@@ -741,7 +741,7 @@ $SETTINGS = array (';
                             $dbTmp,
                             "CREATE TABLE IF NOT EXISTS `" . $var['tbl_prefix'] . "users` (
                             `id` int(12) NOT null AUTO_INCREMENT,
-                            `login` varchar(50) NOT NULL,
+                            `login` varchar(500) NOT NULL,
                             `pw` varchar(400) NOT NULL,
                             `groupes_visibles` varchar(1000) NOT NULL,
                             `derniers` text NULL,
@@ -1249,6 +1249,8 @@ $SETTINGS = array (';
                             `output` text DEFAULT NULL,
                             `arguments` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`arguments`)),
                             `is_in_progress` tinyint(1) NOT NULL DEFAULT 0,
+                            `started_at` varchar(50) NULL,
+                            `item_id` INT(12) NULL,
                             PRIMARY KEY (`increment_id`)
                             ) CHARSET=utf8;"
                         );

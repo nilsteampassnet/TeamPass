@@ -899,7 +899,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         //col4
         $sOutput .= '"'.$record['process_type'].'", ';
         // col5
-        if ($record['process_type'] === 'create_user_keys') {
+        if (in_array($record['process_type'], array('create_user_keys', 'item_copy')) === true) {
             $data_user = DB::queryfirstrow(
                 'SELECT name, lastname FROM ' . prefixTable('users') . '
                 WHERE id = %i',

@@ -1115,5 +1115,8 @@ return array(
     'updated' => 'Updated',
     'number_of_days' => 'Number of days',
     'number_of_times' => 'Number of times',
+    'sharekey_not_ready' => 'Sharekey not yet generated ... all item data may not be ready ... please try later',
+    'item_action_not_yet_possible' => 'Action not yet possible on this item',
+    'open' => '',
 
 );

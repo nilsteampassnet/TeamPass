@@ -287,7 +287,7 @@ catch (Exception $e) {
                                             </small>
                                         </div>
                                         <div class='col-2'>
-                                            <input type='text' class='form-control form-control-sm' id='task_maximum_run_time' value='<?php echo isset($SETTINGS['task_maximum_run_time']) === true ? $SETTINGS['task_maximum_run_time'] : 600; ?>'>
+                                            <input type='number' class='form-control form-control-sm' id='task_maximum_run_time' value='<?php echo isset($SETTINGS['task_maximum_run_time']) === true ? $SETTINGS['task_maximum_run_time'] : 600; ?>'>
                                         </div>
                                     </div>
 
@@ -299,7 +299,7 @@ catch (Exception $e) {
                                             </small>
                                         </div>
                                         <div class='col-2'>
-                                            <input type='text' class='form-control form-control-sm' id='maximum_number_of_items_to_treat' value='<?php echo isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH; ?>'>
+                                            <input type='number' class='form-control form-control-sm' id='maximum_number_of_items_to_treat' value='<?php echo isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH; ?>'>
                                         </div>
                                     </div>
 
@@ -311,7 +311,7 @@ catch (Exception $e) {
                                             </small>
                                         </div>
                                         <div class='col-2'>
-                                            <input type='text' class='form-control form-control-sm' id='tasks_manager_refreshing_period' value='<?php echo isset($SETTINGS['tasks_manager_refreshing_period']) === true ? $SETTINGS['tasks_manager_refreshing_period'] : 20; ?>'>
+                                            <input type='number' class='form-control form-control-sm' id='tasks_manager_refreshing_period' value='<?php echo isset($SETTINGS['tasks_manager_refreshing_period']) === true ? $SETTINGS['tasks_manager_refreshing_period'] : 20; ?>'>
                                         </div>
                                     </div>
 

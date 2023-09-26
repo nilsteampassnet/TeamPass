@@ -79,3 +79,15 @@ function doLog(string $status, string $job, int $enable_tasks_log = 0, int $id =
     
     return -1;
 }
+
+/**
+ * Permits to run a task
+ *
+ * @param array $message
+ * @param string $SETTINGS
+ * @return void
+ */
+function provideLog(string $message, array $SETTINGS)
+{
+    echo '\n' . (string) date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], time()) . ' - '.$message . '\n';
+}

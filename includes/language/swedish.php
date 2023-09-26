@@ -16,11 +16,11 @@
  * @see       https://www.teampass.net
  */
 return array(
-    'show_user_temporary_encryption_code' => 'Show user encryption code',
-    'email_body_new_user' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>An administrator has created for you a user account on Teampass. Next time you will connect to Teampass, please use next credentials:<ul><li>login: #login#</li><li>Password: #password#</li><li>Encryption code: #code#</li></ul><br><br><br>Cheers',
-    'user_password' => 'User password',
-    'user_temporary_encryption_code' => 'User encryption code',
-    'no_email_set' => 'No email has been registered',
+    'show_user_temporary_encryption_code' => 'Visa användares krypteringsnyckel',
+    'email_body_new_user' => 'Hej, <br><br>Detta är ett automatiskt utskick från Teampass lösenordshanterare. <br><br>En administratör har skapat ett användarkonto till dig. Nästa gång du vill logga in i Teampass så använd dina uppgifter: <ul><li>Användarnamn: #login# </li><li>Lösenord: #password# </li><li>Krypteringsnyckel: #code#</li></ul><br><br><br>Välkommen',
+    'user_password' => 'Användarens Lösenord',
+    'user_temporary_encryption_code' => 'Användarens Krypteringsnyckel',
+    'no_email_set' => 'Ingen epost har angetts',
     'send_user_password_by_email' => 'Decide if the user login password should be sent by email.<br>If yes then press button Send.<br><br>Otherwize use the button Copy to clipboard to send it to the user by another mean.<br>It becomes your responsibility as an Administrator to provide the user the password in a secure way.',
     'admin_change_user_encryption_code_info' => 'This operation will reset the encryption code for this user.',
     'send_by_email' => 'Send by email',
@@ -1115,5 +1115,8 @@ return array(
     'updated' => 'Updated',
     'number_of_days' => 'Number of days',
     'number_of_times' => 'Number of times',
+    'sharekey_not_ready' => 'Sharekey not yet generated ... all item data may not be ready ... please try later',
+    'item_action_not_yet_possible' => 'Action not yet possible on this item',
+    'open' => '',
 
 );

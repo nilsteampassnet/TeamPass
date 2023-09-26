@@ -1063,8 +1063,3 @@ function sendMailToUser(
         $SETTINGS
     );
 }
-
-function provideLog(string $message, array $SETTINGS)
-{
-    echo '\n' . (string) date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], time()) . ' - '.$message . '\n';
-}

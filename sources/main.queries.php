@@ -99,9 +99,14 @@ function mainQuery(array $SETTINGS)
     // Connect to mysql server
     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
 
+    // Prepare DB password
+    if (defined('DB_PASSWD_CLEAR') === false) {
+        define('DB_PASSWD_CLEAR', cryption(DB_PASSWD, '', 'decrypt', $SETTINGS)['string']);
+    }
+
     DB::$host = DB_HOST;
     DB::$user = DB_USER;
-    DB::$password = defined('DB_PASSWD_CLEAR') === false ? defuseReturnDecrypted(DB_PASSWD, $SETTINGS) : DB_PASSWD_CLEAR;
+    DB::$password = DB_PASSWD_CLEAR;
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;

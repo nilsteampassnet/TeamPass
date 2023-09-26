@@ -229,6 +229,7 @@ if (null !== $post_type) {
                         'otp_provided' => 0,
                         'can_create_root_folder' => empty($post_root_level) === true ? 0 : $post_root_level,
                         'mfa_enabled' => empty($mfa_enabled) === true ? 0 : $mfa_enabled,
+                        'created_at' => time(),
                     )
                 );
                 $new_user_id = DB::insertId();
@@ -421,7 +422,7 @@ if (null !== $post_type) {
                 DB::update(
                     prefixTable('users'),
                     array(
-                        'login' => $data_user['login'].'_deleted',
+                        'login' => $data_user['login'].'_deleted_'.time(),
                         'deleted_at' => time(),
                     ),
                     'id = %i',
@@ -2400,14 +2401,14 @@ if (null !== $post_type) {
 
             // special case
             if ($post_field === 'auth_type' && $post_new_value === 'ldap') {
-                DB::update(
+                /*DB::update(
                     prefixTable('users'),
                     array(
                         'special' => 'recrypt-private-key',
                     ),
                     'id = %i',
                     $post_user_id
-                );
+                );*/
             }
 
             // send data
@@ -2827,6 +2828,7 @@ if (null !== $post_type) {
                     'special' => 'user_added_from_ldap',
                     'auth_type' => 'ldap',
                     'is_ready_for_usage' => isset($SETTINGS['enable_tasks_manager']) === true && (int) $SETTINGS['enable_tasks_manager'] === 1 ? 0 : 1,
+                    'created_at' => time(),
                 )
             );
             $newUserId = DB::insertId();

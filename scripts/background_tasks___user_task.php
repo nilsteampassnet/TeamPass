@@ -58,8 +58,7 @@ DB::$connect_options = DB_CONNECT_OPTIONS;
 // log start
 $logID = doLog('start', 'user_task', (isset($SETTINGS['enable_tasks_log']) === true ? (int) $SETTINGS['enable_tasks_log'] : 0));
 
-// Manage emails to send in queue.
-// Only manage 10 emails at time
+
 DB::debugmode(false);
 $rows = DB::query(
     'SELECT *

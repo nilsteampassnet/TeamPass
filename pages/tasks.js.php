@@ -116,6 +116,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'tasks', $SETTINGS) === fa
                         } else {
                             return '<i class="fars fa-hand-papper text-info"></i><i class="fa-solid fa-eye pointer action ml-2" data-id="' + $(data).data('process-id') + '" data-type="task-detail"></i><i class="fa-solid fa-trash pointer confirm ml-2 text-danger" data-id="' + $(data).data('process-id') + '" data-type="task-delete"></i>';
                         }
+                    } else if ($(data).data('type') === 'item_copy') {
+                        return '<i class="fa-solid fa-trash pointer confirm ml-2 text-danger" data-id="' + $(data).data('process-id') + '" data-type="task-delete"></i>';
                     } else {
                         return '';
                     }

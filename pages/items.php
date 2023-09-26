@@ -661,7 +661,7 @@ foreach ($rows as $reccord) {
                                 foreach ($elem['fields'] as $field) {
                                     echo '
                                     <li class="list-group-item card-item-field hidden" id="card-item-field-' . $field['id'] . '">
-                                        <b>' . $field['title'] . '</b>
+                                        <span id="card-item-field-title-' . $field['id'] . '"><b>' . $field['title'] . '</b></span>
                                         <button type="button" class="float-right btn btn-outline-info btn-sm ml-1 btn-copy-clipboard-clear"  data-clipboard-target="#card-item-field-value-' . $field['id'] . '">
                                             <i class="fa-solid fa-copy"></i>
                                         </button>

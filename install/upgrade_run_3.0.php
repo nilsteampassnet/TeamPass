@@ -525,6 +525,37 @@ try {
     // Do nothing
 }
 
+// Alter url field in CACHE
+try {
+    mysqli_query(
+        $db_link,
+        'ALTER TABLE `' . $pre . 'cache` CHANGE `url` `url` TEXT NULL DEFAULT NULL;'
+    );
+} catch (Exception $e) {
+    // Do nothing
+}
+
+// Add field item_id to processes table
+$res = addColumnIfNotExist(
+    $pre . 'processes',
+    'item_id',
+    "INT(12) NULL;"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field item_id to table processes! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// Alter url field in ITEMS
+try {
+    mysqli_query(
+        $db_link,
+        'ALTER TABLE `' . $pre . 'users` CHANGE `login` `login` VARCHAR(500) NOT NULL;'
+    );
+} catch (Exception $e) {
+    // Do nothing
+}
 
 
 //---<END 3.0.10

@@ -2966,6 +2966,10 @@ function generateQuickPassword(int $length = 16, bool $symbolsincluded = true): 
  * @param int    $post_object_id          Object
  * @param string $objectKey               Object key
  * @param array  $SETTINGS                Teampass settings
+ * @param int    $user_id                 User ID if needed
+ * @param bool   $onlyForUser                 User ID if needed
+ * @param bool   $deleteAll                 User ID if needed
+ * @param array  $objectKeyArray                 User ID if needed
  *
  * @return void
  */
@@ -2975,11 +2979,18 @@ function storeUsersShareKey(
     int $post_folder_id,
     int $post_object_id,
     string $objectKey,
-    array $SETTINGS
+    array $SETTINGS,
+    bool $onlyForUser = false,
+    bool $deleteAll = true,
+    array $objectKeyArray = []
 ): void {
-    // include librairies & connect to DB
+    // include librairies
     include_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+    $superGlobal = new protect\SuperGlobal\SuperGlobal();
+
+    // connect to DB
     if (defined('DB_PASSWD_CLEAR') === false) {
         define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
     }
@@ -2991,55 +3002,91 @@ function storeUsersShareKey(
     DB::$encoding = DB_ENCODING;
     DB::$ssl = DB_SSL;
     DB::$connect_options = DB_CONNECT_OPTIONS;
+
     // Delete existing entries for this object
-    DB::delete(
-        $object_name,
-        'object_id = %i',
-        $post_object_id
-    );
-    // Superglobals
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-    $superGlobal = new protect\SuperGlobal\SuperGlobal();
-    // Prepare superGlobal variables
-    $sessionPpersonaFolders = $superGlobal->get('personal_folders', 'SESSION');
-    $sessionUserId = $superGlobal->get('user_id', 'SESSION');
-    $sessionUserPublicKey = $superGlobal->get('public_key', 'SESSION', 'user');
+    if ($deleteAll === true) {
+        DB::delete(
+            $object_name,
+            'object_id = %i',
+            $post_object_id
+        );
+    }
+    
     if (
         (int) $post_folder_is_personal === 1
-        && in_array($post_folder_id, $sessionPpersonaFolders) === true
+        && in_array($post_folder_id, $superGlobal->get('personal_folders', 'SESSION')) === true
     ) {
         // If this is a personal object
         // Only create the sharekey for user
-        DB::insert(
-            $object_name,
-            [
-                'object_id' => (int) $post_object_id,
-                'user_id' => (int) $sessionUserId,
-                'share_key' => encryptUserObjectKey($objectKey, $sessionUserPublicKey),
-            ]
-        );
-    } else {
-        // This is a public object
-        // Create sharekey for each user
-        $users = DB::query(
-            'SELECT id, public_key
-            FROM ' . prefixTable('users') . '
-            WHERE id NOT IN ("' . OTV_USER_ID . '","' . SSH_USER_ID . '","' . API_USER_ID . '")
-            AND public_key != ""'
-        );
-        foreach ($users as $user) {
-            // Insert in DB the new object key for this item by user
+        if (empty($objectKey) === false) {
             DB::insert(
                 $object_name,
                 [
-                    'object_id' => $post_object_id,
-                    'user_id' => (int) $user['id'],
+                    'object_id' => (int) $post_object_id,
+                    'user_id' => (int) $superGlobal->get('user_id', 'SESSION'),
                     'share_key' => encryptUserObjectKey(
                         $objectKey,
-                        $user['public_key']
+                        $superGlobal->get('public_key', 'SESSION', 'user')
                     ),
                 ]
             );
+        } else if (count($objectKeyArray) > 0) {
+            foreach ($objectKeyArray as $object) {
+                DB::insert(
+                    $object_name,
+                    [
+                        'object_id' => (int) $object['objectId'],
+                        'user_id' => (int) $superGlobal->get('user_id', 'SESSION'),
+                        'share_key' => encryptUserObjectKey(
+                            $object['objectKey'],
+                            $superGlobal->get('public_key', 'SESSION', 'user')
+                        ),
+                    ]
+                );
+            }
+        }
+    } else {
+        // This is a public object
+        // Create sharekey for each user
+        //DB::debugmode(true);
+        $users = DB::query(
+            'SELECT id, public_key
+            FROM ' . prefixTable('users') . '
+            WHERE ' . ($onlyForUser === true ? 
+                'id IN ("' . TP_USER_ID . '","' . $superGlobal->get('user_id', 'SESSION') . '") ' : 
+                'id NOT IN ("' . OTV_USER_ID . '","' . SSH_USER_ID . '","' . API_USER_ID . '") ') . '
+            AND public_key != ""'
+        );
+        //DB::debugmode(false);
+        foreach ($users as $user) {
+            // Insert in DB the new object key for this item by user
+            if (count($objectKeyArray) === 0) {
+                DB::insert(
+                    $object_name,
+                    [
+                        'object_id' => $post_object_id,
+                        'user_id' => (int) $user['id'],
+                        'share_key' => encryptUserObjectKey(
+                            $objectKey,
+                            $user['public_key']
+                        ),
+                    ]
+                );
+            } else {
+                foreach ($objectKeyArray as $object) {
+                    DB::insert(
+                        $object_name,
+                        [
+                            'object_id' => (int) $object['objectId'],
+                            'user_id' => (int) $user['id'],
+                            'share_key' => encryptUserObjectKey(
+                                $object['objectKey'],
+                                $user['public_key']
+                            ),
+                        ]
+                    );
+                }
+            }
         }
     }
 }
@@ -4208,4 +4255,77 @@ function filterVarBack(string $string): string
     }
 
     return $string;
+}
+
+/**
+ * 
+ */
+function storeTask(
+    string $taskName,
+    int $user_id,
+    int $is_personal_folder,
+    int $folder_destination_id,
+    int $item_id,
+    string $object_keys,
+)
+{
+    if (in_array($taskName, ['item_copy', 'new_item', 'update_item'])) {
+        // Create process
+        DB::insert(
+            prefixTable('processes'),
+            array(
+                'created_at' => time(),
+                'process_type' => $taskName,
+                'arguments' => json_encode([
+                    'item_id' => $item_id,
+                    'object_key' => $object_keys,
+                ]),
+                'updated_at' => '',
+                'finished_at' => '',
+                'output' => '',
+                'item_id' => $item_id,
+            )
+        );
+        $processId = DB::insertId();
+
+        // Create tasks
+        // 1- Create password sharekeys for users of this new ITEM
+        DB::insert(
+            prefixTable('processes_tasks'),
+            array(
+                'process_id' => $processId,
+                'created_at' => time(),
+                'task' => json_encode([
+                    'step' => 'create_users_pwd_key',
+                    'index' => 0,
+                ]),
+            )
+        );
+
+        // 2- Create fields sharekeys for users of this new ITEM
+        DB::insert(
+            prefixTable('processes_tasks'),
+            array(
+                'process_id' => $processId,
+                'created_at' => time(),
+                'task' => json_encode([
+                    'step' => 'create_users_fields_key',
+                    'index' => 0,
+                ]),
+            )
+        );
+
+        // 3- Create files sharekeys for users of this new ITEM
+        DB::insert(
+            prefixTable('processes_tasks'),
+            array(
+                'process_id' => $processId,
+                'created_at' => time(),
+                'task' => json_encode([
+                    'step' => 'create_users_files_key',
+                    'index' => 0,
+                ]),
+            )
+        );
+    }
 }

@@ -1115,5 +1115,8 @@ return array(
     'updated' => 'Mis à jour',
     'number_of_days' => 'Nombre de jours',
     'number_of_times' => 'Nombre de visualisations',
+    'sharekey_not_ready' => 'Clé de partage non générée ... toutes les données de l&apos;objet ne sont pas prêtes ... Merci de patienter',
+    'item_action_not_yet_possible' => 'Cette action n&apos;est pas disponible pour le moment sur cet objet',
+    'open' => '',
 
 );

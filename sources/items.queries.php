@@ -455,15 +455,24 @@ switch ($inputData['type']) {
                 );
                 $newID = DB::insertId();
 
+                // store pwd object key
+                $objectKey = array(
+                    'pwd' => $cryptedStuff['objectKey'],
+                    'fields' => [],
+                    'files' => [],
+                );
+
                 // Create sharekeys for users
                 storeUsersShareKey(
                     prefixTable('sharekeys_items'),
                     (int) $post_folder_is_personal,
                     (int) $inputData['folderId'],
                     (int) $newID,
-                    $cryptedStuff['objectKey'],
-                    $SETTINGS
+                    $objectKey['pwd'],
+                    $SETTINGS,
+                    true
                 );
+                
 
                 // update fields
                 if (
@@ -496,17 +505,28 @@ switch ($inputData['type']) {
                                         'encryption_type' => TP_ENCRYPTION_NAME,
                                     )
                                 );
-                                $newBojectId = DB::insertId();
+                                $newObjectId = DB::insertId();
 
                                 // Store key
+                                // Build list of fields
+                                array_push(
+                                    $objectKey['fields'],
+                                    array(
+                                        'objectId' => $newObjectId,
+                                        'objectKey' => $cryptedStuff['objectKey'],
+                                    )
+                                );
+            
                                 storeUsersShareKey(
                                     prefixTable('sharekeys_fields'),
                                     (int) $post_folder_is_personal,
                                     (int) $inputData['folderId'],
-                                    (int) $newBojectId,
+                                    (int) $newObjectId,
                                     $cryptedStuff['objectKey'],
-                                    $SETTINGS
+                                    $SETTINGS,
+                                    true
                                 );
+                                
                             } else {
                                 // update value
                                 DB::insert(
@@ -703,6 +723,19 @@ switch ($inputData['type']) {
                             $record['id']
                         );
                     }
+                }
+
+                // Create new task for the new item
+                // If it is not a personnal one
+                if ((int) $dataDestination['personal_folder'] !== 1) {
+                    storeTask(
+                        'new_item',
+                        $_SESSION['user_id'],
+                        0,
+                        (int) $inputData['folderId'],
+                        (int) $newID,
+                        json_encode($objectKey),
+                    );
                 }
 
                 // Announce by email?
@@ -2031,6 +2064,13 @@ switch ($inputData['type']) {
             // reaffect pw
             $originalRecord['pw'] = $cryptedStuff['encrypted'];
 
+            // store pwd object key
+            $objectKey = array(
+                'pwd' => $cryptedStuff['objectKey'],
+                'fields' => [],
+                'files' => [],
+            );
+
             // generate the query to update the new record with the previous values
             $aSet = array();
             $aSet['created_at'] = time();
@@ -2064,8 +2104,9 @@ switch ($inputData['type']) {
                 (int) $dataDestination['personal_folder'],
                 (int) $post_dest_id,
                 (int) $newItemId,
-                $cryptedStuff['objectKey'],
-                $SETTINGS
+                $objectKey['pwd'],
+                $SETTINGS,
+                true
             );
 
             // --------------------
@@ -2101,13 +2142,23 @@ switch ($inputData['type']) {
 
                 // Create sharekeys for users
                 if ((int) $field['encryption_type'] === TP_ENCRYPTION_NAME) {
+                    // Build list of fields
+                    array_push(
+                        $objectKey['fields'],
+                        array(
+                            'objectId' => $newFieldId,
+                            'objectKey' => $cryptedStuff['objectKey'],
+                        )
+                    );
+
                     storeUsersShareKey(
                         prefixTable('sharekeys_fields'),
                         (int) $dataDestination['personal_folder'],
                         (int) $post_dest_id,
                         (int) $newFieldId,
                         $cryptedStuff['objectKey'],
-                        $SETTINGS
+                        $SETTINGS,
+                        true
                     );
                 }
             }
@@ -2175,17 +2226,40 @@ switch ($inputData['type']) {
                     $newFileId = DB::insertId();
 
                     // Step5 - create sharekeys
+                    // Build list of fields
+                    array_push(
+                        $objectKey['files'],
+                        array(
+                            'objectId' => $newFileId,
+                            'objectKey' => $newFile['objectKey'],
+                        )
+                    );
+
                     storeUsersShareKey(
                         prefixTable('sharekeys_files'),
                         (int) $dataDestination['personal_folder'],
                         (int) $post_dest_id,
                         (int) $newFileId,
                         $newFile['objectKey'],
-                        $SETTINGS
+                        $SETTINGS,
+                        true
                     );
                 }
             }
             // <---
+
+            // Create new task for the new item
+            // If it is not a personnal one
+            if ((int) $dataDestination['personal_folder'] !== 1) {
+                storeTask(
+                    'item_copy',
+                    $_SESSION['user_id'],
+                    0,
+                    (int) $post_dest_id,
+                    (int) $newItemId,
+                    json_encode($objectKey),
+                );
+            }
 
             // -------------------------
             // Add specific restrictions
@@ -2604,10 +2678,10 @@ switch ($inputData['type']) {
 
             $arrData['label'] = htmlspecialchars_decode($dataItem['label'], ENT_QUOTES);
             $arrData['pw'] = $pw;
+            $arrData['pw_decrypt_info'] = empty($pw) === true ? 'error_no_sharekey_yet' : '';
             $arrData['email'] = empty($dataItem['email']) === true || $dataItem['email'] === null ? '' : $dataItem['email'];
             $arrData['url'] = empty($dataItem['url']) === true ? '' : '<a href="'.$dataItem['url'].'" target="_blank">'.$dataItem['url'].'</a>';
             $arrData['folder'] = $dataItem['id_tree'];
-
             $arrData['description'] = $dataItem['description'];
             $arrData['login'] = htmlspecialchars_decode(str_replace(array('"'), array('&quot;'), $dataItem['login']), ENT_QUOTES);
             $arrData['id_restricted_to'] = $listeRestriction;
@@ -2673,7 +2747,7 @@ switch ($inputData['type']) {
                     // get fields for this Item
                     $rows_tmp = DB::query(
                         'SELECT i.id AS id, i.field_id AS field_id, i.data AS data, i.item_id AS item_id,
-                        i.encryption_type AS encryption_type, c.encrypted_data, c.parent_id AS parent_id,
+                        i.encryption_type AS encryption_type, c.encrypted_data AS encrypted_data, c.parent_id AS parent_id,
                         c.type as field_type, c.masked AS field_masked, c.role_visibility AS role_visibility
                         FROM ' . prefixTable('categories_items') . ' AS i
                         INNER JOIN ' . prefixTable('categories') . ' AS c ON (i.field_id=c.id)
@@ -2694,19 +2768,31 @@ switch ($inputData['type']) {
                         );
                         //db::debugmode(false);
                         $fieldText = [];
-                        if (DB::count() === 0) {
+                        if (DB::count() === 0 && (int) $row['encrypted_data'] !== 1) {
                             // Not encrypted
-                            $fieldText['string'] = $row['data'];
-                            $fieldText['encrypted'] = false;
+                            $fieldText = [
+                                'string' => '',
+                                'encrypted' => false,
+                                'error' => 'error_no_sharekey_yet',
+                            ];
+                        } else if (DB::count() === 0 && (int) $row['encrypted_data'] === 1) {
+                            $fieldText = [
+                                'string' => $row['data'],
+                                'encrypted' => true,
+                                'error' => true,
+                            ];
                         } else {
-                            $fieldText['string'] = doDataDecryption(
-                                $row['data'],
-                                decryptUserObjectKey(
-                                    $userKey['share_key'],
-                                    $_SESSION['user']['private_key']
-                                )
-                            );
-                            $fieldText['encrypted'] = true;
+                            $fieldText = [
+                                'string' => doDataDecryption(
+                                    $row['data'],
+                                    decryptUserObjectKey(
+                                        $userKey['share_key'],
+                                        $_SESSION['user']['private_key']
+                                    )
+                                ),
+                                'encrypted' => true,
+                                'error' => '',
+                            ];
                         }
 
                         // Manage textarea string
@@ -2724,6 +2810,7 @@ switch ($inputData['type']) {
                                 'parent_id' => (int) $row['parent_id'],
                                 'type' => $row['field_type'],
                                 'masked' => (int) $row['field_masked'],
+                                'error' => (string) $fieldText['error'],
                             )
                         );
                     }
@@ -2747,6 +2834,7 @@ switch ($inputData['type']) {
             $arrData['categories'] = $arrCatList;
             $arrData['template_id'] = (int) $template_id;
             $arrData['to_be_deleted'] = '';
+            $arrData['item_ready'] = empty($fieldText['error']) === true ? true : false;
 
             // Manage user restriction
             if (null !== $post_restricted) {
@@ -5333,7 +5421,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
 
         // decrypt and retreive data in JSON format
         $dataReceived = prepareExchangedData(
-$SETTINGS['cpassman_dir'],
+            $SETTINGS['cpassman_dir'],
             $inputData['data'],
             'decode'
         );
@@ -5342,7 +5430,7 @@ $SETTINGS['cpassman_dir'],
         // perform a check in case of Read-Only user creating an item in his PF
         if ($_SESSION['user_read_only'] === true) {
             echo (string) prepareExchangedData(
-$SETTINGS['cpassman_dir'],
+                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('error_not_allowed_to'),

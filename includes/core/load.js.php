@@ -307,7 +307,10 @@ if (
             '<i class="fa-solid fa-user-shield fa-lg warning mr-2"></i><?php echo langHdl('caution'); ?>',
             '<?php echo langHdl('login_attempts_identified_since_last_connection'); ?>',
             '<?php echo langHdl('see_detail'); ?>',
-            '<?php echo langHdl('cancel'); ?>'
+            '<?php echo langHdl('close'); ?>',
+            false,
+            false,
+            false
         );
 
         // Actions on modal buttons
