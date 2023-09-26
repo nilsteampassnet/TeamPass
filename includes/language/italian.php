@@ -1118,5 +1118,7 @@ return array(
     'sharekey_not_ready' => 'Sharekey not yet generated ... all item data may not be ready ... please try later',
     'item_action_not_yet_possible' => 'Action not yet possible on this item',
     'open' => '',
+    'reload_user_cache_table' => 'Reload user cache table',
+    'send_email_to_user' => 'Send email to user',
 
 );

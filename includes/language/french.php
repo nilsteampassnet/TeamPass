@@ -1118,5 +1118,7 @@ return array(
     'sharekey_not_ready' => 'Clé de partage non générée ... toutes les données de l&apos;objet ne sont pas prêtes ... Merci de patienter',
     'item_action_not_yet_possible' => 'Cette action n&apos;est pas disponible pour le moment sur cet objet',
     'open' => '',
+    'reload_user_cache_table' => 'Recharger la table de cache de l&apos;utilisateur',
+    'send_email_to_user' => 'Envoi d&apos;email à l&apos;utilisateur',
 
 );

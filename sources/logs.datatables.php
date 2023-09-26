@@ -995,11 +995,11 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         $sOutput .= '"'.gmdate('H:i:s', (int) $record['finished_at'] - (is_null($record['started_at']) === false ? (int) $record['started_at'] : (int) $record['created_at'])).'",';
         //col5
         if ($record['process_type'] === 'create_user_keys') {
-            $processIcon = '<i class=\"fa-solid fa-user-gear\"></i>';
+            $processIcon = '<i class=\"fa-solid fa-user-gear infotip\" title=\"'.langHdl('user_creation').'\"></i>';
         } else if ($record['process_type'] === 'send_email') {
-            $processIcon = '<i class=\"fa-solid fa-envelope-circle-check\"></i>';
+            $processIcon = '<i class=\"fa-solid fa-envelope-circle-check infotip\" title=\"'.langHdl('send_email_to_user').'\"></i>';
         } else if ($record['process_type'] === 'user_build_cache_tree') {
-            $processIcon = '<i class=\"fa-solid fa-folder-tree\"></i>';
+            $processIcon = '<i class=\"fa-solid fa-folder-tree infotip\" title=\"'.langHdl('reload_user_cache_table').'\"></i>';
         } else {
             $processIcon = '<i class=\"fa-solid fa-question\"></i> ('.$record['process_type'].')';
         }
@@ -1021,6 +1021,19 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         } elseif ($record['process_type'] === 'send_email') {
             $user = json_decode($record['arguments'], true)['receiver_name'];
             $sOutput .= '"'.(is_null($user) === true || empty($user) === true ? '<i class=\"fa-solid fa-user-slash\"></i>' : $user).'"';
+        } elseif ($record['process_type'] === 'user_build_cache_tree') {
+            $user = json_decode($record['arguments'], true)['user_id'];
+            $data_user = DB::queryfirstrow(
+                'SELECT name, lastname, login FROM ' . prefixTable('users') . '
+                WHERE id = %i',
+                $user
+            );
+            if (DB::count() > 0) {
+                $txt = (isset($data_user['name']) === true ? $data_user['name'] : '').(isset($data_user['lastname']) === true ? ' '.$data_user['lastname'] : '');
+                $sOutput .= '"'.(empty($txt) === false ? $txt : $data_user['login']).'"';
+            } else {
+                $sOutput .= '"<i class=\"fa-solid fa-user-slash\"></i>"';
+            }
         } else {
             $sOutput .= '"<i class=\"fa-solid fa-user-slash\"></i>"';
         }

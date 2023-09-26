@@ -119,9 +119,9 @@ doLog('end', '', (isset($SETTINGS['enable_tasks_log']) === true ? (int) $SETTING
  * @param array $ProcessArguments
  * @param array $SETTINGS
  *
- * @return void
+ * @return bool
  */
-function handleTask(int $processId, array $ProcessArguments, array $SETTINGS)
+function handleTask(int $processId, array $ProcessArguments, array $SETTINGS): bool
 {
     provideLog('[PROCESS][#'. $processId.'][START]', $SETTINGS);
     //DB::debugmode(false);
