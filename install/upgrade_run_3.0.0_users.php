@@ -751,6 +751,11 @@ if (null !== $post_step) {
         * Sending email to user
         */
         case 'send_pwd_by_email':
+            // Continue if UPGRADE_SEND_EMAILS set to TRUE or undefined
+            if (defined('UPGRADE_SEND_EMAILS') === true && UPGRADE_SEND_EMAILS === false) {
+                break;
+            }
+
             // Prepare post variables
             $post_user_info = base64_decode(filter_input(INPUT_POST, 'userInfo', FILTER_SANITIZE_FULL_SPECIAL_CHARS));
 
