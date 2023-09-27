@@ -2271,7 +2271,8 @@ function identifyDoInitialChecks(
         return [
             'error' => true,
             'array' => [
-                'error' => 'user_not_exists',
+                'value' => 'user_not_exists',
+                'error' => true,
                 'message' => langHdl('error_bad_credentials'),
                 'pwd_attempts' => (int) $sessionPwdAttempts,
                 'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
