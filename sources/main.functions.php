@@ -4272,7 +4272,7 @@ function storeTask(
     int $is_personal_folder,
     int $folder_destination_id,
     int $item_id,
-    string $object_keys,
+    string $object_keys
 )
 {
     if (in_array($taskName, ['item_copy', 'new_item', 'update_item'])) {

@@ -255,7 +255,7 @@ foreach ($rows as $reccord) {
                                     <div class="input-group-prepend">
                                         <span class="input-group-text"><?php echo langHdl('icon'); ?></span>
                                     </div>
-                                    <input id="form-item-icon" type="text" class="form-control form-item-control " data-field-name="icon" data-change-ongoing="">
+                                    <input id="form-item-icon" type="text" class="form-control form-item-control purify" data-field-name="icon" data-change-ongoing="">
                                     <span class="ml-2 col-md-1 clear-me-html" id="form-item-icon-show"></span>
                                 </div>
                                 <small class='form-text text-muted'>

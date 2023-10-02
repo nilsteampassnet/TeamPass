@@ -1138,7 +1138,7 @@ if (($session_validite_pw === null
     <script type="text/javascript" src="includes/libraries/Encryption/CryptoJs/crypto-js.js"></script>
     <script type="text/javascript" src="includes/libraries/Encryption/CryptoJs/encryption.js"></script>
     <!-- pace -->
-    <script type="text/javascript" data-pace-options='{ "ajax": true }' src="plugins/pace-progress/pace.min.js"></script>
+    <script type="text/javascript" data-pace-options='{ "ajax": true, "eventLag": false }' src="plugins/pace-progress/pace.min.js"></script>
     <!-- clipboardjs -->
     <script type="text/javascript" src="plugins/clipboard/clipboard.min.js"></script>
     <!-- select2 -->
