@@ -17,7 +17,7 @@
  */
 define('TP_VERSION', '3.0.10');
 define("UPGRADE_MIN_DATE", "1692690554");
-define('TP_VERSION_MINOR', '54');
+define('TP_VERSION_MINOR', '55');
 define('TP_TOOL_NAME', 'Teampass');
 define('TP_ONE_DAY_SECONDS', 86400);
 define('TP_ONE_WEEK_SECONDS', 604800);
@@ -32,6 +32,7 @@ define('TP_FILE_PREFIX', 'EncryptedFile_');
 define('NUMBER_ITEMS_IN_BATCH', 100);
 define('WIP', false);
 define('UPGRADE_SEND_EMAILS', true);
+define('KEY_LENGTH', 16);
 
 define('ERR_NOT_ALLOWED', '1000');
 define('ERR_NOT_EXIST', '1001');

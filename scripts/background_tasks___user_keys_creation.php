@@ -22,6 +22,8 @@
  * @see       https://www.teampass.net
  */
 
+use Symfony\Component\Process\Process;
+
 require_once __DIR__.'/../sources/SecureHandler.php';
 session_name('teampass_session');
 session_start();
@@ -53,6 +55,20 @@ DB::$encoding = DB_ENCODING;
 DB::$ssl = DB_SSL;
 DB::$connect_options = DB_CONNECT_OPTIONS;
 
+
+
+// Get PHP binary
+require_once __DIR__.'/../includes/libraries/Symfony/Component/Process/Pipes/PipesInterface.php';
+require_once __DIR__.'/../includes/libraries/Symfony/Component/Process/Pipes/AbstractPipes.php';
+require_once __DIR__.'/../includes/libraries/Symfony/Component/Process/Pipes/UnixPipes.php';
+require_once __DIR__.'/../includes/libraries/Symfony/Component/Process/Pipes/WindowsPipes.php';
+require_once __DIR__.'/../includes/libraries/Symfony/Component/Process/ProcessUtils.php';
+require_once __DIR__.'/../includes/libraries/Symfony/Component/Process/Process.php';
+require_once __DIR__.'/../includes/libraries/Symfony/Component/Process/ExecutableFinder.php';
+require_once __DIR__.'/../includes/libraries/Symfony/Component/Process/PhpExecutableFinder.php';
+$phpBinaryFinder = new Symfony\Component\Process\PhpExecutableFinder();
+$phpBinaryPath = $phpBinaryFinder->find();
+
 // log start
 $logID = doLog('start', 'user_keys', (isset($SETTINGS['enable_tasks_log']) === true ? (int) $SETTINGS['enable_tasks_log'] : 0));
 
@@ -79,6 +95,7 @@ if (DB::count() > 0) {
         json_decode($process_to_perform['arguments'], true),
         $SETTINGS,
     );
+
 } else {
     // search for next process to handle
     $process_to_perform = DB::queryfirstrow(
@@ -107,13 +124,16 @@ if (DB::count() > 0) {
             json_decode($process_to_perform['arguments'], true),
             $SETTINGS,
         );
-    } else {
-
     }
 }
 
 // log end
 doLog('end', '', (isset($SETTINGS['enable_tasks_log']) === true ? (int) $SETTINGS['enable_tasks_log'] : 0), $logID);
+
+// launch a new iterative process
+$process = new Symfony\Component\Process\Process([$phpBinaryPath, __FILE__]);
+$process->start();
+$process->wait();
 
 
 

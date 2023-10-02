@@ -283,29 +283,33 @@ catch (Exception $e) {
                 </div>
                 <!-- /.card -->
 
-                <div class="card card-default">
-                    <div class="card-header">
-                        <h3 class="card-title">
-                            <i class="fas fa-info-circle mr-2"></i>
-                            <?php echo langHdl('information'); ?>
-                        </h3>
-                    </div>
-                    <!-- /.card-header -->
-                    <div class="card-body">
-                        <?php
-                        // Display the readme file
-                        $homepage = file_get_contents('changelog.txt', false, null, 543);
-                        echo $homepage;
-                        ?>
-                    </div>
-                    <!-- /.card-body -->
-                </div>
-                <!-- /.card -->
-
             </div>
             <!-- /.col -->
         </div>
         <!-- /.row -->
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card card-default">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-info-circle mr-2"></i>
+                                <?php echo langHdl('information'); ?>
+                            </h3>
+                        </div>
+                        <!-- /.card-header -->
+                        <div class="card-body">
+                            <?php
+                            // Display the readme file
+                            $homepage = file_get_contents('changelog.txt', false, null, 543);
+                            echo $homepage;
+                            ?>
+                        </div>
+                        <!-- /.card-body -->
+                    </div>
+                    <!-- /.card -->
+            </div>
+        </div>
     </div><!-- /.container-fluid -->
 </div>
 <!-- /.content -->

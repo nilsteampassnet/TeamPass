@@ -2770,7 +2770,7 @@ function doDataEncryption(string $data, string $key = NULL): array
     // Load classes
     $cipher = new Crypt_AES(CRYPT_AES_MODE_CBC);
     // Generate an object key
-    $objectKey = is_null($key) === true ? uniqidReal(32) : $key;
+    $objectKey = is_null($key) === true ? uniqidReal(KEY_LENGTH) : $key;
     // Set it as password
     $cipher->setPassword($objectKey);
     return [

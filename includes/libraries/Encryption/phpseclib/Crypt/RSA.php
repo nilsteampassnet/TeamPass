@@ -2486,7 +2486,7 @@ class Crypt_RSA
         // be output.
 
         if (strlen($c) != $this->k || $this->k < 2 * $this->hLen + 2) {
-            user_error('Decryption error');
+            //user_error('Decryption error');
             return false;
         }
 
@@ -3039,7 +3039,11 @@ class Crypt_RSA
         }
 
         $ciphertext = str_split($ciphertext, $this->k);
-        $ciphertext[count($ciphertext) - 1] = str_pad($ciphertext[count($ciphertext) - 1], $this->k, chr(0), STR_PAD_LEFT);
+        if (count($ciphertext) > 0) {
+            $ciphertext[count($ciphertext) - 1] = str_pad($ciphertext[count($ciphertext) - 1], $this->k, chr(0), STR_PAD_LEFT);
+        } else {
+            $ciphertext = array('');
+        }
 
         $plaintext = '';
 
