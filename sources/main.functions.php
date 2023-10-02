@@ -4010,37 +4010,43 @@ function handleUserKeys(
         if ($generate_user_new_password === true) {
             // Generate a new password
             $passwordClear = GenerateCryptKey(20, false, true, true, false, true);
+        }
 
-            // Hash the new password
-            $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
-            $pwdlib->register();
-            $pwdlib = new PasswordLib\PasswordLib();
-            $hashedPassword = $pwdlib->createPasswordHash($passwordClear);
-            if ($pwdlib->verifyPasswordHash($passwordClear, $hashedPassword) === false) {
-                return prepareExchangedData(
-                    __DIR__.'/..',
-                    array(
-                        'error' => true,
-                        'message' => langHdl('pw_hash_not_correct'),
-                    ),
-                    'encode'
-                );
-            }
-
-            // Generate new keys
-            $userKeys = generateUserKeys($passwordClear);
-
-            // Save in DB
-            DB::update(
-                prefixTable('users'),
+        // Hash the password
+        $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
+        $pwdlib->register();
+        $pwdlib = new PasswordLib\PasswordLib();
+        $hashedPassword = $pwdlib->createPasswordHash($passwordClear);
+        if ($pwdlib->verifyPasswordHash($passwordClear, $hashedPassword) === false) {
+            return prepareExchangedData(
+                __DIR__.'/..',
                 array(
-                    'pw' => $hashedPassword,
-                    'public_key' => $userKeys['public_key'],
-                    'private_key' => $userKeys['private_key'],
+                    'error' => true,
+                    'message' => langHdl('pw_hash_not_correct'),
                 ),
-                'id=%i',
-                $userId
+                'encode'
             );
+        }
+
+        // Generate new keys
+        $userKeys = generateUserKeys($passwordClear);
+
+        // Save in DB
+        DB::update(
+            prefixTable('users'),
+            array(
+                'pw' => $hashedPassword,
+                'public_key' => $userKeys['public_key'],
+                'private_key' => $userKeys['private_key'],
+            ),
+            'id=%i',
+            $userId
+        );
+
+        // update session too
+        if ($userId === $_SESSION['user_id']) {
+            $_SESSION['user']['private_key'] = $userKeys['private_key_clear'];
+            $_SESSION['user']['public_key'] = $userKeys['public_key'];
         }
 
         // Manage empty encryption key

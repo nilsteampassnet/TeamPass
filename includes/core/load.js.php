@@ -578,7 +578,6 @@ if (
                                 'email_body': 'email_body_user_config_4',
                                 'generate_user_new_password': false,
                             };
-                            //console.log(parameters);
 
                             $.post(
                                 "sources/main.queries.php", {
@@ -933,7 +932,6 @@ if (
                 'generate_user_new_password': true,
                 'email_body': 'email_body_user_config_3',
             };
-
             $.post(
                 "sources/main.queries.php", {
                     type: "user_new_keys_generation",
