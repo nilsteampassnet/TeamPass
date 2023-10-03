@@ -4352,5 +4352,6 @@ function getPHPBinary(): string
     require_once __DIR__.'/../includes/libraries/Symfony/Component/Process/ExecutableFinder.php';
     require_once __DIR__.'/../includes/libraries/Symfony/Component/Process/PhpExecutableFinder.php';
     $phpBinaryFinder = new Symfony\Component\Process\PhpExecutableFinder();
-    return $phpBinaryFinder->find();
+    $phpBinaryPath = $phpBinaryFinder->find();
+    return $phpBinaryPath === false ? 'false' : $phpBinaryPath;
 }

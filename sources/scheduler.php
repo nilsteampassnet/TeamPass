@@ -54,7 +54,7 @@ $scheduler->php($SETTINGS['cpassman_dir'] . '/scripts/background_tasks___user_ke
 $scheduler->php($SETTINGS['cpassman_dir'] . '/scripts/background_tasks___sending_emails.php')->everyMinute($SETTINGS['sending_emails_job_frequency'] ?? '2');
 $scheduler->php($SETTINGS['cpassman_dir'] . '/scripts/background_tasks___do_calculation.php')->everyMinute($SETTINGS['items_statistics_job_frequency'] ?? '5');
 $scheduler->php($SETTINGS['cpassman_dir'] . '/scripts/background_tasks___user_task.php')->everyMinute($SETTINGS['user_keys_job_frequency'] ?? '1');
-$scheduler->php($SETTINGS['cpassman_dir'] . '/scripts/background_tasks___items_handler.php')->everyMinute($SETTINGS['items_job_frequency'] ?? '1');
+$scheduler->php($SETTINGS['cpassman_dir'] . '/scripts/background_tasks___items_handler.php')->everyMinute($SETTINGS['items_ops_job_frequency'] ?? '1');
 
 if (isset($SETTINGS['users_personal_folder_task']) === true && empty($SETTINGS['users_personal_folder_task']) === false) {
     runTask(
