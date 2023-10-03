@@ -667,10 +667,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
     /**
      * TOP MENU BUTTONS ACTIONS
      */
-    $(document).on('click', '.tp-action', function() {
-        // Ensure that password strength indicator is reseted
-        //$('#form-password').focus();
-
+    $(document).on('click', '.tp-action', function(event) {
         // Hide if user is not admin
         if (parseInt(store.get('teampassUser').user_admin) === 1 || parseInt(store.get('teampassUser').user_can_manage_all_users) === 1) {
             $('.only-admin').removeClass('hidden');
@@ -1795,6 +1792,9 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             // --- END
             //
         }
+
+        event.preventDefault();
+        event.stopPropagation();
     });
 
 
@@ -2332,6 +2332,12 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
         // 2/ clear all keys for this user
         // 3/ generate keys for this user with encryption key
 
+        if (ProcessInProgress === false) {
+            ProcessInProgress = true;
+        } else {
+            return false;
+        }
+
         
         // If expected to create new encryption key
         var parameters = {
@@ -2426,6 +2432,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                                     }
                                 );
                             }
+                            ProcessInProgress = false;
                         }
                     );
                 }
@@ -2504,7 +2511,9 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 '<?php echo langHdl('perform'); ?>',
                 '<?php echo langHdl('cancel'); ?>'
             );
-            $(document).on('click', '#warningModalButtonAction', function() {
+            $(document).on('click', '#warningModalButtonAction', function(event) {
+                event.preventDefault();
+                event.stopPropagation();
                 if ($('#ldap-user-name').val() !== "" && $('#ldap-user-roles :selected').length > 0) {
                     addUserInTeampass();
                     $(thisElement).removeClass('selected-user');
