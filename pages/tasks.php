@@ -161,6 +161,18 @@ catch (Exception $e) {
 
                                     <div class='row ml-1 mb-2'>
                                         <div class='col-9'>
+                                            <i class="fa-solid fa-tower-observation mr-2"></i><?php echo langHdl('items_management')." (".langHdl('in_minutes').")"; ?>
+                                        </div>
+                                        <div class='col-2'>
+                                            <input type='range' class='form-control form-control-sm form-control-range range-slider' id='items_ops_job_frequency' min='0' max="59" value='<?php echo $SETTINGS['items_ops_job_frequency'] ?? '1'; ?>'>
+                                        </div>
+                                        <div class='col-1'>
+                                            <input type='text' disabled class='form-control form-control-sm' id='items_ops_job_frequency_text' value='<?php echo $SETTINGS['items_ops_job_frequency'] ?? '1'; ?>'>
+                                        </div>
+                                    </div>
+
+                                    <div class='row ml-1 mb-2'>
+                                        <div class='col-9'>
                                             <i class="fa-solid fa-chart-simple mr-2"></i><?php echo langHdl('items_and_folders_statistics')." (".langHdl('in_minutes').")"; ?>
                                         </div>
                                         <div class='col-2'>

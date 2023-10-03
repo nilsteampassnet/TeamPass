@@ -4335,3 +4335,22 @@ function storeTask(
         );
     }
 }
+
+/**
+ * Return PHP binary path
+ *
+ * @return string
+ */
+function getPHPBinary(): string
+{
+    require_once __DIR__.'/../includes/libraries/Symfony/Component/Process/Pipes/PipesInterface.php';
+    require_once __DIR__.'/../includes/libraries/Symfony/Component/Process/Pipes/AbstractPipes.php';
+    require_once __DIR__.'/../includes/libraries/Symfony/Component/Process/Pipes/UnixPipes.php';
+    require_once __DIR__.'/../includes/libraries/Symfony/Component/Process/Pipes/WindowsPipes.php';
+    require_once __DIR__.'/../includes/libraries/Symfony/Component/Process/ProcessUtils.php';
+    require_once __DIR__.'/../includes/libraries/Symfony/Component/Process/Process.php';
+    require_once __DIR__.'/../includes/libraries/Symfony/Component/Process/ExecutableFinder.php';
+    require_once __DIR__.'/../includes/libraries/Symfony/Component/Process/PhpExecutableFinder.php';
+    $phpBinaryFinder = new Symfony\Component\Process\PhpExecutableFinder();
+    return $phpBinaryFinder->find();
+}

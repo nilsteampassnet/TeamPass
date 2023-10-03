@@ -661,6 +661,7 @@ $SETTINGS = array (';
                             array('admin', 'rebuild_config_file', ''),
                             array('admin', 'reload_cache_table_task', ''),
                             array('admin', 'maximum_session_expiration_time', '60'),
+                            array('admin', 'items_ops_job_frequency', '1'),
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting

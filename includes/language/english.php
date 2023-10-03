@@ -16,6 +16,7 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'items_management' => 'Items operations',
     'reload_user_cache_table' => 'Reload user cache table',
     'send_email_to_user' => 'Send email to user',
     'sharekey_not_ready' => 'Sharekey not yet generated ... all item data may not be ready ... please try later',

@@ -58,16 +58,7 @@ DB::$connect_options = DB_CONNECT_OPTIONS;
 
 
 // Get PHP binary
-require_once __DIR__.'/../includes/libraries/Symfony/Component/Process/Pipes/PipesInterface.php';
-require_once __DIR__.'/../includes/libraries/Symfony/Component/Process/Pipes/AbstractPipes.php';
-require_once __DIR__.'/../includes/libraries/Symfony/Component/Process/Pipes/UnixPipes.php';
-require_once __DIR__.'/../includes/libraries/Symfony/Component/Process/Pipes/WindowsPipes.php';
-require_once __DIR__.'/../includes/libraries/Symfony/Component/Process/ProcessUtils.php';
-require_once __DIR__.'/../includes/libraries/Symfony/Component/Process/Process.php';
-require_once __DIR__.'/../includes/libraries/Symfony/Component/Process/ExecutableFinder.php';
-require_once __DIR__.'/../includes/libraries/Symfony/Component/Process/PhpExecutableFinder.php';
-$phpBinaryFinder = new Symfony\Component\Process\PhpExecutableFinder();
-$phpBinaryPath = $phpBinaryFinder->find();
+$phpBinaryPath = getPHPBinary();
 
 // log start
 $logID = doLog('start', 'user_keys', (isset($SETTINGS['enable_tasks_log']) === true ? (int) $SETTINGS['enable_tasks_log'] : 0));
@@ -137,7 +128,14 @@ $process->wait();
 
 
 
-
+/**
+ * Undocumented function
+ *
+ * @param integer $processId
+ * @param array $ProcessArguments
+ * @param array $SETTINGS
+ * @return void
+ */
 function handleTask(int $processId, array $ProcessArguments, array $SETTINGS)
 {
     provideLog('[PROCESS][#'. $processId.'][START]', $SETTINGS);

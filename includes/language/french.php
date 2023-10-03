@@ -1120,5 +1120,6 @@ return array(
     'open' => '',
     'reload_user_cache_table' => 'Recharger la table de cache de l&apos;utilisateur',
     'send_email_to_user' => 'Envoi d&apos;email à l&apos;utilisateur',
+    'items_management' => 'Opérations relatives aux objets',
 
 );

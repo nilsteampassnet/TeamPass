@@ -16,11 +16,11 @@
  * @see       https://www.teampass.net
  */
 return array(
-    'show_user_temporary_encryption_code' => 'Show user encryption code',
-    'email_body_new_user' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>An administrator has created for you a user account on Teampass. Next time you will connect to Teampass, please use next credentials:<ul><li>login: #login#</li><li>Password: #password#</li><li>Encryption code: #code#</li></ul><br><br><br>Cheers',
-    'user_password' => 'User password',
-    'user_temporary_encryption_code' => 'User encryption code',
-    'no_email_set' => 'No email has been registered',
+    'show_user_temporary_encryption_code' => '显示用户加密代码',
+    'email_body_new_user' => '您好，<br><br>这是由 Teampass 密码管理器生成的电子邮件。<br><br>管理员已为您在 Teampass 上创建了一个用户帐户。下次连接到 Teampass 时，请使用以下凭据：<ul><li>登录：#login#</li><li>密码：#password#</li><li>加密代码：#code#< /li></ul><br><br><br>干杯',
+    'user_password' => '用户密码',
+    'user_temporary_encryption_code' => '用户加密代码',
+    'no_email_set' => '尚未注册电子邮件',
     'send_user_password_by_email' => 'Decide if the user login password should be sent by email.<br>If yes then press button Send.<br><br>Otherwize use the button Copy to clipboard to send it to the user by another mean.<br>It becomes your responsibility as an Administrator to provide the user the password in a secure way.',
     'admin_change_user_encryption_code_info' => 'This operation will reset the encryption code for this user.',
     'send_by_email' => 'Send by email',
@@ -448,7 +448,7 @@ return array(
     'email_share_item_subject' => '[TeamPass] 一项已与您共享',
     'email_share_item_mail' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>#tp_user# has shared with you the password item #tp_item# <a href="#tp_link#">Click this link</a> to access the item.',
     'index_maintenance_mode_admin' => 'Maintenance mode is activated. Users currently can not log in.',
-    '2fa_authentication_selector' => 'Select a 2 factor authenticator method',
+    '2fa_authentication_selector' => '选择双因素身份验证方法',
     'upload_empty_file' => 'Upload empty file',
     'upload_any_extension_file' => 'Upload any extension file',
     'upload_any_extension_file_tip' => 'When enabled, this option will allow users to upload any kind of files.',
@@ -1120,5 +1120,6 @@ return array(
     'open' => '',
     'reload_user_cache_table' => 'Reload user cache table',
     'send_email_to_user' => 'Send email to user',
+    'items_management' => 'Items operations',
 
 );

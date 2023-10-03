@@ -859,6 +859,9 @@ if (null !== $post_type) {
             require_once __DIR__.'/../includes/libraries/TiBeN/CrontabManager/CrontabJob.php';
             require_once __DIR__.'/../includes/libraries/TiBeN/CrontabManager/CrontabRepository.php';
 
+            // get PHP binary path
+            $phpBinaryPath = getPHPBinary();
+
             // Instantiate the adapter and repository
             try {
                 $crontabRepository = new CrontabRepository(new CrontabAdapter());
@@ -872,7 +875,7 @@ if (null !== $post_type) {
                         ->setDayOfMonth('*')
                         ->setMonths('*')
                         ->setDayOfWeek('*')
-                        ->setTaskCommandLine('php ' . $SETTINGS['cpassman_dir'] . '/sources/scheduler.php')
+                        ->setTaskCommandLine($phpBinaryPath . ' ' . $SETTINGS['cpassman_dir'] . '/sources/scheduler.php')
                         ->setComments('Teampass scheduler');
                     
                     $crontabRepository->addJob($crontabJob);

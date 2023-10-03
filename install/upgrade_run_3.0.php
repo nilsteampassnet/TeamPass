@@ -557,6 +557,15 @@ try {
     // Do nothing
 }
 
+// Add new setting 'items_ops_job_frequency'
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'items_ops_job_frequency'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'items_ops_job_frequency', '1')"
+    );
+}
+
 
 //---<END 3.0.10
 
