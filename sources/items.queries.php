@@ -237,9 +237,9 @@ switch ($inputData['type']) {
             $post_url = filter_var(htmlspecialchars_decode($dataReceived['url']), FILTER_SANITIZE_URL);
             $post_uploaded_file_id = filter_var($dataReceived['uploaded_file_id'], FILTER_SANITIZE_NUMBER_INT);
             $inputData['userId'] = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
-            $post_to_be_deleted_after_date = filter_var($dataReceived['to_be_deleted_after_date'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_to_be_deleted_after_date = isset($dataReceived['to_be_deleted_after_date']) === true ? filter_var($dataReceived['to_be_deleted_after_date'], FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '';
             $post_to_be_deleted_after_x_views = filter_var($dataReceived['to_be_deleted_after_x_views'], FILTER_SANITIZE_NUMBER_INT);
-            $post_fa_icon = filter_var(($dataReceived['fa_icon']), FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_fa_icon = isset($dataReceived['fa_icon']) === true ? filter_var($dataReceived['fa_icon'], FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '';
 
             //-> DO A SET OF CHECKS
             // Perform a check in case of Read-Only user creating an item in his PF
@@ -727,7 +727,7 @@ switch ($inputData['type']) {
 
                 // Create new task for the new item
                 // If it is not a personnal one
-                if ((int) $dataDestination['personal_folder'] !== 1) {
+                if (isset($post_folder_is_personal) === true && (int) $post_folder_is_personal === 1) {
                     storeTask(
                         'new_item',
                         $_SESSION['user_id'],

@@ -253,6 +253,7 @@ function handleTask(int $processId, array $ProcessArguments, array $SETTINGS): b
             return false;
         }
     }
+    return true;
 }
 
 /**
