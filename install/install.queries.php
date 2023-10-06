@@ -1250,7 +1250,6 @@ $SETTINGS = array (';
                             `output` text DEFAULT NULL,
                             `arguments` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`arguments`)),
                             `is_in_progress` tinyint(1) NOT NULL DEFAULT 0,
-                            `started_at` varchar(50) NULL,
                             `item_id` INT(12) NULL,
                             PRIMARY KEY (`increment_id`)
                             ) CHARSET=utf8;"
