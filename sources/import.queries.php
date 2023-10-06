@@ -567,18 +567,17 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
                     );
                     $previousFolder = $value['UUID'];
                     
-                    if (isset($value['Entry']) === true) {
-                        // recursive inside this entry
-                        $newItemsToAdd = recursive(
-                            array_merge(
-                                ['Entry' => $value['Entry']],
-                                ['Group' => isset($value['Group']) === true ? $value['Group'] : ''],
-                            ),
-                            $previousFolder,
-                            $newItemsToAdd,
-                            $level + 1
-                        );
-                    }
+                    // recursive inside this entry
+                    $newItemsToAdd = recursive(
+                        array_merge(
+                            ['Entry' => isset($value['Entry']) === true ? $value['Entry'] : ''],
+                            ['Group' => isset($value['Group']) === true ? $value['Group'] : ''],
+                        ),
+                        $previousFolder,
+                        $newItemsToAdd,
+                        $level + 1
+                    );
+
                     $previousFolder = $currentFolderId;
                 }
             }

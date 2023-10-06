@@ -208,7 +208,7 @@ function addColumnIfNotExist($dbname, $column, $columnAttr = "VARCHAR(255) NULL"
             return true;
         }
     }
-    if (!$exists) {
+    if (!$exists && empty($column) === false) {
         return mysqli_query($db_link, "ALTER TABLE `$dbname` ADD `$column`  $columnAttr");
     }
 

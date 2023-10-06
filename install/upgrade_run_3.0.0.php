@@ -1634,14 +1634,43 @@ try {
 
 
 //--->BEGIN 3.0.0.22
-try {
-    mysqli_query(
-        $db_link,
-        'ALTER TABLE `' . $pre . 'cache_tree` MODIFY column `increment_id` SMALLINT AUTO_INCREMENT;'
-    );
-} catch (Exception $e) {
-    // Do nothing
+
+// Change column increment_id to auto increment in cache_tree table
+$columns = mysqli_query($db_link, "SELECT count(*) FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = '".$database."'
+    AND TABLE_NAME = '" . $pre . "cache_tree'
+    AND COLUMN_NAME = 'increment_id'
+    AND EXTRA like '%auto_increment%'");
+
+if ($columns === 0) {
+    try {
+        // Drop primary key
+        mysqli_query(
+            $db_link,
+            'ALTER TABLE `' . $pre . 'cache_tree` DROP PRIMARY KEY;'
+        );
+
+        // Add auto increment
+        mysqli_query(
+            $db_link,
+            'ALTER TABLE `' . $pre . 'cache_tree` MODIFY column `increment_id` SMALLINT AUTO_INCREMENT;'
+        );
+
+        // Add primary keys
+        mysqli_query(
+            $db_link,
+            'ALTER TABLE `' . $pre . 'cache_tree` ADD CONSTRAINT PRIMARY KEY (increment_id);'
+        );
+        checkIndexExist(
+            $pre . 'cache_tree',
+            'CACHE',
+            "ADD KEY `CACHE` (`increment_id`, `user_id`)"
+        );
+    } catch (Exception $e) {
+        // Do nothing
+    }
 }
+
 
 // Add indexes
 // Add the Primary INDEX OBJECT to the sharekeys_items table
