@@ -142,7 +142,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                                 //$apiKey = (int) $record['user_id'] === -1 ? doDataDecryption($record['value'], base64_encode(SECUREFILE.':'.$record['timestamp'])) : $record['value'];
                                                 echo '
                                                     <tr data-id="' . $record['increment_id'] . '">
-                                                    <td width="50px"><i class="fa fa-trash infotip pointer delete-api-key" title="' . langHdl('del_button') . '"></i></td>
+                                                    <td width="50px"><i class="fas fa-trash infotip pointer delete-api-key" title="' . langHdl('del_button') . '"></i></td>
                                                     <td><span class="edit-api-key pointer">' . $record['label'] . '</span></td>
                                                     <td>' . $record['value']. '</td>                        
                                                 </tr>';
@@ -198,7 +198,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                             foreach ($rows as $record) {
                                                 echo '
                                                 <tr data-id="' . $record['increment_id'] . '">
-                                                    <td width="50px"><i class="fa fa-trash infotip pointer delete-api-ip" title="' . langHdl('del_button') . '"></i></td>
+                                                    <td width="50px"><i class="fas fa-trash infotip pointer delete-api-ip" title="' . langHdl('del_button') . '"></i></td>
                                                     <td><span class="edit-api-ip pointer" data-field="label">' . $record['label'] . '</span></td>
                                                     <td><span class="edit-api-ip pointer" data-field="value">' . $record['value'] . '</span></td>                        
                                                 </tr>';

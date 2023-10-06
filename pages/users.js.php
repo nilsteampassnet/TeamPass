@@ -1902,7 +1902,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
         // Show select
         $("#select-managedBy")
             .insertAfter('#' + $(this).attr('id'))
-            .after('<i class="fa fa-close text-danger pointer temp-button mr-3" id="select-managedBy-close"></i>');
+            .after('<i class="fas fa-close text-danger pointer temp-button mr-3" id="select-managedBy-close"></i>');
         $('#select-managedBy option[value="' + $(this).data('value') + '"]').prop('selected', true);
 
         // Store current width and change it
@@ -1948,7 +1948,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
     function saveChange(item, currentText, change, field) {
         if (change.val() !== currentText) {
             change
-                .after('<i class="fa fa-refresh fa-spin fa-fw tmp-loader"></i>');
+                .after('<i class="fas fa-refresh fa-spin fa-fw tmp-loader"></i>');
 
             // prepare data
             var data = {

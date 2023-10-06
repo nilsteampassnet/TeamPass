@@ -668,10 +668,7 @@ if (isset($_GET['type']) === false) {
 
     $returnValues = [
         'html_json' => filter_var_array($arr_data, FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-        'message' => filter_var(
-            str_replace('%X%', (string) $iTotal, langHdl('find_message')),
-            FILTER_SANITIZE_FULL_SPECIAL_CHARS
-        ),
+        'message' => (string) $iTotal.' '.langHdl('find_message'),
         'total' => (int) $iTotal,
         'start' => (int) (isset($_GET['start']) === true && (int) $_GET['length'] !== -1) ? (int) $_GET['start'] + (int) $_GET['length'] : -1,
     ];

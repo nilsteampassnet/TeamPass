@@ -195,8 +195,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'api', $SETTINGS) === fals
 
         $(cell).html(
             '<input type="text" class="form-control new-api-key">' +
-            '<button class="btn btn-default" id="new-api-key-save"><i class="fa fa-save"></i></button>' +
-            '<button class="btn btn-default ml-2" id="new-api-key-cancel"><i class="fa fa-times"></i></button>'
+            '<button class="btn btn-default" id="new-api-key-save"><i class="fas fa-save"></i></button>' +
+            '<button class="btn btn-default ml-2" id="new-api-key-cancel"><i class="fas fa-times"></i></button>'
         );
         $('.new-api-key').val(oldLabel);
     });
@@ -397,8 +397,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'api', $SETTINGS) === fals
 
         $(cell).html(
             '<input type="text" class="form-control new-api-ip" data-field="' + field + '">' +
-            '<button class="btn btn-default" id="new-api-ip-save"><i class="fa fa-save"></i></button>' +
-            '<button class="btn btn-default ml-2" id="new-api-ip-cancel"><i class="fa fa-times"></i></button>'
+            '<button class="btn btn-default" id="new-api-ip-save"><i class="fas fa-save"></i></button>' +
+            '<button class="btn btn-default ml-2" id="new-api-ip-cancel"><i class="fas fa-times"></i></button>'
         );
         $('.new-api-ip').val(oldLabel);
     });

@@ -418,7 +418,7 @@ return array(
     'options' => 'Options',
     'users' => 'Utilizatori',
     'folders' => 'Directoare',
-    'find_message' => '<i class=fa fa-info-circle"></i> %X% obiecte gasite',
+    'find_message' => 'obiecte gasite',
     'auto_update_server_password_info' => 'Apasarea butonului START activeaza urmatoarele:<ul><li>Se conecteaza prin SSH la serverul folosind credentialele si campul `URL`,</li><li>Schimba parola utilizatorului pe server</il><li>Salveaza noua parola in Teampass</li><li>Inchide conexiunea SSH</li></ul><br/><b>Utilizatorul trebuie sa aiba privilegii de root pe server (daca nu, indica utilizator si parola de root) inainte de executare.</b>',
     'share' => 'Share-uieste item-ul',
     'notify' => 'Notify',

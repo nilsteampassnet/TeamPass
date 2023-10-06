@@ -158,7 +158,7 @@ if (!empty($superGlobal->get('code', 'GET')) === true
                             'otv',
                             'at_automatically_deleted'
                         );
-                        echo '<div style="padding:10px; margin:90px 30px 30px 30px; text-align:center;" class="ui-widget-content ui-state-error ui-corner-all"><i class="fa fa-warning fa-2x"></i>&nbsp;'.
+                        echo '<div style="padding:10px; margin:90px 30px 30px 30px; text-align:center;" class="ui-widget-content ui-state-error ui-corner-all"><i class="fas fa-warning fa-2x"></i>&nbsp;'.
                         addslashes($LANG['not_allowed_to_see_pw_is_expired']).'</div>';
                         return false;
                     }

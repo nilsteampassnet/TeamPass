@@ -508,7 +508,7 @@ if (!isset($_GET['step']) && !isset($post_step)) {
     if (version_compare($post_actual_cpm_version, '2.1.27', '<=')) {
         echo '
         <div class="alert alert-warning mt-4">
-            <i class="fa fa-exclamation-circle text-danger mr-2 fa-lg"></i>This upgrade was a heavy one. Indeed we have changed the encryption of your data to make them safer now as they don\'t rely anymore on a key.<br>
+            <i class="fas fa-exclamation-circle text-danger mr-2 fa-lg"></i>This upgrade was a heavy one. Indeed we have changed the encryption of your data to make them safer now as they don\'t rely anymore on a key.<br>
             This forced us to encode your users data with a One-Time-Code that they did receive by email. For any reason, they did not received it, you as an admin, can change it from the users management page.
         </div>';
     }

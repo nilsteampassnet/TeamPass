@@ -418,7 +418,7 @@ return array(
     'options' => 'Options',
     'users' => 'Uživatelé',
     'folders' => 'Složky',
-    'find_message' => '<i class="fa fa-info-circle"></i> %X% objektů nalezeno',
+    'find_message' => 'objektů nalezeno',
     'auto_update_server_password_info' => 'Stisknutím tlačítka Start se automaticky provedou následující kroky:<ul><li>Spojení se serverem pomocí protokolu SSH, přihlašovacích údajů a adresy `URL`,</li><li>Změna uživatelského hesla na serveru</il><li>Uložení nového hesla v Teampassu</il><li>Ukončení spojení SSH</li></ul><br /><b>Prosím ubezpečete se předem, že uživatel má právo přihlásit se a změnit svě heslo na serveru (pokud ne, zadejte uživatele typu root jeho heslo).</b>',
     'share' => 'Oznámit tuto položku',
     'notify' => 'Notify',

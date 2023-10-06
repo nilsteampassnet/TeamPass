@@ -418,7 +418,7 @@ return array(
     'options' => 'Opzioni',
     'users' => 'Utenti',
     'folders' => 'cartella',
-    'find_message' => '<i class="fa fa-info-circle"></i> %X% oggetti trovati',
+    'find_message' => 'oggetti trovati',
     'auto_update_server_password_info' => 'Fare clic su Start eseguirà automaticamente questi passaggi:<ul><li>Connettiti tramite SSH al server utilizzando le credenziali di accesso e il campo `URL`,</li><li>Cambia la password utente sul server</il><li>Salva il nuova password in Teampass</il><li>Chiudi connessione SSH</li></ul><br><b>Assicurati che l’utente disponga dei diritti per accedere e modificare la password sul server (in caso contrario, indicare il login e password root) prima di iniziare.</b>',
     'share' => 'Condividi elemento',
     'notify' => 'Notifica',

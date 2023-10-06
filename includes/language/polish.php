@@ -418,7 +418,7 @@ return array(
     'options' => 'Opcje',
     'users' => 'Użytkownicy',
     'folders' => 'Katalog',
-    'find_message' => '<i class="fa fa-info-circle"></i> Ilość wyników znalezionych: %X% ',
+    'find_message' => 'Ilość wyników znalezionych',
     'auto_update_server_password_info' => 'Kliknięcie start, automatycznie wykona poniższe kroki:<ul><li>Połączenie przez SSH do serwera wykorzystując dane logowania i pole `URL`,</li><li>Zmiana hasła użytkownika na serwerze</il><li>Zachowanie nowego hasła w Teampass</il><li>Zakończenie połączenia SSH</li></ul><br /><b>Upewnij się, że użytkownik posiada prawa do zalogowania się i zmiany hasła na serwerze (jeśli nie, określ hasło użytkownika root) przed uruchomieniem.</b> ',
     'share' => 'Udostępnij',
     'notify' => 'Notify',

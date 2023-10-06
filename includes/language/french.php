@@ -418,7 +418,7 @@ return array(
     'options' => 'Options',
     'users' => 'Utilisateurs',
     'folders' => 'Dossiers',
-    'find_message' => '<i class="fa fa-info-circle"></i> %X% objets trouvés',
+    'find_message' => 'objets trouvés',
     'auto_update_server_password_info' => 'En cliquant sur le bouton COMMENCER, les différentes actions seront réalisées :<ul><li>Une connexion SSH sera ouverte avec le serveur Linux en utilisant les identifiants et l&apos;URL fournis,</li><li>Le mot de passe de l&apos;utilisateur sera changé,</li><li>Le nouveau mot de passe sera sauvegardé dans Teampass,</li><li>La connexion SSH sera fermée.</li></ul><br><b>Merci de vous assurer que l&apos;utilisateur dispose des privilèges Root sur le serveur avant de commencer (sinon vous disposez de champs supplémentaires pour saisir les identifiants d&apos;un compte root).',
     'share' => 'Partager',
     'notify' => 'Notifier',

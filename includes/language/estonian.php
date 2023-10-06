@@ -418,7 +418,7 @@ return array(
     'options' => 'Options',
     'users' => 'Kasutajad',
     'folders' => 'Kaustad',
-    'find_message' => '<i class="fa fa-info-circle"></i> %X% objekt(i) leitud',
+    'find_message' => 'objekt(i) leitud',
     'auto_update_server_password_info' => 'Clicking start will automatically perform these steps:<ul><li>Connect through SSH to server using login credentials and field `URL`,</li><li>Change user password on server</il><li>Save the new password in Teampass</il><li>Close SSH connection</li></ul><br /><b>Please ensure that user has rights to log in and change password on the server (if not, indicate the root login and password) before starting.</b>',
     'share' => 'Jaga antud objekti',
     'notify' => 'Notify',

@@ -418,7 +418,7 @@ return array(
     'options' => 'Optionen',
     'users' => 'Benutzer',
     'folders' => 'Ordner',
-    'find_message' => '%X% Objekte gefunden ',
+    'find_message' => 'Objekte gefunden ',
     'auto_update_server_password_info' => 'Der Klick auf den START-Knopf wird folgende Schritte automatisch ausführen:<ul><li>Verbinden mit dem Linuxserver per SSH mittels der Anmeldedaten und des `URL`-Feldes</li><li>Ändern des Benutzer-Passwortes auf dem Linuxserver</li><li>Sichern des Passwortes in Teampass</li><li>Schließen der SSH-Verbindung</li></ul><br /><b>Bitte stellen Sie vor dem Start sicher, dass der Benutzer auf dem Linuxserver root-Rechte hat (falls nicht, kennzeichnen Sie den root-Benutzer und -Passwort).</b>',
     'share' => 'Dieses Element teilen',
     'notify' => 'Benachritigen',

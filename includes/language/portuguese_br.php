@@ -418,7 +418,7 @@ return array(
     'options' => 'Opções',
     'users' => 'Usuários',
     'folders' => 'Pastas',
-    'find_message' => '<i class="fa fa-info-circle"></i> %X% objetos encontrados',
+    'find_message' => 'objetos encontrados',
     'auto_update_server_password_info' => 'Clicando para iniciar irá automaticamente executar os seguintes passos:<ul><li>Connectar no servidor através de SSH usando credenciais de login e campo `URL`,</li><li>Mudar a senha de usuário no servidor</il><li>Salva a nova senha no Teampass</il><li>Fecha a conexão SSH</li></ul><br /><b>Por favor assegure que o usuário possui direitos de logar e de mudar senhas no servidor (se não, indicar o usuário e senha de root) antes de iniciar.</b>',
     'share' => 'Compartilhar este item',
     'notify' => 'Notificar',

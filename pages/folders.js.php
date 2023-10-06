@@ -396,18 +396,18 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                         // Column 6
                         columns += '<td class="modify pointer text-center" data-value="' + value.add_is_blocked + '">';
                         if (value.add_is_blocked === 1) {
-                            columns += '<i class="fa fa-toggle-on text-info"></i>';
+                            columns += '<i class="fas fa-toggle-on text-info"></i>';
                         } else {
-                            columns += '<i class="fa fa-toggle-off"></i>';
+                            columns += '<i class="fas fa-toggle-off"></i>';
                         }
                         columns += '</td>';
 
                         // Column 7
                         columns += '<td class="modify pointer text-center" data-value="' + value.edit_is_blocked + '">';
                         if (value.edit_is_blocked === 1) {
-                            columns += '<i class="fa fa-toggle-on text-info"></i>';
+                            columns += '<i class="fas fa-toggle-on text-info"></i>';
                         } else {
-                            columns += '<i class="fa fa-toggle-off"></i>';
+                            columns += '<i class="fas fa-toggle-off"></i>';
                         }
                         columns += '</td>';
 

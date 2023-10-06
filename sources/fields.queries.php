@@ -1154,8 +1154,8 @@ if (null !== $post_type) {
     <td colspan="2">
         <input type="text" id="catOrd_'.$category[0].'" size="1" class="category_order" value="'.$category[2].'" />&nbsp;
         <span class="fa-stack tip" title="'.$LANG['field_add_in_category'].'" onclick="fieldAdd('.$category[0].')" style="cursor:pointer;">
-            <i class="fa fa-square fa-stack-2x"></i>
-            <i class="fa fa-plus fa-stack-1x fa-inverse"></i>
+            <i class="fas fa-square fa-stack-2x"></i>
+            <i class="fas fa-plus fa-stack-1x fa-inverse"></i>
         </span>
         &nbsp;
         <input type="radio" name="sel_item" id="item_'.$category[0].'_cat" />
@@ -1163,8 +1163,8 @@ if (null !== $post_type) {
     </td>
     <td>
         <span class="fa-stack tip" title="'.$LANG['category_in_folders'].'" onclick="catInFolders('.$category[0].')" style="cursor:pointer;">
-            <i class="fa fa-square fa-stack-2x"></i>
-            <i class="fa fa-edit fa-stack-1x fa-inverse"></i>
+            <i class="fas fa-square fa-stack-2x"></i>
+            <i class="fas fa-edit fa-stack-1x fa-inverse"></i>
         </span>
         &nbsp;
         '.$LANG['category_in_folders_title'].':
@@ -1188,15 +1188,15 @@ if (null !== $post_type) {
         <input type="text" id="catOrd_'.$field['id'].'" size="1" class="category_order" value="'.$field['order'].'" />&nbsp;
         <input type="radio" name="sel_item" id="item_'.$field['id'].'_cat" />
         <label for="item_'.$field['id'].'_cat" id="item_'.$field['id'].'">'.($field['title']).'</label>
-        <span id="encryt_data_'.$field['id'].'" style="margin-left:4px; cursor:pointer;">'.(isset($field['encrypted_data']) && $field['encrypted_data'] === "1") ? '<i class="fa fa-key tip" title="'.$LANG['encrypted_data'].'" onclick="changeEncrypMode(\''.$field['id'].'\', \'1\')"></i>' : '<span class="fa-stack" title="'.$LANG['not_encrypted_data'].'" onclick="changeEncrypMode(\''.$field['id'].'\', \'0\')"><i class="fa fa-key fa-stack-1x"></i><i class="fa fa-ban fa-stack-1x fa-lg" style="color:red;"></i></span>'.'
+        <span id="encryt_data_'.$field['id'].'" style="margin-left:4px; cursor:pointer;">'.(isset($field['encrypted_data']) && $field['encrypted_data'] === "1") ? '<i class="fas fa-key tip" title="'.$LANG['encrypted_data'].'" onclick="changeEncrypMode(\''.$field['id'].'\', \'1\')"></i>' : '<span class="fa-stack" title="'.$LANG['not_encrypted_data'].'" onclick="changeEncrypMode(\''.$field['id'].'\', \'0\')"><i class="fas fa-key fa-stack-1x"></i><i class="fas fa-ban fa-stack-1x fa-lg" style="color:red;"></i></span>'.'
         </span>';
                             if (isset($field['type'])) {
                                 if ($field['type'] === "text") {
                                     $html .= '
-        <span style="margin-left:4px;"><i class="fa fa-paragraph tip" title="'.$LANG['data_is_text'].'"></i></span>';
+        <span style="margin-left:4px;"><i class="fas fa-paragraph tip" title="'.$LANG['data_is_text'].'"></i></span>';
                                 } elseif ($field['type'] === "masked") {
                                     $html .= '
-        <span style="margin-left:4px;"><i class="fa fa-eye-slash tip" title="'.$LANG['data_is_masked'].'"></i></span>';
+        <span style="margin-left:4px;"><i class="fas fa-eye-slash tip" title="'.$LANG['data_is_masked'].'"></i></span>';
                                 }
                             }
                             $html .= '

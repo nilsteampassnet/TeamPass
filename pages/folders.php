@@ -106,7 +106,7 @@ foreach ($tst as $t) {
         <div class="row mb-2">
             <div class="col-sm-6">
                 <h1 class="m-0 text-dark">
-                    <i class="fa fa-folder-open mr-2"></i><?php echo langHdl('folders'); ?>
+                    <i class="fas fa-folder-open mr-2"></i><?php echo langHdl('folders'); ?>
                 </h1>
             </div><!-- /.col -->
         </div><!-- /.row -->
@@ -121,13 +121,13 @@ foreach ($tst as $t) {
                 <div class="card-header align-middle">
                     <h3 class="card-title">
                         <button type="button" class="btn btn-primary btn-sm tp-action mr-2" data-action="new">
-                            <i class="fa fa-plus mr-2"></i><?php echo langHdl('new'); ?>
+                            <i class="fas fa-plus mr-2"></i><?php echo langHdl('new'); ?>
                         </button>
                         <button type="button" class="btn btn-primary btn-sm tp-action mr-2" data-action="delete">
-                            <i class="fa fa-trash mr-2"></i><?php echo langHdl('delete'); ?>
+                            <i class="fas fa-trash mr-2"></i><?php echo langHdl('delete'); ?>
                         </button>
                         <button type="button" class="btn btn-primary btn-sm tp-action mr-2" data-action="refresh">
-                            <i class="fa fa-refresh mr-2"></i><?php echo langHdl('refresh'); ?>
+                            <i class="fas fa-refresh mr-2"></i><?php echo langHdl('refresh'); ?>
                         </button>
                     </h3>
                 </div>
@@ -215,7 +215,7 @@ foreach ($tst as $t) {
                         <form role="form">
                             <div class="card-body">
                                 <div class="form-group">
-                                    <h5><i class="fa fa-warning mr-2"></i><?php echo langHdl('next_list_to_be_deleted'); ?></h5>
+                                    <h5><i class="fas fa-warning mr-2"></i><?php echo langHdl('next_list_to_be_deleted'); ?></h5>
                                     <div id="delete-list" class="clear-me"></div>
                                 </div>
                             </div>

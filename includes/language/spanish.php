@@ -418,7 +418,7 @@ return array(
     'options' => 'Opciones',
     'users' => 'Usuarios',
     'folders' => 'Carpetas',
-    'find_message' => '<i class="fa fa-info-circle"></i> %X% objeto(s) encontrado(s)',
+    'find_message' => 'bjeto(s) encontrado(s)',
     'auto_update_server_password_info' => 'Al hacer clic en el botón EMPEZAR realizará automáticamente los siguientes pasos:<ul><li>Conectar a través de SSH al servidor Linux usando las credenciales de inicio de sesión y campo `URL`,</li><li>Cambiar contraseña de usuario en el servidor Linux</il><li>Guardar la nueva contraseña en Teampass </il><li>Cerrar la conexión SSH</li></ul><br /><b>Asegúrese de que el usuario tiene privilegios de root en el servidor (si no, indicar el inicio de sesión root y su contraseña) antes de comenzar.</b>',
     'share' => 'Compartir este elemento',
     'notify' => 'Notificar',

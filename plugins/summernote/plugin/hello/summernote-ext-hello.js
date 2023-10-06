@@ -27,7 +27,7 @@
       context.memo('button.hello', function() {
         // create button
         var button = ui.button({
-          contents: '<i class="fa fa-child"/> Hello',
+          contents: '<i class="fas fa-child"/> Hello',
           tooltip: 'hello',
           click: function() {
             self.$panel.show();

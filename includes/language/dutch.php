@@ -418,7 +418,7 @@ return array(
     'options' => 'Options',
     'users' => 'Gebruikers',
     'folders' => 'Mappen',
-    'find_message' => '<i class="fa fa-info-circle"></i> %X% objecten gevonden',
+    'find_message' => 'objecten gevonden',
     'auto_update_server_password_info' => 'Klik op START en de volgende stappen zullen automatisch uitgevoerd worden:<ul><li>Verbinding maken via SSH</l',
     'share' => 'Deel dit item',
     'notify' => 'Notify',

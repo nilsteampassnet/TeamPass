@@ -418,7 +418,7 @@ return array(
     'options' => 'Options',
     'users' => '用户',
     'folders' => '文件夹',
-    'find_message' => '<i class="fa fa-info-circle"></i> 找到了 %X% 个对象',
+    'find_message' => '找到了个对象',
     'auto_update_server_password_info' => 'Clicking start will automatically perform these steps:<ul><li>Connect through SSH to server using login credentials and field `URL`,</li><li>Change user password on server</il><li>Save the new password in Teampass</il><li>Close SSH connection</li></ul><br /><b>Please ensure that user has rights to log in and change password on the server (if not, indicate the root login and password) before starting.</b>',
     'share' => '分享此项',
     'notify' => 'Notify',

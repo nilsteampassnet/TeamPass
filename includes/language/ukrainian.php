@@ -418,7 +418,7 @@ return array(
     'options' => 'Options',
     'users' => 'Користувачі',
     'folders' => 'Теки',
-    'find_message' => '<i class="fa fa-info-circle"></i> %X% об&apos;єктів знайдено',
+    'find_message' => 'об&apos;єктів знайдено',
     'auto_update_server_password_info' => 'Clicking start will automatically perform these steps:<ul><li>Connect through SSH to server using login credentials and field `URL`,</li><li>Change user password on server</il><li>Save the new password in Teampass</il><li>Close SSH connection</li></ul><br /><b>Please ensure that user has rights to log in and change password on the server (if not, indicate the root login and password) before starting.</b>',
     'share' => 'Поділитися цим об&apos;єктом',
     'notify' => 'Notify',

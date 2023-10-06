@@ -20,7 +20,7 @@
     var options = context.options;
     var lang = options.langInfo;
 
-    self.icon = '<i class="fa fa-object-group"/>';
+    self.icon = '<i class="fas fa-object-group"/>';
 
     // add context menu button for dialog
     context.memo('button.databasic', function() {

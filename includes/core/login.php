@@ -271,20 +271,20 @@ echo '
             <div id="current-user-password-div" class="hidden">
                 <div class="input-group has-feedback mb-2">
                     <div class="input-group-prepend">
-                        <span class="input-group-text"><i class="fa fa-key"></i></span>
+                        <span class="input-group-text"><i class="fas fa-key"></i></span>
                     </div>
                     <input type="password" id="current-user-password" class="form-control" placeholder="' . langHdl('current_password') . '">
                 </div>
             </div>
             <div class="input-group has-feedback mb-2 mt-4">
                 <div class="input-group-prepend">
-                    <span class="input-group-text"><i class="fa fa-key"></i></span>
+                    <span class="input-group-text"><i class="fas fa-key"></i></span>
                 </div>
                 <input type="password" id="new-user-password" class="form-control" placeholder="' . langHdl('index_new_pw') . '">
             </div>
             <div class="input-group has-feedback mb-2">
                 <div class="input-group-prepend">
-                    <span class="input-group-text"><i class="fa fa-key"></i></span>
+                    <span class="input-group-text"><i class="fas fa-key"></i></span>
                 </div>
                 <input type="password" id="new-user-password-confirm" class="form-control" placeholder="' . langHdl('index_change_pw_confirmation') . '">
             </div>
@@ -309,7 +309,7 @@ echo '
         </div>
         <div class="input-group has-feedback mb-2">
             <div class="input-group-prepend">
-                <span class="input-group-text"><i class="fa fa-key"></i></span>
+                <span class="input-group-text"><i class="fas fa-key"></i></span>
             </div>
             <input type="password" id="user-old-defuse-psk" class="form-control" placeholder="' . langHdl('home_personal_saltkey') . '">
         </div>

@@ -418,7 +418,7 @@ return array(
     'options' => 'Options',
     'users' => 'Felhasználók',
     'folders' => 'Mappák',
-    'find_message' => '<i class="fa fa-info-circle"></i> %X% megtalálva',
+    'find_message' => 'megtalálva',
     'auto_update_server_password_info' => 'A Start gombra kattintva a következők történnek:<ul><li>SSH protokollon keresztül kapcsolódik a szerverhez, a megadott hitelesítési és `URL` adatokkal,</li><li>Módosul a szerveren a felhasználó jelszava</il><li>Elmentésre kerül az új jelszó a Teampass-ban.</il><li>Bezárásra kerül az SSH kapcsolat</li></ul><br /><b>Bizonyosodjon meg róla, hogy a felhasználónak van joga a bejelentkezéshez és a jelszó megváltoztatásához (ha nincs, akkor adjon meg a root belépési kódot és jelszót) mielőtt elkezdené a műveletet.</b>',
     'share' => 'Tétel megosztása',
     'notify' => 'Notify',

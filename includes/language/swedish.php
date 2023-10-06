@@ -418,7 +418,7 @@ return array(
     'options' => 'Options',
     'users' => 'Users',
     'folders' => 'Folders',
-    'find_message' => '%X% objects found',
+    'find_message' => 'objects found',
     'auto_update_server_password_info' => 'Next steps will be performed automatically:<ul><li>Connect through SSH to server using login credentials and field `URL`,</li><li>Change user password on server</il><li>Save the new password in Teampass</il><li>Close SSH connection</li></ul><br /><b>Please ensure that user has rights to log in and change password on the server (if not, indicate the root login and password) before starting.</b>',
     'share' => 'Share',
     'notify' => 'Notify',

@@ -71,7 +71,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
 <div class="card card-warning m-2 hidden" id="dialog-mass-operation">
     <div class="card-header">
         <h3 class="card-title">
-            <i class="fa fa-bug mr-2"></i>
+            <i class="fas fa-bug mr-2"></i>
             <?php echo langHdl('mass_operation'); ?>
         </h3>
     </div>

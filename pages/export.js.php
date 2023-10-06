@@ -536,7 +536,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
             idsArray = idsArray.slice(numberInLoop);
             cpt = parseInt(idsToTreat.length);
 
-            $('#export-progress').find('span').html('<i class="fa fa-cog fa-spin mr-2"></i><?php echo langhdl('please_wait'); ?> - ' + Math.round((parseInt(cpt)*100)/parseInt(number)) + "%");
+            $('#export-progress').find('span').html('<i class="fas fa-cog fa-spin mr-2"></i><?php echo langhdl('please_wait'); ?> - ' + Math.round((parseInt(cpt)*100)/parseInt(number)) + "%");
 
             jqData = {
                 idsList : idsToTreat,

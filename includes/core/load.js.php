@@ -1629,7 +1629,7 @@ if (
                         var html_list = '';
                         $.each(data.html_json, function(i, value) {
                             html_list += '<li onclick="showItemCard($(this).closest(\'li\'))" class="pointer" data-item-edition="0" data-item-id="' + value.id + '" data-item-sk="' + value.perso + '" data-item-expired="0" data-item-restricted="' + value.restricted + '" data-item-display="1" data-item-open-edit="0" data-item-reload="0" data-item-tree-id="' + value.tree_id + '" data-is-search-result="0">' +
-                                '<i class="fa fa-caret-right mr-2"></i>' + value.label + '</li>';
+                                '<i class="fas fa-caret-right mr-2"></i>' + value.label + '</li>';
                         });
                         $('#index-last-pwds').html(html_list);
                     }

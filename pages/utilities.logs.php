@@ -180,7 +180,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                             <div class="input-group">
                                 <div class="input-group-prepend">
                                     <span class="input-group-text">
-                                        <i class="fa fa-calendar"></i>
+                                        <i class="fas fa-calendar"></i>
                                     </span>
                                 </div>
                                 <input type="text" class="form-control float-right" id="purge-date-range">
