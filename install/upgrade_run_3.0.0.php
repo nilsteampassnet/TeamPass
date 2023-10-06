@@ -1661,11 +1661,6 @@ if ($columns === 0) {
             $db_link,
             'ALTER TABLE `' . $pre . 'cache_tree` ADD CONSTRAINT PRIMARY KEY (increment_id);'
         );
-        checkIndexExist(
-            $pre . 'cache_tree',
-            'CACHE',
-            "ADD KEY `CACHE` (`increment_id`, `user_id`)"
-        );
     } catch (Exception $e) {
         // Do nothing
     }

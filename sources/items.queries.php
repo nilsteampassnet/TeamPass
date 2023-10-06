@@ -4009,7 +4009,7 @@ $SETTINGS['cpassman_dir'],$inputData['data'], 'decode');
                     $html_json[$record['id']]['tree_id'] = (int) $record['tree_id'];
                     $html_json[$record['id']]['label'] = strip_tags($record['label']);
                     if (isset($SETTINGS['show_description']) === true && (int) $SETTINGS['show_description'] === 1) {
-                        $html_json[$record['id']]['desc'] = substr(preg_replace('#<[^>]+>#', ' ', $record['description']), 0, 200);
+                        $html_json[$record['id']]['desc'] = mb_substr(preg_replace('#<[^>]+>#', ' ', $record['description']), 0, 200);
                     } else {
                         $html_json[$record['id']]['desc'] = '';
                     }
