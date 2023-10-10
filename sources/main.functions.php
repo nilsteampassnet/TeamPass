@@ -4343,6 +4343,14 @@ function storeTask(
  */
 function getPHPBinary(): string
 {
+    require_once __DIR__.'/../includes/libraries/Symfony/Component/Process/Exception/ExceptionInterface.php';
+    require_once __DIR__.'/../includes/libraries/Symfony/Component/Process/Exception/RuntimeException.php';
+    require_once __DIR__.'/../includes/libraries/Symfony/Component/Process/Exception/RunProcessFailedException.php';
+    require_once __DIR__.'/../includes/libraries/Symfony/Component/Process/Exception/LogicException.php';
+    require_once __DIR__.'/../includes/libraries/Symfony/Component/Process/Exception/InvalidArgumentException.php';
+    require_once __DIR__.'/../includes/libraries/Symfony/Component/Process/Exception/ProcessFailedException.php';
+    require_once __DIR__.'/../includes/libraries/Symfony/Component/Process/Exception/ProcessSignaledException.php';
+    require_once __DIR__.'/../includes/libraries/Symfony/Component/Process/Exception/ProcessTimedOutException.php';
     require_once __DIR__.'/../includes/libraries/Symfony/Component/Process/Pipes/PipesInterface.php';
     require_once __DIR__.'/../includes/libraries/Symfony/Component/Process/Pipes/AbstractPipes.php';
     require_once __DIR__.'/../includes/libraries/Symfony/Component/Process/Pipes/UnixPipes.php';

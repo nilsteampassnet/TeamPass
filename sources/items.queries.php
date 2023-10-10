@@ -2555,7 +2555,7 @@ switch ($inputData['type']) {
                     $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
-                        'message' => langHdl('error_new_ldap_password_detected'),
+                        'message' => langHdl('error_new_ldap_password_detected').'<br><button type="button" class="btn btn-block btn-warning toastr-inside-button"><i class="fa-solid fa-key fa-fw mr-2"></i>'.langHdl('sync_new_ldap_password').'</button>',
                         'show_detail_option' => 2,
                         'error_type' => 'inconsistent_password',
                     ),

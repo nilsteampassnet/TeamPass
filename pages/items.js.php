@@ -4439,6 +4439,27 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                             .html('<i class="icon fas fa-info mr-2"></i><?php echo langHdl('ldap_user_has_changed_his_password');?>')
                             .removeClass('hidden');
                         $('#dialog-ldap-user-change-password').removeClass('hidden');
+                    } else if (data.error_type !== 'undefined') {
+                        toastr.warning(
+                            data.message,
+                            '', {
+                                // no parameter
+                            }
+                        );
+
+                        // On toastr button click
+                        $(document).on('click', '.toastr-inside-button', function() {
+                            if (debugJavascript === true) console.log('LDAP user password has to change his auth password')
+                            // HIde
+                            $('.content-header, .content').addClass('hidden');
+
+                            // Show passwords inputs and form
+                            $('#dialog-ldap-user-change-password-info')
+                                .html('<i class="icon fa-solid fa-info mr-2"></i><?php echo langHdl('ldap_user_has_changed_his_password');?>')
+                                .removeClass('hidden');
+                            $('#dialog-ldap-user-change-password').removeClass('hidden');
+                        });
+                        
                     }
 
 
