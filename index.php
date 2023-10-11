@@ -251,6 +251,12 @@ if (array_key_exists($get['page'], $utilitiesPages) === true) {
     <link rel="stylesheet" href="plugins/toastr/toastr.min.css" />
     <!-- favicon -->
     <link rel="shortcut icon" type="image/png" href="<?php echo $SETTINGS['favicon'];?>"/>
+    <!-- Custom style -->
+    <?php
+    if (file_exists(__DIR__ . '/includes/css/custom.css') === true) {?>
+        <link rel="stylesheet" href="includes/css/custom.css">
+    <?php
+    } ?>
 </head>
 
 
