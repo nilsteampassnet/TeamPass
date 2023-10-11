@@ -2873,7 +2873,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 var data = {
                     'anyone_can_modify': $('#form-item-anyoneCanModify').is(':checked') ? 1 : 0,
                     'complexity_level': parseInt($('#form-item-password-complex').val()),
-                    'description': $('#form-item-description').summernote('code'),
+                    'description': $('#form-item-description').summernote('code') === '<p><br></p>' ? '' : $('#form-item-description').summernote('code'),
                     'diffusion_list': diffusion,
                     'diffusion_list_names': diffusionNames,
                     'folder': parseInt($('#form-item-folder').val()),
@@ -4353,6 +4353,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             if (debugJavascript === true) console.log("Last seen item " + store.get('teampassApplication').lastItemSeen)
         }
 
+        // do
+        $('#card-item-password-history-button').addClass('hidden');
+
         // Prepare data to be sent
         var data = {
             'id': parseInt(itemId),
@@ -4590,7 +4593,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 $('#form-item-label').focus();
 
                 // Editor for description field
-                if (debugJavascript === true) {console.log('>>>> create summernote');}
+                if (debugJavascript === true) {
+                    console.log('>>>> create summernote');
+                }
                 $('#form-item-description')
                     .html(data.description)
                     .summernote({
@@ -5531,7 +5536,8 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 }
                 if (data.error === '') {
                     var html = '',
-                        nbHistoryEvents = 0;
+                        nbHistoryEvents = 0,
+                        previousPasswords = '<h6 class="mb-3"><?php echo langHdl('next_passwords_were_valid_until_date'); ?></h6>';
                     $.each(data.history, function(i, value) {
                         html += '<div class="direct-chat-msg"><div class="direct-chat-info clearfix">' +
                             '<span class="direct-chat-name float-left">' + value.name + '</span>' +
@@ -5551,6 +5557,31 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 // Collapse History
                 if (collapsed === true) {
                     $('#card-item-history').closest().addClass('collapsed');
+                }
+
+                // Display password history
+                if (data.previous_passwords.length > 0) {
+                    $.each(data.previous_passwords, function(i, value) {
+                        previousPasswords += '<div class="row"><div class="col-4"><i class="fa-solid fa-key fa-2xs mr-2"></i><span class="badge bg-info text-dark">' + value.date + '</span></div><div class="col-8"><mark>' + value.password + '</mark></div></div>';
+                    });
+
+                    // SHow dialog
+                    $(document).on('click', '#card-item-password-history-button', function() {
+                        showModalDialogBox(
+                            '#warningModal',
+                            '<i class="fa-solid fa-clock-rotate-left mr-2"></i><?php echo langHdl('previously_used_passwords'); ?>',
+                            previousPasswords,
+                            '',
+                            '<?php echo langHdl('close'); ?>',
+                            'modal-xl'
+                        );
+                    });
+
+                    // show button
+                    $('#card-item-password-history-button').removeClass('hidden');
+                } else {
+                    // hide button
+                    $('#card-item-password-history-button').addClass('hidden');
                 }
 
                 // Hide loading state

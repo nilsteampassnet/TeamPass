@@ -1832,6 +1832,8 @@ function logEvents(
  * @param string $login           User login
  * @param string $raison          Code for reason
  * @param string $encryption_type Encryption on
+ * @param string $time Encryption Time
+ * @param string $old_value       Old value
  * 
  * @return void
  */
@@ -1844,7 +1846,8 @@ function logItems(
     ?string $login = null,
     ?string $raison = null,
     ?string $encryption_type = null,
-    ?string $time = null
+    ?string $time = null,
+    ?string $old_value = null
 ): void {
     // include librairies & connect to DB
     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
@@ -1868,7 +1871,7 @@ function logItems(
             'id_user' => $id_user,
             'action' => $action,
             'raison' => $raison,
-            'raison_iv' => '',
+            'old_value' => $old_value,
             'encryption_type' => is_null($encryption_type) === true ? TP_ENCRYPTION_NAME : $encryption_type,
         ]
     );

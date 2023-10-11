@@ -448,7 +448,7 @@ if (null !== $post_type) {
                             `id_user` int(8) NOT NULL,
                             `action` varchar(250) NULL,
                             `raison` text NULL,
-                            `raison_iv` text NULL,
+                            `old_value` MEDIUMTEXT NULL DEFAULT NULL,
                             `encryption_type` VARCHAR(20) NOT NULL DEFAULT 'not_set',
                             PRIMARY KEY (`increment_id`)
                             ) CHARSET=utf8;"
@@ -876,7 +876,7 @@ $SETTINGS = array (';
                             `increment_id`INT(12) NOT NULL AUTO_INCREMENT,
                             `id` int(12) NOT NULL,
                             `label` varchar(500) NOT NULL,
-                            `description` text NOT NULL,
+                            `description` MEDIUMTEXT NULL DEFAULT NULL,
                             `tags` text DEFAULT NULL,
                             `id_tree` int(12) NOT NULL,
                             `perso` tinyint(1) NOT NULL,

@@ -1105,6 +1105,14 @@ switch ($inputData['type']) {
                 }
 
                 if ($post_password !== $pw) {
+                    // Encrypt previous pw
+                    $previousValue = cryption(
+                        $pw,
+                        '',
+                        'encrypt'
+                    );
+
+                    // log the change of PW
                     logItems(
                         $SETTINGS,
                         (int) $inputData['itemId'],
@@ -1113,25 +1121,10 @@ switch ($inputData['type']) {
                         'at_modification',
                         $_SESSION['login'],
                         'at_pw',
-                        TP_ENCRYPTION_NAME
+                        TP_ENCRYPTION_NAME,
+                        NULL,
+                        isset($previousValue['string']) === true ? $previousValue['string'] : '',
                     );
-
-                    /*
-                    // send email if asked
-                    if (isKeyExistingAndEqual('enable_email_notification_on_user_pw_change', 1, $SETTINGS) === true) {
-                        prepareSendingEmail(
-                            langHdl('email_subject_item_updated'),
-                            str_replace(
-                                array('#label', '#link'),
-                                    array($path, $SETTINGS['email_server_url'] . '/index.php?page=items&group=' . $inputData['folderId'] . '&id=' . $newID . $txt['email_body3']),
-                                    langHdl('new_item_email_body')
-                            ),
-                            $emailAddress,
-                            $post_diffusion_list_names[$cpt],
-                            $SETTINGS
-                        );
-                    }
-                    */
                 }
 
                 // encrypt PW
@@ -1780,7 +1773,7 @@ switch ($inputData['type']) {
                     );
                 }
                 // DESCRIPTION
-                if (strcmp(md5($data['description']), md5($post_description)) !== 0) {
+                if (strcmp(md5(strip_tags($data['description'])), md5(strip_tags($post_description))) !== 0) {
                     // Store updates performed
                     array_push(
                         $arrayOfChanges,
@@ -2676,7 +2669,7 @@ switch ($inputData['type']) {
                 $arrData['show_detail_option'] = 2;
             }
 
-            $arrData['label'] = htmlspecialchars_decode($dataItem['label'], ENT_QUOTES);
+            $arrData['label'] = $dataItem['label'] === '' ? '' : htmlspecialchars_decode($dataItem['label'], ENT_QUOTES);
             $arrData['pw'] = $pw;
             $arrData['pw_decrypt_info'] = empty($pw) === true ? 'error_no_sharekey_yet' : '';
             $arrData['email'] = empty($dataItem['email']) === true || $dataItem['email'] === null ? '' : $dataItem['email'];
@@ -4008,7 +4001,7 @@ $SETTINGS['cpassman_dir'],$inputData['data'], 'decode');
                     $html_json[$record['id']]['item_key'] = (string) $record['item_key'];
                     $html_json[$record['id']]['tree_id'] = (int) $record['tree_id'];
                     $html_json[$record['id']]['label'] = strip_tags($record['label']);
-                    if (isset($SETTINGS['show_description']) === true && (int) $SETTINGS['show_description'] === 1) {
+                    if (isset($SETTINGS['show_description']) === true && (int) $SETTINGS['show_description'] === 1 && is_null($record['description']) === false && empty($record['description']) === false) {
                         $html_json[$record['id']]['desc'] = mb_substr(preg_replace('#<[^>]+>#', ' ', $record['description']), 0, 200);
                     } else {
                         $html_json[$record['id']]['desc'] = '';
@@ -6377,11 +6370,13 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
 
         // get item history
         $history = [];
+        $previous_passwords = [];
         $rows = DB::query(
             'SELECT l.date as date, l.action as action, l.raison as raison,
-            u.login as login, u.avatar_thumb as avatar_thumb, u.name as name, u.lastname as lastname
+                u.login as login, u.avatar_thumb as avatar_thumb, u.name as name, u.lastname as lastname,
+                l.old_value as old_value
             FROM ' . prefixTable('log_items') . ' as l
-            LEFT JOIN ' . prefixTable('users') . ' as u ON (l.id_user=u.id)
+            INNER JOIN ' . prefixTable('users') . ' as u ON (l.id_user=u.id)
             WHERE id_item=%i AND l.action NOT IN (%l)
             ORDER BY date DESC',
             $inputData['itemId'],
@@ -6415,6 +6410,22 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
             $detail = '';
             if ($reason[0] === 'at_pw') {
                 $action = langHdl($reason[0]);
+                
+                // get previous password
+                if (empty($record['old_value']) === false) {
+                    $previous_pwd = cryption(
+                        $record['old_value'],
+                        '',
+                        'decrypt'
+                    );
+                    array_push(
+                        $previous_passwords, 
+                        [
+                            'password' => $previous_pwd['string'],
+                            'date' => date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['date']),
+                        ]
+                    );
+                }
             } elseif ($record['action'] === 'at_manual') {
                 $detail = $reason[0];
                 $action = langHdl($record['action']);
@@ -6472,12 +6483,17 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
             );
         }
 
+        // order previous passwords by date
+        $key_values = array_column($previous_passwords, 'date'); 
+        array_multisort($key_values, SORT_DESC, $previous_passwords);
+
         // send data
         echo (string) prepareExchangedData(
             $SETTINGS['cpassman_dir'],
             [
                 'error' => '',
                 'history' => $history,
+                'previous_passwords' => $previous_passwords,
             ],
             'encode'
         );

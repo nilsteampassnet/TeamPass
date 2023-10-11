@@ -32,6 +32,6 @@ As an example when searching for keyword `password`.
 | 👉 __Offline mode HTML export enabled__ |  Exporting a list of objects outside of Teampass in an HTML format. | ✅ |
 | 👉 __Logon passwords expire after xx days (0 to disable)__ | Defining a due date after which the password is expired. | ✅ |
 | 👉 __Maximum password length__ | Defines the maximum length of an object password managed inside Teampass. | ✅ |
+| 👉 __Manual insertions in item history log allowed__ | Manual insertion in the object history is possible. | ✅ |
 | 👉 __Knowledge base feature__ | A knowledge base is available directly in Teampass permitting to provide more information about objects. | ❌ |
-| 👉 __Manual insertions in item history log allowed__ | Manual insertion in the object history is possible. | ❌ |
 | 👉 __Password suggestion feature enabled__ |  | ❌ |

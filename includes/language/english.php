@@ -16,6 +16,8 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'previously_used_passwords' => 'Previously used passwords',
+    'next_passwords_were_valid_until_date' => 'Next passwords were valid until date',
     'items_management' => 'Items operations',
     'reload_user_cache_table' => 'Reload user cache table',
     'send_email_to_user' => 'Send email to user',

@@ -1121,5 +1121,7 @@ return array(
     'reload_user_cache_table' => 'Torna a carregar la taula de memòria cau de l&apos;usuari',
     'send_email_to_user' => 'Enviar correu electrònic a l&apos;usuari',
     'items_management' => 'Items operations',
+    'previously_used_passwords' => 'Previously used passwords',
+    'next_passwords_were_valid_until_date' => 'Next passwords were valid until date',
 
 );

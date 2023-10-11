@@ -566,6 +566,26 @@ if (intval($tmp) === 0) {
     );
 }
 
+// Alter raison_iv field in log_items
+try {
+    mysqli_query(
+        $db_link,
+        'ALTER TABLE `' . $pre . 'log_items` CHANGE `raison_iv` `old_value` MEDIUMTEXT NULL DEFAULT NULL;'
+    );
+} catch (Exception $e) {
+    // Do nothing
+}
+
+// Alter description field in cache
+try {
+    mysqli_query(
+        $db_link,
+        'ALTER TABLE `' . $pre . 'cache` CHANGE `description` `description` MEDIUMTEXT NULL DEFAULT NULL;'
+    );
+} catch (Exception $e) {
+    // Do nothing
+}
+
 
 //---<END 3.0.10
 

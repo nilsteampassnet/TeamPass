@@ -1121,5 +1121,7 @@ return array(
     'reload_user_cache_table' => 'Reload user cache table',
     'send_email_to_user' => 'Send email to user',
     'items_management' => 'Items operations',
+    'previously_used_passwords' => 'Previously used passwords',
+    'next_passwords_were_valid_until_date' => 'Next passwords were valid until date',
 
 );

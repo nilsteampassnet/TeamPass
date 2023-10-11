@@ -1121,5 +1121,7 @@ return array(
     'reload_user_cache_table' => 'Recharger la table de cache de l&apos;utilisateur',
     'send_email_to_user' => 'Envoi d&apos;email à l&apos;utilisateur',
     'items_management' => 'Opérations relatives aux objets',
+    'previously_used_passwords' => 'Mots de passe précédemment utilisés',
+    'next_passwords_were_valid_until_date' => 'Ces mots de passe ont été valides jusqu&apos;à la date indiquée',
 
 );

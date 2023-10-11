@@ -572,10 +572,13 @@ foreach ($rows as $reccord) {
                     <ul class="list-group list-group-unbordered mb-3">
                         <li class="list-group-item">
                             <b><?php echo langHdl('pw'); ?></b>
-                            <button type="button" class="float-right btn btn-outline-info btn-sm btn-copy-clipboard" id="card-item-pwd-button">
+                            <button type="button" class="float-right btn btn-outline-info btn-sm btn-copy-clipboard infotip" id="card-item-pwd-button" title="<?php echo langHdl('copy'); ?>">
                                 <i class="far fa-copy"></i>
                             </button>
-                            <button type="button" class="float-right btn btn-outline-info btn-sm mr-1" id="card-item-pwd-show-button">
+                            <button type="button" class="float-right btn btn-outline-info btn-sm mr-1 hidden infotip" id="card-item-password-history-button" title="<?php echo langHdl('history'); ?>">
+                            <i class="fa-solid fa-clock-rotate-left"></i>
+                            </button>
+                            <button type="button" class="float-right btn btn-outline-info btn-sm mr-1 infotip" id="card-item-pwd-show-button" title="<?php echo langHdl('show'); ?>">
                                 <i class="far fa-eye pwd-show-spinner"></i>
                             </button>
                             <span id="card-item-pwd" class="float-right unhide_masked_data pointer mr-2"></span>
@@ -583,7 +586,7 @@ foreach ($rows as $reccord) {
                         </li>
                         <li class="list-group-item">
                             <b><?php echo langHdl('index_login'); ?></b>
-                            <button type="button" class="float-right btn btn-outline-info btn-sm ml-1 btn-copy-clipboard-clear" data-clipboard-target="#card-item-login" id="card-item-login-btn">
+                            <button type="button" class="float-right btn btn-outline-info btn-sm ml-1 btn-copy-clipboard-clear infotip" data-clipboard-target="#card-item-login" id="card-item-login-btn" title="<?php echo langHdl('copy'); ?>">
                                 <i class="far fa-copy"></i>
                             </button>
                             <span id="card-item-login" class="float-right"></span>
