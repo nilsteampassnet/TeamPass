@@ -54,6 +54,9 @@ require_once 'main.functions.php';
 
 // Connect to mysql server
 require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
+if (defined('DB_PASSWD_CLEAR') === false) {
+    define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+}
 DB::$host = DB_HOST;
 DB::$user = DB_USER;
 DB::$password = DB_PASSWD_CLEAR;
