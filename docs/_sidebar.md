@@ -8,6 +8,7 @@
 - [Extra](install/extra-settings.md)
 - **Features**
 - [Authentication](features/authentication.md)
+- [Items](features/items.md)
 - [Export](features/export.md)
 - [Keys](features/keys.md)
 - [Roles](features/roles.md)
