@@ -460,7 +460,6 @@ function cronContinueReEncryptingUserSharekeysStep20(
     $rows = DB::query(
         'SELECT id, pw
         FROM ' . prefixTable('items') . '
-        WHERE perso = 0
         ORDER BY id ASC
         LIMIT ' . $post_start . ', ' . $post_length
     );
@@ -533,8 +532,7 @@ function cronContinueReEncryptingUserSharekeysStep20(
     // SHould we change step?
     DB::query(
         'SELECT *
-        FROM ' . prefixTable('items') . '
-        WHERE perso = 0'
+        FROM ' . prefixTable('items')
     );
 
     $next_start = (int) $post_start + (int) $post_length;

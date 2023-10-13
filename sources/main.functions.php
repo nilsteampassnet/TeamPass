@@ -3021,6 +3021,13 @@ function storeUsersShareKey(
     ) {
         // If this is a personal object
         // Only create the sharekey for user
+        $user = DB::queryFirstRow(
+            'SELECT public_key
+            FROM ' . prefixTable('users') . '
+            WHERE id = ' . (int) $superGlobal->get('user_id', 'SESSION') . '
+            AND public_key != ""'
+        );
+
         if (empty($objectKey) === false) {
             DB::insert(
                 $object_name,
@@ -3029,7 +3036,7 @@ function storeUsersShareKey(
                     'user_id' => (int) $superGlobal->get('user_id', 'SESSION'),
                     'share_key' => encryptUserObjectKey(
                         $objectKey,
-                        $superGlobal->get('public_key', 'SESSION', 'user')
+                        $user['public_key']
                     ),
                 ]
             );
@@ -3042,7 +3049,7 @@ function storeUsersShareKey(
                         'user_id' => (int) $superGlobal->get('user_id', 'SESSION'),
                         'share_key' => encryptUserObjectKey(
                             $object['objectKey'],
-                            $superGlobal->get('public_key', 'SESSION', 'user')
+                            $user['public_key']
                         ),
                     ]
                 );

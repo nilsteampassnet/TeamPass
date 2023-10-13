@@ -5562,7 +5562,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 // Display password history
                 if (data.previous_passwords.length > 0) {
                     $.each(data.previous_passwords, function(i, value) {
-                        previousPasswords += '<div class="row"><div class="col-4"><i class="fa-solid fa-key fa-2xs mr-2"></i><span class="badge bg-info text-dark">' + value.date + '</span></div><div class="col-8"><mark>' + value.password + '</mark></div></div>';
+                        previousPasswords += '<div class="row"><div class="col-8"><i class="fa-solid fa-key fa-2xs mr-2"></i><code>' + value.password + '</code></div><div class="col-4"><span class="badge bg-info text-dark">' + value.date + '</span></div></div>';
                     });
                     
                     // SHow dialog

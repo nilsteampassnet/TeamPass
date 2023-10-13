@@ -472,7 +472,6 @@ switch ($inputData['type']) {
                     $SETTINGS,
                     true
                 );
-                
 
                 // update fields
                 if (
