@@ -4346,6 +4346,9 @@ function storeTask(
  */
 function getPHPBinary(): string
 {
+    require_once __DIR__.'/../includes/libraries/Symfony/Component/Process/Messenger/RunProcessMessage.php';
+    require_once __DIR__.'/../includes/libraries/Symfony/Component/Process/Messenger/RunProcessContext.php';
+    require_once __DIR__.'/../includes/libraries/Symfony/Component/Process/Messenger/RunProcessMessageHandler.php';
     require_once __DIR__.'/../includes/libraries/Symfony/Component/Process/Exception/ExceptionInterface.php';
     require_once __DIR__.'/../includes/libraries/Symfony/Component/Process/Exception/RuntimeException.php';
     require_once __DIR__.'/../includes/libraries/Symfony/Component/Process/Exception/RunProcessFailedException.php';

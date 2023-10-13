@@ -5564,7 +5564,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     $.each(data.previous_passwords, function(i, value) {
                         previousPasswords += '<div class="row"><div class="col-4"><i class="fa-solid fa-key fa-2xs mr-2"></i><span class="badge bg-info text-dark">' + value.date + '</span></div><div class="col-8"><mark>' + value.password + '</mark></div></div>';
                     });
-
+                    
                     // SHow dialog
                     $(document).on('click', '#card-item-password-history-button', function() {
                         showModalDialogBox(

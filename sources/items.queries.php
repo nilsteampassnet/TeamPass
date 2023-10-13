@@ -6421,7 +6421,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                     array_push(
                         $previous_passwords, 
                         [
-                            'password' => $previous_pwd['string'],
+                            'password' => htmlentities($previous_pwd['string']),
                             'date' => date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['date']),
                         ]
                     );
