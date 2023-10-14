@@ -146,3 +146,34 @@ Once installation is done, enter the next commands to put back the limited right
 chmod -R 0750 teampass
 chown -R apache:apache teampass
 ```
+
+## Docker
+
+### Install docker
+```
+apt update
+apt install docker.io docker-compose
+```
+
+### Download docker compose 
+```
+wget https://github.com/nilsteampassnet/TeamPass/blob/master/docker-compose.yml
+```
+
+### Modify docker-compose.yml file to suit your env (look at this values) 
+```
+VIRTUAL_HOST: teampass.yourdomain.local
+CERT_NAME: teampass.yourdomain.local.crt
+MYSQL_PASSWORD: YOUR_SECRET_PASSWORD
+```
+About the certificate read the instructions on the main page: https://github.com/nilsteampassnet/TeamPass#with-docker-compose
+
+### Configure docker and start containers 
+```
+docker network create backend
+docker-compose up -d
+docker container ls 
+```
+
+Check your browser at https://teampass.yourdomain.local and follow Note1 and Note2 in the [instructions](https://github.com/nilsteampassnet/TeamPass#with-docker-compose).
+

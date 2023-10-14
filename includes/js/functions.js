@@ -399,7 +399,7 @@ function simplePurifier(
 {
     return sanitizeDom(
         DOMPurify.sanitize(
-            text
+            String(text)
                 .replaceAll('&lt;', '<')
                 .replaceAll('&#x3C;', '<')
                 .replaceAll('&#x3c;', '<')

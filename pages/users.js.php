@@ -2276,14 +2276,14 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
         $("#ldap-user-roles option:selected").each(function() {
             roles.push($(this).val())
         });
-
+        
         // Sanitize text fields
         purifyRes = fieldDomPurifierLoop('#form-user .purify');
         if (purifyRes.purifyStop === true) {
             // if purify failed, stop
             return false;
         }
-
+        
         // prepare data
         var data = {
             'login': simplePurifier($('.selected-user').data('user-login')),
