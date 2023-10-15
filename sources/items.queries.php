@@ -3202,6 +3202,19 @@ switch ($inputData['type']) {
             $returnArray['setting_restricted_to_roles'] = isset($SETTINGS['restricted_to_roles']) === true
                 && (int) $SETTINGS['restricted_to_roles'] === 1 ? 1 : 0;
 
+            // get OTV links
+            if (isset($SETTINGS['otv_is_enabled']) === true && (int) $SETTINGS['otv_is_enabled'] === 1) {
+                DB::query(
+                    'SELECT *
+                    FROM ' . prefixTable('otv') . '
+                    WHERE item_id = %i
+                    AND time_limit > %i',
+                    $inputData['id'],
+                    time()
+                );
+                $returnArray['otv_links'] = (int) DB::count();
+            }
+
             $_SESSION['user']['show_step2'] = false;
             
             echo (string) prepareExchangedData(
@@ -5870,6 +5883,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                 'encrypted' => $passwd['string'],
                 'time_limit' => (int) $dataReceived['days'] * (int) TP_ONE_DAY_SECONDS + time(),
                 'max_views' => (int) $dataReceived['views'],
+                'shared_globaly' => 0,
             )
         );
         $newID = DB::insertId();
@@ -5895,7 +5909,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
         );
         break;
 
-        /*
+    /*
     * CASE
     * Check if Item has been changed since loaded
     */
@@ -5920,14 +5934,33 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
             array(
                 'time_limit' => $days * (int) TP_ONE_DAY_SECONDS + time(),
                 'max_views' => (int) $dataReceived['views'],
+                'shared_globaly' => (int) $dataReceived['shared_globaly'] === 1 ? 1 : 0,
             ),
             'id = %i',
             $dataReceived['otv_id']
         );
 
+        $data = DB::queryFirstRow(
+            'SELECT * FROM ' . prefixTable('otv') . ' WHERE id = %i',
+            $dataReceived['otv_id']
+        );
+
+        if ((int) $dataReceived['shared_globaly'] === 1 && isset($SETTINGS['otv_subdomain']) === true && empty($SETTINGS['otv_subdomain']) === false) {
+            // Inject subdomain in URL by convering www. to subdomain.
+            $domain_scheme = parse_url($SETTINGS['cpassman_url'], PHP_URL_SCHEME);
+            $domain_host = parse_url($SETTINGS['cpassman_url'], PHP_URL_HOST);
+            if (str_contains($domain_host, 'www.') === true) {
+                $domain_host = (string) $SETTINGS['otv_subdomain'] . '.' . substr($domain_host, 4);
+            }
+            $url = $domain_scheme.'://'.$domain_host . '/index.php?otv=true&code=' . $data['code'] . '&key=' . $data['encrypted'] . '&stamp=' . $data['time_limit'];
+        } else {
+            $url = $SETTINGS['cpassman_url'] . '/index.php?otv=true&code=' . $data['code'] . '&key=' . $data['encrypted'] . '&stamp=' . $data['time_limit'];
+        }
+
         echo json_encode(
             array(
                 'error' => false,
+                'new_url' => $url,
             )
         );
         break;

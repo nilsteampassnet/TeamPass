@@ -1215,10 +1215,10 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     // Change the icon for Notification
                     if ($('#form-item-notify-checkbox').is(':checked') === true) {
                         $('#card-item-misc-notification')
-                            .html('<span class="far fa-bell infotip text-success" title="<?php echo langHdl('notification_engaged'); ?>"></span>');
+                            .html('<span class="fa-regular fa-bell infotip text-success" title="<?php echo langHdl('notification_engaged'); ?>"></span>');
                     } else {
                         $('#card-item-misc-notification')
-                            .html('<span class="far fa-bell-slash infotip text-warning" title="<?php echo langHdl('notification_not_engaged'); ?>"></span>');
+                            .html('<span class="fa-regular fa-bell-slash infotip text-warning" title="<?php echo langHdl('notification_not_engaged'); ?>"></span>');
                     }
 
                     // Show/hide forms
@@ -4037,7 +4037,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     if (value.is_favourited === 1) {
                         icon_favorite = '<span class="fa-stack fa-clickable item-favourite pointer infotip mr-2" title="<?php echo langHdl('unfavorite'); ?>" data-item-id="' + value.item_id + '" data-item-key="' + value.item_key + '" data-item-favourited="1"><i class="fa-solid fa-circle fa-stack-2x"></i><i class="fa-solid fa-star fa-stack-1x fa-inverse text-warning"></i></span>';
                     } else {
-                        icon_favorite = '<span class="fa-stack fa-clickable item-favourite pointer infotip mr-2" title="<?php echo langHdl('favorite'); ?>" data-item-id="' + value.item_id + '" data-item-key="' + value.item_key + '" data-item-favourited="0"><i class="fa-solid fa-circle fa-stack-2x"></i><i class="far fa-star fa-stack-1x fa-inverse"></i></span>';
+                        icon_favorite = '<span class="fa-stack fa-clickable item-favourite pointer infotip mr-2" title="<?php echo langHdl('favorite'); ?>" data-item-id="' + value.item_id + '" data-item-key="' + value.item_key + '" data-item-favourited="0"><i class="fa-solid fa-circle fa-stack-2x"></i><i class="fa-regular fa-star fa-stack-1x fa-inverse"></i></span>';
                     }
                 }
 
@@ -4052,9 +4052,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     // Show user a grippy bar to move item
                     (value.canMove === 1  ? '<i class="fa-solid fa-ellipsis-v mr-2 dragndrop"></i>' : '') + //&& value.is_result_of_search === 0
                     // Show user a ban icon if expired
-                    (value.expired === 1 ? '<i class="far fa-calendar-times mr-2 text-warning infotip" title="<?php echo langHdl('not_allowed_to_see_pw_is_expired'); ?>"></i>' : '') +
+                    (value.expired === 1 ? '<i class="fa-regular fa-calendar-times mr-2 text-warning infotip" title="<?php echo langHdl('not_allowed_to_see_pw_is_expired'); ?>"></i>' : '') +
                     // Show user that Item is not accessible
-                    (value.rights === 10 ? '<i class="far fa-eye-slash fa-xs mr-2 text-primary infotip" title="<?php echo langHdl('item_with_restricted_access'); ?>"></i>' : '') +
+                    (value.rights === 10 ? '<i class="fa-regular fa-eye-slash fa-xs mr-2 text-primary infotip" title="<?php echo langHdl('item_with_restricted_access'); ?>"></i>' : '') +
                     // Show user that password is badly encrypted
                     (value.pw_status === 'encryption_error' ? '<i class="fa-solid fa-exclamation-triangle fa-xs text-danger infotip mr-1" title="<?php echo langHdl('pw_encryption_error'); ?>"></i>' : '') +
                     // Show item fa_icon if set
@@ -4064,7 +4064,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     '<span class="list-item-row-description' + (value.rights === 10 ? ' font-weight-light' : '') + '">' + value.label + '</span>' + (value.rights === 10 ? '' : value.desc) + '</span>' +
                     '<span class="list-item-actions hidden">' +
                     (value.rights === 10 ?
-                        '<span class="fa-stack fa-clickable fa-clickable-access-request pointer infotip mr-2" title="<?php echo langHdl('need_access'); ?>"><i class="fa-solid fa-circle fa-stack-2x text-danger"></i><i class="far fa-handshake fa-stack-1x fa-inverse"></i></span>' :
+                        '<span class="fa-stack fa-clickable fa-clickable-access-request pointer infotip mr-2" title="<?php echo langHdl('need_access'); ?>"><i class="fa-solid fa-circle fa-stack-2x text-danger"></i><i class="fa-regular fa-handshake fa-stack-1x fa-inverse"></i></span>' :
                         pwd_error + icon_open + icon_all_can_modify + icon_login + icon_pwd + icon_link + icon_favorite) +
                     '</span>' +
                     (value.folder !== undefined ?
@@ -4922,15 +4922,15 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 // Show Notification engaged
                 if (data.notification_status === true) {
                     $('#card-item-misc')
-                        .append('<span class="mr-4 icon-badge" id="card-item-misc-notification"><span class="far fa-bell infotip text-success" title="<?php echo langHdl('notification_engaged'); ?>"></span></span>');
+                        .append('<span class="mr-4 icon-badge" id="card-item-misc-notification"><span class="fa-regular fa-bell infotip text-success" title="<?php echo langHdl('notification_engaged'); ?>"></span></span>');
                 } else {
                     $('#card-item-misc')
-                        .append('<span class="mr-4 icon-badge" id="card-item-misc-notification"><span class="far fa-bell-slash infotip text-warning" title="<?php echo langHdl('notification_not_engaged'); ?>"></span></span>');
+                        .append('<span class="mr-4 icon-badge" id="card-item-misc-notification"><span class="fa-regular fa-bell-slash infotip text-warning" title="<?php echo langHdl('notification_not_engaged'); ?>"></span></span>');
                 }
 
                 // Prepare counter
                 $('#card-item-misc')
-                    .append('<span class="icon-badge mr-4"><span class="far fa-eye infotip" title="<?php echo langHdl('viewed_number'); ?>"></span><span class="badge badge-info icon-badge-text icon-badge-far">' + data.viewed_no + '</span></span>');
+                    .append('<span class="icon-badge mr-4"><span class="fa-regular fa-eye infotip" title="<?php echo langHdl('viewed_number'); ?>"></span><span class="badge badge-info icon-badge-text icon-badge-far">' + data.viewed_no + '</span></span>');
 
                 // Delete after X views
                 if (data.to_be_deleted !== '') {
@@ -4943,7 +4943,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     }
                     // Show icon
                     $('#card-item-misc')
-                        .append('<span class="icon-badge mr-5"><span class="far fa-trash-alt infotip" title="<?php echo langHdl('automatic_deletion_engaged'); ?>"></span><span class="badge badge-danger icon-badge-text-bottom-right">' + data.to_be_deleted + '</span></span>');
+                        .append('<span class="icon-badge mr-5"><span class="fa-regular fa-trash-alt infotip" title="<?php echo langHdl('automatic_deletion_engaged'); ?>"></span><span class="badge badge-danger icon-badge-text-bottom-right">' + data.to_be_deleted + '</span></span>');
                 }
 
                 // reset password shown info
@@ -5199,6 +5199,12 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     showInputs: false,
                     explicitMode: true
                 });
+
+                // Valid OTV links
+                if (data.otv_links !== undefined && data.otv_links > 0) {
+                    $('#card-item-misc')
+                        .append('<span class="icon-badge mr-4"><span class="fa-regular fa-handshake infotip" title="<?php echo langHdl('existing_valid_otv_links'); ?>"></span><span class="badge badge-info icon-badge-text icon-badge-far">' + data.otv_links + '</span></span>');
+                }
 
                 // Delete inputs related files uploaded but not confirmed
                 var data = {
@@ -5667,6 +5673,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             "otv_id": $('#form-item-otv-link').data('otv-id'),
             "days": $('#form-item-otv-days').val(),
             "views": $('#form-item-otv-views').val(),
+            "shared_globaly": $('#form-item-otv-subdomain').is(":checked") === true ? 1 : 0,
         };
 
         $.post(
@@ -5676,6 +5683,10 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 key: "<?php echo $_SESSION['key']; ?>"
             },
             function(data) {
+                // Display new url
+                if (data.new_url !== undefined) {
+                    $('#form-item-otv-link').val(data.new_url);
+                }
                 toastr.remove();
                 toastr.info(
                     '<?php echo langHdl('updated'); ?>',

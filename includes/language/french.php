@@ -1117,11 +1117,16 @@ return array(
     'number_of_times' => 'Nombre de visualisations',
     'sharekey_not_ready' => 'Clé de partage non générée ... toutes les données de l&apos;objet ne sont pas prêtes ... Merci de patienter',
     'item_action_not_yet_possible' => 'Cette action n&apos;est pas disponible pour le moment sur cet objet',
-    'open' => '',
+    'open' => 'Ouvert',
     'reload_user_cache_table' => 'Recharger la table de cache de l&apos;utilisateur',
     'send_email_to_user' => 'Envoi d&apos;email à l&apos;utilisateur',
     'items_management' => 'Opérations relatives aux objets',
     'previously_used_passwords' => 'Mots de passe précédemment utilisés',
     'next_passwords_were_valid_until_date' => 'Ces mots de passe ont été valides jusqu&apos;à la date indiquée',
+    'feature_disabled_by_administrator' => 'Fonctionnalité désactivée par l&apos;administrateur',
+    'shared_globaly' => 'Partagé globalement',
+    'settings_otv_subdomain' => 'Sous domaine des liens à visualisation unique',
+    'settings_otv_subdomain_tip' => 'Dedicated subdomain for onetime links. Considere your main Teampass URL as isolated from internet, this subdomain could be reachable by everyone to share this item with someone outside your organisation. From security perspective it is a lot safer with such mechanics. Note: This would requite to have a DNS entry for this subdomain pointing to your Teampass server.',
+    'existing_valid_otv_links' => 'Liens à visualisation valides',
 
 );

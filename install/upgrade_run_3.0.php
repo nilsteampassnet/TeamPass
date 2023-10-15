@@ -586,6 +586,18 @@ try {
     // Do nothing
 }
 
+// Add field shared_globaly to otv table
+$res = addColumnIfNotExist(
+    $pre . 'otv',
+    'shared_globaly',
+    "INT(1) NOT NULL DEFAULT '0';"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field shared_globaly to table otv! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
 
 //---<END 3.0.10
 

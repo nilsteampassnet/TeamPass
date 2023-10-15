@@ -1123,5 +1123,10 @@ return array(
     'items_management' => 'Operaciones en los artículos',
     'previously_used_passwords' => 'Previously used passwords',
     'next_passwords_were_valid_until_date' => 'Next passwords were valid until date',
+    'feature_disabled_by_administrator' => 'Feature disabled by administrator',
+    'shared_globaly' => 'Shared globaly',
+    'settings_otv_subdomain' => 'OTV subdomain name',
+    'settings_otv_subdomain_tip' => 'Dedicated subdomain for onetime links. Considere your main Teampass URL as isolated from internet, this subdomain could be reachable by everyone to share this item with someone outside your organisation. From security perspective it is a lot safer with such mechanics. Note: This would requite to have a DNS entry for this subdomain pointing to your Teampass server.',
+    'existing_valid_otv_links' => 'OTV valid links',
 
 );

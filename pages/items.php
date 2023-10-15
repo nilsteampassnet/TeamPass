@@ -513,25 +513,25 @@ foreach ($rows as $reccord) {
                         <div class="collapse navbar-collapse" id="navbarNav">
                             <ul class="navbar-nav">
                                 <li class="nav-item" id="item-form-new-button">
-                                    <a class="text-navy tp-action ml-3" href="#" data-item-action="new"><i class="far fa-plus-square mr-1"></i><small><?php echo langHdl('new'); ?></small></a>
+                                    <a class="text-navy tp-action ml-3" href="#" data-item-action="new"><i class="fa-regular fa-plus-square mr-1"></i><small><?php echo langHdl('new'); ?></small></a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="text-navy tp-action ml-3" href="#" data-item-action="edit"><i class="far fa-edit mr-1"></i><small><?php echo langHdl('edit'); ?></small></a>
+                                    <a class="text-navy tp-action ml-3" href="#" data-item-action="edit"><i class="fa-regular fa-edit mr-1"></i><small><?php echo langHdl('edit'); ?></small></a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="text-navy tp-action ml-3" href="#" data-item-action="delete"><i class="far fa-trash-alt mr-1"></i><small><?php echo langHdl('delete'); ?></small></a>
+                                    <a class="text-navy tp-action ml-3" href="#" data-item-action="delete"><i class="fa-regular fa-trash-alt mr-1"></i><small><?php echo langHdl('delete'); ?></small></a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="text-navy tp-action ml-3" href="#" data-item-action="copy"><i class="far fa-copy mr-1"></i><small><?php echo langHdl('copy'); ?></small></a>
+                                    <a class="text-navy tp-action ml-3" href="#" data-item-action="copy"><i class="fa-regular fa-copy mr-1"></i><small><?php echo langHdl('copy'); ?></small></a>
                                 </li>
                                 <li class="nav-item">
                                     <a class="text-navy ml-3" href="#" data-item-action="link" id="get_item_link"><i class="fa-solid fa-link mr-1"></i><small><?php echo langHdl('link'); ?></small></a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="text-navy tp-action ml-3" href="#" data-item-action="share"><i class="far fa-share-square mr-1"></i><small><?php echo langHdl('share'); ?></small></a>
+                                    <a class="text-navy tp-action ml-3" href="#" data-item-action="share"><i class="fa-regular fa-share-square mr-1"></i><small><?php echo langHdl('share'); ?></small></a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="text-navy tp-action ml-3" href="#" data-item-action="notify"><i class="far fa-bell mr-1"></i><small><?php echo langHdl('notify'); ?></small></a>
+                                    <a class="text-navy tp-action ml-3" href="#" data-item-action="notify"><i class="fa-regular fa-bell mr-1"></i><small><?php echo langHdl('notify'); ?></small></a>
                                 </li>
                                 <?php
                                 if (
@@ -573,13 +573,13 @@ foreach ($rows as $reccord) {
                         <li class="list-group-item">
                             <b><?php echo langHdl('pw'); ?></b>
                             <button type="button" class="float-right btn btn-outline-info btn-sm btn-copy-clipboard infotip" id="card-item-pwd-button" title="<?php echo langHdl('copy'); ?>">
-                                <i class="far fa-copy"></i>
+                                <i class="fa-regular fa-copy"></i>
                             </button>
                             <button type="button" class="float-right btn btn-outline-info btn-sm mr-1 hidden infotip" id="card-item-password-history-button" title="<?php echo langHdl('history'); ?>">
                             <i class="fa-solid fa-clock-rotate-left"></i>
                             </button>
                             <button type="button" class="float-right btn btn-outline-info btn-sm mr-1 infotip" id="card-item-pwd-show-button" title="<?php echo langHdl('show'); ?>">
-                                <i class="far fa-eye pwd-show-spinner"></i>
+                                <i class="fa-regular fa-eye pwd-show-spinner"></i>
                             </button>
                             <span id="card-item-pwd" class="float-right unhide_masked_data pointer mr-2"></span>
                             <input id="hidden-item-pwd" type="hidden">
@@ -587,14 +587,14 @@ foreach ($rows as $reccord) {
                         <li class="list-group-item">
                             <b><?php echo langHdl('index_login'); ?></b>
                             <button type="button" class="float-right btn btn-outline-info btn-sm ml-1 btn-copy-clipboard-clear infotip" data-clipboard-target="#card-item-login" id="card-item-login-btn" title="<?php echo langHdl('copy'); ?>">
-                                <i class="far fa-copy"></i>
+                                <i class="fa-regular fa-copy"></i>
                             </button>
                             <span id="card-item-login" class="float-right"></span>
                         </li>
                         <li class="list-group-item">
                             <b><?php echo langHdl('email'); ?></b>
                             <button type="button" class="float-right btn btn-outline-info btn-sm ml-1 btn-copy-clipboard-clear" data-clipboard-target="#card-item-email" id="card-item-email-btn">
-                                <i class="far fa-copy"></i>
+                                <i class="fa-regular fa-copy"></i>
                             </button>
                             <span id="card-item-email" class="float-right ml-1"></span>
                         </li>
@@ -1072,17 +1072,30 @@ foreach ($rows as $reccord) {
                     </div>
 
                     <div class="row">
-                        <div class="form-group col-5">
-                            <label for="form-item-otv-days"><i class="far fa-calendar-days mr-2"></i><?php echo langHdl('number_of_days'); ?> (<?php echo langHdl('maximum').': '.$SETTINGS['otv_expiration_period'];?>)</label>
+                        <div class="form-group col-4">
+                            <label for="form-item-otv-days"><i class="fa-regular fa-calendar-days mr-2"></i><?php echo langHdl('number_of_days'); ?> (<?php echo langHdl('maximum').': '.$SETTINGS['otv_expiration_period'];?>)</label>
                             <div class="input-group mb-3">
                                 <input type="number" class="form-control clear-me-val" id="form-item-otv-days" min="0" max="<?php echo $SETTINGS['otv_expiration_period'];?>" value="<?php echo $SETTINGS['otv_expiration_period'];?>">
                             </div>
                         </div>
 
-                        <div class="form-group col-5">
-                            <label for="form-item-otv-views"><i class="far fa-hashtag mr-2"></i><?php echo langHdl('number_of_times'); ?></label>
+                        <div class="form-group col-4">
+                            <label for="form-item-otv-views"><i class="fa-regular fa-hashtag mr-2"></i><?php echo langHdl('number_of_times'); ?></label>
                             <div class="input-group mb-3">
-                                <input type="number" class="form-control clear-me-val" id="form-item-otv-views" value="1" min="0"                                            >
+                                <input type="number" class="form-control clear-me-val" id="form-item-otv-views" value="1" min="0">
+                            </div>
+                        </div>
+
+                        <div class="form-group col-2">
+                            <label for="form-item-otv-subdomain" class="infotip" title="<?php
+                                echo isset($SETTINGS['otv_subdomain']) === true && empty($SETTINGS['otv_subdomain']) === false ? '' : langHdl('feature_disabled_by_administrator'); ?>">
+                                <i class="fa-solid fa-globe mr-2"></i><?php echo langHdl('shared_globaly'); ?>
+                            </label>
+                            <div class="input-group mb-3">
+                                <div class="form-check mb-3 icheck-blue">
+                                    <input type="checkbox" class="form-check-input form-item-control flat-blue infotip" id="form-item-otv-subdomain" <?php
+                                        echo isset($SETTINGS['otv_subdomain']) === true && empty($SETTINGS['otv_subdomain']) === false ? ' enabled' : ' disabled'; ?> data-change-ongoing="">
+                                </div>
                             </div>
                         </div>
 
@@ -1305,7 +1318,7 @@ foreach ($rows as $reccord) {
                 <div class="card-header">
                     <div class="row justify-content-end">
                         <div class="col-6">
-                            <h3 class="card-title"><i class="far fa-folder-open mr-2">
+                            <h3 class="card-title"><i class="fa-regular fa-folder-open mr-2">
                                 </i><span class=""><?php echo langHdl('folders'); ?></span>
                         </div>
                         <div class="col-6">
@@ -1319,10 +1332,10 @@ foreach ($rows as $reccord) {
                                     <a class="dropdown-item tp-action" href="#" data-folder-action="expand"><i class="fa-solid fa-expand fa-fw mr-2"></i><?php echo langHdl('expand'); ?></a>
                                     <a class="dropdown-item tp-action" href="#" data-folder-action="collapse"><i class="fa-solid fa-compress fa-fw mr-2"></i><?php echo langHdl('collapse'); ?></a>
                                     <div class="dropdown-divider"></div>
-                                    <a class="dropdown-item tp-action" href="#" data-folder-action="add"><i class="far fa-plus-square fa-fw mr-2"></i><?php echo langHdl('add'); ?></a>
-                                    <a class="dropdown-item tp-action" href="#" data-folder-action="edit"><i class="far fa-edit fa-fw mr-2"></i><?php echo langHdl('edit'); ?></a>
-                                    <a class="dropdown-item tp-action" href="#" data-folder-action="copy"><i class="far fa-copy fa-fw mr-2"></i><?php echo langHdl('copy'); ?></a>
-                                    <a class="dropdown-item tp-action" href="#" data-folder-action="delete"><i class="far fa-trash-alt fa-fw mr-2"></i><?php echo langHdl('delete'); ?></a>
+                                    <a class="dropdown-item tp-action" href="#" data-folder-action="add"><i class="fa-regular fa-plus-square fa-fw mr-2"></i><?php echo langHdl('add'); ?></a>
+                                    <a class="dropdown-item tp-action" href="#" data-folder-action="edit"><i class="fa-regular fa-edit fa-fw mr-2"></i><?php echo langHdl('edit'); ?></a>
+                                    <a class="dropdown-item tp-action" href="#" data-folder-action="copy"><i class="fa-regular fa-copy fa-fw mr-2"></i><?php echo langHdl('copy'); ?></a>
+                                    <a class="dropdown-item tp-action" href="#" data-folder-action="delete"><i class="fa-regular fa-trash-alt fa-fw mr-2"></i><?php echo langHdl('delete'); ?></a>
                                     <div class="dropdown-divider"></div>
                                     <a class="dropdown-item tp-action" href="#" data-folder-action="">
                                         <div class="input-group input-group-sm">

@@ -1117,6 +1117,7 @@ $SETTINGS = array (';
                             `views` INT(10) NOT NULL DEFAULT '0',
                             `max_views` INT(10) NULL DEFAULT NULL,
                             `time_limit` varchar(100) DEFAULT NULL,
+                            `shared_globaly` INT(1) NOT NULL DEFAULT '0',
                             PRIMARY KEY (`id`)
                             ) CHARSET=utf8;"
                         );

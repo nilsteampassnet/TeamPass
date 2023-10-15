@@ -490,6 +490,46 @@ $zones = timezone_list();
                     <!-- /.card-body -->
                 </div>
                 <!-- /.card -->
+            
+
+                <div class='card card-primary'>
+                        <div class='card-header'>
+                            <h3 class='card-title'><?php echo langHdl('otv_link'); ?></h3>
+                        </div>
+                        <!-- /.card-header -->
+                        <!-- form start -->
+                        <div class='card-body'>
+                            <div class='row mb-2 option' data-keywords="one time link">
+                                <div class='col-10'>
+                                    <?php echo langHdl('otv_is_enabled'); ?>
+                                </div>
+                                <div class='col-2'>
+                                    <div class='toggle toggle-modern' id='otv_is_enabled' data-toggle-on='<?php echo isset($SETTINGS['otv_is_enabled']) === true && $SETTINGS['otv_is_enabled'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='otv_is_enabled_input' value='<?php echo isset($SETTINGS['otv_is_enabled']) && $SETTINGS['otv_is_enabled'] === '1' ? '1' : '0'; ?>' />
+                                </div>
+                            </div>
+
+                            <div class='row mb-2 option' data-keywords="one time period expiration link">
+                                <div class='col-10'>
+                                    <?php echo langHdl('settings_otv_expiration_period'); ?>
+                                </div>
+                                <div class='col-2'>
+                                    <input type='number' class='form-control form-control-sm' id='otv_expiration_period' value='<?php echo $SETTINGS['otv_expiration_period'] ?? '7'; ?>'>
+                                </div>
+                            </div>
+
+                            <div class='row mb-2 option' data-keywords="one time subdomain link">
+                                <div class='col-12'>
+                                    <?php echo langHdl('settings_otv_subdomain'); ?>
+                                    <small class='form-text text-muted'>
+                                        <?php echo langHdl('settings_otv_subdomain_tip'); ?>
+                                    </small>
+                                </div>
+                                <div class='col-sm-12'>
+                                    <input type='text' class='form-control form-control-sm' id='otv_subdomain' value='<?php echo isset($SETTINGS['otv_subdomain']) === true ? $SETTINGS['otv_subdomain'] : ''; ?>'>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
             </div>
             <!-- /.col-md-6 -->
@@ -513,24 +553,6 @@ $zones = timezone_list();
                             </div>
                             <div class='col-2'>
                                 <input type='number' class='form-control form-control-sm' id='delay_item_edition' value='<?php echo $SETTINGS['delay_item_edition'] ?? '9'; ?>'>
-                            </div>
-                        </div>
-
-                        <div class='row mb-2 option' data-keywords="one time">
-                            <div class='col-10'>
-                                <?php echo langHdl('otv_is_enabled'); ?>
-                            </div>
-                            <div class='col-2'>
-                                <div class='toggle toggle-modern' id='otv_is_enabled' data-toggle-on='<?php echo isset($SETTINGS['otv_is_enabled']) === true && $SETTINGS['otv_is_enabled'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='otv_is_enabled_input' value='<?php echo isset($SETTINGS['otv_is_enabled']) && $SETTINGS['otv_is_enabled'] === '1' ? '1' : '0'; ?>' />
-                            </div>
-                        </div>
-
-                        <div class='row mb-2 option' data-keywords="one time period expiration">
-                            <div class='col-10'>
-                                <?php echo langHdl('settings_otv_expiration_period'); ?>
-                            </div>
-                            <div class='col-2'>
-                                <input type='number' class='form-control form-control-sm' id='otv_expiration_period' value='<?php echo $SETTINGS['otv_expiration_period'] ?? '7'; ?>'>
                             </div>
                         </div>
 

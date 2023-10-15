@@ -106,6 +106,16 @@ if (!empty($superGlobal->get('code', 'GET')) === true
             DB::delete(prefixTable('otv'), 'id = %i', $data['id']);
 
         } else {
+            // Check if user origine is allowed to see the item
+            // If shared_globaly enabled, then link must contain the subdomain
+            if (empty($SETTINGS['shared_globaly']) === false && (int) $data['shared_globaly'] === 1 && str_contains(parse_url($_SERVER['REQUEST_URI'], PHP_URL_HOST), $SETTINGS['shared_globaly']) === false) {
+                echo '
+                <div class="text-center text-danger">
+                <h3><i class="fas fa-exclamation-triangle mr-2"></i>This link is not valid!</h3>
+                </div>';
+                exit(true);
+            }
+
             // get from DB
             $dataItem = DB::queryfirstrow(
                 'SELECT *
@@ -175,7 +185,7 @@ if (!empty($superGlobal->get('code', 'GET')) === true
             // get data
             $label = strip_tags($dataItem['label']);
             $url = $dataItem['url'];
-            $description = preg_replace('/(?<!\\r)\\n+(?!\\r)/', '', strip_tags($dataItem['description'], TP_ALLOWED_TAGS));
+            $description = preg_replace('/(?<!\\r)\\n+(?!\\r)/', '', strip_tags((string) $dataItem['description'], TP_ALLOWED_TAGS));
             $login = str_replace('"', '&quot;', $dataItem['login']);
             // display data
             $html = '<div class="text-center">
