@@ -65,3 +65,19 @@ fa-solid fa-hippo fa-xl text-danger
 In the items list, the icon is prefixed to the item label.
 
 ![1](../../_media/tp3_items_3.png)
+
+## One Time View
+
+> OTV permits to share an item to any one that doesn't have access to Teampass instance.
+
+Once enabled by the Administrator, this feature allows to create a link dedicated for an item.
+It will be valid a date (by default 7 days) and for a certain number of views (by default 1 time).
+
+An option permits also to define a subdomain.
+Let's considere that your Teampass domain is only visible by your organization.
+It is possible to define a subdomain open to everyone.
+If an Administrator defines a subdomain, any link generated will contain this subdomain and will be available for any user in and outside your organization.
+
+If any valid OTV link exists for an item, a special Icon will be displayed with the number of links.
+
+![1](../../_media/tp3_otv_1.png)
