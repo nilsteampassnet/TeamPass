@@ -869,7 +869,7 @@ if (intval($tmp) === 0) {
 mysqli_query(
     $db_link,
     'CREATE TABLE IF NOT EXISTS `' . $pre . 'cache_tree` (
-        `increment_id` int(32) NOT NULL AUTO_INCREMENT,
+        `increment_id` smallint(32) NOT NULL AUTO_INCREMENT,
         `data` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`data`)),
         `visible_folders` longtext NOT NULL,
         `timestamp` varchar(50) NOT NULL,
@@ -892,7 +892,7 @@ if (!$res) {
 
 mysqli_query(
     $db_link,
-    'ALTER TABLE `' . $pre . 'cache_tree` MODIFY `increment_id` tinyint(32) NOT NULL AUTO_INCREMENT'
+    'ALTER TABLE `' . $pre . 'cache_tree` MODIFY `increment_id` smallint(32) NOT NULL AUTO_INCREMENT'
 );
 
 // Add field status to CACHE_TREE table
