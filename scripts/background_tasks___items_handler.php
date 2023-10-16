@@ -53,6 +53,9 @@ DB::$encoding = DB_ENCODING;
 DB::$ssl = DB_SSL;
 DB::$connect_options = DB_CONNECT_OPTIONS;
 
+// Get PHP binary
+$phpBinaryPath = getPHPBinary();
+
 // log start
 $logID = doLog('start', 'item_keys', (isset($SETTINGS['enable_tasks_log']) === true ? (int) $SETTINGS['enable_tasks_log'] : 0));
 
@@ -111,6 +114,11 @@ if (DB::count() > 0) {
 
 // log end
 doLog('end', '', (isset($SETTINGS['enable_tasks_log']) === true ? (int) $SETTINGS['enable_tasks_log'] : 0), $logID);
+
+// launch a new iterative process
+$process = new Symfony\Component\Process\Process([$phpBinaryPath, __FILE__]);
+$process->start();
+$process->wait();
 
 /**
  * Handle the task
@@ -251,7 +259,7 @@ function handleTask(int $processId, array $ProcessArguments, array $SETTINGS): b
                         'finished_at' => time(),
                         'is_in_progress' => -1,
                         'arguments' => json_encode([
-                            'new_user_id' => $ProcessArguments['new_user_id'],
+                            'new_user_id' => isset($ProcessArguments['new_user_id']) === true ? $ProcessArguments['new_user_id'] : '',
                         ])
                     ),
                     'increment_id = %i',

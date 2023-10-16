@@ -726,7 +726,7 @@ switch ($inputData['type']) {
 
                 // Create new task for the new item
                 // If it is not a personnal one
-                if (isset($post_folder_is_personal) === true && (int) $post_folder_is_personal === 1) {
+                if (isset($post_folder_is_personal) === false || (int) $post_folder_is_personal === 0) {
                     storeTask(
                         'new_item',
                         $_SESSION['user_id'],
@@ -2826,7 +2826,15 @@ switch ($inputData['type']) {
             $arrData['categories'] = $arrCatList;
             $arrData['template_id'] = (int) $template_id;
             $arrData['to_be_deleted'] = '';
-            $arrData['item_ready'] = empty($fieldText['error']) === true ? true : false;
+
+            // Evaluate if item is ready for all users
+            $rows_tmp = DB::queryfirstrow(
+                'SELECT finished_at
+                FROM ' . prefixTable('processes') . '
+                WHERE item_id = %i',
+                $inputData['id']
+            );
+            $arrData['item_ready'] = DB::count() === 0 ? true : (DB::count() > 0 && empty($rows_tmp['finished_at']) === true ? false : true);
 
             // Manage user restriction
             if (null !== $post_restricted) {
