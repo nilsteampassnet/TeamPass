@@ -1538,7 +1538,7 @@ function isUserPasswordCorrect(
                     );
                 }
             }
-            
+
             // Use the password check
             // load passwordLib library
             $pwdlib = new SplClassLoader('PasswordLib', $SETTINGS['cpassman_dir'] . '/includes/libraries');

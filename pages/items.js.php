@@ -371,8 +371,8 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
             // Change class and show spinner
             $('.pwd-show-spinner')
-                .removeClass('far fa-eye')
-                .addClass('fas fa-circle-notch fa-spin text-warning');
+                .removeClass('fa-regular fa-eye')
+                .addClass('fa-solid fa-circle-notch fa-spin text-warning');
 
             // display raw password
             $('#card-item-pwd')
@@ -393,8 +393,8 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     .html('<?php echo $var['hidden_asterisk']; ?>')
                     .removeClass('pointer_none');
                 $('.pwd-show-spinner')
-                    .removeClass('fas fa-circle-notch fa-spin text-warning')
-                    .addClass('far fa-eye');
+                    .removeClass('fa-solid fa-circle-notch fa-spin text-warning')
+                    .addClass('fa-regular fa-eye');
             }, <?php echo isset($SETTINGS['password_overview_delay']) === true ? $SETTINGS['password_overview_delay'] * 1000 : 4000; ?>);
         } else {
             $('#card-item-pwd').html('<?php echo $var['hidden_asterisk']; ?>');
@@ -4439,7 +4439,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
                         // Show passwords inputs and form
                         $('#dialog-ldap-user-change-password-info')
-                            .html('<i class="icon fas fa-info mr-2"></i><?php echo langHdl('ldap_user_has_changed_his_password');?>')
+                            .html('<i class="icon fa-solid fa-info mr-2"></i><?php echo langHdl('ldap_user_has_changed_his_password');?>')
                             .removeClass('hidden');
                         $('#dialog-ldap-user-change-password').removeClass('hidden');
                     } else if (data.error_type !== 'undefined') {

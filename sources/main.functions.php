@@ -2947,7 +2947,7 @@ function generateQuickPassword(int $length = 16, bool $symbolsincluded = true): 
     $big_letters = range('A', 'Z');
     $digits = range(0, 9);
     $symbols = $symbolsincluded === true ?
-        ['#', '_', '-', '@', '$', '+', '&'] : [];
+        ['#', '_', '-', '@', '$', '+', '!'] : [];
     $res = array_merge($small_letters, $big_letters, $digits, $symbols);
     $count = count($res);
     // first variant
