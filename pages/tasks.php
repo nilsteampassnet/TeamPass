@@ -190,7 +190,7 @@ catch (Exception $e) {
                                     </div>
 
                                     <div class='row ml-1 mb-2'>
-                                        <div class='col-9'>
+                                        <div class='col-8'>
                                             <i class="fa-solid fa-person-shelter ml-4 mr-2"></i><?php echo langHdl('users_personal_folder'); ?>
                                         </div>
                                         <div class='col-2'>
@@ -200,15 +200,24 @@ catch (Exception $e) {
                                             <input type='text' disabled class='form-control form-control-sm' id='users_personal_folder_task_parameter' value='<?php echo isset($task[0]) === true && empty($task[0]) === false ? langHdl($task[0])." ".(isset($task[2]) === true ? strtolower(langHdl('day')).' '.$task[2].' ' : '').langHdl('at')." ".$task[1] : langHdl('not_defined') ?>'>
                                             <input type='hidden' disabled class='form-control form-control-sm' id='users_personal_folder_task_parameter_value' value='<?php echo isset($task[0]) === true ? $task[0].";".$task[1].(isset($task[2]) === true ? ';'.$task[2] : '') : '';?>'>
                                         </div>
-                                        <div class='col-1'>
+                                        <div class='col-2'>
                                             <button class="btn btn-primary task-define" data-task="users_personal_folder_task">
                                                 <i class="fa-solid fa-cogs"></i>
                                             </button>
+                                            <?php
+                                            if (defined('WIP') === true && WIP === true) {
+                                                ?>
+                                            <button class="btn btn-primary task-perform ml-1" data-task="users_personal_folder_task">
+                                                <i class="fa-solid fa-play"></i>
+                                            </button>
+                                            <?php
+                                            }
+                                            ?>
                                         </div>
                                     </div>
 
                                     <div class='row ml-1 mb-2'>
-                                        <div class='col-9'>
+                                        <div class='col-8'>
                                             <i class="fa-solid fa-binoculars ml-4 mr-2"></i><?php echo langHdl('clean_orphan_objects'); ?>
                                         </div>
                                         <div class='col-2'>
@@ -218,7 +227,7 @@ catch (Exception $e) {
                                             <input type='text' disabled class='form-control form-control-sm' id='clean_orphan_objects_task_parameter' value='<?php echo isset($task[0]) === true && empty($task[0]) === false ? langHdl($task[0])." ".(isset($task[2]) === true ? strtolower(langHdl('day')).' '.$task[2].' ' : '').langHdl('at')." ".$task[1] : langHdl('not_defined') ?>'>
                                             <input type='hidden' disabled class='form-control form-control-sm' id='clean_orphan_objects_task_parameter_value' value='<?php echo isset($task[0]) === true ? $task[0].";".$task[1].(isset($task[2]) === true ? ';'.$task[2] : '') : '';?>'>
                                         </div>
-                                        <div class='col-1'>
+                                        <div class='col-2'>
                                             <button class="btn btn-primary task-define" data-task="clean_orphan_objects_task">
                                                 <i class="fa-solid fa-cogs"></i>
                                             </button>
@@ -226,7 +235,7 @@ catch (Exception $e) {
                                     </div>
 
                                     <div class='row ml-1 mb-2'>
-                                        <div class='col-9'>
+                                        <div class='col-8'>
                                             <i class="fa-solid fa-broom ml-4 mr-2"></i><?php echo langHdl('purge_temporary_files'); ?>
                                         </div>
                                         <div class='col-2'>
@@ -236,7 +245,7 @@ catch (Exception $e) {
                                             <input type='text' disabled class='form-control form-control-sm' id='purge_temporary_files_task_parameter' value='<?php echo isset($task[0]) === true && empty($task[0]) === false ? langHdl($task[0])." ".(isset($task[2]) === true ? strtolower(langHdl('day')).' '.$task[2].' ' : '').langHdl('at')." ".$task[1] : langHdl('not_defined') ?>'>
                                             <input type='hidden' disabled class='form-control form-control-sm' id='purge_temporary_files_task_parameter_value' value='<?php echo isset($task[0]) === true ? $task[0].";".$task[1].(isset($task[2]) === true ? ';'.$task[2] : '') : '';?>'>
                                         </div>
-                                        <div class='col-1'>
+                                        <div class='col-2'>
                                             <button class="btn btn-primary task-define" data-task="purge_temporary_files_task">
                                                 <i class="fa-solid fa-cogs"></i>
                                             </button>
@@ -244,7 +253,7 @@ catch (Exception $e) {
                                     </div>
 
                                     <div class='row ml-1 mb-2'>
-                                        <div class='col-9'>
+                                        <div class='col-8'>
                                             <i class="fa-solid fa-sliders ml-4 mr-2"></i><?php echo langHdl('rebuild_config_file'); ?>
                                         </div>
                                         <div class='col-2'>
@@ -254,7 +263,7 @@ catch (Exception $e) {
                                             <input type='text' disabled class='form-control form-control-sm' id='rebuild_config_file_task_parameter' value='<?php echo isset($task[0]) === true && empty($task[0]) === false ? langHdl($task[0])." ".(isset($task[2]) === true ? strtolower(langHdl('day')).' '.$task[2].' ' : '').langHdl('at')." ".$task[1] : langHdl('not_defined') ?>'>
                                             <input type='hidden' disabled class='form-control form-control-sm' id='rebuild_config_file_task_parameter_value' value='<?php echo isset($task[0]) === true ? $task[0].";".$task[1].(isset($task[2]) === true ? ';'.$task[2] : '') : ''; ?>'>
                                         </div>
-                                        <div class='col-1'>
+                                        <div class='col-2'>
                                             <button class="btn btn-primary task-define" data-task="rebuild_config_file_task">
                                                 <i class="fa-solid fa-cogs"></i>
                                             </button>
@@ -262,7 +271,7 @@ catch (Exception $e) {
                                     </div>
 
                                     <div class='row ml-1 mb-4'>
-                                        <div class='col-9'>
+                                        <div class='col-8'>
                                             <i class="fa-solid fa-database ml-4 mr-2"></i><?php echo langHdl('admin_action_reload_cache_table'); ?>
                                         </div>
                                         <div class='col-2'>
@@ -272,7 +281,7 @@ catch (Exception $e) {
                                             <input type='text' disabled class='form-control form-control-sm' id='reload_cache_table_task_parameter' value='<?php echo isset($task[0]) === true && empty($task[0]) === false ? langHdl($task[0])." ".(isset($task[2]) === true ? strtolower(langHdl('day')).' '.$task[2].' ' : '').langHdl('at')." ".$task[1] : langHdl('not_defined') ?>'>
                                             <input type='hidden' disabled class='form-control form-control-sm' id='reload_cache_table_task_parameter_value' value='<?php echo isset($task[0]) === true ? $task[0].";".$task[1].(isset($task[2]) === true ? ';'.$task[2] : '') : '';?>'>
                                         </div>
-                                        <div class='col-1'>
+                                        <div class='col-2'>
                                             <button class="btn btn-primary task-define" data-task="reload_cache_table_task">
                                                 <i class="fa-solid fa-cogs"></i>
                                             </button>

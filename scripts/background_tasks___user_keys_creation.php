@@ -458,7 +458,7 @@ function cronContinueReEncryptingUserSharekeysStep20(
     
     // Loop on items
     $rows = DB::query(
-        'SELECT id, pw
+        'SELECT id, pw, perso
         FROM ' . prefixTable('items') . '
         ORDER BY id ASC
         LIMIT ' . $post_start . ', ' . $post_length
@@ -485,7 +485,7 @@ function cronContinueReEncryptingUserSharekeysStep20(
         $share_key_for_item = encryptUserObjectKey($itemKey, $user_public_key);
         
         // Save the key in DB
-        if ($post_self_change === false) {
+        if ($post_self_change === false && ((int) $record['perso'] === 0 || ((int) $record['perso'] === 1 && (int) $post_user_id !== (int) $extra_arguments['owner_id']))) {
             DB::insert(
                 prefixTable('sharekeys_items'),
                 array(

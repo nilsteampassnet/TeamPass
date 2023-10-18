@@ -42,6 +42,7 @@ $scripts_list = array(
     array('upgrade_operations.php', 'populateItemsTable_CreatedAt'),
     array('upgrade_operations.php', 'populateItemsTable_UpdatedAt'),
     array('upgrade_operations.php', 'populateItemsTable_DeletedAt'),
+    array('upgrade_operations.php', '20231017_1'),
 );
 $param = '';
 

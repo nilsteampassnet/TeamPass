@@ -100,7 +100,7 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
 function defuseCryption($message, $ascii_key, $type)
 {
     // load PhpEncryption library
-    $path = '../includes/libraries/Encryption/Encryption/';
+    $path = __DIR__.'/../includes/libraries/Encryption/Encryption/';
 
     if (!class_exists('Defuse\Crypto\Crypto', false)) {
 		include_once $path . 'Exception/CryptoException.php';

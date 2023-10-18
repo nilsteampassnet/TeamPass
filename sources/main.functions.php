@@ -4376,3 +4376,59 @@ function getPHPBinary(): string
     $phpBinaryPath = $phpBinaryFinder->find();
     return $phpBinaryPath === false ? 'false' : $phpBinaryPath;
 }
+
+
+
+/**
+ * Delete unnecessary keys for personal items
+ *
+ * @param boolean $allUsers
+ * @param integer $user_id
+ * @return void
+ */
+function purgeUnnecessaryKeys(bool $allUsers = true, int $user_id=0)
+{
+    if ($allUsers === true) {
+        $users = DB::query(
+            'SELECT id
+            FROM ' . prefixTable('users') . '
+            WHERE id NOT IN ('.OTV_USER_ID.', '.TP_USER_ID.', '.SSH_USER_ID.', '.API_USER_ID.')
+            ORDER BY login ASC'
+        );
+        foreach ($users as $user) {
+            purgeUnnecessaryKeysForUser($user['id']);
+        }
+    } else {
+        purgeUnnecessaryKeysForUser($user_id);
+    }
+}
+
+/**
+ * Delete unnecessary keys for personal items
+ *
+ * @param integer $user_id
+ * @return void
+ */
+function purgeUnnecessaryKeysForUser(int $user_id=0)
+{
+    if ($user_id === 0) {
+        return;
+    }
+
+    $personalItems = DB::queryFirstColumn(
+        'SELECT id
+        FROM ' . prefixTable('items') . ' AS i
+        INNER JOIN ' . prefixTable('log_items') . ' AS li ON li.id_item = i.id
+        WHERE i.perso = 1 AND li.action = "at_creation" AND li.id_user = %i',
+        $user_id
+    );
+    if (count($personalItems) > 0) {
+        print_r($personalItems);
+        DB::delete(
+            prefixTable('sharekeys_items'),
+            'object_id IN %li AND user_id != %i',
+            $personalItems,
+            $user_id
+        );
+    }
+}

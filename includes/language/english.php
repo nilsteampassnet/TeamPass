@@ -16,6 +16,7 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'started' => 'Started',
     'existing_valid_otv_links' => 'OTV valid links',
     'feature_disabled_by_administrator' => 'Feature disabled by administrator',
     'shared_globaly' => 'Shared globaly',

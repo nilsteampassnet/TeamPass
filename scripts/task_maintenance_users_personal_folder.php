@@ -64,7 +64,6 @@ createUserPersonalFolder();
 // log end
 doLog('end', '', (isset($SETTINGS['enable_tasks_log']) === true ? (int) $SETTINGS['enable_tasks_log'] : 0), $logID);
 
-
 /**
  * Permits to create the personal folder for each user.
  *
@@ -78,13 +77,14 @@ function createUserPersonalFolder(): void
     $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
     //get through all users
-    $rows = DB::query(
+    $users = DB::query(
         'SELECT id, login, email
         FROM ' . prefixTable('users') . '
         WHERE id NOT IN ('.OTV_USER_ID.', '.TP_USER_ID.', '.SSH_USER_ID.', '.API_USER_ID.')
         ORDER BY login ASC'
     );
-    foreach ($rows as $record) {
+    foreach ($users as $user) {
+        /*
         //update PF field for user
         DB::update(
             prefixTable('users'),
@@ -92,15 +92,16 @@ function createUserPersonalFolder(): void
                 'personal_folder' => '1',
             ),
             'id = %i',
-            $record['id']
+            $user['id']
         );
+        */
 
         //if folder doesn't exist then create it
         $data = DB::queryfirstrow(
             'SELECT id
             FROM ' . prefixTable('nested_tree') . '
             WHERE title = %s AND parent_id = %i',
-            $record['id'],
+            $user['id'],
             0
         );
         $counter = DB::count();
@@ -110,7 +111,7 @@ function createUserPersonalFolder(): void
                 prefixTable('nested_tree'),
                 array(
                     'parent_id' => '0',
-                    'title' => $record['id'],
+                    'title' => $user['id'],
                     'personal_folder' => '1',
                     'categories' => '',
                 )
@@ -126,7 +127,7 @@ function createUserPersonalFolder(): void
                     'personal_folder' => '1',
                 ),
                 'title=%s AND parent_id=%i',
-                $record['id'],
+                $user['id'],
                 0
             );
             //rebuild fuild tree folder
@@ -146,5 +147,26 @@ function createUserPersonalFolder(): void
                 );
             }
         }
+
+        // Ensure only the user items have a sharekey
+        purgeUnnecessaryKeys(false, $user['id']);
+        /*
+        $personalItems = DB::queryFirstColumn(
+            'SELECT id
+            FROM ' . prefixTable('items') . ' AS i
+            INNER JOIN ' . prefixTable('log_items') . ' AS li ON li.id_item = i.id
+            WHERE i.perso = 1 AND li.action = "at_creation" AND li.id_user = %i',
+            $user['id']
+        );
+        if (count($personalItems) > 0) {
+            print_r($personalItems);
+            DB::delete(
+                prefixTable('sharekeys_items'),
+                'object_id IN %li AND user_id != %i',
+                $personalItems,
+                $user['id']
+            );
+        }
+        */
     }
 }

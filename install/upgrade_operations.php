@@ -19,28 +19,28 @@
 set_time_limit(600);
 
 
-require_once '../sources/SecureHandler.php';
+require_once __DIR__.'/../sources/SecureHandler.php';
 session_name('teampass_session');
 session_start();
 error_reporting(E_ERROR | E_PARSE);
 $_SESSION['CPM'] = 1;
 
 //include librairies
-require_once '../includes/language/english.php';
-require_once '../includes/config/include.php';
-require_once '../includes/config/settings.php';
-require_once '../sources/main.functions.php';
-require_once '../includes/libraries/Tree/NestedTree/NestedTree.php';
-require_once 'tp.functions.php';
-require_once 'libs/aesctr.php';
-require_once '../includes/config/tp.config.php';
+require_once __DIR__.'/../includes/language/english.php';
+require_once __DIR__.'/../includes/config/include.php';
+require_once __DIR__.'/../includes/config/settings.php';
+require_once __DIR__.'/../sources/main.functions.php';
+require_once __DIR__.'/../includes/libraries/Tree/NestedTree/NestedTree.php';
+require_once __DIR__.'/tp.functions.php';
+require_once __DIR__.'/libs/aesctr.php';
+require_once __DIR__.'/../includes/config/tp.config.php';
 
 // Prepare POST variables
 $post_nb = filter_input(INPUT_POST, 'nb', FILTER_SANITIZE_NUMBER_INT);
 $post_start = filter_input(INPUT_POST, 'start', FILTER_SANITIZE_NUMBER_INT);
 
 // Load libraries
-require_once '../includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+require_once __DIR__.'/../includes/libraries/protect/SuperGlobal/SuperGlobal.php';
 $superGlobal = new protect\SuperGlobal\SuperGlobal();
 
 // Some init
@@ -81,11 +81,12 @@ if (mysqli_connect(
 }
 
 // Load libraries
-require_once '../includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+require_once __DIR__.'/../includes/libraries/protect/SuperGlobal/SuperGlobal.php';
 $superGlobal = new protect\SuperGlobal\SuperGlobal();
 
 // Get POST with operation to perform
 $post_operation = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+
 if (isset($post_operation) === true && empty($post_operation) === false) {
     if ($post_operation === '20230604_1') {
         // ---->
@@ -138,6 +139,12 @@ if (isset($post_operation) === true && empty($post_operation) === false) {
         $finish = populateItemsTable_UpdatedAt($pre);
     } elseif ($post_operation === 'populateItemsTable_DeletedAt') {
         $finish = populateItemsTable_DeletedAt($pre);
+    } elseif ($post_operation === '20231017_1') {
+            // ---->
+            // OPERATION - 20231017_1 - remove all existing keys
+            // if item is personal and user is not owner
+
+            purgeUnnecessaryKeys(true);
     }
 }
 
