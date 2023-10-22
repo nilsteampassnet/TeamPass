@@ -492,6 +492,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         $superGlobal->put('user_language', $userInfo['user_language'], 'SESSION', 'user');
         $superGlobal->put('user_timezone', $userInfo['usertimezone'], 'SESSION', 'user');
         $superGlobal->put('session_duration', $dataReceived['duree_session'] * 60, 'SESSION', 'user');
+        $superGlobal->put('keys_recovery_time', $userInfo['keys_recovery_time'], 'SESSION', 'user');
 
         // User signature keys
         $returnKeys = prepareUserEncryptionKeys($userInfo, $passwordClear);        

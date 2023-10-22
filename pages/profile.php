@@ -184,10 +184,11 @@ foreach ($_SESSION['user_roles'] as $role) {
                             <li class="nav-item">
                                 <a class="nav-link<?php echo empty($get['tab']) === true ? ' active' : ''; ?>" href="#tab_information" data-toggle="tab"><?php echo langHdl('information'); ?></a>
                             </li>
+                            <li class="nav-item"><a class="nav-link<?php echo $get['tab'] === 'settings' ? ' active' : ''; ?>" href="#tab_settings" data-toggle="tab"><?php echo langHdl('settings'); ?></a></li>
+                            <li class="nav-item"><a class="nav-link<?php echo $get['tab'] === 'keys' ? ' active' : ''; ?>" href="#tab_keys" data-toggle="tab"><?php echo langHdl('keys_management'); ?></a></li>
                             <li class="nav-item">
-                                <a class="nav-link<?php echo $get['tab'] === 'timeline' ? ' active' : ''; ?>" href="#timeline" data-toggle="tab">Timeline</a>
+                                <a class="nav-link<?php echo $get['tab'] === 'timeline' ? ' active' : ''; ?>" href="#tab_timeline" data-toggle="tab">Timeline</a>
                             </li>
-                            <li class="nav-item"><a class="nav-link" href="#tab_settings" data-toggle="tab"><?php echo langHdl('settings'); ?></a></li>
                         </ul>
                     </div><!-- /.card-header -->
                     <div class="card-body">
@@ -288,7 +289,7 @@ foreach ($_SESSION['user_roles'] as $role) {
                             </div>
 
                             <!-- TIMELINE -->
-                            <div class="tab-pane<?php echo $get['tab'] === 'timeline' ? ' active' : ''; ?>" id="timeline">
+                            <div class="tab-pane<?php echo $get['tab'] === 'timeline' ? ' active' : ''; ?>" id="tab_timeline">
                                 <?php
                                 if (
                                     isset($_SESSION['user']['unsuccessfull_login_attempts_list']) === true
@@ -343,7 +344,7 @@ foreach ($_SESSION['user_roles'] as $role) {
                             </div>
                             
                             <!-- SETTINGS -->
-                            <div class="tab-pane" id="tab_settings">
+                            <div class="tab-pane<?php echo $get['tab'] === 'settings' ? ' active' : ''; ?>" id="tab_settings">
                                 <form class="needs-validation" novalidate onsubmit="return false;">
                                     <div class="form-group">
                                         <label for="profile-name" class="col-sm-2 control-label"><?php echo langHdl('name'); ?></label>
@@ -455,6 +456,47 @@ foreach ($_SESSION['user_roles'] as $role) {
                                 </form>
 
                             </div>
+
+                            <!-- KEYS -->
+                            <div class="tab-pane<?php echo $get['tab'] === 'keys' ? ' active' : ''; ?>" id="tab_keys">
+                                <form class="needs-validation" novalidate onsubmit="return false;">
+                                    
+                                    <div class="alert alert-danger hidden" id="keys_not_recovered">
+                                        <h5><i class="icon fa-solid fa-ban ml-2"></i><?php echo langHdl('keys_not_recovered'); ?></h5>
+                                        <?php echo langHdl('keys_not_recovered_explanation'); ?>
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="card card-default col-sm-12">
+                                            <div class="card-header">
+                                                <h3 class="card-title">
+                                                <i class="fa-solid fa-download mr-2"></i><?php echo langHdl('download'); ?>
+                                                </h3>
+                                            </div>
+                                            <!-- /.card-header -->
+                                            <div class="card-body">
+                                                <div class="form-group">
+                                                    <div class="row">
+                                                        <div class="col-sm-offset-8 col-sm-8">
+                                                            <i class="fa-solid fa-calendar-days mr-2"></i><?php echo langHdl('recovery_keys_download_date'); ?>
+                                                            <span class="badge badge-secondary ml-2" id="profile-keys_download-date"></span>
+                                                        </div>
+                                                        
+                                                    </div>
+                                                </div>
+                                                <div class="form-group">
+                                                    <div class="row">
+                                                        <div class="col-sm-12">
+                                                            <button type="button" class="btn btn-warning float-right ml-2" id="open-dialog-keys-download"><?php echo langHdl('download_recovery_keys'); ?></button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </form>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -466,3 +508,4 @@ foreach ($_SESSION['user_roles'] as $role) {
     <!-- /.container-fluid -->
 </div>
 <!-- /.content -->
+

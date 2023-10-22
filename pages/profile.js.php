@@ -500,4 +500,112 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
             $("#profile-saltkey-complex").val(score);
         }
     });
+
+    $('#profile-keys_download-date').text('<?php echo $_SESSION['user']['keys_recovery_time'] === NULL ? langHdl('none') : date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $_SESSION['user']['keys_recovery_time']); ?>');
+
+    $("#open-dialog-keys-download").on('click', function(event) {
+        event.preventDefault();
+        $('#dialog-recovery-keys-download').removeClass('hidden');
+
+        // Prepare modal
+        showModalDialogBox(
+            '#warningModal',
+            '<i class="fa-solid fa-user-shield fa-lg warning mr-2"></i><?php echo langHdl('caution'); ?>',
+            '<?php echo langHdl('download_recovery_keys_confirmation'); ?>',
+            '<?php echo langHdl('download'); ?>',
+            '<?php echo langHdl('close'); ?>',
+            false,
+            false,
+            false
+        );
+
+        // Actions on modal buttons
+        $(document).on('click', '#warningModalButtonClose', function() {
+            store.update(
+                'teampassUser', {},
+                function(teampassUser) {
+                    teampassUser.shown_warning_unsuccessful_login = true;
+                }
+            );
+        });
+        let RequestOnGoing = false;
+        $(document).on('click', '#warningModalButtonAction', function(event) {
+            event.preventDefault();
+
+            if (RequestOnGoing === true) {
+                return false;
+            }
+            RequestOnGoing = true;
+
+            // We have the password, start reencryption
+            $('#warningModalButtonAction')
+                .addClass('disabled')
+                .html('<i class="fa-solid fa-spinner fa-spin"></i>');
+            $('#warningModalButtonClose').addClass('disabled');
+
+            // SHow user
+            toastr.remove();
+            toastr.info('<?php echo langHdl('in_progress'); ?><i class="fa-solid fa-circle-notch fa-spin fa-2x ml-3"></i>');
+
+            var data = {
+                'user_id': store.get('teampassUser').user_id,
+            };
+            // Do query
+            $.post(
+                "sources/main.queries.php", {
+                    'type': "user_recovery_keys_download",
+                    'type_category': 'action_key',
+                    'data': prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                    'key': '<?php echo $_SESSION['key']; ?>'
+                },
+                function(data) {
+                    data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                    if (debugJavascript === true) console.log(data)
+                    if (data.error === true) {
+                        // error
+                        toastr.remove();
+                        toastr.error(
+                            data.message,
+                            '<?php echo langHdl('caution'); ?>', {
+                                timeOut: 5000,
+                                progressBar: true
+                            }
+                        );
+
+                        // Enable buttons
+                        $("#user-current-defuse-psk-progress").html('<?php echo langHdl('provide_current_psk_and_click_launch'); ?>');
+                        $('#button_do_sharekeys_reencryption, #button_close_sharekeys_reencryption').removeAttr('disabled');
+                        return false;
+                    } else {
+                        $('#profile-keys_download-date').text(data.datetime);
+                        $('#keys_not_recovered, #open_user_keys_management').addClass('hidden');
+                        store.update(
+                            'teampassUser', {},
+                            function(teampassUser) {
+                                teampassUser.keys_recovery_time = data.datetime;
+                            }
+                        );
+
+                        download(new Blob([atob(data.content)]), "teampass_recovery_key_"+data.login+"_"+data.timestamp+".txt", "text/text");
+
+                        $("#warningModalButtonAction").addClass('hidden');
+                        $('#warningModalButtonClose').removeClass('disabled');
+
+                        toastr.remove();
+                        RequestOnGoing = true;
+                    }
+                    $('#warningModalButtonAction').removeClass('disabled')
+                }
+            );
+
+            // Action
+            store.update(
+                'teampassUser', {},
+                function(teampassUser) {
+                    teampassUser.shown_warning_unsuccessful_login = true;
+                }
+            );
+        });
+        
+    });
 </script>

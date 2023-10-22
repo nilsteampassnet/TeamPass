@@ -16,6 +16,20 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'regenerate_only_personal_items_keys' => 'Only regenerate my personal items keys (it requires your public and private keys). This will not impact shared items.',
+    'please_confirm_task_to_be_run' => 'Please confirm the task to be performed',
+    'recovery_keys_not_downloaded' => 'Recovery keys not downloaded',
+    'no_recovery_keys' => 'I do not have recovery keys. This will only regenerate key for shared items (no impact on personal ones that will become unusable).',
+    'provide_recovery_keys' => 'Provide your recovery keys',
+    'public_key' => 'Public key',
+    'private_key' => 'Private key',
+    'download_recovery_keys' => 'Download your recovery keys',
+    'download_recovery_keys_confirmation' => 'You are about to download your recovery keys. Please store them in a safe place as they should be mandatory in case of deasaster.',
+    'recovery_keys_download_date' => 'Recovery keys download date',
+    'keys_not_recovered' => 'Public and Private keys not stored',
+    'keys_not_recovered_explanation' => 'In order to prevent against any passwords lost, you should store safely your personal Teampass keys',
+    'get_your_recovery_keys' => 'Get your recovery keys',
+    'keys_management' => 'Keys management',
     'started' => 'Started',
     'existing_valid_otv_links' => 'OTV valid links',
     'feature_disabled_by_administrator' => 'Feature disabled by administrator',

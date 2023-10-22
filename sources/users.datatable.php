@@ -229,6 +229,10 @@ foreach ($rows as $record) {
             ((in_array($record['id'], [OTV_USER_ID, TP_USER_ID, SSH_USER_ID, API_USER_ID]) === false && (int) $record['admin'] !== 1 && ((int) $SETTINGS['duo'] === 1 || (int) $SETTINGS['google_authentication'] === 1)) ?
                 ((int) $record['mfa_enabled'] === 1 ? '' : '<i class=\"fa-solid fa-fingerprint infotip ml-1\" style=\"color:Tomato\" title=\"'.langHdl('mfa_disabled_for_user').'\"></i>') :
                 ''
+            ).
+            ((in_array($record['id'], [OTV_USER_ID, TP_USER_ID, SSH_USER_ID, API_USER_ID]) === false && (int) $record['admin'] !== 1 && is_null($record['keys_recovery_time']) === true) ? 
+                '<i class=\"fa-solid fa-download infotip ml-1\" style=\"color:Tomato\" title=\"'.langHdl('recovery_keys_not_downloaded').'\"></i>' :
+                ''
             );
         
         $sOutput .= '["<span data-id=\"'.$record['id'].'\" data-fullname=\"'.

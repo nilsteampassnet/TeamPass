@@ -55,13 +55,13 @@ DB::$ssl = DB_SSL;
 DB::$connect_options = DB_CONNECT_OPTIONS;
 
 // log start
-$logID = doLog('start', 'do_maintenance - rebuild-config-file', (isset($SETTINGS['enable_tasks_log']) === true ? (int) $SETTINGS['enable_tasks_log'] : 0));
+$logID = doLog('start', 'do_maintenance - rebuild-config-file', 1);
 
 // Perform maintenance tasks
 rebuildConfigFile();
 
 // log end
-doLog('end', '', (isset($SETTINGS['enable_tasks_log']) === true ? (int) $SETTINGS['enable_tasks_log'] : 0), $logID);
+doLog('end', '', 1, $logID);
 
 
 /**

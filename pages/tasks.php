@@ -133,11 +133,12 @@ catch (Exception $e) {
 }?>
                                     </div>
 
-                                    <h5><i class="fa-solid fa-hourglass-half mr-2"></i><?php echo langHdl('frequency'); ?></h5>
+                                    <h5><i class="fa-solid fa-hourglass-half mr-2"></i><?php echo langHdl('frequency'); ?><i class="fa-solid fa-rotate fa-spin ml-2 hidden text-info" id="go_refresh"></i></h5>
 
                                     <div class='row ml-1 mt-3 mb-2'>
                                         <div class='col-9'>
                                             <i class="fa-solid fa-inbox mr-2"></i><?php echo langHdl('sending_emails')." (".langHdl('in_minutes').")"; ?>
+                                            <span class="badge badge-secondary ml-2" id="sending_emails_job_frequency_badge"></span>
                                         </div>
                                         <div class='col-2'>
                                             <input type='range' class='form-control form-control-sm form-control-range range-slider' id='sending_emails_job_frequency' min='0' max="59" value='<?php echo $SETTINGS['sending_emails_job_frequency'] ?? '2'; ?>'>
@@ -150,6 +151,7 @@ catch (Exception $e) {
                                     <div class='row ml-1 mb-2'>
                                         <div class='col-9'>
                                             <i class="fa-solid fa-user-cog mr-2"></i><?php echo langHdl('user_keys_management')." (".langHdl('in_minutes').")"; ?>
+                                            <span class="badge badge-secondary ml-2" id="user_keys_job_frequency_badge"></span>
                                         </div>
                                         <div class='col-2'>
                                             <input type='range' class='form-control form-control-sm form-control-range range-slider' id='user_keys_job_frequency' min='0' max="59" value='<?php echo $SETTINGS['user_keys_job_frequency'] ?? '1'; ?>'>
@@ -162,6 +164,7 @@ catch (Exception $e) {
                                     <div class='row ml-1 mb-2'>
                                         <div class='col-9'>
                                             <i class="fa-solid fa-tower-observation mr-2"></i><?php echo langHdl('items_management')." (".langHdl('in_minutes').")"; ?>
+                                            <span class="badge badge-secondary ml-2" id="items_ops_job_frequency_badge"></span>
                                         </div>
                                         <div class='col-2'>
                                             <input type='range' class='form-control form-control-sm form-control-range range-slider' id='items_ops_job_frequency' min='0' max="59" value='<?php echo $SETTINGS['items_ops_job_frequency'] ?? '1'; ?>'>
@@ -174,6 +177,7 @@ catch (Exception $e) {
                                     <div class='row ml-1 mb-2'>
                                         <div class='col-9'>
                                             <i class="fa-solid fa-chart-simple mr-2"></i><?php echo langHdl('items_and_folders_statistics')." (".langHdl('in_minutes').")"; ?>
+                                            <span class="badge badge-secondary ml-2" id="items_statistics_job_frequency_badge"></span>
                                         </div>
                                         <div class='col-2'>
                                             <input type='range' class='form-control form-control-sm form-control-range range-slider' id='items_statistics_job_frequency' min='0' max="59" value='<?php echo $SETTINGS['items_statistics_job_frequency'] ?? '5'; ?>'>
@@ -191,7 +195,8 @@ catch (Exception $e) {
 
                                     <div class='row ml-1 mb-2'>
                                         <div class='col-8'>
-                                            <i class="fa-solid fa-person-shelter ml-4 mr-2"></i><?php echo langHdl('users_personal_folder'); ?>
+                                            <i class="fa-solid fa-person-shelter ml-4 mr-2"></i><span id="users_personal_folder_task_text"><?php echo langHdl('users_personal_folder'); ?></span>
+                                            <span class="badge badge-secondary ml-2" id="users_personal_folder_task_badge"></span>
                                         </div>
                                         <div class='col-2'>
                                             <?php
@@ -218,7 +223,8 @@ catch (Exception $e) {
 
                                     <div class='row ml-1 mb-2'>
                                         <div class='col-8'>
-                                            <i class="fa-solid fa-binoculars ml-4 mr-2"></i><?php echo langHdl('clean_orphan_objects'); ?>
+                                            <i class="fa-solid fa-binoculars ml-4 mr-2"></i><span id="clean_orphan_objects_task_text"><?php echo langHdl('clean_orphan_objects'); ?></span>
+                                            <span class="badge badge-secondary ml-2" id="clean_orphan_objects_task_badge"></span>
                                         </div>
                                         <div class='col-2'>
                                             <?php
@@ -231,12 +237,22 @@ catch (Exception $e) {
                                             <button class="btn btn-primary task-define" data-task="clean_orphan_objects_task">
                                                 <i class="fa-solid fa-cogs"></i>
                                             </button>
+                                            <?php
+                                            if (defined('WIP') === true && WIP === true) {
+                                                ?>
+                                            <button class="btn btn-primary task-perform ml-1" data-task="clean_orphan_objects_task">
+                                                <i class="fa-solid fa-play"></i>
+                                            </button>
+                                            <?php
+                                            }
+                                            ?>
                                         </div>
                                     </div>
 
                                     <div class='row ml-1 mb-2'>
                                         <div class='col-8'>
-                                            <i class="fa-solid fa-broom ml-4 mr-2"></i><?php echo langHdl('purge_temporary_files'); ?>
+                                            <i class="fa-solid fa-broom ml-4 mr-2"></i><span id="purge_temporary_files_task_text"><?php echo langHdl('purge_temporary_files'); ?></span>
+                                            <span class="badge badge-secondary ml-2" id="purge_temporary_files_task_badge"></span>
                                         </div>
                                         <div class='col-2'>
                                             <?php
@@ -249,12 +265,22 @@ catch (Exception $e) {
                                             <button class="btn btn-primary task-define" data-task="purge_temporary_files_task">
                                                 <i class="fa-solid fa-cogs"></i>
                                             </button>
+                                            <?php
+                                            if (defined('WIP') === true && WIP === true) {
+                                                ?>
+                                            <button class="btn btn-primary task-perform ml-1" data-task="purge_temporary_files_task">
+                                                <i class="fa-solid fa-play"></i>
+                                            </button>
+                                            <?php
+                                            }
+                                            ?>
                                         </div>
                                     </div>
 
                                     <div class='row ml-1 mb-2'>
                                         <div class='col-8'>
-                                            <i class="fa-solid fa-sliders ml-4 mr-2"></i><?php echo langHdl('rebuild_config_file'); ?>
+                                            <i class="fa-solid fa-sliders ml-4 mr-2"></i><span id="rebuild_config_file_task_text"><?php echo langHdl('rebuild_config_file'); ?></span>
+                                            <span class="badge badge-secondary ml-2" id="rebuild_config_file_task_badge"></span>
                                         </div>
                                         <div class='col-2'>
                                             <?php
@@ -267,12 +293,22 @@ catch (Exception $e) {
                                             <button class="btn btn-primary task-define" data-task="rebuild_config_file_task">
                                                 <i class="fa-solid fa-cogs"></i>
                                             </button>
+                                            <?php
+                                            if (defined('WIP') === true && WIP === true) {
+                                                ?>
+                                            <button class="btn btn-primary task-perform ml-1" data-task="rebuild_config_file_task">
+                                                <i class="fa-solid fa-play"></i>
+                                            </button>
+                                            <?php
+                                            }
+                                            ?>
                                         </div>
                                     </div>
 
                                     <div class='row ml-1 mb-4'>
                                         <div class='col-8'>
-                                            <i class="fa-solid fa-database ml-4 mr-2"></i><?php echo langHdl('admin_action_reload_cache_table'); ?>
+                                            <i class="fa-solid fa-database ml-4 mr-2"></i><span id="reload_cache_table_task_text"><?php echo langHdl('admin_action_reload_cache_table'); ?></span>
+                                            <span class="badge badge-secondary ml-2" id="reload_cache_table_task_badge"></span>
                                         </div>
                                         <div class='col-2'>
                                             <?php
@@ -285,6 +321,15 @@ catch (Exception $e) {
                                             <button class="btn btn-primary task-define" data-task="reload_cache_table_task">
                                                 <i class="fa-solid fa-cogs"></i>
                                             </button>
+                                            <?php
+                                            if (defined('WIP') === true && WIP === true) {
+                                                ?>
+                                            <button class="btn btn-primary task-perform ml-1" data-task="reload_cache_table_task">
+                                                <i class="fa-solid fa-play"></i>
+                                            </button>
+                                            <?php
+                                            }
+                                            ?>
                                         </div>
                                     </div>
 

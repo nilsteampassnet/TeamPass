@@ -1129,5 +1129,18 @@ return array(
     'settings_otv_subdomain_tip' => 'Dedicated subdomain for onetime links. Considere your main Teampass URL as isolated from internet, this subdomain could be reachable by everyone to share this item with someone outside your organisation. From security perspective it is a lot safer with such mechanics. Note: This would requite to have a DNS entry for this subdomain pointing to your Teampass server.',
     'existing_valid_otv_links' => 'OTV valid links',
     'started' => 'Started',
+    'recovery_keys_not_downloaded' => 'Recovery keys not downloaded',
+    'no_recovery_keys' => 'I do not have recovery keys. This will clear all passwords from my personal items.',
+    'provide_recovery_keys' => 'Provide your recovery keys',
+    'public_key' => 'Public key',
+    'private_key' => 'Private key',
+    'download_recovery_keys' => 'Download your recovery keys',
+    'download_recovery_keys_confirmation' => 'You are about to download your recovery keys. Please store them in a safe place as they should be mandatory in case of deasaster.',
+    'recovery_keys_download_date' => 'Recovery keys download date',
+    'keys_not_recovered' => 'Public and Private keys not stored',
+    'keys_not_recovered_explanation' => 'In order to prevent against any passwords lost, you should store safely your personal Teampass keys',
+    'get_your_recovery_keys' => 'Get your recovery keys',
+    'keys_management' => 'Keys management',
+    'please_confirm_task_to_be_run' => 'Please confirm the task to be performed',
 
 );

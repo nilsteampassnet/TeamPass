@@ -1129,5 +1129,18 @@ return array(
     'settings_otv_subdomain_tip' => 'Dedicated subdomain for onetime links. Considere your main Teampass URL as isolated from internet, this subdomain could be reachable by everyone to share this item with someone outside your organisation. From security perspective it is a lot safer with such mechanics. Note: This would requite to have a DNS entry for this subdomain pointing to your Teampass server.',
     'existing_valid_otv_links' => 'Liens à visualisation valides',
     'started' => 'Lancé',
+    'recovery_keys_not_downloaded' => 'Clés de récupération non téléchargées',
+    'no_recovery_keys' => 'Je ne dispose pas des clés de récupération. Cette opération effacera tous les mots de passe des mes objets personnels.',
+    'provide_recovery_keys' => 'Fournir vos clés de récupération',
+    'public_key' => 'Clé publique',
+    'private_key' => 'Clé privée',
+    'download_recovery_keys' => 'Télécharger vos clés de récupération',
+    'download_recovery_keys_confirmation' => 'Vous êtes sur le point de télécharger vos clés de récupération. Merci de les sauvegarder dans un endroit sûr.',
+    'recovery_keys_download_date' => 'Date de téléchargement des clés de récupération',
+    'keys_not_recovered' => 'Clés publique et privée non sauvegardées',
+    'keys_not_recovered_explanation' => 'De façon à vous prévenir de la perte des mots de passe de vos objets personnels, vous devriez sauvegarder vos clés de récuparation.',
+    'get_your_recovery_keys' => 'Télécharger vos clés de récupération',
+    'keys_management' => 'Gestion des clés',
+    'please_confirm_task_to_be_run' => 'Merci de confirmer l&apos;exécution de la tache',
 
 );

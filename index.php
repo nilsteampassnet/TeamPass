@@ -314,6 +314,10 @@ if (($session_validite_pw === null
 
                 <!-- Right navbar links -->
                 <ul class="navbar-nav ml-auto">
+                    <span class="fa-stack infotip pointer hidden mr-2" title="<?php echo langHdl('get_your_recovery_keys'); ?>" id="open_user_keys_management" style="vertical-align: top;">
+                        <i class="fa-solid fa-circle text-danger fa-stack-2x"></i>
+                        <i class="fa-solid fa-bell fa-shake fa-stack-1x fa-inverse"></i>
+                    </span>
                     <!-- Messages Dropdown Menu -->
                     <li class="nav-item dropdown">
                         <div class="dropdown show">
@@ -1241,6 +1245,8 @@ if (($session_validite_pw === null
         <?php
         } elseif ($get['page'] === 'profile') {
             ?>
+            <!-- FILESAVER -->
+            <script type="text/javascript" src="plugins/downloadjs/download.js"></script>
             <!-- PLUPLOAD -->
             <script type="text/javascript" src="includes/libraries/Plupload/plupload.full.min.js"></script>
         <?php

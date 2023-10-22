@@ -1311,6 +1311,17 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
      * DELETE - recycle item
      */
     $('#form-item-delete-perform').click(function() {
+        goDeleteItem(
+            store.get('teampassItem').id,
+            store.get('teampassItem').item_key !== undefined ? store.get('teampassItem').item_key : '',
+            selectedFolderId,
+            store.get('teampassItem').hasAccessLevel,
+            true
+        );
+    });
+
+    function goDeleteItem(itemId, itemKey, folderId, hasAccessLevel, closeItemCard = true)
+    {
         // Show cog
         toastr
             .info('<?php echo langHdl('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
@@ -1320,11 +1331,12 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         userUploadedFile = false;
 
         var data = {
-            'item_id': store.get('teampassItem').id,
-            'folder_id': selectedFolderId,
-            'access_level': store.get('teampassItem').hasAccessLevel,
+            'item_id': itemId,
+            'item_key': itemKey,
+            'folder_id': folderId,
+            'access_level': hasAccessLevel,
         }
-        
+        console.log(data)
         // Launch action
         $.post(
             'sources/items.queries.php', {
@@ -1345,12 +1357,15 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                             timeOut: 1000
                         }
                     );
+                    
                     // Refresh tree
-                    refreshTree(selectedFolderId, true);
+                    refreshTree(folderId, true);
                     // Load list of items
-                    ListerItems(selectedFolderId, '', 0);
+                    ListerItems(folderId, '', 0);
                     // Close
-                    closeItemDetailsCard();
+                    if (closeItemCard === true) {
+                        closeItemDetailsCard();
+                    }
                 } else {
                     // ERROR
                     toastr.remove();
@@ -1364,7 +1379,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 }
             }
         );
-    });
+    }
 
 
     /**
@@ -2197,7 +2212,37 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             
             // Load item info
             Details($(this).closest('tr'), 'edit');
+        })
+        .on('click', '.list-item-clicktodelete', function(event) {
+            event.preventDefault();
+            // Delete item
+            if (debugJavascript === true) console.info('SHOW DELETE ITEM '+$(this).data('item-key'));
+
+            let $itemKey = $(this).data('item-key');
+
+            // SHow dialog
+            showModalDialogBox(
+                '#warningModal',
+                '<i class="fa-solid fa-triangle-exclamation mr-2 text-warning"></i><?php echo langHdl('caution'); ?>',
+                '<?php echo langHdl('please_confirm_deletion'); ?>',
+                '<?php echo langHdl('delete'); ?>',
+                '<?php echo langHdl('close'); ?>',
+            );
+
+            // Launch deletion
+            $(document).on('click', '#warningModalButtonAction', {itemKey:$(this).data('item-key')}, function(event2) {
+                event2.preventDefault();
+                goDeleteItem(
+                    '',
+                    event2.data.itemKey,
+                    selectedFolderId,
+                    '',
+                    false
+                );
+                $('#warningModal').modal('hide');
+            });
         });
+
 
     /**
      *  Manage mini icons on mouse over
@@ -2229,10 +2274,12 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
      */
     $(document)
         .on('mouseenter', '.fa-clickable', function() {
-            $(this).addClass('text-info');
+            if ($(this).hasClass('warn-user')) $(this).addClass('text-danger');
+            else $(this).addClass('text-info');
         })
         .on('mouseleave', '.fa-clickable', function() {
-            $(this).removeClass('text-info');
+            if ($(this).hasClass('warn-user')) $(this).removeClass('text-danger');
+            else $(this).removeClass('text-info');
         });
 
     $('#form-item-label').change(function() {
@@ -4005,11 +4052,13 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     icon_all_can_modify = '<span class="fa-stack fa-clickable pointer infotip list-item-clicktoedit mr-2" title="<?php echo langHdl('edit'); ?>"><i class="fa-solid fa-circle fa-stack-2x"></i><i class="fa-solid fa-pen fa-stack-1x fa-inverse"></i></span>';
                 }
 
+                // Open item icon
+                icon_open = '<span class="fa-stack fa-clickable pointer infotip list-item-clicktoshow mr-2" title="<?php echo langHdl('open'); ?>"><i class="fa-solid fa-circle fa-stack-2x"></i><i class="fa-solid fa-book-open-reader fa-stack-1x fa-inverse"></i></span>';
+
                 // Prepare mini icons
                 if (store.get('teampassSettings') !== undefined && parseInt(store.get('teampassSettings').copy_to_clipboard_small_icons) === 1 &&
                     value.rights > 10
                 ) {
-                    icon_open = '<span class="fa-stack fa-clickable pointer infotip list-item-clicktoshow mr-2" title="<?php echo langHdl('open'); ?>"><i class="fa-solid fa-circle fa-stack-2x"></i><i class="fa-solid fa-book-open-reader fa-stack-1x fa-inverse"></i></span>';
                     // Login icon
                     if (value.login !== '') {
                         icon_login = '<span class="fa-stack fa-clickable fa-clickable-login pointer infotip mr-2" title="<?php echo langHdl('item_menu_copy_login'); ?>" data-clipboard-text="' + sanitizeString(value.login) + '"><i class="fa-solid fa-circle fa-stack-2x"></i><i class="fa-solid fa-user fa-stack-1x fa-inverse"></i></span>';
@@ -4041,6 +4090,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     }
                 }
 
+                // Trash icon
+                trash_link = '<span class="fa-stack fa-clickable warn-user pointer infotip mr-2 list-item-clicktodelete" title="<?php echo langHdl('delete'); ?>" data-item-key="' + value.item_key + '"><i class="fa-solid fa-circle fa-stack-2x"></i><i class="fa-solid fa-trash fa-stack-1x fa-inverse"></i></span>';
+
                 // Prepare Description
                 if (value.desc !== '') {
                     value.desc = ' <span class="text-secondary small">- ' + value.desc + '</span>';
@@ -4065,7 +4117,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     '<span class="list-item-actions hidden">' +
                     (value.rights === 10 ?
                         '<span class="fa-stack fa-clickable fa-clickable-access-request pointer infotip mr-2" title="<?php echo langHdl('need_access'); ?>"><i class="fa-solid fa-circle fa-stack-2x text-danger"></i><i class="fa-regular fa-handshake fa-stack-1x fa-inverse"></i></span>' :
-                        pwd_error + icon_open + icon_all_can_modify + icon_login + icon_pwd + icon_link + icon_favorite) +
+                        pwd_error + icon_open + icon_all_can_modify + icon_login + icon_pwd + icon_link + icon_favorite + trash_link) +
                     '</span>' +
                     (value.folder !== undefined ?
                         '<br><span class="text-secondary small font-italic pointer open-folder" data-tree-id="' +
@@ -4518,6 +4570,11 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     $('#item-form-new-button').removeClass('hidden');
                 }
 
+                // we have an error in the password : pwd_encryption_error
+                if (data.pwd_encryption_error === 'inconsistent_password') {
+                    $('#card-item-pwd').after('<i class="fa-solid fa-bell text-orange fa-shake ml-3 delete-after-usage infotip" title="'+data.pwd_encryption_error_message+'"></i>');
+                }
+
                 // Uncrypt the pwd
                 if (data.pw !== undefined) {
                     data.pw = atob(data.pw).utf8Decode();
@@ -4565,7 +4622,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 // Prepare card
                 const itemIcon = (data.fa_icon !== "") ? '<i class="'+data.fa_icon+' mr-1"></i>' : '';
                 $('#card-item-label, #form-item-title').html(itemIcon + data.label);
-                $('#form-item-label, #form-item-suggestion-label').val(data.label);
+                $('#form-item-label, #form-item-suggestion-label').val($('<div>').html(data.label).text());
                 $('#card-item-description, #form-item-suggestion-description').html(data.description);
                 if (data.description === '') {
                     $('#card-item-description').addClass('hidden');
@@ -4902,7 +4959,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     $('#card-item-pwd-button').removeClass('hidden');
                 } else {
                     $('#card-item-pwd-button').addClass('hidden');
-                    $('#card-item-pwd').after('<i class="fa-solid fa-ban text-danger ml-3 delete-after-usage"></i>');
+                    $('#card-item-pwd').after('<i class="fa-solid fa-ban text-teal ml-3 delete-after-usage"></i>');
                 }
 
                 // Prepare clipboard - COPY EMAIL

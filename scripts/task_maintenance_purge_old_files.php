@@ -56,13 +56,13 @@ DB::$ssl = DB_SSL;
 DB::$connect_options = DB_CONNECT_OPTIONS;
 
 // log start
-$logID = doLog('start', 'do_maintenance - purge-old-files', (isset($SETTINGS['enable_tasks_log']) === true ? (int) $SETTINGS['enable_tasks_log'] : 0));
+$logID = doLog('start', 'do_maintenance - purge-old-files', 1);
 
 // Perform maintenance tasks
 purgeTemporaryFiles();
 
 // log end
-doLog('end', '', (isset($SETTINGS['enable_tasks_log']) === true ? (int) $SETTINGS['enable_tasks_log'] : 0), $logID);
+doLog('end', '', 1, $logID);
 /**
  * Purge old files in FILES and UPLOAD folders.
  *

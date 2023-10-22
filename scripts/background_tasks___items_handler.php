@@ -116,9 +116,18 @@ if (DB::count() > 0) {
 doLog('end', '', (isset($SETTINGS['enable_tasks_log']) === true ? (int) $SETTINGS['enable_tasks_log'] : 0), $logID);
 
 // launch a new iterative process
-$process = new Symfony\Component\Process\Process([$phpBinaryPath, __FILE__]);
-$process->start();
-$process->wait();
+$process_to_perform = DB::queryfirstrow(
+    'SELECT *
+    FROM ' . prefixTable('processes') . '
+    WHERE is_in_progress = %i AND process_type IN ("item_copy", "new_item", "update_item")
+    ORDER BY increment_id ASC',
+    1
+);
+if (DB::count() > 0) {
+    $process = new Symfony\Component\Process\Process([$phpBinaryPath, __FILE__]);
+    $process->start();
+    $process->wait();
+}
 
 /**
  * Handle the task

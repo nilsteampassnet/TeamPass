@@ -598,6 +598,18 @@ if ($res === false) {
     exit();
 }
 
+// Add field keys_recovery_time to users table
+$res = addColumnIfNotExist(
+    $pre . 'users',
+    'keys_recovery_time',
+    "NULL DEFAULT NULL;"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field keys_recovery_time to table users! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
 
 //---<END 3.0.10
 

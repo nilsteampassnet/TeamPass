@@ -462,7 +462,7 @@ switch ($inputData['type']) {
                     'files' => [],
                 );
 
-                // Create sharekeys for users
+                // Create sharekeys for the user itself
                 storeUsersShareKey(
                     prefixTable('sharekeys_items'),
                     (int) $post_folder_is_personal,
@@ -470,7 +470,8 @@ switch ($inputData['type']) {
                     (int) $newID,
                     $objectKey['pwd'],
                     $SETTINGS,
-                    true
+                    true,   // only for the item creator
+                    false,  // no delete all
                 );
 
                 // update fields
@@ -523,7 +524,8 @@ switch ($inputData['type']) {
                                     (int) $newObjectId,
                                     $cryptedStuff['objectKey'],
                                     $SETTINGS,
-                                    true
+                                    true,   // only for the item creator
+                                    false,  // no delete all
                                 );
                                 
                             } else {
@@ -726,7 +728,7 @@ switch ($inputData['type']) {
 
                 // Create new task for the new item
                 // If it is not a personnal one
-                if (isset($post_folder_is_personal) === false || (int) $post_folder_is_personal === 0) {
+                if ((int) $post_folder_is_personal === 0) {
                     storeTask(
                         'new_item',
                         $_SESSION['user_id'],
@@ -1134,7 +1136,6 @@ switch ($inputData['type']) {
                     //-----
                     // NEW ENCRYPTION
                     $cryptedStuff = doDataEncryption($post_password);
-
                     $encrypted_password = $cryptedStuff['encrypted'];
 
                     // Create sharekeys for users
@@ -1341,13 +1342,17 @@ switch ($inputData['type']) {
                                     );
 
                                     // Decrypt the current value
-                                    $oldVal = base64_decode(doDataDecryption(
-                                        $dataTmpCat['data'],
-                                        decryptUserObjectKey(
-                                            $userKey['share_key'],
-                                            $_SESSION['user']['private_key']
-                                        )
-                                    ));
+                                    if (DB::count() > 0) {
+                                        $oldVal = base64_decode(doDataDecryption(
+                                            $dataTmpCat['data'],
+                                            decryptUserObjectKey(
+                                                $userKey['share_key'],
+                                                $_SESSION['user']['private_key']
+                                            )
+                                        ));
+                                    } else {
+                                        $oldVal = '';
+                                    }
                                 } else {
                                     $oldVal = $dataTmpCat['data'];
                                 }
@@ -2542,8 +2547,13 @@ switch ($inputData['type']) {
                     $dataItem['pw'],
                     $decryptedObject
                 );
+                $arrData['pwd_encryption_error'] = false;
+                $arrData['pwd_encryption_error_message'] = '';
             } else {
-                echo (string) prepareExchangedData(
+                $pw = '';
+                $arrData['pwd_encryption_error'] = 'inconsistent_password';
+                $arrData['pwd_encryption_error_message'] = langHdl('error_new_ldap_password_detected');
+                /*echo (string) prepareExchangedData(
                     $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
@@ -2552,8 +2562,7 @@ switch ($inputData['type']) {
                         'error_type' => 'inconsistent_password',
                     ),
                     'encode'
-                );
-                break;
+                );*/
             }
         }
 
@@ -3274,11 +3283,27 @@ switch ($inputData['type']) {
             $inputData['data'],
             'decode'
         );
-
+        
         // Prepare POST variables
-        $inputData['folderId'] = (int) filter_var($dataReceived['folder_id'], FILTER_SANITIZE_NUMBER_INT);
-        $inputData['itemId'] = (int) filter_var($dataReceived['item_id'], FILTER_SANITIZE_NUMBER_INT);
-        $post_access_level = (int) filter_var($dataReceived['access_level'], FILTER_SANITIZE_NUMBER_INT);
+        $data = [
+            'itemId' => isset($dataReceived['item_id']) === true ? $dataReceived['item_id'] : '',
+            'folderId' => isset($dataReceived['folder_id']) === true ? $dataReceived['folder_id'] : '',
+            'accessLevel' => isset($dataReceived['access_level']) === true ? $dataReceived['access_level'] : '',
+            'itemKey' => isset($dataReceived['item_key']) === true ? $dataReceived['item_key'] : '',
+        ];
+        
+        $filters = [
+            'itemId' => 'cast:integer',
+            'folderId' => 'cast:integer',
+            'accessLevel' => 'cast:integer',
+            'itemKey' => 'trim|escape',
+        ];
+        
+        $inputData = dataSanitizer(
+            $data,
+            $filters,
+            $SETTINGS['cpassman_dir']
+        );
 
         // Check that user can access this item
         $granted = accessToItemIsGranted($inputData['itemId'], $SETTINGS);
@@ -3296,11 +3321,16 @@ switch ($inputData['type']) {
 
         // Load item data
         $data = DB::queryFirstRow(
-            'SELECT id_tree
+            'SELECT id_tree, id, label
             FROM ' . prefixTable('items') . '
-            WHERE id = %i',
-            $inputData['itemId']
+            WHERE id = %i OR item_key = %s',
+            $inputData['itemId'],
+            $inputData['itemKey']
         );
+        if (empty($inputData['itemId']) === true) {
+            $inputData['itemId'] = $data['id'];
+        }
+        $inputData['label'] = $data['label'];
 
         // delete item consists in disabling it
         DB::update(
@@ -3309,8 +3339,9 @@ switch ($inputData['type']) {
                 'inactif' => '1',
                 'deleted_at' => time(),
             ),
-            'id = %i',
-            $inputData['itemId']
+            'id = %i OR item_key = %s',
+            $inputData['itemId'],
+            $inputData['itemKey']
         );
 
         // log
@@ -3619,7 +3650,7 @@ $SETTINGS['cpassman_dir'],$inputData['data'], 'decode');
         $post_nb_items_to_display_once = filter_var($dataReceived['nb_items_to_display_once'], FILTER_SANITIZE_NUMBER_INT);
 
         $arr_arbo = [];
-        $folderIsPf = false;
+        $folderIsPf = in_array($inputData['id'], $_SESSION['personal_folders']) === true ? true : false;
         $showError = 0;
         $itemsIDList = $rights = $returnedData = $uniqueLoadData = $html_json = array();
         // Build query limits
@@ -3636,7 +3667,6 @@ $SETTINGS['cpassman_dir'],$inputData['data'], 'decode');
             foreach ($arbo as $elem) {
                 if ($elem->title === $_SESSION['user_id'] && (int) $elem->nlevel === 1) {
                     $elem->title = $_SESSION['login'];
-                    $folderIsPf = true;
                 }
                 // Store path elements
                 array_push(
@@ -4275,6 +4305,15 @@ $SETTINGS['cpassman_dir'],$inputData['data'], 'decode');
                     $_SESSION['user']['private_key']
                 )
             );
+
+            $log = 'Used user ID: '.$_SESSION['user_id']."\n";
+            $log .= 'Used user Private key: '.$_SESSION['user']['private_key']."\n";
+            $log .= '$currentUserKey: '.$dataItem['share_key']."\n";
+            $log .= 'itemKey: '.decryptUserObjectKey(
+                $dataItem['share_key'],
+                $_SESSION['user']['private_key']
+            )."\n\n";
+            file_put_contents('/var/www/html/tplog.log', $log, FILE_APPEND | LOCK_EX);
         }
 
         $returnValues = array(

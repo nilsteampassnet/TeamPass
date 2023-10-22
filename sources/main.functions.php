@@ -3016,11 +3016,10 @@ function storeUsersShareKey(
     }
     
     if (
-        (int) $post_folder_is_personal === 1
-        && in_array($post_folder_id, $superGlobal->get('personal_folders', 'SESSION')) === true
+        //((int) $post_folder_is_personal === 1 && in_array($post_folder_id, $superGlobal->get('personal_folders', 'SESSION')) === true) ||
+        $onlyForUser === true || (int) $post_folder_is_personal === 1
     ) {
-        // If this is a personal object
-        // Only create the sharekey for user
+        // Only create the sharekey for a user
         $user = DB::queryFirstRow(
             'SELECT public_key
             FROM ' . prefixTable('users') . '
@@ -3056,7 +3055,6 @@ function storeUsersShareKey(
             }
         }
     } else {
-        // This is a public object
         // Create sharekey for each user
         //DB::debugmode(true);
         $users = DB::query(
@@ -3238,33 +3236,44 @@ function deleteUserObjetsKeys(int $userId, array $SETTINGS = []): bool
     DB::$ssl = DB_SSL;
     DB::$connect_options = DB_CONNECT_OPTIONS;
     // Remove all item sharekeys items
+    // expect if personal item
     DB::delete(
         prefixTable('sharekeys_items'),
-        'user_id = %i',
+        'user_id = %i AND object_id NOT IN (SELECT i.id FROM ' . prefixTable('items') . ' AS i WHERE i.perso = 1)',
         $userId
     );
     // Remove all item sharekeys files
     DB::delete(
         prefixTable('sharekeys_files'),
-        'user_id = %i',
+        'user_id = %i AND object_id NOT IN (
+            SELECT f.id 
+            FROM ' . prefixTable('items') . ' AS i 
+            INNER JOIN ' . prefixTable('files') . ' AS f ON f.id_item = i.id
+            WHERE i.perso = 1
+        )',
         $userId
     );
     // Remove all item sharekeys fields
     DB::delete(
         prefixTable('sharekeys_fields'),
-        'user_id = %i',
+        'user_id = %i AND object_id NOT IN (
+            SELECT c.id 
+            FROM ' . prefixTable('items') . ' AS i 
+            INNER JOIN ' . prefixTable('categories_items') . ' AS c ON c.item_id = i.id
+            WHERE i.perso = 1
+        )',
         $userId
     );
     // Remove all item sharekeys logs
     DB::delete(
         prefixTable('sharekeys_logs'),
-        'user_id = %i',
+        'user_id = %i AND object_id NOT IN (SELECT i.id FROM ' . prefixTable('items') . ' AS i WHERE i.perso = 1)',
         $userId
     );
     // Remove all item sharekeys suggestions
     DB::delete(
         prefixTable('sharekeys_suggestions'),
-        'user_id = %i',
+        'user_id = %i AND object_id NOT IN (SELECT i.id FROM ' . prefixTable('items') . ' AS i WHERE i.perso = 1)',
         $userId
     );
     return false;
@@ -3993,6 +4002,9 @@ function upgradeRequired(): bool
  * @param boolean $encryptWithUserPassword
  * @param boolean $generate_user_new_password
  * @param string $emailBody
+ * @param boolean $user_self_change
+ * @param string $recovery_public_key
+ * @param string $recovery_private_key
  * @return string
  */
 function handleUserKeys(
@@ -4004,7 +4016,10 @@ function handleUserKeys(
     bool $sendEmailToUser = true,
     bool $encryptWithUserPassword = false,
     bool $generate_user_new_password = false,
-    string $emailBody = ''
+    string $emailBody = '',
+    bool $user_self_change = false,
+    string $recovery_public_key = '',
+    string $recovery_private_key = '',
 ): string
 {
 
@@ -4039,7 +4054,15 @@ function handleUserKeys(
         }
 
         // Generate new keys
-        $userKeys = generateUserKeys($passwordClear);
+        if ($user_self_change === true && empty($recovery_public_key) === false && empty($recovery_private_key) === false){
+            $userKeys = [
+                'public_key' => $recovery_public_key,
+                'private_key_clear' => $recovery_private_key,
+                'private_key' => encryptPrivateKey($passwordClear, $recovery_private_key),
+            ];
+        } else {
+            $userKeys = generateUserKeys($passwordClear);
+        }
 
         // Save in DB
         DB::update(
@@ -4078,6 +4101,8 @@ function handleUserKeys(
                     'send_email' => $sendEmailToUser === true ? 1 : 0,
                     'otp_provided_new_value' => 1,
                     'email_body' => empty($emailBody) === true ? '' : langHdl($emailBody),
+                    'user_self_change' => $user_self_change === true ? 1 : 0,
+                    'only_personal_items' => $only_personal_items === true ? 1 : 0,
                 ]),
                 'updated_at' => '',
                 'finished_at' => '',
@@ -4389,6 +4414,21 @@ function getPHPBinary(): string
 function purgeUnnecessaryKeys(bool $allUsers = true, int $user_id=0)
 {
     if ($allUsers === true) {
+        include_once __DIR__. '/../sources/SplClassLoader.php';
+        //Connect to DB
+        include_once __DIR__. '/../includes/libraries/Database/Meekrodb/db.class.php';
+        if (defined('DB_PASSWD_CLEAR') === false) {
+            define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+        }
+        DB::$host = DB_HOST;
+        DB::$user = DB_USER;
+        DB::$password = DB_PASSWD_CLEAR;
+        DB::$dbName = DB_NAME;
+        DB::$port = DB_PORT;
+        DB::$encoding = DB_ENCODING;
+        DB::$ssl = DB_SSL;
+        DB::$connect_options = DB_CONNECT_OPTIONS;
+
         $users = DB::query(
             'SELECT id
             FROM ' . prefixTable('users') . '
@@ -4396,10 +4436,10 @@ function purgeUnnecessaryKeys(bool $allUsers = true, int $user_id=0)
             ORDER BY login ASC'
         );
         foreach ($users as $user) {
-            purgeUnnecessaryKeysForUser($user['id']);
+            purgeUnnecessaryKeysForUser((int) $user['id']);
         }
     } else {
-        purgeUnnecessaryKeysForUser($user_id);
+        purgeUnnecessaryKeysForUser((int) $user_id);
     }
 }
 
@@ -4415,20 +4455,121 @@ function purgeUnnecessaryKeysForUser(int $user_id=0)
         return;
     }
 
+    include_once __DIR__. '/../sources/SplClassLoader.php';
+    //Connect to DB
+    include_once __DIR__. '/../includes/libraries/Database/Meekrodb/db.class.php';
+    if (defined('DB_PASSWD_CLEAR') === false) {
+        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+    }
+    DB::$host = DB_HOST;
+    DB::$user = DB_USER;
+    DB::$password = DB_PASSWD_CLEAR;
+    DB::$dbName = DB_NAME;
+    DB::$port = DB_PORT;
+    DB::$encoding = DB_ENCODING;
+    DB::$ssl = DB_SSL;
+    DB::$connect_options = DB_CONNECT_OPTIONS;
+
     $personalItems = DB::queryFirstColumn(
         'SELECT id
         FROM ' . prefixTable('items') . ' AS i
         INNER JOIN ' . prefixTable('log_items') . ' AS li ON li.id_item = i.id
-        WHERE i.perso = 1 AND li.action = "at_creation" AND li.id_user = %i',
+        WHERE i.perso = 1 AND li.action = "at_creation" AND li.id_user IN (%i, '.TP_USER_ID.')',
         $user_id
     );
     if (count($personalItems) > 0) {
-        print_r($personalItems);
+        // Item keys
         DB::delete(
             prefixTable('sharekeys_items'),
-            'object_id IN %li AND user_id != %i',
+            'object_id IN %li AND user_id NOT IN (%i, '.TP_USER_ID.')',
+            $personalItems,
+            $user_id
+        );
+        // Files keys
+        DB::delete(
+            prefixTable('sharekeys_files'),
+            'object_id IN %li AND user_id NOT IN (%i, '.TP_USER_ID.')',
+            $personalItems,
+            $user_id
+        );
+        // Fields keys
+        DB::delete(
+            prefixTable('sharekeys_fields'),
+            'object_id IN %li AND user_id NOT IN (%i, '.TP_USER_ID.')',
+            $personalItems,
+            $user_id
+        );
+        // Logs keys
+        DB::delete(
+            prefixTable('sharekeys_logs'),
+            'object_id IN %li AND user_id NOT IN (%i, '.TP_USER_ID.')',
             $personalItems,
             $user_id
         );
     }
+}
+
+/**
+ * Generate recovery keys file
+ *
+ * @param integer $userId
+ * @param array $SETTINGS
+ * @return string
+ */
+function handleUserRecoveryKeysDownload(int $userId, array $SETTINGS):string
+{
+    // Check if user exists
+    $userInfo = DB::queryFirstRow(
+        'SELECT pw, public_key, private_key, login, name
+        FROM ' . prefixTable('users') . '
+        WHERE id = %i',
+        $userId
+    );
+
+    if (DB::count() > 0) {
+        $now = (int) time();
+
+        // Prepare file content
+        $export_value = file_get_contents(__DIR__."/../includes/core/teampass_ascii.txt")."\n".
+            "Generation date: ".date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], $now)."\n\n".
+            "RECOVERY KEYS - Not to be shared - To be store safely\n\n".
+            "Public Key:\n".$userInfo['public_key']."\n\n".
+            "Private Key:\n".decryptPrivateKey($_SESSION['user_pwd'], $userInfo['private_key'])."\n\n";
+
+        // Update user's keys_recovery_time
+        DB::update(
+            prefixTable('users'),
+            [
+                'keys_recovery_time' => $now,
+            ],
+            'id=%i',
+            $userId
+        );
+        $_SESSION['user']['keys_recovery_time'] = $now;
+
+        //Log into DB the user's disconnection
+        logEvents($SETTINGS, 'user_mngt', 'at_user_keys_download', (string) $userId, $userInfo['login']);
+        
+        // Return data
+        return prepareExchangedData(
+            __DIR__.'/..',
+            array(
+                'error' => false,
+                'datetime' => date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], $now),
+                'timestamp' => $now,
+                'content' => base64_encode($export_value),
+                'login' => $userInfo['login'],
+            ),
+            'encode'
+        );
+    }
+
+    return prepareExchangedData(
+        __DIR__.'/..',
+        array(
+            'error' => true,
+            'datetime' => '',
+        ),
+        'encode'
+    );
 }

@@ -532,6 +532,18 @@ function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived,
                 (bool) filter_var($dataReceived['encrypt_with_user_pwd'], FILTER_VALIDATE_BOOLEAN),
                 (bool) isset($dataReceived['generate_user_new_password']) === true ? filter_var($dataReceived['generate_user_new_password'], FILTER_VALIDATE_BOOLEAN) : false,
                 (string) filter_var($dataReceived['email_body'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                (bool) filter_var($dataReceived['user_self_change'], FILTER_VALIDATE_BOOLEAN),
+                (string) filter_var($dataReceived['recovery_public_key'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                (string) filter_var($dataReceived['recovery_private_key'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+            );
+
+        /*
+        * Launch user recovery download
+        */
+        case 'user_recovery_keys_download'://action_key
+            return handleUserRecoveryKeysDownload(
+                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
+                (array) $SETTINGS,
             );
 
         /*

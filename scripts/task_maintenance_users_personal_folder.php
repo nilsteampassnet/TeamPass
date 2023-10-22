@@ -56,13 +56,13 @@ DB::$ssl = DB_SSL;
 DB::$connect_options = DB_CONNECT_OPTIONS;
 
 // log start
-$logID = doLog('start', 'do_maintenance - users-personal-folder', (isset($SETTINGS['enable_tasks_log']) === true ? (int) $SETTINGS['enable_tasks_log'] : 0));
+$logID = doLog('start', 'do_maintenance - users-personal-folder', 1);
 
 // Perform maintenance tasks
 createUserPersonalFolder();
 
 // log end
-doLog('end', '', (isset($SETTINGS['enable_tasks_log']) === true ? (int) $SETTINGS['enable_tasks_log'] : 0), $logID);
+doLog('end', '', 1, $logID);
 
 /**
  * Permits to create the personal folder for each user.
@@ -150,23 +150,5 @@ function createUserPersonalFolder(): void
 
         // Ensure only the user items have a sharekey
         purgeUnnecessaryKeys(false, $user['id']);
-        /*
-        $personalItems = DB::queryFirstColumn(
-            'SELECT id
-            FROM ' . prefixTable('items') . ' AS i
-            INNER JOIN ' . prefixTable('log_items') . ' AS li ON li.id_item = i.id
-            WHERE i.perso = 1 AND li.action = "at_creation" AND li.id_user = %i',
-            $user['id']
-        );
-        if (count($personalItems) > 0) {
-            print_r($personalItems);
-            DB::delete(
-                prefixTable('sharekeys_items'),
-                'object_id IN %li AND user_id != %i',
-                $personalItems,
-                $user['id']
-            );
-        }
-        */
     }
 }

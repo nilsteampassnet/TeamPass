@@ -795,6 +795,7 @@ $SETTINGS = array (';
                             `created_at` varchar(30) NULL,
                             `updated_at` varchar(30) NULL,
                             `deleted_at` varchar(30) NULL,
+                            `keys_recovery_time` VARCHAR(500) NULL DEFAULT NULL,
                             PRIMARY KEY (`id`),
                             UNIQUE KEY `login` (`login`)
                             ) CHARSET=utf8;"

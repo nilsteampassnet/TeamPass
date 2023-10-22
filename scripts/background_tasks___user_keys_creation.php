@@ -122,9 +122,19 @@ if (DB::count() > 0) {
 doLog('end', '', (isset($SETTINGS['enable_tasks_log']) === true ? (int) $SETTINGS['enable_tasks_log'] : 0), $logID);
 
 // launch a new iterative process
-$process = new Symfony\Component\Process\Process([$phpBinaryPath, __FILE__]);
-$process->start();
-$process->wait();
+$process_to_perform = DB::queryfirstrow(
+    'SELECT *
+    FROM ' . prefixTable('processes') . '
+    WHERE is_in_progress = %i AND process_type = %s
+    ORDER BY increment_id ASC',
+    1,
+    'create_user_keys'
+);
+if (DB::count() > 0) {
+    $process = new Symfony\Component\Process\Process([$phpBinaryPath, __FILE__]);
+    $process->start();
+    $process->wait();
+}
 
 
 
@@ -452,17 +462,20 @@ function cronContinueReEncryptingUserSharekeysStep20(
     array $SETTINGS,
     array $extra_arguments
 ): array 
-{
+{    
     // get user private key
     $ownerInfo = getOwnerInfo($extra_arguments['owner_id'], $extra_arguments['creator_pwd'], $SETTINGS);
+    $userInfo = getOwnerInfo($extra_arguments['new_user_id'], $extra_arguments['new_user_pwd'], $SETTINGS);
     
     // Loop on items
     $rows = DB::query(
         'SELECT id, pw, perso
         FROM ' . prefixTable('items') . '
+        '.(isset($extra_arguments['only_personal_items']) === true && $extra_arguments['only_personal_items'] === 1 ? 'WHERE perso = 1' : '').'
         ORDER BY id ASC
         LIMIT ' . $post_start . ', ' . $post_length
     );
+    //    WHERE perso = 0
     foreach ($rows as $record) {
         // Get itemKey from current user
         $currentUserKey = DB::queryFirstRow(
@@ -470,7 +483,8 @@ function cronContinueReEncryptingUserSharekeysStep20(
             FROM ' . prefixTable('sharekeys_items') . '
             WHERE object_id = %i AND user_id = %i',
             $record['id'],
-            $extra_arguments['owner_id']
+            //$extra_arguments['owner_id']
+            (int) $record['perso'] === 0 ? $extra_arguments['owner_id'] : $extra_arguments['new_user_id']
         );
 
         // do we have any input? (#3481)
@@ -479,13 +493,39 @@ function cronContinueReEncryptingUserSharekeysStep20(
         }
 
         // Decrypt itemkey with admin key
-        $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $ownerInfo['private_key']);
+        $itemKey = decryptUserObjectKey(
+            $currentUserKey['share_key'],
+            //$ownerInfo['private_key']
+            (int) $record['perso'] === 0 ? $ownerInfo['private_key'] : $userInfo['private_key']
+        );
         
+        // Prevent to change key if its key is empty
+        if (empty($itemKey) === true) {
+            continue;
+        }
+
         // Encrypt Item key
         $share_key_for_item = encryptUserObjectKey($itemKey, $user_public_key);
         
-        // Save the key in DB
-        if ($post_self_change === false && ((int) $record['perso'] === 0 || ((int) $record['perso'] === 1 && (int) $post_user_id !== (int) $extra_arguments['owner_id']))) {
+        $currentUserKey = DB::queryFirstRow(
+            'SELECT increment_id
+            FROM ' . prefixTable('sharekeys_items') . '
+            WHERE object_id = %i AND user_id = %i',
+            $record['id'],
+            $post_user_id
+        );
+
+        if (DB::count() > 0) {
+            // NOw update
+            DB::update(
+                prefixTable('sharekeys_items'),
+                array(
+                    'share_key' => $share_key_for_item,
+                ),
+                'increment_id = %i',
+                $currentUserKey['increment_id']
+            );
+        } else {
             DB::insert(
                 prefixTable('sharekeys_items'),
                 array(
@@ -494,38 +534,6 @@ function cronContinueReEncryptingUserSharekeysStep20(
                     'share_key' => $share_key_for_item,
                 )
             );
-        } else {
-            // Get itemIncrement from selected user
-            if ((int) $post_user_id !== (int) $extra_arguments['owner_id']) {
-                $currentUserKey = DB::queryFirstRow(
-                    'SELECT increment_id
-                    FROM ' . prefixTable('sharekeys_items') . '
-                    WHERE object_id = %i AND user_id = %i',
-                    $record['id'],
-                    $post_user_id
-                );
-
-                if (DB::count() > 0) {
-                    // NOw update
-                    DB::update(
-                        prefixTable('sharekeys_items'),
-                        array(
-                            'share_key' => $share_key_for_item,
-                        ),
-                        'increment_id = %i',
-                        $currentUserKey['increment_id']
-                    );
-                } else {
-                    DB::insert(
-                        prefixTable('sharekeys_items'),
-                        array(
-                            'object_id' => (int) $record['id'],
-                            'user_id' => (int) $post_user_id,
-                            'share_key' => $share_key_for_item,
-                        )
-                    );
-                }
-            }
         }
     }
 
@@ -670,6 +678,7 @@ function cronContinueReEncryptingUserSharekeysStep40(
 {
     // get user private key
     $ownerInfo = getOwnerInfo($extra_arguments['owner_id'], $extra_arguments['creator_pwd'], $SETTINGS);
+    $userInfo = getOwnerInfo($extra_arguments['new_user_id'], $extra_arguments['new_user_pwd'], $SETTINGS);
 
     // Loop on fields
     $rows = DB::query(
@@ -869,22 +878,24 @@ function cronContinueReEncryptingUserSharekeysStep60(
 {
     // get user private key
     $ownerInfo = getOwnerInfo($extra_arguments['owner_id'], $extra_arguments['creator_pwd'], $SETTINGS);
+    $userInfo = getOwnerInfo($extra_arguments['new_user_id'], $extra_arguments['new_user_pwd'], $SETTINGS);
 
     // Loop on files
     $rows = DB::query(
-        'SELECT id
-        FROM ' . prefixTable('files') . '
-        WHERE status = "' . TP_ENCRYPTION_NAME . '"
+        'SELECT f.id AS id, i.perso AS perso
+        FROM ' . prefixTable('files') . ' AS f
+        INNER JOIN ' . prefixTable('items') . ' AS i ON i.id = f.id_item
+        WHERE f.status = "' . TP_ENCRYPTION_NAME . '"
         LIMIT ' . $post_start . ', ' . $post_length
     ); //aes_encryption
     foreach ($rows as $record) {
         // Get itemKey from current user
         $currentUserKey = DB::queryFirstRow(
-            'SELECT share_key
+            'SELECT share_key, increment_id
             FROM ' . prefixTable('sharekeys_files') . '
             WHERE object_id = %i AND user_id = %i',
             $record['id'],
-            $extra_arguments['owner_id']
+            (int) $record['perso'] === 0 ? $extra_arguments['owner_id'] : $extra_arguments['new_user_id']
         );
 
         // do we have any input? (#3481)
@@ -892,14 +903,50 @@ function cronContinueReEncryptingUserSharekeysStep60(
             continue;
         }
 
-        // Decrypt itemkey with admin key
-        $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $ownerInfo['private_key']);
+        // Decrypt itemkey with user key
+        $itemKey = decryptUserObjectKey(
+            $currentUserKey['share_key'],
+            //$ownerInfo['private_key']
+            (int) $record['perso'] === 0 ? $ownerInfo['private_key'] : $userInfo['private_key']
+        );
+        
+        // Prevent to change key if its key is empty
+        if (empty($itemKey) === true) {
+            continue;
+        }
 
         // Encrypt Item key
         $share_key_for_item = encryptUserObjectKey($itemKey, $user_public_key);
 
+        $currentUserKey = DB::queryFirstRow(
+            'SELECT increment_id
+            FROM ' . prefixTable('sharekeys_files') . '
+            WHERE object_id = %i AND user_id = %i',
+            $record['id'],
+            $post_user_id
+        );
         // Save the key in DB
-        if ($post_self_change === false) {
+        if (DB::count() > 0) {
+            // NOw update
+            DB::update(
+                prefixTable('sharekeys_files'),
+                array(
+                    'share_key' => $share_key_for_item,
+                ),
+                'increment_id = %i',
+                $currentUserKey['increment_id']
+            );
+        } else {
+            DB::insert(
+                prefixTable('sharekeys_files'),
+                array(
+                    'object_id' => (int) $record['id'],
+                    'user_id' => (int) $post_user_id,
+                    'share_key' => $share_key_for_item,
+                )
+            );
+        }
+        /*if ($post_self_change === false) {
             DB::insert(
                 prefixTable('sharekeys_files'),
                 array(
@@ -913,7 +960,7 @@ function cronContinueReEncryptingUserSharekeysStep60(
             if ((int) $post_user_id !== (int) $extra_arguments['owner_id']) {
                 $currentUserKey = DB::queryFirstRow(
                     'SELECT increment_id
-                    FROM ' . prefixTable('sharekeys_items') . '
+                    FROM ' . prefixTable('sharekeys_files') . '
                     WHERE object_id = %i AND user_id = %i',
                     $record['id'],
                     $post_user_id
@@ -929,7 +976,7 @@ function cronContinueReEncryptingUserSharekeysStep60(
                 'increment_id = %i',
                 $currentUserKey['increment_id']
             );
-        }
+        }*/
     }
 
     // SHould we change step? Finished ?
