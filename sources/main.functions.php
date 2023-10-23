@@ -1649,7 +1649,7 @@ function makeThumbnail(string $src, string $dest, int $desired_width)
 function prefixTable(string $table): string
 {
     $safeTable = htmlspecialchars(DB_PREFIX . $table);
-    if (! empty($safeTable)) {
+    if (empty($safeTable) === false) {
         // sanitize string
         return $safeTable;
     }
@@ -2465,7 +2465,11 @@ function recursiveChmod(
     // See whether this is a file
     if (is_file($path)) {
         // Chmod the file with our given filepermissions
-        chmod($path, $filePerm);
+        try {
+            chmod($path, $filePerm);
+        } catch (Exception $e) {
+            return false;
+        }
     // If this is a directory...
     } elseif (is_dir($path)) {
         // Then get an array of the contents
@@ -2479,7 +2483,11 @@ function recursiveChmod(
         }
 
         // When we are done with the contents of the directory, we chmod the directory itself
-        chmod($path, $dirPerm);
+        try {
+            chmod($path, $filePerm);
+        } catch (Exception $e) {
+            return false;
+        }
     }
 
     // Everything seemed to work out well, return true
