@@ -277,6 +277,18 @@ catch (Exception $e) {
                         '<p><i class="fa-solid fa-server mr-2"></i>Server version: ' . DB::serverVersion().
                             '<br><span class="ml-4">Database size: '.($dbSize['size']).'MB</span>'.
                         '</p>';
+
+                        // local time
+                        $serverTime = localtime(time(), true);
+                        echo '<div class="row">'.
+                            '<div class="col-6"><i class="fa-solid fa-clock mr-2"></i>Server time:</div>'.
+                            '<div class="col-6"><span class="badge badge-info">' . $serverTime['tm_hour'].':'.$serverTime['tm_min'].':'.$serverTime['tm_sec'].'</span></div>'.
+                        '</div>'.
+                        '<div class="row">'.
+                            '<div class="col-6"><span class="ml-4">Timezone:</span></div>'.
+                            '<div class="col-6"><span class="badge badge-info">'.date_default_timezone_get().'</span></div>'.
+                        '</div>';
+
                         ?>
                     </div>
                     <!-- /.card-body -->
