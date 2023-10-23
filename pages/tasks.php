@@ -237,15 +237,9 @@ catch (Exception $e) {
                                             <button class="btn btn-primary task-define" data-task="clean_orphan_objects_task">
                                                 <i class="fa-solid fa-cogs"></i>
                                             </button>
-                                            <?php
-                                            if (defined('WIP') === true && WIP === true) {
-                                                ?>
                                             <button class="btn btn-primary task-perform ml-1" data-task="clean_orphan_objects_task">
                                                 <i class="fa-solid fa-play"></i>
                                             </button>
-                                            <?php
-                                            }
-                                            ?>
                                         </div>
                                     </div>
 
@@ -265,15 +259,9 @@ catch (Exception $e) {
                                             <button class="btn btn-primary task-define" data-task="purge_temporary_files_task">
                                                 <i class="fa-solid fa-cogs"></i>
                                             </button>
-                                            <?php
-                                            if (defined('WIP') === true && WIP === true) {
-                                                ?>
                                             <button class="btn btn-primary task-perform ml-1" data-task="purge_temporary_files_task">
                                                 <i class="fa-solid fa-play"></i>
                                             </button>
-                                            <?php
-                                            }
-                                            ?>
                                         </div>
                                     </div>
 
@@ -293,15 +281,9 @@ catch (Exception $e) {
                                             <button class="btn btn-primary task-define" data-task="rebuild_config_file_task">
                                                 <i class="fa-solid fa-cogs"></i>
                                             </button>
-                                            <?php
-                                            if (defined('WIP') === true && WIP === true) {
-                                                ?>
                                             <button class="btn btn-primary task-perform ml-1" data-task="rebuild_config_file_task">
                                                 <i class="fa-solid fa-play"></i>
                                             </button>
-                                            <?php
-                                            }
-                                            ?>
                                         </div>
                                     </div>
 
@@ -321,15 +303,9 @@ catch (Exception $e) {
                                             <button class="btn btn-primary task-define" data-task="reload_cache_table_task">
                                                 <i class="fa-solid fa-cogs"></i>
                                             </button>
-                                            <?php
-                                            if (defined('WIP') === true && WIP === true) {
-                                                ?>
                                             <button class="btn btn-primary task-perform ml-1" data-task="reload_cache_table_task">
                                                 <i class="fa-solid fa-play"></i>
                                             </button>
-                                            <?php
-                                            }
-                                            ?>
                                         </div>
                                     </div>
 

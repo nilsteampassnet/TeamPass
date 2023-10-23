@@ -602,7 +602,7 @@ if ($res === false) {
 $res = addColumnIfNotExist(
     $pre . 'users',
     'keys_recovery_time',
-    "NULL DEFAULT NULL;"
+    "VARCHAR(500) NULL DEFAULT NULL;"
 );
 if ($res === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field keys_recovery_time to table users! ' . mysqli_error($db_link) . '!"}]';

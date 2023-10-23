@@ -386,19 +386,12 @@ function identifyUserRights(
     // Load superglobal
     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
     $superGlobal = new protect\SuperGlobal\SuperGlobal();
-    //Connect to DB
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
-    if (defined('DB_PASSWD_CLEAR') === false) {
-        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+
+    // Load class DB
+    if (class_exists('DB') === false) {
+        loadClass('DB');
     }
-    DB::$host = DB_HOST;
-    DB::$user = DB_USER;
-    DB::$password = DB_PASSWD_CLEAR;
-    DB::$dbName = DB_NAME;
-    DB::$port = DB_PORT;
-    DB::$encoding = DB_ENCODING;
-    DB::$ssl = DB_SSL;
-    DB::$connect_options = DB_CONNECT_OPTIONS;
+    
     //Build tree
     $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'] . '/includes/libraries');
     $tree->register();
@@ -876,19 +869,12 @@ function updateCacheTable(string $action, array $SETTINGS, ?int $ident = null): 
 function cacheTableRefresh(array $SETTINGS): void
 {
     include_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
-    //Connect to DB
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
-    if (defined('DB_PASSWD_CLEAR') === false) {
-        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+
+    // Load class DB
+    if (class_exists('DB') === false) {
+        loadClass('DB');
     }
-    DB::$host = DB_HOST;
-    DB::$user = DB_USER;
-    DB::$password = DB_PASSWD_CLEAR;
-    DB::$dbName = DB_NAME;
-    DB::$port = DB_PORT;
-    DB::$encoding = DB_ENCODING;
-    DB::$ssl = DB_SSL;
-    DB::$connect_options = DB_CONNECT_OPTIONS;
+
     //Load Tree
     $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'] .'/includes/libraries');
     $tree->register();
@@ -983,19 +969,12 @@ function cacheTableUpdate(array $SETTINGS, ?int $ident = null): void
     // Load superglobal
     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
     $superGlobal = new protect\SuperGlobal\SuperGlobal();
-    //Connect to DB
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
-    if (defined('DB_PASSWD_CLEAR') === false) {
-        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+
+    // Load class DB
+    if (class_exists('DB') === false) {
+        loadClass('DB');
     }
-    DB::$host = DB_HOST;
-    DB::$user = DB_USER;
-    DB::$password = DB_PASSWD_CLEAR;
-    DB::$dbName = DB_NAME;
-    DB::$port = DB_PORT;
-    DB::$encoding = DB_ENCODING;
-    DB::$ssl = DB_SSL;
-    DB::$connect_options = DB_CONNECT_OPTIONS;
+
     //Load Tree
     $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
     $tree->register();
@@ -1074,19 +1053,12 @@ function cacheTableAdd(array $SETTINGS, ?int $ident = null): void
     $superGlobal = new protect\SuperGlobal\SuperGlobal();
     // Get superglobals
     $globalsUserId = $superGlobal->get('user_id', 'SESSION');
-    //Connect to DB
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
-    if (defined('DB_PASSWD_CLEAR') === false) {
-        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+
+    // Load class DB
+    if (class_exists('DB') === false) {
+        loadClass('DB');
     }
-    DB::$host = DB_HOST;
-    DB::$user = DB_USER;
-    DB::$password = DB_PASSWD_CLEAR;
-    DB::$dbName = DB_NAME;
-    DB::$port = DB_PORT;
-    DB::$encoding = DB_ENCODING;
-    DB::$ssl = DB_SSL;
-    DB::$connect_options = DB_CONNECT_OPTIONS;
+
     //Load Tree
     $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
     $tree->register();
@@ -1778,19 +1750,11 @@ function logEvents(
         $who = getClientIpServer();
     }
 
-    // include librairies & connect to DB
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
-    if (defined('DB_PASSWD_CLEAR') === false) {
-        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+    // Load class DB
+    if (class_exists('DB') === false) {
+        loadClass('DB');
     }
-    DB::$host = DB_HOST;
-    DB::$user = DB_USER;
-    DB::$password = DB_PASSWD_CLEAR;
-    DB::$dbName = DB_NAME;
-    DB::$port = DB_PORT;
-    DB::$encoding = DB_ENCODING;
-    DB::$ssl = DB_SSL;
-    DB::$connect_options = DB_CONNECT_OPTIONS;
+
     DB::insert(
         prefixTable('log_system'),
         [
@@ -1849,19 +1813,11 @@ function logItems(
     ?string $time = null,
     ?string $old_value = null
 ): void {
-    // include librairies & connect to DB
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
-    if (defined('DB_PASSWD_CLEAR') === false) {
-        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+    // Load class DB
+    if (class_exists('DB') === false) {
+        loadClass('DB');
     }
-    DB::$host = DB_HOST;
-    DB::$user = DB_USER;
-    DB::$password = DB_PASSWD_CLEAR;
-    DB::$dbName = DB_NAME;
-    DB::$port = DB_PORT;
-    DB::$encoding = DB_ENCODING;
-    DB::$ssl = DB_SSL;
-    DB::$connect_options = DB_CONNECT_OPTIONS;
+
     // Insert log in DB
     DB::insert(
         prefixTable('log_items'),
@@ -2117,19 +2073,12 @@ function noHTML(string $input, string $encoding = 'UTF-8'): string
 function handleConfigFile($action, $SETTINGS, $field = null, $value = null)
 {
     $tp_config_file = $SETTINGS['cpassman_dir'] . '/includes/config/tp.config.php';
-    // include librairies & connect to DB
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
-    if (defined('DB_PASSWD_CLEAR') === false) {
-        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+
+    // Load class DB
+    if (class_exists('DB') === false) {
+        loadClass('DB');
     }
-    DB::$host = DB_HOST;
-    DB::$user = DB_USER;
-    DB::$password = DB_PASSWD_CLEAR;
-    DB::$dbName = DB_NAME;
-    DB::$port = DB_PORT;
-    DB::$encoding = DB_ENCODING;
-    DB::$ssl = DB_SSL;
-    DB::$connect_options = DB_CONNECT_OPTIONS;
+
     if (file_exists($tp_config_file) === false || $action === 'rebuild') {
         // perform a copy
         if (file_exists($tp_config_file)) {
@@ -2634,19 +2583,12 @@ function obfuscateEmail(string $email): string
 function performDBQuery(array $SETTINGS, string $fields, string $table): array
 {
     // include librairies & connect to DB
-    include_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
-    if (defined('DB_PASSWD_CLEAR') === false) {
-        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+    //include_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
+
+    // Load class DB
+    if (class_exists('DB') === false) {
+        loadClass('DB');
     }
-    DB::$host = DB_HOST;
-    DB::$user = DB_USER;
-    DB::$password = DB_PASSWD_CLEAR;
-    DB::$dbName = DB_NAME;
-    DB::$port = DB_PORT;
-    DB::$encoding = DB_ENCODING;
-    DB::$ssl = DB_SSL;
-    DB::$connect_options = DB_CONNECT_OPTIONS;
     // Insert log in DB
     return DB::query(
         'SELECT ' . $fields . '
@@ -2988,23 +2930,15 @@ function storeUsersShareKey(
     array $objectKeyArray = []
 ): void {
     // include librairies
-    include_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
+    //include_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
+    //include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
     $superGlobal = new protect\SuperGlobal\SuperGlobal();
 
-    // connect to DB
-    if (defined('DB_PASSWD_CLEAR') === false) {
-        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+    // Load class DB
+    if (class_exists('DB') === false) {
+        loadClass('DB');
     }
-    DB::$host = DB_HOST;
-    DB::$user = DB_USER;
-    DB::$password = DB_PASSWD_CLEAR;
-    DB::$dbName = DB_NAME;
-    DB::$port = DB_PORT;
-    DB::$encoding = DB_ENCODING;
-    DB::$ssl = DB_SSL;
-    DB::$connect_options = DB_CONNECT_OPTIONS;
 
     // Delete existing entries for this object
     if ($deleteAll === true) {
@@ -3222,19 +3156,13 @@ function ldapCheckUserPassword(string $login, string $password, array $SETTINGS)
 function deleteUserObjetsKeys(int $userId, array $SETTINGS = []): bool
 {
     // include librairies & connect to DB
-    include_once __DIR__. '/../includes/config/settings.php';
-    include_once __DIR__. '/../includes/libraries/Database/Meekrodb/db.class.php';
-    if (defined('DB_PASSWD_CLEAR') === false) {
-        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+    //include_once __DIR__. '/../includes/config/settings.php';
+
+    // Load class DB
+    if (class_exists('DB') === false) {
+        loadClass('DB');
     }
-    DB::$host = DB_HOST;
-    DB::$user = DB_USER;
-    DB::$password = DB_PASSWD_CLEAR;
-    DB::$dbName = DB_NAME;
-    DB::$port = DB_PORT;
-    DB::$encoding = DB_ENCODING;
-    DB::$ssl = DB_SSL;
-    DB::$connect_options = DB_CONNECT_OPTIONS;
+
     // Remove all item sharekeys items
     // expect if personal item
     DB::delete(
@@ -3638,19 +3566,11 @@ function dataSanitizer(
 function cacheTreeUserHandler(int $user_id, string $data, array $SETTINGS, string $field_update = '')
 {
     include_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
-    //Connect to DB
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
-    if (defined('DB_PASSWD_CLEAR') === false) {
-        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+
+    // Load class DB
+    if (class_exists('DB') === false) {
+        loadClass('DB');
     }
-    DB::$host = DB_HOST;
-    DB::$user = DB_USER;
-    DB::$password = DB_PASSWD_CLEAR;
-    DB::$dbName = DB_NAME;
-    DB::$port = DB_PORT;
-    DB::$encoding = DB_ENCODING;
-    DB::$ssl = DB_SSL;
-    DB::$connect_options = DB_CONNECT_OPTIONS;
 
     // Exists ?
     $userCacheId = DB::queryfirstrow(
@@ -3793,19 +3713,10 @@ function handleFoldersCategories(
     //load ClassLoader
     include_once __DIR__. '/../sources/SplClassLoader.php';
     
-    //Connect to DB
-    include_once __DIR__. '/../includes/libraries/Database/Meekrodb/db.class.php';
-    if (defined('DB_PASSWD_CLEAR') === false) {
-        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, []));
+    // Load class DB
+    if (class_exists('DB') === false) {
+        loadClass('DB');
     }
-    DB::$host = DB_HOST;
-    DB::$user = DB_USER;
-    DB::$password = DB_PASSWD_CLEAR;
-    DB::$dbName = DB_NAME;
-    DB::$port = DB_PORT;
-    DB::$encoding = DB_ENCODING;
-    DB::$ssl = DB_SSL;
-    DB::$connect_options = DB_CONNECT_OPTIONS;
 
     $arr_data = array();
 
@@ -4102,7 +4013,6 @@ function handleUserKeys(
                     'otp_provided_new_value' => 1,
                     'email_body' => empty($emailBody) === true ? '' : langHdl($emailBody),
                     'user_self_change' => $user_self_change === true ? 1 : 0,
-                    'only_personal_items' => $only_personal_items === true ? 1 : 0,
                 ]),
                 'updated_at' => '',
                 'finished_at' => '',
@@ -4414,20 +4324,10 @@ function getPHPBinary(): string
 function purgeUnnecessaryKeys(bool $allUsers = true, int $user_id=0)
 {
     if ($allUsers === true) {
-        include_once __DIR__. '/../sources/SplClassLoader.php';
-        //Connect to DB
-        include_once __DIR__. '/../includes/libraries/Database/Meekrodb/db.class.php';
-        if (defined('DB_PASSWD_CLEAR') === false) {
-            define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+        // Load class DB
+        if (class_exists('DB') === false) {
+            loadClass('DB');
         }
-        DB::$host = DB_HOST;
-        DB::$user = DB_USER;
-        DB::$password = DB_PASSWD_CLEAR;
-        DB::$dbName = DB_NAME;
-        DB::$port = DB_PORT;
-        DB::$encoding = DB_ENCODING;
-        DB::$ssl = DB_SSL;
-        DB::$connect_options = DB_CONNECT_OPTIONS;
 
         $users = DB::query(
             'SELECT id
@@ -4455,20 +4355,10 @@ function purgeUnnecessaryKeysForUser(int $user_id=0)
         return;
     }
 
-    include_once __DIR__. '/../sources/SplClassLoader.php';
-    //Connect to DB
-    include_once __DIR__. '/../includes/libraries/Database/Meekrodb/db.class.php';
-    if (defined('DB_PASSWD_CLEAR') === false) {
-        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+    // Load class DB
+    if (class_exists('DB') === false) {
+        loadClass('DB');
     }
-    DB::$host = DB_HOST;
-    DB::$user = DB_USER;
-    DB::$password = DB_PASSWD_CLEAR;
-    DB::$dbName = DB_NAME;
-    DB::$port = DB_PORT;
-    DB::$encoding = DB_ENCODING;
-    DB::$ssl = DB_SSL;
-    DB::$connect_options = DB_CONNECT_OPTIONS;
 
     $personalItems = DB::queryFirstColumn(
         'SELECT id
@@ -4572,4 +4462,32 @@ function handleUserRecoveryKeysDownload(int $userId, array $SETTINGS):string
         ),
         'encode'
     );
+}
+
+/**
+ * Permits to load a class
+ *
+ * @param string $className
+ * @return void
+ */
+function loadClass(string $className): void
+{
+    include_once __DIR__. '/../includes/config/settings.php';
+
+    // Load class DB
+    if ($className === 'DB') {
+        //Connect to DB
+        include_once __DIR__. '/../includes/libraries/Database/Meekrodb/db.class.php';
+        if (defined('DB_PASSWD_CLEAR') === false) {
+            define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+        }
+        DB::$host = DB_HOST;
+        DB::$user = DB_USER;
+        DB::$password = DB_PASSWD_CLEAR;
+        DB::$dbName = DB_NAME;
+        DB::$port = DB_PORT;
+        DB::$encoding = DB_ENCODING;
+        DB::$ssl = DB_SSL;
+        DB::$connect_options = DB_CONNECT_OPTIONS;
+    }
 }
