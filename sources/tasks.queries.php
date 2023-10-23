@@ -259,7 +259,7 @@ function performTask(string $task, string $dir, string $phpBinaryPath, string $d
     require_once __DIR__.'/../includes/libraries/Symfony/Component/Process/Process.php';
     require_once __DIR__.'/../includes/libraries/Symfony/Component/Process/ExecutableFinder.php';
     require_once __DIR__.'/../includes/libraries/Symfony/Component/Process/PhpExecutableFinder.php';
-    
+
     switch ($task) {
         case 'users_personal_folder_task':
 
@@ -308,7 +308,7 @@ function performTask(string $task, string $dir, string $phpBinaryPath, string $d
         }
 
     // execute the process
-    if (undefined !== $process) {
+    if (isset($process) === true) {
         try {
             $process->start();
 
