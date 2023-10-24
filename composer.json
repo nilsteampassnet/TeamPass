@@ -7,7 +7,7 @@
         "apcu-autoloader": true,
         "discard-changes": true
     },
-    "version": "3.0.0.11",
+    "version": "3.0.10",
     "keywords": ["passwords", "manager", "collaborative", "vault", "security"],
     "homepage": "https://www.teampass.net",
     "license": "GPL-3.0-only",
@@ -39,6 +39,13 @@
         "ext-bcmath": "*",
         "ext-iconv": "*",
         "ext-xml": "*",
-        "ext-gd": "*"
+        "ext-gd": "*",
+        "symfony/finder": "^6.3",
+        "symfony/process": "^6.3",
+        "symfony/contracts": "^3.3",
+        "illuminate/contracts": "^10.28",
+        "tightenco/collect": "^9.52",
+        "nesbot/carbon": "^2.71",
+        "directorytree/ldaprecord": "^3.2"
     }
 }

@@ -1,0 +1,20 @@
+---
+name: Support / help request
+about: Request help using LdapRecord (requires sponsorship)
+title: "[Support]"
+labels: question
+assignees: ''
+
+---
+
+<!-- ISSUE WILL BE CLOSED WITHOUT SPONSORSHIP: -->
+<!-- https://github.com/sponsors/stevebauman -->
+<!-- Thank you for your understanding. -->
+
+<!--
+  Please update the below information with your environment.
+  Issues filed without the below information will be closed.
+-->
+**Environment:**
+ - LDAP Server Type: [e.g. ActiveDirectory / OpenLDAP / FreeIPA]
+ - PHP Version: [e.g. 8.1 / 8.2]

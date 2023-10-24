@@ -151,6 +151,11 @@ switch ($post_type) {
         require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/Connection.php';
         require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/LdapInterface.php';
         require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/HandlesConnection.php';
+        
+        // Autoloader relative path to this PHP file
+        //require_once __DIR__.'/../vendor/autoload.php';
+
+        // Load LdapRecord
         $ad = new SplClassLoader('LdapRecord', '../includes/libraries');
         $ad->register();
 
