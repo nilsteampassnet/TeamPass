@@ -29,9 +29,8 @@ Use EZimuel\PHPSecureSession;
 // Load functions
 require_once 'main.functions.php';
 
+// init
 loadClasses('DB');
-
-//require_once 'SecureHandler.php';
 session_name('teampass_session');
 session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] === false || !isset($_SESSION['key']) || empty($_SESSION['key'])) {
@@ -58,7 +57,6 @@ $checkUserAccess = new PerformChecks(
         ],
     )
 );
-
 // Handle the case
 $checkUserAccess->caseHandler();
 if ($checkUserAccess->userAccessPage($_SESSION['user_id'], $_SESSION['key'], 'items', $SETTINGS) === false) {

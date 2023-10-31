@@ -572,7 +572,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                 WHERE id IN %li',
                 $superGlobal->get('user_roles', 'SESSION')
             );
-            $excludeUser = isset($SETTINGS['exclude_user']) ? str_contains($superGlobal->get('login'), $SETTINGS['exclude_user']) : false;
+            $excludeUser = isset($SETTINGS['exclude_user']) ? str_contains($superGlobal->get('login', 'SESSION'), $SETTINGS['exclude_user']) : false;
             $adjustPermissions = ($superGlobal->get('user_id', 'SESSION') >= 1000000 && !$excludeUser && (isset($SETTINGS['admin_needle']) || isset($SETTINGS['manager_needle']) || isset($SETTINGS['tp_manager_needle']) || isset($SETTINGS['read_only_needle'])));
             if ($adjustPermissions) {
                 $userInfo['admin'] = $userInfo['gestionnaire'] = $userInfo['can_manage_all_users'] = $userInfo['read_only'] = 0;

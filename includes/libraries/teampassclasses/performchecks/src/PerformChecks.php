@@ -27,11 +27,11 @@ class PerformChecks
     /**
      * Construct the class.
      *
-     * @param string $postType
+     * @param string|array $postType
      */
     public function __construct($postType)
     {
-        $this->postType = $postType['type'];
+        $this->postType = (string) $postType['type'];
     }
 
     /**
