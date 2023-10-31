@@ -1406,13 +1406,15 @@ define("DB_NAME", "' . $db['db_bdd'] . '");
 define("DB_PREFIX", "' . $var['tbl_prefix'] . '");
 define("DB_PORT", "' . $db['db_port'] . '");
 define("DB_ENCODING", "' . $session_db_encoding . '");
-define("DB_SSL", array(
-    "key" => "",
-    "cert" => "",
-    "ca_cert" => "",
-    "ca_path" => "",
-    "cipher" => ""
-));
+define("DB_SSL", false); // if DB over SSL then comment this line
+// if DB over SSL then uncomment the following lines
+//define("DB_SSL", array(
+//    "key" => "",
+//    "cert" => "",
+//    "ca_cert" => "",
+//    "ca_path" => "",
+//    "cipher" => ""
+//));
 define("DB_CONNECT_OPTIONS", array(
     MYSQLI_OPT_CONNECT_TIMEOUT => 10
 ));

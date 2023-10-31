@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/9.3/phpunit.xsd">
+  <coverage>
+    <include>
+      <directory suffix=".php">src</directory>
+    </include>
+    <report>
+      <clover outputFile="target/reports/unit/clover.xml"/>
+      <html outputDirectory="target/reports/unit/coverage"/>
+    </report>
+  </coverage>
+  <testsuites>
+    <testsuite name="PHPUnit testsuite">
+      <directory suffix="Test.php">tests</directory>
+    </testsuite>
+  </testsuites>
+  <!-- Code coverage report, optional -->
+  <logging>
+    <junit outputFile="target/reports/unit/junit.xml"/>
+  </logging>
+  <php>
+    <ini name="date.timezone" value="Europe/Berlin"/>
+  </php>
+</phpunit>

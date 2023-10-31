@@ -1,0 +1,23 @@
+{
+    "name": "PasswordLib/PasswordLib",
+    "type": "library",
+    "description": "A Password Hashing Library",
+    "keywords": ["password", "hash", "hashing", "random", "salt", "crypt"],
+    "homepage": "https://github.com/ircmaxell/PHP-PasswordLib",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Anthony Ferrara",
+            "email": "ircmaxell@ircmaxell.com",
+            "homepage": "http://blog.ircmaxell.com"
+        }
+    ],
+    "require": {
+        "php": ">=5.3.2"
+    },
+    "autoload": {
+        "psr-0": {
+            "PasswordLib": "lib"
+        }
+    }
+}

@@ -1,0 +1,14 @@
+language: php
+php:
+  - 5.3
+  - 5.4
+  - 5.5
+  - 5.6
+
+before_script:
+  - ./scripts/bundle-devtools.sh .
+  - export GOODBY_CSV_TEST_DB_HOST=127.0.0.1
+  - export GOODBY_CSV_TEST_DB_USER=root
+  - export GOODBY_CSV_TEST_DB_PASS=""
+  - mysql -e 'create database goodby_csv_test'
+script: ./vendor/bin/phpunit --coverage-text --configuration phpunit.xml.dist

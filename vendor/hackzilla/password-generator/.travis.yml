@@ -1,0 +1,39 @@
+language: php
+
+php:
+  - 7.3
+  - 7.4
+  - 8.0
+  - nightly
+
+env:
+  global:
+    - PATH="$HOME/.composer/vendor/bin:$PATH"
+
+matrix:
+  fast_finish: true
+  include:
+    - php: 8.0
+      env: CS_FIXER=run
+    - php: 7.3
+      env: CS_FIXER=run
+    - php: 7.3
+      env: COMPOSER_FLAGS="--prefer-lowest"
+  allow_failures:
+    - php: nightly
+
+sudo: false
+
+cache:
+  directories:
+    - $HOME/.composer/cache
+
+before_script:
+  - composer selfupdate
+  - composer config -g github-oauth.github.com $GITHUB_OAUTH_TOKEN
+  - composer global require phpunit/phpunit fabpot/php-cs-fixer --no-update
+  - composer global update --prefer-dist --no-interaction
+  - composer update --prefer-dist --no-interaction $COMPOSER_FLAGS
+
+script:
+  - make test

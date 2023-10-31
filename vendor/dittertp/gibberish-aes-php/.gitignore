@@ -1,0 +1,10 @@
+/target
+/vendor/
+/instance-src
+/.idea
+/.buildpath
+/.project
+/.settings/
+.sass-cache
+build.properties
+.phpunit.result.cache

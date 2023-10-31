@@ -19,8 +19,19 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
+Use TeampassClasses\SuperGlobal\SuperGlobal;
+Use TeampassClasses\NestedTree\NestedTree;
+Use TeampassClasses\PerformChecks\PerformChecks;
+Use voku\helper\AntiXSS;
+Use EZimuel\PHPSecureSession;
+//Use DB;
 
-require_once 'SecureHandler.php';
+// Load functions
+require_once 'main.functions.php';
+
+loadClasses('DB');
+
+//require_once 'SecureHandler.php';
 session_name('teampass_session');
 session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] === false || !isset($_SESSION['key']) || empty($_SESSION['key'])) {
@@ -28,25 +39,36 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] === false || !isset($_SESSION['
 }
 
 // Load config
-if (file_exists('../includes/config/tp.config.php')) {
-    include_once '../includes/config/tp.config.php';
-} elseif (file_exists('./includes/config/tp.config.php')) {
-    include_once './includes/config/tp.config.php';
-} else {
+try {
+    include_once __DIR__.'/../includes/config/tp.config.php';
+} catch (Exception $e) {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+    exit();
 }
 
 // Do checks
-require_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
-require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
+// Instantiate the class with posted data
+$checkUserAccess = new PerformChecks(
+    dataSanitizer(
+        [
+            'type' => isset($_POST['type']) === true ? $_POST['type'] : '',
+        ],
+        [
+            'type' => 'trim|escape',
+        ],
+    )
+);
 
-if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'items', $SETTINGS) === false) {
+// Handle the case
+$checkUserAccess->caseHandler();
+if ($checkUserAccess->userAccessPage($_SESSION['user_id'], $_SESSION['key'], 'items', $SETTINGS) === false) {
     // Not allowed page
-    echo "> ".$_SESSION['user_id']." < - > ".$_SESSION['key']." <";
+    //echo "> ".$_SESSION['user_id']." < - > ".$_SESSION['key']." <";
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
+
 
 /*
  * Define Timezone
@@ -58,10 +80,18 @@ if (isset($SETTINGS['timezone']) === true) {
 }
 
 require_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user']['user_language'] . '.php';
-require_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
 header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, must-revalidate');
-require_once 'main.functions.php';
+
+
+// Prepare nestedTree
+$tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+
+// Load AntiXSS
+$antiXss = new AntiXSS();
+
+// Connect to mysql server
+
 
 // Ensure Complexity levels are translated
 if (defined('TP_PW_COMPLEXITY') === false) {
@@ -76,31 +106,6 @@ if (defined('TP_PW_COMPLEXITY') === false) {
         )
     );
 }
-
-// Load AntiXSS
-include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/portable-ascii-master/src/voku/helper/ASCII.php';
-include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/portable-utf8-master/src/voku/helper/UTF8.php';
-include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/anti-xss-master/src/voku/helper/AntiXSS.php';
-$antiXss = new voku\helper\AntiXSS();
-
-// Connect to mysql server
-require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
-if (defined('DB_PASSWD_CLEAR') === false) {
-    define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
-}
-DB::$host = DB_HOST;
-DB::$user = DB_USER;
-DB::$password = DB_PASSWD_CLEAR;
-DB::$dbName = DB_NAME;
-DB::$port = DB_PORT;
-DB::$encoding = DB_ENCODING;
-DB::$ssl = DB_SSL;
-DB::$connect_options = DB_CONNECT_OPTIONS;
-
-// Load Tree
-require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tree/NestedTree/NestedTree.php';
-$tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
-
 
 // Prepare POST variables
 $data = [
@@ -5998,17 +6003,21 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
             $domain_host = parse_url($SETTINGS['cpassman_url'], PHP_URL_HOST);
             if (str_contains($domain_host, 'www.') === true) {
                 $domain_host = (string) $SETTINGS['otv_subdomain'] . '.' . substr($domain_host, 4);
+            } else {
+                $domain_host = (string) $SETTINGS['otv_subdomain'] . '.' . $domain_host;
             }
             $url = $domain_scheme.'://'.$domain_host . '/index.php?otv=true&code=' . $data['code'] . '&key=' . $data['encrypted'] . '&stamp=' . $data['time_limit'];
         } else {
             $url = $SETTINGS['cpassman_url'] . '/index.php?otv=true&code=' . $data['code'] . '&key=' . $data['encrypted'] . '&stamp=' . $data['time_limit'];
         }
 
-        echo json_encode(
+        echo (string) prepareExchangedData(
+            $SETTINGS['cpassman_dir'],
             array(
                 'error' => false,
                 'new_url' => $url,
-            )
+            ),
+            'encode'
         );
         break;
 
@@ -6266,8 +6275,8 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
         }
 
         //Build tree
-        require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tree/NestedTree/NestedTree.php';
-        $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+        //require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tree/NestedTree/NestedTree.php';
+        //$tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
         $tree->rebuild();
         $folders = $tree->getDescendants();
         $inc = 0;

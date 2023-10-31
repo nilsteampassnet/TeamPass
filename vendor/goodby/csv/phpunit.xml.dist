@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit
+        bootstrap="phpunit-bootstrap.php"
+        processIsolation="false"
+        verbose="true"
+        strict="false"
+        colors="true">
+    <testsuites>
+        <testsuite name="PHPUnit">
+            <directory>src/*/*/*/Tests</directory>
+        </testsuite>
+    </testsuites>
+
+    <php>
+        <includePath>./../html/install/src</includePath>
+        <!-- Don't change GOODBY_CSV_TEST_DB_*_DEFAULT here. See phpunit-bootstrap.php. -->
+        <server name="GOODBY_CSV_TEST_DB_HOST_DEFAULT" value="localhost"/>
+        <server name="GOODBY_CSV_TEST_DB_NAME_DEFAULT" value="goodby_csv_test"/>
+        <server name="GOODBY_CSV_TEST_DB_USER_DEFAULT" value="root"/>
+        <server name="GOODBY_CSV_TEST_DB_PASS_DEFAULT" value="root"/>
+    </php>
+
+    <logging>
+        <log
+                type="coverage-html"
+                target="metrics/coverage"
+                charset="UTF-8"
+                yui="true"
+                highlight="false"
+                lowUpperBound="35"
+                highLowerBound="70"/>
+        <!-- <log type="coverage-text" target="php://stdout" lowUpperBound="35" highLowerBound="70" /> -->
+    </logging>
+
+    <filter>
+        <whitelist>
+            <directory suffix=".php">src</directory>
+            <!-- <file>/path/to/file</file> -->
+            <exclude>
+                <!-- <file>/path/to/file</file> -->
+                <directory suffix="Interface.php">src</directory>
+                <directory>src/*/*/*/Tests</directory>
+            </exclude>
+        </whitelist>
+    </filter>
+    <listeners>
+        <listener class="\Mockery\Adapter\Phpunit\TestListener"
+                  file="vendor/mockery/mockery/library/Mockery/Adapter/Phpunit/TestListener.php"/>
+    </listeners>
+</phpunit>

@@ -24,8 +24,11 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-use LdapRecord\Connection;
-use LdapRecord\Container;
+Use LdapRecord\Connection;
+Use LdapRecord\Container;
+Use voku\helper\AntiXSS;
+Use TeampassClasses\SuperGlobal\SuperGlobal;
+Use TeampassClasses\NestedTree\NestedTree;
 
 require_once 'SecureHandler.php';
 session_name('teampass_session');
@@ -48,34 +51,16 @@ if (! isset($SETTINGS['cpassman_dir']) || empty($SETTINGS['cpassman_dir']) === t
     $SETTINGS['cpassman_dir'] = '..';
 }
 
-// Load libraries
+// Load libraries if needed
 require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
-require_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
-require_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
-include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-$superGlobal = new protect\SuperGlobal\SuperGlobal();
+loadClasses('DB');
+$superGlobal = new SuperGlobal();
 
 // Prepare POST variables
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $post_login = filter_input(INPUT_POST, 'login', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES);
 
-// connect to the server
-if (defined('DB_PASSWD_CLEAR') === false) {
-    define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
-}
-require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
-if (defined('DB_PASSWD_CLEAR') === false) {
-    define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
-}
-DB::$host = DB_HOST;
-DB::$user = DB_USER;
-DB::$password = DB_PASSWD_CLEAR;
-DB::$dbName = DB_NAME;
-DB::$port = DB_PORT;
-DB::$encoding = DB_ENCODING;
-DB::$ssl = DB_SSL;
-DB::$connect_options = DB_CONNECT_OPTIONS;
 
 if ($post_type === 'identify_user') {
     //--------
@@ -86,8 +71,9 @@ if ($post_type === 'identify_user') {
     defineComplexity();
 
     // Load superGlobals
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-    $superGlobal = new protect\SuperGlobal\SuperGlobal();
+    ///include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+    //$superGlobal = new protect\SuperGlobal\SuperGlobal();
+    //$superGlobal = new SuperGlobal();
 
     // If Debug then clean the files
     if (DEBUGLDAP === true) {
@@ -186,14 +172,15 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     error_reporting(E_ERROR);
 
     // Load AntiXSS
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/portable-ascii-master/src/voku/helper/ASCII.php';
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/portable-utf8-master/src/voku/helper/UTF8.php';
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/anti-xss-master/src/voku/helper/AntiXSS.php';
-    $antiXss = new voku\helper\AntiXSS();
+    //include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/portable-ascii-master/src/voku/helper/ASCII.php';
+    //include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/portable-utf8-master/src/voku/helper/UTF8.php';
+    //include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/anti-xss-master/src/voku/helper/AntiXSS.php';
+    $antiXss = new AntiXSS();
 
     // Load superGlobals
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-    $superGlobal = new protect\SuperGlobal\SuperGlobal();
+    //include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+    //$superGlobal = new protect\SuperGlobal\SuperGlobal();
+    $superGlobal = new SuperGlobal();
 
     // Prepare GET variables
     $sessionAdmin = $superGlobal->get('user_admin', 'SESSION');
@@ -204,7 +191,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     $server['PHP_AUTH_PW'] = $superGlobal->get('PHP_AUTH_PW', 'SERVER');
 
     // connect to the server
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
+    //include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
     DB::$host = DB_HOST;
     DB::$user = DB_USER;
     DB::$password = defined('DB_PASSWD_CLEAR') === false ? defuseReturnDecrypted(DB_PASSWD, $SETTINGS) : DB_PASSWD_CLEAR;
@@ -1194,58 +1181,10 @@ function checkUserPasswordValidity($userInfo, $numDaysBeforePwExpiration, $lastP
  */
 function authenticateThroughAD(string $username, array $userInfo, string $passwordClear, array $SETTINGS): array
 {
-    // Load expected libraries
-    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Illuminate/Contracts/Auth/Authenticatable.php';
-    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Illuminate/Contracts/Support/Arrayable.php';
-    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tightenco/Collect/Support/Traits/EnumeratesValues.php';
-    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tightenco/Collect/Support/Traits/Macroable.php';
-    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tightenco/Collect/Support/helpers.php';
-    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tightenco/Collect/Support/Arr.php';
-    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tightenco/Collect/Contracts/Support/Jsonable.php';
-    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tightenco/Collect/Contracts/Support/Arrayable.php';
-    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tightenco/Collect/Support/Enumerable.php';
-    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tightenco/Collect/Support/Collection.php';
-    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/CarbonTimeZone.php';
-    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Units.php';
-    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Week.php';
-    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Timestamp.php';
-    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Test.php';
-    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/ObjectInitialisation.php';
-    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Serialization.php';
-    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/IntervalRounding.php';
-    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Rounding.php';
-    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Localization.php';
-    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Options.php';
-    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Cast.php';
-    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Mutability.php';
-    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Modifiers.php';
-    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Mixin.php';
-    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Macro.php';
-    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Difference.php';
-    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Creator.php';
-    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Converter.php';
-    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Comparison.php';
-    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Boundaries.php';
-    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Traits/Date.php';
-    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/CarbonInterface.php';
-    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Carbon/Carbon.php';
-    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/DetectsErrors.php';
-    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/Connection.php';
-    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/LdapInterface.php';
-    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/HandlesConnection.php';
-    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/Ldap.php';
-    
-    // Autoloader relative path to this PHP file
-    //require_once __DIR__.'/../vendor/autoload.php';
-
-    // Load LDAP libraries
-    $ad = new SplClassLoader('LdapRecord', '../includes/libraries');
-    $ad->register();
-
     // Build ldap configuration array
     $config = [
         // Mandatory Configuration Options
-        'hosts' => [explode(',', $SETTINGS['ldap_hosts'])],
+        'hosts' => explode(',', $SETTINGS['ldap_hosts']),
         'base_dn' => $SETTINGS['ldap_bdn'],
         'username' => $SETTINGS['ldap_username'],
         'password' => $SETTINGS['ldap_password'],
@@ -1349,7 +1288,7 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
         require_once 'ldap.activedirectory.php';
     } else {
         require_once 'ldap.openldap.php';
-    }   
+    }
     $ret = getUserADGroups(
         $SETTINGS['ldap_type'] === 'ActiveDirectory' ?
             $userADInfos[(isset($SETTINGS['ldap_user_dn_attribute']) === true && empty($SETTINGS['ldap_user_dn_attribute']) === false) ? $SETTINGS['ldap_user_dn_attribute'] : 'distinguishedname'][0] :
@@ -1508,8 +1447,9 @@ function finalizeAuthentication(
 function yubicoMFACheck($dataReceived, string $userInfo, array $SETTINGS): array
 {
     // Load superGlobals
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-    $superGlobal = new protect\SuperGlobal\SuperGlobal();
+    //include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+    //$superGlobal = new protect\SuperGlobal\SuperGlobal();
+    $superGlobal = new SuperGlobal();
     $sessionAdmin = $superGlobal->get('user_admin', 'SESSION');
     $sessionUrl = $superGlobal->get('initial_url', 'SESSION');
     $sessionPwdAttempts = $superGlobal->get('pwd_attempts', 'SESSION');
@@ -1679,8 +1619,9 @@ function googleMFACheck(string $username, array $userInfo, $dataReceived, array 
         && empty($dataReceived['GACode']) === false
     ) {
         // Load superGlobals
-        include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-        $superGlobal = new protect\SuperGlobal\SuperGlobal();
+        //include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+        //$superGlobal = new protect\SuperGlobal\SuperGlobal();
+        $superGlobal = new SuperGlobal();
         $sessionAdmin = $superGlobal->get('user_admin', 'SESSION');
         $sessionUrl = $superGlobal->get('initial_url', 'SESSION');
         $sessionPwdAttempts = $superGlobal->get('pwd_attempts', 'SESSION');
@@ -1776,8 +1717,9 @@ function duoMFACheck(
 ): array
 {
     // Load superGlobals
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';            
-    $superGlobal = new protect\SuperGlobal\SuperGlobal();
+    //include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';            
+    //$superGlobal = new protect\SuperGlobal\SuperGlobal();
+    $superGlobal = new SuperGlobal();
 
     $sessionPwdAttempts = $superGlobal->get('pwd_attempts', 'SESSION');
     $saved_state = null !== $superGlobal->get('duo_state','SESSION') ? $superGlobal->get('duo_state','SESSION') : '';
@@ -1842,8 +1784,9 @@ function duoMFAPerform(
 ): array
 {
     // Load superGlobals
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';            
-    $superGlobal = new protect\SuperGlobal\SuperGlobal();
+    //include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';            
+    //$superGlobal = new protect\SuperGlobal\SuperGlobal();
+    $superGlobal = new SuperGlobal();
 
     // load libraries
     require $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/php-jwt/BeforeValidException.php';
@@ -2137,7 +2080,7 @@ class initialChecks {
 
     // Methods
     public function get_is_too_much_attempts($attempts) {
-        if ($attempts > 3) {
+        if ($attempts > 30) {
             throw new Exception(
                 "error" 
             );
@@ -2249,8 +2192,9 @@ function identifyDoInitialChecks(
         $checks->get_is_too_much_attempts($sessionPwdAttempts);
     } catch (Exception $e) {
         // Load superGlobals
-        include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-        $superGlobal = new protect\SuperGlobal\SuperGlobal();
+        //include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+        //$superGlobal = new protect\SuperGlobal\SuperGlobal();
+        $superGlobal = new SuperGlobal();
         $superGlobal->put('next_possible_pwd_attempts', time() + 10, 'SESSION');
         $superGlobal->put('pwd_attempts', 0, 'SESSION');
 
@@ -2497,9 +2441,10 @@ function identifyDoMFAChecks(
             if ($ret['error'] !== false) {
                 logEvents($SETTINGS, 'failed_auth', 'bad_duo_mfa', '', stripslashes($username), stripslashes($username));
                 // Load superGlobals
-                include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+                //include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
                 # Retrieve the previously stored state and username from the session
-                $superGlobal = new protect\SuperGlobal\SuperGlobal();
+                //$superGlobal = new protect\SuperGlobal\SuperGlobal();
+                $superGlobal = new SuperGlobal();
                 $superGlobal->forget('duo_state','SESSION');
                 $superGlobal->forget('duo_data','SESSION');
                 $superGlobal->forget('duo_status','SESSION');

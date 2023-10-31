@@ -19,10 +19,18 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
+Use PasswordLib\PasswordLib;
+Use TeampassClasses\SuperGlobal\SuperGlobal;
+Use Hackzilla\PasswordGenerator\Generator\ComputerPasswordGenerator;
+Use Hackzilla\PasswordGenerator\RandomGenerator\Php7RandomGenerator;
+Use RobThree\Auth\TwoFactorAuth;
+Use EZimuel\PHPSecureSession;
+Use DB;
+
 set_time_limit(600);
 
 if (isset($_SESSION) === false) {
-    include_once 'SecureHandler.php';
+    //include_once 'SecureHandler.php';
     session_name('teampass_session');
     session_start();
     $_SESSION['CPM'] = 1;
@@ -35,12 +43,11 @@ if (isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1) {
 }
 
 // Load config
-if (file_exists('../includes/config/tp.config.php')) {
-    include '../includes/config/tp.config.php';
-} elseif (file_exists('./includes/config/tp.config.php')) {
-    include './includes/config/tp.config.php';
-} else {
+try {
+    include_once __DIR__.'/../includes/config/tp.config.php';
+} catch (Exception $e) {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+    exit();
 }
 
 // Define Timezone
@@ -64,7 +71,7 @@ if (
     && checkUser($_SESSION['user_id'], $_SESSION['key'], 'home', $SETTINGS) === false
 ) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-    include $SETTINGS['cpassman_dir'] . '/error.php';
+    include __DIR__.'/../error.php';
     exit();
 } elseif ((isset($_SESSION['user_id']) === true
         && isset($_SESSION['key'])) === true
@@ -76,7 +83,7 @@ if (
     mainQuery($SETTINGS);
 } else {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-    include $SETTINGS['cpassman_dir'] . '/error.php';
+    include __DIR__.'/../error.php';
     exit();
 }
 
@@ -89,29 +96,13 @@ function mainQuery(array $SETTINGS)
     header('Cache-Control: no-cache');
     error_reporting(E_ERROR);
 
-
     // Includes
-    include_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user']['user_language'] . '.php';
-    include_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
-    include_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
-    include_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
+    include_once __DIR__.'/../includes/language/' . $_SESSION['user']['user_language'] . '.php';
+    include_once __DIR__.'/../includes/config/settings.php';
+    include_once __DIR__.'/../sources/main.functions.php';
 
-    // Connect to mysql server
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
-
-    // Prepare DB password
-    if (defined('DB_PASSWD_CLEAR') === false) {
-        define('DB_PASSWD_CLEAR', cryption(DB_PASSWD, '', 'decrypt', $SETTINGS)['string']);
-    }
-
-    DB::$host = DB_HOST;
-    DB::$user = DB_USER;
-    DB::$password = DB_PASSWD_CLEAR;
-    DB::$dbName = DB_NAME;
-    DB::$port = DB_PORT;
-    DB::$encoding = DB_ENCODING;
-    DB::$ssl = DB_SSL;
-    DB::$connect_options = DB_CONNECT_OPTIONS;
+    // Load libraries
+    loadClasses('DB');
 
     // User's language loading
     include_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user']['user_language'] . '.php';
@@ -511,9 +502,7 @@ function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived,
         */
         case 'generate_new_key'://action_key
             // load passwordLib library
-            $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
-            $pwdlib->register();
-            $pwdlib = new PasswordLib\PasswordLib();
+            $pwdlib = new PasswordLib();
             // generate key
             $key = $pwdlib->getRandomToken(filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT));
             return '[{"key" : "' . htmlentities($key, ENT_QUOTES) . '"}]';
@@ -786,9 +775,7 @@ function changePassword(
 ): string
 {
     // load passwordLib library
-    $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
-    $pwdlib->register();
-    $pwdlib = new PasswordLib\PasswordLib();
+    $pwdlib = new PasswordLib();
 
     // Prepare variables
     $post_new_password_hashed = $pwdlib->createPasswordHash($post_new_password);
@@ -949,7 +936,7 @@ function generateQRCode(
             'encode'
         );
     }
-
+    
     // Check if user exists
     if (isValueSetNullEmpty($post_id) === true) {
         // Get data about user
@@ -971,11 +958,6 @@ function generateQRCode(
     // Get number of returned users
     $counter = DB::count();
 
-    // load passwordLib library
-    $pwdlib = new SplClassLoader('PasswordLib', $SETTINGS['cpassman_dir'] . '/includes/libraries');
-    $pwdlib->register();
-    $pwdlib = new PasswordLib\PasswordLib();
-
     // Do treatment
     if ($counter === 0) {
         // Not a registered user !
@@ -991,6 +973,8 @@ function generateQRCode(
         );
     }
 
+    // load passwordLib library
+    $pwdlib = new PasswordLib();
     if (
         isSetArrayOfValues([$post_pwd, $data['pw']]) === true
         && $pwdlib->verifyPasswordHash($post_pwd, $data['pw']) === false
@@ -1021,8 +1005,7 @@ function generateQRCode(
     }
     
     // generate new GA user code
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Authentication/TwoFactorAuth/TwoFactorAuth.php';
-    $tfa = new Authentication\TwoFactorAuth\TwoFactorAuth($SETTINGS['ga_website_name']);
+    $tfa = new TwoFactorAuth($SETTINGS['ga_website_name']);
     $gaSecretKey = $tfa->createSecret();
     $gaTemporaryCode = GenerateCryptKey(12, false, true, true, false, true, $SETTINGS);
 
@@ -1160,17 +1143,10 @@ function generateGenericPassword(
             'encode'
         );
     }
-    
-    $generator = new SplClassLoader('PasswordGenerator\Generator', '../includes/libraries');
-    $generator->register();
-    $generator = new PasswordGenerator\Generator\ComputerPasswordGenerator();
-
-    // Is PHP7 being used?
-    if (version_compare(PHP_VERSION, '7.0.0', '>=')) {
-        $php7generator = new SplClassLoader('PasswordGenerator\RandomGenerator', '../includes/libraries');
-        $php7generator->register();
-        $generator->setRandomGenerator(new PasswordGenerator\RandomGenerator\Php7RandomGenerator());
-    }
+    // Load libraries
+    //require_once __DIR__.'/../vendor/autoload.php';
+    $generator = new ComputerPasswordGenerator();
+    $generator->setRandomGenerator(new Php7RandomGenerator());
 
     // Manage size
     $generator->setLength(($size <= 0) ? 10 : $size);
@@ -1553,9 +1529,7 @@ function isUserPasswordCorrect(
 
             // Use the password check
             // load passwordLib library
-            $pwdlib = new SplClassLoader('PasswordLib', $SETTINGS['cpassman_dir'] . '/includes/libraries');
-            $pwdlib->register();
-            $pwdlib = new PasswordLib\PasswordLib();
+            $pwdlib = new PasswordLib();
             
             if ($pwdlib->verifyPasswordHash(htmlspecialchars_decode($post_user_password), $userInfo['pw']) === true) {
                 // GOOD password
@@ -1642,9 +1616,7 @@ function changePrivateKeyEncryptionPassword(
             );
 
             // Load superGlobals
-            include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-            $superGlobal = new protect\SuperGlobal\SuperGlobal();
-
+            $superGlobal = new SuperGlobal();
             $superGlobal->put('private_key', $privateKey, 'SESSION', 'user');
         }
 
@@ -1710,9 +1682,7 @@ function initializeUserPassword(
                 $userKeys = generateUserKeys($post_user_password);
 
                 // load passwordLib library
-                $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
-                $pwdlib->register();
-                $pwdlib = new PasswordLib\PasswordLib();
+                $pwdlib = new PasswordLib();
 
                 // Update user account
                 DB::update(
@@ -2894,8 +2864,7 @@ function changeUserAuthenticationPassword(
             }
 
             // Load superGlobals
-            include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-            $superGlobal = new protect\SuperGlobal\SuperGlobal();
+            $superGlobal = new SuperGlobal();
 
             if ($superGlobal->get('private_key', 'SESSION', 'user') === $privateKey) {
                 // Encrypt it with new password
@@ -2903,9 +2872,7 @@ function changeUserAuthenticationPassword(
 
                 // Generate new hash for auth password
                 // load passwordLib library
-                $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
-                $pwdlib->register();
-                $pwdlib = new PasswordLib\PasswordLib();
+                $pwdlib = new PasswordLib();
 
                 // Prepare variables
                 $newPw = $pwdlib->createPasswordHash($post_new_pwd);
@@ -2998,8 +2965,7 @@ function changeUserLDAPAuthenticationPassword(
                 );
 
                 // Load superGlobals
-                include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-                $superGlobal = new protect\SuperGlobal\SuperGlobal();
+                $superGlobal = new SuperGlobal();
                 $superGlobal->put('private_key', $privateKey, 'SESSION', 'user');
 
                 return prepareExchangedData(
@@ -3066,8 +3032,7 @@ function changeUserLDAPAuthenticationPassword(
                     );
                     
                     // Load superGlobals
-                    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-                    $superGlobal = new protect\SuperGlobal\SuperGlobal();
+                    $superGlobal = new SuperGlobal();
                     $superGlobal->put('private_key', $privateKey, 'SESSION', 'user');
 
                     return prepareExchangedData(

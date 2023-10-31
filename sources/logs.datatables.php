@@ -394,6 +394,10 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
             $cell = langHdl('log_user_email_changed').' '.$change[1];
         } elseif ($record['label'] === 'at_user_new_keys') {
             $cell = langHdl('new_keys_generated');
+        } elseif ($record['label'] === 'at_user_keys_download') {
+            $cell = langHdl('user_keys_downloaded');
+        } elseif ($record['label'] === 'at_2fa_google_code_send_by_email') {
+            $cell = langHdl('mfa_code_send_by_email');
         } else {
             $cell = htmlspecialchars(stripslashes((string) $record['label']), ENT_QUOTES);
         }

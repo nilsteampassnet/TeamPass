@@ -165,13 +165,15 @@ define("DB_NAME", "' . $database . '");
 define("DB_PREFIX", "' . $pre . '");
 define("DB_PORT", "' . $port . '");
 define("DB_ENCODING", "' . $encoding . '");
-define("DB_SSL", array(
-    "key" => "",
-    "cert" => "",
-    "ca_cert" => "",
-    "ca_path" => "",
-    "cipher" => ""
-));
+define("DB_SSL", false); // if DB over SSL then comment this line
+// if DB over SSL then uncomment the following lines
+//define("DB_SSL", array(
+//    "key" => "",
+//    "cert" => "",
+//    "ca_cert" => "",
+//    "ca_path" => "",
+//    "cipher" => ""
+//));
 define("DB_CONNECT_OPTIONS", array(
     MYSQLI_OPT_CONNECT_TIMEOUT => 10
 ));
@@ -794,15 +796,17 @@ if (isset($post_type)) {
     define("DB_PREFIX", "' . DB_PREFIX . '");
     define("DB_PORT", "' . DB_PORT . '");
     define("DB_ENCODING", "' . DB_ENCODING . '");
-    define("DB_SSL", array(
-        "key" => "",
-        "cert" => "",
-        "ca_cert" => "",
-        "ca_path" => "",
-        "cipher" => ""
-    ));
+    define("DB_SSL", false); // if DB over SSL then comment this line
+    // if DB over SSL then uncomment the following lines
+    //define("DB_SSL", array(
+    //    "key" => "",
+    //    "cert" => "",
+    //    "ca_cert" => "",
+    //    "ca_path" => "",
+    //    "cipher" => ""
+    //));
     define("DB_CONNECT_OPTIONS", array(
-    MYSQLI_OPT_CONNECT_TIMEOUT => 10
+        MYSQLI_OPT_CONNECT_TIMEOUT => 10
     ));
     define("SECUREPATH", "' . SECUREPATH. '");
 
@@ -835,13 +839,7 @@ if (isset($post_type)) {
                 include '../includes/config/settings.php';
 
                 // ensure the new constant is set
-                define("DB_SSL", array(
-                    "key" => "",
-                    "cert" => "",
-                    "ca_cert" => "",
-                    "ca_path" => "",
-                    "cipher" => ""
-                ));
+                define("DB_SSL", false);
                 define("DB_CONNECT_OPTIONS", array(
                     MYSQLI_OPT_CONNECT_TIMEOUT => 10
                 ));

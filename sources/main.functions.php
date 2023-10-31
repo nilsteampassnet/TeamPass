@@ -26,6 +26,23 @@ declare(strict_types=1);
 
 use LdapRecord\Connection;
 use ForceUTF8\Encoding;
+Use Elegant\Sanitizer\Sanitizer;
+Use voku\helper\AntiXSS;
+Use Hackzilla\PasswordGenerator\Generator\ComputerPasswordGenerator;
+Use Hackzilla\PasswordGenerator\RandomGenerator\Php7RandomGenerator;
+Use TeampassClasses\SuperGlobal\SuperGlobal;
+Use TeampassClasses\NestedTree\NestedTree;
+Use Defuse\Crypto\Key;
+Use Defuse\Crypto\Crypto;
+Use Defuse\Crypto\KeyProtectedByPassword;
+Use Defuse\Crypto\File;
+use PHPMailer\PHPMailer\PHPMailer;
+Use phpseclib\Crypt\RSA;
+Use phpseclib\Crypt\AES;
+Use PasswordLib\PasswordLib;
+Use Symfony\Component\Process\Process;
+Use Symfony\Component\Process\PhpExecutableFinder;
+//Use DB;
 
 if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
     //die('Hacking attempt...');
@@ -38,6 +55,10 @@ if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir'
 
 header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, must-revalidate');
+
+loadClasses();
+
+
 /**
  * Convert language code to string.
  *
@@ -51,8 +72,8 @@ function langHdl(string $string): string
     }
 
     // Load superglobal
-    include_once __DIR__.'/../includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-    $superGlobal = new protect\SuperGlobal\SuperGlobal();
+    //include_once __DIR__.'/../includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+    $superGlobal = new SuperGlobal();
     // Get language string
     $session_language = $superGlobal->get(trim($string), 'SESSION', 'lang');
     if (is_null($session_language) === true) {
@@ -120,7 +141,7 @@ function cryption(string $message, string $ascii_key, string $type, ?array $SETT
     $ascii_key = empty($ascii_key) === true ? file_get_contents(SECUREPATH.'/'.SECUREFILE) : $ascii_key;
     $err = false;
     
-    $path = __DIR__.'/../includes/libraries/Encryption/Encryption/';
+    /*$path = __DIR__.'/../includes/libraries/Encryption/Encryption/';
 
     include_once $path . 'Exception/CryptoException.php';
     include_once $path . 'Exception/BadFormatException.php';
@@ -135,15 +156,15 @@ function cryption(string $message, string $ascii_key, string $type, ?array $SETT
     include_once $path . 'File.php';
     include_once $path . 'RuntimeTests.php';
     include_once $path . 'KeyProtectedByPassword.php';
-    include_once $path . 'Core.php';
+    include_once $path . 'Core.php';*/
     
     // convert KEY
-    $key = \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key);
+    $key = Key::loadFromAsciiSafeString($ascii_key);
     try {
         if ($type === 'encrypt') {
-            $text = \Defuse\Crypto\Crypto::encrypt($message, $key);
+            $text = Crypto::encrypt($message, $key);
         } elseif ($type === 'decrypt') {
-            $text = \Defuse\Crypto\Crypto::decrypt($message, $key);
+            $text = Crypto::decrypt($message, $key);
         }
     } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
         $err = 'an attack! either the wrong key was loaded, or the ciphertext has changed since it was created either corrupted in the database or intentionally modified by someone trying to carry out an attack.';
@@ -172,7 +193,7 @@ function cryption(string $message, string $ascii_key, string $type, ?array $SETT
 function defuse_generate_key()
 {
     // load PhpEncryption library
-    if (file_exists('../includes/config/tp.config.php') === true) {
+    /*if (file_exists('../includes/config/tp.config.php') === true) {
         $path = '../includes/libraries/Encryption/Encryption/';
     } elseif (file_exists('./includes/config/tp.config.php') === true) {
         $path = './includes/libraries/Encryption/Encryption/';
@@ -193,9 +214,9 @@ function defuse_generate_key()
     include_once $path . 'File.php';
     include_once $path . 'RuntimeTests.php';
     include_once $path . 'KeyProtectedByPassword.php';
-    include_once $path . 'Core.php';
+    include_once $path . 'Core.php';*/
 
-    $key = \Defuse\Crypto\Key::createNewRandomKey();
+    $key = Key::createNewRandomKey();
     $key = $key->saveToAsciiSafeString();
     return $key;
 }
@@ -210,7 +231,7 @@ function defuse_generate_key()
 function defuse_generate_personal_key(string $psk): string
 {
     // load PhpEncryption library
-    if (file_exists('../includes/config/tp.config.php') === true) {
+    /*if (file_exists('../includes/config/tp.config.php') === true) {
         $path = '../includes/libraries/Encryption/Encryption/';
     } elseif (file_exists('./includes/config/tp.config.php') === true) {
         $path = './includes/libraries/Encryption/Encryption/';
@@ -231,9 +252,9 @@ function defuse_generate_personal_key(string $psk): string
     include_once $path . 'File.php';
     include_once $path . 'RuntimeTests.php';
     include_once $path . 'KeyProtectedByPassword.php';
-    include_once $path . 'Core.php';
+    include_once $path . 'Core.php';*/
     
-    $protected_key = \Defuse\Crypto\KeyProtectedByPassword::createRandomPasswordProtectedKey($psk);
+    $protected_key = KeyProtectedByPassword::createRandomPasswordProtectedKey($psk);
     return $protected_key->saveToAsciiSafeString(); // save this in user table
 }
 
@@ -248,7 +269,7 @@ function defuse_generate_personal_key(string $psk): string
 function defuse_validate_personal_key(string $psk, string $protected_key_encoded): string
 {
     // load PhpEncryption library
-    if (file_exists('../includes/config/tp.config.php') === true) {
+    /*if (file_exists('../includes/config/tp.config.php') === true) {
         $path = '../includes/libraries/Encryption/Encryption/';
     } elseif (file_exists('./includes/config/tp.config.php') === true) {
         $path = './includes/libraries/Encryption/Encryption/';
@@ -269,10 +290,10 @@ function defuse_validate_personal_key(string $psk, string $protected_key_encoded
     include_once $path . 'File.php';
     include_once $path . 'RuntimeTests.php';
     include_once $path . 'KeyProtectedByPassword.php';
-    include_once $path . 'Core.php';
+    include_once $path . 'Core.php';*/
 
     try {
-        $protected_key_encoded = \Defuse\Crypto\KeyProtectedByPassword::loadFromAsciiSafeString($protected_key_encoded);
+        $protected_key_encoded = KeyProtectedByPassword::loadFromAsciiSafeString($protected_key_encoded);
         $user_key = $protected_key_encoded->unlockKey($psk);
         $user_key_encoded = $user_key->saveToAsciiSafeString();
     } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
@@ -382,20 +403,18 @@ function identifyUserRights(
     $SETTINGS
 ) {
     //load ClassLoader
-    include_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
+    /*include_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
     // Load superglobal
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-    $superGlobal = new protect\SuperGlobal\SuperGlobal();
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';*/
+    $superGlobal = new SuperGlobal();
 
     // Load class DB
-    if (class_exists('DB') === false) {
-        loadClass('DB');
-    }
+    loadClasses('DB');
     
     //Build tree
-    $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'] . '/includes/libraries');
-    $tree->register();
-    $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+    /*$tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'] . '/includes/libraries');
+    $tree->register();*/
+    $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
     // Check if user is ADMINISTRATOR    
     (int) $isAdmin === 1 ?
@@ -438,8 +457,7 @@ function identifyUserRights(
 function identAdmin($idFonctions, $SETTINGS, $tree)
 {
     // Load superglobal
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-    $superGlobal = new protect\SuperGlobal\SuperGlobal();
+    $superGlobal = new SuperGlobal();
     // Init
     $groupesVisibles = [];
     $superGlobal->put('personal_folders', [], 'SESSION');
@@ -484,7 +502,7 @@ function identAdmin($idFonctions, $SETTINGS, $tree)
             array_push($globalsVisibleFolders, $persfld['id']);
             array_push($globalsPersonalVisibleFolders, $persfld['id']);
             // get all descendants
-            $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+            $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
             $tree->rebuild();
             $tst = $tree->getDescendants($persfld['id']);
             foreach ($tst as $t) {
@@ -556,8 +574,7 @@ function identUser(
     object $tree
 ) {
     // Load superglobal
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-    $superGlobal = new protect\SuperGlobal\SuperGlobal();
+    $superGlobal = new SuperGlobal();
     // Init
     $superGlobal->put('groupes_visibles', [], 'SESSION');
     $superGlobal->put('personal_folders', [], 'SESSION');
@@ -868,17 +885,11 @@ function updateCacheTable(string $action, array $SETTINGS, ?int $ident = null): 
  */
 function cacheTableRefresh(array $SETTINGS): void
 {
-    include_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
-
     // Load class DB
-    if (class_exists('DB') === false) {
-        loadClass('DB');
-    }
+    loadClasses('DB');
 
     //Load Tree
-    $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'] .'/includes/libraries');
-    $tree->register();
-    $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+    $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
     // truncate table
     DB::query('TRUNCATE TABLE ' . prefixTable('cache'));
     // reload date
@@ -965,20 +976,13 @@ function cacheTableRefresh(array $SETTINGS): void
  */
 function cacheTableUpdate(array $SETTINGS, ?int $ident = null): void
 {
-    include_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
-    // Load superglobal
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-    $superGlobal = new protect\SuperGlobal\SuperGlobal();
+    $superGlobal = new SuperGlobal();
 
     // Load class DB
-    if (class_exists('DB') === false) {
-        loadClass('DB');
-    }
+    loadClasses('DB');
 
     //Load Tree
-    $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
-    $tree->register();
-    $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+    $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
     // get new value from db
     $data = DB::queryfirstrow(
         'SELECT label, description, id_tree, perso, restricted_to, login, url
@@ -1047,22 +1051,15 @@ function cacheTableUpdate(array $SETTINGS, ?int $ident = null): void
  */
 function cacheTableAdd(array $SETTINGS, ?int $ident = null): void
 {
-    include_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
-    // Load superglobal
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-    $superGlobal = new protect\SuperGlobal\SuperGlobal();
+    $superGlobal = new SuperGlobal();
     // Get superglobals
     $globalsUserId = $superGlobal->get('user_id', 'SESSION');
 
     // Load class DB
-    if (class_exists('DB') === false) {
-        loadClass('DB');
-    }
+    loadClasses('DB');
 
     //Load Tree
-    $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
-    $tree->register();
-    $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+    $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
     // get new value from db
     $data = DB::queryFirstRow(
         'SELECT i.label, i.description, i.id_tree as id_tree, i.perso, i.restricted_to, i.id, i.login, i.url, l.date
@@ -1343,19 +1340,12 @@ function buildEmail(
     $cron = false
 )
 {
-    // Load settings
-    //include_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
     // Load superglobal
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-    $superGlobal = new protect\SuperGlobal\SuperGlobal();
+    $superGlobal = new SuperGlobal();
     // Get user language
     include_once $SETTINGS['cpassman_dir'] . '/includes/language/' . (null !== $superGlobal->get('user_language', 'SESSION', 'user') ? $superGlobal->get('user_language', 'SESSION', 'user') : 'english') . '.php';
-    // Load library
-    include_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
     // load PHPMailer
-    $mail = new SplClassLoader('PHPMailer\PHPMailer', $SETTINGS['cpassman_dir'] . '/includes/libraries');
-    $mail->register();
-    $mail = new PHPMailer\PHPMailer\PHPMailer(true);
+    $mail = new PHPMailer(true);
 
     // send to user
     $mail->setLanguage('en', $SETTINGS['cpassman_dir'] . '/includes/libraries/PHPMailer/PHPMailer/language/');
@@ -1562,8 +1552,7 @@ function prepareExchangedData($teampassDir, $data, string $type, ?string $key = 
 {
     $teampassDir = __DIR__ . '/..';
     // Load superglobal
-    include_once $teampassDir . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-    $superGlobal = new protect\SuperGlobal\SuperGlobal();
+        $superGlobal = new SuperGlobal();
     // Get superglobals
     if ($key !== null) {
         $superGlobal->put('key', $key, 'SESSION');
@@ -1571,9 +1560,6 @@ function prepareExchangedData($teampassDir, $data, string $type, ?string $key = 
     } else {
         $globalsKey = $superGlobal->get('key', 'SESSION');
     }
-
-    //load Encoding
-    include_once $teampassDir . '/includes/libraries/ForceUTF8/Encoding.php';
     
     //Load CRYPTOJS
     include_once $teampassDir . '/includes/libraries/Encryption/CryptoJs/Encryption.php';
@@ -1679,16 +1665,8 @@ function GenerateCryptKey(
     bool $lowercase = false,
     array $SETTINGS = []
 ): string {
-    include_once __DIR__ . '/../sources/SplClassLoader.php';
-    $generator = new SplClassLoader('PasswordGenerator\Generator', __DIR__. '/../includes/libraries');
-    $generator->register();
-    $generator = new PasswordGenerator\Generator\ComputerPasswordGenerator();
-    // Is PHP7 being used?
-    if (version_compare(PHP_VERSION, '7.0.0', '>=')) {
-        $php7generator = new SplClassLoader('PasswordGenerator\RandomGenerator', __DIR__ . '/../includes/libraries');
-        $php7generator->register();
-        $generator->setRandomGenerator(new PasswordGenerator\RandomGenerator\Php7RandomGenerator());
-    }
+    $generator = new ComputerPasswordGenerator();
+    $generator->setRandomGenerator(new Php7RandomGenerator());
     
     // Manage size
     $generator->setLength((int) $size);
@@ -1751,9 +1729,7 @@ function logEvents(
     }
 
     // Load class DB
-    if (class_exists('DB') === false) {
-        loadClass('DB');
-    }
+    loadClasses('DB');
 
     DB::insert(
         prefixTable('log_system'),
@@ -1814,9 +1790,7 @@ function logItems(
     ?string $old_value = null
 ): void {
     // Load class DB
-    if (class_exists('DB') === false) {
-        loadClass('DB');
-    }
+    loadClasses('DB');
 
     // Insert log in DB
     DB::insert(
@@ -1894,7 +1868,7 @@ function notifyOnChange(int $item_id, string $action, array $SETTINGS): void
     ) {
         // Load superglobal
         include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-        $superGlobal = new protect\SuperGlobal\SuperGlobal();
+        $superGlobal = new SuperGlobal();
         // Get superglobals
         $globalsLastname = $superGlobal->get('lastname', 'SESSION');
         $globalsName = $superGlobal->get('name', 'SESSION');
@@ -1943,8 +1917,7 @@ function notifyOnChange(int $item_id, string $action, array $SETTINGS): void
 function notifyChangesToSubscribers(int $item_id, string $label, array $changes, array $SETTINGS): void
 {
     // Load superglobal
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-    $superGlobal = new protect\SuperGlobal\SuperGlobal();
+    $superGlobal = new SuperGlobal();
     // Get superglobals
     $globalsUserId = $superGlobal->get('user_id', 'SESSION');
     $globalsLastname = $superGlobal->get('lastname', 'SESSION');
@@ -1997,12 +1970,7 @@ function notifyChangesToSubscribers(int $item_id, string $label, array $changes,
  */
 function geItemReadablePath(int $id_tree, string $label, array $SETTINGS): string
 {
-    // Class loader
-    include_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
-    //Load Tree
-    $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
-    $tree->register();
-    $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+    $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
     $arbo = $tree->getPath($id_tree, true);
     $path = '';
     foreach ($arbo as $elem) {
@@ -2075,9 +2043,7 @@ function handleConfigFile($action, $SETTINGS, $field = null, $value = null)
     $tp_config_file = $SETTINGS['cpassman_dir'] . '/includes/config/tp.config.php';
 
     // Load class DB
-    if (class_exists('DB') === false) {
-        loadClass('DB');
-    }
+    loadClasses('DB');
 
     if (file_exists($tp_config_file) === false || $action === 'rebuild') {
         // perform a copy
@@ -2237,10 +2203,7 @@ function prepareFileWithDefuse(
     string $password = null
 ) {
     // Load AntiXSS
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/portable-ascii-master/src/voku/helper/ASCII.php';
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/portable-utf8-master/src/voku/helper/UTF8.php';
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/anti-xss-master/src/voku/helper/AntiXSS.php';
-    $antiXss = new voku\helper\AntiXSS();
+    $antiXss = new AntiXSS();
     // Protect against bad inputs
     if (is_array($source_file) === true || is_array($target_file) === true) {
         return 'error_cannot_be_array';
@@ -2295,7 +2258,7 @@ function defuseFileEncrypt(
     string $password = null
 ) {
     // load PhpEncryption library
-    $path_to_encryption = '/includes/libraries/Encryption/Encryption/';
+    /*$path_to_encryption = '/includes/libraries/Encryption/Encryption/';
     include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Exception/CryptoException.php';
     include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Exception/BadFormatException.php';
     include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Exception/IOException.php';
@@ -2309,9 +2272,9 @@ function defuseFileEncrypt(
     include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'File.php';
     include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'RuntimeTests.php';
     include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'KeyProtectedByPassword.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Core.php';
+    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Core.php';*/
     try {
-        \Defuse\Crypto\File::encryptFileWithPassword(
+        File::encryptFileWithPassword(
             $source_file,
             $target_file,
             $password
@@ -2345,7 +2308,7 @@ function defuseFileDecrypt(
     string $password = null
 ) {
     // load PhpEncryption library
-    $path_to_encryption = '/includes/libraries/Encryption/Encryption/';
+    /*$path_to_encryption = '/includes/libraries/Encryption/Encryption/';
     include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Exception/CryptoException.php';
     include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Exception/BadFormatException.php';
     include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Exception/IOException.php';
@@ -2359,9 +2322,9 @@ function defuseFileDecrypt(
     include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'File.php';
     include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'RuntimeTests.php';
     include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'KeyProtectedByPassword.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Core.php';
+    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Core.php';*/
     try {
-        \Defuse\Crypto\File::decryptFileWithPassword(
+        File::decryptFileWithPassword(
             $source_file,
             $target_file,
             $password
@@ -2406,10 +2369,10 @@ function debugTeampass(string $text): void
 function fileDelete(string $file, array $SETTINGS): void
 {
     // Load AntiXSS
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/portable-ascii-master/src/voku/helper/ASCII.php';
+    /*include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/portable-ascii-master/src/voku/helper/ASCII.php';
     include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/portable-utf8-master/src/voku/helper/UTF8.php';
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/anti-xss-master/src/voku/helper/AntiXSS.php';
-    $antiXss = new voku\helper\AntiXSS();
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/anti-xss-master/src/voku/helper/AntiXSS.php';*/
+    $antiXss = new AntiXSS();
     $file = $antiXss->xss_clean($file);
     if (is_file($file)) {
         unlink($file);
@@ -2504,8 +2467,7 @@ function recursiveChmod(
  */
 function accessToItemIsGranted(int $item_id, array $SETTINGS)
 {
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-    $superGlobal = new protect\SuperGlobal\SuperGlobal();
+    $superGlobal = new SuperGlobal();
     // Prepare superGlobal variables
     $session_groupes_visibles = $superGlobal->get('groupes_visibles', 'SESSION');
     $session_list_restricted_folders_for_items = $superGlobal->get('list_restricted_folders_for_items', 'SESSION');
@@ -2594,9 +2556,7 @@ function performDBQuery(array $SETTINGS, string $fields, string $table): array
     //include_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
 
     // Load class DB
-    if (class_exists('DB') === false) {
-        loadClass('DB');
-    }
+    loadClasses('DB');
     // Insert log in DB
     return DB::query(
         'SELECT ' . $fields . '
@@ -2639,10 +2599,6 @@ function formatSizeUnits(int $bytes): string
  */
 function generateUserKeys(string $userPwd): array
 {
-    // include library
-    include_once __DIR__.'/../includes/libraries/Encryption/phpseclib/Math/BigInteger.php';
-    include_once __DIR__.'/../includes/libraries/Encryption/phpseclib/Crypt/RSA.php';
-    include_once __DIR__.'/../includes/libraries/Encryption/phpseclib/Crypt/AES.php';
     // Load classes
     $rsa = new Crypt_RSA();
     $cipher = new Crypt_AES();
@@ -2669,7 +2625,6 @@ function generateUserKeys(string $userPwd): array
 function decryptPrivateKey(string $userPwd, string $userPrivateKey): string
 {
     if (empty($userPwd) === false) {
-        include_once __DIR__.'/../includes/libraries/Encryption/phpseclib/Crypt/AES.php';
         // Load classes
         $cipher = new Crypt_AES();
         // Encrypt the privatekey
@@ -2694,7 +2649,6 @@ function decryptPrivateKey(string $userPwd, string $userPrivateKey): string
 function encryptPrivateKey(string $userPwd, string $userPrivateKey): string
 {
     if (empty($userPwd) === false) {
-        include_once __DIR__.'/../includes/libraries/Encryption/phpseclib/Crypt/AES.php';
         // Load classes
         $cipher = new Crypt_AES();
         // Encrypt the privatekey
@@ -2718,8 +2672,6 @@ function encryptPrivateKey(string $userPwd, string $userPrivateKey): string
  */
 function doDataEncryption(string $data, string $key = NULL): array
 {
-    // Includes
-    include_once __DIR__.'/../includes/libraries/Encryption/phpseclib/Crypt/AES.php';
     // Load classes
     $cipher = new Crypt_AES(CRYPT_AES_MODE_CBC);
     // Generate an object key
@@ -2742,8 +2694,6 @@ function doDataEncryption(string $data, string $key = NULL): array
  */
 function doDataDecryption(string $data, string $key): string
 {
-    // Includes
-    include_once __DIR__.'/../includes/libraries/Encryption/phpseclib/Crypt/AES.php';
     // Load classes
     $cipher = new Crypt_AES();
     // Set the object key
@@ -2761,9 +2711,6 @@ function doDataDecryption(string $data, string $key): string
  */
 function encryptUserObjectKey(string $key, string $publicKey): string
 {
-    // Includes
-    include_once __DIR__.'/../includes/libraries/Encryption/phpseclib/Math/BigInteger.php';
-    include_once __DIR__.'/../includes/libraries/Encryption/phpseclib/Crypt/RSA.php';
     // Load classes
     $rsa = new Crypt_RSA();
     $rsa->loadKey(base64_decode($publicKey));
@@ -2781,9 +2728,6 @@ function encryptUserObjectKey(string $key, string $publicKey): string
  */
 function decryptUserObjectKey(string $key, string $privateKey): string
 {
-    // Includes
-    include_once __DIR__.'/../includes/libraries/Encryption/phpseclib/Math/BigInteger.php';
-    include_once __DIR__.'/../includes/libraries/Encryption/phpseclib/Crypt/RSA.php';
     // Load classes
     $rsa = new Crypt_RSA();
     $rsa->loadKey(base64_decode($privateKey));
@@ -2816,11 +2760,6 @@ function encryptFile(string $fileInName, string $fileInPath): array
         define('FILE_BUFFER_SIZE', 128 * 1024);
     }
 
-    // Includes
-    include_once __DIR__.'/../includes/config/include.php';
-    include_once __DIR__.'/../includes/libraries/Encryption/phpseclib/Math/BigInteger.php';
-    include_once __DIR__.'/../includes/libraries/Encryption/phpseclib/Crypt/RSA.php';
-    include_once __DIR__.'/../includes/libraries/Encryption/phpseclib/Crypt/AES.php';
     // Load classes
     $cipher = new Crypt_AES();
     // Generate an object key
@@ -2862,11 +2801,6 @@ function decryptFile(string $fileName, string $filePath, string $key): string
         define('FILE_BUFFER_SIZE', 128 * 1024);
     }
 
-    // Includes
-    include_once __DIR__.'/../includes/config/include.php';
-    include_once __DIR__.'/../includes/libraries/Encryption/phpseclib/Math/BigInteger.php';
-    include_once __DIR__.'/../includes/libraries/Encryption/phpseclib/Crypt/RSA.php';
-    include_once __DIR__.'/../includes/libraries/Encryption/phpseclib/Crypt/AES.php';
     // Get file name
     $fileName = base64_decode($fileName);
     // Load classes
@@ -2937,16 +2871,10 @@ function storeUsersShareKey(
     bool $deleteAll = true,
     array $objectKeyArray = []
 ): void {
-    // include librairies
-    //include_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
-    //include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-    $superGlobal = new protect\SuperGlobal\SuperGlobal();
+    $superGlobal = new SuperGlobal();
 
     // Load class DB
-    if (class_exists('DB') === false) {
-        loadClass('DB');
-    }
+    loadClasses('DB');
 
     // Delete existing entries for this object
     if ($deleteAll === true) {
@@ -3076,8 +3004,7 @@ function filterString(string $field)
     $field = filter_var(trim($field), FILTER_SANITIZE_FULL_SPECIAL_CHARS);
     if (empty($field) === false) {
         // Load AntiXSS
-        include_once __DIR__.'/../includes/libraries/anti-xss-master/src/voku/helper/AntiXSS.php';
-        $antiXss = new voku\helper\AntiXSS();
+        $antiXss = new AntiXSS();
         // Return
         return $antiXss->xss_clean($field);
     }
@@ -3118,15 +3045,7 @@ function ldapCheckUserPassword(string $login, string $password, array $SETTINGS)
             LDAP_OPT_X_TLS_REQUIRE_CERT => (isset($SETTINGS['ldap_tls_certiface_check']) ? $SETTINGS['ldap_tls_certiface_check'] : LDAP_OPT_X_TLS_HARD),
         ],
     ];
-    // Load expected libraries
-    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tightenco/Collect/Support/Traits/Macroable.php';
-    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tightenco/Collect/Support/Arr.php';
-    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/DetectsErrors.php';
-    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/Connection.php';
-    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/LdapInterface.php';
-    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/LdapRecord/Ldap.php';
-    $ad = new SplClassLoader('LdapRecord', '../includes/libraries');
-    $ad->register();
+    
     $connection = new Connection($config);
     // Connect to LDAP
     try {
@@ -3163,13 +3082,8 @@ function ldapCheckUserPassword(string $login, string $password, array $SETTINGS)
  */
 function deleteUserObjetsKeys(int $userId, array $SETTINGS = []): bool
 {
-    // include librairies & connect to DB
-    //include_once __DIR__. '/../includes/config/settings.php';
-
     // Load class DB
-    if (class_exists('DB') === false) {
-        loadClass('DB');
-    }
+    loadClasses('DB');
 
     // Remove all item sharekeys items
     // expect if personal item
@@ -3540,23 +3454,10 @@ function dataSanitizer(
 )
 {
     // Load Sanitizer library
-    require_once $path . '/includes/libraries/Illuminate/Support/Traits/Macroable.php';
-    require_once $path . '/includes/libraries/Illuminate/Support/Str.php';
-    require_once $path . '/includes/libraries/Illuminate/Validation/ValidationRuleParser.php';
-    require_once $path . '/includes/libraries/Illuminate/Support/Arr.php';
-    require_once $path . '/includes/libraries/Elegant/sanitizer/Contracts/Filter.php';
-    require_once $path . '/includes/libraries/Elegant/sanitizer/Filters/Trim.php';
-    require_once $path . '/includes/libraries/Elegant/sanitizer/Filters/Cast.php';
-    require_once $path . '/includes/libraries/Elegant/sanitizer/Filters/EscapeHTML.php';
-    require_once $path . '/includes/libraries/Elegant/sanitizer/Filters/EmptyStringToNull.php';
-    require_once $path . '/includes/libraries/Elegant/sanitizer/Sanitizer.php';
-    $sanitizer = new Elegant\sanitizer\Sanitizer($data, $filters);
+    $sanitizer = new Sanitizer($data, $filters);
 
     // Load AntiXSS
-    include_once $path. '/includes/libraries/portable-ascii-master/src/voku/helper/ASCII.php';
-    include_once $path . '/includes/libraries/portable-utf8-master/src/voku/helper/UTF8.php';
-    include_once $path . '/includes/libraries/anti-xss-master/src/voku/helper/AntiXSS.php';
-    $antiXss = new voku\helper\AntiXSS();
+    $antiXss = new AntiXSS();
 
     // Sanitize post and get variables
     return $antiXss->xss_clean($sanitizer->sanitize());
@@ -3573,12 +3474,8 @@ function dataSanitizer(
  */
 function cacheTreeUserHandler(int $user_id, string $data, array $SETTINGS, string $field_update = '')
 {
-    include_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
-
     // Load class DB
-    if (class_exists('DB') === false) {
-        loadClass('DB');
-    }
+    loadClasses('DB');
 
     // Exists ?
     $userCacheId = DB::queryfirstrow(
@@ -3718,13 +3615,8 @@ function handleFoldersCategories(
     array $folderIds
 )
 {
-    //load ClassLoader
-    include_once __DIR__. '/../sources/SplClassLoader.php';
-    
     // Load class DB
-    if (class_exists('DB') === false) {
-        loadClass('DB');
-    }
+    loadClasses('DB');
 
     $arr_data = array();
 
@@ -3938,7 +3830,7 @@ function handleUserKeys(
     string $emailBody = '',
     bool $user_self_change = false,
     string $recovery_public_key = '',
-    string $recovery_private_key = '',
+    string $recovery_private_key = ''
 ): string
 {
 
@@ -3957,9 +3849,7 @@ function handleUserKeys(
         }
 
         // Hash the password
-        $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
-        $pwdlib->register();
-        $pwdlib = new PasswordLib\PasswordLib();
+        $pwdlib = new PasswordLib();
         $hashedPassword = $pwdlib->createPasswordHash($passwordClear);
         if ($pwdlib->verifyPasswordHash($passwordClear, $hashedPassword) === false) {
             return prepareExchangedData(
@@ -4296,11 +4186,8 @@ function storeTask(
  */
 function getPHPBinary(): string
 {
-    // Autoloader relative path to this PHP file
-    require_once __DIR__.'/../vendor/autoload.php';
-
     // Get PHP binary path
-    $phpBinaryFinder = new Symfony\Component\Process\PhpExecutableFinder();
+    $phpBinaryFinder = new PhpExecutableFinder();
     $phpBinaryPath = $phpBinaryFinder->find();
     return $phpBinaryPath === false ? 'false' : $phpBinaryPath;
 }
@@ -4318,9 +4205,7 @@ function purgeUnnecessaryKeys(bool $allUsers = true, int $user_id=0)
 {
     if ($allUsers === true) {
         // Load class DB
-        if (class_exists('DB') === false) {
-            loadClass('DB');
-        }
+        loadClasses('DB');
 
         $users = DB::query(
             'SELECT id
@@ -4349,9 +4234,7 @@ function purgeUnnecessaryKeysForUser(int $user_id=0)
     }
 
     // Load class DB
-    if (class_exists('DB') === false) {
-        loadClass('DB');
-    }
+    loadClasses('DB');
 
     $personalItems = DB::queryFirstColumn(
         'SELECT id
@@ -4458,29 +4341,59 @@ function handleUserRecoveryKeysDownload(int $userId, array $SETTINGS):string
 }
 
 /**
- * Permits to load a class
+ * Permits to load expected classes
  *
  * @param string $className
  * @return void
  */
-function loadClass(string $className): void
+function loadClasses(string $className = ''): void
 {
+    include_once __DIR__. '/../sources/main.functions.php';
+    include_once __DIR__. '/../includes/config/include.php';
     include_once __DIR__. '/../includes/config/settings.php';
+    require_once __DIR__.'/../vendor/autoload.php';
 
-    // Load class DB
-    if ($className === 'DB') {
-        //Connect to DB
-        include_once __DIR__. '/../includes/libraries/Database/Meekrodb/db.class.php';
-        if (defined('DB_PASSWD_CLEAR') === false) {
-            define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+    if (defined('DB_PASSWD_CLEAR') === false) {
+        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, []));
+    }
+
+    if (empty($className) === false) {
+        // Load class DB
+        if ((string) $className === 'DB') {
+            //Connect to DB
+            DB::$host = DB_HOST;
+            DB::$user = DB_USER;
+            DB::$password = DB_PASSWD_CLEAR;
+            DB::$dbName = DB_NAME;
+            DB::$port = DB_PORT;
+            DB::$encoding = DB_ENCODING;
+            DB::$ssl = DB_SSL;
+            DB::$connect_options = DB_CONNECT_OPTIONS;
         }
-        DB::$host = DB_HOST;
-        DB::$user = DB_USER;
-        DB::$password = DB_PASSWD_CLEAR;
-        DB::$dbName = DB_NAME;
-        DB::$port = DB_PORT;
-        DB::$encoding = DB_ENCODING;
-        DB::$ssl = DB_SSL;
-        DB::$connect_options = DB_CONNECT_OPTIONS;
     }
 }
+
+/**
+ * Returns the page the user is visiting.
+ *
+ * @return string The page name
+ */
+function getCurrectPage($SETTINGS)
+{
+    // Load libraries
+    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+    $superGlobal = new protect\SuperGlobal\SuperGlobal();
+
+    // Parse the url
+    parse_str(
+        substr(
+            (string) $superGlobal->get('REQUEST_URI', 'SERVER'),
+            strpos((string) $superGlobal->get('REQUEST_URI', 'SERVER'), '?') + 1
+        ),
+        $result
+    );
+
+    return $result['page'];
+}
+
+

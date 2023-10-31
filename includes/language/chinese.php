@@ -1142,5 +1142,7 @@ return array(
     'get_your_recovery_keys' => 'Get your recovery keys',
     'keys_management' => 'Keys management',
     'please_confirm_task_to_be_run' => 'Please confirm the task to be performed',
+    'user_keys_downloaded' => 'User keys downloaded',
+    'mfa_code_send_by_email' => 'MFA code sent by email',
 
 );

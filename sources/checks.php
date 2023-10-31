@@ -23,14 +23,11 @@ declare(strict_types=1);
 require_once 'SecureHandler.php';
 
 // Load config
-if (file_exists('../includes/config/tp.config.php')) {
-    include_once '../includes/config/tp.config.php';
-} elseif (file_exists('./includes/config/tp.config.php')) {
-    include_once './includes/config/tp.config.php';
-} elseif (file_exists('../../includes/config/tp.config.php')) {
-    include_once '../../includes/config/tp.config.php';
-} else {
-    throw new Exception('Error file "/includes/config/tp.config.php" not exists', 1);
+try {
+    include_once __DIR__.'/../includes/config/tp.config.php';
+} catch (Exception $e) {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+    exit();
 }
 
 require_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
@@ -149,19 +146,6 @@ function checkUser($userId, $userKey, $pageVisited, $SETTINGS)
     include_once __DIR__ . '/../includes/libraries/Database/Meekrodb/db.class.php';
     include_once 'SplClassLoader.php';
     include_once 'main.functions.php';
-
-    /*
-    // Securize language
-    include_once __DIR__ . '/../includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-    $superGlobal = new protect\SuperGlobal\SuperGlobal();
-    if (
-        is_null($superGlobal->get('user_language', 'SESSION', 'user')) === true
-        || empty($superGlobal->get('user_language', 'SESSION', 'user')) === true
-    ) {
-        $superGlobal->put('user_language', 'english', 'SESSION', 'user');
-    }
-    include_once __DIR__ . '/../includes/language/' . $superGlobal->get('user_language', 'SESSION', 'user') . '.php';
-    */
 
     // Connect to mysql server
     DB::$host = DB_HOST;

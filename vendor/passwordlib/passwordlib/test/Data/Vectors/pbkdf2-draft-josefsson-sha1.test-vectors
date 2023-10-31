@@ -1,0 +1,41 @@
+Set 1
+    P=password
+    S=salt
+    c=1
+    dkLen=20
+    DK=0c60c80f961f0e71f3a9b524af6012062fe037a6
+
+Set 2
+    P=password
+    S=salt
+    c=2
+    dkLen=20
+    DK=ea6c014dc72d6f8ccd1ed92ace1d41f0d8de8957
+
+Set 3
+    P=password
+    S=salt
+    c=4096
+    dkLen=20
+    DK=4b007901b765489abead49d926f721d065a429c1
+
+#Set 4
+#    P=password
+#    S=salt
+#    c=16777216
+#    dkLen=20
+#    DK=eefe3d61cd4da4e4e9945b3d6ba2158c2634e984
+
+Set 5
+    P=passwordPASSWORDpassword
+    S=saltSALTsaltSALTsaltSALTsaltSALTsalt
+    c=4096
+    dkLen=25
+    DK=3d2eec4fe41c849b80c8d83662c0e44a8b291a964cf2f07038
+
+Set 6
+    P=pass\0word
+    S=sa\0lt
+    c=4096
+    dkLen=16
+    DK=56fa6aa75548099dcc37d7f03425e0c3

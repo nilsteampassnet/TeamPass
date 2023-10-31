@@ -26,25 +26,20 @@ declare(strict_types=1);
 
 use LdapRecord\Connection;
 use LdapRecord\Container;
-use LdapRecord\Models\OpenLdap\User;
+use LdapRecord\Models\OpenLDAP\User;
 
-/*require_once 'SecureHandler.php';
-session_name('teampass_session');
-session_start();*/
-if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
-    //die('Hacking attempt...');
-}
+require_once __DIR__.'/../vendor/autoload.php';
 
 /**
  * Get the user's AD groups.
  *
  * @param string $userDN
- * @param LdapRecord\Connection $connection
+ * @param Connection $connection
  * @param array $SETTINGS
  *
  * @return array
  */
-function getUserADGroups(string $userDN, LdapRecord\Connection $connection, array $SETTINGS): array
+function getUserADGroups(string $userDN, Connection $connection, array $SETTINGS): array
 {
     // init
     $groupsArr = [];
@@ -60,18 +55,9 @@ function getUserADGroups(string $userDN, LdapRecord\Connection $connection, arra
         }
 
         // Get user groups from AD
-        require_once '../includes/libraries/LdapRecord/Models/OpenLDAP/User.php';
         $user = User::find($userDN);
         $groups = $user->groups()->get();
         foreach ($groups as $group) {
-            /*array_push(
-                $groupsArr,
-                [
-                    'title' => $group->getName(),
-                    'dn' => $group->getDn(),
-                    'id' => $group[$idAttribute][0],
-                ]
-            );*/
             array_push(
                 $groupsArr,
                 $group[$idAttribute][0]

@@ -244,7 +244,7 @@ class Math_BigInteger
      */
     function __construct($x = 0, $base = 10)
     {
-        if (!defined('MATH_BIGINTEGER_MODE')) {
+        //if (!defined('MATH_BIGINTEGER_MODE')) {
             switch (true) {
                 case extension_loaded('gmp'):
                     define('MATH_BIGINTEGER_MODE', MATH_BIGINTEGER_MODE_GMP);
@@ -255,7 +255,7 @@ class Math_BigInteger
                 default:
                     define('MATH_BIGINTEGER_MODE', MATH_BIGINTEGER_MODE_INTERNAL);
             }
-        }
+        //}
 
         if (extension_loaded('openssl') && !defined('MATH_BIGINTEGER_OPENSSL_DISABLE') && !defined('MATH_BIGINTEGER_OPENSSL_ENABLED')) {
             // some versions of XAMPP have mismatched versions of OpenSSL which causes it not to work

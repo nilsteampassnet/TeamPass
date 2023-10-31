@@ -1,0 +1,22 @@
+{
+    "chmod": "0755",
+    "finder": [
+        {
+            "in": "src",
+            "name": "*.php"
+        },
+        {
+            "in": "vendor/composer",
+            "name": "*.php"
+        },
+        {
+            "in": "vendor/paragonie",
+            "name": "*.php",
+            "exclude": "other"
+        }
+    ],
+    "main": "vendor/autoload.php",
+    "output": "defuse-crypto.phar",
+    "shebang": false,
+    "stub": true
+}

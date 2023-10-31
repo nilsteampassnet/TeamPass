@@ -32,14 +32,33 @@ define("DB_PASSWD", "' . DB_PASSWD . '");
 define("DB_NAME", "' . DB_NAME . '");
 define("DB_PREFIX", "' . DB_PREFIX . '");
 define("DB_PORT", "' . DB_PORT . '");
-define("DB_ENCODING", "' . DB_ENCODING . '");
+define("DB_ENCODING", "' . DB_ENCODING . '");';
+
+if (isset(DB_SSL['key']) === true && empty(DB_SSL['key']) === false) {
+    $settingsTxt .= '
+define("DB_SSL", false); // if DB over SSL then comment this line
+// if DB over SSL then uncomment the following lines
+//define("DB_SSL", array(
+//    "key" => "",
+//    "cert" => "",
+//    "ca_cert" => "",
+//    "ca_path" => "",
+//    "cipher" => ""
+//));';
+} else {
+    $settingsTxt .= '
+//define("DB_SSL", false); // if DB over SSL then comment this line
+// if DB over SSL then uncomment the following lines
 define("DB_SSL", array(
     "key" => "'.DB_SSL['key'].'",
     "cert" => "'.DB_SSL['cert'].'",
     "ca_cert" => ""'.DB_SSL['ca_cert'].',
     "ca_path" => "'.DB_SSL['ca_path'].'",
     "cipher" => "'.DB_SSL['cipher'].'"
-));
+));';
+}
+
+$settingsTxt .= '
 define("DB_CONNECT_OPTIONS", array(
     MYSQLI_OPT_CONNECT_TIMEOUT => 10
 ));

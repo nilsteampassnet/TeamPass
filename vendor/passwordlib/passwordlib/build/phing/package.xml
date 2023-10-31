@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="package" default="package" basedir="../../">
+    <property file="build/build.properties" />
+
+     <target name="package">
+		 <delete dir="${path.results/lib" />
+		 <delete dir="${path.package}" />
+		 <mkdir dir="${path.results}/lib" />
+		 <mkdir dir="${path.package}" />
+		 <exec
+            os="Linux"
+            outputProperty="version.number"
+            command="git rev-parse HEAD"
+            dir="${project.basedir}"
+            />
+		<phingcall target="copyFilesToResultsLib" />
+		<phingcall target="packagePear" />
+        <phingcall target="packageFiles" />
+		<phingcall target="packagePhar" />
+    </target>
+
+	<target name="copyFilesToResultsLib">
+		<delete dir="${path.results}/lib" />
+		<mkdir dir="${path.results}/lib" />
+
+        <copy todir="${path.results}/lib">
+            <filterchain>
+                <replacetokens begintoken="@@" endtoken="@@">
+                    <token key="version" value="${version.number}" />
+                </replacetokens>
+            </filterchain>
+            <fileset dir="${path.lib}">
+                <include name="**/**" />
+            </fileset>
+        </copy>
+	</target>
+
+	<target name="packageFiles">
+		<zip destfile="${path.package}/PasswordLib.zip">
+            <fileset dir="${path.results}/lib">
+                <include name="**/**" />
+            </fileset>
+        </zip>
+        <filehash file="${path.package}/PasswordLib.zip" hashtype="0" propertyname="filehash" />
+        <echo message="${filehash}" file="${path.package}/PasswordLib.zip.md5" />
+        <filehash file="${path.package}/PasswordLib.zip" hashtype="1" propertyname="filehash" />
+        <echo message="${filehash}" file="${path.package}/PasswordLib.zip.sha1" />
+
+        <tar destfile="${path.package}/PasswordLib.tar.gz" compression="gzip">
+            <fileset dir="${path.results}/lib">
+                <include name="**/**" />
+            </fileset>
+        </tar>
+        <tar destfile="${path.package}/PasswordLib.tar.bz2" compression="bzip2">
+            <fileset dir="${path.results}/lib">
+                <include name="**/**" />
+            </fileset>
+        </tar>
+        <phingcall target="writeFileHashes">
+            <property name="filename" value="${path.package}/PasswordLib.tar.gz" />
+        </phingcall>
+        <phingcall target="writeFileHashes">
+            <property name="filename" value="${path.package}/PasswordLib.tar.bz2" />
+        </phingcall>
+	</target>
+
+	<target name="packagePear">
+		<pearpkg name="PasswordLib" dir="${path.results}/lib" destfile="${path.results}/lib/package.xml">
+            <fileset dir="${path.results}/lib">
+                <include name="**/**" />
+            </fileset>
+            <option name="notes">Release Notes</option>
+            <option name="description">A Cryptography Library for PHP</option>
+            <option name="summary">A Cryptography Library for PHP</option>
+            <option name="version" value="${version.string}" />
+            <option name="state" value="alpha" />
+            <mapping name="maintainers">
+                <element>
+                    <element key="handle" value="ircmaxell" />
+                    <element key="name" value="Anthony Ferrara" />
+                    <element key="email" value="ircmaxell@ircmaxell.com" />
+                    <element key="role" value="lead" />
+                </element>
+            </mapping>
+        </pearpkg>
+	</target>
+
+	<target name="packagePhar">
+		<pharpackage
+            destfile="${path.package}/PasswordLib.phar"
+            basedir="${path.results}/lib"
+            stub="${path.build}/phar.stub.php"
+            signature="sha1"
+            >
+            <fileset dir="${path.results}/lib">
+                <include name="**/**" />
+            </fileset>
+            <metadata>
+                <element name="version" value="${version.number}" />
+            </metadata>
+        </pharpackage>
+        <phingcall target="writeFileHashes">
+            <property name="filename" value="${path.package}/PasswordLib.phar" />
+        </phingcall>
+	</target>
+
+    <target name="writeFileHashes">
+        <filehash file="${filename}" hashtype="0" propertyname="filehash" />
+        <echo message="${filehash}" file="${filename}.md5" />
+        <filehash file="${filename}" hashtype="1" propertyname="filehash" />
+        <echo message="${filehash}" file="${filename}.sha1" />
+    </target>
+</project>

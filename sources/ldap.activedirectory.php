@@ -28,12 +28,7 @@ use LdapRecord\Connection;
 use LdapRecord\Container;
 use LdapRecord\Models\ActiveDirectory\User;
 
-require_once 'SecureHandler.php';
-session_name('teampass_session');
-session_start();
-if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
-    //die('Hacking attempt...');
-}
+require_once __DIR__.'/../vendor/autoload.php';
 
 /**
  * Get the user's AD groups.
@@ -44,14 +39,14 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
  *
  * @return array
  */
-function getUserADGroups(string $userDN, LdapRecord\Connection $connection, array $SETTINGS): array
+function getUserADGroups(string $userDN, Connection $connection, array $SETTINGS): array
 {
     // init
     $groupsArr = [];
-    
+
     try {
         Container::addConnection($connection);
-        
+        echo "ici";
         // get id attribute
         if (isset($SETTINGS['ldap_guid_attibute']) ===true && empty($SETTINGS['ldap_guid_attibute']) === false) {
             $idAttribute = $SETTINGS['ldap_guid_attibute'];
@@ -60,7 +55,6 @@ function getUserADGroups(string $userDN, LdapRecord\Connection $connection, arra
         }
 
         // Get user groups from AD
-        require_once '../includes/libraries/LdapRecord/Models/ActiveDirectory/User.php';
         $user = User::find($userDN);
         $groups = $user->groups()->get();
         foreach ($groups as $group) {
@@ -71,6 +65,7 @@ function getUserADGroups(string $userDN, LdapRecord\Connection $connection, arra
         }
     } catch (\LdapRecord\Auth\BindException $e) {
         // Do nothing
+        return "ici";
     }
 
     return [

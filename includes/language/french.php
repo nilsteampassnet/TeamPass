@@ -1142,5 +1142,7 @@ return array(
     'get_your_recovery_keys' => 'Télécharger vos clés de récupération',
     'keys_management' => 'Gestion des clés',
     'please_confirm_task_to_be_run' => 'Merci de confirmer l&apos;exécution de la tache',
+    'user_keys_downloaded' => 'Clés utilisateur téléchargées',
+    'mfa_code_send_by_email' => 'Code MFA envoyé par email',
 
 );

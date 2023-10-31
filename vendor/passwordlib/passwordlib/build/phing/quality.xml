@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="quality" default="quality" basedir="../../">
+    <property file="build/build.properties" />
+
+	<target name="quality">
+		<phingcall target="cs" />
+		<phingcall target="cpd" />
+		<phingcall target="loc" />
+		<phingcall target="pmd" />
+		<phingcall target="pdepend" />
+	</target>
+
+    <target name="quality-lite">
+		<phingcall target="cs" />
+		<phingcall target="cpd" />
+		<phingcall target="pmd" />
+	</target>
+
+	<target name="cs">
+		<mkdir dir="${path.results}/logs" />
+        <exec
+            command="phpcs
+						--report=summary
+						--report-checkstyle=&quot;${path.logs}/checkstyle.xml&quot;
+						--standard=&quot;${path.build}/phpcs/ruleset.xml&quot;
+						&quot;${path.lib}/PasswordLib&quot;"
+            passthru="true"
+            checkreturn="true" />
+    </target>
+
+    <target name="cpd">
+		<mkdir dir="${path.results}/logs" />
+        <phpcpd>
+            <fileset dir="${path.lib}">
+                <include name="**/*.php" />
+            </fileset>
+            <formatter type="pmd" outfile="${path.logs}/php-cpd.xml" />
+        </phpcpd>
+    </target>
+
+    <target name="loc">
+		<mkdir dir="${path.results}/logs" />
+        <exec
+            command="phploc
+						--log-csv &quot;${path.logs}/phploc.csv&quot;
+						&quot;${path.lib}/PasswordLib&quot;"
+	        />
+    </target>
+
+    <target name="pmd">
+		<mkdir dir="${path.results}/logs" />
+        <phpmd rulesets="${path.build}/phpmd/ruleset.xml">
+            <fileset dir="${path.lib}/PasswordLib">
+                <include name="**/*.php" />
+            </fileset>
+            <formatter type="xml" outfile="${path.logs}/pmd.xml" />
+            <formatter type="text" usefile="false" />
+        </phpmd>
+    </target>
+
+    <target name="pdepend">
+		<mkdir dir="${path.results}/logs" />
+        <phpdepend file="${path.lib}/PasswordLib">
+            <logger type="phpunit-xml" outfile="${path.logs}/metrics.xml" />
+            <logger type="jdepend-xml" outfile="${path.logs}/jdepend.xml" />
+            <logger type="jdepend-chart" outfile="${path.logs}/dependencies.svg" />
+            <logger type="overview-pyramid" outfile="${path.logs}/overview-pyramid.svg" />
+            <analyzer type="coderank-mode" value="method" />
+        </phpdepend>
+    </target>
+
+</project>

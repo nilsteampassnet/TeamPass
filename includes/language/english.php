@@ -16,6 +16,8 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'mfa_code_send_by_email' => 'MFA code sent by email',
+    'user_keys_downloaded' => 'User keys downloaded',
     'regenerate_only_personal_items_keys' => 'Only regenerate my personal items keys (it requires your public and private keys). This will not impact shared items.',
     'please_confirm_task_to_be_run' => 'Please confirm the task to be performed',
     'recovery_keys_not_downloaded' => 'Recovery keys not downloaded',

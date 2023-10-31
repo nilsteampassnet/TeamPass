@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="tests" default="test" basedir="../../">
+    <property file="build/build.properties" />
+
+    <target name="test">
+        <phingcall target="lint" />
+        <phingcall target="unit-all" />
+    </target>
+
+    <target name="test-lite">
+        <phingcall target="unit" />
+    </target>
+
+    <target name="vectors">
+        <mkdir dir="${path.results}/logs" />
+        <exec
+            passthru="true"
+            checkreturn="true"
+            command="phpunit --log-junit &quot;${path.logs}/vectors.xml&quot;
+                       --configuration &quot;${path.tests}/phpunit.xml.dist&quot;
+                       &quot;${path.tests}/Vectors&quot;"
+            />
+    </target>
+
+    <target name="unit">
+        <mkdir dir="${path.results}/logs" />
+        <exec
+            passthru="true"
+            checkreturn="true"
+            command="phpunit --log-junit &quot;${path.logs}/junit.xml&quot;
+                       --configuration &quot;${path.tests}/phpunit.xml.dist&quot;
+                       &quot;${path.tests}/Unit&quot;"
+        />
+    </target>
+
+    <target name="unit-all">
+        <delete dir="${path.results}/coverage" />
+        <mkdir dir="${path.results}/coverage" />
+        <mkdir dir="${path.results}/logs" />
+        <exec
+            passthru="true"
+            checkreturn="true"
+            command="phpunit --log-junit &quot;${path.logs}/junit.xml&quot;
+                       --coverage-clover &quot;${path.logs}/clover.xml&quot;
+                       --coverage-html &quot;${path.results}/coverage&quot;
+                       --configuration &quot;${path.tests}/phpunit.xml.dist&quot;"
+        />
+        <phingcall target="vectors" />
+    </target>
+
+    <target name="lint">
+        <phplint haltonfailure="true" deprecatedAsError="true">
+            <fileset dir="${path.lib}">
+                <include name="**/*.php" />
+            </fileset>
+        </phplint>
+    </target>
+
+</project>

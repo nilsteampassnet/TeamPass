@@ -1,0 +1,24 @@
+{
+    "name": "hackzilla/password-generator",
+    "description": "Password Generator Library",
+    "license": "MIT",
+    "type": "library",
+    "authors": [
+        {
+            "name": "Daniel Platt",
+            "email": "github@ofdan.co.uk",
+            "homepage": "https://www.hackzilla.org"
+        }
+    ],
+    "require": {
+        "php": ">=7.1.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Hackzilla\\PasswordGenerator\\": ""
+        }
+    }
+}

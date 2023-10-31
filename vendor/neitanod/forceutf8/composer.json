@@ -1,0 +1,21 @@
+{
+    "name": "neitanod/forceutf8",
+    "homepage": "https://github.com/neitanod/forceutf8",
+    "license": "BSD-3-Clause",
+    "type": "library",
+    "description": "PHP Class Encoding featuring popular Encoding::toUTF8() function --formerly known as forceUTF8()-- that fixes mixed encoded strings.",
+    "require": {
+        "php": ">=5.3.0"
+    },
+    "authors": [
+        {
+            "name":  "Sebastián Grignoli",
+            "email": "grignoli@gmail.com"
+        }
+    ],
+    "autoload": {
+        "psr-0": {
+            "ForceUTF8\\": "src/"
+        }
+    }
+}

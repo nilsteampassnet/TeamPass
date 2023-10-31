@@ -5740,9 +5740,29 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 key: "<?php echo $_SESSION['key']; ?>"
             },
             function(data) {
+                data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
                 // Display new url
                 if (data.new_url !== undefined) {
                     $('#form-item-otv-link').val(data.new_url);
+
+                    // prepare clipboard
+                    var clipboard = new ClipboardJS("#form-item-otv-copy-button", {
+                        text: function() {
+                            return data.new_url;
+                        }
+                    });
+                    clipboard.on('success', function(e) {
+                        toastr.remove();
+                        toastr.info(
+                            '<?php echo langHdl('copy_to_clipboard'); ?>',
+                            '', {
+                                timeOut: 2000,
+                                positionClass: 'toast-top-right',
+                                progressBar: true
+                            }
+                        );
+                        e.clearSelection();
+                    });
                 }
                 toastr.remove();
                 toastr.info(

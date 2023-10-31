@@ -20,7 +20,7 @@ declare(strict_types=1);
  * @author Fabien Potencier <fabien.potencier@symfony-project.org>
  */
 
- 
+
 class SplClassLoader
 {
     private $_fileExtension = '.php';

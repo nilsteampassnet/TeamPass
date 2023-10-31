@@ -1,0 +1,92 @@
+Primitive Name: AES
+========================
+Key size: Variable
+Block size: 128 bits
+
+Test vectors -- set 1
+=====================
+
+Set 1 vector 1
+    mode=aes-128
+    key=2b7e151628aed2a6abf7158809cf4f3c
+    iv=f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff
+    plain=6bc1bee22e409f96e93d7e117393172a
+    cipher=874d6191b620e3261bef6864990db6ce
+
+Set 1 vector 2
+    mode=aes-128
+    key=2b7e151628aed2a6abf7158809cf4f3c
+    iv=f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff
+    plain=ae2d8a571e03ac9c9eb76fac45af8e51
+    cipher=9806f66b7970fdff8617187bb9fffdff
+
+Set 1 vector 3
+    mode=aes-128
+    key=2b7e151628aed2a6abf7158809cf4f3c
+    iv=f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff
+    plain=30c81c46a35ce411e5fbc1191a0a52ef
+    cipher=5ae4df3edbd5d35e5b4f09020db03eab
+
+Set 1 vector 4
+    mode=aes-128
+    key=2b7e151628aed2a6abf7158809cf4f3c
+    iv=f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff
+    plain=f69f2445df4f9b17ad2b417be66c3710
+    cipher=1e031dda2fbe03d1792170a0f3009cee
+
+Set 2 vector 1
+    mode=aes-192
+    key=8e73b0f7da0e6452c810f32b809079e562f8ead2522c6b7b
+    iv=f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff
+    plain=6bc1bee22e409f96e93d7e117393172a
+    cipher=1abc932417521ca24f2b0459fe7e6e0b
+
+Set 2 vector 2
+    mode=aes-192
+    key=8e73b0f7da0e6452c810f32b809079e562f8ead2522c6b7b
+    iv=f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff
+    plain=ae2d8a571e03ac9c9eb76fac45af8e51
+    cipher=090339ec0aa6faefd5ccc2c6f4ce8e94
+
+Set 2 vector 3
+    mode=aes-192
+    key=8e73b0f7da0e6452c810f32b809079e562f8ead2522c6b7b
+    iv=f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff
+    plain=30c81c46a35ce411e5fbc1191a0a52ef
+    cipher=1e36b26bd1ebc670d1bd1d665620abf7
+
+Set 2 vector 4
+    mode=aes-192
+    key=8e73b0f7da0e6452c810f32b809079e562f8ead2522c6b7b
+    iv=f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff
+    plain=f69f2445df4f9b17ad2b417be66c3710
+    cipher=4f78a7f6d29809585a97daec58c6b050
+
+Set 3 vector 1
+    mode=aes-256
+    key=603deb1015ca71be2b73aef0857d77811f352c073b6108d72d9810a30914dff4
+    iv=f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff
+    plain=6bc1bee22e409f96e93d7e117393172a
+    cipher=601ec313775789a5b7a7f504bbf3d228
+
+Set 3 vector 2
+    mode=aes-256
+    key=603deb1015ca71be2b73aef0857d77811f352c073b6108d72d9810a30914dff4
+    iv=f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff
+    plain=ae2d8a571e03ac9c9eb76fac45af8e51
+    cipher=f443e3ca4d62b59aca84e990cacaf5c5
+
+Set 3 vector 3
+    mode=aes-256
+    key=603deb1015ca71be2b73aef0857d77811f352c073b6108d72d9810a30914dff4
+    iv=f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff
+    plain=30c81c46a35ce411e5fbc1191a0a52ef
+    cipher=2b0930daa23de94ce87017ba2d84988d
+
+Set 3 vector 4
+    mode=aes-256
+    key=603deb1015ca71be2b73aef0857d77811f352c073b6108d72d9810a30914dff4
+    iv=f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff
+    plain=f69f2445df4f9b17ad2b417be66c3710
+    cipher=dfc9c58db67aada613c2dd08457941a6
+

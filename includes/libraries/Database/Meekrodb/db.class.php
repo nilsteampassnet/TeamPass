@@ -180,7 +180,7 @@ class MeekroDB {
       $mysql = new mysqli();
 
       $connect_flags = 0;
-      if ($this->ssl['key']) {
+      if (is_array($this->ssl)) {
         $mysql->ssl_set($this->ssl['key'], $this->ssl['cert'], $this->ssl['ca_cert'], $this->ssl['ca_path'], $this->ssl['cipher']);
         $connect_flags |= MYSQLI_CLIENT_SSL;
       } 

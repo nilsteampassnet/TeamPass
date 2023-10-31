@@ -29,37 +29,29 @@ session_start();
 
 // Load config
 require_once __DIR__.'/../includes/config/tp.config.php';
-require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
-require_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+require_once __DIR__.'/../includes/config/include.php';
+require_once __DIR__.'/../includes/config/settings.php';
 
 // Load library
-require_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
-require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
-
+//require_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
+require_once __DIR__.'/../vendor/autoload.php';
+require_once __DIR__.'/../sources/main.functions.php';
 
 // Create a new scheduler
-$assert = new SplClassLoader('Webmozart\Assert', $SETTINGS['cpassman_dir'] . '/includes/libraries');
-$assert->register();
-$cron = new SplClassLoader('Cron', $SETTINGS['cpassman_dir'] . '/includes/libraries');
-$cron->register();
-$scheduler = new SplClassLoader('GO', $SETTINGS['cpassman_dir'] . '/includes/libraries');
-$scheduler->register();
 $scheduler = new scheduler();
-
-
 
 // Build the scheduler jobs
 // https://github.com/peppeocchi/php-cron-scheduler
-$scheduler->php($SETTINGS['cpassman_dir'] . '/scripts/background_tasks___user_keys_creation.php')->everyMinute($SETTINGS['user_keys_job_frequency'] ?? '1');
-$scheduler->php($SETTINGS['cpassman_dir'] . '/scripts/background_tasks___sending_emails.php')->everyMinute($SETTINGS['sending_emails_job_frequency'] ?? '2');
-$scheduler->php($SETTINGS['cpassman_dir'] . '/scripts/background_tasks___do_calculation.php')->everyMinute($SETTINGS['items_statistics_job_frequency'] ?? '5');
-$scheduler->php($SETTINGS['cpassman_dir'] . '/scripts/background_tasks___user_task.php')->everyMinute($SETTINGS['user_keys_job_frequency'] ?? '1');
-$scheduler->php($SETTINGS['cpassman_dir'] . '/scripts/background_tasks___items_handler.php')->everyMinute($SETTINGS['items_ops_job_frequency'] ?? '1');
+$scheduler->php(__DIR__.'/../scripts/background_tasks___user_keys_creation.php')->everyMinute($SETTINGS['user_keys_job_frequency'] ?? '1');
+$scheduler->php(__DIR__.'/../scripts/background_tasks___sending_emails.php')->everyMinute($SETTINGS['sending_emails_job_frequency'] ?? '2');
+$scheduler->php(__DIR__.'/../scripts/background_tasks___do_calculation.php')->everyMinute($SETTINGS['items_statistics_job_frequency'] ?? '5');
+$scheduler->php(__DIR__.'/../scripts/background_tasks___user_task.php')->everyMinute($SETTINGS['user_keys_job_frequency'] ?? '1');
+$scheduler->php(__DIR__.'/../scripts/background_tasks___items_handler.php')->everyMinute($SETTINGS['items_ops_job_frequency'] ?? '1');
 
 if (isset($SETTINGS['users_personal_folder_task']) === true && empty($SETTINGS['users_personal_folder_task']) === false) {
     runTask(
         explode(';', $SETTINGS['users_personal_folder_task']),
-        $SETTINGS['cpassman_dir'] . '/scripts/task_maintenance_users_personal_folder.php',
+        __DIR__.'/../scripts/task_maintenance_users_personal_folder.php',
         $scheduler
     );
 }
@@ -67,7 +59,7 @@ if (isset($SETTINGS['users_personal_folder_task']) === true && empty($SETTINGS['
 if (isset($SETTINGS['clean_orphan_objects_task']) === true && empty($SETTINGS['clean_orphan_objects_task']) === false) {
     runTask(
         explode(';', $SETTINGS['clean_orphan_objects_task']),
-        $SETTINGS['cpassman_dir'] . '/scripts/task_maintenance_clean_orphan_objects.php',
+        __DIR__.'/../scripts/task_maintenance_clean_orphan_objects.php',
         $scheduler
     );
 }
@@ -75,7 +67,7 @@ if (isset($SETTINGS['clean_orphan_objects_task']) === true && empty($SETTINGS['c
 if (isset($SETTINGS['purge_temporary_files_task']) === true && empty($SETTINGS['purge_temporary_files_task']) === false) {
     runTask(
         explode(';', $SETTINGS['purge_temporary_files_task']),
-        $SETTINGS['cpassman_dir'] . '/scripts/task_maintenance_purge_old_files.php',
+        __DIR__.'/../scripts/task_maintenance_purge_old_files.php',
         $scheduler
     );
 }
@@ -83,7 +75,7 @@ if (isset($SETTINGS['purge_temporary_files_task']) === true && empty($SETTINGS['
 if (isset($SETTINGS['reload_cache_table_task']) === true && empty($SETTINGS['reload_cache_table_task']) === false) {
     runTask(
         explode(';', $SETTINGS['reload_cache_table_task']),
-        $SETTINGS['cpassman_dir'] . '/scripts/task_maintenance_reload_cache_table.php',
+        __DIR__.'/../scripts/task_maintenance_reload_cache_table.php',
         $scheduler
     );
 }
@@ -91,7 +83,7 @@ if (isset($SETTINGS['reload_cache_table_task']) === true && empty($SETTINGS['rel
 if (isset($SETTINGS['rebuild_config_file_task']) === true && empty($SETTINGS['rebuild_config_file_task']) === false) {
     runTask(
         explode(';', $SETTINGS['rebuild_config_file_task']),
-        $SETTINGS['cpassman_dir'] . '/scripts/task_maintenance_rebuild_config_file.php',
+        __DIR__.'/../scripts/task_maintenance_rebuild_config_file.php',
         $scheduler
     );
 }

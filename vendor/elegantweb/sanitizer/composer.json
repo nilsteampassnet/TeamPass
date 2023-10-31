@@ -1,0 +1,50 @@
+{
+    "name": "elegantweb/sanitizer",
+    "description": "Sanitization library for PHP and the Laravel framework.",
+    "keywords": ["laravel", "sanitation", "input sanitation", "input sanitizer", "input", "transform input", "input filter"],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "William Wallace San Paulo",
+            "email": "info@waavi.com"
+        },
+        {
+            "name": "Sina Sharifzade",
+            "email": "sharifzadesina@gmail.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "require": {
+        "php": "^8.0",
+        "illuminate/support": "^6.0|^7.0|^8.0|^9.0|^10.0",
+        "illuminate/validation": "^6.0|^7.0|^8.0|^9.0|^10.0",
+        "nesbot/carbon": "^1.0|^2.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Elegant\\Sanitizer\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Elegant\\Sanitizer\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Elegant\\Sanitizer\\Laravel\\SanitizerServiceProvider"
+            ],
+            "aliases": {
+                "Sanitizer": "Elegant\\Sanitizer\\Laravel\\Facade"
+            }
+        }
+    },
+    "scripts": {
+        "test": "phpunit"
+    }
+}

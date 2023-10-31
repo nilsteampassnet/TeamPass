@@ -1,5 +1,7 @@
 <?php
 
+namespace protect\SuperGlobal;
+
 /**
  * Teampass - a collaborative passwords manager
  *
@@ -15,8 +17,6 @@
  * @version   GIT: <git_id>
  * @link      http://www.teampass.net
  */
-
-namespace protect\SuperGlobal;
 
 // Start session in case its not
 if (session_id() === '') {
