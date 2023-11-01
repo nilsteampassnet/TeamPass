@@ -1,0 +1,23 @@
+{
+    "name": "teampassclasses/encryption",
+    "description": "Handle the data encryption/decryption.",
+    "type": "library",
+    "license": "GPL-3.0-only",
+    "keywords": [
+        "encrytion",
+        "decryption"
+    ],
+    "authors": [
+        {
+            "name": "Nils Laumaillé"
+        }
+    ],
+    "require": {
+        "php": "^7.4 || ^8.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "TeampassClasses\\Encryption\\": "src/"
+        }
+    }
+}

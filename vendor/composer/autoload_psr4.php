@@ -14,6 +14,7 @@ return array(
     'TeampassClasses\\SuperGlobal\\' => array($vendorDir . '/teampassclasses/superglobal/src'),
     'TeampassClasses\\PerformChecks\\' => array($vendorDir . '/teampassclasses/performchecks/src'),
     'TeampassClasses\\NestedTree\\' => array($vendorDir . '/teampassclasses/nestedtree/src'),
+    'TeampassClasses\\Encryption\\' => array($vendorDir . '/teampassclasses/encryption/src'),
     'Symfony\\Polyfill\\Php83\\' => array($vendorDir . '/symfony/polyfill-php83'),
     'Symfony\\Polyfill\\Php80\\' => array($vendorDir . '/symfony/polyfill-php80'),
     'Symfony\\Polyfill\\Php72\\' => array($vendorDir . '/symfony/polyfill-php72'),

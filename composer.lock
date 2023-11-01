@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "9caa09146f3ce4e21aad608613515b5b",
+    "content-hash": "9f69e857605fe54390987d0cdcd45d2b",
     "packages": [
         {
             "name": "brick/math",
@@ -823,7 +823,7 @@
         },
         {
             "name": "illuminate/collections",
-            "version": "v10.29.0",
+            "version": "v10.30.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/collections.git",
@@ -878,7 +878,7 @@
         },
         {
             "name": "illuminate/conditionable",
-            "version": "v10.29.0",
+            "version": "v10.30.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/conditionable.git",
@@ -924,7 +924,7 @@
         },
         {
             "name": "illuminate/container",
-            "version": "v10.29.0",
+            "version": "v10.30.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/container.git",
@@ -975,16 +975,16 @@
         },
         {
             "name": "illuminate/contracts",
-            "version": "v10.29.0",
+            "version": "v10.30.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/contracts.git",
-                "reference": "6c39fba7b2311e28f5c6ac7d729e3d49a2a98406"
+                "reference": "f6bf37a272fda164f6c451407c99f820eb1eb95b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/illuminate/contracts/zipball/6c39fba7b2311e28f5c6ac7d729e3d49a2a98406",
-                "reference": "6c39fba7b2311e28f5c6ac7d729e3d49a2a98406",
+                "url": "https://api.github.com/repos/illuminate/contracts/zipball/f6bf37a272fda164f6c451407c99f820eb1eb95b",
+                "reference": "f6bf37a272fda164f6c451407c99f820eb1eb95b",
                 "shasum": ""
             },
             "require": {
@@ -1019,11 +1019,11 @@
                 "issues": "https://github.com/laravel/framework/issues",
                 "source": "https://github.com/laravel/framework"
             },
-            "time": "2023-09-05T19:07:46+00:00"
+            "time": "2023-10-30T00:59:22+00:00"
         },
         {
             "name": "illuminate/filesystem",
-            "version": "v10.29.0",
+            "version": "v10.30.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/filesystem.git",
@@ -1087,7 +1087,7 @@
         },
         {
             "name": "illuminate/macroable",
-            "version": "v10.29.0",
+            "version": "v10.30.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/macroable.git",
@@ -1133,16 +1133,16 @@
         },
         {
             "name": "illuminate/support",
-            "version": "v10.29.0",
+            "version": "v10.30.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/support.git",
-                "reference": "e46e5864314d59fa690637e51d6cd2113acb2e7b"
+                "reference": "5244b825e8988db7c91254c31ce224dc3892eeae"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/illuminate/support/zipball/e46e5864314d59fa690637e51d6cd2113acb2e7b",
-                "reference": "e46e5864314d59fa690637e51d6cd2113acb2e7b",
+                "url": "https://api.github.com/repos/illuminate/support/zipball/5244b825e8988db7c91254c31ce224dc3892eeae",
+                "reference": "5244b825e8988db7c91254c31ce224dc3892eeae",
                 "shasum": ""
             },
             "require": {
@@ -1200,11 +1200,11 @@
                 "issues": "https://github.com/laravel/framework/issues",
                 "source": "https://github.com/laravel/framework"
             },
-            "time": "2023-10-18T14:12:13+00:00"
+            "time": "2023-10-30T01:00:17+00:00"
         },
         {
             "name": "illuminate/translation",
-            "version": "v10.29.0",
+            "version": "v10.30.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/translation.git",
@@ -1255,7 +1255,7 @@
         },
         {
             "name": "illuminate/validation",
-            "version": "v10.29.0",
+            "version": "v10.30.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/validation.git",
@@ -3534,6 +3534,40 @@
             "time": "2023-10-12T18:45:56+00:00"
         },
         {
+            "name": "teampassclasses/encryption",
+            "version": "dev-master",
+            "dist": {
+                "type": "path",
+                "url": "includes/libraries/teampassclasses/encryption",
+                "reference": "cd2102e1aa7232b6edf8f594ea727c13c6f909b6"
+            },
+            "require": {
+                "php": "^7.4 || ^8.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "TeampassClasses\\Encryption\\": "src/"
+                }
+            },
+            "license": [
+                "GPL-3.0-only"
+            ],
+            "authors": [
+                {
+                    "name": "Nils Laumaillé"
+                }
+            ],
+            "description": "Handle the data encryption/decryption.",
+            "keywords": [
+                "decryption",
+                "encrytion"
+            ],
+            "transport-options": {
+                "relative": true
+            }
+        },
+        {
             "name": "teampassclasses/nestedtree",
             "version": "dev-master",
             "dist": {
@@ -4135,7 +4169,8 @@
         "teampassclasses/nestedtree": 20,
         "teampassclasses/superglobal": 20,
         "ezimuel/php-secure-session": 20,
-        "teampassclasses/performchecks": 20
+        "teampassclasses/performchecks": 20,
+        "teampassclasses/encryption": 20
     },
     "prefer-stable": true,
     "prefer-lowest": false,

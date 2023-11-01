@@ -42,6 +42,7 @@ Use phpseclib\Crypt\AES;
 Use PasswordLib\PasswordLib;
 Use Symfony\Component\Process\Process;
 Use Symfony\Component\Process\PhpExecutableFinder;
+Use TeampassClasses\Encryption\Encryption;
 //Use DB;
 
 if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
@@ -1552,7 +1553,8 @@ function prepareExchangedData($teampassDir, $data, string $type, ?string $key = 
 {
     $teampassDir = __DIR__ . '/..';
     // Load superglobal
-        $superGlobal = new SuperGlobal();
+    $superGlobal = new SuperGlobal();
+
     // Get superglobals
     if ($key !== null) {
         $superGlobal->put('key', $key, 'SESSION');
@@ -1561,13 +1563,10 @@ function prepareExchangedData($teampassDir, $data, string $type, ?string $key = 
         $globalsKey = $superGlobal->get('key', 'SESSION');
     }
     
-    //Load CRYPTOJS
-    include_once $teampassDir . '/includes/libraries/Encryption/CryptoJs/Encryption.php';
-
     // Perform
     if ($type === 'encode' && is_array($data) === true) {
         // Now encode
-        return Encryption\CryptoJs\Encryption::encrypt(
+        return Encryption::encrypt(
             json_encode(
                 $data,
                 JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP
@@ -1578,7 +1577,7 @@ function prepareExchangedData($teampassDir, $data, string $type, ?string $key = 
     if ($type === 'decode' && is_array($data) === false) {
         // check if key exists
         return json_decode(
-            (string) Encryption\CryptoJs\Encryption::decrypt(
+            (string) Encryption::decrypt(
                 (string) $data,
                 $globalsKey
             ),

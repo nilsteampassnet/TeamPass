@@ -44,6 +44,7 @@ class ComposerStaticInitf8d0a111ac97059c58e49ca16fe551d0
             'TeampassClasses\\SuperGlobal\\' => 28,
             'TeampassClasses\\PerformChecks\\' => 30,
             'TeampassClasses\\NestedTree\\' => 27,
+            'TeampassClasses\\Encryption\\' => 27,
         ),
         'S' => 
         array (
@@ -158,6 +159,10 @@ class ComposerStaticInitf8d0a111ac97059c58e49ca16fe551d0
         'TeampassClasses\\NestedTree\\' => 
         array (
             0 => __DIR__ . '/..' . '/teampassclasses/nestedtree/src',
+        ),
+        'TeampassClasses\\Encryption\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/teampassclasses/encryption/src',
         ),
         'Symfony\\Polyfill\\Php83\\' => 
         array (
@@ -852,6 +857,8 @@ class ComposerStaticInitf8d0a111ac97059c58e49ca16fe551d0
         'Illuminate\\Contracts\\Encryption\\Encrypter' => __DIR__ . '/..' . '/illuminate/contracts/Encryption/Encrypter.php',
         'Illuminate\\Contracts\\Encryption\\StringEncrypter' => __DIR__ . '/..' . '/illuminate/contracts/Encryption/StringEncrypter.php',
         'Illuminate\\Contracts\\Events\\Dispatcher' => __DIR__ . '/..' . '/illuminate/contracts/Events/Dispatcher.php',
+        'Illuminate\\Contracts\\Events\\ShouldDispatchAfterCommit' => __DIR__ . '/..' . '/illuminate/contracts/Events/ShouldDispatchAfterCommit.php',
+        'Illuminate\\Contracts\\Events\\ShouldHandleEventsAfterCommit' => __DIR__ . '/..' . '/illuminate/contracts/Events/ShouldHandleEventsAfterCommit.php',
         'Illuminate\\Contracts\\Filesystem\\Cloud' => __DIR__ . '/..' . '/illuminate/contracts/Filesystem/Cloud.php',
         'Illuminate\\Contracts\\Filesystem\\Factory' => __DIR__ . '/..' . '/illuminate/contracts/Filesystem/Factory.php',
         'Illuminate\\Contracts\\Filesystem\\FileNotFoundException' => __DIR__ . '/..' . '/illuminate/contracts/Filesystem/FileNotFoundException.php',
@@ -891,6 +898,7 @@ class ComposerStaticInitf8d0a111ac97059c58e49ca16fe551d0
         'Illuminate\\Contracts\\Queue\\ShouldBeUnique' => __DIR__ . '/..' . '/illuminate/contracts/Queue/ShouldBeUnique.php',
         'Illuminate\\Contracts\\Queue\\ShouldBeUniqueUntilProcessing' => __DIR__ . '/..' . '/illuminate/contracts/Queue/ShouldBeUniqueUntilProcessing.php',
         'Illuminate\\Contracts\\Queue\\ShouldQueue' => __DIR__ . '/..' . '/illuminate/contracts/Queue/ShouldQueue.php',
+        'Illuminate\\Contracts\\Queue\\ShouldQueueAfterCommit' => __DIR__ . '/..' . '/illuminate/contracts/Queue/ShouldQueueAfterCommit.php',
         'Illuminate\\Contracts\\Redis\\Connection' => __DIR__ . '/..' . '/illuminate/contracts/Redis/Connection.php',
         'Illuminate\\Contracts\\Redis\\Connector' => __DIR__ . '/..' . '/illuminate/contracts/Redis/Connector.php',
         'Illuminate\\Contracts\\Redis\\Factory' => __DIR__ . '/..' . '/illuminate/contracts/Redis/Factory.php',
@@ -1776,6 +1784,7 @@ class ComposerStaticInitf8d0a111ac97059c58e49ca16fe551d0
         'TCPDF_IMPORT' => __DIR__ . '/..' . '/tecnickcom/tcpdf/tcpdf_import.php',
         'TCPDF_PARSER' => __DIR__ . '/..' . '/tecnickcom/tcpdf/tcpdf_parser.php',
         'TCPDF_STATIC' => __DIR__ . '/..' . '/tecnickcom/tcpdf/include/tcpdf_static.php',
+        'TeampassClasses\\Encryption\\Encryption' => __DIR__ . '/..' . '/teampassclasses/encryption/src/Encryption.php',
         'TeampassClasses\\NestedTree\\NestedTree' => __DIR__ . '/..' . '/teampassclasses/nestedtree/src/NestedTree.php',
         'TeampassClasses\\PerformChecks\\PerformChecks' => __DIR__ . '/..' . '/teampassclasses/performchecks/src/PerformChecks.php',
         'TeampassClasses\\SuperGlobal\\SuperGlobal' => __DIR__ . '/..' . '/teampassclasses/superglobal/src/SuperGlobal.php',
