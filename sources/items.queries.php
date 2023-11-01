@@ -20,11 +20,10 @@ declare(strict_types=1);
  */
 
 Use TeampassClasses\SuperGlobal\SuperGlobal;
-Use TeampassClasses\NestedTree\NestedTree;
 Use TeampassClasses\PerformChecks\PerformChecks;
 Use voku\helper\AntiXSS;
 Use EZimuel\PHPSecureSession;
-//Use DB;
+Use TeampassClasses\NestedTree\NestedTree;
 
 // Load functions
 require_once 'main.functions.php';
@@ -87,9 +86,6 @@ $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
 // Load AntiXSS
 $antiXss = new AntiXSS();
-
-// Connect to mysql server
-
 
 // Ensure Complexity levels are translated
 if (defined('TP_PW_COMPLEXITY') === false) {

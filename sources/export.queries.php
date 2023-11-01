@@ -18,74 +18,64 @@ declare(strict_types=1);
  * ---
  * @see       https://www.teampass.net
  */
+Use TeampassClasses\SuperGlobal\SuperGlobal;
+Use TeampassClasses\PerformChecks\PerformChecks;
+Use voku\helper\AntiXSS;
+Use EZimuel\PHPSecureSession;
+Use TeampassClasses\NestedTree\NestedTree;
 
+// Load functions
+require_once 'main.functions.php';
 
-require_once 'SecureHandler.php';
+// init
+loadClasses('DB');
 session_name('teampass_session');
 session_start();
-if (
-    isset($_SESSION['CPM']) === false
-    || $_SESSION['CPM'] != 1
-    || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id'])
-    || isset($_SESSION['key']) === false || empty($_SESSION['key'])
-) {
+if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] === false || !isset($_SESSION['key']) || empty($_SESSION['key'])) {
     die('Hacking attempt...');
 }
 
-
-// reference the Dompdf namespace
-//use Dompdf\Dompdf;
-
-// Load config if $SETTINGS not defined
-if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir'])) {
-    if (file_exists('../includes/config/tp.config.php')) {
-        include_once '../includes/config/tp.config.php';
-    } elseif (file_exists('./includes/config/tp.config.php')) {
-        include_once './includes/config/tp.config.php';
-    } elseif (file_exists('../../includes/config/tp.config.php')) {
-        include_once '../../includes/config/tp.config.php';
-    } else {
-        throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
-    }
+// Load config
+try {
+    include_once __DIR__.'/../includes/config/tp.config.php';
+} catch (Exception $e) {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+    exit();
 }
 
 // Do checks
-require_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
-require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
-if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'items', $SETTINGS) === false) {
+// Instantiate the class with posted data
+$checkUserAccess = new PerformChecks(
+    dataSanitizer(
+        [
+            'type' => isset($_POST['type']) === true ? $_POST['type'] : '',
+        ],
+        [
+            'type' => 'trim|escape',
+        ],
+    )
+);
+// Handle the case
+$checkUserAccess->caseHandler();
+if ($checkUserAccess->userAccessPage($_SESSION['user_id'], $_SESSION['key'], 'items', $SETTINGS) === false) {
     // Not allowed page
+    //echo "> ".$_SESSION['user_id']." < - > ".$_SESSION['key']." <";
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
     include $SETTINGS['cpassman_dir'] . '/error.php';
-    exit();
+    exit;
 }
 
 // No time limit
 set_time_limit(0);
 
-require_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
 header('Content-type: text/html; charset=utf-8');
 error_reporting(E_ERROR);
-require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
-require_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
 
-// Connect to mysql server
-require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
-if (defined('DB_PASSWD_CLEAR') === false) {
-    define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
-}
-DB::$host = DB_HOST;
-DB::$user = DB_USER;
-DB::$password = DB_PASSWD_CLEAR;
-DB::$dbName = DB_NAME;
-DB::$port = DB_PORT;
-DB::$encoding = DB_ENCODING;
-DB::$ssl = DB_SSL;
-DB::$connect_options = DB_CONNECT_OPTIONS;
+// Prepare nestedTree
+$tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
-// Build tree
-$tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'] . '/includes/libraries');
-$tree->register();
-$tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+// Load AntiXSS
+$antiXss = new AntiXSS();
 
 // User's language loading
 require_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user']['user_language'] . '.php';
@@ -274,11 +264,18 @@ if (null !== $post_type) {
             // Loop on Results, decode to UTF8 and write in CSV file
             $tmp = '';
             foreach ($full_listing as $value) {
-                $value = array_map('utf8_decode', $value);
                 $tmp .= array2csv($value);
             }
 
-            echo '[{"content":"' . base64_encode($tmp) . '"}]';
+            //echo '[{"content":"' . urlencode($tmp) . '"}]';
+            echo prepareExchangedData(
+                $SETTINGS['cpassman_dir'],
+                array(
+                    'error' => false,
+                    'csv_content' => $tmp,
+                ),
+                'encode'
+            );
             break;
 
             /*
@@ -551,8 +548,8 @@ if (null !== $post_type) {
                 );
 
                 // set header and footer fonts
-                $pdf->setHeaderFont(Array('helvetica', '', PDF_FONT_SIZE_MAIN));
-                $pdf->setFooterFont(Array('helvetica', '', PDF_FONT_SIZE_DATA));
+                $pdf->setHeaderFont(Array(PDF_FONT_NAME_MAIN, '', PDF_FONT_SIZE_MAIN));
+                $pdf->setFooterFont(Array(PDF_FONT_NAME_DATA, '', PDF_FONT_SIZE_DATA));
 
                 // set default monospaced font
                 $pdf->SetDefaultMonospacedFont(PDF_FONT_MONOSPACED);
@@ -641,6 +638,12 @@ if (null !== $post_type) {
                     </tbody>
                 </table>
                 </body></html>';
+
+                // set default font subsetting mode
+                $pdf->setFontSubsetting(true);
+
+                // set font
+                $pdf->SetFont('freeserif', '', 12);
 
                 $pdf->writeHTML($html_table, true, false, false, false, '');
 

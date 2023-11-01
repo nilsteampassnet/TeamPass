@@ -294,10 +294,13 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                             timeOut: 1000
                         }
                     );
-
-                    download(new Blob([atob(data[0].content)]), $('#export-filename').val() + ".csv", "text/csv");
-                },
-                'json'
+                    
+                    //decrypt data
+                    data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                    
+                    // download VSC file
+                    download(new Blob([data.csv_content]), $('#export-filename').val() + ".csv", "text/csv");//decodeURI(data[0].content)
+                }
             );
         }
 

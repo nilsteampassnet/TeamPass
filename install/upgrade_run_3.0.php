@@ -610,6 +610,16 @@ if ($res === false) {
     exit();
 }
 
+// Alter description favourites in users
+try {
+    mysqli_query(
+        $db_link,
+        'ALTER TABLE `' . $pre . 'users` CHANGE `favourites` `favourites` varchar(1000) NULL DEFAULT NULL;'
+    );
+} catch (Exception $e) {
+    // Do nothing
+}
+
 
 //---<END 3.0.10
 
