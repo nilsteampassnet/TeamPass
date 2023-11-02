@@ -1542,16 +1542,14 @@ function utf8Converter(array $array): array
 /**
  * Permits to prepare data to be exchanged.
  *
- * @param string       $teampassDir
  * @param array|string $data Text
  * @param string       $type Parameter
  * @param string       $key  Optional key
  *
  * @return string|array
  */
-function prepareExchangedData($teampassDir, $data, string $type, ?string $key = null)
+function prepareExchangedData($data, string $type, ?string $key = null)
 {
-    $teampassDir = __DIR__ . '/..';
     // Load superglobal
     $superGlobal = new SuperGlobal();
 

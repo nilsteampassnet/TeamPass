@@ -269,7 +269,6 @@ if (null !== $post_type) {
 
             //echo '[{"content":"' . urlencode($tmp) . '"}]';
             echo prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => false,
                     'csv_content' => $tmp,
@@ -285,7 +284,6 @@ if (null !== $post_type) {
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
                 echo prepareExchangedData(
-                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
@@ -297,7 +295,6 @@ if (null !== $post_type) {
 
             // decrypt and retrieve data in JSON format
             $dataReceived = prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
                 $post_data,
                 'decode'
             );
@@ -316,7 +313,6 @@ if (null !== $post_type) {
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
                 echo prepareExchangedData(
-                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
@@ -328,7 +324,6 @@ if (null !== $post_type) {
 
             // decrypt and retrieve data in JSON format
             $dataReceived = prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
                 $post_data,
                 'decode'
             );
@@ -477,7 +472,6 @@ if (null !== $post_type) {
             }
 
             echo prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => false,
                     //'message' => 'Loop on folder id finished',
@@ -493,7 +487,6 @@ if (null !== $post_type) {
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
                 echo prepareExchangedData(
-                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
@@ -505,7 +498,6 @@ if (null !== $post_type) {
 
             // decrypt and retrieve data in JSON format
             $dataReceived = prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
                 $post_data,
                 'decode'
             );
@@ -667,7 +659,6 @@ if (null !== $post_type) {
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
                 echo prepareExchangedData(
-                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
@@ -679,7 +670,6 @@ if (null !== $post_type) {
 
             // decrypt and retrieve data in JSON format
             $dataReceived = prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
                 $post_data,
                 'decode'
             );
@@ -738,7 +728,6 @@ if (null !== $post_type) {
             $outstream = fopen($SETTINGS['path_to_files_folder'] . (substr($SETTINGS['path_to_files_folder'] , -1) === '/' ? '' : '/') . $inputData['filename'], 'w');
             if ($outstream === false) {
                 echo (string) prepareExchangedData(
-                    $SETTINGS['cpassman_dir'],
                     [
                         'error' => true,
                         'message' => langHdl('error_while_creating_file'),
@@ -797,7 +786,6 @@ if (null !== $post_type) {
 
             // send back and continue
             echo (string) prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
                 [
                     'error' => false,
                     'loop' => true,
@@ -816,7 +804,6 @@ if (null !== $post_type) {
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
                 echo prepareExchangedData(
-                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
@@ -828,7 +815,6 @@ if (null !== $post_type) {
 
             // decrypt and retrieve data in JSON format
             $dataReceived = prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
                 $post_data,
                 'decode'
             );
@@ -863,7 +849,6 @@ if (null !== $post_type) {
                 $outstream = fopen($inputData['filename'].'.txt', 'a');
                 if ($outstream === false) {
                     echo (string) prepareExchangedData(
-                        $SETTINGS['cpassman_dir'],
                         [
                             'error' => true,
                             'message' => langHdl('error_while_creating_file'),
@@ -934,7 +919,6 @@ if (null !== $post_type) {
 
             // send back and continue
             echo (string) prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
                 [
                     'error' => false,
                     //'message' => 'loop treatment finished',
@@ -954,7 +938,6 @@ if (null !== $post_type) {
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
                 echo prepareExchangedData(
-                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
@@ -966,7 +949,6 @@ if (null !== $post_type) {
 
             // decrypt and retrieve data in JSON format
             $dataReceived = prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
                 $post_data,
                 'decode'
             );
@@ -983,7 +965,6 @@ if (null !== $post_type) {
             $handle = fopen($inputData['filename'].'.txt', 'r');
             if ($handle === false) {
                 echo (string) prepareExchangedData(
-                    $SETTINGS['cpassman_dir'],
                     [
                         'error' => true,
                         'message' => langHdl('error_while_creating_file'),
@@ -996,7 +977,6 @@ if (null !== $post_type) {
             $contents = fread($handle, filesize($inputData['filename'].'.txt'));
             if ($contents === false) {
                 echo (string) prepareExchangedData(
-                    $SETTINGS['cpassman_dir'],
                     [
                         'error' => true,
                         'message' => langHdl('error_while_creating_file'),
@@ -1027,7 +1007,6 @@ if (null !== $post_type) {
             $outstream = fopen($inputData['filename'], 'a');
             if ($outstream === false) {
                 echo (string) prepareExchangedData(
-                    $SETTINGS['cpassman_dir'],
                     [
                         'error' => true,
                         'message' => langHdl('error_while_creating_file'),
@@ -1149,7 +1128,6 @@ if (null !== $post_type) {
             fclose($outstream);
 
             echo (string) prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
                 [
                     'error' => false,
                     //'message' => 'file treatment finished',

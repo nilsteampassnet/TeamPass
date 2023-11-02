@@ -111,7 +111,6 @@ if ($post_type === 'identify_user') {
         $_SESSION['next_possible_pwd_attempts'] = time() + 10;
         // Encrypt data to return
         echo prepareExchangedData(
-            $SETTINGS['cpassman_dir'],
             [
                 'value' => 'bruteforce_wait',
                 'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
@@ -136,7 +135,6 @@ if ($post_type === 'identify_user') {
     // Encrypt data to return
     echo json_encode([
         'ret' => prepareExchangedData(
-            $SETTINGS['cpassman_dir'],
             [
                 'agses' => isKeyExistingAndEqual('agses_authentication_enabled', 1, $SETTINGS) === true ? true : false,
                 'google' => isKeyExistingAndEqual('google_authentication', 1, $SETTINGS) === true ? true : false,
@@ -208,7 +206,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         $dataReceived = $sentData;
     } else {
         $dataReceived = prepareExchangedData(
-            $SETTINGS['cpassman_dir'],
             $sentData,
             'decode',
             $superGlobal->get('key', 'SESSION')
@@ -230,7 +227,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         $superGlobal->forget('duo_data','SESSION');
         if($duo_data_dec === false){
             echo prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
                 [
                     'error' => true,
                     'message' => langHdl('duo_error_decrypt'),
@@ -247,7 +243,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     if(isset($dataReceived['pw']) === false || isset($dataReceived['login']) === false) {
         echo json_encode([
             'data' => prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
                 [
                     'error' => true,
                     'message' => langHdl('ga_enter_credentials'),
@@ -282,7 +277,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     // if user doesn't exist in Teampass then return error
     if ($userInitialData['error'] === true) {
         echo prepareExchangedData(
-            $SETTINGS['cpassman_dir'],
             $userInitialData['array'],
             'encode'
         );
@@ -302,7 +296,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     );
     if ($userLdap['error'] === true) {
         echo prepareExchangedData(
-            $SETTINGS['cpassman_dir'],
             $userLdap['array'],
             'encode'
         );
@@ -318,7 +311,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         //$userInfo = $userLdap['user_info'];
         echo json_encode([
             'data' => prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
                 [
                     'error' => true,
                     'message' => '',
@@ -334,7 +326,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     // Check user and password
     if ($userLdap['userPasswordVerified'] === false && (int) checkCredentials($passwordClear, $userInfo, $dataReceived, $username, $SETTINGS) !== 1) {
         echo prepareExchangedData(
-            $SETTINGS['cpassman_dir'],
             [
                 'value' => '',
                 'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
@@ -370,7 +361,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         );
         if ($userMfa['error'] === true) {
             echo prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
                 [
                     'error' => true,
                     'message' => $userMfa['mfaData']['message'],
@@ -383,7 +373,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             // Case where user has initiated Google Auth
             // Return QR code
             echo prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
                 [
                     'value' => $userMfa['mfaData']['value'],
                     'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
@@ -400,7 +389,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             // Case where user has initiated Duo Auth
             // Return the DUO redirect URL
             echo prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
                 [
                     'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
                     'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
@@ -785,7 +773,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         defineComplexity();
 
         echo prepareExchangedData(
-            $SETTINGS['cpassman_dir'],
             [
                 'value' => $return,
                 'user_id' => $superGlobal->get('user_id', 'SESSION') !== null ? (int) $superGlobal->get('user_id', 'SESSION') : '',
@@ -815,7 +802,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     } elseif ((int) $userInfo['disabled'] === 1) {
         // User and password is okay but account is locked
         echo prepareExchangedData(
-            $SETTINGS['cpassman_dir'],
             [
                 'value' => $return,
                 'user_id' => $superGlobal->get('user_id', 'SESSION') !== null ? (int) $superGlobal->get('user_id', 'SESSION') : '',
@@ -852,7 +838,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         ) === true
     ) {
         echo prepareExchangedData(
-            $SETTINGS['cpassman_dir'],
             [
                 'value' => $return,
                 'user_id' => $superGlobal->get('user_id', 'SESSION') !== null ? (int) $superGlobal->get('user_id', 'SESSION') : '',
@@ -877,7 +862,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         return false;
     }
     echo prepareExchangedData(
-        $SETTINGS['cpassman_dir'],
         [
             'value' => $return,
             'user_id' => $superGlobal->get('user_id', 'SESSION') !== null ? (int) $superGlobal->get('user_id', 'SESSION') : '',

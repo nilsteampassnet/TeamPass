@@ -673,5 +673,7 @@ if (isset($_GET['type']) === false) {
         'start' => (int) (isset($_GET['start']) === true && (int) $_GET['length'] !== -1) ? (int) $_GET['start'] + (int) $_GET['length'] : -1,
     ];
     echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],$returnValues, 'encode');
+        $returnValues,
+        'encode'
+    );
 }

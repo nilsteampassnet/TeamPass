@@ -75,7 +75,6 @@ $post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS
 // Check KEY
 if ($post_key !== $_SESSION['key']) {
     echo prepareExchangedData(
-        $SETTINGS['cpassman_dir'],
         array(
             'error' => true,
             'message' => langHdl('key_is_not_correct'),
@@ -84,7 +83,6 @@ if ($post_key !== $_SESSION['key']) {
     );
 } elseif ($_SESSION['user_read_only'] === true) {
     echo prepareExchangedData(
-        $SETTINGS['cpassman_dir'],
         array(
             'error' => true,
             'message' => langHdl('error_not_allowed_to'),
@@ -95,7 +93,6 @@ if ($post_key !== $_SESSION['key']) {
 
 // decrypt and retrieve data in JSON format
 $dataReceived = prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
     $post_data,
     'decode'
 );

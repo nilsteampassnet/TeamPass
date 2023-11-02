@@ -179,7 +179,6 @@ if (null !== $post_type) {
         case 'reencrypt_personal_pwd_start':
             if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== $_SESSION['key']) {
                 echo prepareExchangedData(
-                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
@@ -194,7 +193,6 @@ if (null !== $post_type) {
                 || empty($_SESSION['user']['encrypted_psk']) === true
             ) {
                 echo prepareExchangedData(
-                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('error_personal_saltkey_is_not_set'),
@@ -229,7 +227,6 @@ if (null !== $post_type) {
         case 'server_auto_update_password':
             if ($post_key !== $_SESSION['key']) {
                 echo prepareExchangedData(
-                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
@@ -241,7 +238,6 @@ if (null !== $post_type) {
 
             // decrypt and retreive data in JSON format
             $dataReceived = prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
                 $post_data,
                 'decode'
             );
@@ -269,7 +265,6 @@ if (null !== $post_type) {
             if (!isset($parse['host']) || empty($parse['host']) || !isset($parse['port']) || empty($parse['port'])) {
                 // error in parsing the url
                 echo prepareExchangedData(
-                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => 'Parsing URL failed.<br />Ensure the URL is well written!</i>',
@@ -282,7 +277,6 @@ if (null !== $post_type) {
                 $ssh = new phpseclib\Net\SSH2($parse['host'], $parse['port']);
                 if (!$ssh->login($dataReceived['ssh_root'], $dataReceived['ssh_pwd'])) {
                     echo prepareExchangedData(
-                        $SETTINGS['cpassman_dir'],
                         array(
                             'error' => true,
                             'message' => 'Login failed.',
@@ -333,7 +327,6 @@ if (null !== $post_type) {
 
             // finished
             echo prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => false,
                     'message' => '',
@@ -349,7 +342,6 @@ if (null !== $post_type) {
                 || null === filter_input(INPUT_POST, 'freq', FILTER_SANITIZE_FULL_SPECIAL_CHARS)
             ) {
                 echo prepareExchangedData(
-                    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),

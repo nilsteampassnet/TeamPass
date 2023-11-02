@@ -84,7 +84,6 @@ if (null !== $post_type) {
     // Do checks
     if ($post_key !== $_SESSION['key']) {
         echo prepareExchangedData(
-            $SETTINGS['cpassman_dir'],
             array(
                 'error' => true,
                 'message' => langHdl('key_is_not_correct'),
@@ -94,7 +93,6 @@ if (null !== $post_type) {
         return false;
     } elseif ($_SESSION['user_read_only'] === true) {
         echo prepareExchangedData(
-            $SETTINGS['cpassman_dir'],
             array(
                 'error' => true,
                 'message' => langHdl('error_not_allowed_to'),
@@ -164,7 +162,6 @@ function loadLastTasksExec(string $datetimeFormat, string $dir): string
     }
 
     return prepareExchangedData(
-        $dir,
         array(
             'error' => false,
             'task' => json_encode($lastExec),
@@ -298,7 +295,6 @@ function performTask(string $task, string $dir, string $phpBinaryPath, string $d
         }
 
         return prepareExchangedData(
-            $dir,
             array(
                 'error' => $error,
                 'output' => $output,
@@ -309,7 +305,6 @@ function performTask(string $task, string $dir, string $phpBinaryPath, string $d
     }
 
     return prepareExchangedData(
-        $dir,
         array(
             'error' => true,
             'output' => '',

@@ -110,7 +110,6 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
         // Check KEY and rights
         if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('key_is_not_correct'),
@@ -241,7 +240,6 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
             fclose($fp);
         } else {
             echo prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('cannot_open_file'),
@@ -268,7 +266,6 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
 
             // Show results to user.
             echo prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => false,
                     'message' => '',
@@ -289,7 +286,6 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
         // Check KEY and rights
         if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('key_is_not_correct'),
@@ -304,7 +300,6 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
 
         // Decrypt and retreive data in JSON format
         $dataReceived = prepareExchangedData(
-            $SETTINGS['cpassman_dir'],
             $post_data,
             'decode'
         );
@@ -435,7 +430,6 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
         }
 
         echo prepareExchangedData(
-            $SETTINGS['cpassman_dir'],
             array(
                 'error' => false,
                 'message' => '',
@@ -450,7 +444,6 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
         // Check KEY and rights
         if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('key_is_not_correct'),
@@ -462,7 +455,6 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
 
         // Decrypt and retreive data in JSON format
         $receivedParameters = prepareExchangedData(
-            $SETTINGS['cpassman_dir'],
             $post_data,
             'decode'
         );
@@ -600,7 +592,6 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
 
         
         echo prepareExchangedData(
-            $SETTINGS['cpassman_dir'],
             array(
                 'error' => false,
                 'message' => '',
@@ -616,7 +607,6 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
         // Check KEY and rights
         if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('key_is_not_correct'),
@@ -628,7 +618,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
 
         // Decrypt and retreive data in JSON format
         $receivedParameters = prepareExchangedData(
-            $SETTINGS['cpassman_dir'],$post_data,
+            $post_data,
             'decode'
         );
 
@@ -674,7 +664,6 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
 
 
         echo prepareExchangedData(
-            $SETTINGS['cpassman_dir'],
             array(
                 'error' => false,
                 'message' => '',
@@ -690,7 +679,6 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
         // Check KEY and rights
         if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('key_is_not_correct'),
@@ -702,7 +690,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
 
         // Decrypt and retreive data in JSON format
         $receivedParameters = prepareExchangedData(
-            $SETTINGS['cpassman_dir'],$post_data,
+            $post_data,
             'decode'
         );
 
@@ -821,7 +809,6 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
 
 
         echo prepareExchangedData(
-            $SETTINGS['cpassman_dir'],
             array(
                 'error' => false,
                 'message' => '',

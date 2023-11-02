@@ -78,7 +78,6 @@ if (null === $post_key
     || $post_key != $_SESSION['key']
 ) {
     echo prepareExchangedData(
-        $SETTINGS['cpassman_dir'],
         array('error' => 'ERR_KEY_NOT_CORRECT'),
         'encode'
     );
@@ -92,7 +91,6 @@ if (null !== $post_type) {
             // Check KEY and rights
             if ($post_key !== $_SESSION['key']) {
                 echo prepareExchangedData(
-                    $SETTINGS['cpassman_dir'],
                     array('error' => 'ERR_KEY_NOT_CORRECT'),
                     'encode'
                 );
@@ -101,7 +99,6 @@ if (null !== $post_type) {
 
             // decrypt and retreive data in JSON format
             $dataReceived = prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
                 $post_data,
                 'decode'
             );

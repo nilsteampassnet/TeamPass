@@ -84,7 +84,6 @@ switch ($post_type) {
         // Check KEY and rights
         if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('key_is_not_correct'),
@@ -96,7 +95,6 @@ switch ($post_type) {
 
         // decrypt and retrieve data in JSON format
         $dataReceived = prepareExchangedData(
-            $SETTINGS['cpassman_dir'],
             $post_data,
             'decode'
         );
@@ -108,7 +106,6 @@ switch ($post_type) {
         // Check if data is correct
         if (empty($post_username) === true && empty($post_password) === true) {
             echo prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => "Error : ".langHdl('error_empty_data'),
@@ -149,7 +146,6 @@ switch ($post_type) {
             $error = $e->getDetailedError();
 
             echo prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => "Error : ".(isset($error) === true ? $error->getErrorCode()." - ".$error->getErrorMessage(). "<br>".$error->getDiagnosticMessage() : $e),
@@ -170,7 +166,6 @@ switch ($post_type) {
             $error = $e->getDetailedError();
             
             echo prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('error')." - ".(isset($error) === true ? $error->getErrorCode()." - ".$error->getErrorMessage(). "<br>".$error->getDiagnosticMessage() : $e),
@@ -191,7 +186,6 @@ switch ($post_type) {
             $error = $e->getDetailedError();
             
             echo prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('error').' : '.(isset($error) === true ? $error->getErrorCode()." - ".$error->getErrorMessage(). "<br>".$error->getDiagnosticMessage() : $e),
@@ -210,7 +204,6 @@ switch ($post_type) {
             }
             
             echo prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => false,
                     'message' => "User is successfully authenticated",
@@ -220,7 +213,6 @@ switch ($post_type) {
             );
         } else {
             echo prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => "Error : User could not be authentificated",

@@ -620,6 +620,18 @@ try {
     // Do nothing
 }
 
+// Add field aes_iv to users table
+$res = addColumnIfNotExist(
+    $pre . 'users',
+    'aes_iv',
+    "TEXT NULL DEFAULT NULL;"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field aes_iv to table users! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
 
 //---<END 3.0.10
 

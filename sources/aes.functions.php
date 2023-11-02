@@ -78,7 +78,6 @@ if (is_null($post_type) === false) {
         case 'user_change_pair_keys':
             // Decrypt and retreive data in JSON format
             $dataReceived = prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
                 $post_data,
                 'decode'
             );

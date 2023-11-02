@@ -168,7 +168,6 @@ switch ($post_type) {
         // Check KEY
         if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('key_is_not_correct'),
@@ -180,7 +179,6 @@ switch ($post_type) {
         // Is admin?
         if ($_SESSION['is_admin'] === true) {
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('error_not_allowed_to'),
@@ -291,7 +289,6 @@ switch ($post_type) {
         // Check KEY
         if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('key_is_not_correct'),
@@ -303,7 +300,6 @@ switch ($post_type) {
         // Is admin?
         if ($_SESSION['is_admin'] === true) {
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('error_not_allowed_to'),
@@ -384,7 +380,6 @@ switch ($post_type) {
         // Check KEY
         if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('key_is_not_correct'),
@@ -396,7 +391,6 @@ switch ($post_type) {
         // Is admin?
         if ($_SESSION['is_admin'] === true) {
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('error_not_allowed_to'),
@@ -462,7 +456,6 @@ switch ($post_type) {
 
         //Show done
         echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
             array(
                 'error' => false,
                 'message' => langHdl('last_execution') . ' ' .
@@ -482,7 +475,6 @@ switch ($post_type) {
         // Check KEY
         if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('key_is_not_correct'),
@@ -494,7 +486,6 @@ switch ($post_type) {
         // Is admin?
         if ($_SESSION['is_admin'] === true) {
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('error_not_allowed_to'),
@@ -518,7 +509,6 @@ switch ($post_type) {
         );
 
         echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
             [
                 'error' => false,
                 'message' => langHdl('last_execution') . ' ' .
@@ -536,7 +526,6 @@ switch ($post_type) {
         // Check KEY
         if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
                 [
                     'error' => true,
                     'message' => langHdl('key_is_not_correct'),
@@ -548,7 +537,6 @@ switch ($post_type) {
         // Is admin?
         if ($_SESSION['is_admin'] === true) {
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('error_not_allowed_to'),
@@ -574,7 +562,6 @@ switch ($post_type) {
 
         if ($ret !== true) {
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => $ret,
@@ -585,7 +572,6 @@ switch ($post_type) {
         }
 
         echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
             array(
                 'error' => false,
                 'message' => langHdl('last_execution') . ' ' .
@@ -603,7 +589,6 @@ switch ($post_type) {
         // Check KEY
         if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('key_is_not_correct'),
@@ -615,7 +600,6 @@ switch ($post_type) {
         // Is admin?
         if ($_SESSION['is_admin'] === true) {
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('error_not_allowed_to'),
@@ -709,7 +693,6 @@ switch ($post_type) {
         // Check KEY
         if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('key_is_not_correct'),
@@ -721,7 +704,6 @@ switch ($post_type) {
         // Is admin?
         if ($_SESSION['is_admin'] === true) {
             echo prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('error_not_allowed_to'),
@@ -812,7 +794,6 @@ switch ($post_type) {
 
         // Send back
         echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
             array(
                 'error' => false,
                 'message' => '',
@@ -830,7 +811,6 @@ switch ($post_type) {
         // Check KEY
         if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('key_is_not_correct'),
@@ -844,7 +824,6 @@ switch ($post_type) {
         // Is admin?
         if ($_SESSION['is_admin'] === true) {
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('error_not_allowed_to'),
@@ -861,7 +840,6 @@ switch ($post_type) {
         if (empty($_SESSION['reencrypt_new_salt']) || empty($_SESSION['reencrypt_old_salt'])) {
             // SK is not correct
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => 'saltkeys are empty???',
@@ -884,7 +862,6 @@ switch ($post_type) {
             // Allowed values for $_POST['object'] : "items,logs,files,categories"
             if (in_array($objects[0], array('items', 'logs', 'files', 'categories')) === false) {
                 echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => 'Input `' . $objects[0] . '` is not allowed',
@@ -1196,7 +1173,6 @@ switch ($post_type) {
 
         // Send back
         echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
             array(
                 'error' => false,
                 'message' => '',
@@ -1217,7 +1193,6 @@ switch ($post_type) {
         // Check KEY
         if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('key_is_not_correct'),
@@ -1229,7 +1204,6 @@ switch ($post_type) {
         // Is admin?
         if ($_SESSION['is_admin'] === true) {
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('error_not_allowed_to'),
@@ -1253,7 +1227,6 @@ switch ($post_type) {
 
         // Send back
         echo prepareExchangedData(
-            $SETTINGS['cpassman_dir'],
             array(
                 'error' => false,
                 'message' => '',
@@ -1270,7 +1243,6 @@ switch ($post_type) {
         // Check KEY
         if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('key_is_not_correct'),
@@ -1282,7 +1254,6 @@ switch ($post_type) {
         // Is admin?
         if ($_SESSION['is_admin'] === true) {
             echo prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('error_not_allowed_to'),
@@ -1333,7 +1304,6 @@ switch ($post_type) {
 
         // Send back
         echo prepareExchangedData(
-            $SETTINGS['cpassman_dir'],
             array(
                 'error' => false,
                 'message' => '',
@@ -1350,7 +1320,6 @@ switch ($post_type) {
         // Check KEY
         if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('key_is_not_correct'),
@@ -1362,7 +1331,6 @@ switch ($post_type) {
         // Is admin?
         if ($_SESSION['is_admin'] === true) {
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('error_not_allowed_to'),
@@ -1397,7 +1365,6 @@ switch ($post_type) {
         // Check KEY
         if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('key_is_not_correct'),
@@ -1410,7 +1377,6 @@ switch ($post_type) {
         // User has an email set?
         if (empty($_SESSION['user_email'])) {
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('no_email_set'),
@@ -1429,7 +1395,6 @@ switch ($post_type) {
                 $SETTINGS
             );
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
                 array(
                     'error' => false,
                     'message' => '',
@@ -1447,7 +1412,6 @@ switch ($post_type) {
         // Check KEY
         if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('key_is_not_correct'),
@@ -1521,7 +1485,6 @@ switch ($post_type) {
         }
 
         echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
             array(
                 'error' => $error,
                 'message' => $message,
@@ -1538,7 +1501,6 @@ switch ($post_type) {
         // Check KEY
         if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('key_is_not_correct'),
@@ -1583,7 +1545,6 @@ switch ($post_type) {
         logEvents($SETTINGS, 'admin_action', 'Emails backlog', (string) $_SESSION['user_id'], $_SESSION['login']);
 
         echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
             array(
                 'error' => false,
                 'message' => '',
@@ -1599,7 +1560,6 @@ switch ($post_type) {
         // Check KEY
         if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('key_is_not_correct'),
@@ -1611,7 +1571,6 @@ switch ($post_type) {
         // Is admin?
         if ($_SESSION['is_admin'] === true) {
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('error_not_allowed_to'),
@@ -1649,7 +1608,6 @@ switch ($post_type) {
             }
         } else {
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('error_not_allowed_to'),
@@ -1659,7 +1617,6 @@ switch ($post_type) {
         }
 
         echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
             array(
                 'error' => false,
                 'message' => '',
@@ -1677,7 +1634,6 @@ switch ($post_type) {
         // Check KEY
         if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('key_is_not_correct'),
@@ -1689,7 +1645,6 @@ switch ($post_type) {
         // Is admin?
         if ($_SESSION['is_admin'] === true) {
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('error_not_allowed_to'),
@@ -1797,7 +1752,6 @@ switch ($post_type) {
         }
 
         echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
             array(
                 'error' => false,
                 'message' => $message,
@@ -1816,7 +1770,6 @@ switch ($post_type) {
         // Check KEY
         if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('key_is_not_correct'),
@@ -1828,7 +1781,6 @@ switch ($post_type) {
         // Is admin?
         if ($_SESSION['is_admin'] === true) {
             echo prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('error_not_allowed_to'),
@@ -1840,7 +1792,6 @@ switch ($post_type) {
 
         // decrypt and retrieve data in JSON format
         $dataReceived = prepareExchangedData(
-            $SETTINGS['cpassman_dir'],
             $post_data,
             'decode'
         );
@@ -1897,7 +1848,6 @@ switch ($post_type) {
 
         // send data
         echo prepareExchangedData(
-            $SETTINGS['cpassman_dir'],
             array(
                 'error' => false,
                 'message' => '',
@@ -1915,7 +1865,6 @@ switch ($post_type) {
         // Check KEY
         if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('key_is_not_correct'),
@@ -1927,7 +1876,6 @@ switch ($post_type) {
         // Is admin?
         if ($_SESSION['is_admin'] === true) {
             echo prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('error_not_allowed_to'),
@@ -1939,7 +1887,6 @@ switch ($post_type) {
 
         // decrypt and retrieve data in JSON format
         $dataReceived = prepareExchangedData(
-            $SETTINGS['cpassman_dir'],
             $post_data,
             'decode'
         );
@@ -1993,7 +1940,6 @@ switch ($post_type) {
         }
 
         echo prepareExchangedData(
-            $SETTINGS['cpassman_dir'],
             array(
                 'error' => false,
                 'message' => '',
@@ -2036,7 +1982,6 @@ switch ($post_type) {
         // Check KEY
         if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('key_is_not_correct'),
@@ -2048,7 +1993,6 @@ switch ($post_type) {
 
         // decrypt and retreive data in JSON format
         $dataReceived = prepareExchangedData(
-            $SETTINGS['cpassman_dir'],
             $post_data,
             'decode'
         );
@@ -2056,7 +2000,6 @@ switch ($post_type) {
         // Check if we have what we need first
         if (empty($dataReceived['duo_ikey']) || empty($dataReceived['duo_skey']) || empty($dataReceived['duo_host'])) {
             echo prepareExchangedData(
-            $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('data_are_missing'),
@@ -2085,7 +2028,6 @@ switch ($post_type) {
             );
         } catch (Duo\DuoUniversal\DuoException $e) {
             echo prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => langHdl('duo_config_error') . "<br/>Duo: " . $e->getMessage(),
@@ -2110,7 +2052,6 @@ switch ($post_type) {
             }*/
             $duo_error = langHdl('duo_error_check_config') . "<br/>Duo: " . $e->getMessage();
             echo prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
                     array(
                         'error' => true,
                         'message' => $duo_error,
@@ -2122,7 +2063,6 @@ switch ($post_type) {
 
         // send data
         echo prepareExchangedData(
-            $SETTINGS['cpassman_dir'],
             array(
                 'error' => false,
                 'message' => '',
@@ -2135,7 +2075,6 @@ switch ($post_type) {
         // Check KEY and rights
         if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('key_is_not_correct'),
@@ -2146,7 +2085,6 @@ switch ($post_type) {
         }
         // decrypt and retreive data in JSON format
         $dataReceived = prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
             $post_data,
             'decode'
         );
@@ -2221,7 +2159,6 @@ switch ($post_type) {
         // Check KEY and rights
         if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('key_is_not_correct'),
@@ -2232,7 +2169,6 @@ switch ($post_type) {
         }
         // decrypt and retreive data in JSON format
         $dataReceived = prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
             $post_data,
             'decode'
         );
@@ -2332,7 +2268,6 @@ switch ($post_type) {
         // Check KEY and rights
         if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('key_is_not_correct'),
@@ -2343,7 +2278,6 @@ switch ($post_type) {
         }
         // decrypt and retreive data in JSON format
         $dataReceived = prepareExchangedData(
-            $SETTINGS['cpassman_dir'],
             $post_data,
             'decode'
         );
@@ -2472,7 +2406,6 @@ switch ($post_type) {
 
         // Encrypt data to return
         echo prepareExchangedData(
-            $SETTINGS['cpassman_dir'],
             array(
                 'error' => false,
                 'misc' => $counter . ' ; ' . $SETTINGS[$post_field],
@@ -2486,7 +2419,6 @@ switch ($post_type) {
         // Check KEY and rights
         if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('key_is_not_correct'),
@@ -2498,7 +2430,6 @@ switch ($post_type) {
 
         // Encrypt data to return
         echo prepareExchangedData(
-            $SETTINGS['cpassman_dir'],
             getStatisticsData($SETTINGS),
             'encode'
         );
@@ -2509,7 +2440,6 @@ switch ($post_type) {
         // Check KEY and rights
         if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('key_is_not_correct'),
@@ -2591,7 +2521,6 @@ switch ($post_type) {
         // Check KEY and rights
         if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(
-    $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('key_is_not_correct'),
@@ -2617,7 +2546,6 @@ switch ($post_type) {
         // Check KEY and rights
         if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(
-                $SETTINGS['cpassman_dir'],
                 array(
                     'error' => true,
                     'message' => langHdl('key_is_not_correct'),
@@ -2656,7 +2584,6 @@ switch ($post_type) {
         }
 
         echo prepareExchangedData(
-            $SETTINGS['cpassman_dir'],
             $json, 
             'encode'
         );
