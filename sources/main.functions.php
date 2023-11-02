@@ -3850,7 +3850,6 @@ function handleUserKeys(
         $hashedPassword = $pwdlib->createPasswordHash($passwordClear);
         if ($pwdlib->verifyPasswordHash($passwordClear, $hashedPassword) === false) {
             return prepareExchangedData(
-                __DIR__.'/..',
                 array(
                     'error' => true,
                     'message' => langHdl('pw_hash_not_correct'),
@@ -4030,7 +4029,6 @@ function handleUserKeys(
     }
 
     return prepareExchangedData(
-        __DIR__.'/..',
         array(
             'error' => false,
             'message' => '',
@@ -4315,7 +4313,6 @@ function handleUserRecoveryKeysDownload(int $userId, array $SETTINGS):string
         
         // Return data
         return prepareExchangedData(
-            __DIR__.'/..',
             array(
                 'error' => false,
                 'datetime' => date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], $now),
@@ -4328,7 +4325,6 @@ function handleUserRecoveryKeysDownload(int $userId, array $SETTINGS):string
     }
 
     return prepareExchangedData(
-        __DIR__.'/..',
         array(
             'error' => true,
             'datetime' => '',
