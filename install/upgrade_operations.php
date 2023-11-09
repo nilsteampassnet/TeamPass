@@ -16,21 +16,25 @@
  * @see       https://www.teampass.net
  */
 
-set_time_limit(600);
+Use EZimuel\PHPSecureSession;
+Use TeampassClasses\SuperGlobal\SuperGlobal;
+Use PasswordLib\PasswordLib;
 
+// Load functions
+require_once __DIR__.'/../sources/main.functions.php';
 
-require_once __DIR__.'/../sources/SecureHandler.php';
+// init
+loadClasses('DB');
 session_name('teampass_session');
 session_start();
 error_reporting(E_ERROR | E_PARSE);
+set_time_limit(600);
 $_SESSION['CPM'] = 1;
 
 //include librairies
 require_once __DIR__.'/../includes/language/english.php';
 require_once __DIR__.'/../includes/config/include.php';
 require_once __DIR__.'/../includes/config/settings.php';
-require_once __DIR__.'/../sources/main.functions.php';
-require_once __DIR__.'/../includes/libraries/Tree/NestedTree/NestedTree.php';
 require_once __DIR__.'/tp.functions.php';
 require_once __DIR__.'/libs/aesctr.php';
 require_once __DIR__.'/../includes/config/tp.config.php';
@@ -40,8 +44,7 @@ $post_nb = filter_input(INPUT_POST, 'nb', FILTER_SANITIZE_NUMBER_INT);
 $post_start = filter_input(INPUT_POST, 'start', FILTER_SANITIZE_NUMBER_INT);
 
 // Load libraries
-require_once __DIR__.'/../includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-$superGlobal = new protect\SuperGlobal\SuperGlobal();
+$superGlobal = new SuperGlobal();
 
 // Some init
 $_SESSION['settings']['loaded'] = '';
@@ -79,10 +82,6 @@ if (mysqli_connect(
     mysqli_close($db_link);
     exit();
 }
-
-// Load libraries
-require_once __DIR__.'/../includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-$superGlobal = new protect\SuperGlobal\SuperGlobal();
 
 // Get POST with operation to perform
 $post_operation = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);

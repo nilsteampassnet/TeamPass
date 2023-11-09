@@ -19,11 +19,13 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-Use TeampassClasses\SuperGlobal\SuperGlobal;
-Use TeampassClasses\PerformChecks\PerformChecks;
+
 Use voku\helper\AntiXSS;
-Use EZimuel\PHPSecureSession;
 Use TeampassClasses\NestedTree\NestedTree;
+Use TeampassClasses\SuperGlobal\SuperGlobal;
+Use EZimuel\PHPSecureSession;
+Use TeampassClasses\PerformChecks\PerformChecks;
+
 
 // Load functions
 require_once 'main.functions.php';
@@ -32,11 +34,8 @@ require_once 'main.functions.php';
 loadClasses('DB');
 session_name('teampass_session');
 session_start();
-if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] === false || !isset($_SESSION['key']) || empty($_SESSION['key'])) {
-    die('Hacking attempt...');
-}
 
-// Load config
+// Load config if $SETTINGS not defined
 try {
     include_once __DIR__.'/../includes/config/tp.config.php';
 } catch (Exception $e) {
@@ -54,17 +53,38 @@ $checkUserAccess = new PerformChecks(
         [
             'type' => 'trim|escape',
         ],
-    )
+    ),
+    [
+        'user_id' => isset($_SESSION['user_id']) === false ? null : $_SESSION['user_id'],
+        'user_key' => isset($_SESSION['key']) === false ? null : $_SESSION['key'],
+        'CPM' => isset($_SESSION['CPM']) === false ? null : $_SESSION['CPM'],
+    ]
 );
 // Handle the case
 $checkUserAccess->caseHandler();
-if ($checkUserAccess->userAccessPage($_SESSION['user_id'], $_SESSION['key'], 'items', $SETTINGS) === false) {
+if (
+    $checkUserAccess->userAccessPage('items') === false ||
+    $checkUserAccess->checkSession() === false
+) {
     // Not allowed page
-    //echo "> ".$_SESSION['user_id']." < - > ".$_SESSION['key']." <";
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
+
+// Load language file
+require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user']['user_language'].'.php';
+
+// Define Timezone
+date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
+
+// Set header properties
+header('Content-type: text/html; charset=utf-8');
+header('Cache-Control: no-cache, no-store, must-revalidate');
+error_reporting(E_ERROR);
+set_time_limit(0);
+
+// --------------------------------- //
 
 
 /*
@@ -6171,8 +6191,6 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
         }
 
         //Build tree
-        //require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tree/NestedTree/NestedTree.php';
-        //$tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
         $tree->rebuild();
         $folders = $tree->getDescendants();
         $inc = 0;

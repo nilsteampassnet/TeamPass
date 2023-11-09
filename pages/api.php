@@ -24,33 +24,61 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-if (
-    isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
-    || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === true
-    || isset($_SESSION['key']) === false || empty($_SESSION['key']) === true
-) {
-    die('Hacking attempt...');
-}
+Use TeampassClasses\SuperGlobal\SuperGlobal;
+Use TeampassClasses\NestedTree\NestedTree;
+Use TeampassClasses\PerformChecks\PerformChecks;
 
-// Load config
-if (file_exists('../includes/config/tp.config.php') === true) {
-    include_once '../includes/config/tp.config.php';
-} elseif (file_exists('./includes/config/tp.config.php') === true) {
-    include_once './includes/config/tp.config.php';
-} else {
+// Load functions
+require_once __DIR__.'/../sources/main.functions.php';
+
+// init
+loadClasses('DB');
+
+// Load config if $SETTINGS not defined
+try {
+    include_once __DIR__.'/../includes/config/tp.config.php';
+} catch (Exception $e) {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+    exit();
 }
 
-/* do checks */
-require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
-if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'api', $SETTINGS) === false) {
+// Do checks
+$checkUserAccess = new PerformChecks(
+    dataSanitizer(
+        [
+            'type' => isset($_POST['type']) === true ? $_POST['type'] : '',
+        ],
+        [
+            'type' => 'trim|escape',
+        ],
+    ),
+    [
+        'user_id' => isset($_SESSION['user_id']) === false ? null : $_SESSION['user_id'],
+        'user_key' => isset($_SESSION['key']) === false ? null : $_SESSION['key'],
+        'CPM' => isset($_SESSION['CPM']) === false ? null : $_SESSION['CPM'],
+    ]
+);
+// Handle the case
+$checkUserAccess->caseHandler();
+if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('api') === false) {
+    // Not allowed page
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
 
-// Load template
-require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
+// Load language file
+require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user']['user_language'].'.php';
+
+// Define Timezone
+date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
+
+// Set header properties
+header('Content-type: text/html; charset=utf-8');
+header('Cache-Control: no-cache, no-store, must-revalidate');
+
+// --------------------------------- //
+
 
 ?>
 
@@ -120,7 +148,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                 </small>
                                 <div class="mt-4">
                                     <?php
-                                    $rows = DB::query(
+                                    $rowsKeys = DB::query(
                                         'SELECT increment_id, label, timestamp, user_id, value 
                                         FROM ' . prefixTable('api') . '
                                         WHERE type = %s
@@ -138,13 +166,12 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                         </thead>
                                         <tbody>
                                             <?php
-                                            foreach ($rows as $record) {
-                                                //$apiKey = (int) $record['user_id'] === -1 ? doDataDecryption($record['value'], base64_encode(SECUREFILE.':'.$record['timestamp'])) : $record['value'];
+                                            foreach ($rowsKeys as $key) {
                                                 echo '
-                                                    <tr data-id="' . $record['increment_id'] . '">
+                                                    <tr data-id="' . $key['increment_id'] . '">
                                                     <td width="50px"><i class="fas fa-trash infotip pointer delete-api-key" title="' . langHdl('del_button') . '"></i></td>
-                                                    <td><span class="edit-api-key pointer">' . $record['label'] . '</span></td>
-                                                    <td>' . $record['value']. '</td>                        
+                                                    <td><span class="edit-api-key pointer">' . $key['label'] . '</span></td>
+                                                    <td>' . $key['value']. '</td>                        
                                                 </tr>';
                                             } ?>
                                         </tbody>
@@ -178,10 +205,10 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                 </small>
                                 <div class="col-12 mt-4" id="table-api-ip">
                                     <?php
-                                    $rows = DB::query(
+                                    $rowsIps = DB::query(
                                                 'SELECT increment_id, label, timestamp value FROM ' . prefixTable('api') . '
-                                        WHERE type = %s
-                                        ORDER BY timestamp ASC',
+                                                WHERE type = %s
+                                                ORDER BY timestamp ASC',
                                                 'ip'
                                             );
                                     ?>
@@ -195,12 +222,12 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                         </thead>
                                         <tbody>
                                             <?php
-                                            foreach ($rows as $record) {
+                                            foreach ($rowsIps as $ip) {
                                                 echo '
-                                                <tr data-id="' . $record['increment_id'] . '">
+                                                <tr data-id="' . $ip['increment_id'] . '">
                                                     <td width="50px"><i class="fas fa-trash infotip pointer delete-api-ip" title="' . langHdl('del_button') . '"></i></td>
-                                                    <td><span class="edit-api-ip pointer" data-field="label">' . $record['label'] . '</span></td>
-                                                    <td><span class="edit-api-ip pointer" data-field="value">' . $record['value'] . '</span></td>                        
+                                                    <td><span class="edit-api-ip pointer" data-field="label">' . $ip['label'] . '</span></td>
+                                                    <td><span class="edit-api-ip pointer" data-field="value">' . $ip['value'] . '</span></td>                        
                                                 </tr>';
                                             } ?>
                                         </tbody>

@@ -24,6 +24,8 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
+Use TeampassClasses\SuperGlobal\SuperGlobal;
+
 // Automatic redirection
 $nextUrl = '';
 if (strpos($server['request_uri'], '?') > 0) {
@@ -33,8 +35,7 @@ if (strpos($server['request_uri'], '?') > 0) {
     );
 }
 
-require_once './includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-$superGlobal = new protect\SuperGlobal\SuperGlobal();
+$superGlobal = new SuperGlobal();
 $get = [];
 $get['post_type'] = $superGlobal->get('post_type', 'GET');
 if (isset($SETTINGS['duo']) === true && (int) $SETTINGS['duo'] === 1 && $get['post_type'] === 'duo' ) {
@@ -89,7 +90,7 @@ if (
             <input type="text" id="login" class="form-control" placeholder="', filter_var($username, FILTER_SANITIZE_FULL_SPECIAL_CHARS), '" readonly>';
 } else {
     echo '
-            <input type="text" id="login" class="form-control" placeholder="' . langHdl('index_login') . '">';
+            <input type="text" id="login" class="form-control" placeholder="' . langHdl('index_login') . '" value="'.(null !== $superGlobal->get('login', 'SESSION') && empty($superGlobal->get('login', 'SESSION')) === false ? filter_var($superGlobal->get('login', 'SESSION'), FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '').'">';
 }
 
 echo '

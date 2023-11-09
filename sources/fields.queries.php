@@ -19,58 +19,71 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
+Use voku\helper\AntiXSS;
+Use TeampassClasses\NestedTree\NestedTree;
+Use TeampassClasses\SuperGlobal\SuperGlobal;
+Use EZimuel\PHPSecureSession;
+Use TeampassClasses\PerformChecks\PerformChecks;
 
-require_once 'SecureHandler.php';
+
+// Load functions
+require_once 'main.functions.php';
+
+// init
+loadClasses('DB');
 session_name('teampass_session');
 session_start();
-if (isset($_SESSION['CPM']) === false
-    || $_SESSION['CPM'] != 1
-    || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id'])
-    || isset($_SESSION['key']) === false || empty($_SESSION['key'])
-) {
-    die('Hacking attempt...');
-}
 
 // Load config if $SETTINGS not defined
-if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir'])) {
-    if (file_exists('../includes/config/tp.config.php')) {
-        include_once '../includes/config/tp.config.php';
-    } elseif (file_exists('./includes/config/tp.config.php')) {
-        include_once './includes/config/tp.config.php';
-    } elseif (file_exists('../../includes/config/tp.config.php')) {
-        include_once '../../includes/config/tp.config.php';
-    } else {
-        throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
-    }
-}
-
-/* do checks */
-require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
-require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
-if (!checkUser($_SESSION['user_id'], $_SESSION['key'], 'options', $SETTINGS)) {
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-    include $SETTINGS['cpassman_dir'].'/error.php';
+try {
+    include_once __DIR__.'/../includes/config/tp.config.php';
+} catch (Exception $e) {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
     exit();
 }
 
-require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user']['user_language'].'.php';
-require_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
-require_once $SETTINGS['cpassman_dir'].'/includes/config/tp.config.php';
-
-header('Content-type: text/html; charset=utf-8');
-header('Cache-Control: no-cache, no-store, must-revalidate');
-
-require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
-
-// connect to the server
-require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-if (defined('DB_PASSWD_CLEAR') === false) {
-    define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+// Do checks
+// Instantiate the class with posted data
+$checkUserAccess = new PerformChecks(
+    dataSanitizer(
+        [
+            'type' => isset($_POST['type']) === true ? $_POST['type'] : '',
+        ],
+        [
+            'type' => 'trim|escape',
+        ],
+    ),
+    [
+        'user_id' => isset($_SESSION['user_id']) === false ? null : $_SESSION['user_id'],
+        'user_key' => isset($_SESSION['key']) === false ? null : $_SESSION['key'],
+        'CPM' => isset($_SESSION['CPM']) === false ? null : $_SESSION['CPM'],
+    ]
+);
+// Handle the case
+$checkUserAccess->caseHandler();
+if (
+    $checkUserAccess->userAccessPage('fields') === false ||
+    $checkUserAccess->checkSession() === false
+) {
+    // Not allowed page
+    $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
+    include $SETTINGS['cpassman_dir'] . '/error.php';
+    exit;
 }
 
-//Load AES
-$aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
-$aes->register();
+// Load language file
+require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user']['user_language'].'.php';
+
+// Define Timezone
+date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
+
+// Set header properties
+header('Content-type: text/html; charset=utf-8');
+header('Cache-Control: no-cache, no-store, must-revalidate');
+error_reporting(E_ERROR);
+set_time_limit(0);
+
+// --------------------------------- //
 
 // Prepare POST variables
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);

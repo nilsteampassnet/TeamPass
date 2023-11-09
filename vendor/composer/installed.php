@@ -29,12 +29,12 @@
             'dev_requirement' => false,
         ),
         'directorytree/ldaprecord' => array(
-            'pretty_version' => 'v3.2.2',
-            'version' => '3.2.2.0',
+            'pretty_version' => 'v3.2.3',
+            'version' => '3.2.3.0',
             'type' => 'library',
             'install_path' => __DIR__ . '/../directorytree/ldaprecord',
             'aliases' => array(),
-            'reference' => '1fa74d0cfdc88a7560476a98b10df6e24db6dd52',
+            'reference' => '6f5b7f2b36a1622b8a90f35fd47593ee489a4e77',
             'dev_requirement' => false,
         ),
         'dittertp/gibberish-aes-php' => array(
@@ -71,6 +71,15 @@
             'install_path' => __DIR__ . '/../dragonmantank/cron-expression',
             'aliases' => array(),
             'reference' => 'adfb1f505deb6384dc8b39804c5065dd3c8c8c0a',
+            'dev_requirement' => false,
+        ),
+        'duosecurity/duo_universal_php' => array(
+            'pretty_version' => '1.0.2',
+            'version' => '1.0.2.0',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../duosecurity/duo_universal_php',
+            'aliases' => array(),
+            'reference' => '8734a47480d2d2f0539e8ee782675e052025d026',
             'dev_requirement' => false,
         ),
         'egulias/email-validator' => array(

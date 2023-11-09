@@ -8,8 +8,8 @@ class DetailedError
      * Constructor.
      */
     public function __construct(
-        protected ?int $errorCode,
-        protected ?string $errorMessage,
+        protected int $errorCode,
+        protected string $errorMessage,
         protected ?string $diagnosticMessage
     ) {
     }
@@ -17,7 +17,7 @@ class DetailedError
     /**
      * Returns the LDAP error code.
      */
-    public function getErrorCode(): ?int
+    public function getErrorCode(): int
     {
         return $this->errorCode;
     }
@@ -25,7 +25,7 @@ class DetailedError
     /**
      * Returns the LDAP error message.
      */
-    public function getErrorMessage(): ?string
+    public function getErrorMessage(): string
     {
         return $this->errorMessage;
     }

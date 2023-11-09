@@ -24,8 +24,6 @@
 
 // Load config
 require_once __DIR__.'/../includes/config/tp.config.php';
-
-// Do checks
 require_once __DIR__.'/../includes/config/include.php';
 require_once __DIR__.'/../includes/config/settings.php';
 header('Content-type: text/html; charset=utf-8');

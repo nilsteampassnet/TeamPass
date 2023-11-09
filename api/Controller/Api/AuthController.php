@@ -23,6 +23,7 @@
  * @see       https://www.teampass.net
  */
 
+Use TeampassClasses\SuperGlobal\SuperGlobal;
 
 class AuthController extends BaseController
 {
@@ -31,7 +32,7 @@ class AuthController extends BaseController
      */
     public function authorizeAction()
     {
-        $superGlobal = new protect\SuperGlobal\SuperGlobal();
+        $superGlobal = new SuperGlobal();
         $strErrorDesc = '';
         $responseData = '';
         $strErrorHeader = '';

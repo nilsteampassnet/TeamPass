@@ -1,5 +1,4 @@
 {
-  "dependencies": {
-    "crypto-js": "^4.2.0"
-  }
+  "name": "Teampass",
+  "author": "Nils Laumaillé <nils@teampass.net>"
 }

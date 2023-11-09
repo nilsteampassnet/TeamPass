@@ -23,16 +23,19 @@
  * @see       https://www.teampass.net
  */
 
+
+Use TeampassClasses\SuperGlobal\SuperGlobal;
+
 define("API_ROOT_PATH", __DIR__ . "/..");
 
 // include main configuration file
-require API_ROOT_PATH . '/../includes/config/settings.php';
-require API_ROOT_PATH . '/../includes/config/tp.config.php';
 require API_ROOT_PATH . '/../sources/main.functions.php';
 
+// init
+loadClasses('DB');
+
 // Load superglobal
-require API_ROOT_PATH. '/../includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-$superGlobal = new protect\SuperGlobal\SuperGlobal();
+$superGlobal = new SuperGlobal();
 
 // include the base controller file
 require API_ROOT_PATH . "/Controller/Api/BaseController.php";

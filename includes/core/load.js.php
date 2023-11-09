@@ -114,6 +114,7 @@ if (
                     'user_id': store.get('teampassUser').user_id,
                     'fields' : 'special, auth_type, is_ready_for_usage, ongoing_process_id, otp_provided, keys_recovery_time',
                 }
+                console.log(data);
                 $.post(
                     "sources/main.queries.php", {
                         type: "get_user_info",
@@ -243,10 +244,15 @@ if (
                 //console.info("DEBUG - Save user location -"+store.get('teampassUser').location_stored)
                 if (store.get('teampassUser').location_stored !== 1) {
                 // Save user location
+                    var data = {
+                        'user_id': store.get('teampassUser').user_id,
+                        'action': 'perform',
+                    }
                     $.post(
-                        "sources/users.queries.php", {
+                        "sources/main.queries.php", {
                             type: 'save_user_location',
-                            step: "perform",
+                            type_category: 'action_user',
+                            data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
                             key: "<?php echo $_SESSION['key']; ?>"
                         },
                         function(data) {

@@ -23,7 +23,7 @@
  * @see       https://www.teampass.net
  */
 
-
+Use TeampassClasses\SuperGlobal\SuperGlobal;
 
 class UserController extends BaseController
 {
@@ -32,7 +32,7 @@ class UserController extends BaseController
      */
     public function listAction()
     {
-        $superGlobal = new protect\SuperGlobal\SuperGlobal();
+        $superGlobal = new SuperGlobal();
         $strErrorDesc = '';
         $requestMethod = $superGlobal->get('REQUEST_METHOD', 'SERVER');
         $arrQueryStringParams = $this->getQueryStringParams();

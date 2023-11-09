@@ -17,7 +17,7 @@
  */
 define('TP_VERSION', '3.0.10');
 define("UPGRADE_MIN_DATE", "1697990713");
-define('TP_VERSION_MINOR', '96');
+define('TP_VERSION_MINOR', '104');
 define('TP_TOOL_NAME', 'Teampass');
 define('TP_ONE_DAY_SECONDS', 86400);
 define('TP_ONE_WEEK_SECONDS', 604800);
@@ -81,7 +81,6 @@ $mngPages = array(
     'options' => 'options.php',
     'statistics' => 'statistics.php',
     '2fa' => '2fa.php',
-    'special' => 'special.php',
     'ldap' => 'ldap.php',
     'emails' => 'emails.php',
     'backups' => 'backups.php',

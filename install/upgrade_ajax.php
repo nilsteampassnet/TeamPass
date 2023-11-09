@@ -18,8 +18,17 @@
 use TiBeN\CrontabManager\CrontabJob;
 use TiBeN\CrontabManager\CrontabAdapter;
 use TiBeN\CrontabManager\CrontabRepository;
+Use EZimuel\PHPSecureSession;
+Use Hackzilla\PasswordGenerator\Generator\ComputerPasswordGenerator;
+Use Hackzilla\PasswordGenerator\RandomGenerator\Php7RandomGenerator;
+Use TeampassClasses\SuperGlobal\SuperGlobal;
+Use PasswordLib\PasswordLib;
 
-require_once '../sources/SecureHandler.php';
+// Load functions
+require_once __DIR__.'/../sources/main.functions.php';
+
+// init
+loadClasses('DB');
 session_name('teampass_session');
 session_start();
 error_reporting(E_ERROR | E_PARSE);
@@ -31,7 +40,6 @@ define('MIN_MARIADB_VERSION', '10.2.1');
 require_once '../includes/language/english.php';
 require_once '../includes/config/include.php';
 require_once '../includes/config/settings.php';
-require_once '../sources/main.functions.php';
 require_once 'tp.functions.php';
 
 
@@ -253,8 +261,7 @@ try {
 }
 
 // Load libraries
-require_once '../includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-$superGlobal = new protect\SuperGlobal\SuperGlobal();
+$superGlobal = new SuperGlobal();
 
 // Set Session
 $superGlobal->put('CPM', 1, 'SESSION');
@@ -299,32 +306,7 @@ if (isset($post_type)) {
             }
 
             $_SESSION['settings']['cpassman_dir'] = '..';
-            require_once '../includes/libraries/PasswordLib/Random/Generator.php';
-            require_once '../includes/libraries/PasswordLib/Random/Source.php';
-            require_once '../includes/libraries/PasswordLib/Random/Source/MTRand.php';
-            require_once '../includes/libraries/PasswordLib/Random/Source/Rand.php';
-            require_once '../includes/libraries/PasswordLib/Random/Source/UniqID.php';
-            require_once '../includes/libraries/PasswordLib/Random/Source/URandom.php';
-            require_once '../includes/libraries/PasswordLib/Random/Source/MicroTime.php';
-            require_once '../includes/libraries/PasswordLib/Random/Source/CAPICOM.php';
-            require_once '../includes/libraries/PasswordLib/Random/Mixer.php';
-            require_once '../includes/libraries/PasswordLib/Random/AbstractMixer.php';
-            require_once '../includes/libraries/PasswordLib/Random/Mixer/Hash.php';
-            require_once '../includes/libraries/PasswordLib/Password/AbstractPassword.php';
-            require_once '../includes/libraries/PasswordLib/Password/Implementation/Hash.php';
-            require_once '../includes/libraries/PasswordLib/Password/Implementation/Crypt.php';
-            require_once '../includes/libraries/PasswordLib/Password/Implementation/SHA256.php';
-            require_once '../includes/libraries/PasswordLib/Password/Implementation/SHA512.php';
-            require_once '../includes/libraries/PasswordLib/Password/Implementation/PHPASS.php';
-            require_once '../includes/libraries/PasswordLib/Password/Implementation/PHPBB.php';
-            require_once '../includes/libraries/PasswordLib/Password/Implementation/PBKDF.php';
-            require_once '../includes/libraries/PasswordLib/Password/Implementation/MediaWiki.php';
-            require_once '../includes/libraries/PasswordLib/Password/Implementation/MD5.php';
-            require_once '../includes/libraries/PasswordLib/Password/Implementation/Joomla.php';
-            require_once '../includes/libraries/PasswordLib/Password/Implementation/Drupal.php';
-            require_once '../includes/libraries/PasswordLib/Password/Implementation/APR1.php';
-            require_once '../includes/libraries/PasswordLib/PasswordLib.php';
-            $pwdlib = new PasswordLib\PasswordLib();
+            $pwdlib = new PasswordLib();
 
             // Connect to db and check user is granted
             $user_info = mysqli_fetch_array(
@@ -975,10 +957,6 @@ if (isset($post_type)) {
 
 
             //<-- Add cronjob if not exist
-            require_once '../includes/libraries/TiBeN/CrontabManager/CrontabAdapter.php';
-            require_once '../includes/libraries/TiBeN/CrontabManager/CrontabJob.php';
-            require_once '../includes/libraries/TiBeN/CrontabManager/CrontabRepository.php';
-
             // get php location
             require_once 'tp.functions.php';
             $phpLocation = findPhpBinary();

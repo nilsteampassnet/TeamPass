@@ -30,14 +30,6 @@ require_once 'main.functions.php';
 loadClasses('DB');
 session_name('teampass_session');
 session_start();
-if (
-    isset($_SESSION['CPM']) === false
-    || $_SESSION['CPM'] !== 1
-    || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id'])
-    || isset($_SESSION['key']) === false || empty($_SESSION['key'])
-) {
-    die('Hacking attempt...');
-}
 
 // Load config if $SETTINGS not defined
 try {
@@ -57,22 +49,36 @@ $checkUserAccess = new PerformChecks(
         [
             'type' => 'trim|escape',
         ],
-    )
+    ),
+    [
+        'user_id' => isset($_SESSION['user_id']) === false ? null : $_SESSION['user_id'],
+        'user_key' => isset($_SESSION['key']) === false ? null : $_SESSION['key'],
+        'CPM' => isset($_SESSION['CPM']) === false ? null : $_SESSION['CPM'],
+    ]
 );
 // Handle the case
 $checkUserAccess->caseHandler();
-if ($checkUserAccess->userAccessPage($_SESSION['user_id'], $_SESSION['key'], 'options', $SETTINGS) === false) {
+if (
+    $checkUserAccess->userAccessPage('tasks') === false ||
+    $checkUserAccess->checkSession() === false
+) {
     // Not allowed page
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
 
-require_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user']['user_language'] . '.php';
+// Load language file
+require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user']['user_language'].'.php';
 
+// Define Timezone
+date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
+
+// Set header properties
 header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, no-store, must-revalidate');
 
+// --------------------------------- //
 
 // Prepare POST variables
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);

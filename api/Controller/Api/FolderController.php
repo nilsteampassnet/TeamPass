@@ -23,6 +23,7 @@
  * @see       https://www.teampass.net
  */
 
+Use TeampassClasses\SuperGlobal\SuperGlobal;
 
 class FolderController extends BaseController
 {
@@ -34,7 +35,7 @@ class FolderController extends BaseController
      */
     public function listFoldersAction(array $userData)
     {
-        $superGlobal = new protect\SuperGlobal\SuperGlobal();
+        $superGlobal = new SuperGlobal();
         $strErrorDesc = '';
         $requestMethod = $superGlobal->get('REQUEST_METHOD', 'SERVER');
 

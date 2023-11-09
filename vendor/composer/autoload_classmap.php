@@ -196,6 +196,8 @@ return array(
     'Doctrine\\Inflector\\Rules\\Word' => $vendorDir . '/doctrine/inflector/lib/Doctrine/Inflector/Rules/Word.php',
     'Doctrine\\Inflector\\RulesetInflector' => $vendorDir . '/doctrine/inflector/lib/Doctrine/Inflector/RulesetInflector.php',
     'Doctrine\\Inflector\\WordInflector' => $vendorDir . '/doctrine/inflector/lib/Doctrine/Inflector/WordInflector.php',
+    'Duo\\DuoUniversal\\Client' => $vendorDir . '/duosecurity/duo_universal_php/src/Client.php',
+    'Duo\\DuoUniversal\\DuoException' => $vendorDir . '/duosecurity/duo_universal_php/src/DuoException.php',
     'EZimuel\\PHPSecureSession\\SecureHandler' => $vendorDir . '/ezimuel/php-secure-session/src/SecureHandler.php',
     'Egulias\\EmailValidator\\EmailLexer' => $vendorDir . '/egulias/email-validator/src/EmailLexer.php',
     'Egulias\\EmailValidator\\EmailParser' => $vendorDir . '/egulias/email-validator/src/EmailParser.php',

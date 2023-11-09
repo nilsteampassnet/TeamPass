@@ -111,6 +111,7 @@ class ComposerStaticInitf8d0a111ac97059c58e49ca16fe551d0
         ),
         'D' => 
         array (
+            'Duo\\DuoUniversal\\' => 17,
             'Doctrine\\Inflector\\' => 19,
             'Doctrine\\Common\\Lexer\\' => 22,
             'Defuse\\Crypto\\' => 14,
@@ -310,6 +311,10 @@ class ComposerStaticInitf8d0a111ac97059c58e49ca16fe551d0
         'EZimuel\\PHPSecureSession\\' => 
         array (
             0 => __DIR__ . '/..' . '/ezimuel/php-secure-session/src',
+        ),
+        'Duo\\DuoUniversal\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/duosecurity/duo_universal_php/src',
         ),
         'Doctrine\\Inflector\\' => 
         array (
@@ -588,6 +593,8 @@ class ComposerStaticInitf8d0a111ac97059c58e49ca16fe551d0
         'Doctrine\\Inflector\\Rules\\Word' => __DIR__ . '/..' . '/doctrine/inflector/lib/Doctrine/Inflector/Rules/Word.php',
         'Doctrine\\Inflector\\RulesetInflector' => __DIR__ . '/..' . '/doctrine/inflector/lib/Doctrine/Inflector/RulesetInflector.php',
         'Doctrine\\Inflector\\WordInflector' => __DIR__ . '/..' . '/doctrine/inflector/lib/Doctrine/Inflector/WordInflector.php',
+        'Duo\\DuoUniversal\\Client' => __DIR__ . '/..' . '/duosecurity/duo_universal_php/src/Client.php',
+        'Duo\\DuoUniversal\\DuoException' => __DIR__ . '/..' . '/duosecurity/duo_universal_php/src/DuoException.php',
         'EZimuel\\PHPSecureSession\\SecureHandler' => __DIR__ . '/..' . '/ezimuel/php-secure-session/src/SecureHandler.php',
         'Egulias\\EmailValidator\\EmailLexer' => __DIR__ . '/..' . '/egulias/email-validator/src/EmailLexer.php',
         'Egulias\\EmailValidator\\EmailParser' => __DIR__ . '/..' . '/egulias/email-validator/src/EmailParser.php',

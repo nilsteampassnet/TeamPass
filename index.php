@@ -24,6 +24,10 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
+Use TeampassClasses\SuperGlobal\SuperGlobal;
+Use EZimuel\PHPSecureSession;
+Use TeampassClasses\PerformChecks\PerformChecks;
+
 header('X-XSS-Protection: 1; mode=block');
 header('X-Frame-Options: SameOrigin');
 header("Cache-Control: no-cache, no-store, must-revalidate");
@@ -57,10 +61,11 @@ csrfProtector::init();
 session_id();
 
 // Load config
-if (file_exists(__DIR__.'/includes/config/tp.config.php') === true) {
+try {
     include_once __DIR__.'/includes/config/tp.config.php';
-} else {
-    throw new Exception('Error file "/includes/config/tp.config.php" not exists', 1);
+} catch (Exception $e) {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+    exit();
 }
 
 // initialize session
@@ -71,9 +76,13 @@ if (isset($SETTINGS['cpassman_dir']) === false || $SETTINGS['cpassman_dir'] === 
     $SETTINGS['cpassman_dir'] = __DIR__;
 }
 
-// Include files
-require_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
-require_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
+// Load functions
+require_once __DIR__. '/includes/config/include.php';
+require_once __DIR__.'/sources/main.functions.php';
+
+// init
+loadClasses('DB');
+
 // Quick major version check -> upgrade needed?
 if (isset($SETTINGS['teampass_version']) === true && version_compare(TP_VERSION, $SETTINGS['teampass_version']) > 0) {
     // Perform redirection
@@ -86,29 +95,12 @@ if (isset($SETTINGS['teampass_version']) === true && version_compare(TP_VERSION,
     exit;
 }
 
-require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-$superGlobal = new protect\SuperGlobal\SuperGlobal();
+$superGlobal = new SuperGlobal();
 
 if (isset($SETTINGS['cpassman_url']) === false || $SETTINGS['cpassman_url'] === '') {
     $SETTINGS['cpassman_url'] = $superGlobal->get('REQUEST_URI', 'SERVER');
 }
 
-// Include files
-require_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
-require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
-// Open MYSQL database connection
-require_once './includes/libraries/Database/Meekrodb/db.class.php';
-if (defined('DB_PASSWD_CLEAR') === false) {
-    define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
-}
-DB::$host = DB_HOST;
-DB::$user = DB_USER;
-DB::$password = DB_PASSWD_CLEAR;
-DB::$dbName = DB_NAME;
-DB::$port = DB_PORT;
-DB::$encoding = DB_ENCODING;
-DB::$ssl = DB_SSL;
-DB::$connect_options = DB_CONNECT_OPTIONS;
 // Load Core library
 require_once $SETTINGS['cpassman_dir'] . '/sources/core.php';
 // Prepare POST variables
@@ -1145,8 +1137,8 @@ if (($session_validite_pw === null
     <!-- STORE.JS -->
     <script type="text/javascript" src="plugins/store.js/dist/store.everything.min.js"></script>
     <!-- cryptojs-aesphp -->
-    <script type="text/javascript" src="includes/libraries/Encryption/CryptoJs/crypto-js.js"></script>
-    <script type="text/javascript" src="includes/libraries/Encryption/CryptoJs/encryption.js"></script>
+    <script type="text/javascript" src="includes/libraries/cryptojs/crypto-js.js"></script>
+    <script type="text/javascript" src="includes/libraries/cryptojs/encryption.js"></script>
     <!-- pace -->
     <script type="text/javascript" data-pace-options='{ "ajax": true, "eventLag": false }' src="plugins/pace-progress/pace.min.js"></script>
     <!-- clipboardjs -->
@@ -1183,7 +1175,7 @@ if (($session_validite_pw === null
         <!-- Sortable -->
         <!--<script src="./plugins/sortable/jquery.sortable.js"></script>-->
         <!-- PLUPLOAD -->
-        <script type="text/javascript" src="includes/libraries/Plupload/plupload.full.min.js"></script>
+        <script type="text/javascript" src="includes/libraries/plupload/js/plupload.full.min.js"></script>
         <!-- DataTables -->
         <link rel="stylesheet" src="./plugins/datatables/css/jquery.dataTables.min.css">
         <link rel="stylesheet" src="./plugins/datatables/css/dataTables.bootstrap4.min.css">
@@ -1211,7 +1203,7 @@ if (($session_validite_pw === null
             <link rel="stylesheet" href="./plugins/timepicker/bootstrap-timepicker.min.css">
             <script src="./plugins/timepicker/bootstrap-timepicker.min.js"></script>
             <!-- PLUPLOAD -->
-            <script type="text/javascript" src="includes/libraries/Plupload/plupload.full.min.js"></script>
+            <script type="text/javascript" src="includes/libraries/plupload/js/plupload.full.min.js"></script>
             <!-- VALIDATE -->
             <script type="text/javascript" src="plugins/jquery-validation/jquery.validate.js"></script>
             <!-- PWSTRENGHT -->
@@ -1248,7 +1240,7 @@ if (($session_validite_pw === null
             <!-- FILESAVER -->
             <script type="text/javascript" src="plugins/downloadjs/download.js"></script>
             <!-- PLUPLOAD -->
-            <script type="text/javascript" src="includes/libraries/Plupload/plupload.full.min.js"></script>
+            <script type="text/javascript" src="includes/libraries/plupload/js/plupload.full.min.js"></script>
         <?php
         } elseif ($get['page'] === 'export') {
             ?>

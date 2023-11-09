@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "9f69e857605fe54390987d0cdcd45d2b",
+    "content-hash": "4fa1406b4ea1428a6842897dafd36cdb",
     "packages": [
         {
             "name": "brick/math",
@@ -130,16 +130,16 @@
         },
         {
             "name": "directorytree/ldaprecord",
-            "version": "v3.2.2",
+            "version": "v3.2.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DirectoryTree/LdapRecord.git",
-                "reference": "1fa74d0cfdc88a7560476a98b10df6e24db6dd52"
+                "reference": "6f5b7f2b36a1622b8a90f35fd47593ee489a4e77"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DirectoryTree/LdapRecord/zipball/1fa74d0cfdc88a7560476a98b10df6e24db6dd52",
-                "reference": "1fa74d0cfdc88a7560476a98b10df6e24db6dd52",
+                "url": "https://api.github.com/repos/DirectoryTree/LdapRecord/zipball/6f5b7f2b36a1622b8a90f35fd47593ee489a4e77",
+                "reference": "6f5b7f2b36a1622b8a90f35fd47593ee489a4e77",
                 "shasum": ""
             },
             "require": {
@@ -202,7 +202,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2023-10-12T16:46:17+00:00"
+            "time": "2023-11-01T21:33:20+00:00"
         },
         {
             "name": "dittertp/gibberish-aes-php",
@@ -483,6 +483,46 @@
                 }
             ],
             "time": "2023-08-10T19:36:49+00:00"
+        },
+        {
+            "name": "duosecurity/duo_universal_php",
+            "version": "1.0.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/duosecurity/duo_universal_php.git",
+                "reference": "8734a47480d2d2f0539e8ee782675e052025d026"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/duosecurity/duo_universal_php/zipball/8734a47480d2d2f0539e8ee782675e052025d026",
+                "reference": "8734a47480d2d2f0539e8ee782675e052025d026",
+                "shasum": ""
+            },
+            "require": {
+                "ext-curl": "*",
+                "ext-json": "*",
+                "firebase/php-jwt": "^6.0",
+                "php": ">=7.3"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^9.0",
+                "squizlabs/php_codesniffer": "3.*"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Duo\\DuoUniversal\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "description": "A PHP implementation of the Duo Universal SDK.",
+            "homepage": "https://duo.com/",
+            "support": {
+                "email": "support@duosecurity.com",
+                "issues": "https://github.com/duosecurity/duo_universal_php/issues",
+                "source": "https://github.com/duosecurity/duo_universal_php/tree/1.0.2"
+            },
+            "time": "2023-01-13T18:47:58+00:00"
         },
         {
             "name": "egulias/email-validator",
@@ -2288,9 +2328,9 @@
             },
             "type": "library",
             "autoload": {
-                "classmap": [
-                    "db.class.php"
-                ]
+                "psr-4": {
+                    "SergeyTsalkov\\MeekroDB\\": "src/"
+                }
             },
             "notification-url": "https://packagist.org/downloads/",
             "license": [

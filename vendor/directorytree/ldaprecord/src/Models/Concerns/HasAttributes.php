@@ -212,7 +212,7 @@ trait HasAttributes
             return $value;
         }
 
-        return utf8_encode($value);
+        return mb_convert_encoding($value, 'UTF-8', 'ISO-8859-1');
     }
 
     /**

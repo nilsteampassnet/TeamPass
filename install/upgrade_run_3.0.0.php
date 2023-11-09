@@ -16,21 +16,26 @@
  * @see       https://www.teampass.net
  */
 
-set_time_limit(600);
+Use EZimuel\PHPSecureSession;
+Use TeampassClasses\SuperGlobal\SuperGlobal;
+Use PasswordLib\PasswordLib;
+Use TeampassClasses\NestedTree\NestedTree;
 
+// Load functions
+require_once __DIR__.'/../sources/main.functions.php';
 
-require_once '../sources/SecureHandler.php';
+// init
+loadClasses('DB');
 session_name('teampass_session');
 session_start();
 error_reporting(E_ERROR | E_PARSE);
+set_time_limit(600);
 $_SESSION['CPM'] = 1;
 
 //include librairies
 require_once '../includes/language/english.php';
 require_once '../includes/config/include.php';
 require_once '../includes/config/settings.php';
-require_once '../sources/main.functions.php';
-require_once '../includes/libraries/Tree/NestedTree/NestedTree.php';
 require_once 'tp.functions.php';
 require_once 'libs/aesctr.php';
 require_once '../includes/config/tp.config.php';
@@ -46,7 +51,7 @@ if ($ret['error'] === true) {
 define('DB_PASSWD_CLEAR', defuse_return_decrypted(DB_PASSWD));
 
 //Build tree
-$tree = new Tree\NestedTree\NestedTree(
+$tree = new NestedTree(
     $pre . 'nested_tree',
     'id',
     'parent_id',
@@ -84,8 +89,7 @@ if (mysqli_connect(
 }
 
 // Load libraries
-require_once '../includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-$superGlobal = new protect\SuperGlobal\SuperGlobal();
+$superGlobal = new SuperGlobal();
 
 // Set Session
 $superGlobal->put('db_encoding', 'utf8', 'SESSION');

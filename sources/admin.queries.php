@@ -20,71 +20,72 @@ declare(strict_types=1);
  */
 
 
-require_once 'SecureHandler.php';
+Use TeampassClasses\SuperGlobal\SuperGlobal;
+Use EZimuel\PHPSecureSession;
+Use TeampassClasses\PerformChecks\PerformChecks;
+Use TeampassClasses\NestedTree\NestedTree;
+Use TeampassClasses\Encryption\Encryption;
+Use Duo\DuoUniversal\Client;
+Use Defuse\Crypto\Crypto;
+Use Defuse\Crypto\Key;
+
+// Load functions
+require_once 'main.functions.php';
+
+// init
+loadClasses('DB');
 session_name('teampass_session');
 session_start();
-if (
-    isset($_SESSION['CPM']) === false
-    || $_SESSION['CPM'] !== 1
-    || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id'])
-    || isset($_SESSION['key']) === false || empty($_SESSION['key'])
-) {
-    die('Hacking attempt...');
-}
 
 // Load config if $SETTINGS not defined
-if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir'])) {
-    if (file_exists('../includes/config/tp.config.php')) {
-        include_once '../includes/config/tp.config.php';
-    } elseif (file_exists('./includes/config/tp.config.php')) {
-        include_once './includes/config/tp.config.php';
-    } elseif (file_exists('../../includes/config/tp.config.php')) {
-        include_once '../../includes/config/tp.config.php';
-    } else {
-        throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
-    }
+try {
+    include_once __DIR__.'/../includes/config/tp.config.php';
+} catch (Exception $e) {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+    exit();
 }
 
-/* do checks */
-require_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
-require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
-if (!checkUser($_SESSION['user_id'], $_SESSION['key'], 'options', $SETTINGS)) {
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
+// Do checks
+// Instantiate the class with posted data
+$checkUserAccess = new PerformChecks(
+    dataSanitizer(
+        [
+            'type' => isset($_POST['type']) === true ? $_POST['type'] : '',
+        ],
+        [
+            'type' => 'trim|escape',
+        ],
+    ),
+    [
+        'user_id' => isset($_SESSION['user_id']) === false ? null : $_SESSION['user_id'],
+        'user_key' => isset($_SESSION['key']) === false ? null : $_SESSION['key'],
+        'CPM' => isset($_SESSION['CPM']) === false ? null : $_SESSION['CPM'],
+    ]
+);
+// Handle the case
+$checkUserAccess->caseHandler();
+if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('admin') === false) {
+    // Not allowed page
+    $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
 
-require_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user']['user_language'] . '.php';
-require_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
-require_once $SETTINGS['cpassman_dir'] . '/includes/config/tp.config.php';
+// Load language file
+require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user']['user_language'].'.php';
 
+// Define Timezone
+date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
+
+// Set header properties
 header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, no-store, must-revalidate');
 
-require_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
+// --------------------------------- //
 
-// connect to the server
-require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
-if (defined('DB_PASSWD_CLEAR') === false) {
-    define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
-}
-DB::$host = DB_HOST;
-DB::$user = DB_USER;
-DB::$password = DB_PASSWD_CLEAR;
-DB::$dbName = DB_NAME;
-DB::$port = DB_PORT;
-DB::$encoding = DB_ENCODING;
-DB::$ssl = DB_SSL;
-DB::$connect_options = DB_CONNECT_OPTIONS;
 
-//Load Tree
-$tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
-$tree->register();
-$tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
-
-//Load AES
-$aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
-$aes->register();
+// Load tree
+$tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
 // Prepare POST variables
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
@@ -632,19 +633,13 @@ switch ($post_type) {
                 $err = '';
 
                 // it means that file is DEFUSE encrypted
-                include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/Crypto.php';
-                include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/DerivedKeys.php';
-                include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/KeyOrPassword.php';
-                include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/File.php';
-                include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/Core.php';
-
                 try {
-                    \Defuse\Crypto\File::decryptFileWithPassword(
+                    File::decryptFileWithPassword(
                         $SETTINGS['bck_script_path'] . '/' . $post_option . '.sql',
                         $SETTINGS['bck_script_path'] . '/' . str_replace('encrypted', 'clear', $filename) . '.sql',
                         base64_decode($SETTINGS['bck_script_key'])
                     );
-                } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
+                } catch (Exception\WrongKeyOrModifiedCiphertextException $ex) {
                     $err = 'An attack! Either the wrong key was loaded, or the ciphertext has changed since it was created either corrupted in the database or intentionally modified by someone trying to carry out an attack.';
                 }
 
@@ -662,20 +657,17 @@ switch ($post_type) {
                     fclose($inF);
                 }
 
-                $return = Encryption\Crypt\aesctr::decrypt(
-                    /* @scrutinizer ignore-type */
-                    $return,
-                    /* @scrutinizer ignore-type */
-                    base64_decode($tp_settings['bck_script_key']),
-                    256
+                $return = Encryption::decrypt(
+                    /* @scrutinizer ignore-type */ $return,
+                    /* @scrutinizer ignore-type */base64_decode($tp_settings['bck_script_key']),
                 );
 
                 //save the file
                 $handle = fopen($tp_settings['bck_script_path'] . '/' . $filename . '.clear.sql', 'w+');
-                if ($handle !== false) {
-                    fwrite($handle, $return);
-                    fclose($handle);
+                if ($handle !== false && is_null($return) === false) {
+                    fwrite($handle, /** @scrutinizer ignore-type */ $return);
                 }
+                fclose($handle);
             }
             $result = 'backup_decrypt_success';
             $msg = $tp_settings['bck_script_path'] . '/' . $filename . '.clear.sql';
@@ -1666,17 +1658,6 @@ switch ($post_type) {
         $newFilesList = array();
         $message = '';
 
-        // load PhpEncryption library
-        include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/Crypto.php';
-        include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/Encoding.php';
-        include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/DerivedKeys.php';
-        include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/Key.php';
-        include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/KeyOrPassword.php';
-        include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/File.php';
-        include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/RuntimeTests.php';
-        include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/KeyProtectedByPassword.php';
-        include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/Core.php';
-
         // treat 10 files
         foreach ($post_list as $file) {
             if ($cpt < 5) {
@@ -2009,24 +1990,15 @@ switch ($post_type) {
             break;
         }
 
-        // Load Duo Web SDK
-        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/php-jwt/BeforeValidException.php';
-        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/php-jwt/ExpiredException.php';
-        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/php-jwt/SignatureInvalidException.php';
-        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/php-jwt/JWT.php';
-        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/php-jwt/Key.php';
-        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/DuoUniversal/DuoException.php';
-        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/DuoUniversal/Client.php';
-
         // Run Duo Config Check
         try {
-            $duo_client = new Duo\DuoUniversal\Client(
+            $duo_client = new Client(
                 $dataReceived['duo_ikey'],
                 $dataReceived['duo_skey'],
                 $dataReceived['duo_host'],
                 $SETTINGS['cpassman_url'].'/'.DUO_CALLBACK
             );
-        } catch (Duo\DuoUniversal\DuoException $e) {
+        } catch (DuoException $e) {
             echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -2040,7 +2012,7 @@ switch ($post_type) {
         // Run healthcheck against Duo with the config
         try {
             $duo_client->healthCheck();
-        } catch (Duo\DuoUniversal\DuoException $e) {
+        } catch (DuoException $e) {
             /*if ($SETTINGS['duo_failmode'] == "OPEN") {
                 # If we're failing open, errors in 2FA still allow for success
                 $duo_error = langHdl('duo_error_failopen');

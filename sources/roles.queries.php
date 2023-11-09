@@ -21,48 +21,68 @@ declare(strict_types=1);
 
 use LdapRecord\Connection;
 Use LdapRecord\Container;
-Use TeampassClasses\SuperGlobal\SuperGlobal;
 Use TeampassClasses\NestedTree\NestedTree;
+Use TeampassClasses\SuperGlobal\SuperGlobal;
+Use EZimuel\PHPSecureSession;
+Use TeampassClasses\PerformChecks\PerformChecks;
 
-require_once 'SecureHandler.php';
+
+// Load functions
+require_once 'main.functions.php';
+
+// init
+loadClasses('DB');
 session_name('teampass_session');
 session_start();
-if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] === false || !isset($_SESSION['key']) || empty($_SESSION['key'])) {
-    die('Hacking attempt...');
-}
 
-// Load config
-if (file_exists('../includes/config/tp.config.php')) {
-    include_once '../includes/config/tp.config.php';
-} elseif (file_exists('./includes/config/tp.config.php')) {
-    include_once './includes/config/tp.config.php';
-} else {
+// Load config if $SETTINGS not defined
+try {
+    include_once __DIR__.'/../includes/config/tp.config.php';
+} catch (Exception $e) {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
-}
-
-// Do checks
-require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
-if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'roles', $SETTINGS) === false) {
-    // Not allowed page
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
-    include $SETTINGS['cpassman_dir'].'/error.php';
     exit();
 }
 
-// Load libraries if needed
-loadClasses();
-
-/*
- * Define Timezone
-**/
-if (isset($SETTINGS['timezone']) === true) {
-    date_default_timezone_set($SETTINGS['timezone']);
-} else {
-    date_default_timezone_set('UTC');
+// Do checks
+// Instantiate the class with posted data
+$checkUserAccess = new PerformChecks(
+    dataSanitizer(
+        [
+            'type' => isset($_POST['type']) === true ? $_POST['type'] : '',
+        ],
+        [
+            'type' => 'trim|escape',
+        ],
+    ),
+    [
+        'user_id' => isset($_SESSION['user_id']) === false ? null : $_SESSION['user_id'],
+        'user_key' => isset($_SESSION['key']) === false ? null : $_SESSION['key'],
+        'CPM' => isset($_SESSION['CPM']) === false ? null : $_SESSION['CPM'],
+    ]
+);
+// Handle the case
+$checkUserAccess->caseHandler();
+if (
+    $checkUserAccess->userAccessPage('roles') === false ||
+    $checkUserAccess->checkSession() === false
+) {
+    // Not allowed page
+    $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
+    include $SETTINGS['cpassman_dir'] . '/error.php';
+    exit;
 }
 
-header('Content-type: text/html; charset=utf-8');
+// Load language file
 require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user']['user_language'].'.php';
+
+// Define Timezone
+date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
+
+// Set header properties
+header('Content-type: text/html; charset=utf-8');
+header('Cache-Control: no-cache, no-store, must-revalidate');
+
+// --------------------------------- //
 
 // Load tree
 $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');

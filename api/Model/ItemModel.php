@@ -22,6 +22,8 @@
  *
  * @see       https://www.teampass.net
  */
+Use TeampassClasses\NestedTree\NestedTree;
+
 require_once API_ROOT_PATH . "/Model/Database.php";
 
 class ItemModel extends Database
@@ -79,8 +81,7 @@ class ItemModel extends Database
             
 
             // get path to item
-            require_once API_ROOT_PATH. '/../includes/libraries/Tree/NestedTree/NestedTree.php';
-            $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+            $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
             $arbo = $tree->getPath($row['id_tree'], false);
             $path = '';
             foreach ($arbo as $elem) {

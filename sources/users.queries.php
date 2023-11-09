@@ -20,35 +20,66 @@ declare(strict_types=1);
  */
 
 Use LdapRecord\Connection;
+Use TeampassClasses\NestedTree\NestedTree;
+Use TeampassClasses\SuperGlobal\SuperGlobal;
+Use EZimuel\PHPSecureSession;
+Use TeampassClasses\PerformChecks\PerformChecks;
+Use PasswordLib\PasswordLib;
 
-require_once 'SecureHandler.php';
+
+// Load functions
+require_once 'main.functions.php';
+
+// init
+loadClasses('DB');
 session_name('teampass_session');
 session_start();
-if (
-    isset($_SESSION['CPM']) === false
-    || $_SESSION['CPM'] != 1
-    || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id'])
-    || isset($_SESSION['key']) === false || empty($_SESSION['key'])
-) {
-    die('Hacking attempt...');
-}
 
 // Load config if $SETTINGS not defined
-if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir'])) {
-    if (file_exists('../includes/config/tp.config.php')) {
-        include_once '../includes/config/tp.config.php';
-    } elseif (file_exists('./includes/config/tp.config.php')) {
-        include_once './includes/config/tp.config.php';
-    } elseif (file_exists('../../includes/config/tp.config.php')) {
-        include_once '../../includes/config/tp.config.php';
-    } else {
-        throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
-    }
+try {
+    include_once __DIR__.'/../includes/config/tp.config.php';
+} catch (Exception $e) {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+    exit();
 }
 
-/* do checks */
-require_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
-require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
+// Do checks
+$checkUserAccess = new PerformChecks(
+    dataSanitizer(
+        [
+            'type' => isset($_POST['type']) === true ? $_POST['type'] : '',
+        ],
+        [
+            'type' => 'trim|escape',
+        ],
+    ),
+    [
+        'user_id' => isset($_SESSION['user_id']) === false ? null : $_SESSION['user_id'],
+        'user_key' => isset($_SESSION['key']) === false ? null : $_SESSION['key'],
+        'CPM' => isset($_SESSION['CPM']) === false ? null : $_SESSION['CPM'],
+    ]
+);
+// Handle the case
+$checkUserAccess->caseHandler();
+if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('users') === false) {
+    // Not allowed page
+    $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
+    include $SETTINGS['cpassman_dir'] . '/error.php';
+    exit;
+}
+
+// Load language file
+require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user']['user_language'].'.php';
+
+// Define Timezone
+date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
+
+// Set header properties
+header('Content-type: text/html; charset=utf-8');
+header('Cache-Control: no-cache, no-store, must-revalidate');
+
+// --------------------------------- //
+
 // Prepare post variables
 $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
@@ -56,34 +87,9 @@ $post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS
 $isprofileupdate = filter_input(INPUT_POST, 'isprofileupdate', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $password_do_not_change = 'do_not_change';
 
-// DO check for "users" rights
-if (
-    (checkUser($_SESSION['user_id'], $_SESSION['key'], 'users', $SETTINGS) === false)
-    && (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === false 
-        && (null === $isprofileupdate || $isprofileupdate === false)
-        && !in_array($post_type, ['user_profile_update','save_user_change'], true))
-) {
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-    include $SETTINGS['cpassman_dir'] . '/error.php';
-    exit();
-}
-
-require_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
-header('Content-type: text/html; charset=utf-8');
-require_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user']['user_language'] . '.php';
-require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
-require_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
-
-// Connect to mysql server
-require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
-if (defined('DB_PASSWD_CLEAR') === false) {
-    define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
-}
 
 //Load Tree
-$tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
-$tree->register();
-$tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+$tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
 if (null !== $post_type) {
     switch ($post_type) {
@@ -178,9 +184,7 @@ if (null !== $post_type) {
                 $userKeys = generateUserKeys($password);
 
                 // load passwordLib library
-                $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
-                $pwdlib->register();
-                $pwdlib = new PasswordLib\PasswordLib();
+                $pwdlib = new PasswordLib();
 
                 // Prepare variables
                 $hashedPassword = $pwdlib->createPasswordHash($password);
@@ -1172,23 +1176,22 @@ if (null !== $post_type) {
                 $arrFldAllowed = array();
 
                 //Build tree
-                $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'] . '/includes/libraries');
-                $tree->register();
-                $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+                $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
                 // get FUNCTIONS
                 $functionsList = array();
                 $selected = '';
                 $users_functions = array_filter(array_unique(explode(';', empty($rowUser['fonction_id'].';'.$rowUser['roles_from_ad_groups']) === true ? '' : $rowUser['fonction_id'].';'.$rowUser['roles_from_ad_groups'])));
                 // array of roles for actual user
-                $my_functions = explode(';', $_SESSION['fonction_id']);
+                //$my_functions = explode(';', $rowUser['fonction_id']);
 
                 $rows = DB::query('SELECT id,title,creator_id FROM ' . prefixTable('roles_title'));
                 foreach ($rows as $record) {
                     if (
                         (int) $_SESSION['is_admin'] === 1
                         || (((int) $_SESSION['user_manager'] === 1 || (int) $_SESSION['user_can_manage_all_users'] === 1)
-                            && (in_array($record['id'], $my_functions) || $record['creator_id'] == $_SESSION['user_id']))
+                            //&& (in_array($record['id'], $my_functions) || $record['creator_id'] == $_SESSION['user_id'])
+                            )
                     ) {
                         if (in_array($record['id'], $users_functions)) {
                             $selected = 'selected';
@@ -1496,9 +1499,7 @@ if (null !== $post_type) {
                 && $post_id === $_SESSION['user_id']
             ) {
                 // load passwordLib library
-                $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
-                $pwdlib->register();
-                $pwdlib = new PasswordLib\PasswordLib();
+                $pwdlib = new PasswordLib();
 
                 $changeArray['pw'] = $pwdlib->createPasswordHash($post_password);
                 $changeArray['key_tempo'] = '';
@@ -1782,9 +1783,7 @@ if (null !== $post_type) {
             $arrData = array();
 
             //Build tree
-            $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'] . '/includes/libraries');
-            $tree->register();
-            $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+            $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
             // get User info
             $rowUser = DB::queryFirstRow(
@@ -2361,77 +2360,9 @@ if (null !== $post_type) {
 
             break;
 
-            /*
-         * STORE USER LOCATION
-         */
-        case 'save_user_location':
-            // Check KEY
-            if ($post_key !== $_SESSION['key']) {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
-                    ),
-                    'encode'
-                );
-                break;
-            }
-
-            // Manage 1st step - is this needed?
-            if (filter_input(INPUT_POST, 'step', FILTER_SANITIZE_FULL_SPECIAL_CHARS) === 'refresh') {
-                $record = DB::queryFirstRow(
-                    'SELECT user_ip_lastdate
-                    FROM ' . prefixTable('users') . '
-                    WHERE id = %i',
-                    $_SESSION['user_id']
-                );
-
-                if (
-                    empty($record['user_ip_lastdate']) === true
-                    || (time() - $record['user_ip_lastdate']) > TP_ONE_DAY_SECONDS
-                ) {
-                    echo prepareExchangedData(
-                        array(
-                            'refresh' => true,
-                            'error' => '',
-                        ),
-                        'encode'
-                    );
-                    break;
-                }
-            } elseif (filter_input(INPUT_POST, 'step', FILTER_SANITIZE_FULL_SPECIAL_CHARS) === 'perform') {
-                DB::update(
-                    prefixTable('users'),
-                    array(
-                        'user_ip' => getClientIpServer(),
-                        'user_ip_lastdate' => time(),
-                    ),
-                    'id = %i',
-                    $_SESSION['user_id']
-                );
-
-                echo prepareExchangedData(
-                    array(
-                        'refresh' => false,
-                        'error' => '',
-                    ),
-                    'encode'
-                );
-            }
-
-            echo prepareExchangedData(
-                array(
-                    'refresh' => '',
-                    'error' => false,
-                ),
-                'encode'
-            );
-
-            break;
-
-            /*
-            * GET LDAP LIST OF USERS
-            */
+        /*
+        * GET LDAP LIST OF USERS
+        */
         case 'get_list_of_users_in_ldap':
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
@@ -2659,9 +2590,7 @@ if (null !== $post_type) {
                 }
 
                 // load passwordLib library
-                $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
-                $pwdlib->register();
-                $pwdlib = new PasswordLib\PasswordLib();
+                $pwdlib = new PasswordLib();
 
                 // Prepare variables
                 $password = generateQuickPassword(12, true);
@@ -2750,9 +2679,7 @@ if (null !== $post_type) {
                 );
 
                 // Rebuild tree
-                $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'] . '/includes/libraries');
-                $tree->register();
-                $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+                $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
                 $tree->rebuild();
             }
 
