@@ -25,12 +25,14 @@ Use Hackzilla\PasswordGenerator\Generator\ComputerPasswordGenerator;
 Use Hackzilla\PasswordGenerator\RandomGenerator\Php7RandomGenerator;
 Use RobThree\Auth\TwoFactorAuth;
 Use EZimuel\PHPSecureSession;
-//Use DB;
+Use TeampassClasses\PerformChecks\PerformChecks;
 
-set_time_limit(600);
+// Load functions
+require_once 'main.functions.php';
+
+loadClasses('DB');
 
 if (isset($_SESSION) === false) {
-    //include_once 'SecureHandler.php';
     session_name('teampass_session');
     session_start();
     $_SESSION['CPM'] = 1;
@@ -50,25 +52,52 @@ try {
     exit();
 }
 
+// Do checks
+// Instantiate the class with posted data
+$checkUserAccess = new PerformChecks(
+    dataSanitizer(
+        [
+            'type' => isset($_POST['type']) === true ? $_POST['type'] : '',
+        ],
+        [
+            'type' => 'trim|escape',
+        ],
+    ),
+    [
+        'user_id' => isset($_SESSION['user_id']) === false ? null : $_SESSION['user_id'],
+        'user_key' => isset($_SESSION['key']) === false ? null : $_SESSION['key'],
+        'CPM' => isset($_SESSION['CPM']) === false ? null : $_SESSION['CPM'],
+    ]
+);
+/*// Handle the case
+$checkUserAccess->caseHandler();
+if (
+    ($checkUserAccess->userAccessPage('home') === false ||
+    $checkUserAccess->checkSession() === false)
+    && filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== 'get_teampass_settings'
+) {
+    // Not allowed page
+    $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
+    include $SETTINGS['cpassman_dir'] . '/error.php';
+    exit;
+}*/
+
 // Define Timezone
 date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
+set_time_limit(600);
 
 // DO CHECKS
-require_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
-require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 if (
     isset($post_type) === true
     && ($post_type === 'ga_generate_qr'
-        //|| $post_type === 'recovery_send_pw_by_email'
-        //|| $post_type === 'recovery_generate_new_password'
         || $post_type === 'get_teampass_settings')
 ) {
     // continue
     mainQuery($SETTINGS);
 } elseif (
     isset($_SESSION['user_id']) === true
-    && checkUser($_SESSION['user_id'], $_SESSION['key'], 'home', $SETTINGS) === false
+    && $checkUserAccess->userAccessPage('home') === false
 ) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
     include __DIR__.'/../error.php';
@@ -76,7 +105,6 @@ if (
 } elseif ((isset($_SESSION['user_id']) === true
         && isset($_SESSION['key'])) === true
     || (isset($post_type) === true
-        //&& $post_type === 'change_user_language'
         && null !== filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES))
 ) {
     // continue
@@ -98,14 +126,13 @@ function mainQuery(array $SETTINGS)
 
     // Includes
     include_once __DIR__.'/../includes/language/' . $_SESSION['user']['user_language'] . '.php';
-    include_once __DIR__.'/../includes/config/settings.php';
     include_once __DIR__.'/../sources/main.functions.php';
 
     // Load libraries
     loadClasses('DB');
 
     // User's language loading
-    include_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user']['user_language'] . '.php';
+    //include_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user']['user_language'] . '.php';
 
     // Prepare post variables
     $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
@@ -354,6 +381,12 @@ function userHandler(string $post_type, /*php8 array|null|string*/ $dataReceived
                 (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
                 (string) $SETTINGS['cpassman_dir'],
                 (int) $SETTINGS['maximum_session_expiration_time'],
+            );
+
+        case 'save_user_location'://action_user
+            return userSaveIp(
+                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
+                (string) filter_var($dataReceived['action'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
             );
 
         /*
@@ -714,6 +747,35 @@ function userGetSessionTime(int $userid, string $dir, int $maximum_session_expir
         ),
         'encode'
     ); 
+}
+
+/**
+ * Save the user's IP
+ *
+ * @param integer $userID
+ * @param string $action
+ * @return string
+ */
+function userSaveIp(int $userID, string $action): string
+{
+    if ($action === 'perform') {
+        DB::update(
+            prefixTable('users'),
+            array(
+                'user_ip' => getClientIpServer(),
+                'user_ip_lastdate' => time(),
+            ),
+            'id = %i',
+            $userID
+        );
+    }
+
+    return prepareExchangedData(
+        array(
+            'error' => false,
+        ),
+        'encode'
+    );
 }
 
 /**
@@ -1818,9 +1880,6 @@ function startReEncryptingUserSharekeys(
             $post_user_id
         );
         if (DB::count() > 0) {
-            // Include libraries
-            include_once $SETTINGS['cpassman_dir'] . '/sources/aes.functions.php';
-
             // CLear old sharekeys
             if ($post_self_change === false) {
                 deleteUserObjetsKeys($post_user_id, $SETTINGS);
@@ -1887,8 +1946,6 @@ function continueReEncryptingUserSharekeys(
             $post_user_id
         );
         if (isset($userInfo['public_key']) === true) {
-            // Include libraries
-            include_once $SETTINGS['cpassman_dir'] . '/sources/aes.functions.php';
             $return = [];
 
             // WHAT STEP TO PERFORM?

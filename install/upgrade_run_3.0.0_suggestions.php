@@ -16,21 +16,25 @@
  * @see       https://www.teampass.net
  */
 
-set_time_limit(600);
+Use EZimuel\PHPSecureSession;
+Use TeampassClasses\SuperGlobal\SuperGlobal;
+Use PasswordLib\PasswordLib;
 
+// Load functions
+require_once __DIR__.'/../sources/main.functions.php';
 
-require_once '../sources/SecureHandler.php';
+// init
+loadClasses('DB');
 session_name('teampass_session');
 session_start();
 error_reporting(E_ERROR | E_PARSE);
-$_SESSION['db_encoding'] = "utf8";
+set_time_limit(600);
 $_SESSION['CPM'] = 1;
 
 
 require_once '../includes/language/english.php';
 require_once '../includes/config/include.php';
 require_once '../includes/config/settings.php';
-require_once '../sources/main.functions.php';
 require_once '../includes/config/tp.config.php';
 require_once 'tp.functions.php';
 require_once 'libs/aesctr.php';
@@ -40,8 +44,7 @@ $post_nb = filter_input(INPUT_POST, 'nb', FILTER_SANITIZE_NUMBER_INT);
 $post_start = filter_input(INPUT_POST, 'start', FILTER_SANITIZE_NUMBER_INT);
 
 // Load libraries
-require_once '../includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-$superGlobal = new protect\SuperGlobal\SuperGlobal();
+$superGlobal = new SuperGlobal();
 
 
 // Some init

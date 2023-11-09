@@ -22,6 +22,10 @@
  *
  * @see       https://www.teampass.net
  */
+
+
+Use TeampassClasses\SuperGlobal\SuperGlobal;
+
 class BaseController
 {
     /**
@@ -39,7 +43,7 @@ class BaseController
      */
     public function getUriSegments()
     {
-        $superGlobal = new protect\SuperGlobal\SuperGlobal();
+        $superGlobal = new SuperGlobal();
         $uri = parse_url($superGlobal->get('REQUEST_URI', 'SERVER'), PHP_URL_PATH);
         $uri = explode( '/', $uri );
         return $this->sanitizeUrl(array_slice($uri, ((int) array_search('index.php', $uri) + 1)));
@@ -52,7 +56,7 @@ class BaseController
      */
     public function getQueryStringParams()
     {
-        $superGlobal = new protect\SuperGlobal\SuperGlobal();
+        $superGlobal = new SuperGlobal();
         parse_str(html_entity_decode($superGlobal->get('QUERY_STRING', 'SERVER')), $query);
         return $this->sanitizeUrl($query);
     }

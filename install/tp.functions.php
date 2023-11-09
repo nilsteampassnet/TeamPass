@@ -1,5 +1,10 @@
 <?php
 
+Use Hackzilla\PasswordGenerator\Generator\ComputerPasswordGenerator;
+Use Hackzilla\PasswordGenerator\RandomGenerator\Php7RandomGenerator;
+Use Defuse\Crypto\Key;
+Use Defuse\Crypto\Crypto;
+
 // new SECUREFILE - 3.0.0.23
 function handleSecurefileConstant()
 {
@@ -118,26 +123,6 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
  */
 function defuseCryption($message, $ascii_key, $type)
 {
-    // load PhpEncryption library
-    $path = __DIR__.'/../includes/libraries/Encryption/Encryption/';
-
-    if (!class_exists('Defuse\Crypto\Crypto', false)) {
-		include_once $path . 'Exception/CryptoException.php';
-		include_once $path . 'Exception/BadFormatException.php';
-		include_once $path . 'Exception/EnvironmentIsBrokenException.php';
-		include_once $path . 'Exception/IOException.php';
-		include_once $path . 'Exception/WrongKeyOrModifiedCiphertextException.php';
-		include_once $path . 'Crypto.php';
-		include_once $path . 'Encoding.php';
-		include_once $path . 'DerivedKeys.php';
-		include_once $path . 'Key.php';
-		include_once $path . 'KeyOrPassword.php';
-		include_once $path . 'File.php';
-		include_once $path . 'RuntimeTests.php';
-		include_once $path . 'KeyProtectedByPassword.php';
-		include_once $path . 'Core.php';
-	}
-
     include_once '../includes/config/settings.php';
 
     // init
@@ -148,23 +133,23 @@ function defuseCryption($message, $ascii_key, $type)
     }
     
     // convert KEY
-    $key = \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key);
+    $key = Key::loadFromAsciiSafeString($ascii_key);
 
     try {
         if ($type === 'encrypt') {
-            $text = \Defuse\Crypto\Crypto::encrypt($message, $key);
+            $text = Crypto::encrypt($message, $key);
         } elseif ($type === 'decrypt') {
-            $text = \Defuse\Crypto\Crypto::decrypt($message, $key);
+            $text = Crypto::decrypt($message, $key);
         }
-    } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
+    } catch (WrongKeyOrModifiedCiphertextException $ex) {
         $err = 'an attack! either the wrong key was loaded, or the ciphertext has changed since it was created either corrupted in the database or intentionally modified by someone trying to carry out an attack.';
-    } catch (Defuse\Crypto\Exception\BadFormatException $ex) {
+    } catch (BadFormatException $ex) {
         $err = $ex;
-    } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
+    } catch (EnvironmentIsBrokenException $ex) {
         $err = $ex;
-    } catch (Defuse\Crypto\Exception\CryptoException $ex) {
+    } catch (CryptoException $ex) {
         $err = $ex;
-    } catch (Defuse\Crypto\Exception\IOException $ex) {
+    } catch (IOException $ex) {
         $err = $ex;
     }
 
@@ -341,11 +326,7 @@ function cleanFields($txt)
  */
 function generateRandomKey()
 {
-    // load passwordLib library
-    $path = '../includes/libraries/PasswordGenerator/Generator/';
-    include_once $path.'ComputerPasswordGenerator.php';
-
-    $generator = new PasswordGenerator\Generator\ComputerPasswordGenerator();
+    $generator = new ComputerPasswordGenerator();
 
     $generator->setLength(40);
     $generator->setSymbols(false);

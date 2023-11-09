@@ -43,7 +43,6 @@ Use PasswordLib\PasswordLib;
 Use Symfony\Component\Process\Process;
 Use Symfony\Component\Process\PhpExecutableFinder;
 Use TeampassClasses\Encryption\Encryption;
-//Use DB;
 
 if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
     //die('Hacking attempt...');
@@ -73,7 +72,6 @@ function langHdl(string $string): string
     }
 
     // Load superglobal
-    //include_once __DIR__.'/../includes/libraries/protect/SuperGlobal/SuperGlobal.php';
     $superGlobal = new SuperGlobal();
     // Get language string
     $session_language = $superGlobal->get(trim($string), 'SESSION', 'lang');
@@ -128,6 +126,21 @@ function bCrypt(
 }
 
 /**
+ * Checks if a string is hex encoded
+ *
+ * @param string $str
+ * @return boolean
+ */
+function isHex(string $str): bool
+{
+    if (str_starts_with(strtolower($str), '0x')) {
+        $str = substr($str, 2);
+    }
+
+    return ctype_xdigit($str);
+}
+
+/**
  * Defuse cryption function.
  *
  * @param string $message   what to de/crypt
@@ -142,23 +155,6 @@ function cryption(string $message, string $ascii_key, string $type, ?array $SETT
     $ascii_key = empty($ascii_key) === true ? file_get_contents(SECUREPATH.'/'.SECUREFILE) : $ascii_key;
     $err = false;
     
-    /*$path = __DIR__.'/../includes/libraries/Encryption/Encryption/';
-
-    include_once $path . 'Exception/CryptoException.php';
-    include_once $path . 'Exception/BadFormatException.php';
-    include_once $path . 'Exception/EnvironmentIsBrokenException.php';
-    include_once $path . 'Exception/IOException.php';
-    include_once $path . 'Exception/WrongKeyOrModifiedCiphertextException.php';
-    include_once $path . 'Crypto.php';
-    include_once $path . 'Encoding.php';
-    include_once $path . 'DerivedKeys.php';
-    include_once $path . 'Key.php';
-    include_once $path . 'KeyOrPassword.php';
-    include_once $path . 'File.php';
-    include_once $path . 'RuntimeTests.php';
-    include_once $path . 'KeyProtectedByPassword.php';
-    include_once $path . 'Core.php';*/
-    
     // convert KEY
     $key = Key::loadFromAsciiSafeString($ascii_key);
     try {
@@ -167,15 +163,15 @@ function cryption(string $message, string $ascii_key, string $type, ?array $SETT
         } elseif ($type === 'decrypt') {
             $text = Crypto::decrypt($message, $key);
         }
-    } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
+    } catch (Exception\WrongKeyOrModifiedCiphertextException $ex) {
         $err = 'an attack! either the wrong key was loaded, or the ciphertext has changed since it was created either corrupted in the database or intentionally modified by someone trying to carry out an attack.';
-    } catch (Defuse\Crypto\Exception\BadFormatException $ex) {
+    } catch (Exception\BadFormatException $ex) {
         $err = $ex;
-    } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
+    } catch (Exception\EnvironmentIsBrokenException $ex) {
         $err = $ex;
-    } catch (Defuse\Crypto\Exception\CryptoException $ex) {
+    } catch (Exception\CryptoException $ex) {
         $err = $ex;
-    } catch (Defuse\Crypto\Exception\IOException $ex) {
+    } catch (Exception\IOException $ex) {
         $err = $ex;
     }
     //echo \Defuse\Crypto\Crypto::decrypt($message, $key).' ## ';
@@ -193,30 +189,6 @@ function cryption(string $message, string $ascii_key, string $type, ?array $SETT
  */
 function defuse_generate_key()
 {
-    // load PhpEncryption library
-    /*if (file_exists('../includes/config/tp.config.php') === true) {
-        $path = '../includes/libraries/Encryption/Encryption/';
-    } elseif (file_exists('./includes/config/tp.config.php') === true) {
-        $path = './includes/libraries/Encryption/Encryption/';
-    } else {
-        $path = '../includes/libraries/Encryption/Encryption/';
-    }
-
-    include_once $path . 'Exception/CryptoException.php';
-    include_once $path . 'Exception/BadFormatException.php';
-    include_once $path . 'Exception/EnvironmentIsBrokenException.php';
-    include_once $path . 'Exception/IOException.php';
-    include_once $path . 'Exception/WrongKeyOrModifiedCiphertextException.php';
-    include_once $path . 'Crypto.php';
-    include_once $path . 'Encoding.php';
-    include_once $path . 'DerivedKeys.php';
-    include_once $path . 'Key.php';
-    include_once $path . 'KeyOrPassword.php';
-    include_once $path . 'File.php';
-    include_once $path . 'RuntimeTests.php';
-    include_once $path . 'KeyProtectedByPassword.php';
-    include_once $path . 'Core.php';*/
-
     $key = Key::createNewRandomKey();
     $key = $key->saveToAsciiSafeString();
     return $key;
@@ -231,30 +203,6 @@ function defuse_generate_key()
  */
 function defuse_generate_personal_key(string $psk): string
 {
-    // load PhpEncryption library
-    /*if (file_exists('../includes/config/tp.config.php') === true) {
-        $path = '../includes/libraries/Encryption/Encryption/';
-    } elseif (file_exists('./includes/config/tp.config.php') === true) {
-        $path = './includes/libraries/Encryption/Encryption/';
-    } else {
-        $path = '../includes/libraries/Encryption/Encryption/';
-    }
-
-    include_once $path . 'Exception/CryptoException.php';
-    include_once $path . 'Exception/BadFormatException.php';
-    include_once $path . 'Exception/EnvironmentIsBrokenException.php';
-    include_once $path . 'Exception/IOException.php';
-    include_once $path . 'Exception/WrongKeyOrModifiedCiphertextException.php';
-    include_once $path . 'Crypto.php';
-    include_once $path . 'Encoding.php';
-    include_once $path . 'DerivedKeys.php';
-    include_once $path . 'Key.php';
-    include_once $path . 'KeyOrPassword.php';
-    include_once $path . 'File.php';
-    include_once $path . 'RuntimeTests.php';
-    include_once $path . 'KeyProtectedByPassword.php';
-    include_once $path . 'Core.php';*/
-    
     $protected_key = KeyProtectedByPassword::createRandomPasswordProtectedKey($psk);
     return $protected_key->saveToAsciiSafeString(); // save this in user table
 }
@@ -269,37 +217,13 @@ function defuse_generate_personal_key(string $psk): string
  */
 function defuse_validate_personal_key(string $psk, string $protected_key_encoded): string
 {
-    // load PhpEncryption library
-    /*if (file_exists('../includes/config/tp.config.php') === true) {
-        $path = '../includes/libraries/Encryption/Encryption/';
-    } elseif (file_exists('./includes/config/tp.config.php') === true) {
-        $path = './includes/libraries/Encryption/Encryption/';
-    } else {
-        $path = '../includes/libraries/Encryption/Encryption/';
-    }
-
-    include_once $path . 'Exception/CryptoException.php';
-    include_once $path . 'Exception/BadFormatException.php';
-    include_once $path . 'Exception/EnvironmentIsBrokenException.php';
-    include_once $path . 'Exception/IOException.php';
-    include_once $path . 'Exception/WrongKeyOrModifiedCiphertextException.php';
-    include_once $path . 'Crypto.php';
-    include_once $path . 'Encoding.php';
-    include_once $path . 'DerivedKeys.php';
-    include_once $path . 'Key.php';
-    include_once $path . 'KeyOrPassword.php';
-    include_once $path . 'File.php';
-    include_once $path . 'RuntimeTests.php';
-    include_once $path . 'KeyProtectedByPassword.php';
-    include_once $path . 'Core.php';*/
-
     try {
         $protected_key_encoded = KeyProtectedByPassword::loadFromAsciiSafeString($protected_key_encoded);
         $user_key = $protected_key_encoded->unlockKey($psk);
         $user_key_encoded = $user_key->saveToAsciiSafeString();
-    } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
+    } catch (Exception\EnvironmentIsBrokenException $ex) {
         return 'Error - Major issue as the encryption is broken.';
-    } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
+    } catch (Exception\WrongKeyOrModifiedCiphertextException $ex) {
         return 'Error - The saltkey is not the correct one.';
     }
 
@@ -403,18 +327,7 @@ function identifyUserRights(
     $idFonctions,
     $SETTINGS
 ) {
-    //load ClassLoader
-    /*include_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
-    // Load superglobal
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';*/
     $superGlobal = new SuperGlobal();
-
-    // Load class DB
-    loadClasses('DB');
-    
-    //Build tree
-    /*$tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'] . '/includes/libraries');
-    $tree->register();*/
     $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
     // Check if user is ADMINISTRATOR    
@@ -1349,7 +1262,7 @@ function buildEmail(
     $mail = new PHPMailer(true);
 
     // send to user
-    $mail->setLanguage('en', $SETTINGS['cpassman_dir'] . '/includes/libraries/PHPMailer/PHPMailer/language/');
+    $mail->setLanguage('en', $SETTINGS['cpassman_dir'] . '/vendor/phpmailer/phpmailer/language/');
     $mail->SMTPDebug = isset($SETTINGS['email_debug_level']) === true && $cron === false && $silent === false ? $SETTINGS['email_debug_level'] : 0;
     $mail->Port = (int) $SETTINGS['email_port'];
     //COULD BE USED
@@ -2212,7 +2125,7 @@ function prepareFileWithDefuse(
     if (empty($password) === true || is_null($password) === true) {
         // get KEY to define password
         $ascii_key = file_get_contents(SECUREPATH.'/'.SECUREFILE);
-        $password = \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key);
+        $password = Key::loadFromAsciiSafeString($ascii_key);
     }
 
     $err = '';
@@ -2254,33 +2167,17 @@ function defuseFileEncrypt(
     array $SETTINGS,
     string $password = null
 ) {
-    // load PhpEncryption library
-    /*$path_to_encryption = '/includes/libraries/Encryption/Encryption/';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Exception/CryptoException.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Exception/BadFormatException.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Exception/IOException.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Exception/EnvironmentIsBrokenException.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Exception/WrongKeyOrModifiedCiphertextException.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Crypto.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Encoding.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'DerivedKeys.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Key.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'KeyOrPassword.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'File.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'RuntimeTests.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'KeyProtectedByPassword.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Core.php';*/
     try {
         File::encryptFileWithPassword(
             $source_file,
             $target_file,
             $password
         );
-    } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
+    } catch (Exception\WrongKeyOrModifiedCiphertextException $ex) {
         $err = 'wrong_key';
-    } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
+    } catch (Exception\EnvironmentIsBrokenException $ex) {
         $err = $ex;
-    } catch (Defuse\Crypto\Exception\IOException $ex) {
+    } catch (Exception\IOException $ex) {
         $err = $ex;
     }
 
@@ -2304,33 +2201,17 @@ function defuseFileDecrypt(
     array $SETTINGS,
     string $password = null
 ) {
-    // load PhpEncryption library
-    /*$path_to_encryption = '/includes/libraries/Encryption/Encryption/';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Exception/CryptoException.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Exception/BadFormatException.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Exception/IOException.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Exception/EnvironmentIsBrokenException.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Exception/WrongKeyOrModifiedCiphertextException.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Crypto.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Encoding.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'DerivedKeys.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Key.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'KeyOrPassword.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'File.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'RuntimeTests.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'KeyProtectedByPassword.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Core.php';*/
     try {
         File::decryptFileWithPassword(
             $source_file,
             $target_file,
             $password
         );
-    } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
+    } catch (Exception\WrongKeyOrModifiedCiphertextException $ex) {
         $err = 'wrong_key';
-    } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
+    } catch (Exception\EnvironmentIsBrokenException $ex) {
         $err = $ex;
-    } catch (Defuse\Crypto\Exception\IOException $ex) {
+    } catch (Exception\IOException $ex) {
         $err = $ex;
     }
 
@@ -2366,9 +2247,6 @@ function debugTeampass(string $text): void
 function fileDelete(string $file, array $SETTINGS): void
 {
     // Load AntiXSS
-    /*include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/portable-ascii-master/src/voku/helper/ASCII.php';
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/portable-utf8-master/src/voku/helper/UTF8.php';
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/anti-xss-master/src/voku/helper/AntiXSS.php';*/
     $antiXss = new AntiXSS();
     $file = $antiXss->xss_clean($file);
     if (is_file($file)) {
@@ -4341,9 +4219,8 @@ function handleUserRecoveryKeysDownload(int $userId, array $SETTINGS):string
  */
 function loadClasses(string $className = ''): void
 {
-    include_once __DIR__. '/../sources/main.functions.php';
-    include_once __DIR__. '/../includes/config/include.php';
-    include_once __DIR__. '/../includes/config/settings.php';
+    require_once __DIR__. '/../includes/config/include.php';
+    require_once __DIR__. '/../includes/config/settings.php';
     require_once __DIR__.'/../vendor/autoload.php';
 
     if (defined('DB_PASSWD_CLEAR') === false) {
@@ -4374,8 +4251,7 @@ function loadClasses(string $className = ''): void
 function getCurrectPage($SETTINGS)
 {
     // Load libraries
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-    $superGlobal = new protect\SuperGlobal\SuperGlobal();
+    $superGlobal = new SuperGlobal();
 
     // Parse the url
     parse_str(

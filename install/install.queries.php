@@ -18,16 +18,42 @@
 use TiBeN\CrontabManager\CrontabJob;
 use TiBeN\CrontabManager\CrontabAdapter;
 use TiBeN\CrontabManager\CrontabRepository;
+Use Defuse\Crypto\Key;
+Use Defuse\Crypto\Crypto;
+Use EZimuel\PHPSecureSession;
+Use Hackzilla\PasswordGenerator\Generator\ComputerPasswordGenerator;
+Use Hackzilla\PasswordGenerator\RandomGenerator\Php7RandomGenerator;
+Use TeampassClasses\SuperGlobal\SuperGlobal;
 
-set_time_limit(600);
+// Load functions
+require_once __DIR__.'/../sources/main.functions.php';
 
-require_once '../sources/SecureHandler.php';
+// init
+loadClasses('DB');
 session_name('teampass_session');
 session_start();
-error_reporting(E_ERROR | E_PARSE);
+
+// Load config if $SETTINGS not defined
+try {
+    include_once __DIR__.'/../includes/config/tp.config.php';
+} catch (Exception $e) {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+    exit();
+}
+
+// Define Timezone
+date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
+
+// Set header properties
 header('Content-type: text/html; charset=utf-8');
+header('Cache-Control: no-cache, no-store, must-revalidate');
+error_reporting(E_ERROR | E_PARSE);
+// increase the maximum amount of time a script is allowed to run
+set_time_limit(600);
 $session_db_encoding = 'utf8';
 define('MIN_PHP_VERSION', 7.4);
+
+$superGlobal = new SuperGlobal();
 
 /**
  * Generates a random key.
@@ -35,11 +61,8 @@ define('MIN_PHP_VERSION', 7.4);
 function generateRandomKey()
 {
     // load passwordLib library
-    $path = '../includes/libraries/PasswordGenerator/Generator/';
-    include_once $path . 'ComputerPasswordGenerator.php';
-
-    $generator = new PasswordGenerator\Generator\ComputerPasswordGenerator();
-
+    $generator = new ComputerPasswordGenerator();
+    $generator->setRandomGenerator(new Php7RandomGenerator());
     $generator->setLength(40);
     $generator->setSymbols(false);
     $generator->setLowercase(true);
@@ -61,37 +84,20 @@ function generateRandomKey()
  */
 function encryptFollowingDefuse($message, $ascii_key)
 {
-    // load PhpEncryption library
-    $path = '../includes/libraries/Encryption/Encryption/';
-    include_once $path . 'Exception/CryptoException.php';
-    include_once $path . 'Exception/BadFormatException.php';
-    include_once $path . 'Exception/EnvironmentIsBrokenException.php';
-    include_once $path . 'Exception/IOException.php';
-    include_once $path . 'Exception/WrongKeyOrModifiedCiphertextException.php';
-    require_once $path . 'Crypto.php';
-    require_once $path . 'Encoding.php';
-    require_once $path . 'DerivedKeys.php';
-    require_once $path . 'Key.php';
-    require_once $path . 'KeyOrPassword.php';
-    require_once $path . 'File.php';
-    require_once $path . 'RuntimeTests.php';
-    require_once $path . 'KeyProtectedByPassword.php';
-    require_once $path . 'Core.php';
-    //echo $message . " -- ".$ascii_key."<br>";
     // convert KEY
-    $key = \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key);
+    $key = Key::loadFromAsciiSafeString($ascii_key);
 
     try {
-        $text = \Defuse\Crypto\Crypto::encrypt($message, $key);
-    } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
+        $text = Crypto::encrypt($message, $key);
+    } catch (WrongKeyOrModifiedCiphertextException $ex) {
         $err = 'an attack! either the wrong key was loaded, or the ciphertext has changed since it was created either corrupted in the database or intentionally modified by someone trying to carry out an attack.';
-    } catch (Defuse\Crypto\Exception\BadFormatException $ex) {
+    } catch (BadFormatException $ex) {
         $err = $ex;
-    } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
+    } catch (EnvironmentIsBrokenException $ex) {
         $err = $ex;
-    } catch (Defuse\Crypto\Exception\CryptoException $ex) {
+    } catch (CryptoException $ex) {
         $err = $ex;
-    } catch (Defuse\Crypto\Exception\IOException $ex) {
+    } catch (IOException $ex) {
         $err = $ex;
     }
 
@@ -109,11 +115,6 @@ $post_task = filter_input(INPUT_POST, 'task', FILTER_SANITIZE_FULL_SPECIAL_CHARS
 $post_index = filter_input(INPUT_POST, 'index', FILTER_SANITIZE_NUMBER_INT);
 $post_multiple = filter_input(INPUT_POST, 'multiple', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $post_db = filter_input(INPUT_POST, 'db', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-
-// Load libraries
-require_once '../sources/main.functions.php';
-require_once '../includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-$superGlobal = new protect\SuperGlobal\SuperGlobal();
 
 // Prepare SESSION variables
 $session_url_path = $superGlobal->get('url_path', 'SESSION');
@@ -206,7 +207,14 @@ if (null !== $post_type) {
             $post_urlpath = $data['url_path'];
 
             // launch
-            if ($dbTmp = mysqli_connect($db['db_host'], $db['db_login'], $db['db_pw'], $db['db_bdd'], $db['db_port'])) {
+            try {
+                $dbTmp = mysqli_connect($db['db_host'], $db['db_login'], $db['db_pw'], $db['db_bdd'], $db['db_port']);
+            } catch (Exception $e) {
+                echo '[{"error" : "Cannot connect to Database - '.$e->getMessage().'"}]';
+                break;
+            } 
+
+            if ($dbTmp) {
                 // create temporary INSTALL mysqli table
                 $mysqli_result = mysqli_query(
                     $dbTmp,
@@ -1356,17 +1364,7 @@ $SETTINGS = array (';
                     }
 
                     // 1- generate saltkey
-                    require_once '../includes/libraries/Encryption/Encryption/Crypto.php';
-                    require_once '../includes/libraries/Encryption/Encryption/Encoding.php';
-                    require_once '../includes/libraries/Encryption/Encryption/DerivedKeys.php';
-                    require_once '../includes/libraries/Encryption/Encryption/Key.php';
-                    require_once '../includes/libraries/Encryption/Encryption/KeyOrPassword.php';
-                    require_once '../includes/libraries/Encryption/Encryption/File.php';
-                    require_once '../includes/libraries/Encryption/Encryption/RuntimeTests.php';
-                    require_once '../includes/libraries/Encryption/Encryption/KeyProtectedByPassword.php';
-                    require_once '../includes/libraries/Encryption/Encryption/Core.php';
-
-                    $key = \Defuse\Crypto\Key::createNewRandomKey();
+                    $key = Key::createNewRandomKey();
                     $new_salt = $key->saveToAsciiSafeString();
 
                     // 2- store key in file
@@ -1510,10 +1508,6 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                     echo '[{"error" : "", "index" : "' . $post_index . '", "multiple" : "' . $post_multiple . '"}]';
                 } elseif ($task === 'cronJob') {
                     // Create cronjob
-                    require_once '../includes/libraries/TiBeN/CrontabManager/CrontabAdapter.php';
-                    require_once '../includes/libraries/TiBeN/CrontabManager/CrontabJob.php';
-                    require_once '../includes/libraries/TiBeN/CrontabManager/CrontabRepository.php';
-
                     // get php location
                     require_once 'tp.functions.php';
                     $phpLocation = findPhpBinary();

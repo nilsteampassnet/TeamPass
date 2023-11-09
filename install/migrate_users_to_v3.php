@@ -20,7 +20,7 @@
 set_time_limit(600);
 
 
-require_once '../sources/SecureHandler.php';
+require_once './libs/SecureHandler.php';
 session_name('teampass_session');
 session_start();
 error_reporting(E_ERROR | E_PARSE);

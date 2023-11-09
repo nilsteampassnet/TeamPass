@@ -22,8 +22,8 @@
  */
 
 use GO\Scheduler;
+Use EZimuel\PHPSecureSession;
 
-require_once __DIR__.'/../sources/SecureHandler.php';
 session_name('teampass_session');
 session_start();
 
@@ -33,7 +33,6 @@ require_once __DIR__.'/../includes/config/include.php';
 require_once __DIR__.'/../includes/config/settings.php';
 
 // Load library
-//require_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
 require_once __DIR__.'/../vendor/autoload.php';
 require_once __DIR__.'/../sources/main.functions.php';
 

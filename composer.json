@@ -90,6 +90,7 @@
         "teampassclasses/superglobal": "dev-master",
         "ezimuel/php-secure-session": "dev-master",
         "teampassclasses/performchecks": "dev-master",
-        "teampassclasses/encryption": "dev-master"
+        "teampassclasses/encryption": "dev-master",
+        "duosecurity/duo_universal_php": "^1.0"
     }
 }

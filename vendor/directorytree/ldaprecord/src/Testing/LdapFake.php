@@ -32,12 +32,12 @@ class LdapFake implements LdapInterface
     /**
      * The default fake last error string.
      */
-    protected string $lastError = '';
+    protected string $lastError = 'Unknown error';
 
     /**
      * The default fake diagnostic message string.
      */
-    protected string $diagnosticMessage = '';
+    protected ?string $diagnosticMessage = null;
 
     /**
      * Create a new expected operation.
@@ -152,7 +152,7 @@ class LdapFake implements LdapInterface
     /**
      * Set the last error of a failed bind attempt.
      */
-    public function shouldReturnError(string $message = ''): static
+    public function shouldReturnError(string $message): static
     {
         $this->lastError = $message;
 
@@ -162,7 +162,7 @@ class LdapFake implements LdapInterface
     /**
      * Set the diagnostic message of a failed bind attempt.
      */
-    public function shouldReturnDiagnosticMessage(string $message = ''): static
+    public function shouldReturnDiagnosticMessage(?string $message): static
     {
         $this->diagnosticMessage = $message;
 
@@ -188,7 +188,7 @@ class LdapFake implements LdapInterface
     /**
      * Return a fake diagnostic message.
      */
-    public function getDiagnosticMessage(): string
+    public function getDiagnosticMessage(): ?string
     {
         return $this->diagnosticMessage;
     }

@@ -23,12 +23,13 @@
  * @see       https://www.teampass.net
  */
 
+Use Firebase\JWT;
+
 class Operation
 {
     public function verifyJwt($jwt)
     {
-        include_once API_ROOT_PATH . '/../includes/libraries/Firebase/JWT/JWT.php';
-        $JWT = new Firebase\JWT\JWT();
+        $JWT = new JWT();
 
         try {
             $JWT->decode($jwt, DB_PASSWD, array('HS256'));

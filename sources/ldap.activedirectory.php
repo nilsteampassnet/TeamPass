@@ -46,7 +46,6 @@ function getUserADGroups(string $userDN, Connection $connection, array $SETTINGS
 
     try {
         Container::addConnection($connection);
-        echo "ici";
         // get id attribute
         if (isset($SETTINGS['ldap_guid_attibute']) ===true && empty($SETTINGS['ldap_guid_attibute']) === false) {
             $idAttribute = $SETTINGS['ldap_guid_attibute'];
@@ -65,12 +64,35 @@ function getUserADGroups(string $userDN, Connection $connection, array $SETTINGS
         }
     } catch (\LdapRecord\Auth\BindException $e) {
         // Do nothing
-        return "ici";
     }
 
     return [
         'error' => false,
         'message' => '',
         'userGroups' => $groupsArr,
+    ];
+}
+
+/**
+ * Check is user is enabled
+ *
+ * @param string $userDN
+ * @param Connection $connection
+ * @return array
+ */
+function userIsEnabled(string $userDN, Connection $connection): array
+{
+    $isEnabled = false;
+    try {
+        Container::addConnection($connection);
+        $user = User::find($userDN);
+        $isEnabled = $user->isEnabled();
+    } catch (\LdapRecord\Auth\BindException $e) {
+        // Do nothing
+    }
+    return [
+        'error' => false,
+        'message' => '',
+        'isEnabled' => $isEnabled,
     ];
 }

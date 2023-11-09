@@ -54,19 +54,19 @@ class LdapExpectation
     protected bool $indefinitely = true;
 
     /**
-     * Whether the expectation should return errors.
+     * Whether the expectation should return an error.
      */
     protected bool $errors = false;
 
     /**
-     * The error number to return.
+     * The error code to return.
      */
-    protected ?string $errorCode = null;
+    protected int $errorCode = 1;
 
     /**
-     * The last error string to return.
+     * The error message to return.
      */
-    protected ?string $errorMessage = null;
+    protected string $errorMessage = 'Unknown error';
 
     /**
      * The diagnostic message string to return.
@@ -130,7 +130,7 @@ class LdapExpectation
     /**
      * The error message to return from the expectation.
      */
-    public function andReturnError(int $errorCode = 1, string $errorMessage = '', string $diagnosticMessage = ''): static
+    public function andReturnError(int $errorCode = 1, string $errorMessage = 'Unknown error', string $diagnosticMessage = null): static
     {
         $this->errors = true;
 
@@ -287,7 +287,7 @@ class LdapExpectation
     /**
      * Get the expected error code.
      */
-    public function getExpectedErrorCode(): ?int
+    public function getExpectedErrorCode(): int
     {
         return $this->errorCode;
     }

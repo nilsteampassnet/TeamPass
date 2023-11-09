@@ -1,6 +1,7 @@
 <?php
 
 namespace TeampassClasses\PerformChecks;
+Use DB;
 
 /**
  * Teampass - a collaborative passwords manager.
@@ -20,7 +21,6 @@ namespace TeampassClasses\PerformChecks;
  */
 
 Use EZimuel\PHPSecureSession;
-Use DB;
 
 class PerformChecks
 {
@@ -28,10 +28,40 @@ class PerformChecks
      * Construct the class.
      *
      * @param string|array $postType
+     * @param array $sessionVar
      */
-    public function __construct($postType)
+    public function __construct($postType, $sessionVar = null)
     {
         $this->postType = (string) $postType['type'];
+        $this->sessionVar = is_null($sessionVar) === true ? [] : $sessionVar;
+    }
+
+    /**
+     * Checks if session variables are the expected one
+     *
+     * @return void
+     */
+    public function checkSession()
+    {
+        // Check if session is valid
+        if (count($this->sessionVar) > 0) {
+            // if user is not logged in
+            if (isset($this->sessionVar['login']) === true && is_null($this->sessionVar['login']) === false && empty($this->sessionVar['login']) === false) {
+                return $this->initialLogin();
+            }
+            // Other cases
+            if (isset($this->sessionVar['user_id']) === true && (is_null($this->sessionVar['user_id']) === true || empty($this->sessionVar['user_id']) === true)) {
+                return false;
+            }
+            if (isset($this->sessionVar['user_key']) === true && (is_null($this->sessionVar['user_key']) === true || empty($this->sessionVar['user_key']) === true)) {
+                return false;
+            }
+            if (isset($this->sessionVar['CPM']) === true && (is_null($this->sessionVar['CPM']) === true || $this->sessionVar['CPM'] !== 1)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -74,23 +104,40 @@ class PerformChecks
         }
     }
 
+    public function initialLogin()
+    {
+        if (empty($this->sessionVar['user_id']) === true && empty($this->sessionVar['login']) === false && substr($_SERVER['SCRIPT_NAME'], strrpos($_SERVER['SCRIPT_NAME'], '/')+1) === 'identify.php') {
+            // Check if user exists in DB
+            DB::queryfirstrow(
+                'SELECT id FROM ' . prefixTable('users') . ' WHERE login = %s',
+                $this->sessionVar['login']
+            );
+            if (DB::count() > 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /**
      * Checks if user is allowed to open the page.
      *
-     * @param int    $userId      User's ID
-     * @param int    $userKey     User's temporary key
      * @param string $pageVisited Page visited
-     * @param array  $SETTINGS    Settings
      *
      * @return bool
      */
-    function userAccessPage($userId, $userKey, $pageVisited, $SETTINGS)
+    function userAccessPage($pageVisited)
     {
         // Should we start?
-        if (empty($userId) === true || empty($pageVisited) === true || empty($userKey) === true) {
+        if (empty($pageVisited) === true) {
             return false;
         }
 
+        // Case not user logged in
+        if (empty($this->sessionVar['user_id']) === true && empty($this->sessionVar['user_key']) === true && empty($this->sessionVar['CPM']) === true && strpos($_SERVER['REQUEST_URI'] , "index.php") !== false) {
+            return true;
+        }
+        
         // Definition
         $pagesRights = array(
             'user' => array(
@@ -104,28 +151,29 @@ class PerformChecks
             'human_resources' => array(
                 'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'folders', 'roles', 'utilities', 'users', 'profile',
                 'import', 'export', 'offline', 'process',
-                'utilities.deletion', 'utilities.renewal', 'utilities.database', 'utilities.logs', 'tasks',
+                'utilities.deletion', 'utilities.renewal', 'utilities.database', 'utilities.logs1', 'tasks',
             ),
             'admin' => array(
                 'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'folders', 'manage_roles', 'manage_folders',
                 'import', 'export', 'offline', 'process',
                 'manage_views', 'manage_users', 'manage_settings', 'manage_main',
-                'admin', '2fa', 'profile', '2fa', 'api', 'backups', 'emails', 'ldap', 'special',
+                'admin', 'profile', 'mfa', 'api', 'backups', 'emails', 'ldap', 'special',
                 'statistics', 'fields', 'options', 'views', 'roles', 'folders', 'users', 'utilities',
-                'utilities.deletion', 'utilities.renewal', 'utilities.database', 'utilities.logs', 'tasks',
+                'utilities.deletion', 'utilities.renewal', 'utilities.database', 'utilities.logs', 'tasks', 'uploads',
             ),
         );
+        
         // Convert to array
         $pageVisited = (is_array(json_decode($pageVisited, true)) === true) ? json_decode($pageVisited, true) : [$pageVisited];
-
+        
         // load user's data
         $data = DB::queryfirstrow(
-            'SELECT login, key_tempo, admin, gestionnaire, can_manage_all_users FROM ' . prefixTable('users') . ' WHERE id = %i',
-            $userId
+            'SELECT id, login, key_tempo, admin, gestionnaire, can_manage_all_users FROM ' . prefixTable('users') . ' WHERE id = %i',
+            $this->sessionVar['user_id']
         );
-
+        
         // check if user exists and tempo key is coherant
-        if (empty($data['login']) === true || empty($data['key_tempo']) === true || $data['key_tempo'] !== $userKey) {
+        if (empty($data['login']) === true || empty($data['key_tempo']) === true || $data['key_tempo'] !== $this->sessionVar['user_key']) {
             return false;
         }
         

@@ -24,18 +24,27 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
-    die('Please login...');
+
+Use voku\helper\AntiXSS;
+Use TeampassClasses\SuperGlobal\SuperGlobal;
+Use EZimuel\PHPSecureSession;
+Use TeampassClasses\PerformChecks\PerformChecks;
+
+
+// Load functions
+require_once 'main.functions.php';
+loadClasses('DB');
+
+// Load config if $SETTINGS not defined
+try {
+    include_once __DIR__.'/../includes/config/tp.config.php';
+} catch (Exception $e) {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+    exit();
 }
 
-// Load config
-if (file_exists('../includes/config/tp.config.php')) {
-    include_once '../includes/config/tp.config.php';
-} elseif (file_exists('./includes/config/tp.config.php')) {
-    include_once './includes/config/tp.config.php';
-} else {
-    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
-}
+// Include files
+$superGlobal = new SuperGlobal();
 
 /**
  * Redirection management.
@@ -47,10 +56,7 @@ if (file_exists('../includes/config/tp.config.php')) {
 function redirect($url)
 {
     // Load AntiXSS
-    include_once '../includes/libraries/portable-ascii-master/src/voku/helper/ASCII.php';
-    include_once '../includes/libraries/portable-utf8-master/src/voku/helper/UTF8.php';
-    include_once '../includes/libraries/anti-xss-master/src/voku/helper/AntiXSS.php';
-    $antiXss = new voku\helper\AntiXSS();
+    $antiXss = new AntiXSS();
     if (! headers_sent()) {    //If headers not sent yet... then do php redirect
         header('Location: ' . $antiXss->xss_clean($url));
     }
@@ -64,9 +70,7 @@ function redirect($url)
     echo '</noscript>';
 }
 
-// Include files
-require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-$superGlobal = new protect\SuperGlobal\SuperGlobal();
+
 // Prepare GET variables
 $server = [];
 $server['https'] = $superGlobal->get('HTTPS', 'SERVER');

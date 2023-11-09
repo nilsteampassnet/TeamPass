@@ -22,7 +22,8 @@
  *
  * @see       https://www.teampass.net
  */
-
+Use PasswordLib\PasswordLib;
+Use TeampassClasses\NestedTree\NestedTree;
 
 require_once API_ROOT_PATH . "/Model/Database.php";
 
@@ -84,10 +85,7 @@ class AuthModel extends Database
             $userInfo = $userInfoRes[0];
             
             // Check password
-            include_once API_ROOT_PATH . '/../sources/SplClassLoader.php';
-            $pwdlib = new SplClassLoader('PasswordLib', API_ROOT_PATH . '/../includes/libraries');
-            $pwdlib->register();
-            $pwdlib = new PasswordLib\PasswordLib();
+            $pwdlib = new PasswordLib();
             if ($pwdlib->verifyPasswordHash($inputData['password'], $userInfo['pw']) === true) {
                 // Correct credentials
                 // get user keys
@@ -160,9 +158,7 @@ class AuthModel extends Database
     private function buildUserFoldersList(array $userInfo): array
     {
         //Build tree
-        $tree = new SplClassLoader('Tree\NestedTree', API_ROOT_PATH . '/../includes/libraries');
-        $tree->register();
-        $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+        $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
         
         // Start by adding the manually added folders
         $allowedFolders = explode(";", $userInfo['groupes_visibles']);

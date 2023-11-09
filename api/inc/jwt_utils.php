@@ -23,6 +23,8 @@
  * @see       https://www.teampass.net
  */
 
+Use TeampassClasses\SuperGlobal\SuperGlobal;
+
 function generate_jwt($headers, $payload) {
 	$headers_encoded = base64url_encode(json_encode($headers));
 	
@@ -68,7 +70,7 @@ function base64url_encode($data) {
 }
 
 function get_authorization_header(){
-	$superGlobal = new protect\SuperGlobal\SuperGlobal();
+	$superGlobal = new SuperGlobal();
 	$headers = null;
 	
 	if (null !== $superGlobal->get('Authorization', 'SERVER')) {

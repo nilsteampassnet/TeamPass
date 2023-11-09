@@ -51,6 +51,7 @@ return array(
     'Elegant\\Sanitizer\\' => array($vendorDir . '/elegantweb/sanitizer/src'),
     'Egulias\\EmailValidator\\' => array($vendorDir . '/egulias/email-validator/src'),
     'EZimuel\\PHPSecureSession\\' => array($vendorDir . '/ezimuel/php-secure-session/src'),
+    'Duo\\DuoUniversal\\' => array($vendorDir . '/duosecurity/duo_universal_php/src'),
     'Doctrine\\Inflector\\' => array($vendorDir . '/doctrine/inflector/lib/Doctrine/Inflector'),
     'Doctrine\\Common\\Lexer\\' => array($vendorDir . '/doctrine/lexer/src'),
     'Defuse\\Crypto\\' => array($vendorDir . '/defuse/php-encryption/src'),

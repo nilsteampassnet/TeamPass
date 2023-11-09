@@ -24,6 +24,15 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
+
+Use TeampassClasses\PerformChecks\PerformChecks;
+
+// Load functions
+require_once __DIR__.'/../sources/main.functions.php';
+
+// init
+loadClasses();
+
 if (
     isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
     || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === true
@@ -32,20 +41,35 @@ if (
     die('Hacking attempt...');
 }
 
-// Load config
-if (file_exists('../includes/config/tp.config.php') === true) {
-    include_once '../includes/config/tp.config.php';
-} elseif (file_exists('./includes/config/tp.config.php') === true) {
-    include_once './includes/config/tp.config.php';
-} else {
-    throw new Exception('Error file "/includes/config/tp.config.php" not exists', 1);
+// Load config if $SETTINGS not defined
+try {
+    include_once __DIR__.'/../includes/config/tp.config.php';
+} catch (Exception $e) {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+    exit();
 }
 
-/* do checks */
-require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
-if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === false) {
+// Do checks
+$checkUserAccess = new PerformChecks(
+    dataSanitizer(
+        [
+            'type' => isset($_POST['type']) === true ? $_POST['type'] : '',
+        ],
+        [
+            'type' => 'trim|escape',
+        ],
+    ),
+    [
+        'user_id' => isset($_SESSION['user_id']) === false ? null : $_SESSION['user_id'],
+        'user_key' => isset($_SESSION['key']) === false ? null : $_SESSION['key'],
+        'CPM' => isset($_SESSION['CPM']) === false ? null : $_SESSION['CPM'],
+    ]
+);
+// Handle the case
+$checkUserAccess->caseHandler();
+if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('import') === false) {
+    // Not allowed page
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
-    //not allowed page
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -81,8 +105,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
         multi_selection: false,
         max_file_count: 1,
         url: "<?php echo $SETTINGS['cpassman_url']; ?>/sources/upload.files.php",
-        flash_swf_url: '<?php echo $SETTINGS['cpassman_url']; ?>/includes/libraries/Plupload/Moxie.swf',
-        silverlight_xap_url: '<?php echo $SETTINGS['cpassman_url']; ?>/includes/libraries/Plupload/Moxie.xap',
+        flash_swf_url: '<?php echo $SETTINGS['cpassman_url']; ?>/includes/libraries/plupload/js/Moxie.swf',
+        silverlight_xap_url: '<?php echo $SETTINGS['cpassman_url']; ?>/includes/libraries/plupload/js/Moxie.xap',
         filters: [{
             title: "CSV files",
             extensions: "csv"
@@ -110,6 +134,10 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                             }
                         );
 
+                        up.settings.multipart_params.PHPSESSID = "<?php echo session_id(); ?>";
+                        up.settings.multipart_params.type_upload = "import_items_from_csv";
+                        up.settings.multipart_params.user_token = data[0].token;
+
                         up.start();
                     },
                     "json"
@@ -118,17 +146,13 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
             BeforeUpload: function(up, file) {
                 // Show spinner
                 toastr.remove();
-                toastr.info('<i class="fas fa-cog fa-spin fa-2x"></i>');
-
-                up.settings.multipart_params = {
-                    "PHPSESSID": "<?php echo session_id(); ?>",
-                    "type_upload": "import_items_from_csv",
-                    "user_token": store.get('teampassApplication').uploadedFileId
-                };
+                toastr.info('<i class="fa-solid fa-ellipsis fa-2x fa-fade ml-2"></i>');
             },
             FileUploaded: function(upldr, file, object) {
                 var data = prepareExchangedData(object.response, "decode", "<?php echo $_SESSION['key']; ?>");
-                console.log(data)
+                if (debugJavascript === true) {
+                    console.log(data)
+                }
 
                 if (data.error === true) {
                     toastr.remove();
@@ -260,7 +284,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
     function ImportCSV() {
         // Show spinner
         toastr.remove();
-        toastr.info('<i class="fas fa-cog fa-spin fa-2x"></i><?php echo langHdl('reading_file'); ?>');
+        toastr.info('<?php echo langHdl('reading_file'); ?><i class="fa-solid fa-ellipsis fa-2x fa-fade ml-2"></i>');
 
         // Perform query
         $.post(
@@ -458,8 +482,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
         multi_selection: false,
         max_file_count: 1,
         url: "<?php echo $SETTINGS['cpassman_url']; ?>/sources/upload.files.php",
-        flash_swf_url: '<?php echo $SETTINGS['cpassman_url']; ?>/includes/libraries/Plupload/Moxie.swf',
-        silverlight_xap_url: '<?php echo $SETTINGS['cpassman_url']; ?>/includes/libraries/Plupload/Moxie.xap',
+        flash_swf_url: '<?php echo $SETTINGS['cpassman_url']; ?>/includes/libraries/plupload/js/Moxie.swf',
+        silverlight_xap_url: '<?php echo $SETTINGS['cpassman_url']; ?>/includes/libraries/plupload/js/Moxie.xap',
         filters: [{
             title: "KEEPASS files",
             extensions: "xml"

@@ -31,7 +31,7 @@ ini_set('session.use_only_cookies', 1);
 // Uses a secure connection (HTTPS) if possible
 ini_set('session.cookie_secure', 0);
 
-require_once '../sources/SecureHandler.php';
+require_once './libs/SecureHandler.php';
 session_name('teampass_session');
 session_start();
 //Session teampass tag

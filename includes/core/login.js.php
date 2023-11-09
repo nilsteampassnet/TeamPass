@@ -530,7 +530,8 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
         // Get 2fa
         $.post(
             'sources/identify.php', {
-                type: 'get2FAMethods'
+                type: 'get2FAMethods',
+                login: $('#login').val(),
             },
             function(data) {
                 data = JSON.parse(data);
@@ -653,192 +654,162 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
     function identifyUser(redirect, psk, data, randomstring) {
         var old_data = data;
         // Check if session is still existing
+        console.info('Session existance check:')
+        console.log(data);
+        //send query
         $.post(
-            "sources/checks.php", {
-                type: "checkSessionExists",
-                key: "<?php echo $_SESSION['key']; ?>"
+            "sources/identify.php", {
+                type: "identify_user",
+                login: $('#login').val(),
+                data: prepareExchangedData(
+                    JSON.stringify(data),
+                    'encode',
+                    '<?php echo $_SESSION['key']; ?>'
+                )
             },
-            function(check_data) {
-                check_data = JSON.parse(check_data);
-                
-                if (check_data.status === true) {
-                    if (debugJavascript === true) {
-                        console.info('Session existance check:')
-                        console.log(check_data);
-                    }
-
-                    //send query
-                    $.post(
-                        "sources/identify.php", {
-                            type: "identify_user",
-                            data: prepareExchangedData(
-                                JSON.stringify(data),
-                                'encode',
-                                '<?php echo $_SESSION['key']; ?>'
-                            )
-                        },
-                        function(receivedData) {
-                            try {
-                                var data = prepareExchangedData(
-                                    receivedData,
-                                    "decode",
-                                    "<?php echo $_SESSION['key']; ?>"
-                                );
-                            } catch (e) {
-                                // error
-                                toastr.remove();
-                                toastr.error(
-                                    '<?php echo langHdl('server_answer_error'); ?>',
-                                    '<?php echo langHdl('caution'); ?>', {
-                                        timeOut: 5000,
-                                        progressBar: true,
-                                        positionClass: "toast-top-right"
-                                    }
-                                );
-                                return false;
-                            }
-                            
-                            if (debugJavascript === true) {
-                                console.info('Identification answer:')
-                                console.log('SESSION KEY is: <?php echo $_SESSION['key']; ?>');
-                                console.log(data);
-                            }
-                            
-                            // Maintenance mode is enabled?
-                            if (data.error === 'maintenance_mode_enabled') {
-                                toastr.remove();
-                                toastr.warning(
-                                    '<?php echo langHdl('index_maintenance_mode_admin'); ?>',
-                                    '<?php echo langHdl('caution'); ?>', {
-                                        timeOut: 0,
-                                        positionClass: "toast-top-right"
-                                    }
-                                );
-                                return false;
-                            }
-
-                            if (data.error === true) {
-                                if (typeof data.extra !== 'undefined' && data.extra === 'ad_user_created') {
-                                    toastr.remove();
-                                    toastr.info(
-                                        '<?php echo langHdl('your_attention_please'); ?>',
-                                        '<?php echo langHdl('ad_user_created_automatically'); ?>', {
-                                            timeOut: 0,
-                                            positionClass: "toast-top-center"
-                                        }
-                                    );
-                                    return false;
-                                }  else if (data.error === true || data.error !== '') {
-                                    toastr.remove();
-                                    toastr.error(
-                                        data.message,
-                                        '<?php echo langHdl('caution'); ?>',
-                                        {
-                                            timeOut: 10000,
-                                            progressBar: true,
-                                            positionClass: "toast-top-right"
-                                        }
-                                    );
-                                    if(data.ga_bad_code === true)
-                                    {
-                                        $("#ga_code").addClass("ui-state-error");
-                                    }
-                                } else {
-                                    toastr.remove();
-                                    toastr.error(
-                                        '<?php echo langHdl('error_bad_credentials'); ?>',
-                                        '<?php echo langHdl('caution'); ?>', {
-                                            timeOut: 5000,
-                                            progressBar: true,
-                                            positionClass: "toast-top-right"
-                                        }
-                                    );
-                                }
-                            } else if (data.error === false && data.mfaStatus === 'ga_temporary_code_correct') {
-                                $('#div-2fa-google-qr')
-                                    .removeClass('hidden')
-                                    .html('<div class="col-12 alert alert-info">' +
-                                        '<p class="text-center">' + data.value + '</p>' +
-                                        '<p class="text-center"><i class="fas fa-mobile-alt fa-lg mr-1"></i>' +
-                                        '<?php echo langHdl('mfa_flash'); ?></p></div>');
-                                $('#ga_code')
-                                    .val('')
-                                    .focus();
-
-                                toastr.remove();
-                                toastr.success(
-                                    '<?php echo langHdl('done'); ?>',
-                                    '', {
-                                        timeOut: 1000
-                                    }
-                                );
-                            } else if(data.error === false && data.duo_url_ready === true) {
-                                toastr.remove();
-                                toastr.info(
-                                    '<?php echo langHdl('duo_redirect_uri'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>',
-                                    '', {
-                                        timeOut: 5000,
-                                        progressBar: true,
-                                        positionClass: "toast-top-center"
-                                    }
-                                );
-                                setTimeout(
-                                    function() {
-                                        window.location.href = data.duo_redirect_url;
-                                    },
-                                    500
-                                );
-                            } else if (data.value === randomstring) {
-                                // Update session
-                                store.update(
-                                    'teampassUser', {},
-                                    function(teampassUser) {
-                                        teampassUser.sessionDuration = 3600;
-                                        teampassUser.sessionStartTimestamp = Date.now();
-                                        teampassUser.sessionKey = data.session_key;
-                                        teampassUser.user_id = data.user_id;
-                                        teampassUser.pwd = old_data.pw;
-                                        teampassUser.user_has_psk = data.has_psk;
-                                        teampassUser.shown_warning_unsuccessful_login = data.shown_warning_unsuccessful_login;
-                                        teampassUser.nb_unsuccessful_logins = data.nb_unsuccessful_logins;
-                                        teampassUser.special = data.special;
-                                        teampassUser.auth_type = '';
-                                        teampassUser.location_stored = 0;
-                                    }
-                                );
-
-                                //redirection for admin is specific
-                                if (parseInt(data.user_admin) === 1) {
-                                    window.location.href = 'index.php?page=admin';
-                                } else if (data.initial_url !== '' && data.initial_url !== null) {
-                                    window.location.href = data.initial_url;
-                                } else {
-                                    window.location.href = 'index.php?page=items';
-                                }
-                            }
-
-                            // Clear Yubico
-                            if ($("#yubico_key").length > 0) {
-                                $("#yubico_key, #yubico_user_id, #yubico_user_key").val("");
-                            }
-                        }
+            function(receivedData) {
+                try {
+                    var data = prepareExchangedData(
+                        receivedData,
+                        "decode",
+                        "<?php echo $_SESSION['key']; ?>"
                     );
-                } else {
-                    // No session was found, warn user
+                } catch (e) {
+                    // error
                     toastr.remove();
                     toastr.error(
-                        '<?php echo langHdl('alert_page_will_reload'); ?>',
+                        '<?php echo langHdl('server_answer_error'); ?>',
                         '<?php echo langHdl('caution'); ?>', {
                             timeOut: 5000,
-                            progressBar: true
+                            progressBar: true,
+                            positionClass: "toast-top-right"
+                        }
+                    );
+                    return false;
+                }
+                
+                if (debugJavascript === true) {
+                    console.info('Identification answer:')
+                    console.log('SESSION KEY is: <?php echo $_SESSION['key']; ?>');
+                    console.log(data);
+                }
+                
+                // Maintenance mode is enabled?
+                if (data.error === 'maintenance_mode_enabled') {
+                    toastr.remove();
+                    toastr.warning(
+                        '<?php echo langHdl('index_maintenance_mode_admin'); ?>',
+                        '<?php echo langHdl('caution'); ?>', {
+                            timeOut: 0,
+                            positionClass: "toast-top-right"
+                        }
+                    );
+                    return false;
+                }
+
+                if (data.error === true) {
+                    if (typeof data.extra !== 'undefined' && data.extra === 'ad_user_created') {
+                        toastr.remove();
+                        toastr.info(
+                            '<?php echo langHdl('your_attention_please'); ?>',
+                            '<?php echo langHdl('ad_user_created_automatically'); ?>', {
+                                timeOut: 0,
+                                positionClass: "toast-top-center"
+                            }
+                        );
+                        return false;
+                    }  else if (data.error === true || data.error !== '') {
+                        toastr.remove();
+                        toastr.error(
+                            data.message,
+                            '<?php echo langHdl('caution'); ?>',
+                            {
+                                timeOut: 10000,
+                                progressBar: true,
+                                positionClass: "toast-top-right"
+                            }
+                        );
+                        if(data.ga_bad_code === true)
+                        {
+                            $("#ga_code").addClass("ui-state-error");
+                        }
+                    } else {
+                        toastr.remove();
+                        toastr.error(
+                            '<?php echo langHdl('error_bad_credentials'); ?>',
+                            '<?php echo langHdl('caution'); ?>', {
+                                timeOut: 5000,
+                                progressBar: true,
+                                positionClass: "toast-top-right"
+                            }
+                        );
+                    }
+                } else if (data.error === false && data.mfaStatus === 'ga_temporary_code_correct') {
+                    $('#div-2fa-google-qr')
+                        .removeClass('hidden')
+                        .html('<div class="col-12 alert alert-info">' +
+                            '<p class="text-center">' + data.value + '</p>' +
+                            '<p class="text-center"><i class="fas fa-mobile-alt fa-lg mr-1"></i>' +
+                            '<?php echo langHdl('mfa_flash'); ?></p></div>');
+                    $('#ga_code')
+                        .val('')
+                        .focus();
+
+                    toastr.remove();
+                    toastr.success(
+                        '<?php echo langHdl('done'); ?>',
+                        '', {
+                            timeOut: 1000
+                        }
+                    );
+                } else if(data.error === false && data.duo_url_ready === true) {
+                    toastr.remove();
+                    toastr.info(
+                        '<?php echo langHdl('duo_redirect_uri'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>',
+                        '', {
+                            timeOut: 5000,
+                            progressBar: true,
+                            positionClass: "toast-top-center"
+                        }
+                    );
+                    setTimeout(
+                        function() {
+                            window.location.href = data.duo_redirect_url;
+                        },
+                        500
+                    );
+                } else if (data.value === randomstring) {
+                    // Update session
+                    store.update(
+                        'teampassUser', {},
+                        function(teampassUser) {
+                            teampassUser.sessionDuration = 3600;
+                            teampassUser.sessionStartTimestamp = Date.now();
+                            teampassUser.sessionKey = data.session_key;
+                            teampassUser.user_id = data.user_id;
+                            teampassUser.pwd = old_data.pw;
+                            teampassUser.user_has_psk = data.has_psk;
+                            teampassUser.shown_warning_unsuccessful_login = data.shown_warning_unsuccessful_login;
+                            teampassUser.nb_unsuccessful_logins = data.nb_unsuccessful_logins;
+                            teampassUser.special = data.special;
+                            teampassUser.auth_type = '';
+                            teampassUser.location_stored = 0;
                         }
                     );
 
-                    // Delay page submit
-                    $(this).delay(500).queue(function() {
-                        document.location.reload(true);
-                        $(this).dequeue();
-                    });
+                    //redirection for admin is specific
+                    if (parseInt(data.user_admin) === 1) {
+                        window.location.href = 'index.php?page=admin';
+                    } else if (data.initial_url !== '' && data.initial_url !== null) {
+                        window.location.href = data.initial_url;
+                    } else {
+                        window.location.href = 'index.php?page=items';
+                    }
+                }
+
+                // Clear Yubico
+                if ($("#yubico_key").length > 0) {
+                    $("#yubico_key, #yubico_user_id, #yubico_user_key").val("");
                 }
             }
         );
