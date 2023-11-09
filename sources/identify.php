@@ -34,6 +34,7 @@ use LdapRecord\Auth\Events\Failed;
 Use TeampassClasses\NestedTree\NestedTree;
 Use PasswordLib\PasswordLib;
 Use Duo\DuoUniversal\Client;
+Use Duo\DuoUniversal\DuoException;
 Use RobThree\Auth\TwoFactorAuth;
 
 // Load functions
@@ -1795,7 +1796,7 @@ function duoMFAPerform(
             $SETTINGS['duo_host'],
             $SETTINGS['cpassman_url'].'/'.DUO_CALLBACK
         );
-    } catch (Client\NestedTreeDuoException $e) {
+    } catch (DuoException $e) {
         return [
             'error' => true,
             'message' => langHdl('duo_config_error'),
@@ -1809,7 +1810,7 @@ function duoMFAPerform(
         $duo_error = langHdl('duo_error_secure');
         $duo_failmode = "none";
         $duo_client->healthCheck();
-    } catch (Client\NestedTreeDuoException $e) {
+    } catch (DuoException $e) {
         //Not implemented Duo Failmode in case the Duo services are not available
         /*if ($SETTINGS['duo_failmode'] == "safe") {
             # If we're failing open, errors in 2FA still allow for success
@@ -1835,7 +1836,7 @@ function duoMFAPerform(
         try {
             $duo_state = $duo_client->generateState();
             $duo_redirect_url = $duo_client->createAuthUrl($username, $duo_state);
-        } catch (Client\NestedTreeDuoException $e) {
+        } catch (DuoException $e) {
             return [
                 'error' => true,
                 'message' => $duo_error . langHdl('duo_error_url'),
@@ -1883,7 +1884,7 @@ function duoMFAPerform(
         try {
             // Check if the Duo code received is valid
             $decoded_token = $duo_client->exchangeAuthorizationCodeFor2FAResult($dataReceived['duo_code'], $username);
-        } catch (Client\NestedTreeDuoException $e) {
+        } catch (DuoException $e) {
             return [
                 'error' => true,
                 'message' => langHdl('duo_error_decoding'),

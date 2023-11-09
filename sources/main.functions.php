@@ -37,8 +37,8 @@ Use Defuse\Crypto\Crypto;
 Use Defuse\Crypto\KeyProtectedByPassword;
 Use Defuse\Crypto\File;
 use PHPMailer\PHPMailer\PHPMailer;
-Use phpseclib\phpseclib\Crypt\RSA;
-Use phpseclib\phpseclib\Crypt\AES;
+Use phpseclib\Crypt\RSA;
+Use phpseclib\Crypt\AES;
 Use PasswordLib\PasswordLib;
 Use Symfony\Component\Process\Process;
 Use Symfony\Component\Process\PhpExecutableFinder;
@@ -163,18 +163,17 @@ function cryption(string $message, string $ascii_key, string $type, ?array $SETT
         } elseif ($type === 'decrypt') {
             $text = Crypto::decrypt($message, $key);
         }
-    } catch (Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
+    } catch (\Exception\WrongKeyOrModifiedCiphertextException $ex) {
         $err = 'an attack! either the wrong key was loaded, or the ciphertext has changed since it was created either corrupted in the database or intentionally modified by someone trying to carry out an attack.';
-    } catch (Crypto\Exception\BadFormatException $ex) {
+    } catch (\Exception\BadFormatException $ex) {
         $err = $ex;
-    } catch (ECrypto\xception\EnvironmentIsBrokenException $ex) {
+    } catch (\Exception\EnvironmentIsBrokenException $ex) {
         $err = $ex;
-    } catch (Crypto\Exception\CryptoException $ex) {
+    } catch (\Exception\CryptoException $ex) {
         $err = $ex;
-    } catch (Crypto\Exception\IOException $ex) {
+    } catch (\Exception\IOException $ex) {
         $err = $ex;
     }
-    //echo \Defuse\Crypto\Crypto::decrypt($message, $key).' ## ';
 
     return [
         'string' => $text ?? '',
