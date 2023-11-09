@@ -90,9 +90,5 @@ function userIsEnabled(string $userDN, Connection $connection): array
     } catch (\LdapRecord\Auth\BindException $e) {
         // Do nothing
     }
-    return [
-        'error' => false,
-        'message' => '',
-        'isEnabled' => $isEnabled,
-    ];
+    return $isEnabled;
 }

@@ -405,11 +405,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             return false;
         }
     }
-/*
-    print_r($userLdap);
-    print_r($userInfo);
-    return false;
-    */
+    
     // Can connect if
     // 1- no LDAP mode + user enabled + pw ok
     // 2- LDAP mode + user enabled + ldap connection ok + user is not admin
@@ -1213,14 +1209,15 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
 
         // Determining Auth Failure Cause
         $dispatcher = Container::getDispatcher();
-        $message = '';
         $dispatcher->listen(Failed::class, function (Failed $event) use (&$message) {
             $ldap = $event->getConnection();
         
             // The diagnostic message will be available here.
             $error = $ldap->getDiagnosticMessage();
         
-            if (strpos($error, '532') !== false) {
+            if (is_null($error) === false) {
+                $message = '';
+            } elseif (strpos($error, '532') !== false) {
                 $message = 'Your password has expired.';
             } elseif (strpos($error, '533') !== false) {
                 $message = 'Your account is disabled.';
@@ -1798,7 +1795,7 @@ function duoMFAPerform(
             $SETTINGS['duo_host'],
             $SETTINGS['cpassman_url'].'/'.DUO_CALLBACK
         );
-    } catch (NestedTreeDuoException $e) {
+    } catch (Client\NestedTreeDuoException $e) {
         return [
             'error' => true,
             'message' => langHdl('duo_config_error'),
@@ -1812,7 +1809,7 @@ function duoMFAPerform(
         $duo_error = langHdl('duo_error_secure');
         $duo_failmode = "none";
         $duo_client->healthCheck();
-    } catch (NestedTreeDuoException $e) {
+    } catch (Client\NestedTreeDuoException $e) {
         //Not implemented Duo Failmode in case the Duo services are not available
         /*if ($SETTINGS['duo_failmode'] == "safe") {
             # If we're failing open, errors in 2FA still allow for success
@@ -1838,7 +1835,7 @@ function duoMFAPerform(
         try {
             $duo_state = $duo_client->generateState();
             $duo_redirect_url = $duo_client->createAuthUrl($username, $duo_state);
-        } catch (NestedTreeDuoException $e) {
+        } catch (Client\NestedTreeDuoException $e) {
             return [
                 'error' => true,
                 'message' => $duo_error . langHdl('duo_error_url'),
@@ -1886,7 +1883,7 @@ function duoMFAPerform(
         try {
             // Check if the Duo code received is valid
             $decoded_token = $duo_client->exchangeAuthorizationCodeFor2FAResult($dataReceived['duo_code'], $username);
-        } catch (NestedTreeDuoException $e) {
+        } catch (Client\NestedTreeDuoException $e) {
             return [
                 'error' => true,
                 'message' => langHdl('duo_error_decoding'),
