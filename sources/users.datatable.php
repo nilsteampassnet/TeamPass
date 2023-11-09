@@ -92,9 +92,9 @@ $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
 // Build FUNCTIONS list
 $rolesList = [];
-$rows = DB::query('SELECT id,title FROM '.prefixTable('roles_title').' ORDER BY title ASC');
-foreach ($rows as $record) {
-    $rolesList[$record['id']] = ['id' => $record['id'], 'title' => $record['title']];
+$titles = DB::query('SELECT id,title FROM '.prefixTable('roles_title').' ORDER BY title ASC');
+foreach ($titles as $title) {
+    $rolesList[$title['id']] = ['id' => $title['id'], 'title' => $title['title']];
 }
 
 $html = '';

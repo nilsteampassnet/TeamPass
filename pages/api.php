@@ -78,7 +78,7 @@ header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, no-store, must-revalidate');
 
 // --------------------------------- //
- 
+
 
 ?>
 
@@ -148,7 +148,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                 </small>
                                 <div class="mt-4">
                                     <?php
-                                    $rows = DB::query(
+                                    $rowsKeys = DB::query(
                                         'SELECT increment_id, label, timestamp, user_id, value 
                                         FROM ' . prefixTable('api') . '
                                         WHERE type = %s
@@ -166,13 +166,12 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                         </thead>
                                         <tbody>
                                             <?php
-                                            foreach ($rows as $record) {
-                                                //$apiKey = (int) $record['user_id'] === -1 ? doDataDecryption($record['value'], base64_encode(SECUREFILE.':'.$record['timestamp'])) : $record['value'];
+                                            foreach ($rowsKeys as $key) {
                                                 echo '
-                                                    <tr data-id="' . $record['increment_id'] . '">
+                                                    <tr data-id="' . $key['increment_id'] . '">
                                                     <td width="50px"><i class="fas fa-trash infotip pointer delete-api-key" title="' . langHdl('del_button') . '"></i></td>
-                                                    <td><span class="edit-api-key pointer">' . $record['label'] . '</span></td>
-                                                    <td>' . $record['value']. '</td>                        
+                                                    <td><span class="edit-api-key pointer">' . $key['label'] . '</span></td>
+                                                    <td>' . $key['value']. '</td>                        
                                                 </tr>';
                                             } ?>
                                         </tbody>
@@ -206,10 +205,10 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                 </small>
                                 <div class="col-12 mt-4" id="table-api-ip">
                                     <?php
-                                    $rows = DB::query(
+                                    $rowsIps = DB::query(
                                                 'SELECT increment_id, label, timestamp value FROM ' . prefixTable('api') . '
-                                        WHERE type = %s
-                                        ORDER BY timestamp ASC',
+                                                WHERE type = %s
+                                                ORDER BY timestamp ASC',
                                                 'ip'
                                             );
                                     ?>
@@ -223,12 +222,12 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                         </thead>
                                         <tbody>
                                             <?php
-                                            foreach ($rows as $record) {
+                                            foreach ($rowsIps as $ip) {
                                                 echo '
-                                                <tr data-id="' . $record['increment_id'] . '">
+                                                <tr data-id="' . $ip['increment_id'] . '">
                                                     <td width="50px"><i class="fas fa-trash infotip pointer delete-api-ip" title="' . langHdl('del_button') . '"></i></td>
-                                                    <td><span class="edit-api-ip pointer" data-field="label">' . $record['label'] . '</span></td>
-                                                    <td><span class="edit-api-ip pointer" data-field="value">' . $record['value'] . '</span></td>                        
+                                                    <td><span class="edit-api-ip pointer" data-field="label">' . $ip['label'] . '</span></td>
+                                                    <td><span class="edit-api-ip pointer" data-field="value">' . $ip['value'] . '</span></td>                        
                                                 </tr>';
                                             } ?>
                                         </tbody>

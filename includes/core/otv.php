@@ -28,10 +28,11 @@ declare(strict_types=1);
 Use TeampassClasses\SuperGlobal\SuperGlobal;
 Use EZimuel\PHPSecureSession;
 Use TeampassClasses\PerformChecks\PerformChecks;
+Use TeampassClasses\NestedTree\NestedTree;
 
 
 // Load functions
-require_once 'main.functions.php';
+require_once __DIR__.'/../../sources/main.functions.php';
 loadClasses('DB');
 
 // Load config if $SETTINGS not defined

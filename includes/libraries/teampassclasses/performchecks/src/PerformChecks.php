@@ -39,9 +39,9 @@ class PerformChecks
     /**
      * Checks if session variables are the expected one
      *
-     * @return void
+     * @return bool
      */
-    public function checkSession()
+    public function checkSession(): bool
     {
         // Check if session is valid
         if (count($this->sessionVar) > 0) {
@@ -69,7 +69,7 @@ class PerformChecks
      *
      * @return void
      */
-    public function caseHandler()
+    public function caseHandler(): void
     {
         switch ($this->postType) {
             case 'checkSessionExists':
@@ -104,7 +104,12 @@ class PerformChecks
         }
     }
 
-    public function initialLogin()
+    /**
+     * Is this an initial login?
+     *
+     * @return bool
+     */
+    public function initialLogin(): bool
     {
         if (empty($this->sessionVar['user_id']) === true && empty($this->sessionVar['login']) === false && substr($_SERVER['SCRIPT_NAME'], strrpos($_SERVER['SCRIPT_NAME'], '/')+1) === 'identify.php') {
             // Check if user exists in DB
@@ -126,7 +131,7 @@ class PerformChecks
      *
      * @return bool
      */
-    function userAccessPage($pageVisited)
+    function userAccessPage($pageVisited): bool
     {
         // Should we start?
         if (empty($pageVisited) === true) {
@@ -199,7 +204,7 @@ class PerformChecks
      *
      * @return bool
      */
-    private function isValueInArray($pages, $table)
+    private function isValueInArray($pages, $table): bool
     {
         foreach ($pages as $page) {
             if (in_array($page, $table) === true) {
