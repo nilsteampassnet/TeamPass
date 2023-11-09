@@ -662,14 +662,15 @@ switch ($post_type) {
                     $return,
                     /* @scrutinizer ignore-type */
                     base64_decode($tp_settings['bck_script_key']),
-                    256
                 );
 
                 //save the file
-                $handle = fopen($tp_settings['bck_script_path'] . '/' . $filename . '.clear.sql', 'w+');
-                if ($handle !== false) {
-                    fwrite($handle, $return);
-                    fclose($handle);
+                if (is_null($return) === false) {
+                    $handle = fopen($tp_settings['bck_script_path'] . '/' . $filename . '.clear.sql', 'w+');
+                    if ($handle !== false) {
+                        fwrite($handle, $return);
+                        fclose($handle);
+                    }
                 }
             }
             $result = 'backup_decrypt_success';
