@@ -658,20 +658,16 @@ switch ($post_type) {
                 }
 
                 $return = Encryption::decrypt(
-                    /* @scrutinizer ignore-type */
-                    $return,
-                    /* @scrutinizer ignore-type */
-                    base64_decode($tp_settings['bck_script_key']),
+                    /* @scrutinizer ignore-type */ $return,
+                    /* @scrutinizer ignore-type */base64_decode($tp_settings['bck_script_key']),
                 );
 
                 //save the file
-                if (is_null($return) === false) {
-                    $handle = fopen($tp_settings['bck_script_path'] . '/' . $filename . '.clear.sql', 'w+');
-                    if ($handle !== false) {
-                        fwrite($handle, $return);
-                        fclose($handle);
-                    }
+                $handle = fopen($tp_settings['bck_script_path'] . '/' . $filename . '.clear.sql', 'w+');
+                if ($handle !== false && is_null($return) === false) {
+                    fwrite($handle, /** @scrutinizer ignore-type */ $return);
                 }
+                fclose($handle);
             }
             $result = 'backup_decrypt_success';
             $msg = $tp_settings['bck_script_path'] . '/' . $filename . '.clear.sql';
