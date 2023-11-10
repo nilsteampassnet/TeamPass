@@ -19,13 +19,13 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-Use PasswordLib\PasswordLib;
-Use TeampassClasses\SuperGlobal\SuperGlobal;
-Use Hackzilla\PasswordGenerator\Generator\ComputerPasswordGenerator;
-Use Hackzilla\PasswordGenerator\RandomGenerator\Php7RandomGenerator;
-Use RobThree\Auth\TwoFactorAuth;
-Use EZimuel\PHPSecureSession;
-Use TeampassClasses\PerformChecks\PerformChecks;
+use PasswordLib\PasswordLib;
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use Hackzilla\PasswordGenerator\Generator\ComputerPasswordGenerator;
+use Hackzilla\PasswordGenerator\RandomGenerator\Php7RandomGenerator;
+use RobThree\Auth\TwoFactorAuth;
+use EZimuel\PHPSecureSession;
+use TeampassClasses\PerformChecks\PerformChecks;
 
 // Load functions
 require_once 'main.functions.php';
@@ -1557,7 +1557,7 @@ function isUserPasswordCorrect(
                 }
             }
 
-            // Use the password check
+            // use the password check
             // load passwordLib library
             $pwdlib = new PasswordLib();
             

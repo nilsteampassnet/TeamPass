@@ -19,12 +19,12 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-Use LdapRecord\Connection;
-Use TeampassClasses\NestedTree\NestedTree;
-Use TeampassClasses\SuperGlobal\SuperGlobal;
-Use EZimuel\PHPSecureSession;
-Use TeampassClasses\PerformChecks\PerformChecks;
-Use PasswordLib\PasswordLib;
+use LdapRecord\Connection;
+use TeampassClasses\NestedTree\NestedTree;
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use EZimuel\PHPSecureSession;
+use TeampassClasses\PerformChecks\PerformChecks;
+use PasswordLib\PasswordLib;
 
 
 // Load functions

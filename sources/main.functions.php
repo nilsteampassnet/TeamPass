@@ -26,25 +26,25 @@ declare(strict_types=1);
 
 use LdapRecord\Connection;
 use ForceUTF8\Encoding;
-Use Elegant\Sanitizer\Sanitizer;
-Use voku\helper\AntiXSS;
-Use Hackzilla\PasswordGenerator\Generator\ComputerPasswordGenerator;
-Use Hackzilla\PasswordGenerator\RandomGenerator\Php7RandomGenerator;
-Use TeampassClasses\SuperGlobal\SuperGlobal;
-Use TeampassClasses\NestedTree\NestedTree;
-Use Defuse\Crypto\Key;
-Use Defuse\Crypto\Crypto;
-Use Defuse\Crypto\KeyProtectedByPassword;
-Use Defuse\Crypto\File;
-Use Defuse\Crypto\Exception as CryptoException;
+use Elegant\Sanitizer\Sanitizer;
+use voku\helper\AntiXSS;
+use Hackzilla\PasswordGenerator\Generator\ComputerPasswordGenerator;
+use Hackzilla\PasswordGenerator\RandomGenerator\Php7RandomGenerator;
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\NestedTree\NestedTree;
+use Defuse\Crypto\Key;
+use Defuse\Crypto\Crypto;
+use Defuse\Crypto\KeyProtectedByPassword;
+use Defuse\Crypto\File;
+use Defuse\Crypto\Exception as CryptoException;
 use PHPMailer\PHPMailer\PHPMailer;
-Use phpseclib\Crypt\RSA;
-Use phpseclib\Crypt\AES;
-Use PasswordLib\PasswordLib;
-Use Symfony\Component\Process\Exception\ProcessFailedException;
-Use Symfony\Component\Process\Process;
-Use Symfony\Component\Process\PhpExecutableFinder;
-Use TeampassClasses\Encryption\Encryption;
+use phpseclib\Crypt\RSA;
+use phpseclib\Crypt\AES;
+use PasswordLib\PasswordLib;
+use Symfony\Component\Process\Exception\ProcessFailedException;
+use Symfony\Component\Process\Process;
+use Symfony\Component\Process\PhpExecutableFinder;
+use TeampassClasses\Encryption\Encryption;
 
 if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
     //die('Hacking attempt...');
@@ -59,7 +59,6 @@ header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, must-revalidate');
 
 loadClasses();
-
 
 /**
  * Convert language code to string.
@@ -4230,6 +4229,7 @@ function loadClasses(string $className = ''): void
 {
     require_once __DIR__. '/../includes/config/include.php';
     require_once __DIR__. '/../includes/config/settings.php';
+    require_once __DIR__. '/../includes/libraries/string.polyfill.php';
     require_once __DIR__.'/../vendor/autoload.php';
 
     if (defined('DB_PASSWD_CLEAR') === false) {

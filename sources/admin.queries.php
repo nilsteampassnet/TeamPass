@@ -20,15 +20,15 @@ declare(strict_types=1);
  */
 
 
-Use TeampassClasses\SuperGlobal\SuperGlobal;
-Use EZimuel\PHPSecureSession;
-Use TeampassClasses\PerformChecks\PerformChecks;
-Use TeampassClasses\NestedTree\NestedTree;
-Use TeampassClasses\Encryption\Encryption;
-Use Duo\DuoUniversal\Client;
-Use Duo\DuoUniversal\DuoException;
-Use Defuse\Crypto\Crypto;
-Use Defuse\Crypto\Key;
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use EZimuel\PHPSecureSession;
+use TeampassClasses\PerformChecks\PerformChecks;
+use TeampassClasses\NestedTree\NestedTree;
+use TeampassClasses\Encryption\Encryption;
+use Duo\DuoUniversal\Client;
+use Duo\DuoUniversal\DuoException;
+use Defuse\Crypto\Crypto;
+use Defuse\Crypto\Key;
 use Defuse\Crypto\Exception as CryptoException;
 
 // Load functions

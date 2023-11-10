@@ -23,7 +23,7 @@
  * @see       https://www.teampass.net
  */
 
-Use Firebase\JWT;
+use Firebase\JWT;
 
 class Operation
 {

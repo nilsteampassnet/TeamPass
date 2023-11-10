@@ -26,9 +26,9 @@ declare(strict_types=1);
 use TiBeN\CrontabManager\CrontabJob;
 use TiBeN\CrontabManager\CrontabAdapter;
 use TiBeN\CrontabManager\CrontabRepository;
-Use TeampassClasses\SuperGlobal\SuperGlobal;
-Use TeampassClasses\NestedTree\NestedTree;
-Use TeampassClasses\PerformChecks\PerformChecks;
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\NestedTree\NestedTree;
+use TeampassClasses\PerformChecks\PerformChecks;
 
 if (
     isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1

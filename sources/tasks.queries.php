@@ -19,10 +19,10 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-Use EZimuel\PHPSecureSession;
-Use Symfony\Component\Process\Exception\ProcessFailedException;
-Use Symfony\Component\Process\Process;
-Use TeampassClasses\PerformChecks\PerformChecks;
+use EZimuel\PHPSecureSession;
+use Symfony\Component\Process\Exception\ProcessFailedException;
+use Symfony\Component\Process\Process;
+use TeampassClasses\PerformChecks\PerformChecks;
 
 // Load functions
 require_once 'main.functions.php';

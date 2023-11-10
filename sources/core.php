@@ -25,10 +25,10 @@ declare(strict_types=1);
  */
 
 
-Use voku\helper\AntiXSS;
-Use TeampassClasses\SuperGlobal\SuperGlobal;
-Use EZimuel\PHPSecureSession;
-Use TeampassClasses\PerformChecks\PerformChecks;
+use voku\helper\AntiXSS;
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use EZimuel\PHPSecureSession;
+use TeampassClasses\PerformChecks\PerformChecks;
 
 
 // Load functions

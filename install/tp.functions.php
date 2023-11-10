@@ -1,10 +1,10 @@
 <?php
 
-Use Hackzilla\PasswordGenerator\Generator\ComputerPasswordGenerator;
-Use Hackzilla\PasswordGenerator\RandomGenerator\Php7RandomGenerator;
-Use Defuse\Crypto\Key;
-Use Defuse\Crypto\Crypto;
-Use Defuse\Crypto\Exception as CryptoException;
+use Hackzilla\PasswordGenerator\Generator\ComputerPasswordGenerator;
+use Hackzilla\PasswordGenerator\RandomGenerator\Php7RandomGenerator;
+use Defuse\Crypto\Key;
+use Defuse\Crypto\Crypto;
+use Defuse\Crypto\Exception as CryptoException;
 
 // new SECUREFILE - 3.0.0.23
 function handleSecurefileConstant()

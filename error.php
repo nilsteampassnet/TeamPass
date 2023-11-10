@@ -25,9 +25,9 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-Use TeampassClasses\SuperGlobal\SuperGlobal;
-Use EZimuel\PHPSecureSession;
-Use TeampassClasses\PerformChecks\PerformChecks;
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use EZimuel\PHPSecureSession;
+use TeampassClasses\PerformChecks\PerformChecks;
 
 // Load functions
 require_once __DIR__.'/sources/main.functions.php';

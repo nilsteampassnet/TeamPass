@@ -3986,7 +3986,7 @@
                 "phpunit/phpunit": "~6.0 || ~7.0 || ~9.0"
             },
             "suggest": {
-                "ext-intl": "Use Intl for transliterator_transliterate() support"
+                "ext-intl": "use Intl for transliterator_transliterate() support"
             },
             "type": "library",
             "autoload": {
@@ -4070,12 +4070,12 @@
                 "voku/phpstan-rules": "3.1.*@dev"
             },
             "suggest": {
-                "ext-ctype": "Use Ctype for e.g. hexadecimal digit detection",
-                "ext-fileinfo": "Use Fileinfo for better binary file detection",
-                "ext-iconv": "Use iconv for best performance",
-                "ext-intl": "Use Intl for best performance",
-                "ext-json": "Use JSON for string detection",
-                "ext-mbstring": "Use Mbstring for best performance"
+                "ext-ctype": "use Ctype for e.g. hexadecimal digit detection",
+                "ext-fileinfo": "use Fileinfo for better binary file detection",
+                "ext-iconv": "use iconv for best performance",
+                "ext-intl": "use Intl for best performance",
+                "ext-json": "use JSON for string detection",
+                "ext-mbstring": "use Mbstring for best performance"
             },
             "type": "library",
             "autoload": {

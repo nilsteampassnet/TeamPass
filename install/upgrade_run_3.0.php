@@ -16,10 +16,10 @@
  * @see       https://www.teampass.net
  */
 
-Use EZimuel\PHPSecureSession;
-Use TeampassClasses\SuperGlobal\SuperGlobal;
-Use PasswordLib\PasswordLib;
-Use TeampassClasses\NestedTree\NestedTree;
+use EZimuel\PHPSecureSession;
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use PasswordLib\PasswordLib;
+use TeampassClasses\NestedTree\NestedTree;
 
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';

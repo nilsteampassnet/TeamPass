@@ -18,11 +18,11 @@
 use TiBeN\CrontabManager\CrontabJob;
 use TiBeN\CrontabManager\CrontabAdapter;
 use TiBeN\CrontabManager\CrontabRepository;
-Use EZimuel\PHPSecureSession;
-Use Hackzilla\PasswordGenerator\Generator\ComputerPasswordGenerator;
-Use Hackzilla\PasswordGenerator\RandomGenerator\Php7RandomGenerator;
-Use TeampassClasses\SuperGlobal\SuperGlobal;
-Use PasswordLib\PasswordLib;
+use EZimuel\PHPSecureSession;
+use Hackzilla\PasswordGenerator\Generator\ComputerPasswordGenerator;
+use Hackzilla\PasswordGenerator\RandomGenerator\Php7RandomGenerator;
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use PasswordLib\PasswordLib;
 
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';

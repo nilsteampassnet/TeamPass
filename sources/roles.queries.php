@@ -20,11 +20,11 @@ declare(strict_types=1);
  */
 
 use LdapRecord\Connection;
-Use LdapRecord\Container;
-Use TeampassClasses\NestedTree\NestedTree;
-Use TeampassClasses\SuperGlobal\SuperGlobal;
-Use EZimuel\PHPSecureSession;
-Use TeampassClasses\PerformChecks\PerformChecks;
+use LdapRecord\Container;
+use TeampassClasses\NestedTree\NestedTree;
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use EZimuel\PHPSecureSession;
+use TeampassClasses\PerformChecks\PerformChecks;
 
 
 // Load functions

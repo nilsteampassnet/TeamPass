@@ -23,7 +23,7 @@
  * @see       https://www.teampass.net
  */
 
-Use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SuperGlobal\SuperGlobal;
 
 function generate_jwt($headers, $payload) {
 	$headers_encoded = base64url_encode(json_encode($headers));

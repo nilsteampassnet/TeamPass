@@ -22,8 +22,8 @@
  *
  * @see       https://www.teampass.net
  */
-Use PasswordLib\PasswordLib;
-Use TeampassClasses\NestedTree\NestedTree;
+use PasswordLib\PasswordLib;
+use TeampassClasses\NestedTree\NestedTree;
 
 require_once API_ROOT_PATH . "/Model/Database.php";
 

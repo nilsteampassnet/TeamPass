@@ -22,7 +22,7 @@
  */
 
 use GO\Scheduler;
-Use EZimuel\PHPSecureSession;
+use EZimuel\PHPSecureSession;
 
 session_name('teampass_session');
 session_start();

@@ -21,10 +21,10 @@ declare(strict_types=1);
 use TiBeN\CrontabManager\CrontabJob;
 use TiBeN\CrontabManager\CrontabAdapter;
 use TiBeN\CrontabManager\CrontabRepository;
-Use TeampassClasses\SuperGlobal\SuperGlobal;
-Use EZimuel\PHPSecureSession;
-Use TeampassClasses\PerformChecks\PerformChecks;
-Use TeampassClasses\NestedTree\NestedTree;
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use EZimuel\PHPSecureSession;
+use TeampassClasses\PerformChecks\PerformChecks;
+use TeampassClasses\NestedTree\NestedTree;
 
 // Load functions
 require_once 'main.functions.php';

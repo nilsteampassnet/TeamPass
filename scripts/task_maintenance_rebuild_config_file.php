@@ -21,7 +21,7 @@
  * @see       https://www.teampass.net
  */
 
-Use TeampassClasses\NestedTree\NestedTree;
+use TeampassClasses\NestedTree\NestedTree;
 
 
 // Load functions

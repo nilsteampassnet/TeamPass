@@ -24,7 +24,7 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-Use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SuperGlobal\SuperGlobal;
 
 // Automatic redirection
 $nextUrl = '';

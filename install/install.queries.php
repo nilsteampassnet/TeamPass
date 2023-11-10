@@ -18,13 +18,13 @@
 use TiBeN\CrontabManager\CrontabJob;
 use TiBeN\CrontabManager\CrontabAdapter;
 use TiBeN\CrontabManager\CrontabRepository;
-Use Defuse\Crypto\Key;
-Use Defuse\Crypto\Crypto;
-Use Defuse\Crypto\Exception as CryptoException;
-Use EZimuel\PHPSecureSession;
-Use Hackzilla\PasswordGenerator\Generator\ComputerPasswordGenerator;
-Use Hackzilla\PasswordGenerator\RandomGenerator\Php7RandomGenerator;
-Use TeampassClasses\SuperGlobal\SuperGlobal;
+use Defuse\Crypto\Key;
+use Defuse\Crypto\Crypto;
+use Defuse\Crypto\Exception as CryptoException;
+use EZimuel\PHPSecureSession;
+use Hackzilla\PasswordGenerator\Generator\ComputerPasswordGenerator;
+use Hackzilla\PasswordGenerator\RandomGenerator\Php7RandomGenerator;
+use TeampassClasses\SuperGlobal\SuperGlobal;
 
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';

@@ -17,9 +17,9 @@
  * @see       https://www.teampass.net
  */
 
-Use EZimuel\PHPSecureSession;
-Use TeampassClasses\SuperGlobal\SuperGlobal;
-Use PasswordLib\PasswordLib;
+use EZimuel\PHPSecureSession;
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use PasswordLib\PasswordLib;
 
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';

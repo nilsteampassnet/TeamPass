@@ -24,9 +24,9 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-Use TeampassClasses\SuperGlobal\SuperGlobal;
-Use EZimuel\PHPSecureSession;
-Use TeampassClasses\PerformChecks\PerformChecks;
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use EZimuel\PHPSecureSession;
+use TeampassClasses\PerformChecks\PerformChecks;
 
 header('X-XSS-Protection: 1; mode=block');
 header('X-Frame-Options: SameOrigin');

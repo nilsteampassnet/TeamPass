@@ -23,7 +23,7 @@
  */
 
 
-Use TeampassClasses\NestedTree\NestedTree;
+use TeampassClasses\NestedTree\NestedTree;
 
 
 // Load functions

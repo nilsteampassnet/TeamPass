@@ -24,18 +24,18 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-Use voku\helper\AntiXSS;
-Use EZimuel\PHPSecureSession;
-Use TeampassClasses\SuperGlobal\SuperGlobal;
-Use TeampassClasses\PerformChecks\PerformChecks;
-Use LdapRecord\Connection;
-Use LdapRecord\Container;
+use voku\helper\AntiXSS;
+use EZimuel\PHPSecureSession;
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\PerformChecks\PerformChecks;
+use LdapRecord\Connection;
+use LdapRecord\Container;
 use LdapRecord\Auth\Events\Failed;
-Use TeampassClasses\NestedTree\NestedTree;
-Use PasswordLib\PasswordLib;
-Use Duo\DuoUniversal\Client;
-Use Duo\DuoUniversal\DuoException;
-Use RobThree\Auth\TwoFactorAuth;
+use TeampassClasses\NestedTree\NestedTree;
+use PasswordLib\PasswordLib;
+use Duo\DuoUniversal\Client;
+use Duo\DuoUniversal\DuoException;
+use RobThree\Auth\TwoFactorAuth;
 
 // Load functions
 require_once 'main.functions.php';
