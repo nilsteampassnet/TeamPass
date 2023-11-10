@@ -1,0 +1,9 @@
+---
+exclude_paths:
+  - "vendor/**"
+  - "plugins/**"
+  - "includes/libraries/cryptojs/**"
+  - "includes/libraries/csrfp/**"
+  - "includes/libraries/ezimuel/**"
+  - "includes/libraries/plupload/**"
+  - "includes/libraries/yubico/**"
