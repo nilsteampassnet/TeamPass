@@ -130,16 +130,16 @@
         },
         {
             "name": "directorytree/ldaprecord",
-            "version": "v3.2.3",
+            "version": "v3.3.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/DirectoryTree/LdapRecord.git",
-                "reference": "6f5b7f2b36a1622b8a90f35fd47593ee489a4e77"
+                "reference": "17540a7740964418c1eba251d31369a276a48a76"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/DirectoryTree/LdapRecord/zipball/6f5b7f2b36a1622b8a90f35fd47593ee489a4e77",
-                "reference": "6f5b7f2b36a1622b8a90f35fd47593ee489a4e77",
+                "url": "https://api.github.com/repos/DirectoryTree/LdapRecord/zipball/17540a7740964418c1eba251d31369a276a48a76",
+                "reference": "17540a7740964418c1eba251d31369a276a48a76",
                 "shasum": ""
             },
             "require": {
@@ -202,7 +202,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2023-11-01T21:33:20+00:00"
+            "time": "2023-11-08T20:58:22+00:00"
         },
         {
             "name": "dittertp/gibberish-aes-php",
@@ -863,7 +863,7 @@
         },
         {
             "name": "illuminate/collections",
-            "version": "v10.30.1",
+            "version": "v10.31.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/collections.git",
@@ -918,7 +918,7 @@
         },
         {
             "name": "illuminate/conditionable",
-            "version": "v10.30.1",
+            "version": "v10.31.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/conditionable.git",
@@ -964,7 +964,7 @@
         },
         {
             "name": "illuminate/container",
-            "version": "v10.30.1",
+            "version": "v10.31.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/container.git",
@@ -1015,7 +1015,7 @@
         },
         {
             "name": "illuminate/contracts",
-            "version": "v10.30.1",
+            "version": "v10.31.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/contracts.git",
@@ -1063,16 +1063,16 @@
         },
         {
             "name": "illuminate/filesystem",
-            "version": "v10.30.1",
+            "version": "v10.31.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/filesystem.git",
-                "reference": "8f355f9e281a4219671be0a82195f49153b1bced"
+                "reference": "4dff993a0d2f4f9861b1b834dac878b0ac8ddab6"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/illuminate/filesystem/zipball/8f355f9e281a4219671be0a82195f49153b1bced",
-                "reference": "8f355f9e281a4219671be0a82195f49153b1bced",
+                "url": "https://api.github.com/repos/illuminate/filesystem/zipball/4dff993a0d2f4f9861b1b834dac878b0ac8ddab6",
+                "reference": "4dff993a0d2f4f9861b1b834dac878b0ac8ddab6",
                 "shasum": ""
             },
             "require": {
@@ -1123,11 +1123,11 @@
                 "issues": "https://github.com/laravel/framework/issues",
                 "source": "https://github.com/laravel/framework"
             },
-            "time": "2023-09-15T22:35:37+00:00"
+            "time": "2023-11-07T13:10:29+00:00"
         },
         {
             "name": "illuminate/macroable",
-            "version": "v10.30.1",
+            "version": "v10.31.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/macroable.git",
@@ -1173,16 +1173,16 @@
         },
         {
             "name": "illuminate/support",
-            "version": "v10.30.1",
+            "version": "v10.31.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/support.git",
-                "reference": "5244b825e8988db7c91254c31ce224dc3892eeae"
+                "reference": "7c28b263a170e3c402f29c964fa0e8da17b2f832"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/illuminate/support/zipball/5244b825e8988db7c91254c31ce224dc3892eeae",
-                "reference": "5244b825e8988db7c91254c31ce224dc3892eeae",
+                "url": "https://api.github.com/repos/illuminate/support/zipball/7c28b263a170e3c402f29c964fa0e8da17b2f832",
+                "reference": "7c28b263a170e3c402f29c964fa0e8da17b2f832",
                 "shasum": ""
             },
             "require": {
@@ -1240,11 +1240,11 @@
                 "issues": "https://github.com/laravel/framework/issues",
                 "source": "https://github.com/laravel/framework"
             },
-            "time": "2023-10-30T01:00:17+00:00"
+            "time": "2023-11-03T13:09:12+00:00"
         },
         {
             "name": "illuminate/translation",
-            "version": "v10.30.1",
+            "version": "v10.31.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/translation.git",
@@ -1295,16 +1295,16 @@
         },
         {
             "name": "illuminate/validation",
-            "version": "v10.30.1",
+            "version": "v10.31.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/validation.git",
-                "reference": "21859fb894a715b4f6e1fa55484d81a5e2dfc6a0"
+                "reference": "0a00657e78d4a4fe75412e712067da4a910ad49f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/illuminate/validation/zipball/21859fb894a715b4f6e1fa55484d81a5e2dfc6a0",
-                "reference": "21859fb894a715b4f6e1fa55484d81a5e2dfc6a0",
+                "url": "https://api.github.com/repos/illuminate/validation/zipball/0a00657e78d4a4fe75412e712067da4a910ad49f",
+                "reference": "0a00657e78d4a4fe75412e712067da4a910ad49f",
                 "shasum": ""
             },
             "require": {
@@ -1352,7 +1352,7 @@
                 "issues": "https://github.com/laravel/framework/issues",
                 "source": "https://github.com/laravel/framework"
             },
-            "time": "2023-10-16T20:03:33+00:00"
+            "time": "2023-11-07T13:17:03+00:00"
         },
         {
             "name": "moxiecode/plupload",
@@ -2328,9 +2328,9 @@
             },
             "type": "library",
             "autoload": {
-                "psr-4": {
-                    "SergeyTsalkov\\MeekroDB\\": "src/"
-                }
+                "classmap": [
+                    "db.class.php"
+                ]
             },
             "notification-url": "https://packagist.org/downloads/",
             "license": [

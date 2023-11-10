@@ -42,10 +42,10 @@ class SuperGlobal
     /**
      * Sets a variable
      *
-     * @param  string            $key         Key to use
-     * @param  string|array|bool $value Value to put
-     * @param  string            $type        Type of super global
-     * @param  string            $special     Is this a special superglobal definition
+     * @param  string                $key       Key to use
+     * @param  string|array|bool|int $value     Value to put
+     * @param  string                $type      Type of super global
+     * @param  string                $special   Is this a special superglobal definition
      * @return void
      */
     public static function put($key, $value, $type, $special = false)

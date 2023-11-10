@@ -40,7 +40,6 @@ try {
     include_once __DIR__.'/../includes/config/tp.config.php';
 } catch (Exception $e) {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
-    exit();
 }
 
 // Do checks
@@ -2779,9 +2778,9 @@ switch ($inputData['type']) {
                         }
 
                         // Manage textarea string
-                        if ($row['field_type'] === 'textarea') {
+                        /*if ($row['field_type'] === 'textarea') {
                             $fieldText = $fieldText;
-                        }
+                        }*/
 
                         // build returned list of Fields text
                         array_push(
@@ -3561,7 +3560,7 @@ switch ($inputData['type']) {
             'id = %i',
             $inputData['source']
         );
-        $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+        $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
         $tree->rebuild();
         break;
 

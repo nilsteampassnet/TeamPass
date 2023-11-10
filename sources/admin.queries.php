@@ -29,6 +29,7 @@ Use Duo\DuoUniversal\Client;
 Use Duo\DuoUniversal\DuoException;
 Use Defuse\Crypto\Crypto;
 Use Defuse\Crypto\Key;
+use Defuse\Crypto\Exception as CryptoException;
 
 // Load functions
 require_once 'main.functions.php';
@@ -43,7 +44,6 @@ try {
     include_once __DIR__.'/../includes/config/tp.config.php';
 } catch (Exception $e) {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
-    exit();
 }
 
 // Do checks
@@ -640,7 +640,7 @@ switch ($post_type) {
                         $SETTINGS['bck_script_path'] . '/' . str_replace('encrypted', 'clear', $filename) . '.sql',
                         base64_decode($SETTINGS['bck_script_key'])
                     );
-                } catch (Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
+                } catch (CryptoException\WrongKeyOrModifiedCiphertextException $ex) {
                     $err = 'An attack! Either the wrong key was loaded, or the ciphertext has changed since it was created either corrupted in the database or intentionally modified by someone trying to carry out an attack.';
                 }
 
@@ -1376,7 +1376,6 @@ switch ($post_type) {
                 ),
                 'encode'
             );
-            break;
         } else {
             require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
 
@@ -1394,7 +1393,6 @@ switch ($post_type) {
                 ),
                 'encode'
             );
-            break;
         }
         break;
 

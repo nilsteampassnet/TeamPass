@@ -50,7 +50,6 @@ try {
     include_once __DIR__.'/../includes/config/tp.config.php';
 } catch (Exception $e) {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
-    exit();
 }
 
 if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir']) === true || $SETTINGS['cpassman_dir'] === '.') {
@@ -464,7 +463,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         $superGlobal->put('user_agsescardid', $userInfo['agses-usercardid'], 'SESSION', 'user');
         $superGlobal->put('user_language', $userInfo['user_language'], 'SESSION', 'user');
         $superGlobal->put('user_timezone', $userInfo['usertimezone'], 'SESSION', 'user');
-        $superGlobal->put('session_duration', $dataReceived['duree_session'] * 60, 'SESSION', 'user');
+        $superGlobal->put('session_duration', (int) $dataReceived['duree_session'] * 60, 'SESSION', 'user');
         $superGlobal->put('keys_recovery_time', $userInfo['keys_recovery_time'], 'SESSION', 'user');
 
         // User signature keys
@@ -1490,8 +1489,7 @@ function yubicoMFACheck($dataReceived, string $userInfo, array $SETTINGS): array
                 'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : '',
                 'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
                 'pwd_attempts' => (int) $sessionPwdAttempts,
-                'error' => 'no_user_yubico_credentials',
-                'message' => '',
+                'message' => 'no_user_yubico_credentials',
                 'proceedIdentification' => false,
             ];
         }
@@ -1512,7 +1510,6 @@ function yubicoMFACheck($dataReceived, string $userInfo, array $SETTINGS): array
             'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : '',
             'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
             'pwd_attempts' => (int) $sessionPwdAttempts,
-            'error' => 'bad_user_yubico_credentials',
             'message' => langHdl('yubico_bad_code'),
             'proceedIdentification' => false,
         ];

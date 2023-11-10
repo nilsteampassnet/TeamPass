@@ -20,6 +20,7 @@ use TiBeN\CrontabManager\CrontabAdapter;
 use TiBeN\CrontabManager\CrontabRepository;
 Use Defuse\Crypto\Key;
 Use Defuse\Crypto\Crypto;
+Use Defuse\Crypto\Exception as CryptoException;
 Use EZimuel\PHPSecureSession;
 Use Hackzilla\PasswordGenerator\Generator\ComputerPasswordGenerator;
 Use Hackzilla\PasswordGenerator\RandomGenerator\Php7RandomGenerator;
@@ -38,7 +39,6 @@ try {
     include_once __DIR__.'/../includes/config/tp.config.php';
 } catch (Exception $e) {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
-    exit();
 }
 
 // Define Timezone
@@ -89,15 +89,15 @@ function encryptFollowingDefuse($message, $ascii_key)
 
     try {
         $text = Crypto::encrypt($message, $key);
-    } catch (WrongKeyOrModifiedCiphertextException $ex) {
+    } catch (CryptoException\WrongKeyOrModifiedCiphertextException $ex) {
         $err = 'an attack! either the wrong key was loaded, or the ciphertext has changed since it was created either corrupted in the database or intentionally modified by someone trying to carry out an attack.';
-    } catch (BadFormatException $ex) {
+    } catch (CryptoException\BadFormatException $ex) {
         $err = $ex;
-    } catch (EnvironmentIsBrokenException $ex) {
+    } catch (CryptoException\EnvironmentIsBrokenException $ex) {
         $err = $ex;
-    } catch (CryptoException $ex) {
+    } catch (CryptoException\CryptoException $ex) {
         $err = $ex;
-    } catch (IOException $ex) {
+    } catch (CryptoException\IOException $ex) {
         $err = $ex;
     }
 
@@ -1351,7 +1351,7 @@ $SETTINGS = array (';
                 if ($task === 'settings.php') {
                     // first is to create teampass-seckey.txt
                     // 0- check if exists
-                    define('SECUREFILE', generateRandomKey(25));
+                    define('SECUREFILE', generateRandomKey());
                     $filename_seckey = $securePath . '/' . SECUREFILE;
 
                     if (file_exists($filename_seckey)) {

@@ -4,13 +4,14 @@ Use Hackzilla\PasswordGenerator\Generator\ComputerPasswordGenerator;
 Use Hackzilla\PasswordGenerator\RandomGenerator\Php7RandomGenerator;
 Use Defuse\Crypto\Key;
 Use Defuse\Crypto\Crypto;
+Use Defuse\Crypto\Exception as CryptoException;
 
 // new SECUREFILE - 3.0.0.23
 function handleSecurefileConstant()
 {
     if (defined('SECUREFILE') === false || SECUREFILE === 'teampass-seckey.txt' || file_exists(SECUREPATH.'/teampass-seckey.txt') === true) {
         // Anonymize the file if needed
-        define('SECUREFILE', generateRandomKey(25));
+        define('SECUREFILE', generateRandomKey());
     
         // manage the file itself by renaming it
         if (rename(SECUREPATH.'/teampass-seckey.txt', SECUREPATH.'/'.SECUREFILE) === false) {
@@ -141,15 +142,15 @@ function defuseCryption($message, $ascii_key, $type)
         } elseif ($type === 'decrypt') {
             $text = Crypto::decrypt($message, $key);
         }
-    } catch (WrongKeyOrModifiedCiphertextException $ex) {
+    } catch (CryptoException\WrongKeyOrModifiedCiphertextException $ex) {
         $err = 'an attack! either the wrong key was loaded, or the ciphertext has changed since it was created either corrupted in the database or intentionally modified by someone trying to carry out an attack.';
-    } catch (BadFormatException $ex) {
+    } catch (CryptoException\BadFormatException $ex) {
         $err = $ex;
-    } catch (EnvironmentIsBrokenException $ex) {
+    } catch (CryptoException\EnvironmentIsBrokenException $ex) {
         $err = $ex;
-    } catch (CryptoException $ex) {
+    } catch (CryptoException\CryptoException $ex) {
         $err = $ex;
-    } catch (IOException $ex) {
+    } catch (CryptoException\IOException $ex) {
         $err = $ex;
     }
 
@@ -184,9 +185,9 @@ function defuse_return_decrypted($value)
  *
  * @param string $val A string
  *
- * @return void
+ * @return string
  */
-function getSettingValue($val)
+function getSettingValue($val): string
 {
     $val = trim(strstr($val, "="));
     return trim(str_replace('"', '', substr($val, 1, strpos($val, ";") - 1)));
@@ -227,7 +228,7 @@ function addColumnIfNotExist($dbname, $column, $columnAttr = "VARCHAR(255) NULL"
  *
  * @return boolean
  */
-function removeColumnIfNotExist($table, $column)
+function removeColumnIfNotExist($table, $column): bool
 {
     global $db_link;
     $exists = false;
@@ -240,6 +241,7 @@ function removeColumnIfNotExist($table, $column)
     if ($exists === true) {
         return mysqli_query($db_link, "ALTER TABLE `$table` DROP `$column`;");
     }
+    return false;
 }
 
 /**
@@ -403,7 +405,7 @@ function changeColumnName($table, $oldName, $newName, $type): void
     global $db_link;
 
     // check if column already exists
-    $columns = mysqli_query($db_link, "show columns from `" . $pre . $table . "`");
+    $columns = mysqli_query($db_link, "show columns from `" . $table . "`");
     while ($col = mysqli_fetch_assoc($columns)) {
         if ((string) $col['Field'] === $oldName) {
             // change column name

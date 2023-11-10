@@ -22,6 +22,7 @@
  * @see       https://www.teampass.net
  */
 
+Use Symfony\Component\Process\Exception\ProcessFailedException;
 Use Symfony\Component\Process\Process;
 Use voku\helper\AntiXSS;
 Use TeampassClasses\NestedTree\NestedTree;
@@ -43,7 +44,6 @@ try {
     include_once __DIR__.'/../includes/config/tp.config.php';
 } catch (Exception $e) {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
-    exit();
 }
 
 // Define Timezone

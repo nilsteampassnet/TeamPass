@@ -20,6 +20,8 @@ Use EZimuel\PHPSecureSession;
 Use TeampassClasses\SuperGlobal\SuperGlobal;
 Use PasswordLib\PasswordLib;
 use Defuse\Crypto\File;
+use Defuse\Crypto\Key;
+Use Defuse\Crypto\Exception as CryptoException;
 
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
@@ -156,20 +158,20 @@ while ($file_info = mysqli_fetch_array($rows)) {
             // Now decrypt the file
             $err = '';
             try {
-                ile::decryptFile(
+                File::decryptFile(
                     $SETTINGS['path_to_upload_folder'].'/'.$file_info['file'],
                     $SETTINGS['path_to_upload_folder'].'/'.$file_info['file'].'.delete',
                     Key::loadFromAsciiSafeString($ascii_key)
                 );
-            } catch (WrongKeyOrModifiedCiphertextException $ex) {
+            } catch (CryptoException\WrongKeyOrModifiedCiphertextException $ex) {
                 $err = 'An attack! Either the wrong key was loaded, or the ciphertext has changed since it was created either corrupted in the database or intentionally modified by someone trying to carry out an attack.';
-            } catch (BadFormatException $ex) {
+            } catch (CryptoException\BadFormatException $ex) {
                 $err = $ex;
-            } catch (EnvironmentIsBrokenException $ex) {
+            } catch (CryptoException\EnvironmentIsBrokenException $ex) {
                 $err = $ex;
-            } catch (CryptoException $ex) {
+            } catch (CryptoException\CryptoException $ex) {
                 $err = $ex;
-            } catch (IOException $ex) {
+            } catch (CryptoException\IOException $ex) {
                 $err = $ex;
             }
             if (empty($err) === false) {

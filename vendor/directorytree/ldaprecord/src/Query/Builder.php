@@ -266,7 +266,7 @@ class Builder
      */
     public function setBaseDn(Model|string $dn = null): static
     {
-        $this->baseDn = $this->substituteBaseInDn($dn);
+        $this->baseDn = $this->substituteBaseDn($dn);
 
         return $this;
     }
@@ -292,7 +292,7 @@ class Builder
      */
     public function setDn(Model|string $dn = null): static
     {
-        $this->dn = $this->substituteBaseInDn($dn);
+        $this->dn = $this->substituteBaseDn($dn);
 
         return $this;
     }
@@ -300,13 +300,9 @@ class Builder
     /**
      * Substitute the base DN string template for the current base.
      */
-    protected function substituteBaseInDn(Model|string $dn = null): string
+    protected function substituteBaseDn(Model|string $dn = null): string
     {
-        return str_replace(
-            '{base}',
-            $this->baseDn ?: '',
-            (string) ($dn instanceof Model ? $dn->getDn() : $dn)
-        );
+        return str_replace('{base}', $this->baseDn ?? '', (string) $dn);
     }
 
     /**
@@ -1384,6 +1380,18 @@ class Builder
      */
     public function insert(string $dn, array $attributes): bool
     {
+        return (bool) $this->insertAndGetDn($dn, $attributes);
+    }
+
+    /**
+     * Insert an entry into the directory and get the inserted distinguished name.
+     *
+     * @throws LdapRecordException
+     */
+    public function insertAndGetDn(string $dn, array $attributes): string|false
+    {
+        $dn = $this->substituteBaseDn($dn);
+
         if (empty($dn)) {
             throw new LdapRecordException('A new LDAP object must have a distinguished name (dn).');
         }
@@ -1396,7 +1404,7 @@ class Builder
 
         return $this->connection->run(
             fn (LdapInterface $ldap) => $ldap->add($dn, $attributes)
-        );
+        ) ? $dn : false;
     }
 
     /**
@@ -1454,9 +1462,19 @@ class Builder
      */
     public function rename(string $dn, string $rdn, string $newParentDn, bool $deleteOldRdn = true): bool
     {
+        return (bool) $this->renameAndGetDn($dn, $rdn, $newParentDn, $deleteOldRdn);
+    }
+
+    /**
+     * Rename an entry in the directory and get the new distinguished name.
+     */
+    public function renameAndGetDn(string $dn, string $rdn, string $newParentDn, bool $deleteOldRdn = true): string|false
+    {
+        $newParentDn = $this->substituteBaseDn($newParentDn);
+
         return $this->connection->run(
             fn (LdapInterface $ldap) => $ldap->rename($dn, $rdn, $newParentDn, $deleteOldRdn)
-        );
+        ) ? implode(',', [$rdn, $newParentDn]) : false;
     }
 
     /**

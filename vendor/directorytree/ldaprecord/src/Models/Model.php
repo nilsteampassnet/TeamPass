@@ -157,7 +157,7 @@ abstract class Model implements ArrayAccess, Arrayable, JsonSerializable, String
     }
 
     /**
-     * Set the models distinguished name.
+     * Set the model's distinguished name.
      */
     public function setDn(string $dn = null): static
     {
@@ -167,7 +167,7 @@ abstract class Model implements ArrayAccess, Arrayable, JsonSerializable, String
     }
 
     /**
-     * A mutator for setting the models distinguished name.
+     * A mutator for setting the model's distinguished name.
      */
     public function setDnAttribute(string $dn): static
     {
@@ -175,7 +175,7 @@ abstract class Model implements ArrayAccess, Arrayable, JsonSerializable, String
     }
 
     /**
-     * A mutator for setting the models distinguished name.
+     * A mutator for setting the model's distinguished name.
      */
     public function setDistinguishedNameAttribute(string $dn): static
     {
@@ -886,7 +886,7 @@ abstract class Model implements ArrayAccess, Arrayable, JsonSerializable, String
         // but filter out any empty attributes before sending them
         // to the server. LDAP servers will throw an exception if
         // attributes have been given empty or null values.
-        $query->insert($this->getDn(), array_filter($this->getAttributes()));
+        $this->dn = $query->insertAndGetDn($this->getDn(), array_filter($this->getAttributes()));
 
         $this->dispatch('created');
 
@@ -1190,12 +1190,10 @@ abstract class Model implements ArrayAccess, Arrayable, JsonSerializable, String
 
         $this->dispatch('renaming', [$rdn, $newParentDn]);
 
-        $this->newQuery()->rename($this->dn, $rdn, $newParentDn, $deleteOldRdn);
-
         // If the model was successfully renamed, we will set
         // its new DN so any further updates to the model
         // can be performed without any issues.
-        $this->dn = implode(',', [$rdn, $newParentDn]);
+        $this->dn = $this->newQuery()->renameAndGetDn($this->dn, $rdn, $newParentDn, $deleteOldRdn);
 
         $map = $this->newDn($this->dn)->assoc();
 

@@ -36,10 +36,12 @@ Use Defuse\Crypto\Key;
 Use Defuse\Crypto\Crypto;
 Use Defuse\Crypto\KeyProtectedByPassword;
 Use Defuse\Crypto\File;
+Use Defuse\Crypto\Exception as CryptoException;
 use PHPMailer\PHPMailer\PHPMailer;
 Use phpseclib\Crypt\RSA;
 Use phpseclib\Crypt\AES;
 Use PasswordLib\PasswordLib;
+Use Symfony\Component\Process\Exception\ProcessFailedException;
 Use Symfony\Component\Process\Process;
 Use Symfony\Component\Process\PhpExecutableFinder;
 Use TeampassClasses\Encryption\Encryption;
@@ -133,9 +135,17 @@ function bCrypt(
  */
 function isHex(string $str): bool
 {
-    if (str_starts_with(strtolower($str), '0x')) {
-        $str = substr($str, 2);
+    if ((int) phpversion() >= 8) {
+        // Code for PHP 8
+        if (str_starts_with(strtolower($str), '0x')) {
+            $str = substr($str, 2);
+        }
+    } else {
+        if (substr($str, 0, 2 ) === "0x") {
+            $str = substr($str, 2);
+        }
     }
+    
 
     return ctype_xdigit($str);
 }
@@ -163,15 +173,15 @@ function cryption(string $message, string $ascii_key, string $type, ?array $SETT
         } elseif ($type === 'decrypt') {
             $text = Crypto::decrypt($message, $key);
         }
-    } catch (\Exception\WrongKeyOrModifiedCiphertextException $ex) {
+    } catch (CryptoException\WrongKeyOrModifiedCiphertextException $ex) {
         $err = 'an attack! either the wrong key was loaded, or the ciphertext has changed since it was created either corrupted in the database or intentionally modified by someone trying to carry out an attack.';
-    } catch (\Exception\BadFormatException $ex) {
+    } catch (CryptoException\BadFormatException $ex) {
         $err = $ex;
-    } catch (\Exception\EnvironmentIsBrokenException $ex) {
+    } catch (CryptoException\EnvironmentIsBrokenException $ex) {
         $err = $ex;
-    } catch (\Exception\CryptoException $ex) {
+    } catch (CryptoException\CryptoException $ex) {
         $err = $ex;
-    } catch (\Exception\IOException $ex) {
+    } catch (CryptoException\IOException $ex) {
         $err = $ex;
     }
 
@@ -220,9 +230,9 @@ function defuse_validate_personal_key(string $psk, string $protected_key_encoded
         $protected_key_encoded = KeyProtectedByPassword::loadFromAsciiSafeString($protected_key_encoded);
         $user_key = $protected_key_encoded->unlockKey($psk);
         $user_key_encoded = $user_key->saveToAsciiSafeString();
-    } catch (KeyProtectedByPassword\Exception\EnvironmentIsBrokenException $ex) {
+    } catch (CryptoException\EnvironmentIsBrokenException $ex) {
         return 'Error - Major issue as the encryption is broken.';
-    } catch (KeyProtectedByPassword\Exception\WrongKeyOrModifiedCiphertextException $ex) {
+    } catch (CryptoException\WrongKeyOrModifiedCiphertextException $ex) {
         return 'Error - The saltkey is not the correct one.';
     }
 
@@ -363,7 +373,7 @@ function identifyUserRights(
  *
  * @param string $idFonctions Roles of user
  * @param array  $SETTINGS    Teampass settings
- * @param array  $tree        Tree of folders
+ * @param object $tree        Tree of folders
  *
  * @return bool
  */
@@ -415,7 +425,6 @@ function identAdmin($idFonctions, $SETTINGS, $tree)
             array_push($globalsVisibleFolders, $persfld['id']);
             array_push($globalsPersonalVisibleFolders, $persfld['id']);
             // get all descendants
-            $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
             $tree->rebuild();
             $tst = $tree->getDescendants($persfld['id']);
             foreach ($tst as $t) {
@@ -1494,6 +1503,7 @@ function prepareExchangedData($data, string $type, ?string $key = null)
             true
         );
     }
+    return '';
 }
 
 
@@ -2172,11 +2182,11 @@ function defuseFileEncrypt(
             $target_file,
             $password
         );
-    } catch (Exception\WrongKeyOrModifiedCiphertextException $ex) {
+    } catch (CryptoException\WrongKeyOrModifiedCiphertextException $ex) {
         $err = 'wrong_key';
-    } catch (Exception\EnvironmentIsBrokenException $ex) {
+    } catch (CryptoException\EnvironmentIsBrokenException $ex) {
         $err = $ex;
-    } catch (Exception\IOException $ex) {
+    } catch (CryptoException\IOException $ex) {
         $err = $ex;
     }
 
@@ -2206,11 +2216,11 @@ function defuseFileDecrypt(
             $target_file,
             $password
         );
-    } catch (Exception\WrongKeyOrModifiedCiphertextException $ex) {
+    } catch (CryptoException\WrongKeyOrModifiedCiphertextException $ex) {
         $err = 'wrong_key';
-    } catch (Exception\EnvironmentIsBrokenException $ex) {
+    } catch (CryptoException\EnvironmentIsBrokenException $ex) {
         $err = $ex;
-    } catch (Exception\IOException $ex) {
+    } catch (CryptoException\IOException $ex) {
         $err = $ex;
     }
 

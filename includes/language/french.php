@@ -20,7 +20,7 @@ return array(
     'email_body_new_user' => 'Bonjour,<br><br>Ceci est un mail généré par le gestionnaire de mot de passe Teampass.<br><br>Un administrateur vous a créé un compte utilisateur sur Teampass. Lors de votre prochaine connexion, veuillez utiliser les identifiants suivants :<ul><li>Login: #login#</li><li>Mot de passe: #password#</li><li>Code de chiffrement : #code#</li></ul><br><br>Cordialement',
     'user_password' => 'Mot de passe utilisateur',
     'user_temporary_encryption_code' => 'Code de chiffrement utilisateur',
-    'no_email_set' => 'Aucun email n&apos;a été enregistré',
+    'no_email_set' => 'Aucun email enregistré',
     'send_user_password_by_email' => 'Choisissez si le login utilisateur doit être envoyé par mail.<br> Si oui, cliquez sur le bouton Envoyer. <br><br>Sinon, cliquez sur le bouton Copier dans le presse papier pour l&apos;envoyer à l&apos;utilisateur par un autre moyen.<br>Cela devient votre responsabilité en tant qu&apos;administrateur de fournir le mot de passe de l&apos;utilisateur de façon sécurisée.',
     'admin_change_user_encryption_code_info' => 'Cette opération aura comme conséquence de réinitialiser le code de chiffrement pour cet utilisateur.',
     'send_by_email' => 'Envoyer par email',
