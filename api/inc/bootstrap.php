@@ -24,7 +24,7 @@
  */
 
 
-use TeampassClasses\SuperGlobal\SuperGlobal;
+Use TeampassClasses\SuperGlobal\SuperGlobal;
 
 define("API_ROOT_PATH", __DIR__ . "/..");
 

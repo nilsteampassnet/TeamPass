@@ -94,8 +94,7 @@ function langHdl(string $string): string
     if (empty($session_language) === true) {
         return trim($string);
     }
-    //return (string) str_replace("'",  "&apos;", $session_language);
-    return (string) $session_language;
+    return (string) htmlentities($session_language);
 }
 
 /**
@@ -1996,14 +1995,14 @@ function handleConfigFile($action, $SETTINGS, $field = null, $value = null)
             }
 
             if (stristr($line, "'" . $field . "' => '")) {
-                $data[$inc] = "    '" . $field . "' => '" . htmlspecialchars_decode($value, ENT_COMPAT) . "',\n";
+                $data[$inc] = "    '" . $field . "' => '" . htmlspecialchars_decode($value ?? '', ENT_COMPAT) . "',\n";
                 $bFound = true;
                 break;
             }
             ++$inc;
         }
         if ($bFound === false) {
-            $data[$inc] = "    '" . $field . "' => '" . htmlspecialchars_decode($value, ENT_COMPAT). "',\n);\n";
+            $data[$inc] = "    '" . $field . "' => '" . htmlspecialchars_decode($value ?? '', ENT_COMPAT). "',\n);\n";
         }
     }
 
