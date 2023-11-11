@@ -528,4 +528,6 @@ function handleUploadError($message): string
         ),
         'encode'
     );
+
+    exit();
 }

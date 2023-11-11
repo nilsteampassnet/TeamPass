@@ -114,12 +114,12 @@ if (null !== $post_type) {
 
     switch ($post_type) {
         case 'perform_task':
-            echo performTask($post_task, $SETTINGS['cpassman_dir'], $phpBinaryPath, $SETTINGS['date_format'].' '.$SETTINGS['time_format']);
+            echo performTask($post_task, $phpBinaryPath, $SETTINGS['date_format'].' '.$SETTINGS['time_format']);
 
             break;
 
         case 'load_last_tasks_execution':
-            echo loadLastTasksExec($SETTINGS['date_format'].' '.$SETTINGS['time_format'], $SETTINGS['cpassman_dir']);
+            echo loadLastTasksExec($SETTINGS['date_format'].' '.$SETTINGS['time_format']);
 
             break;  
     }
@@ -129,10 +129,9 @@ if (null !== $post_type) {
  * Load the last tasks execution
  *
  * @param string $datetimeFormat
- * @param string $dir
  * @return string
  */
-function loadLastTasksExec(string $datetimeFormat, string $dir): string
+function loadLastTasksExec(string $datetimeFormat): string
 {
     $lastExec = [];
 
@@ -229,12 +228,11 @@ function loadLastTasksExec_getBadge(string $processLabel): string
  * Perform a task
  *
  * @param string $task
- * @param string $dir
  * @param string $phpBinaryPath
  * @param string $datetimeFormat
  * @return string
  */
-function performTask(string $task, string $dir, string $phpBinaryPath, string $datetimeFormat): string
+function performTask(string $task, string $phpBinaryPath, string $datetimeFormat): string
 {
     switch ($task) {
         case 'users_personal_folder_task':

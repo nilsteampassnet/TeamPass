@@ -22,6 +22,7 @@
  */
 
 use TeampassClasses\NestedTree\NestedTree;
+use TeampassClasses\SuperGlobal\SuperGlobal;
 
 
 // Load functions

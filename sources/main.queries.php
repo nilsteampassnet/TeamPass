@@ -130,7 +130,6 @@ function mainQuery(array $SETTINGS)
 
     // Load libraries
     loadClasses('DB');
-$superGlobal = new SuperGlobal();
 
     // User's language loading
     //include_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user']['user_language'] . '.php';

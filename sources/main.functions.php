@@ -62,7 +62,6 @@ header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, must-revalidate');
 
 loadClasses();
-$superGlobal = new SuperGlobal();
 
 /**
  * Convert language code to string.
@@ -899,11 +898,9 @@ $superGlobal = new SuperGlobal();
  */
 function cacheTableUpdate(?int $ident = null): void
 {
-    $superGlobal = new SuperGlobal();
-
     // Load class DB
     loadClasses('DB');
-$superGlobal = new SuperGlobal();
+    $superGlobal = new SuperGlobal();
 
     //Load Tree
     $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
@@ -980,7 +977,6 @@ function cacheTableAdd(?int $ident = null): void
 
     // Load class DB
     loadClasses('DB');
-$superGlobal = new SuperGlobal();
 
     //Load Tree
     $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
@@ -1651,7 +1647,6 @@ function logEvents(
 
     // Load class DB
     loadClasses('DB');
-$superGlobal = new SuperGlobal();
 
     DB::insert(
         prefixTable('log_system'),
@@ -1713,7 +1708,6 @@ function logItems(
 ): void {
     // Load class DB
     loadClasses('DB');
-$superGlobal = new SuperGlobal();
 
     // Insert log in DB
     DB::insert(
@@ -1967,7 +1961,6 @@ function handleConfigFile($action, $SETTINGS, $field = null, $value = null)
 
     // Load class DB
     loadClasses('DB');
-$superGlobal = new SuperGlobal();
 
     if (file_exists($tp_config_file) === false || $action === 'rebuild') {
         // perform a copy
@@ -2446,7 +2439,7 @@ function performDBQuery(array $SETTINGS, string $fields, string $table): array
 
     // Load class DB
     loadClasses('DB');
-$superGlobal = new SuperGlobal();
+    
     // Insert log in DB
     return DB::query(
         'SELECT ' . $fields . '
@@ -2824,7 +2817,6 @@ function storeUsersShareKey(
 
     // Load class DB
     loadClasses('DB');
-$superGlobal = new SuperGlobal();
 
     // Delete existing entries for this object
     if ($deleteAll === true) {
@@ -3034,7 +3026,6 @@ function deleteUserObjetsKeys(int $userId, array $SETTINGS = []): bool
 {
     // Load class DB
     loadClasses('DB');
-$superGlobal = new SuperGlobal();
 
     // Remove all item sharekeys items
     // expect if personal item
@@ -3427,7 +3418,6 @@ function cacheTreeUserHandler(int $user_id, string $data, array $SETTINGS, strin
 {
     // Load class DB
     loadClasses('DB');
-$superGlobal = new SuperGlobal();
 
     // Exists ?
     $userCacheId = DB::queryfirstrow(
@@ -3569,7 +3559,6 @@ function handleFoldersCategories(
 {
     // Load class DB
     loadClasses('DB');
-$superGlobal = new SuperGlobal();
 
     $arr_data = array();
 
@@ -4157,7 +4146,6 @@ function purgeUnnecessaryKeys(bool $allUsers = true, int $user_id=0)
     if ($allUsers === true) {
         // Load class DB
         loadClasses('DB');
-$superGlobal = new SuperGlobal();
 
         $users = DB::query(
             'SELECT id
@@ -4187,7 +4175,6 @@ function purgeUnnecessaryKeysForUser(int $user_id=0)
 
     // Load class DB
     loadClasses('DB');
-$superGlobal = new SuperGlobal();
 
     $personalItems = DB::queryFirstColumn(
         'SELECT id

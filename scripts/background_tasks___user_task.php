@@ -87,7 +87,7 @@ foreach ($rows as $record) {
     );
 
     // update visible_folders HTML
-    performVisibleFoldersHtmlUpdate($arguments['user_id'], $SETTINGS);
+    performVisibleFoldersHtmlUpdate($arguments['user_id']);
 
     // update DB
     DB::update(
@@ -106,10 +106,7 @@ foreach ($rows as $record) {
 doLog('end', '', (isset($SETTINGS['enable_tasks_log']) === true ? (int) $SETTINGS['enable_tasks_log'] : 0), $logID);
 
 
-function performVisibleFoldersHtmlUpdate(
-    int $user_id,
-    array $SETTINGS
-)
+function performVisibleFoldersHtmlUpdate (int $user_id)
 {
     $html = [];
 

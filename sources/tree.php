@@ -315,7 +315,6 @@ function recursiveTree(
 ) {
     $text = '';
     $title = '';
-    $show_but_block = false;
     
     // Load config
     include __DIR__.'/../includes/config/tp.config.php';
@@ -569,7 +568,7 @@ function prepareNodeJson(
  * @param integer $nbItemsInFolder
  * @param integer $nbItemsInSubfolders
  * @param integer $nbSubfolders
- * @param integer $session_list_folders_limited
+ * @param array $session_list_folders_limited
  * @param integer $show_only_accessible_folders
  * @param integer $tree_counters
  * @param bool $session_user_read_only
@@ -706,7 +705,7 @@ function prepareNodeData(
 
     return [
         'html' => '',
-        'title' => isset($title) === true ? $title : '',
+        'title' => '',
         'restricted' => 1,
         'folderClass' => 'folder_not_droppable',
         'show_but_block' => true,
