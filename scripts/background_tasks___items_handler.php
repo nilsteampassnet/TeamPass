@@ -148,7 +148,6 @@ if (DB::count() > 0) {
 function handleTask(int $processId, array $ProcessArguments, array $SETTINGS): bool
 {
     provideLog('[PROCESS][#'. $processId.'][START]', $SETTINGS);
-    //DB::debugmode(false);
     $task_to_perform = DB::queryfirstrow(
         'SELECT *
         FROM ' . prefixTable('processes_tasks') . '
@@ -159,13 +158,6 @@ function handleTask(int $processId, array $ProcessArguments, array $SETTINGS): b
 
     // get the process object
     $processObject = json_decode($ProcessArguments['object_key'], true);
-
-    /*
-    print_r($processObject);
-    //echo " ;; ".cryption($ProcessArguments['new_user_pwd'], '','decrypt', $SETTINGS)['string']." ;; ".cryption($ProcessArguments['new_user_code'], '','decrypt', $SETTINGS)['string']." ;; ";
-    return false;
-    */
-
     
     if (DB::count() > 0) {
         // check if a linux process is not currently on going
@@ -290,4 +282,5 @@ function handleTask(int $processId, array $ProcessArguments, array $SETTINGS): b
             return false;
         }
     }
+    return false;
 }

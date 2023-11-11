@@ -76,6 +76,6 @@ function reloadCacheTable(): void
     include __DIR__. '/../includes/config/tp.config.php';
 
     if (isset($SETTINGS) === true) {
-        updateCacheTable('reload', $SETTINGS, NULL);
+        updateCacheTable('reload', NULL);
     }
 }

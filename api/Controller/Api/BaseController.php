@@ -39,7 +39,7 @@ class BaseController
     /**
      * Get URI elements.
      * 
-     * @return array
+     * @return array|string
      */
     public function getUriSegments()
     {
@@ -52,7 +52,7 @@ class BaseController
     /**
      * Get querystring params.
      * 
-     * @return array
+     * @return array|string
      */
     public function getQueryStringParams()
     {

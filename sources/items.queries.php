@@ -800,11 +800,7 @@ switch ($inputData['type']) {
 
             // Add item to CACHE table if new item has been created
             if (isset($newID) === true) {
-                updateCacheTable(
-                    'add_value',
-                    $SETTINGS,
-                    (int) $newID
-                );
+                updateCacheTable('add_value', (int) $newID);
             }
 
             $arrData = array(
@@ -1671,7 +1667,7 @@ switch ($inputData['type']) {
                     }
                 }
                 // Update CACHE table
-                updateCacheTable('update_value', $SETTINGS, (int) $inputData['itemId']);
+                updateCacheTable('update_value', (int) $inputData['itemId']);
 
                 //---- Log all modifications done ----
 
@@ -2290,7 +2286,7 @@ switch ($inputData['type']) {
             );
             // reload cache table
             include_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
-            updateCacheTable('reload', $SETTINGS, null);
+            updateCacheTable('reload', null);
 
             echo (string) prepareExchangedData(
                 array(
@@ -2894,11 +2890,7 @@ switch ($inputData['type']) {
                         );
 
                         // Update cache table
-                        updateCacheTable(
-                            'delete_value',
-                            $SETTINGS,
-                            (int) $inputData['id']
-                        );
+                        updateCacheTable('delete_value', (int) $inputData['id']);
 
                         $arrData['show_detail_option'] = 1;
                         $arrData['to_be_deleted'] = 0;
@@ -3325,7 +3317,7 @@ switch ($inputData['type']) {
             $_SESSION['login']
         );
         // Update CACHE table
-        updateCacheTable('delete_value', $SETTINGS, (int) $inputData['itemId']);
+        updateCacheTable('delete_value', (int) $inputData['itemId']);
 
         echo (string) prepareExchangedData(
             array(
@@ -5044,11 +5036,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
         );
 
         // Update cache table
-        updateCacheTable(
-            'update_value',
-            $SETTINGS,
-            (int) $inputData['itemId']
-        );
+        updateCacheTable('update_value', (int) $inputData['itemId']);
 
         $returnValues = array(
             'error' => '',
@@ -5375,7 +5363,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
 
         // reload cache table
         require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
-        updateCacheTable('reload', $SETTINGS, null);
+        updateCacheTable('reload', null);
 
         echo (string) prepareExchangedData(
             array(
@@ -5479,7 +5467,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                 );
 
                 // Update CACHE table
-                updateCacheTable('delete_value', $SETTINGS, (int) $item_id);
+                updateCacheTable('delete_value', (int) $item_id);
             }
         }
 

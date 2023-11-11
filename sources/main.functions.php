@@ -35,7 +35,7 @@ use TeampassClasses\NestedTree\NestedTree;
 use Defuse\Crypto\Key;
 use Defuse\Crypto\Crypto;
 use Defuse\Crypto\KeyProtectedByPassword;
-use Defuse\Crypto\File;
+use Defuse\Crypto\File as CryptoFile;
 use Defuse\Crypto\Exception as CryptoException;
 use PHPMailer\PHPMailer\PHPMailer;
 use phpseclib\Crypt\RSA;
@@ -783,17 +783,17 @@ function identUserGetPFList(
  * 
  * @return void
  */
-function updateCacheTable(string $action, array $SETTINGS, ?int $ident = null): void
+function updateCacheTable(string $action, ?int $ident = null): void
 {
     if ($action === 'reload') {
         // Rebuild full cache table
-        cacheTableRefresh($SETTINGS);
+        cacheTableRefresh();
     } elseif ($action === 'update_value' && is_null($ident) === false) {
         // UPDATE an item
-        cacheTableUpdate($SETTINGS, $ident);
+        cacheTableUpdate($ident);
     } elseif ($action === 'add_value' && is_null($ident) === false) {
         // ADD an item
-        cacheTableAdd($SETTINGS, $ident);
+        cacheTableAdd($ident);
     } elseif ($action === 'delete_value' && is_null($ident) === false) {
         // DELETE an item
         DB::delete(prefixTable('cache'), 'id = %i', $ident);
@@ -803,11 +803,9 @@ function updateCacheTable(string $action, array $SETTINGS, ?int $ident = null): 
 /**
  * Cache table - refresh.
  *
- * @param array $SETTINGS Teampass settings
- * 
  * @return void
  */
-function cacheTableRefresh(array $SETTINGS): void
+function cacheTableRefresh(): void
 {
     // Load class DB
     loadClasses('DB');
@@ -893,12 +891,11 @@ function cacheTableRefresh(array $SETTINGS): void
 /**
  * Cache table - update existing value.
  *
- * @param array  $SETTINGS Teampass settings
  * @param int    $ident    Ident format
  * 
  * @return void
  */
-function cacheTableUpdate(array $SETTINGS, ?int $ident = null): void
+function cacheTableUpdate(?int $ident = null): void
 {
     $superGlobal = new SuperGlobal();
 
@@ -968,12 +965,11 @@ function cacheTableUpdate(array $SETTINGS, ?int $ident = null): void
 /**
  * Cache table - add new value.
  *
- * @param array  $SETTINGS Teampass settings
  * @param int    $ident    Ident format
  * 
  * @return void
  */
-function cacheTableAdd(array $SETTINGS, ?int $ident = null): void
+function cacheTableAdd(?int $ident = null): void
 {
     $superGlobal = new SuperGlobal();
     // Get superglobals
@@ -2179,7 +2175,7 @@ function defuseFileEncrypt(
     string $password = null
 ) {
     try {
-        File::encryptFileWithPassword(
+        CryptoFile::encryptFileWithPassword(
             $source_file,
             $target_file,
             $password
@@ -2213,7 +2209,7 @@ function defuseFileDecrypt(
     string $password = null
 ) {
     try {
-        File::decryptFileWithPassword(
+        CryptoFile::decryptFileWithPassword(
             $source_file,
             $target_file,
             $password
@@ -4347,5 +4343,5 @@ function getCurrectPage($SETTINGS)
 function returnIfSet($value, $retFalse = '', $retTrue = null)
 {
 
-    return isset($value) === true ? ($retTrue === null ? ($value !== null ? $value : '') : $retTrue) : $retFalse;
+    return isset($value) === true ? ($retTrue === null ? $value : $retTrue) : $retFalse;
 }

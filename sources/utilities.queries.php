@@ -311,7 +311,7 @@ if (null !== $post_type) {
                 );
             }
 
-            updateCacheTable('reload', $SETTINGS, null);
+            updateCacheTable('reload', null);
 
             // send data
             echo prepareExchangedData(
@@ -440,7 +440,7 @@ if (null !== $post_type) {
                 );
             }
 
-            updateCacheTable('reload', $SETTINGS, NULL);
+            updateCacheTable('reload', NULL);
 
             // send data
             echo prepareExchangedData(

@@ -939,11 +939,7 @@ if (null !== $post_type) {
                                 }
 
                                 //Update CACHE table
-                                updateCacheTable(
-                                    'delete_value',
-                                    $SETTINGS,
-                                    (int) $item['id']
-                                );
+                                updateCacheTable('delete_value',(int) $item['id']);
 
                                 // --> build json tree  
                                 // update cache_tree
@@ -999,7 +995,7 @@ if (null !== $post_type) {
 
             // reload cache table
             include_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
-            updateCacheTable('reload', $SETTINGS, null);
+            updateCacheTable('reload', null);
 
             // Update timestamp
             DB::update(
@@ -1467,7 +1463,7 @@ if (null !== $post_type) {
 
             // reload cache table
             include_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
-            updateCacheTable('reload', $SETTINGS, NULL);
+            updateCacheTable('reload', NULL);
 
             // Update timestamp
             DB::update(
