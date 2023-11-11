@@ -521,13 +521,11 @@ if (
  */
 function handleUploadError($message): string
 {
-    echo prepareExchangedData(
+    return prepareExchangedData(
         array(
             'error' => true,
             'message' => $message,
         ),
         'encode'
     );
-
-    exit();
 }
