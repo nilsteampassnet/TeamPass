@@ -26,12 +26,13 @@ declare(strict_types=1);
 
 
 use TeampassClasses\PerformChecks\PerformChecks;
-
+use TeampassClasses\SuperGlobal\SuperGlobal;
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
 
 // init
 loadClasses();
+$superGlobal = new SuperGlobal();
 
 if (
     isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
@@ -52,16 +53,16 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => isset($_POST['type']) === true ? $_POST['type'] : '',
+            'type' => returnIfSet($superGlobal->get('type', 'POST')),
         ],
         [
             'type' => 'trim|escape',
         ],
     ),
     [
-        'user_id' => isset($_SESSION['user_id']) === false ? null : $_SESSION['user_id'],
-        'user_key' => isset($_SESSION['key']) === false ? null : $_SESSION['key'],
-        'CPM' => isset($_SESSION['CPM']) === false ? null : $_SESSION['CPM'],
+        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
+        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
     ]
 );
 // Handle the case
@@ -319,7 +320,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     );
                     
                     //decrypt data
-                    data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                    data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                     
                     // download VSC file
                     download(new Blob([data.csv_content]), $('#export-filename').val() + ".csv", "text/csv");//decodeURI(data[0].content)
@@ -349,12 +350,12 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         $.post(
             'sources/export.queries.php', {
                 type: 'export_prepare_data',
-                data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
-                key: '<?php echo $_SESSION['key']; ?>'
+                data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'),
+                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
             },
             function(data) {
                 //decrypt data
-                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                 //console.log(data);
                 var exportTag = data.exportTag;
 
@@ -393,8 +394,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             // Build XMLHttpRequest parameters
                             var data = new FormData();
                             data.append('type', 'finalize_export_pdf');
-                            data.append('data', prepareExchangedData(JSON.stringify(dataLocal), 'encode', '<?php echo $_SESSION['key']; ?>'));
-                            data.append('key', '<?php echo $_SESSION['key']; ?>');
+                            data.append('data', prepareExchangedData(JSON.stringify(dataLocal), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'));
+                            data.append('key', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
 
                             // Build XMLHttpRequest
                             var xhr = new XMLHttpRequest();
@@ -439,9 +440,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                                     export_tag: exportTag,
                                                 }),
                                                 'encode',
-                                                '<?php echo $_SESSION['key']; ?>'
+                                                '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                                             ),
-                                            key: '<?php echo $_SESSION['key']; ?>'
+                                            key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                                         }
                                     );
 
@@ -503,13 +504,13 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 data: prepareExchangedData(
                     JSON.stringify(vars),
                     'encode',
-                    '<?php echo $_SESSION['key']; ?>'
+                    '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                 ),
-                key: '<?php echo $_SESSION['key']; ?>'
+                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
             },
             function(data) {
                 //decrypt data
-                data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
                 //console.log(data);
 
                 if (data.error === true) {
@@ -581,13 +582,13 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         data: prepareExchangedData(
                         JSON.stringify(jqData),
                         'encode',
-                        '<?php echo $_SESSION['key']; ?>'
+                        '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                     ),
-                    key: '<?php echo $_SESSION['key']; ?>'
+                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                 },
                 function(data) {
                     //decrypt data
-                    data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                    data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
                     //console.log(data);
 
                     if (data.error === true) {
@@ -622,9 +623,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                         export_tag: export_tag,
                                     }),
                                     'encode',
-                                    '<?php echo $_SESSION['key']; ?>'
+                                    '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                                 ),
-                                key: '<?php echo $_SESSION['key']; ?>'
+                                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                             }
                         );
 
@@ -639,13 +640,13 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                         password : password,
                                     }),
                                     'encode',
-                                    '<?php echo $_SESSION['key']; ?>'
+                                    '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                                 ),
-                                key: '<?php echo $_SESSION['key']; ?>'
+                                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                             },
                             function(data) {
                                 //decrypt data
-                                data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                                data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
 
                                 $('#export-progress').find('span').html('');
                                 $('#export-progress').addClass('hidden')

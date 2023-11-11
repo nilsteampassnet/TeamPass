@@ -33,6 +33,7 @@ require API_ROOT_PATH . '/../sources/main.functions.php';
 
 // init
 loadClasses('DB');
+$superGlobal = new SuperGlobal();
 
 // Load superglobal
 $superGlobal = new SuperGlobal();

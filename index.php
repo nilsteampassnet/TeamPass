@@ -81,6 +81,7 @@ require_once __DIR__.'/sources/main.functions.php';
 
 // init
 loadClasses('DB');
+$superGlobal = new SuperGlobal();
 
 // Quick major version check -> upgrade needed?
 if (isset($SETTINGS['teampass_version']) === true && version_compare(TP_VERSION, $SETTINGS['teampass_version']) > 0) {

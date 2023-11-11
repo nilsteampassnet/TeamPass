@@ -26,12 +26,13 @@ declare(strict_types=1);
 
 
 use TeampassClasses\PerformChecks\PerformChecks;
-
+use TeampassClasses\SuperGlobal\SuperGlobal;
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
 
 // init
 loadClasses();
+$superGlobal = new SuperGlobal();
 
 if (
     isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
@@ -52,16 +53,16 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => isset($_POST['type']) === true ? $_POST['type'] : '',
+            'type' => returnIfSet($superGlobal->get('type', 'POST')),
         ],
         [
             'type' => 'trim|escape',
         ],
     ),
     [
-        'user_id' => isset($_SESSION['user_id']) === false ? null : $_SESSION['user_id'],
-        'user_key' => isset($_SESSION['key']) === false ? null : $_SESSION['key'],
-        'CPM' => isset($_SESSION['CPM']) === false ? null : $_SESSION['CPM'],
+        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
+        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
     ]
 );
 // Handle the case
@@ -123,7 +124,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         ambiguous: true,
                         reason: "import_items_from_csv",
                         duration: 10,
-                        key: '<?php echo $_SESSION['key']; ?>'
+                        key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                     },
                     function(data) {
                         store.update(
@@ -148,7 +149,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 toastr.info('<i class="fa-solid fa-ellipsis fa-2x fa-fade ml-2"></i>');
             },
             FileUploaded: function(upldr, file, object) {
-                var data = prepareExchangedData(object.response, "decode", "<?php echo $_SESSION['key']; ?>");
+                var data = prepareExchangedData(object.response, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
                 if (debugJavascript === true) {
                     console.log(data)
                 }
@@ -291,10 +292,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 type: "import_file_format_csv",
                 file: store.get('teampassApplication').uploadedFileId,
                 folder_id: $('#import-csv-target-folder').val(),
-                key: '<?php echo $_SESSION['key']; ?>'
+                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
             },
             function(data) {
-                data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
                 console.log(data)
 
                 // CLear
@@ -422,11 +423,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         $.post(
             "sources/import.queries.php", {
                 type: "import_items",
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                key: '<?php echo $_SESSION['key']; ?>'
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
             },
             function(data) {
-                data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
                 console.log(data)
 
                 if (data.error === true) {
@@ -500,7 +501,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         ambiguous: true,
                         reason: "import_items_from_keepass",
                         duration: 10,
-                        key: '<?php echo $_SESSION['key']; ?>'
+                        key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                     },
                     function(data) {
                         store.update(
@@ -527,7 +528,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 };
             },
             FileUploaded: function(upldr, file, object) {
-                var data = prepareExchangedData(object.response, "decode", "<?php echo $_SESSION['key']; ?>");
+                var data = prepareExchangedData(object.response, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
                 console.log(data)
 
                 if (data.error === true) {
@@ -612,11 +613,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         $.post(
             "sources/import.queries.php", {
                 type: "import_file_format_keepass",
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                key: '<?php echo $_SESSION['key']; ?>'
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
             },
             function(data) {
-                data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
                 console.log(data);
 
                 if (data.error === true) {
@@ -651,11 +652,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     $.post(
                         "sources/import.queries.php", {
                             type: "keepass_create_folders",
-                            data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                            key: '<?php echo $_SESSION['key']; ?>'
+                            data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                            key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                         },
                         function(data) {
-                            data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                            data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
                             //console.log(data)
 
                             if (data.error === true) {
@@ -709,11 +710,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                         $.post(
                                             "sources/import.queries.php", {
                                                 type: "keepass_create_items",
-                                                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                                                key: '<?php echo $_SESSION['key']; ?>'
+                                                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                                                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                                             },
                                             function(data) {
-                                                data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                                                data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
                                                 //console.info("Done")
                                                 //console.log(data)
 

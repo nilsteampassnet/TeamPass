@@ -83,7 +83,7 @@ $superGlobal = new SuperGlobal();
                 type     : 'increase_session_time',
                 type_category: 'action_user',
                 duration : parseInt(duration, 10) * hourInMinutes,
-                key: "<?php echo $_SESSION['key']; ?>"
+                key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
             },
             function(data) {
                 if (data[0].new_value !== 'expired') {
@@ -101,7 +101,7 @@ $superGlobal = new SuperGlobal();
     // Start real time
     // get list of last items
     if (store.get('teampassUser') !== undefined && parseInt(store.get('teampassUser').user_id) > 0
-        && String('<?php echo $_SESSION['key']; ?>') === store.get('teampassUser').sessionKey
+        && String('<?php echo $superGlobal->get('key', 'SESSION'); ?>') === store.get('teampassUser').sessionKey
         && (Date.now() - store.get('teampassUser').sessionStartTimestamp) < (store.get('teampassUser').sessionDuration * 1000)
     ) {
         $.when(
@@ -122,12 +122,12 @@ $superGlobal = new SuperGlobal();
                     "sources/main.queries.php", {
                         type: "get_user_info",
                         type_category: 'action_user',
-                        data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
-                        key: "<?php echo $_SESSION['key']; ?>"
+                        data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'),
+                        key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
                     },
                     function(data) {
                         //decrypt data
-                        data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                        data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                         if (debugJavascript === true) {
                             console.info('Get user info results:');
                             console.log(data);
@@ -225,7 +225,7 @@ $superGlobal = new SuperGlobal();
                                     "sources/main.queries.php", {
                                         type: "send_waiting_emails",
                                         type_category: 'action_mail',
-                                        key: "<?php echo $_SESSION['key']; ?>"
+                                        key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
                                     }
                                 )
                             ).then(function() {
@@ -234,7 +234,7 @@ $superGlobal = new SuperGlobal();
                                     "sources/main.queries.php", {
                                         type: "sending_statistics",
                                         type_category: 'action_system',
-                                        key: "<?php echo $_SESSION['key']; ?>"
+                                        key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
                                     }
                                 );
                             });
@@ -255,8 +255,8 @@ $superGlobal = new SuperGlobal();
                         "sources/main.queries.php", {
                             type: 'save_user_location',
                             type_category: 'action_user',
-                            data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
-                            key: "<?php echo $_SESSION['key']; ?>"
+                            data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'),
+                            key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
                         },
                         function(data) {
                             // update local storage
@@ -394,11 +394,11 @@ $superGlobal = new SuperGlobal();
                         "sources/main.queries.php", {
                             'type': "user_psk_reencryption",
                             'type_category': 'action_key',
-                            'data': prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                            'key': '<?php echo $_SESSION['key']; ?>'
+                            'data': prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                            'key': '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                         },
                         function(data) {
-                            data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                            data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
                             if (debugJavascript === true) console.log(data)
                             if (data.error === true) {
                                 // error
@@ -525,7 +525,7 @@ $superGlobal = new SuperGlobal();
                 // ----
             } else if ($(this).data('name') === 'logout') {
                 // Logout directly to login form
-                window.location.href = "./includes/core/logout.php?token=<?php echo $_SESSION['key']; ?>";
+                window.location.href = "./includes/core/logout.php?token=<?php echo $superGlobal->get('key', 'SESSION'); ?>";
 
                 // ----
             } else if ($(this).data('name') === 'generate-new_keys') {
@@ -657,11 +657,11 @@ $superGlobal = new SuperGlobal();
                                 "sources/main.queries.php", {
                                     type: "user_new_keys_generation",
                                     type_category: 'action_key',
-                                    data: prepareExchangedData(JSON.stringify(parameters), "encode", "<?php echo $_SESSION['key']; ?>"),
-                                    key: "<?php echo $_SESSION['key']; ?>"
+                                    data: prepareExchangedData(JSON.stringify(parameters), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                                    key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
                                 },
                                 function(data_next1) { 
-                                    data_next1 = prepareExchangedData(data_next1, 'decode', '<?php echo $_SESSION['key']; ?>');
+                                    data_next1 = prepareExchangedData(data_next1, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                                     if (debugJavascript === true) console.log(data_next1)
 
                                     if (data_next1.error !== false) {
@@ -730,11 +730,11 @@ $superGlobal = new SuperGlobal();
         $.post(
             "sources/main.queries.php", {
                 type: "store_personal_saltkey",
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                key: '<?php echo $_SESSION['key']; ?>'
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
             },
             function(data) {
-                data = prepareExchangedData(data, '<?php echo $_SESSION['key']; ?>');
+                data = prepareExchangedData(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
 
                 // Is there an error?
                 if (data.error === true) {
@@ -914,11 +914,11 @@ $superGlobal = new SuperGlobal();
                 'sources/main.queries.php', {
                     type: 'change_user_auth_password',
                     type_category: 'action_password',
-                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                    key: "<?php echo $_SESSION['key']; ?>"
+                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                    key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
                 },
                 function(data) {
-                    data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                    data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                     if (debugJavascript === true) console.log(data);
 
                     if (data.error !== false) {
@@ -1010,11 +1010,11 @@ $superGlobal = new SuperGlobal();
                 "sources/main.queries.php", {
                     type: "user_new_keys_generation",
                     type_category: 'action_key',
-                    data: prepareExchangedData(JSON.stringify(parameters), "encode", "<?php echo $_SESSION['key']; ?>"),
-                    key: "<?php echo $_SESSION['key']; ?>"
+                    data: prepareExchangedData(JSON.stringify(parameters), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                    key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
                 },
                 function(data_next1) { 
-                    data_next1 = prepareExchangedData(data_next1, 'decode', '<?php echo $_SESSION['key']; ?>');
+                    data_next1 = prepareExchangedData(data_next1, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                     if (debugJavascript === true) console.log(data_next1)
 
                     if (data_next1.error !== false) {
@@ -1090,11 +1090,11 @@ $superGlobal = new SuperGlobal();
                 'sources/main.queries.php', {
                     type: 'mail_me',
                     type_category: 'action_mail',
-                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                    key: '<?php echo $_SESSION['key']; ?>'
+                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                 },
                 function(data) {
-                    data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                    data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                     if (debugJavascript === true) console.log(data);
                     if (data.error !== false) {
                         // Show error
@@ -1170,11 +1170,11 @@ $superGlobal = new SuperGlobal();
             'sources/main.queries.php', {
                 type: 'test_current_user_password_is_correct',
                 type_category: 'action_password',
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                key: "<?php echo $_SESSION['key']; ?>"
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
             },
             function(data) {
-                data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                 if (debugJavascript === true) console.log(data);
 
                 if (data.error !== false) {
@@ -1206,11 +1206,11 @@ $superGlobal = new SuperGlobal();
                         'sources/main.queries.php', {
                             type: 'change_private_key_encryption_password',
                             type_category: 'action_key',
-                            data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                            key: "<?php echo $_SESSION['key']; ?>"
+                            data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                            key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
                         },
                         function(data) {
-                            data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                            data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                             if (debugJavascript === true) console.log(data);
 
                             if (data.error !== false) {
@@ -1293,11 +1293,11 @@ $superGlobal = new SuperGlobal();
             'sources/main.queries.php', {
                 type: 'test_current_user_password_is_correct',
                 type_category: 'action_password',
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                key: "<?php echo $_SESSION['key']; ?>"
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
             },
             function(data) {
-                data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                 if (debugJavascript === true) console.log(data);
 
                 if (data.error !== false) {
@@ -1329,11 +1329,11 @@ $superGlobal = new SuperGlobal();
                         'sources/main.queries.php', {
                             type: 'change_private_key_encryption_password',
                             type_category: 'action_key',
-                            data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                            key: "<?php echo $_SESSION['key']; ?>"
+                            data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                            key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
                         },
                         function(data) {
-                            data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                            data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                             if (debugJavascript === true) console.log(data);
 
                             if (data.error !== false) {
@@ -1421,11 +1421,11 @@ $superGlobal = new SuperGlobal();
                 'sources/main.queries.php', {
                     type: 'change_user_ldap_auth_password',
                     type_category: 'action_password',
-                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                    key: "<?php echo $_SESSION['key']; ?>"
+                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                    key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
                 },
                 function(data) {
-                    data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                    data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                     if (debugJavascript === true) console.log(data);
 
                     if (data.error !== false) {
@@ -1485,14 +1485,14 @@ $superGlobal = new SuperGlobal();
             "sources/main.queries.php", {
                 type: "get_teampass_settings",
                 type_category: 'action_system',
-                key: '<?php echo $_SESSION['key']; ?>'
+                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
             },
             function(data) {
                 try {
                     data = prepareExchangedData(
                         data,
                         "decode",
-                        "<?php echo $_SESSION['key']; ?>"
+                        "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
                     );
                 } catch (e) {
                     // error
@@ -1575,11 +1575,11 @@ $superGlobal = new SuperGlobal();
             "sources/main.queries.php", {
                 type: 'user_get_session_time',
                 type_category: 'action_user',
-                data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
-                key: '<?php echo $_SESSION['key']; ?>'
+                data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'),
+                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
             },
             function(data) {
-                data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                 if (debugJavascript === true) {
                     console.log('debug')
                     console.log(data);
@@ -1681,7 +1681,7 @@ $superGlobal = new SuperGlobal();
             "sources/main.queries.php", {
                 type: 'refresh_list_items_seen',
                 type_category: 'action_user',
-                key: '<?php echo $_SESSION['key']; ?>'
+                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
             },
             function(data) {
                 try {
@@ -1776,11 +1776,11 @@ $superGlobal = new SuperGlobal();
             "sources/main.queries.php", {
                 type: 'generate_bug_report',
                 type_category: 'action_system',
-                data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
-                key: '<?php echo $_SESSION['key']; ?>'
+                data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'),
+                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
             },
             function(data) {
-                data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
 
                 // Show data
                 $('#dialog-bug-report-text').html(data.html);
@@ -1868,12 +1868,12 @@ $superGlobal = new SuperGlobal();
         $.post(
             "sources/users.queries.php", {
                 type: "get_generate_keys_progress",
-                data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
-                key: "<?php echo $_SESSION['key']; ?>"
+                data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'),
+                key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
             },
             function(data) {
                 //decrypt data
-                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                 if (debugJavascript === true) {
                     console.info('Process generation keys status:');
                     console.log(data);

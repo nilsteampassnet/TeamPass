@@ -62,6 +62,7 @@ header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, must-revalidate');
 
 loadClasses();
+$superGlobal = new SuperGlobal();
 
 /**
  * Convert language code to string.
@@ -98,7 +99,7 @@ function langHdl(string $string): string
     if (empty($session_language) === true) {
         return trim($string);
     }
-    return (string) $antiXss->xss_clean($session_language);
+    return (string) $antiXss->xss_clean($session_language);//esc_html($session_language);
 }
 
 /**
@@ -809,6 +810,7 @@ function cacheTableRefresh(): void
 {
     // Load class DB
     loadClasses('DB');
+$superGlobal = new SuperGlobal();
 
     //Load Tree
     $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
@@ -901,6 +903,7 @@ function cacheTableUpdate(?int $ident = null): void
 
     // Load class DB
     loadClasses('DB');
+$superGlobal = new SuperGlobal();
 
     //Load Tree
     $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
@@ -977,6 +980,7 @@ function cacheTableAdd(?int $ident = null): void
 
     // Load class DB
     loadClasses('DB');
+$superGlobal = new SuperGlobal();
 
     //Load Tree
     $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
@@ -1647,6 +1651,7 @@ function logEvents(
 
     // Load class DB
     loadClasses('DB');
+$superGlobal = new SuperGlobal();
 
     DB::insert(
         prefixTable('log_system'),
@@ -1708,6 +1713,7 @@ function logItems(
 ): void {
     // Load class DB
     loadClasses('DB');
+$superGlobal = new SuperGlobal();
 
     // Insert log in DB
     DB::insert(
@@ -1961,6 +1967,7 @@ function handleConfigFile($action, $SETTINGS, $field = null, $value = null)
 
     // Load class DB
     loadClasses('DB');
+$superGlobal = new SuperGlobal();
 
     if (file_exists($tp_config_file) === false || $action === 'rebuild') {
         // perform a copy
@@ -2439,6 +2446,7 @@ function performDBQuery(array $SETTINGS, string $fields, string $table): array
 
     // Load class DB
     loadClasses('DB');
+$superGlobal = new SuperGlobal();
     // Insert log in DB
     return DB::query(
         'SELECT ' . $fields . '
@@ -2816,6 +2824,7 @@ function storeUsersShareKey(
 
     // Load class DB
     loadClasses('DB');
+$superGlobal = new SuperGlobal();
 
     // Delete existing entries for this object
     if ($deleteAll === true) {
@@ -3025,6 +3034,7 @@ function deleteUserObjetsKeys(int $userId, array $SETTINGS = []): bool
 {
     // Load class DB
     loadClasses('DB');
+$superGlobal = new SuperGlobal();
 
     // Remove all item sharekeys items
     // expect if personal item
@@ -3417,6 +3427,7 @@ function cacheTreeUserHandler(int $user_id, string $data, array $SETTINGS, strin
 {
     // Load class DB
     loadClasses('DB');
+$superGlobal = new SuperGlobal();
 
     // Exists ?
     $userCacheId = DB::queryfirstrow(
@@ -3558,6 +3569,7 @@ function handleFoldersCategories(
 {
     // Load class DB
     loadClasses('DB');
+$superGlobal = new SuperGlobal();
 
     $arr_data = array();
 
@@ -4145,6 +4157,7 @@ function purgeUnnecessaryKeys(bool $allUsers = true, int $user_id=0)
     if ($allUsers === true) {
         // Load class DB
         loadClasses('DB');
+$superGlobal = new SuperGlobal();
 
         $users = DB::query(
             'SELECT id
@@ -4174,6 +4187,7 @@ function purgeUnnecessaryKeysForUser(int $user_id=0)
 
     // Load class DB
     loadClasses('DB');
+$superGlobal = new SuperGlobal();
 
     $personalItems = DB::queryFirstColumn(
         'SELECT id
@@ -4288,6 +4302,9 @@ function loadClasses(string $className = ''): void
     require_once __DIR__. '/../includes/config/include.php';
     require_once __DIR__. '/../includes/config/settings.php';
     require_once __DIR__. '/../includes/libraries/string.polyfill.php';
+    /*require_once __DIR__. '/../includes/libraries/wp/plugin.php';
+    require_once __DIR__. '/../includes/libraries/wp/option.php';
+    require_once __DIR__. '/../includes/libraries/wp/formatting.php';*/
     require_once __DIR__.'/../vendor/autoload.php';
 
     if (defined('DB_PASSWD_CLEAR') === false) {
@@ -4336,7 +4353,7 @@ function getCurrectPage($SETTINGS)
  * Permits to return value if set
  *
  * @param string|int $value
- * @param string|int $retFalse
+ * @param string|int|null $retFalse
  * @param string|int $retTrue
  * @return mixed
  */

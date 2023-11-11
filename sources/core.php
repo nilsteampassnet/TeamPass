@@ -30,10 +30,10 @@ use TeampassClasses\SuperGlobal\SuperGlobal;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
 
-
 // Load functions
 require_once 'main.functions.php';
 loadClasses('DB');
+$superGlobal = new SuperGlobal();
 
 // Load config if $SETTINGS not defined
 try {

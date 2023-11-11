@@ -26,12 +26,14 @@ declare(strict_types=1);
 
 
 use TeampassClasses\PerformChecks\PerformChecks;
+use TeampassClasses\SuperGlobal\SuperGlobal;
 
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
 
 // init
 loadClasses();
+$superGlobal = new SuperGlobal();
 
 if (
     isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
@@ -52,16 +54,16 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => isset($_POST['type']) === true ? $_POST['type'] : '',
+            'type' => returnIfSet($superGlobal->get('type', 'POST')),
         ],
         [
             'type' => 'trim|escape',
         ],
     ),
     [
-        'user_id' => isset($_SESSION['user_id']) === false ? null : $_SESSION['user_id'],
-        'user_key' => isset($_SESSION['key']) === false ? null : $_SESSION['key'],
-        'CPM' => isset($_SESSION['CPM']) === false ? null : $_SESSION['CPM'],
+        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
+        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
     ]
 );
 // Handle the case
@@ -385,7 +387,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             $(this).addClass('pwd-shown');
             // Prepare data to show
             // Is data crypted?
-            var data = unCryptData($('#hidden-item-pwd').val(), '<?php echo $_SESSION['key']; ?>');
+            var data = unCryptData($('#hidden-item-pwd').val(), '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
             if (data !== false && data !== undefined) {
                 $('#hidden-item-pwd').val(
                     data.password
@@ -1024,11 +1026,11 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 $.post(
                     "sources/items.queries.php", {
                         type: 'delete_uploaded_files_but_not_saved',
-                        data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
-                        key: '<?php echo $_SESSION['key']; ?>'
+                        data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'),
+                        key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                     },
                     function(data) {
-                        data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>', 'items.queries.php', 'delete_uploaded_files_but_not_saved');
+                        data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'items.queries.php', 'delete_uploaded_files_but_not_saved');
                         if (debugJavascript === true) console.log(data);
                     }
                 );
@@ -1135,11 +1137,11 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         $.post(
             "sources/items.queries.php", {
                 type: 'send_request_access',
-                data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
-                key: '<?php echo $_SESSION['key']; ?>'
+                data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'),
+                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
             },
             function(data) {
-                data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>', 'items.queries.php', 'send_request_access');
+                data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'items.queries.php', 'send_request_access');
                 if (debugJavascript === true) console.log(data);
 
                 if (data.error !== false) {
@@ -1218,11 +1220,11 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         $.post(
             'sources/items.queries.php', {
                 type: 'save_notification_status',
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                key: '<?php echo $_SESSION['key']; ?>'
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
             },
             function(data) {
-                data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>', 'items.queries.php', 'save_notification_status');
+                data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'items.queries.php', 'save_notification_status');
 
                 if (data.error !== false) {
                     // Show error
@@ -1293,11 +1295,11 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         $.post(
             'sources/items.queries.php', {
                 type: 'send_email',
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                key: '<?php echo $_SESSION['key']; ?>'
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
             },
             function(data) {
-                data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>', 'items.queries.php', 'send_email');
+                data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'items.queries.php', 'send_email');
 
                 if (data.error !== false) {
                     // Show error
@@ -1364,12 +1366,12 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         $.post(
             'sources/items.queries.php', {
                 type: 'delete_item',
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                key: '<?php echo $_SESSION['key']; ?>'
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
             },
             function(data) {
                 //decrypt data
-                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>', 'items.queries.php', 'delete_item');
+                data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'items.queries.php', 'delete_item');
 
                 if (typeof data !== 'undefined' && data.error !== true) {
                     $('.form-item-action, .item-details-card-menu').addClass('hidden');
@@ -1415,7 +1417,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 type: 'notify_user_on_item_change',
                 id: store.get('teampassItem').id,
                 value: $('#form-item-anyoneCanModify').is(':checked') === true ? 1 : 0,
-                key: '<?php echo $_SESSION['key']; ?>'
+                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
             },
             function(data) {
                 if (data[0].error === '') {
@@ -1484,12 +1486,12 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         $.post(
             'sources/items.queries.php', {
                 type: 'copy_item',
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                key: '<?php echo $_SESSION['key']; ?>'
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
             },
             function(data) {
                 //decrypt data
-                data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
 
                 if (typeof data !== 'undefined' && data.error !== true) {
                     // Warn user
@@ -1573,11 +1575,11 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             $.post(
                 "sources/utils.queries.php", {
                     type: "server_auto_update_password",
-                    data: prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>"),
-                    key: "<?php echo $_SESSION['key']; ?>"
+                    data: prepareExchangedData(data, "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                    key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
                 },
                 function(data) {
-                    data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                    data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
                     if (debugJavascript === true) console.log(data);
                     //check if format error
                     if (data.error === true) {
@@ -1611,7 +1613,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     type: "server_auto_update_password_frequency",
                     id: store.get('teampassItem').id,
                     freq: $('#form-item-server-cron-frequency').val(),
-                    key: "<?php echo $_SESSION['key']; ?>"
+                    key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
                 },
                 function(data) {
                     if (data[0].error != "") {
@@ -1685,12 +1687,12 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         $.post(
             'sources/items.queries.php', {
                 type: 'suggest_item_change',
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                key: '<?php echo $_SESSION['key']; ?>'
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
             },
             function(data) {
                 //decrypt data//decrypt data
-                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>', 'items.queries.php', 'suggest_item_change');
+                data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'items.queries.php', 'suggest_item_change');
 
                 if (data.error === true) {
                     // ERROR
@@ -1801,12 +1803,12 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         $.post(
             'sources/folders.queries.php', {
                 type: $('#form-folder-add').data('action') + '_folder',
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                key: '<?php echo $_SESSION['key']; ?>'
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
             },
             function(data) {
                 //decrypt data//decrypt data
-                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>', 'folders.queries.php', $('#form-folder-add').data('action') + '_folder');
+                data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'folders.queries.php', $('#form-folder-add').data('action') + '_folder');
                 if (debugJavascript === true) {
                     console.log(data);
                 }
@@ -1938,12 +1940,12 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         $.post(
             'sources/folders.queries.php', {
                 type: 'delete_folders',
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                key: '<?php echo $_SESSION['key']; ?>'
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
             },
             function(data) {
                 //decrypt data
-                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>', 'folders.queries.php', 'delete_folders');
+                data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'folders.queries.php', 'delete_folders');
 
                 if (data.error === true) {
                     // ERROR
@@ -2022,12 +2024,12 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         $.post(
             'sources/folders.queries.php', {
                 type: 'copy_folder',
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                key: '<?php echo $_SESSION['key']; ?>'
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
             },
             function(data) {
                 //decrypt data
-                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>', 'folders.queries.php', 'copy_folder');
+                data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'folders.queries.php', 'copy_folder');
 
                 if (data.error === true) {
                     // ERROR
@@ -2336,8 +2338,8 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
                 $.post('sources/items.queries.php', {
                         type: 'action_on_quick_icon',
-                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                        key: '<?php echo $_SESSION['key']; ?>'
+                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                        key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                     },
                     function(ret) {
                         //change quick icon
@@ -2395,7 +2397,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         if (mouseStillDown === true) {
             // Prepare data to show
             // Is data crypted?
-            var data = unCryptData($('#hidden-item-pwd').val(), '<?php echo $_SESSION['key']; ?>');
+            var data = unCryptData($('#hidden-item-pwd').val(), '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
             if (data !== false && data !== undefined) {
                 $('#hidden-item-pwd').val(
                     data.password
@@ -2660,7 +2662,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     ambiguous: true,
                     reason: "item_attachments",
                     duration: 10,
-                    key: '<?php echo $_SESSION['key']; ?>'
+                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                 },
                 function(data) {
                     store.update(
@@ -2987,13 +2989,13 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 $.post(
                     "sources/items.queries.php", {
                         type: $('#form-item-button-save').data('action'),
-                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                        key: "<?php echo $_SESSION['key']; ?>"
+                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                        key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
                     },
                     function(data) {
                         //decrypt data
                         try {
-                            data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                            data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
                         } catch (e) {
                             // error
                             $("#div_loading").addClass("hidden");
@@ -3038,8 +3040,8 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                                 $.post(
                                     "sources/items.queries.php", {
                                         type: 'confirm_attachments',
-                                        data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
-                                        key: '<?php echo $_SESSION['key']; ?>'
+                                        data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'),
+                                        key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                                     }
                                 );
                             } else {
@@ -3082,8 +3084,8 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             $.post(
                 "sources/items.queries.php", {
                     type: 'confirm_attachments',
-                    data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
-                    key: '<?php echo $_SESSION['key']; ?>'
+                    data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'),
+                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                 }
             );
 
@@ -3278,7 +3280,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 search: criteria,
                 start: start,
                 length: 10,
-                key: '<?php echo $_SESSION['key']; ?>'
+                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
             },
             function(data) {
                 var pwd_error = '',
@@ -3287,7 +3289,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     icon_pwd,
                     icon_favorite;
 
-                data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>', 'find.queries.php', type);
+                data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'find.queries.php', type);
                 if (debugJavascript === true) console.log(data);
 
                 // Ensure correct div is not hidden
@@ -3347,12 +3349,12 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         $.post(
             'sources/items.queries.php', {
                 type: 'refresh_visible_folders',
-                data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
-                key: '<?php echo $_SESSION['key']; ?>'
+                data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'),
+                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
             },
             function(data) {
                 //decrypt data
-                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>', 'items.queries.php', 'refresh_visible_folders');
+                data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'items.queries.php', 'refresh_visible_folders');
                 if (debugJavascript === true) {
                     console.log('TREE');
                     console.log(data);
@@ -3461,11 +3463,11 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             'sources/items.queries.php', {
                 type: 'refresh_folders_other_info',
                 data: sending,
-                key: '<?php echo $_SESSION['key']; ?>'
+                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
             },
             function(data) {
                 //decrypt data
-                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>', 'items.queries.php', 'refresh_folders_other_info');
+                data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'items.queries.php', 'refresh_folders_other_info');
                 if (debugJavascript === true) {
                     console.info('RESULTS for refresh_folders_other_info');
                     console.log(data);
@@ -3675,12 +3677,12 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             //ajax query
             var request = $.post('sources/items.queries.php', {
                     type: 'do_items_list_in_folder',
-                    data: prepareExchangedData(JSON.stringify(dataArray), 'encode', '<?php echo $_SESSION['key']; ?>'),
-                    key: '<?php echo $_SESSION['key']; ?>',
+                    data: prepareExchangedData(JSON.stringify(dataArray), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'),
+                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>',
                 },
                 function(retData) {
                     //get data
-                    data = decodeQueryReturn(retData, '<?php echo $_SESSION['key']; ?>', 'items.queries.php', 'do_items_list_in_folder');
+                    data = decodeQueryReturn(retData, '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'items.queries.php', 'do_items_list_in_folder');
 
                     if (debugJavascript === true) {
                         console.log('LIST ITEMS');
@@ -3794,12 +3796,12 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                                     async: false,
                                     url: 'sources/items.queries.php',
                                     data: 'type=show_item_password&item_key=' + trigger.getAttribute('data-item-key') +
-                                        '&key=<?php echo $_SESSION['key']; ?>',
+                                        '&key=<?php echo $superGlobal->get('key', 'SESSION'); ?>',
                                     dataType: "",
                                     success: function(data) {
                                         //decrypt data
                                         try {
-                                            data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                                            data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
                                         } catch (e) {
                                             // error
                                             toastr.remove();
@@ -4317,12 +4319,12 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         $.post(
             'sources/items.queries.php', {
                 type: 'check_current_access_rights',
-                data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
-                key: '<?php echo $_SESSION['key']; ?>'
+                data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'),
+                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
             },
             function(data) {
                 //decrypt data
-                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>', 'items.queries.php', 'show_details_item');
+                data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'items.queries.php', 'show_details_item');
                 requestRunning = true;
                 if (debugJavascript === true) {
                     console.log("DEBUG: checkAccess");
@@ -4451,12 +4453,12 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         $.post(
             'sources/items.queries.php', {
                 type: 'show_details_item',
-                data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
-                key: '<?php echo $_SESSION['key']; ?>'
+                data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'),
+                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
             },
             function(data) {
                 //decrypt data
-                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>', 'items.queries.php', 'show_details_item');
+                data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'items.queries.php', 'show_details_item');
                 requestRunning = true;
                 if (debugJavascript === true) {
                     console.log("RECEIVED object details");
@@ -5118,14 +5120,14 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             'sources/items.queries.php', {
                 type: 'showDetailsStep2',
                 id: id,
-                key: '<?php echo $_SESSION['key']; ?>'
+                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
             },
             function(data) {
                 //decrypt data
-                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>', 'items.queries.php', 'showDetailsStep2');
+                data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'items.queries.php', 'showDetailsStep2');
 
                 if (debugJavascript === true) {
-                    console.log('RECEIVED STEP2 - used key: <?php echo $_SESSION['key']; ?>');
+                    console.log('RECEIVED STEP2 - used key: <?php echo $superGlobal->get('key', 'SESSION'); ?>');
                     console.log(data);
                 }
 
@@ -5164,7 +5166,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
                             // Show DOWNLOAD icon
                             downloadIcon =
-                                '<a class="text-secondary infotip mr-2" href="sources/downloadFile.php?name=' + encodeURI(value.filename) + '&key=<?php echo $_SESSION['key']; ?>&key_tmp=' + value.key + '&fileid=' + value.id + '" title="<?php echo langHdl('download'); ?>">' +
+                                '<a class="text-secondary infotip mr-2" href="sources/downloadFile.php?name=' + encodeURI(value.filename) + '&key=<?php echo $superGlobal->get('key', 'SESSION'); ?>&key_tmp=' + value.key + '&fileid=' + value.id + '" title="<?php echo langHdl('download'); ?>">' +
                                 '<i class="fa-solid fa-file-download"></i></a>';
                             html += downloadIcon;
 
@@ -5293,8 +5295,8 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 $.post(
                     "sources/items.queries.php", {
                         type: 'delete_uploaded_files_but_not_saved',
-                        data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
-                        key: '<?php echo $_SESSION['key']; ?>'
+                        data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'),
+                        key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                     },
                     function (data) {
                         /*// add track-change class on item form
@@ -5342,11 +5344,11 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             $.post(
                 "sources/items.queries.php", {
                     type: 'history_entry_add',
-                    data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
-                    key: '<?php echo $_SESSION['key']; ?>'
+                    data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'),
+                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                 },
                 function(data) {
-                    data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>', 'items.queries.php', 'history_entry_add');
+                    data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'items.queries.php', 'history_entry_add');
                     if (debugJavascript === true) console.log(data);
                     $('.history').val('');
 
@@ -5383,12 +5385,12 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             $.post(
                 'sources/items.queries.php', {
                     type: 'delete_attached_file',
-                    data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
-                    key: '<?php echo $_SESSION['key']; ?>'
+                    data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'),
+                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                 },
                 function(data) {
                     //decrypt data
-                    data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>', 'items.queries.php', 'delete_attached_file');
+                    data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'items.queries.php', 'delete_attached_file');
                     if (debugJavascript === true) console.log(data);
 
                     //check if format error
@@ -5493,11 +5495,11 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 $.post(
                     "sources/items.queries.php", {
                         type: 'history_entry_add',
-                        data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
-                        key: '<?php echo $_SESSION['key']; ?>'
+                        data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'),
+                        key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                     },
                     function(data) {
-                        data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>', 'items.queries.php', 'history_entry_add');
+                        data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'items.queries.php', 'history_entry_add');
                         if (debugJavascript === true) console.log(data);
                         $('#warningModal .history').val('');
 
@@ -5538,11 +5540,11 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             "sources/items.queries.php", {
                 type: "image_preview_preparation",
                 id: fileId,
-                key: "<?php echo $_SESSION['key']; ?>"
+                key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
             },
             function(data) {
                 //decrypt data
-                data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>', 'items.queries.php', 'image_preview_preparation');
+                data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'items.queries.php', 'image_preview_preparation');
                 //if (debugJavascript === true) console.log(data);
 
                 //check if format error
@@ -5610,11 +5612,11 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             "sources/items.queries.php", {
                 type: "load_item_history",
                 item_id: item_id,
-                key: "<?php echo $_SESSION['key']; ?>"
+                key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
             },
             function(data) {
                 //decrypt data
-                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>', 'items.queries.php', 'load_item_history');
+                data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'items.queries.php', 'load_item_history');
                 if (debugJavascript === true) {
                     console.info('History:');
                     console.log(data);
@@ -5691,8 +5693,8 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         $.post(
             "sources/items.logs.php", {
                 type: "log_action_on_item",
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                key: "<?php echo $_SESSION['key']; ?>"
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
             }
         );
     }
@@ -5713,8 +5715,8 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         $.post(
             "sources/items.queries.php", {
                 type: "generate_OTV_url",
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                key: "<?php echo $_SESSION['key']; ?>"
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
             },
             function(data) {
                 //check if format error
@@ -5758,11 +5760,11 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         $.post(
             "sources/items.queries.php", {
                 type: "update_OTV_url",
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                key: "<?php echo $_SESSION['key']; ?>"
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
             },
             function(data) {
-                data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
                 // Display new url
                 if (data.new_url !== undefined) {
                     $('#form-item-otv-link').val(data.new_url);
@@ -5837,11 +5839,11 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 folder_id: val,
                 context: context,
                 item_id: store.get('teampassItem').id,
-                key: '<?php echo $_SESSION['key']; ?>'
+                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
             },
             function(data) {
                 //decrypt data
-                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>', 'items.queries.php', 'get_complixity_level');
+                data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'items.queries.php', 'get_complixity_level');
 
                 if (debugJavascript === true) {
                     console.info('GET COMPLEXITY LEVEL');
@@ -5952,10 +5954,10 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 symbols: $('#pwd-definition-symbols').prop("checked"),
                 secure_pwd: secure_pwd,
                 force: "false",
-                key: "<?php echo $_SESSION['key']; ?>"
+                key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
             },
             function(data) {
-                data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
                 if (debugJavascript === true) console.log(data)
                 if (data.error == "true") {
                     // error
@@ -6084,12 +6086,12 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 $.post(
                     'sources/items.queries.php', {
                         type: 'move_item',
-                        data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
-                        key: '<?php echo $_SESSION['key']; ?>'
+                        data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'),
+                        key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                     },
                     function(data) {
                         //decrypt data
-                        data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>', 'items.queries.php', 'move_item');
+                        data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'items.queries.php', 'move_item');
 
                         if (debugJavascript === true) console.log(data)
 

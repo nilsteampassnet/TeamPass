@@ -34,6 +34,7 @@ use TeampassClasses\NestedTree\NestedTree;
 // Load functions
 require_once __DIR__.'/../../sources/main.functions.php';
 loadClasses('DB');
+$superGlobal = new SuperGlobal();
 
 // Load config if $SETTINGS not defined
 try {

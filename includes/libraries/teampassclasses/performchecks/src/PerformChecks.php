@@ -24,6 +24,8 @@ Use EZimuel\PHPSecureSession;
 
 class PerformChecks
 {
+    private $postType;
+    private $sessionVar;
     /**
      * Construct the class.
      *
@@ -93,15 +95,16 @@ class PerformChecks
             echo json_encode([
                 'status' => true,
             ]);
-        } else {
-            // In case that no session is available
-            // Force the page to be reloaded and attach the CSRFP info
-            // Load CSRFP
-            $csrfp_array = __DIR__ . '/../includes/libraries/csrfp/libs/csrfp.config.php';
-
-            // Send back CSRFP info
-            echo $csrfp_array['CSRFP_TOKEN'] . ';' . filter_input(INPUT_POST, $csrfp_array['CSRFP_TOKEN'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            exit();
         }
+
+        // In case that no session is available
+        // Force the page to be reloaded and attach the CSRFP info
+        // Load CSRFP
+        $csrfp_array = __DIR__ . '/../includes/libraries/csrfp/libs/csrfp.config.php';
+
+        // Send back CSRFP info
+        echo $csrfp_array['CSRFP_TOKEN'] . ';' . filter_input(INPUT_POST, $csrfp_array['CSRFP_TOKEN'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
     }
 
     /**

@@ -28,12 +28,12 @@ use TeampassClasses\SuperGlobal\SuperGlobal;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
 
-
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
 
 // init
 loadClasses('DB');
+$superGlobal = new SuperGlobal();
 session_name('teampass_session');
 session_start();
 

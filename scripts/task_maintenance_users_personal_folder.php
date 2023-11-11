@@ -23,12 +23,14 @@
  */
 
 use TeampassClasses\NestedTree\NestedTree;
+use TeampassClasses\SuperGlobal\SuperGlobal;
 
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
 
 // init
 loadClasses('DB');
+$superGlobal = new SuperGlobal();
 session_name('teampass_session');
 session_start();
 

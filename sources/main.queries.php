@@ -31,6 +31,7 @@ use TeampassClasses\PerformChecks\PerformChecks;
 require_once 'main.functions.php';
 
 loadClasses('DB');
+$superGlobal = new SuperGlobal();
 
 if (isset($_SESSION) === false) {
     session_name('teampass_session');
@@ -56,16 +57,16 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => isset($_POST['type']) === true ? $_POST['type'] : '',
+            'type' => returnIfSet($superGlobal->get('type', 'POST')),
         ],
         [
             'type' => 'trim|escape',
         ],
     ),
     [
-        'user_id' => isset($_SESSION['user_id']) === false ? null : $_SESSION['user_id'],
-        'user_key' => isset($_SESSION['key']) === false ? null : $_SESSION['key'],
-        'CPM' => isset($_SESSION['CPM']) === false ? null : $_SESSION['CPM'],
+        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
+        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
     ]
 );
 /*// Handle the case
@@ -129,6 +130,7 @@ function mainQuery(array $SETTINGS)
 
     // Load libraries
     loadClasses('DB');
+$superGlobal = new SuperGlobal();
 
     // User's language loading
     //include_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user']['user_language'] . '.php';

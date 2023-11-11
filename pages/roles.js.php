@@ -25,12 +25,13 @@ declare(strict_types=1);
  */
 
 use TeampassClasses\PerformChecks\PerformChecks;
-
+use TeampassClasses\SuperGlobal\SuperGlobal;
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
 
 // init
 loadClasses();
+$superGlobal = new SuperGlobal();
 
 if (
     isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
@@ -51,16 +52,16 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => isset($_POST['type']) === true ? $_POST['type'] : '',
+            'type' => returnIfSet($superGlobal->get('type', 'POST')),
         ],
         [
             'type' => 'trim|escape',
         ],
     ),
     [
-        'user_id' => isset($_SESSION['user_id']) === false ? null : $_SESSION['user_id'],
-        'user_key' => isset($_SESSION['key']) === false ? null : $_SESSION['key'],
-        'CPM' => isset($_SESSION['CPM']) === false ? null : $_SESSION['CPM'],
+        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
+        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
     ]
 );
 // Handle the case
@@ -168,10 +169,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             'sources/roles.queries.php', {
                 type: 'build_matrix',
                 role_id: selectedRoleId,
-                key: '<?php echo $_SESSION['key']; ?>'
+                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
             },
             function(data) {
-                data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                 console.log(data);
                 if (data.error === true) {
                     // Show error
@@ -302,10 +303,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 'sources/folders.queries.php', {
                     type: 'select_sub_folders',
                     id: id,
-                    key: '<?php echo $_SESSION['key']; ?>'
+                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                 },
                 function(data) {
-                    data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                    data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                     // check/uncheck checkbox
                     if (data.subfolders !== '') {
                         $.each(JSON.parse(data.subfolders), function(i, value) {
@@ -348,10 +349,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 'sources/folders.queries.php', {
                     type: 'select_sub_folders',
                     id: id,
-                    key: '<?php echo $_SESSION['key']; ?>'
+                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                 },
                 function(data) {
-                    data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                    data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                     // check/uncheck checkbox
                     if (data.subfolders !== '') {
                         $.each(JSON.parse(data.subfolders), function(i, value) {
@@ -518,11 +519,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             $.post(
                 'sources/roles.queries.php', {
                     type: 'change_role_definition',
-                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                    key: '<?php echo $_SESSION['key']; ?>'
+                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                 },
                 function(data) { //decrypt data
-                    data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');                    
+                    data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>');                    
                     console.log('DID CHANGES')
                     console.log(data);
 
@@ -704,11 +705,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             $.post(
                 'sources/roles.queries.php', {
                     type: 'change_access_right_on_folder',
-                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                    key: '<?php echo $_SESSION['key']; ?>'
+                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                 },
                 function(data) { //decrypt data
-                    data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                    data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
 
                     if (data.error === true) {
                         // ERROR
@@ -754,12 +755,12 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             $.post(
                 'sources/roles.queries.php', {
                     type: 'delete_role',
-                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                    key: '<?php echo $_SESSION['key']; ?>'
+                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                 },
                 function(data) {
                     //decrypt data
-                    data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                    data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
 
                     if (data.error === true) {
                         // ERROR
@@ -825,12 +826,12 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             $.post(
                 'sources/roles.queries.php', {
                     type: 'map_role_with_adgroup',
-                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                    key: '<?php echo $_SESSION['key']; ?>'
+                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                 },
                 function(data) {
                     //decrypt data
-                    data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                    data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
 
                     if (data.error === true) {
                         // ERROR
@@ -883,11 +884,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         $.post(
             "sources/roles.queries.php", {
                 type: "get_list_of_groups_in_ldap",
-                key: "<?php echo $_SESSION['key']; ?>"
+                key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
             },
             function(data) {
                 //decrypt data
-                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                 console.log(data)
 
                 if (data.error === true) {
@@ -1034,10 +1035,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 'sources/roles.queries.php', {
                     type: 'build_matrix',
                     role_id: $('#folders-compare').val(),
-                    key: '<?php echo $_SESSION['key']; ?>'
+                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                 },
                 function(data) {
-                    data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                    data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                     if (data.error !== false) {
                         // Show error
                         toastr.remove();

@@ -354,7 +354,7 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                                     "sources/main.queries.php", {
                                         type: "convert_items_with_personal_saltkey_progress",
                                         data: prepareExchangedData(JSON.stringify(data), "encode", store.get('teampassUser').sessionKey),
-                                        key: '<?php echo $_SESSION['key']; ?>'
+                                        key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                                     },
                                     function(data) {
                                         data = prepareExchangedData(data, store.get('teampassUser').sessionKey);
@@ -536,7 +536,7 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
             function(data) {
                 data = JSON.parse(data);
 
-                if (data.key !== '<?php echo $_SESSION['key']; ?>') {
+                if (data.key !== '<?php echo $superGlobal->get('key', 'SESSION'); ?>') {
                     // No session was found, warn user
                     toastr.remove();
                     toastr.error(
@@ -560,7 +560,7 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                     data = prepareExchangedData(
                         data.ret,
                         "decode",
-                        "<?php echo $_SESSION['key']; ?>"
+                        "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
                     );
                 } catch (e) {
                     // error
@@ -664,7 +664,7 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                 data: prepareExchangedData(
                     JSON.stringify(data),
                     'encode',
-                    '<?php echo $_SESSION['key']; ?>'
+                    '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                 )
             },
             function(receivedData) {
@@ -672,7 +672,7 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                     var data = prepareExchangedData(
                         receivedData,
                         "decode",
-                        "<?php echo $_SESSION['key']; ?>"
+                        "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
                     );
                 } catch (e) {
                     // error
@@ -690,7 +690,7 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                 
                 if (debugJavascript === true) {
                     console.info('Identification answer:')
-                    console.log('SESSION KEY is: <?php echo $_SESSION['key']; ?>');
+                    console.log('SESSION KEY is: <?php echo $superGlobal->get('key', 'SESSION'); ?>');
                     console.log(data);
                 }
                 
@@ -830,11 +830,11 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                 'sources/main.queries.php', {
                     type: 'ga_generate_qr',
                     type_category: 'action_user',
-                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                    key: "<?php echo $_SESSION['key']; ?>"
+                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                    key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
                 },
                 function(data) {
-                    data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                    data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                     if (debugJavascript === true) console.log(data);
 
                     if (data.error !== false) {
@@ -887,11 +887,11 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
             'sources/main.queries.php', {
                 type: 'ga_generate_qr',
                 type_category: 'action_user',
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                key: "<?php echo $_SESSION['key']; ?>"
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
             },
             function(data) {
-                data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                 if (debugJavascript === true) console.log(data);
 
                 if (data.error !== false) {

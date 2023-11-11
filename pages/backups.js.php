@@ -25,12 +25,13 @@ declare(strict_types=1);
  */
 
 use TeampassClasses\PerformChecks\PerformChecks;
-
+use TeampassClasses\SuperGlobal\SuperGlobal;
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
 
 // init
 loadClasses();
+$superGlobal = new SuperGlobal();
 
 if (
     isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
@@ -51,16 +52,16 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => isset($_POST['type']) === true ? $_POST['type'] : '',
+            'type' => returnIfSet($superGlobal->get('type', 'POST')),
         ],
         [
             'type' => 'trim|escape',
         ],
     ),
     [
-        'user_id' => isset($_SESSION['user_id']) === false ? null : $_SESSION['user_id'],
-        'user_key' => isset($_SESSION['key']) === false ? null : $_SESSION['key'],
-        'CPM' => isset($_SESSION['CPM']) === false ? null : $_SESSION['CPM'],
+        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
+        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
     ]
 );
 // Handle the case
@@ -88,10 +89,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 capitalize: "true",
                 symbols: "false",
                 secure: "true",
-                key: "<?php echo $_SESSION['key']; ?>"
+                key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
             },
             function(data) {
-                data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
 
                 if (data.key !== "") {
                     $('#onthefly-backup-key').val(data.key);
@@ -125,12 +126,12 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 $.post(
                     "sources/backups.queries.php", {
                         type: "onthefly_backup",
-                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                        key: "<?php echo $_SESSION['key']; ?>"
+                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                        key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
                     },
                     function(data) {
                         //decrypt data
-                        data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                        data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                         console.log(data);
 
                         if (data.error === true) {
@@ -153,13 +154,13 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             $.post(
                                 "sources/admin.queries.php", {
                                     type: "save_option_change",
-                                    data: prepareExchangedData(JSON.stringify(newData), "encode", "<?php echo $_SESSION['key']; ?>"),
-                                    key: "<?php echo $_SESSION['key']; ?>"
+                                    data: prepareExchangedData(JSON.stringify(newData), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                                    key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
                                 },
                                 function(data) {
                                     // Handle server answer
                                     try {
-                                        data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                                        data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
                                     } catch (e) {
                                         // error
                                         toastr.remove();
@@ -223,12 +224,12 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 $.post(
                     "sources/backups.queries.php", {
                         type: "onthefly_restore",
-                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                        key: "<?php echo $_SESSION['key']; ?>"
+                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                        key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
                     },
                     function(data) {
                         //decrypt data
-                        data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                        data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                         console.log(data);
 
                         if (data.error === true) {
@@ -308,7 +309,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             ambiguous: true,
                             reason: "restore_db",
                             duration: 10,
-                            key: '<?php echo $_SESSION['key']; ?>'
+                            key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                         },
                         function(data) {
                             console.log(data);
@@ -362,12 +363,12 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
     // Uploader options
     uploader_restoreDB.bind('FileUploaded', function(upldr, file, object) {
-        var myData = prepareExchangedData(object.response, "decode", "<?php echo $_SESSION['key']; ?>");
+        var myData = prepareExchangedData(object.response, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
         $('#onthefly-restore-file').data('operation-id', myData.operation_id);
     });
 
     uploader_restoreDB.bind("Error", function(up, err) {
-        //var myData = prepareExchangedData(err, "decode", "<?php echo $_SESSION['key']; ?>");
+        //var myData = prepareExchangedData(err, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
         $("#onthefly-restore-progress")
             .removeClass('hidden')
             .html('<div class="alert alert-danger alert-dismissible ml-2">' +
