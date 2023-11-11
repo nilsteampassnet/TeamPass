@@ -270,7 +270,6 @@ if (($session_validite_pw === null
     && empty($session_user_id) === false
 ) {
     ?>
-
     <body class="hold-transition sidebar-mini layout-navbar-fixed layout-fixed">
         <div class="wrapper">
 
@@ -656,6 +655,9 @@ if (($session_validite_pw === null
                         <a href="<?php echo HELP_URL; ?>" target="_blank" class="text-info"><i class="fa-solid fa-life-ring mr-2 infotip" title="<?php echo langHdl('admin_help'); ?>"></i></a>
                         <i class="fa-solid fa-bug infotip pointer text-info" title="<?php echo langHdl('bugs_page'); ?>" onclick="generateBugReport()"></i>
                     </div>
+                    <?php 
+    //print_r($_SESSION);
+    ?>
                 </div>
                 </div>
                 <!-- /.sidebar -->

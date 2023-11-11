@@ -45,6 +45,9 @@ use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Process;
 use Symfony\Component\Process\PhpExecutableFinder;
 use TeampassClasses\Encryption\Encryption;
+//use phpseclib3\Crypt\PublicKeyLoader;
+//use phpseclib3\Crypt\RSA;
+//use phpseclib3\Exception\NoKeyLoadedException;
 
 if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
     //die('Hacking attempt...');
@@ -72,8 +75,9 @@ function langHdl(string $string): string
         return 'ERROR in language strings!';
     }
 
-    // Load superglobal
+    // Load
     $superGlobal = new SuperGlobal();
+    $antiXss = new AntiXSS();
     // Get language string
     $session_language = $superGlobal->get(trim($string), 'SESSION', 'lang');
     if (is_null($session_language) === true) {
@@ -94,7 +98,7 @@ function langHdl(string $string): string
     if (empty($session_language) === true) {
         return trim($string);
     }
-    return (string) htmlentities($session_language);
+    return (string) $antiXss->xss_clean($session_language);
 }
 
 /**
@@ -1628,7 +1632,7 @@ function send_syslog($message, $host, $port, $component = 'teampass'): void
  * @param string $label    Label
  * @param string $who      Who
  * @param string $login    Login
- * @param string $field_1  Field
+ * @param string|int $field_1  Field
  * 
  * @return void
  */
@@ -1638,7 +1642,7 @@ function logEvents(
     string $label, 
     string $who, 
     ?string $login = null, 
-    ?string $field_1 = null
+    $field_1 = null
 ): void
 {
     if (empty($who)) {
@@ -2481,19 +2485,30 @@ function formatSizeUnits(int $bytes): string
  */
 function generateUserKeys(string $userPwd): array
 {
-    // Load classes
-    $rsa = new Crypt_RSA();
-    $cipher = new Crypt_AES();
-    // Create the private and public key
-    $res = $rsa->createKey(4096);
-    // Encrypt the privatekey
-    $cipher->setPassword($userPwd);
-    $privatekey = $cipher->encrypt($res['privatekey']);
-    return [
-        'private_key' => base64_encode($privatekey),
-        'public_key' => base64_encode($res['publickey']),
-        'private_key_clear' => base64_encode($res['privatekey']),
-    ];
+    //if (WIP === false) {
+        // Load classes
+        $rsa = new Crypt_RSA();
+        $cipher = new Crypt_AES();
+        // Create the private and public key
+        $res = $rsa->createKey(4096);
+        // Encrypt the privatekey
+        $cipher->setPassword($userPwd);
+        $privatekey = $cipher->encrypt($res['privatekey']);
+        return [
+            'private_key' => base64_encode($privatekey),
+            'public_key' => base64_encode($res['publickey']),
+            'private_key_clear' => base64_encode($res['privatekey']),
+        ];
+    /*} else {
+        // Create the keys
+        $keys = RSA::createKey();
+
+        return [
+            'private_key' => base64_encode($keys->withPassword($userPwd)->toString('PKCS8')),
+            'public_key' => base64_encode($keys->getPublicKey()),
+            'private_key_clear' => base64_encode($keys->toString('PKCS8')),
+        ];
+    }*/
 }
 
 /**
@@ -2504,18 +2519,31 @@ function generateUserKeys(string $userPwd): array
  *
  * @return string
  */
-function decryptPrivateKey(string $userPwd, string $userPrivateKey): string
+function decryptPrivateKey(string $userPwd, string $userPrivateKey): string|object
 {
     if (empty($userPwd) === false) {
-        // Load classes
-        $cipher = new Crypt_AES();
-        // Encrypt the privatekey
-        $cipher->setPassword($userPwd);
-        try {
-            return base64_encode((string) $cipher->decrypt(base64_decode($userPrivateKey)));
-        } catch (Exception $e) {
-            return $e;
-        }
+        //if (WIP === false) {
+            // Load classes
+            $cipher = new Crypt_AES();
+            // Encrypt the privatekey
+            $cipher->setPassword($userPwd);
+            try {
+                return base64_encode((string) $cipher->decrypt(base64_decode($userPrivateKey)));
+            } catch (Exception $e) {
+                return $e;
+            }
+        /*} else {
+            //echo $userPrivateKey." ;; ".($userPwd)." ;;";
+            // Load and decrypt the private key
+            try {
+                $privateKey = PublicKeyLoader::loadPrivateKey(base64_decode($userPrivateKey), $userPwd)->withHash('sha1')->withMGFHash('sha1');
+                print_r($privateKey);
+                return base64_encode((string) $$privateKey);
+            } catch (NoKeyLoadedException $e) {
+                print_r($e);
+                return $e;
+            }
+        }*/
     }
     return '';
 }
@@ -2531,15 +2559,26 @@ function decryptPrivateKey(string $userPwd, string $userPrivateKey): string
 function encryptPrivateKey(string $userPwd, string $userPrivateKey): string
 {
     if (empty($userPwd) === false) {
-        // Load classes
-        $cipher = new Crypt_AES();
-        // Encrypt the privatekey
-        $cipher->setPassword($userPwd);        
-        try {
-            return base64_encode($cipher->encrypt(base64_decode($userPrivateKey)));
-        } catch (Exception $e) {
-            return $e;
-        }
+        //if (WIP === false) {
+            // Load classes
+            $cipher = new Crypt_AES();
+            // Encrypt the privatekey
+            $cipher->setPassword($userPwd);        
+            try {
+                return base64_encode($cipher->encrypt(base64_decode($userPrivateKey)));
+            } catch (Exception $e) {
+                return $e;
+            }
+        /*} else {
+            // Load the private key
+            $privateKey = PublicKeyLoader::load(base64_decode($userPrivateKey));
+
+            try {
+                return base64_encode($privateKey->withPassword($userPwd));
+            } catch (Exception $e) {
+                return $e;
+            }
+        }*/
     }
     return '';
 }
@@ -2554,16 +2593,20 @@ function encryptPrivateKey(string $userPwd, string $userPrivateKey): string
  */
 function doDataEncryption(string $data, string $key = NULL): array
 {
-    // Load classes
-    $cipher = new Crypt_AES(CRYPT_AES_MODE_CBC);
-    // Generate an object key
-    $objectKey = is_null($key) === true ? uniqidReal(KEY_LENGTH) : $key;
-    // Set it as password
-    $cipher->setPassword($objectKey);
-    return [
-        'encrypted' => base64_encode($cipher->encrypt($data)),
-        'objectKey' => base64_encode($objectKey),
-    ];
+    //if (WIP === false) {
+        // Load classes
+        $cipher = new Crypt_AES(CRYPT_AES_MODE_CBC);
+        // Generate an object key
+        $objectKey = is_null($key) === true ? uniqidReal(KEY_LENGTH) : $key;
+        // Set it as password
+        $cipher->setPassword($objectKey);
+        return [
+            'encrypted' => base64_encode($cipher->encrypt($data)),
+            'objectKey' => base64_encode($objectKey),
+        ];
+    /*} else {
+
+    }*/
 }
 
 /**
@@ -2576,11 +2619,15 @@ function doDataEncryption(string $data, string $key = NULL): array
  */
 function doDataDecryption(string $data, string $key): string
 {
-    // Load classes
-    $cipher = new Crypt_AES();
-    // Set the object key
-    $cipher->setPassword(base64_decode($key));
-    return base64_encode((string) $cipher->decrypt(base64_decode($data)));
+    //if (WIP === false) {
+        // Load classes
+        $cipher = new Crypt_AES();
+        // Set the object key
+        $cipher->setPassword(base64_decode($key));
+        return base64_encode((string) $cipher->decrypt(base64_decode($data)));
+    /*} else {
+
+    }*/
 }
 
 /**
@@ -2593,11 +2640,15 @@ function doDataDecryption(string $data, string $key): string
  */
 function encryptUserObjectKey(string $key, string $publicKey): string
 {
-    // Load classes
-    $rsa = new Crypt_RSA();
-    $rsa->loadKey(base64_decode($publicKey));
-    // Encrypt
-    return base64_encode($rsa->encrypt(base64_decode($key)));
+    //if (WIP === false) {
+        // Load classes
+        $rsa = new Crypt_RSA();
+        $rsa->loadKey(base64_decode($publicKey));
+        // Encrypt
+        return base64_encode($rsa->encrypt(base64_decode($key)));
+    /*} else {
+
+    }*/
 }
 
 /**
@@ -2610,20 +2661,24 @@ function encryptUserObjectKey(string $key, string $publicKey): string
  */
 function decryptUserObjectKey(string $key, string $privateKey): string
 {
-    // Load classes
-    $rsa = new Crypt_RSA();
-    $rsa->loadKey(base64_decode($privateKey));
-    // Decrypt
-    try {
-        $tmpValue = $rsa->decrypt(base64_decode($key));
-        if (is_bool($tmpValue) === false) {
-            $ret = base64_encode((string) /** @scrutinizer ignore-type */$tmpValue);
-        } else {
-            $ret = '';
+    //if (WIP === false) {
+        // Load classes
+        $rsa = new Crypt_RSA();
+        $rsa->loadKey(base64_decode($privateKey));
+        // Decrypt
+        try {
+            $tmpValue = $rsa->decrypt(base64_decode($key));
+            if (is_bool($tmpValue) === false) {
+                $ret = base64_encode((string) /** @scrutinizer ignore-type */$tmpValue);
+            } else {
+                $ret = '';
+            }
+        } catch (Exception $e) {
+            return $e;
         }
-    } catch (Exception $e) {
-        return $e;
-    }
+        /*} else {
+
+        }*/
 
     return $ret;
 }
@@ -2641,31 +2696,34 @@ function encryptFile(string $fileInName, string $fileInPath): array
     if (defined('FILE_BUFFER_SIZE') === false) {
         define('FILE_BUFFER_SIZE', 128 * 1024);
     }
+    //if (WIP === false) {
+        // Load classes
+        $cipher = new Crypt_AES();
+        // Generate an object key
+        $objectKey = uniqidReal(32);
+        // Set it as password
+        $cipher->setPassword($objectKey);
+        // Prevent against out of memory
+        $cipher->enableContinuousBuffer();
+        //$cipher->disablePadding();
 
-    // Load classes
-    $cipher = new Crypt_AES();
-    // Generate an object key
-    $objectKey = uniqidReal(32);
-    // Set it as password
-    $cipher->setPassword($objectKey);
-    // Prevent against out of memory
-    $cipher->enableContinuousBuffer();
-    //$cipher->disablePadding();
+        // Encrypt the file content
+        $plaintext = file_get_contents(
+            filter_var($fileInPath . '/' . $fileInName, FILTER_SANITIZE_URL)
+        );
+        $ciphertext = $cipher->encrypt($plaintext);
+        // Save new file
+        $hash = md5($plaintext);
+        $fileOut = $fileInPath . '/' . TP_FILE_PREFIX . $hash;
+        file_put_contents($fileOut, $ciphertext);
+        unlink($fileInPath . '/' . $fileInName);
+        return [
+            'fileHash' => base64_encode($hash),
+            'objectKey' => base64_encode($objectKey),
+        ];
+    /*} else {
 
-    // Encrypt the file content
-    $plaintext = file_get_contents(
-        filter_var($fileInPath . '/' . $fileInName, FILTER_SANITIZE_URL)
-    );
-    $ciphertext = $cipher->encrypt($plaintext);
-    // Save new file
-    $hash = md5($plaintext);
-    $fileOut = $fileInPath . '/' . TP_FILE_PREFIX . $hash;
-    file_put_contents($fileOut, $ciphertext);
-    unlink($fileInPath . '/' . $fileInName);
-    return [
-        'fileHash' => base64_encode($hash),
-        'objectKey' => base64_encode($objectKey),
-    ];
+    }*/
 }
 
 /**
@@ -2682,20 +2740,25 @@ function decryptFile(string $fileName, string $filePath, string $key): string
     if (! defined('FILE_BUFFER_SIZE')) {
         define('FILE_BUFFER_SIZE', 128 * 1024);
     }
-
+    
     // Get file name
     $fileName = base64_decode($fileName);
-    // Load classes
-    $cipher = new Crypt_AES();
-    // Set the object key
-    $cipher->setPassword(base64_decode($key));
-    // Prevent against out of memory
-    $cipher->enableContinuousBuffer();
-    $cipher->disablePadding();
-    // Get file content
-    $ciphertext = file_get_contents($filePath . '/' . TP_FILE_PREFIX . $fileName);
-    // Decrypt file content and return
-    return base64_encode($cipher->decrypt($ciphertext));
+
+    //if (WIP === false) {
+        // Load classes
+        $cipher = new Crypt_AES();
+        // Set the object key
+        $cipher->setPassword(base64_decode($key));
+        // Prevent against out of memory
+        $cipher->enableContinuousBuffer();
+        $cipher->disablePadding();
+        // Get file content
+        $ciphertext = file_get_contents($filePath . '/' . TP_FILE_PREFIX . $fileName);
+        // Decrypt file content and return
+        return base64_encode($cipher->decrypt($ciphertext));
+    /*} else {
+        
+    }*/
 }
 
 /**
@@ -4273,4 +4336,16 @@ function getCurrectPage($SETTINGS)
     return $result['page'];
 }
 
+/**
+ * Permits to return value if set
+ *
+ * @param string|int $value
+ * @param string|int $retFalse
+ * @param string|int $retTrue
+ * @return mixed
+ */
+function returnIfSet($value, $retFalse = '', $retTrue = null)
+{
 
+    return isset($value) === true ? ($retTrue === null ? ($value !== null ? $value : '') : $retTrue) : $retFalse;
+}

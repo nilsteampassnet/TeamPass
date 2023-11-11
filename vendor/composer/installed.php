@@ -440,12 +440,12 @@
             ),
         ),
         'symfony/http-foundation' => array(
-            'pretty_version' => 'v6.3.7',
-            'version' => '6.3.7.0',
+            'pretty_version' => 'v6.3.8',
+            'version' => '6.3.8.0',
             'type' => 'library',
             'install_path' => __DIR__ . '/../symfony/http-foundation',
             'aliases' => array(),
-            'reference' => '59d1837d5d992d16c2628cd0d6b76acf8d69b33e',
+            'reference' => 'ce332676de1912c4389222987193c3ef38033df6',
             'dev_requirement' => false,
         ),
         'symfony/mime' => array(
@@ -566,12 +566,12 @@
             ),
         ),
         'symfony/var-dumper' => array(
-            'pretty_version' => 'v6.3.6',
-            'version' => '6.3.6.0',
+            'pretty_version' => 'v6.3.8',
+            'version' => '6.3.8.0',
             'type' => 'library',
             'install_path' => __DIR__ . '/../symfony/var-dumper',
             'aliases' => array(),
-            'reference' => '999ede244507c32b8e43aebaa10e9fce20de7c97',
+            'reference' => '81acabba9046550e89634876ca64bfcd3c06aa0a',
             'dev_requirement' => false,
         ),
         'teampassclasses/encryption' => array(

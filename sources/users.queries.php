@@ -454,7 +454,7 @@ if (null !== $post_type) {
                         }
                     }
                     // rebuild tree
-                    $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+                    $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
                     $tree->rebuild();
                 }
 
@@ -1582,7 +1582,7 @@ if (null !== $post_type) {
                             }
                         }
                         // rebuild tree
-                        $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+                        $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
                         $tree->rebuild();
                     }
                     // update LOG

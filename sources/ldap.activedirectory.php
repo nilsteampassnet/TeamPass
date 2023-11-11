@@ -78,9 +78,9 @@ function getUserADGroups(string $userDN, Connection $connection, array $SETTINGS
  *
  * @param string $userDN
  * @param Connection $connection
- * @return array
+ * @return bool
  */
-function userIsEnabled(string $userDN, Connection $connection): array
+function userIsEnabled(string $userDN, Connection $connection): bool
 {
     $isEnabled = false;
     try {

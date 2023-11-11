@@ -24,6 +24,8 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
+use TeampassClasses\SuperGlobal\SuperGlobal;
+
 if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
     die('Hacking attempt...');
 }
@@ -47,6 +49,7 @@ if (
     </script>
 <?php
 }
+$superGlobal = new SuperGlobal();
 ?>
 
 <script type="text/javascript">
@@ -1539,19 +1542,18 @@ if (
                     store.update(
                         'teampassUser', {},
                         function(teampassUser) {
-                            teampassUser['user_admin'] = <?php echo isset($_SESSION['user_admin']) === true ? (int) $_SESSION['user_admin'] : 0; ?>;
-                            teampassUser['user_id'] = <?php echo isset($_SESSION['user_id']) === true ? (int) $_SESSION['user_id'] : 0; ?>;
-                            teampassUser['user_manager'] = <?php echo isset($_SESSION['user_manager']) === true ? (int) $_SESSION['user_manager'] : 0; ?>;
-                            teampassUser['user_can_manage_all_users'] = <?php echo isset($_SESSION['user_can_manage_all_users']) === true ? (int) $_SESSION['user_can_manage_all_users'] : 0; ?>;
-                            teampassUser['user_read_only'] = <?php echo isset($_SESSION['user_admin']) === true ? (int) $_SESSION['user_read_only'] : 1; ?>;
-                            teampassUser['key'] = '<?php echo isset($_SESSION['key']) === true ? $_SESSION['key'] : 0; ?>';
-                            teampassUser['login'] = "<?php echo isset($_SESSION['login']) === true ? $_SESSION['login'] : 0; ?>";
-                            teampassUser['lastname'] = "<?php echo isset($_SESSION['lastname']) === true ? $_SESSION['lastname'] : 0; ?>";
-                            teampassUser['name'] = "<?php echo isset($_SESSION['name']) === true ? $_SESSION['name'] : 0; ?>";
-                            teampassUser['pskDefinedInDatabase'] = <?php echo isset($_SESSION['user']['encrypted_psk']) === true ? 1 : 0; ?>;
-                            teampassUser['can_create_root_folder'] = <?php echo isset($_SESSION['can_create_root_folder']) === true ? (int) $_SESSION['can_create_root_folder'] : 0; ?>;
-                            teampassUser['pskDefinedInDatabase'] = <?php echo isset($_SESSION['user']['encrypted_psk']) === true ? 1 : 0; ?>;
-                            teampassUser['special'] = '<?php echo isset($_SESSION['user']['special']) === true ? $_SESSION['user']['special'] : 'none'; ?>';
+                            teampassUser['user_admin'] = <?php echo returnIfSet($superGlobal->get('admin', 'SESSION'), 0); ?>;
+                            teampassUser['user_id'] = <?php echo returnIfSet($superGlobal->get('user_id', 'SESSION'), 0); ?>;
+                            teampassUser['user_manager'] = <?php echo returnIfSet($superGlobal->get('user_manager', 'SESSION'), 0); ?>;
+                            teampassUser['user_can_manage_all_users'] = <?php echo returnIfSet($superGlobal->get('user_can_manage_all_users', 'SESSION'), 0); ?>;
+                            teampassUser['user_read_only'] = <?php echo returnIfSet($superGlobal->get('user_read_only', 'SESSION'), 0); ?>;
+                            teampassUser['key'] = '<?php echo returnIfSet($superGlobal->get('key', 'SESSION'), 0); ?>';
+                            teampassUser['login'] = "<?php echo returnIfSet($superGlobal->get('login', 'SESSION'), 0); ?>";
+                            teampassUser['lastname'] = "<?php echo returnIfSet($superGlobal->get('lastname', 'SESSION'), 0); ?>";
+                            teampassUser['name'] = "<?php echo returnIfSet($superGlobal->get('name', 'SESSION'), 0); ?>";
+                            teampassUser['pskDefinedInDatabase'] = <?php echo returnIfSet($superGlobal->get('encrypted_psk', 'SESSION', 'user'), 0, 1); ?>;
+                            teampassUser['can_create_root_folder'] = <?php echo returnIfSet($superGlobal->get('can_create_root_folder', 'SESSION'), 0); ?>;
+                            teampassUser['special'] = '<?php echo returnIfSet($superGlobal->get('special', 'SESSION', 'user'), 0); ?>';
                         }
                     );
                 }

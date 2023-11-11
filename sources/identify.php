@@ -442,7 +442,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         $superGlobal->put('admin', $userInfo['admin'], 'SESSION');
         $superGlobal->put('user_manager', $userInfo['gestionnaire'], 'SESSION');
         $superGlobal->put('user_can_manage_all_users', $userInfo['can_manage_all_users'], 'SESSION');
-        $superGlobal->put('user_read_only', (bool) $userInfo['read_only'], 'SESSION');
+        $superGlobal->put('user_read_only', (int) $userInfo['read_only'], 'SESSION');
         $superGlobal->put('last_pw_change', (int) $userInfo['last_pw_change'], 'SESSION');
         $superGlobal->put('last_pw', $userInfo['last_pw'], 'SESSION');
         $superGlobal->put('can_create_root_folder', $userInfo['can_create_root_folder'], 'SESSION');
@@ -1208,25 +1208,25 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
         }
 
         // Determining Auth Failure Cause
+        $message = '';
         $dispatcher = Container::getDispatcher();
         $dispatcher->listen(Failed::class, function (Failed $event) use (&$message) {
             $ldap = $event->getConnection();
         
             // The diagnostic message will be available here.
             $error = $ldap->getDiagnosticMessage();
-        
-            if (is_null($error) === false) {
-                $message = '';
-            } elseif (strpos($error, '532') !== false) {
-                $message = 'Your password has expired.';
-            } elseif (strpos($error, '533') !== false) {
-                $message = 'Your account is disabled.';
-            } elseif (strpos($error, '701') !== false) {
-                $message = 'Your account has expired.';
-            } elseif (strpos($error, '775') !== false) {
-                $message = 'Your account is locked.';
-            } else {
-                $message = 'Username or password is incorrect.';
+            if ($error !== null) {
+                if (strpos($error, '532') !== false) {
+                    $message = 'Your password has expired.';
+                } elseif (strpos($error, '533') !== false) {
+                    $message = 'Your account is disabled.';
+                } elseif (strpos($error, '701') !== false) {
+                    $message = 'Your account has expired.';
+                } elseif (strpos($error, '775') !== false) {
+                    $message = 'Your account is locked.';
+                } else {
+                    $message = 'Username or password is incorrect.';
+                }
             }
         });
 
@@ -1238,7 +1238,8 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
                 $userADInfos['userprincipalname'][0] :  // refering to https://ldaprecord.com/docs/core/v2/authentication#basic-authentication
                 $userADInfos['dn'],
             $passwordClear
-        );        
+        );
+
         // User is not auth then return error
         if ($userAuthAttempt === false) {
             return [
