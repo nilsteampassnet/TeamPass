@@ -33,7 +33,7 @@ class UserController extends BaseController
     public function listAction()
     {
         $superGlobal = new SuperGlobal();
-        $strErrorDesc = '';
+        $strErrorDesc = $responseData = $strErrorHeader = '';
         $requestMethod = $superGlobal->get('REQUEST_METHOD', 'SERVER');
         $arrQueryStringParams = $this->getQueryStringParams();
 

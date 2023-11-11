@@ -37,7 +37,7 @@ class ItemController extends BaseController
     public function inFoldersAction(array $userData): void
     {
         $superGlobal = new SuperGlobal();
-        $strErrorDesc = '';
+        $strErrorDesc = $responseData = $strErrorHeader = '';
         $requestMethod = $superGlobal->get('REQUEST_METHOD', 'SERVER');
 
         // get parameters

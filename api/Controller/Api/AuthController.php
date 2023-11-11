@@ -33,9 +33,7 @@ class AuthController extends BaseController
     public function authorizeAction()
     {
         $superGlobal = new SuperGlobal();
-        $strErrorDesc = '';
-        $responseData = '';
-        $strErrorHeader = '';
+        $strErrorDesc = $responseData = $strErrorHeader = '';
         $requestMethod = $superGlobal->get('REQUEST_METHOD', 'SERVER');
         $arrQueryStringParams = $this->getQueryStringParams();
 
