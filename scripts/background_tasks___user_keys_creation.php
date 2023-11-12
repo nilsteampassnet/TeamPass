@@ -333,14 +333,13 @@ function performUserCreationKeys(
                 $logID = doLog('start', 'user_keys-ITEMS', (isset($SETTINGS['enable_tasks_log']) === true ? (int) $SETTINGS['enable_tasks_log'] : 0));
                 $return = cronContinueReEncryptingUserSharekeysStep20(
                     $post_user_id,
-                    $post_self_change,
                     $post_start,
                     $post_length,
                     $userInfo['public_key'],
                     $SETTINGS,
                     $extra_arguments
                 );
-                $logID = doLog('end', '', (isset($SETTINGS['enable_tasks_log']) === true ? (int) $SETTINGS['enable_tasks_log'] : 0), $logID, $return['treated_items']);
+                doLog('end', '', (isset($SETTINGS['enable_tasks_log']) === true ? (int) $SETTINGS['enable_tasks_log'] : 0), $logID, $return['treated_items']);
                 provideLog('[STEP][20][FINISHED]', $SETTINGS);
             }
 
@@ -394,7 +393,6 @@ function performUserCreationKeys(
                 provideLog('[STEP][60][START][INDEX]['.$post_start.']', $SETTINGS);
                 $return = cronContinueReEncryptingUserSharekeysStep60(
                     $post_user_id,
-                    $post_self_change,
                     $post_start,
                     $post_length,
                     $userInfo['public_key'],
@@ -448,7 +446,6 @@ function getOwnerInfo(int $owner_id, string $owner_pwd, array $SETTINGS): array
  * Handle step 1
  *
  * @param integer $post_user_id
- * @param boolean $post_self_change
  * @param integer $post_start
  * @param integer $post_length
  * @param string $user_public_key
@@ -458,7 +455,6 @@ function getOwnerInfo(int $owner_id, string $owner_pwd, array $SETTINGS): array
  */
 function cronContinueReEncryptingUserSharekeysStep20(
     int $post_user_id,
-    bool $post_self_change,
     int $post_start,
     int $post_length,
     string $user_public_key,
@@ -861,7 +857,6 @@ function cronContinueReEncryptingUserSharekeysStep50(
  * Handle step 5
  *
  * @param integer $post_user_id
- * @param boolean $post_self_change
  * @param integer $post_start
  * @param integer $post_length
  * @param string $user_public_key
@@ -871,7 +866,6 @@ function cronContinueReEncryptingUserSharekeysStep50(
  */
 function cronContinueReEncryptingUserSharekeysStep60(
     int $post_user_id,
-    bool $post_self_change,
     int $post_start,
     int $post_length,
     string $user_public_key,

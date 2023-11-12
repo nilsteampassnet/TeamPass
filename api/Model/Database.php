@@ -25,7 +25,7 @@
 class Database
 {
     protected $connection = null;
- 
+
     public function __construct()
     {
         try {
@@ -49,7 +49,6 @@ class Database
             return $result;
         } catch(Exception $e) {
             throw New Exception( $e->getMessage() );
-            return false;
         }
     }
  

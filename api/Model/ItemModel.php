@@ -48,7 +48,8 @@ class ItemModel extends Database
             LEFT JOIN ".prefixTable('nested_tree')." as t ON (t.id = i.id_tree) ".
             $sqlExtra . 
             " ORDER BY i.id ASC" .
-            ($limit > 0 ? " LIMIT ?". ["i", $limit] : '')
+            //($limit > 0 ? " LIMIT ?". ["i", $limit] : '')
+            ($limit > 0 ? " LIMIT ". $limit : '')
         );
         $ret = [];
         foreach ($rows as $row) {
@@ -125,6 +126,7 @@ class ItemModel extends Database
     public function addItem(string $idTree, string $userName, string $hostname, string $password) : bool
     {
         // TODO ecrire
+        
         return true;
     }
 }

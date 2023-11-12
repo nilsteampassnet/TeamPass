@@ -128,7 +128,7 @@ class ItemController extends BaseController
     public function addAction(array $userData)
     {
         $superGlobal = new SuperGlobal();
-        $strErrorDesc = '';
+        $strErrorDesc = $strErrorHeader = '';
         $requestMethod = $superGlobal->get('REQUEST_METHOD', 'SERVER');
 
         if (strtoupper($requestMethod) === 'POST') {

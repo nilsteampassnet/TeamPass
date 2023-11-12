@@ -87,7 +87,7 @@ function apiIsEnabled(): string
 {
     require API_ROOT_PATH . '/../includes/config/tp.config.php';
 
-    if ((int) $SETTINGS['api'] === 1) {
+    if (isset($SETTINGS) === true && isset($SETTINGS['api']) === true && (int) $SETTINGS['api'] === 1) {
         return json_encode(
             [
                 'error' => false,

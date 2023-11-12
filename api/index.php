@@ -35,10 +35,9 @@ require __DIR__ . "/inc/bootstrap.php";
 // sanitize url segments
 $base = new BaseController();
 $uri = $base->getUriSegments();
-if (is_array($uri) === false) {
+if (is_array($uri) === false || is_string($uri) === true) {
     $uri = [$uri];  // ensure $uril is table
 }
-//$uriCount = count($uri)-1;
 
 // Prepare DB password
 if (defined('DB_PASSWD_CLEAR') === false) {

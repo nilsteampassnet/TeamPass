@@ -2514,9 +2514,9 @@ function generateUserKeys(string $userPwd): array
  * @param string $userPwd        User password
  * @param string $userPrivateKey User private key
  *
- * @return string
+ * @return string|object
  */
-function decryptPrivateKey(string $userPwd, string $userPrivateKey): string|object
+function decryptPrivateKey(string $userPwd, string $userPrivateKey)
 {
     if (empty($userPwd) === false) {
         //if (WIP === false) {

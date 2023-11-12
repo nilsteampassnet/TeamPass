@@ -73,7 +73,7 @@ function purgeTemporaryFiles(): void
 {
     // Load expected files
     require_once __DIR__. '/../sources/main.functions.php';
-    include __DIR__. '/../includes/config/tp.config.php';
+    require_once __DIR__. '/../includes/config/tp.config.php';
 
     if (isset($SETTINGS) === true) {
         //read folder
