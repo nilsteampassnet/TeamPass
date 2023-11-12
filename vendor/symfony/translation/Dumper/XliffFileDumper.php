@@ -21,12 +21,10 @@ use Symfony\Component\Translation\MessageCatalogue;
  */
 class XliffFileDumper extends FileDumper
 {
-    public function __construct(
-        private string $extension = 'xlf',
-    ) {
-    }
-
-    public function formatCatalogue(MessageCatalogue $messages, string $domain, array $options = []): string
+    /**
+     * {@inheritdoc}
+     */
+    public function formatCatalogue(MessageCatalogue $messages, string $domain, array $options = [])
     {
         $xliffVersion = '1.2';
         if (\array_key_exists('xliff_version', $options)) {
@@ -49,12 +47,15 @@ class XliffFileDumper extends FileDumper
         throw new InvalidArgumentException(sprintf('No support implemented for dumping XLIFF version "%s".', $xliffVersion));
     }
 
-    protected function getExtension(): string
+    /**
+     * {@inheritdoc}
+     */
+    protected function getExtension()
     {
-        return $this->extension;
+        return 'xlf';
     }
 
-    private function dumpXliff1(string $defaultLocale, MessageCatalogue $messages, ?string $domain, array $options = []): string
+    private function dumpXliff1(string $defaultLocale, MessageCatalogue $messages, ?string $domain, array $options = [])
     {
         $toolInfo = ['tool-id' => 'symfony', 'tool-name' => 'Symfony'];
         if (\array_key_exists('tool_info', $options)) {
@@ -78,15 +79,6 @@ class XliffFileDumper extends FileDumper
         $xliffTool = $xliffHead->appendChild($dom->createElement('tool'));
         foreach ($toolInfo as $id => $value) {
             $xliffTool->setAttribute($id, $value);
-        }
-
-        if ($catalogueMetadata = $messages->getCatalogueMetadata('', $domain) ?? []) {
-            $xliffPropGroup = $xliffHead->appendChild($dom->createElement('prop-group'));
-            foreach ($catalogueMetadata as $key => $value) {
-                $xliffProp = $xliffPropGroup->appendChild($dom->createElement('prop'));
-                $xliffProp->setAttribute('prop-type', $key);
-                $xliffProp->appendChild($dom->createTextNode($value));
-            }
         }
 
         $xliffBody = $xliffFile->appendChild($dom->createElement('body'));
@@ -137,7 +129,7 @@ class XliffFileDumper extends FileDumper
         return $dom->saveXML();
     }
 
-    private function dumpXliff2(string $defaultLocale, MessageCatalogue $messages, ?string $domain): string
+    private function dumpXliff2(string $defaultLocale, MessageCatalogue $messages, ?string $domain)
     {
         $dom = new \DOMDocument('1.0', 'utf-8');
         $dom->formatOutput = true;
@@ -153,16 +145,6 @@ class XliffFileDumper extends FileDumper
             $xliffFile->setAttribute('id', substr($domain, 0, -\strlen(MessageCatalogue::INTL_DOMAIN_SUFFIX)).'.'.$messages->getLocale());
         } else {
             $xliffFile->setAttribute('id', $domain.'.'.$messages->getLocale());
-        }
-
-        if ($catalogueMetadata = $messages->getCatalogueMetadata('', $domain) ?? []) {
-            $xliff->setAttribute('xmlns:m', 'urn:oasis:names:tc:xliff:metadata:2.0');
-            $xliffMetadata = $xliffFile->appendChild($dom->createElement('m:metadata'));
-            foreach ($catalogueMetadata as $key => $value) {
-                $xliffMeta = $xliffMetadata->appendChild($dom->createElement('prop'));
-                $xliffMeta->setAttribute('type', $key);
-                $xliffMeta->appendChild($dom->createTextNode($value));
-            }
         }
 
         foreach ($messages->all($domain) as $source => $target) {

@@ -2,19 +2,21 @@
 
 namespace LdapRecord\Models\Relations;
 
-use LdapRecord\Models\Collection;
+use LdapRecord\Query\Collection;
 
 class HasManyIn extends OneToMany
 {
     /**
      * Get the relationships results.
+     *
+     * @return Collection
      */
-    public function getRelationResults(): Collection
+    public function getRelationResults()
     {
         $results = $this->parent->newCollection();
 
         foreach ((array) $this->parent->getAttribute($this->relationKey) as $value) {
-            if ($value && $foreign = $this->getForeignModelByValue($value)) {
+            if ($foreign = $this->getForeignModelByValue($value)) {
                 $results->push($foreign);
             }
         }

@@ -1,17 +1,6 @@
 CHANGELOG
 =========
 
-6.2
----
-
- * Add `Finder::sortByExtension()` and `Finder::sortBySize()`
- * Add `Finder::sortByCaseInsensitiveName()` to sort by name with case insensitive sorting methods
-
-6.0
----
-
- * Remove `Comparator::setTarget()` and `Comparator::setOperator()`
-
 5.4.0
 -----
 

@@ -29,22 +29,20 @@
         }
     ],
     "require": {
-        "php": ">=8.1",
+        "php": ">=7.3",
         "ext-ldap": "*",
         "ext-json": "*",
-        "ext-iconv": "*",
-        "psr/log": "*",
-        "psr/simple-cache": "^1.0|^2.0|^3.0",
-        "nesbot/carbon": "*",
-        "illuminate/contracts": "^8.0|^9.0|^10.0",
-        "illuminate/collections": "^8.0|^9.0|^10.0"
+        "psr/log": "^1.0|^2.0|^3.0",
+        "psr/simple-cache": "^1.0|^2.0",
+        "nesbot/carbon": "^1.0|^2.0",
+        "tightenco/collect": "^5.6|^6.0|^7.0|^8.0|^9.0",
+        "illuminate/contracts": "^5.0|^6.0|^7.0|^8.0|^9.0|^10.0",
+        "symfony/polyfill-php80": "^1.25"
     },
     "require-dev": {
         "phpunit/phpunit": "^9.0",
         "mockery/mockery": "^1.0",
-        "spatie/ray": "^1.24",
-        "laravel/pint": "^1.6",
-        "fakerphp/faker": "^1.21"
+        "spatie/ray": "^1.24"
     },
     "archive": {
         "exclude": [

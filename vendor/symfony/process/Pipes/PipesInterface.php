@@ -57,5 +57,5 @@ interface PipesInterface
     /**
      * Closes file handles and pipes.
      */
-    public function close(): void;
+    public function close();
 }

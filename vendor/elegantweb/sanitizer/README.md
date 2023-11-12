@@ -1,7 +1,7 @@
 # sanitizer
 
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/elegantweb/sanitizer?style=flat-square)
-![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/elegantweb/sanitizer/test.yml?style=flat-square)
+![GitHub Workflow Status](https://img.shields.io/github/workflow/status/elegantweb/sanitizer/test?style=flat-square)
 
 > Sanitization library for PHP and the Laravel framework.
 
@@ -15,24 +15,19 @@ composer require elegantweb/sanitizer
 
 ``` php
 use Elegant\Sanitizer\Sanitizer;
-use Elegant\Sanitizer\Filters\Enum;
 
 $data = [
-    'title' => ' ',
     'name' => ' sina ',
     'birth_date' => '06/25/1980',
     'email' => 'JOHn@DoE.com',
     'json' => '{"name":"value"}',
-    'enum' => 'H',
 ];
 
 $filters = [
-    'title' => 'trim|empty_string_to_null',
-    'name' => 'trim|empty_string_to_null|capitalize',
-    'birth_date' => 'trim|empty_string_to_null|format_date:"m/d/Y","F j, Y"',
-    'email' => ['trim', 'empty_string_to_null', 'lowercase'],
+    'name' => 'trim|capitalize',
+    'birth_date' => 'trim|format_date:"m/d/Y","F j, Y"',
+    'email' => ['trim', 'lowercase'],
     'json' => 'cast:array',
-    'enum' => ['trim', new Enum(BackedEnum::class)],
 ];
 
 $sanitizer = new Sanitizer($data, $filters);
@@ -44,12 +39,10 @@ Will result in:
 
 ``` php
 [
-    'title' => null,
     'name' => 'Sina',
     'birth_date' => 'June 25, 1980',
     'email' => 'john@doe.com',
     'json' => ['name' => 'value'],
-    'enum' => BackedEnum::Hearts,
 ];
 ```
 
@@ -61,7 +54,7 @@ In Laravel, you can use the Sanitizer through the Facade:
 $newData = \Sanitizer::make($data, $filters)->sanitize();
 ```
 
-You may also Sanitize input in your own FormRequests by using the SanitizesInput trait, and adding a `filters` method that returns the filters that you want applied to the input.
+You may also Sanitize input in your own FormRequests by using the SanitizesInput trait, and adding a filters method that returns the filters that you want applied to the input.
 
 ``` php
 namespace App\Http\Requests;
@@ -109,17 +102,16 @@ The following filters are available out of the box:
 
  Filter                   | Description
 :-------------------------|:-------------------------
- **trim**                 | Trims the given string
+ **trim**                 | Trims a string
  **empty_string_to_null** | If the given string is empty set it to `null`
- **escape**               | Removes HTML tags and encodes special characters of the given string
+ **escape**               | Escapes HTML and special chars using php's filter_var
  **lowercase**            | Converts the given string to all lowercase
  **uppercase**            | Converts the given string to all uppercase
- **capitalize**           | Capitalizes the given string
- **cast**                 | Casts the given value into the given type. Options are: integer, float, string, boolean, object, array and Laravel Collection.
- **format_date**          | Always takes two arguments, the given date's format and the target format, following DateTime notation.
- **strip_tags**           | Strips HTML and PHP tags from the given string
- **digit**                | Removes all characters except digits from the given string
- **enum**                 | Casts the given value to its corresponding enum type
+ **capitalize**           | Capitalize a string
+ **cast**                 | Casts a variable into the given type. Options are: integer, float, string, boolean, object, array and Laravel Collection.
+ **format_date**          | Always takes two arguments, the date's given format and the target format, following DateTime notation.
+ **strip_tags**           | Strip HTML and PHP tags using php's strip_tags
+ **digit**                | Get only digit characters from the string
 
 ## Custom Filters
 

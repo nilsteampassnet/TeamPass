@@ -85,7 +85,7 @@ function folderAction(array $actions, array $userData)
  */
 function apiIsEnabled(): string
 {
-    require API_ROOT_PATH . '/../includes/config/tp.config.php';
+    require_once API_ROOT_PATH . '/../includes/config/tp.config.php';
 
     if (isset($SETTINGS) === true && isset($SETTINGS['api']) === true && (int) $SETTINGS['api'] === 1) {
         return json_encode(

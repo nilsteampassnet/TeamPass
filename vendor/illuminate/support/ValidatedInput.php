@@ -5,7 +5,6 @@ namespace Illuminate\Support;
 use ArrayIterator;
 use Illuminate\Contracts\Support\ValidatedData;
 use stdClass;
-use Traversable;
 
 class ValidatedInput implements ValidatedData
 {
@@ -28,39 +27,9 @@ class ValidatedInput implements ValidatedData
     }
 
     /**
-     * Determine if the validated input has one or more keys.
-     *
-     * @param  mixed  $keys
-     * @return bool
-     */
-    public function has($keys)
-    {
-        $keys = is_array($keys) ? $keys : func_get_args();
-
-        foreach ($keys as $key) {
-            if (! Arr::has($this->input, $key)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Determine if the validated input is missing one or more keys.
-     *
-     * @param  mixed  $keys
-     * @return bool
-     */
-    public function missing($keys)
-    {
-        return ! $this->has($keys);
-    }
-
-    /**
      * Get a subset containing the provided keys with values from the input data.
      *
-     * @param  mixed  $keys
+     * @param  array|mixed  $keys
      * @return array
      */
     public function only($keys)
@@ -85,7 +54,7 @@ class ValidatedInput implements ValidatedData
     /**
      * Get all of the input except for a specified array of items.
      *
-     * @param  mixed  $keys
+     * @param  array|mixed  $keys
      * @return array
      */
     public function except($keys)
@@ -190,7 +159,8 @@ class ValidatedInput implements ValidatedData
      * @param  mixed  $key
      * @return bool
      */
-    public function offsetExists($key): bool
+    #[\ReturnTypeWillChange]
+    public function offsetExists($key)
     {
         return isset($this->input[$key]);
     }
@@ -201,7 +171,8 @@ class ValidatedInput implements ValidatedData
      * @param  mixed  $key
      * @return mixed
      */
-    public function offsetGet($key): mixed
+    #[\ReturnTypeWillChange]
+    public function offsetGet($key)
     {
         return $this->input[$key];
     }
@@ -213,7 +184,8 @@ class ValidatedInput implements ValidatedData
      * @param  mixed  $value
      * @return void
      */
-    public function offsetSet($key, $value): void
+    #[\ReturnTypeWillChange]
+    public function offsetSet($key, $value)
     {
         if (is_null($key)) {
             $this->input[] = $value;
@@ -228,7 +200,8 @@ class ValidatedInput implements ValidatedData
      * @param  string  $key
      * @return void
      */
-    public function offsetUnset($key): void
+    #[\ReturnTypeWillChange]
+    public function offsetUnset($key)
     {
         unset($this->input[$key]);
     }
@@ -238,7 +211,8 @@ class ValidatedInput implements ValidatedData
      *
      * @return \ArrayIterator
      */
-    public function getIterator(): Traversable
+    #[\ReturnTypeWillChange]
+    public function getIterator()
     {
         return new ArrayIterator($this->input);
     }

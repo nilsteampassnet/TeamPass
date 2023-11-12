@@ -4,53 +4,67 @@ namespace LdapRecord\Models\Attributes;
 
 use LdapRecord\EscapesValues;
 use LdapRecord\Support\Arr;
-use Stringable;
 
-class DistinguishedNameBuilder implements Stringable
+class DistinguishedNameBuilder
 {
     use EscapesValues;
 
     /**
      * The components of the DN.
+     *
+     * @var array
      */
-    protected array $components = [];
+    protected $components = [];
 
     /**
      * Whether to output the DN in reverse.
+     *
+     * @var bool
      */
-    protected bool $reverse = false;
+    protected $reverse = false;
 
     /**
      * Constructor.
+     *
+     * @param  string|null  $value
      */
     public function __construct($dn = null)
     {
-        $this->components = array_map(
-            fn ($rdn) => DistinguishedName::explodeRdn($rdn),
-            DistinguishedName::make($dn)->components()
-        );
+        $this->components = array_map(function ($rdn) {
+            return DistinguishedName::explodeRdn($rdn);
+        }, DistinguishedName::make($dn)->components());
     }
 
     /**
      * Forward missing method calls onto the Distinguished Name object.
+     *
+     * @param  string  $method
+     * @param  array  $args
+     * @return mixed
      */
-    public function __call(string $method, array $args): mixed
+    public function __call($method, $args)
     {
         return $this->get()->{$method}(...$args);
     }
 
     /**
      * Get the distinguished name value.
+     *
+     * @return string
      */
-    public function __toString(): string
+    public function __toString()
     {
         return (string) $this->get();
     }
 
     /**
      * Prepend an RDN onto the DN.
+     *
+     * @param  string|array  $attribute
+     * @param  string|null  $value
+     * @return $this
      */
-    public function prepend(array|string $attribute, string $value = null): static
+    public function prepend($attribute, $value = null)
     {
         array_unshift(
             $this->components,
@@ -62,8 +76,12 @@ class DistinguishedNameBuilder implements Stringable
 
     /**
      * Append an RDN onto the DN.
+     *
+     * @param  string|array  $attribute
+     * @param  string|null  $value
+     * @return $this
      */
-    public function append(array|string $attribute, string $value = null): static
+    public function append($attribute, $value = null)
     {
         array_push(
             $this->components,
@@ -75,8 +93,12 @@ class DistinguishedNameBuilder implements Stringable
 
     /**
      * Componentize the attribute and value.
+     *
+     * @param  string|array  $attribute
+     * @param  string|null  $value
+     * @return array
      */
-    protected function componentize(array|string $attribute, string $value = null): array
+    protected function componentize($attribute, $value = null)
     {
         // Here we will make the assumption that an array of
         // RDN's have been given if the value is null, and
@@ -98,50 +120,65 @@ class DistinguishedNameBuilder implements Stringable
 
     /**
      * Make a componentized array by exploding the value if it's a string.
+     *
+     * @param  string  $value
+     * @return array
      */
-    protected function makeComponentizedArray(array|string $value): array
+    protected function makeComponentizedArray($value)
     {
         return is_array($value) ? $value : DistinguishedName::explodeRdn($value);
     }
 
     /**
      * Make an appendable component array from the attribute and value.
+     *
+     * @param  string|array  $attribute
+     * @param  string|null  $value
+     * @return array
      */
-    protected function makeAppendableComponent(string|array $attribute, string $value = null): array
+    protected function makeAppendableComponent($attribute, $value = null)
     {
-        return [trim($attribute), $this->escape(trim($value))->forDn()];
+        return [trim($attribute), $this->escape(trim($value))->dn()];
     }
 
     /**
      * Pop an RDN off of the end of the DN.
+     *
+     * @param  int  $amount
+     * @param  array  $removed
+     * @return $this
      */
-    public function pop(int $amount = 1, array &$removed = null): static
+    public function pop($amount = 1, &$removed = [])
     {
-        $removed = array_map(
-            fn ($component) => DistinguishedName::makeRdn($component),
-            array_splice($this->components, -$amount, $amount)
-        );
+        $removed = array_map(function ($component) {
+            return DistinguishedName::makeRdn($component);
+        }, array_splice($this->components, -$amount, $amount));
 
         return $this;
     }
 
     /**
      * Shift an RDN off of the beginning of the DN.
+     *
+     * @param  int  $amount
+     * @param  array  $removed
+     * @return $this
      */
-    public function shift(int $amount = 1, array &$removed = null): static
+    public function shift($amount = 1, &$removed = [])
     {
-        $removed = array_map(
-            fn ($component) => DistinguishedName::makeRdn($component),
-            array_splice($this->components, 0, $amount)
-        );
+        $removed = array_map(function ($component) {
+            return DistinguishedName::makeRdn($component);
+        }, array_splice($this->components, 0, $amount));
 
         return $this;
     }
 
     /**
      * Whether to output the DN in reverse.
+     *
+     * @return $this
      */
-    public function reverse(): static
+    public function reverse()
     {
         $this->reverse = true;
 
@@ -150,8 +187,11 @@ class DistinguishedNameBuilder implements Stringable
 
     /**
      * Get the components of the DN.
+     *
+     * @param  null|string  $type
+     * @return array
      */
-    public function components(string $type = null): array
+    public function components($type = null)
     {
         return is_null($type)
             ? $this->components
@@ -160,36 +200,42 @@ class DistinguishedNameBuilder implements Stringable
 
     /**
      * Get the components of a particular type.
+     *
+     * @param  string  $type
+     * @return array
      */
-    protected function componentsOfType(string $type): array
+    protected function componentsOfType($type)
     {
-        $components = array_filter($this->components, fn ($component) => (
-            ([$name] = $component) && strtolower($name) === strtolower($type)
-        ));
+        $components = array_filter($this->components, function ($component) use ($type) {
+            return ([$name] = $component) && strtolower($name) === strtolower($type);
+        });
 
         return array_values($components);
     }
 
     /**
      * Get the fully qualified DN.
+     *
+     * @return DistinguishedName
      */
-    public function get(): DistinguishedName
+    public function get()
     {
         return new DistinguishedName($this->build());
     }
 
     /**
      * Build the distinguished name from the components.
+     *
+     * @return string
      */
-    protected function build(): string
+    protected function build()
     {
         $components = $this->reverse
             ? array_reverse($this->components)
             : $this->components;
 
-        return implode(',', array_map(
-            fn ($component) => DistinguishedName::makeRdn($component),
-            $components
-        ));
+        return implode(',', array_map(function ($component) {
+            return DistinguishedName::makeRdn($component);
+        }, $components));
     }
 }

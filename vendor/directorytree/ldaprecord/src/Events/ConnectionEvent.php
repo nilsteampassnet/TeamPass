@@ -8,11 +8,15 @@ abstract class ConnectionEvent
 {
     /**
      * The LDAP connection.
+     *
+     * @var Connection
      */
-    protected Connection $connection;
+    protected $connection;
 
     /**
      * Constructor.
+     *
+     * @param  Connection  $connection
      */
     public function __construct(Connection $connection)
     {
@@ -21,8 +25,10 @@ abstract class ConnectionEvent
 
     /**
      * Get the connection pertaining to the event.
+     *
+     * @return Connection
      */
-    public function getConnection(): Connection
+    public function getConnection()
     {
         return $this->connection;
     }

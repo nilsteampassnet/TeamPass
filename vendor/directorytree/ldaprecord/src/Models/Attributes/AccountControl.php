@@ -3,9 +3,8 @@
 namespace LdapRecord\Models\Attributes;
 
 use ReflectionClass;
-use Stringable;
 
-class AccountControl implements Stringable
+class AccountControl
 {
     public const SCRIPT = 1;
 
@@ -52,122 +51,151 @@ class AccountControl implements Stringable
     public const PARTIAL_SECRETS_ACCOUNT = 67108864;
 
     /**
-     * The account control flags.
+     * The account control flag values.
      *
      * @var array<int, int>
      */
-    protected array $flags = [];
+    protected $values = [];
 
     /**
      * Constructor.
+     *
+     * @param  ?int  $flag
      */
-    public function __construct(int $flag = null)
+    public function __construct($flag = null)
     {
         if (! is_null($flag)) {
-            $this->applyFlags($flag);
+            $this->apply($flag);
         }
     }
 
     /**
-     * Get the value when cast to string.
+     * Get the value when casted to string.
+     *
+     * @return string
      */
-    public function __toString(): string
+    public function __toString()
     {
         return (string) $this->getValue();
     }
 
     /**
-     * Get the value when cast to int.
+     * Get the value when casted to int.
+     *
+     * @return int
      */
-    public function __toInt(): int
+    public function __toInt()
     {
         return $this->getValue();
     }
 
     /**
-     * Set a flag on the account control.
+     * Add the flag to the account control values.
+     *
+     * @param  int  $flag
+     * @return $this
      */
-    public function setFlag(int $flag): static
+    public function add($flag)
     {
         // Use the value as a key so if the same value
         // is used, it will always be overwritten
-        $this->flags[$flag] = $flag;
+        $this->values[$flag] = $flag;
 
         return $this;
     }
 
     /**
-     * Unset a flag from the account control.
+     * Remove the flag from the account control.
+     *
+     * @param  int  $flag
+     * @return $this
      */
-    public function unsetFlag(int $flag): static
+    public function remove($flag)
     {
-        unset($this->flags[$flag]);
+        unset($this->values[$flag]);
 
         return $this;
     }
 
     /**
-     * Extract and apply several flags.
+     * Extract and apply the flag.
+     *
+     * @param  int  $flag
+     * @return void
      */
-    public function applyFlags(int $flags): void
+    public function apply($flag)
     {
-        $this->setFlags($this->extractFlags($flags));
+        $this->setValues($this->extractFlags($flag));
     }
 
     /**
-     * Determine if the account control contains the given flag(s).
+     * Determine if the account control contains the given UAC flag(s).
+     *
+     * @param  int  $flag
+     * @return bool
      */
-    public function hasFlag(int $flag): bool
+    public function has($flag)
     {
         // Here we will extract the given flag into an array
         // of possible flags. This will allow us to see if
         // our AccountControl object contains any of them.
         $flagsUsed = array_intersect(
             $this->extractFlags($flag),
-            $this->flags
+            $this->values
         );
 
         return in_array($flag, $flagsUsed);
     }
 
     /**
-     * Determine if the account control does not contain the given flag(s).
+     * Determine if the account control does not contain the given UAC flag(s).
+     *
+     * @param  int  $flag
+     * @return bool
      */
-    public function doesntHaveFlag(int $flag): bool
+    public function doesntHave($flag)
     {
-        return ! $this->hasFlag($flag);
+        return ! $this->has($flag);
     }
 
     /**
      * Generate an LDAP filter based on the current value.
+     *
+     * @return string
      */
-    public function filter(): string
+    public function filter()
     {
-        return sprintf('(UserAccountControl:1.2.840.113556.1.4.803:=%s)', $this);
+        return sprintf('(UserAccountControl:1.2.840.113556.1.4.803:=%s)', $this->getValue());
     }
 
     /**
      * The logon script will be run.
+     *
+     * @return $this
      */
-    public function setRunLoginScript(): static
+    public function runLoginScript()
     {
-        return $this->setFlag(static::SCRIPT);
+        return $this->add(static::SCRIPT);
     }
 
     /**
      * The user account is locked.
+     *
+     * @return $this
      */
-    public function setAccountIsLocked(): static
+    public function accountIsLocked()
     {
-        return $this->setFlag(static::LOCKOUT);
+        return $this->add(static::LOCKOUT);
     }
 
     /**
      * The user account is disabled.
+     *
+     * @return $this
      */
-    public function setAccountIsDisabled(): static
+    public function accountIsDisabled()
     {
-        return $this->setFlag(static::ACCOUNTDISABLE);
+        return $this->add(static::ACCOUNTDISABLE);
     }
 
     /**
@@ -175,95 +203,117 @@ class AccountControl implements Stringable
      *
      * This account provides user access to this domain, but not to any domain that
      * trusts this domain. This is sometimes referred to as a local user account.
+     *
+     * @return $this
      */
-    public function setAccountIsTemporary(): static
+    public function accountIsTemporary()
     {
-        return $this->setFlag(static::TEMP_DUPLICATE_ACCOUNT);
+        return $this->add(static::TEMP_DUPLICATE_ACCOUNT);
     }
 
     /**
      * This is a default account type that represents a typical user.
+     *
+     * @return $this
      */
-    public function setAccountIsNormal(): static
+    public function accountIsNormal()
     {
-        return $this->setFlag(static::NORMAL_ACCOUNT);
+        return $this->add(static::NORMAL_ACCOUNT);
     }
 
     /**
      * This is a permit to trust an account for a system domain that trusts other domains.
+     *
+     * @return $this
      */
-    public function setAccountIsForInterdomain(): static
+    public function accountIsForInterdomain()
     {
-        return $this->setFlag(static::INTERDOMAIN_TRUST_ACCOUNT);
+        return $this->add(static::INTERDOMAIN_TRUST_ACCOUNT);
     }
 
     /**
      * This is a computer account for a computer that is running Microsoft
      * Windows NT 4.0 Workstation, Microsoft Windows NT 4.0 Server, Microsoft
      * Windows 2000 Professional, or Windows 2000 Server and is a member of this domain.
+     *
+     * @return $this
      */
-    public function setAccountIsForWorkstation(): static
+    public function accountIsForWorkstation()
     {
-        return $this->setFlag(static::WORKSTATION_TRUST_ACCOUNT);
+        return $this->add(static::WORKSTATION_TRUST_ACCOUNT);
     }
 
     /**
      * This is a computer account for a domain controller that is a member of this domain.
+     *
+     * @return $this
      */
-    public function setAccountIsForServer(): static
+    public function accountIsForServer()
     {
-        return $this->setFlag(static::SERVER_TRUST_ACCOUNT);
+        return $this->add(static::SERVER_TRUST_ACCOUNT);
     }
 
     /**
      * This is an MNS logon account.
+     *
+     * @return $this
      */
-    public function setAccountIsMnsLogon(): static
+    public function accountIsMnsLogon()
     {
-        return $this->setFlag(static::MNS_LOGON_ACCOUNT);
+        return $this->add(static::MNS_LOGON_ACCOUNT);
     }
 
     /**
      * (Windows 2000/Windows Server 2003) This account does
      * not require Kerberos pre-authentication for logging on.
+     *
+     * @return $this
      */
-    public function setAccountDoesNotRequirePreAuth(): static
+    public function accountDoesNotRequirePreAuth()
     {
-        return $this->setFlag(static::DONT_REQ_PREAUTH);
+        return $this->add(static::DONT_REQ_PREAUTH);
     }
 
     /**
      * When this flag is set, it forces the user to log on by using a smart card.
+     *
+     * @return $this
      */
-    public function setAccountRequiresSmartCard(): static
+    public function accountRequiresSmartCard()
     {
-        return $this->setFlag(static::SMARTCARD_REQUIRED);
+        return $this->add(static::SMARTCARD_REQUIRED);
     }
 
     /**
      * (Windows Server 2008/Windows Server 2008 R2) The account is a read-only domain controller (RODC).
      *
      * This is a security-sensitive setting. Removing this setting from an RODC compromises security on that server.
+     *
+     * @return $this
      */
-    public function setAccountIsReadOnly(): static
+    public function accountIsReadOnly()
     {
-        return $this->setFlag(static::PARTIAL_SECRETS_ACCOUNT);
+        return $this->add(static::PARTIAL_SECRETS_ACCOUNT);
     }
 
     /**
      * The home folder is required.
+     *
+     * @return $this
      */
-    public function setHomeFolderIsRequired(): static
+    public function homeFolderIsRequired()
     {
-        return $this->setFlag(static::HOMEDIR_REQUIRED);
+        return $this->add(static::HOMEDIR_REQUIRED);
     }
 
     /**
      * No password is required.
+     *
+     * @return $this
      */
-    public function setPasswordIsNotRequired(): static
+    public function passwordIsNotRequired()
     {
-        return $this->setFlag(static::PASSWD_NOTREQD);
+        return $this->add(static::PASSWD_NOTREQD);
     }
 
     /**
@@ -272,34 +322,42 @@ class AccountControl implements Stringable
      * For information about how to programmatically set this permission, visit the following link:
      *
      * @see http://msdn2.microsoft.com/en-us/library/aa746398.aspx
+     *
+     * @return $this
      */
-    public function setPasswordCannotBeChanged(): static
+    public function passwordCannotBeChanged()
     {
-        return $this->setFlag(static::PASSWD_CANT_CHANGE);
+        return $this->add(static::PASSWD_CANT_CHANGE);
     }
 
     /**
      * Represents the password, which should never expire on the account.
+     *
+     * @return $this
      */
-    public function setPasswordDoesNotExpire(): static
+    public function passwordDoesNotExpire()
     {
-        return $this->setFlag(static::DONT_EXPIRE_PASSWORD);
+        return $this->add(static::DONT_EXPIRE_PASSWORD);
     }
 
     /**
      * (Windows 2000/Windows Server 2003) The user's password has expired.
+     *
+     * @return $this
      */
-    public function setPasswordIsExpired(): static
+    public function passwordIsExpired()
     {
-        return $this->setFlag(static::PASSWORD_EXPIRED);
+        return $this->add(static::PASSWORD_EXPIRED);
     }
 
     /**
      * The user can send an encrypted password.
+     *
+     * @return $this
      */
-    public function setAllowEncryptedTextPassword(): static
+    public function allowEncryptedTextPassword()
     {
-        return $this->setFlag(static::ENCRYPTED_TEXT_PWD_ALLOWED);
+        return $this->add(static::ENCRYPTED_TEXT_PWD_ALLOWED);
     }
 
     /**
@@ -310,10 +368,12 @@ class AccountControl implements Stringable
      *
      * To enable a service for Kerberos delegation, you must set this
      * flag on the userAccountControl property of the service account.
+     *
+     * @return $this
      */
-    public function setTrustForDelegation(): static
+    public function trustForDelegation()
     {
-        return $this->setFlag(static::TRUSTED_FOR_DELEGATION);
+        return $this->add(static::TRUSTED_FOR_DELEGATION);
     }
 
     /**
@@ -323,36 +383,44 @@ class AccountControl implements Stringable
      * should be tightly controlled. This setting lets a service that runs under the
      * account assume a client's identity and authenticate as that user to other remote
      * servers on the network.
+     *
+     * @return $this
      */
-    public function setTrustToAuthForDelegation(): static
+    public function trustToAuthForDelegation()
     {
-        return $this->setFlag(static::TRUSTED_TO_AUTH_FOR_DELEGATION);
+        return $this->add(static::TRUSTED_TO_AUTH_FOR_DELEGATION);
     }
 
     /**
      * When this flag is set, the security context of the user is not delegated to a
      * service even if the service account is set as trusted for Kerberos delegation.
+     *
+     * @return $this
      */
-    public function setDoNotTrustForDelegation(): static
+    public function doNotTrustForDelegation()
     {
-        return $this->setFlag(static::NOT_DELEGATED);
+        return $this->add(static::NOT_DELEGATED);
     }
 
     /**
      * (Windows 2000/Windows Server 2003) Restrict this principal to
      * use only Data Encryption Standard (DES) encryption types for keys.
+     *
+     * @return $this
      */
-    public function setUseDesKeyOnly(): static
+    public function useDesKeyOnly()
     {
-        return $this->setFlag(static::USE_DES_KEY_ONLY);
+        return $this->add(static::USE_DES_KEY_ONLY);
     }
 
     /**
      * Get the account control value.
+     *
+     * @return int
      */
-    public function getValue(): int
+    public function getValue()
     {
-        return array_sum($this->flags);
+        return array_sum($this->values);
     }
 
     /**
@@ -360,56 +428,64 @@ class AccountControl implements Stringable
      *
      * @return array<int, int>
      */
-    public function getFlags(): array
+    public function getValues()
     {
-        return $this->flags;
+        return $this->values;
     }
 
     /**
      * Set the account control values.
      *
      * @param  array<int, int>  $flags
+     * @return void
      */
-    public function setFlags(array $flags): void
+    public function setValues(array $flags)
     {
-        $this->flags = $flags;
+        $this->values = $flags;
     }
 
     /**
      * Get all flags that are currently applied to the value.
+     *
+     * @return array
      */
-    public function getAppliedFlags(): array
+    public function getAppliedFlags()
     {
         $flags = $this->getAllFlags();
 
-        $applied = [];
+        $exists = [];
 
         foreach ($flags as $name => $flag) {
-            if ($this->hasFlag($flag)) {
-                $applied[$name] = $flag;
+            if ($this->has($flag)) {
+                $exists[$name] = $flag;
             }
         }
 
-        return $applied;
+        return $exists;
     }
 
     /**
      * Get all possible account control flags.
+     *
+     * @return array
      */
-    public function getAllFlags(): array
+    public function getAllFlags()
     {
         return (new ReflectionClass(__CLASS__))->getConstants();
     }
 
     /**
      * Extracts the given flag into an array of flags used.
+     *
+     * @param  int  $flag
+     * @return array
      */
-    protected function extractFlags(int $flag): array
+    public function extractFlags($flag)
     {
         $flags = [];
 
         for ($i = 0; $i <= 26; $i++) {
-            if ($flag & (1 << $i)) {
+            if ((int) $flag & (1 << $i)) {
                 $flags[1 << $i] = 1 << $i;
             }
         }

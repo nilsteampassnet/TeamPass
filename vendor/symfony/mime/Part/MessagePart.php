@@ -60,7 +60,10 @@ class MessagePart extends DataPart
         return $this->message->toIterable();
     }
 
-    public function __sleep(): array
+    /**
+     * @return array
+     */
+    public function __sleep()
     {
         return ['message'];
     }

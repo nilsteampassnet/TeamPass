@@ -2,6 +2,8 @@
 
 namespace Illuminate\Translation;
 
+use Illuminate\Support\Str;
+
 class MessageSelector
 {
     /**
@@ -66,7 +68,7 @@ class MessageSelector
 
         $value = $matches[2];
 
-        if (str_contains($condition, ',')) {
+        if (Str::contains($condition, ',')) {
             [$from, $to] = explode(',', $condition, 2);
 
             if ($to === '*' && $number >= $from) {
@@ -89,9 +91,9 @@ class MessageSelector
      */
     private function stripConditions($segments)
     {
-        return collect($segments)
-            ->map(fn ($part) => preg_replace('/^[\{\[]([^\[\]\{\}]*)[\}\]]/', '', $part))
-            ->all();
+        return collect($segments)->map(function ($part) {
+            return preg_replace('/^[\{\[]([^\[\]\{\}]*)[\}\]]/', '', $part);
+        })->all();
     }
 
     /**

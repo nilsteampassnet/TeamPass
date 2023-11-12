@@ -4,7 +4,6 @@ namespace LdapRecord\Testing;
 
 use LdapRecord\Auth\Guard;
 use LdapRecord\Connection;
-use LdapRecord\LdapInterface;
 use LdapRecord\Models\Model;
 
 class ConnectionFake extends Connection
@@ -14,19 +13,25 @@ class ConnectionFake extends Connection
      *
      * @var LdapFake
      */
-    protected LdapInterface $ldap;
+    protected $ldap;
 
     /**
      * Whether the fake is connected.
+     *
+     * @var bool
      */
-    protected bool $connected = false;
+    protected $connected = false;
 
     /**
      * Make a new fake LDAP connection instance.
+     *
+     * @param  array  $config
+     * @param  string  $ldap
+     * @return static
      */
-    public static function make(array $config = [], string $ldap = LdapFake::class): static
+    public static function make(array $config = [], $ldap = LdapFake::class)
     {
-        $connection = new static($config, new $ldap);
+        $connection = new static($config, new $ldap());
 
         $connection->configure();
 
@@ -35,10 +40,13 @@ class ConnectionFake extends Connection
 
     /**
      * Set the user to authenticate as.
+     *
+     * @param  Model|string  $user
+     * @return $this
      */
-    public function actingAs(Model|string $user): static
+    public function actingAs($user)
     {
-        $this->ldap->shouldAllowBindWith(
+        $this->ldap->shouldAuthenticateWith(
             $user instanceof Model ? $user->getDn() : $user
         );
 
@@ -47,8 +55,10 @@ class ConnectionFake extends Connection
 
     /**
      * Set the connection to bypass bind attempts as the configured user.
+     *
+     * @return $this
      */
-    public function shouldBeConnected(): static
+    public function shouldBeConnected()
     {
         $this->connected = true;
 
@@ -61,8 +71,10 @@ class ConnectionFake extends Connection
 
     /**
      * Set the connection to attempt binding as the configured user.
+     *
+     * @return $this
      */
-    public function shouldNotBeConnected(): static
+    public function shouldNotBeConnected()
     {
         $this->connected = false;
 
@@ -74,20 +86,10 @@ class ConnectionFake extends Connection
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
-    public function isConnected(): bool
+    public function isConnected()
     {
         return $this->connected ?: parent::isConnected();
-    }
-
-    /**
-     * Perform tear down tasks on the fake.
-     *
-     * @throws LdapExpectationException
-     */
-    public function tearDown(): void
-    {
-        $this->ldap->assertMinimumExpectationCounts();
     }
 }

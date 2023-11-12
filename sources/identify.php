@@ -1210,6 +1210,8 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
 
         // Determining Auth Failure Cause
         $message = '';
+        /*
+        // REQUIRES LIBRARY version 3.x
         $dispatcher = Container::getDispatcher();
         $dispatcher->listen(Failed::class, function (Failed $event) use (&$message) {
             $ldap = $event->getConnection();
@@ -1230,6 +1232,7 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
                 }
             }
         });
+        */
 
         // 3- User auth attempt
         // For AD, we use attribute userPrincipalName

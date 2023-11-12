@@ -36,31 +36,33 @@ class TSPropertyArray
     ];
 
     /**
-     * The default data that occurs before the TSPropertyArray (CtxCfgPresent with a bunch of spaces...?).
+     * @var string The default data that occurs before the TSPropertyArray (CtxCfgPresent with a bunch of spaces...?)
      */
-    protected string $defaultPreBinary = '43747843666750726573656e742020202020202020202020202020202020202020202020202020202020202020202020';
+    protected $defaultPreBinary = '43747843666750726573656e742020202020202020202020202020202020202020202020202020202020202020202020';
 
     /**
-     * The TSProperty array.
-     *
      * @var TSProperty[]
      */
-    protected array $tsProperty = [];
+    protected $tsProperty = [];
 
     /**
-     * The TSProperty signature.
+     * @var string
      */
-    protected string $signature = self::VALID_SIGNATURE;
+    protected $signature = self::VALID_SIGNATURE;
 
     /**
      * Binary data that occurs before the TSPropertyArray data in userParameters.
+     *
+     * @var string
      */
-    protected string $preBinary = '';
+    protected $preBinary = '';
 
     /**
      * Binary data that occurs after the TSPropertyArray data in userParameters.
+     *
+     * @var string
      */
-    protected string $postBinary = '';
+    protected $postBinary = '';
 
     /**
      * Construct in one of the following ways:.
@@ -68,8 +70,10 @@ class TSPropertyArray
      *   - Pass an array of TSProperty key => value pairs (See DEFAULTS constant).
      *   - Pass the userParameters binary value. The object representation of that will be decoded and constructed.
      *   - Pass nothing and a default set of TSProperty key => value pairs will be used (See DEFAULTS constant).
+     *
+     * @param  mixed  $tsPropertyArray
      */
-    public function __construct(mixed $tsPropertyArray = null)
+    public function __construct($tsPropertyArray = null)
     {
         $this->preBinary = hex2bin($this->defaultPreBinary);
 
@@ -88,16 +92,22 @@ class TSPropertyArray
 
     /**
      * Check if a specific TSProperty exists by its property name.
+     *
+     * @param  string  $propName
+     * @return bool
      */
-    public function has(string $propName): bool
+    public function has($propName)
     {
         return array_key_exists(strtolower($propName), array_change_key_case($this->tsProperty));
     }
 
     /**
      * Get a TSProperty object by its property name (ie. CtxWFProfilePath).
+     *
+     * @param  string  $propName
+     * @return TSProperty
      */
-    public function get(string $propName): TSProperty
+    public function get($propName)
     {
         $this->validateProp($propName);
 
@@ -106,8 +116,11 @@ class TSPropertyArray
 
     /**
      * Add a TSProperty object. If it already exists, it will be overwritten.
+     *
+     * @param  TSProperty  $tsProperty
+     * @return $this
      */
-    public function add(TSProperty $tsProperty): static
+    public function add(TSProperty $tsProperty)
     {
         $this->tsProperty[$tsProperty->getName()] = $tsProperty;
 
@@ -115,9 +128,12 @@ class TSPropertyArray
     }
 
     /**
-     * Remove a TSProperty by its property name (i.e. CtxMinEncryptionLevel).
+     * Remove a TSProperty by its property name (ie. CtxMinEncryptionLevel).
+     *
+     * @param  string  $propName
+     * @return $this
      */
-    public function remove(string $propName): static
+    public function remove($propName)
     {
         foreach (array_keys($this->tsProperty) as $property) {
             if (strtolower($propName) == strtolower($property)) {
@@ -130,8 +146,12 @@ class TSPropertyArray
 
     /**
      * Set the value for a specific TSProperty by its name.
+     *
+     * @param  string  $propName
+     * @param  mixed  $propValue
+     * @return $this
      */
-    public function set(string $propName, string|int $propValue): static
+    public function set($propName, $propValue)
     {
         $this->validateProp($propName);
 
@@ -142,8 +162,10 @@ class TSPropertyArray
 
     /**
      * Get the full binary representation of the userParameters containing the TSPropertyArray data.
+     *
+     * @return string
      */
-    public function toBinary(): string
+    public function toBinary()
     {
         $binary = $this->preBinary;
 
@@ -160,8 +182,10 @@ class TSPropertyArray
 
     /**
      * Get a simple associative array containing of all TSProperty names and values.
+     *
+     * @return array
      */
-    public function toArray(): array
+    public function toArray()
     {
         $userParameters = [];
 
@@ -177,15 +201,17 @@ class TSPropertyArray
      *
      * @return TSProperty[]
      */
-    public function getTSProperties(): array
+    public function getTSProperties()
     {
         return $this->tsProperty;
     }
 
     /**
      * Validates that the given property name exists.
+     *
+     * @param  string  $propName
      */
-    protected function validateProp(string $propName): void
+    protected function validateProp($propName)
     {
         if (! $this->has($propName)) {
             throw new InvalidArgumentException(sprintf('TSProperty for "%s" does not exist.', $propName));
@@ -193,17 +219,21 @@ class TSPropertyArray
     }
 
     /**
-     * Get the TS property object for the given property.
+     * @param  string  $propName
+     * @return TSProperty
      */
-    protected function getTsPropObj(string $propName): TSProperty
+    protected function getTsPropObj($propName)
     {
         return array_change_key_case($this->tsProperty)[strtolower($propName)];
     }
 
     /**
-     * Get an associative array with all the userParameters property names and values.
+     * Get an associative array with all of the userParameters property names and values.
+     *
+     * @param  string  $userParameters
+     * @return void
      */
-    protected function decodeUserParameters(string $userParameters): void
+    protected function decodeUserParameters($userParameters)
     {
         $userParameters = bin2hex($userParameters);
 
@@ -233,9 +263,11 @@ class TSPropertyArray
      * individual TSProperty structures. Return the full length
      * of the TSPropertyArray data.
      *
+     * @param  string  $tsPropertyArray
+     * @param  int  $tsPropCount
      * @return int The length of the data in the TSPropertyArray
      */
-    protected function addTSPropData(string $tsPropertyArray, int $tsPropCount): int
+    protected function addTSPropData($tsPropertyArray, $tsPropCount)
     {
         $length = 0;
 

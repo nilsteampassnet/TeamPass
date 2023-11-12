@@ -3,11 +3,6 @@
 namespace Illuminate\Support\Facades;
 
 use Closure;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Js;
-use Illuminate\Support\Str;
-use Illuminate\Support\Testing\Fakes\Fake;
 use Mockery;
 use Mockery\LegacyMockInterface;
 use RuntimeException;
@@ -29,13 +24,6 @@ abstract class Facade
     protected static $resolvedInstance;
 
     /**
-     * Indicates if the resolved instance should be cached.
-     *
-     * @var bool
-     */
-    protected static $cached = true;
-
-    /**
      * Run a Closure when the facade has been resolved.
      *
      * @param  \Closure  $callback
@@ -46,11 +34,11 @@ abstract class Facade
         $accessor = static::getFacadeAccessor();
 
         if (static::$app->resolved($accessor) === true) {
-            $callback(static::getFacadeRoot(), static::$app);
+            $callback(static::getFacadeRoot());
         }
 
-        static::$app->afterResolving($accessor, function ($service, $app) use ($callback) {
-            $callback($service, $app);
+        static::$app->afterResolving($accessor, function ($service) use ($callback) {
+            $callback($service);
         });
     }
 
@@ -96,26 +84,10 @@ abstract class Facade
         $name = static::getFacadeAccessor();
 
         $mock = static::isMock()
-            ? static::$resolvedInstance[$name]
-            : static::createFreshMockInstance();
+                    ? static::$resolvedInstance[$name]
+                    : static::createFreshMockInstance();
 
         return $mock->shouldReceive(...func_get_args());
-    }
-
-    /**
-     * Initiate a mock expectation on the facade.
-     *
-     * @return \Mockery\Expectation
-     */
-    public static function expects()
-    {
-        $name = static::getFacadeAccessor();
-
-        $mock = static::isMock()
-            ? static::$resolvedInstance[$name]
-            : static::createFreshMockInstance();
-
-        return $mock->expects(...func_get_args());
     }
 
     /**
@@ -185,19 +157,6 @@ abstract class Facade
     }
 
     /**
-     * Determines whether a "fake" has been set as the facade instance.
-     *
-     * @return bool
-     */
-    protected static function isFake()
-    {
-        $name = static::getFacadeAccessor();
-
-        return isset(static::$resolvedInstance[$name]) &&
-               static::$resolvedInstance[$name] instanceof Fake;
-    }
-
-    /**
      * Get the root object behind the facade.
      *
      * @return mixed
@@ -222,21 +181,21 @@ abstract class Facade
     /**
      * Resolve the facade root instance from the container.
      *
-     * @param  string  $name
+     * @param  object|string  $name
      * @return mixed
      */
     protected static function resolveFacadeInstance($name)
     {
+        if (is_object($name)) {
+            return $name;
+        }
+
         if (isset(static::$resolvedInstance[$name])) {
             return static::$resolvedInstance[$name];
         }
 
         if (static::$app) {
-            if (static::$cached) {
-                return static::$resolvedInstance[$name] = static::$app[$name];
-            }
-
-            return static::$app[$name];
+            return static::$resolvedInstance[$name] = static::$app[$name];
         }
     }
 
@@ -259,57 +218,6 @@ abstract class Facade
     public static function clearResolvedInstances()
     {
         static::$resolvedInstance = [];
-    }
-
-    /**
-     * Get the application default aliases.
-     *
-     * @return \Illuminate\Support\Collection
-     */
-    public static function defaultAliases()
-    {
-        return collect([
-            'App' => App::class,
-            'Arr' => Arr::class,
-            'Artisan' => Artisan::class,
-            'Auth' => Auth::class,
-            'Blade' => Blade::class,
-            'Broadcast' => Broadcast::class,
-            'Bus' => Bus::class,
-            'Cache' => Cache::class,
-            'Config' => Config::class,
-            'Cookie' => Cookie::class,
-            'Crypt' => Crypt::class,
-            'Date' => Date::class,
-            'DB' => DB::class,
-            'Eloquent' => Model::class,
-            'Event' => Event::class,
-            'File' => File::class,
-            'Gate' => Gate::class,
-            'Hash' => Hash::class,
-            'Http' => Http::class,
-            'Js' => Js::class,
-            'Lang' => Lang::class,
-            'Log' => Log::class,
-            'Mail' => Mail::class,
-            'Notification' => Notification::class,
-            'Password' => Password::class,
-            'Process' => Process::class,
-            'Queue' => Queue::class,
-            'RateLimiter' => RateLimiter::class,
-            'Redirect' => Redirect::class,
-            'Request' => Request::class,
-            'Response' => Response::class,
-            'Route' => Route::class,
-            'Schema' => Schema::class,
-            'Session' => Session::class,
-            'Storage' => Storage::class,
-            'Str' => Str::class,
-            'URL' => URL::class,
-            'Validator' => Validator::class,
-            'View' => View::class,
-            'Vite' => Vite::class,
-        ]);
     }
 
     /**

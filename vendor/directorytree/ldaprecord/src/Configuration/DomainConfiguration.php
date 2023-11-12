@@ -8,15 +8,19 @@ class DomainConfiguration
 {
     /**
      * The extended configuration options.
+     *
+     * @var array
      */
-    protected static array $extended = [];
+    protected static $extended = [];
 
     /**
      * The configuration options array.
      *
      * The default values for each key indicate the type of value it requires.
+     *
+     * @var array
      */
-    protected array $options = [
+    protected $options = [
         // An array of LDAP hosts.
         'hosts' => [],
 
@@ -44,18 +48,6 @@ class DomainConfiguration
         // Whether or not to use TLS when connecting.
         'use_tls' => false,
 
-        // Whether or not to use SASL when connecting.
-        'use_sasl' => false,
-
-        // SASL options
-        'sasl_options' => [
-            'mech' => null,
-            'realm' => null,
-            'authc_id' => null,
-            'authz_id' => null,
-            'props' => null,
-        ],
-
         // Whether or not follow referrals is enabled when performing LDAP operations.
         'follow_referrals' => false,
 
@@ -65,6 +57,8 @@ class DomainConfiguration
 
     /**
      * Constructor.
+     *
+     * @param  array  $options
      *
      * @throws ConfigurationException When an option value given is an invalid type.
      */
@@ -79,24 +73,32 @@ class DomainConfiguration
 
     /**
      * Extend the configuration with a custom option, or override an existing.
+     *
+     * @param  string  $option
+     * @param  mixed  $default
+     * @return void
      */
-    public static function extend(string $option, mixed $default = null): void
+    public static function extend($option, $default = null)
     {
         static::$extended[$option] = $default;
     }
 
     /**
      * Flush the extended configuration options.
+     *
+     * @return void
      */
-    public static function flushExtended(): void
+    public static function flushExtended()
     {
         static::$extended = [];
     }
 
     /**
      * Get all configuration options.
+     *
+     * @return array
      */
-    public function all(): array
+    public function all()
     {
         return $this->options;
     }
@@ -104,9 +106,12 @@ class DomainConfiguration
     /**
      * Set a configuration option.
      *
+     * @param  string  $key
+     * @param  mixed  $value
+     *
      * @throws ConfigurationException When an option value given is an invalid type.
      */
-    public function set(string $key, mixed $value): void
+    public function set($key, $value)
     {
         if ($this->validate($key, $value)) {
             $this->options[$key] = $value;
@@ -116,12 +121,15 @@ class DomainConfiguration
     /**
      * Returns the value for the specified configuration options.
      *
+     * @param  string  $key
+     * @return mixed
+     *
      * @throws ConfigurationException When the option specified does not exist.
      */
-    public function get(string $key): mixed
+    public function get($key)
     {
         if (! $this->has($key)) {
-            throw new ConfigurationException("Option $key does not exist.");
+            throw new ConfigurationException("Option {$key} does not exist.");
         }
 
         return $this->options[$key];
@@ -129,8 +137,11 @@ class DomainConfiguration
 
     /**
      * Checks if a configuration option exists.
+     *
+     * @param  string  $key
+     * @return bool
      */
-    public function has(string $key): bool
+    public function has($key)
     {
         return array_key_exists($key, $this->options);
     }
@@ -138,9 +149,13 @@ class DomainConfiguration
     /**
      * Validate the configuration option.
      *
+     * @param  string  $key
+     * @param  mixed  $value
+     * @return bool
+     *
      * @throws ConfigurationException When an option value given is an invalid type.
      */
-    protected function validate(string $key, mixed $value): bool
+    protected function validate($key, $value)
     {
         $default = $this->get($key);
 

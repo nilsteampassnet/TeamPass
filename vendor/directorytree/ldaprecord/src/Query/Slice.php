@@ -10,34 +10,49 @@ use JsonSerializable;
 class Slice implements ArrayAccess, IteratorAggregate, JsonSerializable
 {
     /**
-     * All the items in the slice.
+     * All of the items being paginated.
+     *
+     * @var \LdapRecord\Query\Collection|array
      */
-    protected Collection|array $items;
+    protected $items;
 
     /**
      * The number of items to be shown per page.
+     *
+     * @var int
      */
-    protected int $perPage;
+    protected $perPage;
 
     /**
      * The total number of items before slicing.
+     *
+     * @var int
      */
-    protected int $total;
+    protected $total;
 
     /**
      * The last available page.
+     *
+     * @var int
      */
-    protected int $lastPage;
+    protected $lastPage;
 
     /**
      * The current page being "viewed".
+     *
+     * @var int
      */
-    protected int $currentPage;
+    protected $currentPage;
 
     /**
      * Constructor.
+     *
+     * @param  \LdapRecord\Query\Collection|array  $items
+     * @param  int  $total
+     * @param  int  $perPage
+     * @param  int|null  $currentPage
      */
-    public function __construct(Collection|array $items, int $total, int $perPage, int $currentPage = null)
+    public function __construct($items, $total, $perPage, $currentPage = null)
     {
         $this->items = $items;
         $this->total = $total;
@@ -48,159 +63,202 @@ class Slice implements ArrayAccess, IteratorAggregate, JsonSerializable
 
     /**
      * Get the slice of items being paginated.
+     *
+     * @return \LdapRecord\Query\Collection|array
      */
-    public function items(): Collection|array
+    public function items()
     {
         return $this->items;
     }
 
     /**
      * Get the total number of items being paginated.
+     *
+     * @return int
      */
-    public function total(): int
+    public function total()
     {
         return $this->total;
     }
 
     /**
      * Get the number of items shown per page.
+     *
+     * @return int
      */
-    public function perPage(): int
+    public function perPage()
     {
         return $this->perPage;
     }
 
     /**
      * Determine if there are more items in the data source.
+     *
+     * @return bool
      */
-    public function hasMorePages(): bool
+    public function hasMorePages()
     {
         return $this->currentPage() < $this->lastPage();
     }
 
     /**
      * Determine if there are enough items to split into multiple pages.
+     *
+     * @return bool
      */
-    public function hasPages(): bool
+    public function hasPages()
     {
         return $this->currentPage() != 1 || $this->hasMorePages();
     }
 
     /**
      * Determine if the paginator is on the first page.
+     *
+     * @return bool
      */
-    public function onFirstPage(): bool
+    public function onFirstPage()
     {
         return $this->currentPage() <= 1;
     }
 
     /**
      * Determine if the paginator is on the last page.
+     *
+     * @return bool
      */
-    public function onLastPage(): bool
+    public function onLastPage()
     {
         return ! $this->hasMorePages();
     }
 
     /**
      * Get the current page.
+     *
+     * @return int
      */
-    public function currentPage(): int
+    public function currentPage()
     {
         return $this->currentPage;
     }
 
     /**
      * Get the last page.
+     *
+     * @return int
      */
-    public function lastPage(): int
+    public function lastPage()
     {
         return $this->lastPage;
     }
 
     /**
      * Get an iterator for the items.
+     *
+     * @return \ArrayIterator
      */
     #[\ReturnTypeWillChange]
-    public function getIterator(): ArrayIterator
+    public function getIterator()
     {
         return new ArrayIterator($this->items);
     }
 
     /**
      * Determine if the list of items is empty.
+     *
+     * @return bool
      */
-    public function isEmpty(): bool
+    public function isEmpty()
     {
         return empty($this->items);
     }
 
     /**
      * Determine if the list of items is not empty.
+     *
+     * @return bool
      */
-    public function isNotEmpty(): bool
+    public function isNotEmpty()
     {
         return ! $this->isEmpty();
     }
 
     /**
      * Get the number of items for the current page.
+     *
+     * @return int
      */
     #[\ReturnTypeWillChange]
-    public function count(): int
+    public function count()
     {
         return count($this->items);
     }
 
     /**
      * Determine if the given item exists.
+     *
+     * @param  mixed  $key
+     * @return bool
      */
     #[\ReturnTypeWillChange]
-    public function offsetExists(mixed $offset): bool
+    public function offsetExists($key)
     {
-        return array_key_exists($offset, $this->items);
+        return array_key_exists($key, $this->items);
     }
 
     /**
      * Get the item at the given offset.
+     *
+     * @param  mixed  $key
+     * @return mixed
      */
     #[\ReturnTypeWillChange]
-    public function offsetGet(mixed $offset): mixed
+    public function offsetGet($key)
     {
-        return $this->items[$offset] ?? null;
+        return $this->items[$key] ?? null;
     }
 
     /**
      * Set the item at the given offset.
+     *
+     * @param  mixed  $key
+     * @param  mixed  $value
+     * @return void
      */
     #[\ReturnTypeWillChange]
-    public function offsetSet(mixed $offset, mixed $value): void
+    public function offsetSet($key, $value)
     {
-        $this->items[$offset] = $value;
+        $this->items[$key] = $value;
     }
 
     /**
      * Unset the item at the given key.
+     *
+     * @param  mixed  $key
+     * @return void
      */
     #[\ReturnTypeWillChange]
-    public function offsetUnset(mixed $offset): void
+    public function offsetUnset($key)
     {
-        unset($this->items[$offset]);
+        unset($this->items[$key]);
     }
 
     /**
      * Convert the object into something JSON serializable.
+     *
+     * @return array
      */
     #[\ReturnTypeWillChange]
-    public function jsonSerialize(): array
+    public function jsonSerialize()
     {
         return $this->toArray();
     }
 
     /**
      * Get the arrayable items.
+     *
+     * @return array
      */
-    public function getArrayableItems(): array
+    public function getArrayableItems()
     {
         return $this->items instanceof Collection
             ? $this->items->all()
@@ -209,8 +267,10 @@ class Slice implements ArrayAccess, IteratorAggregate, JsonSerializable
 
     /**
      * Get the instance as an array.
+     *
+     * @return array
      */
-    public function toArray(): array
+    public function toArray()
     {
         return [
             'current_page' => $this->currentPage(),

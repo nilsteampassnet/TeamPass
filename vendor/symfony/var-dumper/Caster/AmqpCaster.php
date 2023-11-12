@@ -46,9 +46,6 @@ class AmqpCaster
         \AMQP_EX_TYPE_HEADERS => 'AMQP_EX_TYPE_HEADERS',
     ];
 
-    /**
-     * @return array
-     */
     public static function castConnection(\AMQPConnection $c, array $a, Stub $stub, bool $isNested)
     {
         $prefix = Caster::PREFIX_VIRTUAL;
@@ -82,9 +79,6 @@ class AmqpCaster
         return $a;
     }
 
-    /**
-     * @return array
-     */
     public static function castChannel(\AMQPChannel $c, array $a, Stub $stub, bool $isNested)
     {
         $prefix = Caster::PREFIX_VIRTUAL;
@@ -108,9 +102,6 @@ class AmqpCaster
         return $a;
     }
 
-    /**
-     * @return array
-     */
     public static function castQueue(\AMQPQueue $c, array $a, Stub $stub, bool $isNested)
     {
         $prefix = Caster::PREFIX_VIRTUAL;
@@ -134,9 +125,6 @@ class AmqpCaster
         return $a;
     }
 
-    /**
-     * @return array
-     */
     public static function castExchange(\AMQPExchange $c, array $a, Stub $stub, bool $isNested)
     {
         $prefix = Caster::PREFIX_VIRTUAL;
@@ -165,9 +153,6 @@ class AmqpCaster
         return $a;
     }
 
-    /**
-     * @return array
-     */
     public static function castEnvelope(\AMQPEnvelope $c, array $a, Stub $stub, bool $isNested, int $filter = 0)
     {
         $prefix = Caster::PREFIX_VIRTUAL;

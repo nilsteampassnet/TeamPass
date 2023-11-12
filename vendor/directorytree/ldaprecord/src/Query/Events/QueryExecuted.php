@@ -8,20 +8,25 @@ class QueryExecuted
 {
     /**
      * The LDAP filter that was used for the query.
+     *
+     * @var Builder
      */
-    protected Builder $query;
+    protected $query;
 
     /**
      * The number of milliseconds it took to execute the query.
      *
      * @var ?float
      */
-    protected ?float $time;
+    protected $time;
 
     /**
      * Constructor.
+     *
+     * @param  Builder  $query
+     * @param  null|float  $time
      */
-    public function __construct(Builder $query, float $time = null)
+    public function __construct(Builder $query, $time = null)
     {
         $this->query = $query;
         $this->time = $time;
@@ -29,16 +34,20 @@ class QueryExecuted
 
     /**
      * Returns the LDAP filter that was used for the query.
+     *
+     * @return Builder
      */
-    public function getQuery(): Builder
+    public function getQuery()
     {
         return $this->query;
     }
 
     /**
      * Returns the number of milliseconds it took to execute the query.
+     *
+     * @return float|null
      */
-    public function getTime(): ?float
+    public function getTime()
     {
         return $this->time;
     }

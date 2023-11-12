@@ -38,36 +38,32 @@ class ProcessTimedOutException extends RuntimeException
         ));
     }
 
-    /**
-     * @return Process
-     */
     public function getProcess()
     {
         return $this->process;
     }
 
-    /**
-     * @return bool
-     */
     public function isGeneralTimeout()
     {
         return self::TYPE_GENERAL === $this->timeoutType;
     }
 
-    /**
-     * @return bool
-     */
     public function isIdleTimeout()
     {
         return self::TYPE_IDLE === $this->timeoutType;
     }
 
-    public function getExceededTimeout(): ?float
+    public function getExceededTimeout()
     {
-        return match ($this->timeoutType) {
-            self::TYPE_GENERAL => $this->process->getTimeout(),
-            self::TYPE_IDLE => $this->process->getIdleTimeout(),
-            default => throw new \LogicException(sprintf('Unknown timeout type "%d".', $this->timeoutType)),
-        };
+        switch ($this->timeoutType) {
+            case self::TYPE_GENERAL:
+                return $this->process->getTimeout();
+
+            case self::TYPE_IDLE:
+                return $this->process->getIdleTimeout();
+
+            default:
+                throw new \LogicException(sprintf('Unknown timeout type "%d".', $this->timeoutType));
+        }
     }
 }

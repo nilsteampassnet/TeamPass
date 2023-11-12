@@ -9,28 +9,38 @@ abstract class AbstractPaginator
 {
     /**
      * The query builder instance.
+     *
+     * @var Builder
      */
-    protected Builder $query;
+    protected $query;
 
     /**
      * The filter to execute.
+     *
+     * @var string
      */
-    protected string $filter;
+    protected $filter;
 
     /**
      * The amount of objects to fetch per page.
+     *
+     * @var int
      */
-    protected int $perPage;
+    protected $perPage;
 
     /**
      * Whether the operation is critical.
+     *
+     * @var bool
      */
-    protected bool $isCritical;
+    protected $isCritical;
 
     /**
      * Constructor.
+     *
+     * @param  Builder  $query
      */
-    public function __construct(Builder $query, string $filter, int $perPage, bool $isCritical = false)
+    public function __construct(Builder $query, $filter, $perPage, $isCritical)
     {
         $this->query = $query;
         $this->filter = $filter;
@@ -40,8 +50,11 @@ abstract class AbstractPaginator
 
     /**
      * Execute the pagination request.
+     *
+     * @param  LdapInterface  $ldap
+     * @return array
      */
-    public function execute(LdapInterface $ldap): mixed
+    public function execute(LdapInterface $ldap)
     {
         $pages = [];
 
@@ -65,37 +78,53 @@ abstract class AbstractPaginator
     }
 
     /**
-     * Whether the paginator should continue iterating.
+     * Whether the paginater should continue iterating.
+     *
+     * @return bool
      */
-    protected function shouldContinue(): bool
+    protected function shouldContinue()
     {
-        $cookie = $this->fetchCookie();
+        $cookie = (string) $this->fetchCookie();
 
         return $cookie !== '';
     }
 
     /**
      * Fetch the pagination cookie.
+     *
+     * @return string
      */
-    abstract protected function fetchCookie(): ?string;
+    abstract protected function fetchCookie();
 
     /**
      * Prepare the server controls before executing the pagination request.
+     *
+     * @return void
      */
-    abstract protected function prepareServerControls(): void;
+    abstract protected function prepareServerControls();
 
     /**
      * Apply the server controls.
+     *
+     * @param  LdapInterface  $ldap
+     * @return void
      */
-    abstract protected function applyServerControls(LdapInterface $ldap): void;
+    abstract protected function applyServerControls(LdapInterface $ldap);
 
     /**
      * Reset the server controls.
+     *
+     * @param  LdapInterface  $ldap
+     * @return void
      */
-    abstract protected function resetServerControls(LdapInterface $ldap): void;
+    abstract protected function resetServerControls(LdapInterface $ldap);
 
     /**
      * Update the server controls.
+     *
+     * @param  LdapInterface  $ldap
+     * @param  resource  $resource
+     * @return void
      */
-    abstract protected function updateServerControls(LdapInterface $ldap, mixed $resource): void;
+    abstract protected function updateServerControls(LdapInterface $ldap, $resource);
 }

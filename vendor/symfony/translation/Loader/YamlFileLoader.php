@@ -26,7 +26,10 @@ class YamlFileLoader extends FileLoader
 {
     private $yamlParser;
 
-    protected function loadResource(string $resource): array
+    /**
+     * {@inheritdoc}
+     */
+    protected function loadResource(string $resource)
     {
         if (null === $this->yamlParser) {
             if (!class_exists(\Symfony\Component\Yaml\Parser::class)) {

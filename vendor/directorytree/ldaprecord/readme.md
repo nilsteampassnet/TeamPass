@@ -8,6 +8,9 @@
     <a href="https://github.com/DirectoryTree/LdapRecord/actions">
         <img src="https://img.shields.io/github/actions/workflow/status/directorytree/ldaprecord/run-tests.yml?branch=master&style=flat-square">
     </a>
+    <a href="https://scrutinizer-ci.com/g/DirectoryTree/LdapRecord/?branch=master">
+        <img src="https://img.shields.io/scrutinizer/g/DirectoryTree/LdapRecord/master.svg?style=flat-square"/>
+    </a>
     <a href="https://packagist.org/packages/DirectoryTree/LdapRecord">
         <img src="https://img.shields.io/packagist/dt/DirectoryTree/LdapRecord.svg?style=flat-square"/>
     </a>
@@ -29,9 +32,9 @@
 </p>
 
 <h4 align="center">
-    <a href="https://ldaprecord.com/docs/core/v3/quickstart/">Quickstart</a>
+    <a href="https://ldaprecord.com/docs/core/v2/quickstart/">Quickstart</a>
     <span> · </span>
-    <a href="https://ldaprecord.com/docs/core/v3/">Documentation</a>
+    <a href="https://ldaprecord.com/docs/core/v2/">Documentation</a>
     <span> · </span>
     <a href="https://github.com/DirectoryTree/LdapRecord-Laravel">Laravel Integration</a>
     <span> · </span>
@@ -64,15 +67,15 @@ Active Directory Features
 
 🚪 **Enable / Disable Accounts**
 
-Detect and assign User Account Control values on accounts with the fluent [Account Control builder](https://ldaprecord.com/docs/core/v3/active-directory/users/#uac).
+Detect and assign User Account Control values on accounts with the fluent [Account Control builder](https://ldaprecord.com/docs/core/v2/active-directory/users/#uac).
 
 🔑 **Reset / Change Passwords**
 
-Built-in support for [changing](https://ldaprecord.com/docs/core/v3/active-directory/users/#changing-passwords) and [resetting](https://ldaprecord.com/docs/core/v3/active-directory/users/#resetting-passwords) passwords on Active Directory accounts.
+Built-in support for [changing](https://ldaprecord.com/docs/core/v2/active-directory/users/#changing-passwords) and [resetting](https://ldaprecord.com/docs/core/v2/active-directory/users/#resetting-passwords) passwords on Active Directory accounts.
 
 🗑 **Restore Deleted Objects**
 
-Seamlessly access your Active Directory recycle bin and [restore deleted objects](https://ldaprecord.com/docs/core/v3/models/#restoring-deleted-models).
+We've all been there -- accidentally deleting a user or group in Active Directory. [Restore them](https://ldaprecord.com/docs/core/v2/models/#restoring-deleted-models) by seamlessly accessing your directory's recycle bin.
 
 ---
 

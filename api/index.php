@@ -82,7 +82,7 @@ if ($uri[0] === 'authorize') {
     } elseif ($controller === 'user') {
         require API_ROOT_PATH . "/Controller/Api/UserController.php";
         $objFeedController = new UserController();
-        $strMethodName = $action . 'Action';
+        $strMethodName = (string) $action . 'Action';
         $objFeedController->{$strMethodName}();
 
     // action related to ITEM

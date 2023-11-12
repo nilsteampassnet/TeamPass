@@ -35,12 +35,8 @@ trait FormatsMessages
 
         $lowerRule = Str::snake($rule);
 
-        $customKey = "validation.custom.{$attribute}.{$lowerRule}";
-
         $customMessage = $this->getCustomMessageFromTranslator(
-            in_array($rule, $this->sizeRules)
-                ? [$customKey.".{$this->getAttributeType($attribute)}", $customKey]
-                : $customKey
+            $customKey = "validation.custom.{$attribute}.{$lowerRule}"
         );
 
         // First we check for a custom defined validation message for the attribute
@@ -99,37 +95,25 @@ trait FormatsMessages
     {
         $source = $source ?: $this->customMessages;
 
-        $keys = ["{$attribute}.{$lowerRule}", $lowerRule, $attribute];
+        $keys = ["{$attribute}.{$lowerRule}", $lowerRule];
 
         // First we will check for a custom message for an attribute specific rule
         // message for the fields, then we will check for a general custom line
         // that is not attribute specific. If we find either we'll return it.
         foreach ($keys as $key) {
             foreach (array_keys($source) as $sourceKey) {
-                if (str_contains($sourceKey, '*')) {
+                if (strpos($sourceKey, '*') !== false) {
                     $pattern = str_replace('\*', '([^.]*)', preg_quote($sourceKey, '#'));
 
                     if (preg_match('#^'.$pattern.'\z#u', $key) === 1) {
-                        $message = $source[$sourceKey];
-
-                        if (is_array($message) && isset($message[$lowerRule])) {
-                            return $message[$lowerRule];
-                        }
-
-                        return $message;
+                        return $source[$sourceKey];
                     }
 
                     continue;
                 }
 
                 if (Str::is($sourceKey, $key)) {
-                    $message = $source[$sourceKey];
-
-                    if ($sourceKey === $attribute && is_array($message) && isset($message[$lowerRule])) {
-                        return $message[$lowerRule];
-                    }
-
-                    return $message;
+                    return $source[$sourceKey];
                 }
             }
         }
@@ -138,33 +122,25 @@ trait FormatsMessages
     /**
      * Get the custom error message from the translator.
      *
-     * @param  array|string  $keys
+     * @param  string  $key
      * @return string
      */
-    protected function getCustomMessageFromTranslator($keys)
+    protected function getCustomMessageFromTranslator($key)
     {
-        foreach (Arr::wrap($keys) as $key) {
-            if (($message = $this->translator->get($key)) !== $key) {
-                return $message;
-            }
-
-            // If an exact match was not found for the key, we will collapse all of these
-            // messages and loop through them and try to find a wildcard match for the
-            // given key. Otherwise, we will simply return the key's value back out.
-            $shortKey = preg_replace(
-                '/^validation\.custom\./', '', $key
-            );
-
-            $message = $this->getWildcardCustomMessages(Arr::dot(
-                (array) $this->translator->get('validation.custom')
-            ), $shortKey, $key);
-
-            if ($message !== $key) {
-                return $message;
-            }
+        if (($message = $this->translator->get($key)) !== $key) {
+            return $message;
         }
 
-        return Arr::last(Arr::wrap($keys));
+        // If an exact match was not found for the key, we will collapse all of these
+        // messages and loop through them and try to find a wildcard match for the
+        // given key. Otherwise, we will simply return the key's value back out.
+        $shortKey = preg_replace(
+            '/^validation\.custom\./', '', $key
+        );
+
+        return $this->getWildcardCustomMessages(Arr::dot(
+            (array) $this->translator->get('validation.custom')
+        ), $shortKey, $key);
     }
 
     /**
@@ -245,8 +221,6 @@ trait FormatsMessages
         );
 
         $message = $this->replaceInputPlaceholder($message, $attribute);
-        $message = $this->replaceIndexPlaceholder($message, $attribute);
-        $message = $this->replacePositionPlaceholder($message, $attribute);
 
         if (isset($this->replacers[Str::snake($rule)])) {
             return $this->callReplacer($message, $attribute, Str::snake($rule), $parameters, $this);
@@ -326,92 +300,6 @@ trait FormatsMessages
     }
 
     /**
-     * Replace the :index placeholder in the given message.
-     *
-     * @param  string  $message
-     * @param  string  $attribute
-     * @return string
-     */
-    protected function replaceIndexPlaceholder($message, $attribute)
-    {
-        return $this->replaceIndexOrPositionPlaceholder(
-            $message, $attribute, 'index'
-        );
-    }
-
-    /**
-     * Replace the :position placeholder in the given message.
-     *
-     * @param  string  $message
-     * @param  string  $attribute
-     * @return string
-     */
-    protected function replacePositionPlaceholder($message, $attribute)
-    {
-        return $this->replaceIndexOrPositionPlaceholder(
-            $message, $attribute, 'position', fn ($segment) => $segment + 1
-        );
-    }
-
-    /**
-     * Replace the :index or :position placeholder in the given message.
-     *
-     * @param  string  $message
-     * @param  string  $attribute
-     * @param  string  $placeholder
-     * @param  \Closure|null  $modifier
-     * @return string
-     */
-    protected function replaceIndexOrPositionPlaceholder($message, $attribute, $placeholder, Closure $modifier = null)
-    {
-        $segments = explode('.', $attribute);
-
-        $modifier ??= fn ($value) => $value;
-
-        $numericIndex = 1;
-
-        foreach ($segments as $segment) {
-            if (is_numeric($segment)) {
-                if ($numericIndex === 1) {
-                    $message = str_ireplace(':'.$placeholder, $modifier((int) $segment), $message);
-                }
-
-                $message = str_ireplace(
-                    ':'.$this->numberToIndexOrPositionWord($numericIndex).'-'.$placeholder,
-                    $modifier((int) $segment),
-                    $message
-                );
-
-                $numericIndex++;
-            }
-        }
-
-        return $message;
-    }
-
-    /**
-     * Get the word for a index or position segment.
-     *
-     * @param  int  $value
-     * @return string
-     */
-    protected function numberToIndexOrPositionWord(int $value)
-    {
-        return [
-            1 => 'first',
-            2 => 'second',
-            3 => 'third',
-            4 => 'fourth',
-            5 => 'fifth',
-            6 => 'sixth',
-            7 => 'seventh',
-            8 => 'eighth',
-            9 => 'ninth',
-            10 => 'tenth',
-        ][(int) $value] ?? 'other';
-    }
-
-    /**
      * Replace the :input placeholder in the given message.
      *
      * @param  string  $message
@@ -440,10 +328,6 @@ trait FormatsMessages
     {
         if (isset($this->customValues[$attribute][$value])) {
             return $this->customValues[$attribute][$value];
-        }
-
-        if (is_array($value)) {
-            return 'array';
         }
 
         $key = "validation.values.{$attribute}.{$value}";

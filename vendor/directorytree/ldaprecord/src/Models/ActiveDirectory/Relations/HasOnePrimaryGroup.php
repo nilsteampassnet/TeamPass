@@ -9,8 +9,11 @@ class HasOnePrimaryGroup extends HasOne
 {
     /**
      * Get the foreign model by the given value.
+     *
+     * @param  string  $value
+     * @return Model|null
      */
-    protected function getForeignModelByValue(string $value): ?Model
+    protected function getForeignModelByValue($value)
     {
         return $this->query->findBySid(
             $this->getParentModelObjectSid()
@@ -21,8 +24,11 @@ class HasOnePrimaryGroup extends HasOne
      * Get the foreign value from the given model.
      *
      * Retrieves the last RID from the models Object SID.
+     *
+     * @param  Model  $model
+     * @return string
      */
-    protected function getForeignValueFromModel(Model $model): ?string
+    protected function getForeignValueFromModel(Model $model)
     {
         $objectSidComponents = explode('-', $model->getConvertedSid());
 
@@ -31,8 +37,10 @@ class HasOnePrimaryGroup extends HasOne
 
     /**
      * Get the parent relationship models converted object sid.
+     *
+     * @return string
      */
-    protected function getParentModelObjectSid(): string
+    protected function getParentModelObjectSid()
     {
         return preg_replace(
             '/\d+$/',

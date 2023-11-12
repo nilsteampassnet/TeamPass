@@ -6,20 +6,24 @@ class GroupNode extends Node
 {
     /**
      * The group's operator.
+     *
+     * @var string
      */
-    protected string $operator;
+    protected $operator;
 
     /**
      * The group's sub-nodes.
      *
      * @var Node[]
      */
-    protected array $nodes = [];
+    protected $nodes = [];
 
     /**
      * Constructor.
+     *
+     * @param  string  $filter
      */
-    public function __construct(string $filter)
+    public function __construct($filter)
     {
         $this->raw = $filter;
 
@@ -30,8 +34,10 @@ class GroupNode extends Node
 
     /**
      * Get the group's operator.
+     *
+     * @return string
      */
-    public function getOperator(): string
+    public function getOperator()
     {
         return $this->operator;
     }
@@ -41,7 +47,7 @@ class GroupNode extends Node
      *
      * @return Node[]
      */
-    public function getNodes(): array
+    public function getNodes()
     {
         return $this->nodes;
     }
