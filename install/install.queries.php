@@ -26,6 +26,16 @@ use Hackzilla\PasswordGenerator\Generator\ComputerPasswordGenerator;
 use Hackzilla\PasswordGenerator\RandomGenerator\Php7RandomGenerator;
 use TeampassClasses\SuperGlobal\SuperGlobal;
 
+// Do initial test
+if (file_exists('../includes/config/settings.php') === false) {
+    $settings_sample = 'includes/config/settings.sample.php';
+    $settings = 'includes/config/settings.php';
+    if (copy('../'.$settings_sample, '../'.$settings) === false) {
+        echo '[{"error" : "File <i>' . $settings . '</i> could not be created from <i>'.$settings_sample.'</i>. Please do it on your own and refresh the page!", "index" : "19", "multiple" : "' . $post_multiple . '"}]';
+        die();
+    }
+}
+
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
 
@@ -191,6 +201,7 @@ if (null !== $post_type) {
                 }
                 break;
             }
+
             break;
 
         case 'step_3':

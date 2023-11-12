@@ -75,7 +75,7 @@ function checkPage()
         } else {
             jsonValues = {"absolute_path":$("#absolute_path").val(), "url_path":$("#url_path").val()};
             dataToUse = JSON.stringify(jsonValues);
-            tasks = ["folder*install", "folder*includes", "folder*includes/config", "folder*includes/avatars", "folder*includes/libraries/csrfp/libs", "folder*includes/libraries/csrfp/js", "folder*includes/libraries/csrfp/log",  "extension*mbstring", "extension*openssl", "extension*bcmath", "extension*iconv", "extension*gd", "extension*xml", "extension*curl", "version*php", "ini*max_execution_time", "extension*gmp", "folder*files", "folder*upload"];
+            tasks = ["folder*install", "folder*includes", "folder*includes/config", "folder*includes/avatars", "folder*includes/libraries/csrfp/libs", "folder*includes/libraries/csrfp/js", "folder*includes/libraries/csrfp/log",  "extension*mbstring", "extension*openssl", "extension*bcmath", "extension*iconv", "extension*gd", "extension*xml", "extension*curl", "version*php", "ini*max_execution_time", "extension*gmp", "folder*files", "folder*upload", "misc*settings_creation"];
             multiple = true;
             $("#hid_absolute_path").val($("#absolute_path").val());
             $("#hid_url_path").val($("#url_path").val());
@@ -297,6 +297,7 @@ function doGetJson(task)
                     }
                 } else {
                     $("#res"+step+"_check"+data[0].index).html('<i class="fas fa-check text-success"></i>');
+                    $("#res"+step+"_check19").html('<i class="fas fa-check text-success"></i>');
                 }
 
                 if (data[0].result !== undefined && data[0].result !== "" ) {
