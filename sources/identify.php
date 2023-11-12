@@ -1200,7 +1200,7 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
         if ($SETTINGS['ldap_type'] === 'ActiveDirectory') {
             require_once 'ldap.activedirectory.php';
 
-            if (userIsEnabled($userADInfos['dn'], $connection) === false) {
+            if (userIsEnabled((string) $userADInfos['dn'], $connection) === false) {
                 return [
                     'error' => true,
                     'message' => "Error : User is not enabled",

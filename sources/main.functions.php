@@ -809,7 +809,6 @@ function cacheTableRefresh(): void
 {
     // Load class DB
     loadClasses('DB');
-$superGlobal = new SuperGlobal();
 
     //Load Tree
     $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');

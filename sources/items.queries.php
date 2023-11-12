@@ -6470,7 +6470,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
 
         // order previous passwords by date
         $key_values = array_column($previous_passwords, 'date'); 
-        array_multisort($key_values, SORT_DESC, $previous_passwords);
+        array_multisort($key_values, /** @scrutinizer ignore-type */SORT_DESC, $previous_passwords);
 
         // send data
         echo (string) prepareExchangedData(
