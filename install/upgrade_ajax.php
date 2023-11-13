@@ -852,7 +852,8 @@ if (isset($post_type)) {
             if (file_exists($tp_config_file) === false) {
                 $settingsFile = '../includes/config/settings.php';
                 include_once $settingsFile;
-                handleConfigFile('rebuild', $SETTINGS);
+                include_once 'upgrade_operations.php';
+                installHandleConfigFile('rebuild', $SETTINGS);
                 
                 array_push(
                     $returnStatus, 
@@ -864,7 +865,8 @@ if (isset($post_type)) {
             } else {
                 // Update config file
                 include_once $settingsFile;
-                handleConfigFile('rebuild', $SETTINGS);
+                include_once 'upgrade_operations.php';
+                installHandleConfigFile('rebuild', $SETTINGS);
 
                 array_push(
                     $returnStatus, 
@@ -954,7 +956,8 @@ if (isset($post_type)) {
             }
 
             // save change in config file
-            handleConfigFile('update', $SETTINGS, 'teampass_version', TP_VERSION);
+            include_once 'upgrade_operations.php';
+            installHandleConfigFile('update', $SETTINGS, 'teampass_version', TP_VERSION);
 
 
             //<-- Add cronjob if not exist

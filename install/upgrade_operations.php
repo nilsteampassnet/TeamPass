@@ -149,11 +149,11 @@ if (isset($post_operation) === true && empty($post_operation) === false) {
 }
 
 // Close connection
-mysqli_close($db_link);
+//mysqli_close($db_link);
 
 
 // Return back
-echo '[{"finish":"'.$finish.'" , "next":"", "error":"", "total":"'.$total.'"}]';
+//echo '[{"finish":"'.$finish.'" , "next":"", "error":"", "total":"'.$total.'"}]';
 
 
 
@@ -338,11 +338,11 @@ function installHandleFoldersCategories(
     $port = intval(DB_PORT);
     $user = DB_USER;
     $arr_data = array();
-    $mysqli = new mysqli($server, $user, $pass, $database, $port);
+    $mysqli2 = new mysqli($server, $user, $pass, $database, $port);
 
     // force full list of folders
     if (count($folderIds) === 0) {
-        $result = $mysqli->query('SELECT id
+        $result = $mysqli2->query('SELECT id
             FROM ' . $pre . 'nested_tree
             WHERE personal_folder = 0',
         );
@@ -362,7 +362,7 @@ function installHandleFoldersCategories(
         // Do we have Categories
         // get list of associated Categories
         $arrCatList = array();
-        $result = $mysqli->query('SELECT c.id, c.title, c.level, c.type, c.masked, c.order, c.encrypted_data, c.role_visibility, c.is_mandatory,
+        $result = $mysqli2->query('SELECT c.id, c.title, c.level, c.type, c.masked, c.order, c.encrypted_data, c.role_visibility, c.is_mandatory,
             f.id_category AS category_id
             FROM ' . $pre . 'categories_folders AS f
             INNER JOIN ' . $pre . 'categories AS c ON (f.id_category = c.parent_id)
@@ -389,7 +389,7 @@ function installHandleFoldersCategories(
 
         // Now get complexity
         $valTemp = '';
-        $result = $mysqli->query('SELECT valeur
+        $result = $mysqli2->query('SELECT valeur
             FROM ' . $pre . 'misc
             WHERE type = "complex" AND intitule = '.$folder
         );
@@ -406,7 +406,7 @@ function installHandleFoldersCategories(
 
         // Now get Roles
         $valTemp = '';
-        $result = $mysqli->query('SELECT t.title
+        $result = $mysqli2->query('SELECT t.title
             FROM ' . $pre . 'roles_values as v
             INNER JOIN ' . $pre . 'roles_title as t ON (v.role_id = t.id)
             WHERE v.intitule = '.$folder.'
@@ -421,14 +421,90 @@ function installHandleFoldersCategories(
         $arr_data['visibilityRoles'] = $valTemp;
 
         // now save in DB
-        mysqli_query(
-            $db_link,
-            'UPDATE categories = "'.json_encode($arr_data).'"
+        $mysqli2->query('UPDATE categories = "'.json_encode($arr_data).'"
             FROM ' . $pre . 'nested_tree
             WHERE id = '.$folder
         );
     }
     
-    mysqli_free_result($result); 
-    mysqli_close($mysqli);
+    mysqli_close($mysqli2);
+}
+
+/**
+ * Permits to handle the Teampass config file
+ * $action accepts "rebuild" and "update"
+ *
+ * @param string $action   Action to perform
+ * @param array  $SETTINGS Teampass settings
+ * @param string $field    Field to refresh
+ * @param string $value    Value to set
+ *
+ * @return string|bool
+ */
+function installHandleConfigFile($action, $SETTINGS, $field = null, $value = null)
+{
+    $tp_config_file = $SETTINGS['cpassman_dir'] . '/includes/config/tp.config.php';
+    $filename = '../includes/config/settings.php';
+    include_once '../sources/main.functions.php';
+    $pass = defuse_return_decrypted(DB_PASSWD);
+    $server = DB_HOST;
+    $pre = DB_PREFIX;
+    $database = DB_NAME;
+    $port = intval(DB_PORT);
+    $user = DB_USER;
+    $arr_data = array();
+    $mysqli2 = new mysqli($server, $user, $pass, $database, $port);
+
+    if (file_exists($tp_config_file) === false || $action === 'rebuild') {
+        // perform a copy
+        if (file_exists($tp_config_file)) {
+            if (! copy($tp_config_file, $tp_config_file . '.' . date('Y_m_d_His', time()))) {
+                return "ERROR: Could not copy file '" . $tp_config_file . "'";
+            }
+        }
+
+        // regenerate
+        $data = [];
+        $data[0] = "<?php\n";
+        $data[1] = "global \$SETTINGS;\n";
+        $data[2] = "\$SETTINGS = array (\n";
+
+        $result = $mysqli2->query('SELECT *
+            FROM ' . $pre . 'misc
+            WHERE type = "admin"'
+        );
+        $rowcount = $result->num_rows;
+        if ($rowcount > 0) {
+            while ($row = $result->fetch_assoc()) {
+                array_push($data, "    '" . $row['intitule'] . "' => '" . htmlspecialchars_decode($row['valeur'], ENT_COMPAT) . "',\n");
+            }
+        }
+        array_push($data, ");\n");
+        $data = array_unique($data);
+    // ---
+    } elseif ($action === 'update' && empty($field) === false) {
+        $data = file($tp_config_file);
+        $inc = 0;
+        $bFound = false;
+        foreach ($data as $line) {
+            if (stristr($line, ');')) {
+                break;
+            }
+
+            if (stristr($line, "'" . $field . "' => '")) {
+                $data[$inc] = "    '" . $field . "' => '" . htmlspecialchars_decode($value ?? '', ENT_COMPAT) . "',\n";
+                $bFound = true;
+                break;
+            }
+            ++$inc;
+        }
+        if ($bFound === false) {
+            $data[$inc] = "    '" . $field . "' => '" . htmlspecialchars_decode($value ?? '', ENT_COMPAT). "',\n);\n";
+        }
+    }
+    mysqli_close($mysqli2);
+
+    // update file
+    file_put_contents($tp_config_file, implode('', $data ?? []));
+    return true;
 }
