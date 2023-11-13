@@ -4144,7 +4144,9 @@ function purgeUnnecessaryKeys(bool $allUsers = true, int $user_id=0)
 {
     if ($allUsers === true) {
         // Load class DB
-        loadClasses('DB');
+        if (class_exists('DB') === false) {
+            loadClasses('DB');
+        }
 
         $users = DB::query(
             'SELECT id
@@ -4287,10 +4289,9 @@ function loadClasses(string $className = ''): void
 {
     require_once __DIR__. '/../includes/config/include.php';
     require_once __DIR__. '/../includes/config/settings.php';
-    require_once __DIR__. '/../includes/libraries/string.polyfill.php';
-    /*require_once __DIR__. '/../includes/libraries/wp/plugin.php';
-    require_once __DIR__. '/../includes/libraries/wp/option.php';
-    require_once __DIR__. '/../includes/libraries/wp/formatting.php';*/
+    if (phpversion() < 8) {
+        require_once __DIR__. '/../includes/libraries/string.polyfill.php';
+    }
     require_once __DIR__.'/../vendor/autoload.php';
 
     if (defined('DB_PASSWD_CLEAR') === false) {

@@ -144,7 +144,7 @@ if (isset($post_operation) === true && empty($post_operation) === false) {
             // OPERATION - 20231017_1 - remove all existing keys
             // if item is personal and user is not owner
 
-            purgeUnnecessaryKeys(true);
+            installPurgeUnnecessaryKeys(true, 0,$pre);
     }
 }
 
@@ -231,4 +231,204 @@ function populateItemsTable_DeletedAt($pre)
     }
 
     return 1;
+}
+
+
+/**
+ * Delete unnecessary keys for personal items
+ *
+ * @param boolean $allUsers
+ * @param integer $user_id
+ * @return void
+ */
+function installPurgeUnnecessaryKeys(bool $allUsers = true, int $user_id=0, string $pre)
+{
+    global $db_link;
+    if ($allUsers === true) {
+        $users = mysqli_query(
+            $db_link,
+            'SELECT id
+            FROM ' . $pre . 'users
+            WHERE id NOT IN ('.OTV_USER_ID.', '.TP_USER_ID.', '.SSH_USER_ID.', '.API_USER_ID.')
+            ORDER BY login ASC'
+        );
+        while ($user = mysqli_fetch_assoc($users)) {
+            installPurgeUnnecessaryKeysForUser((int) $user['id'], $pre);
+        }
+    } else {
+        installPurgeUnnecessaryKeysForUser((int) $user_id, $pre);
+    }
+}
+
+/**
+ * Delete unnecessary keys for personal items
+ *
+ * @param integer $user_id
+ * @return void
+ */
+function installPurgeUnnecessaryKeysForUser(int $user_id=0, string $pre)
+{
+    global $db_link;
+    if ($user_id === 0) {
+        return;
+    }
+
+    $result = mysqli_query(
+        $db_link,
+        'SELECT id
+        FROM ' . $pre . 'items AS i
+        INNER JOIN ' . $pre . 'log_items AS li ON li.id_item = i.id
+        WHERE i.perso = 1 AND li.action = "at_creation" AND li.id_user IN ('.TP_USER_ID.', '.$user_id.')',
+    );
+    $rowcount = mysqli_num_rows($result);
+    if ($rowcount > 0) {
+        // Build list of items id
+        $pfItemsList = [];
+        while ($row = mysqli_fetch_assoc($result)) {
+            array_push($pfItemsList, $row['id']);
+        }
+
+        /*$personalItem = mysqli_fetch_column($result, 0);*/
+        $pfItemsList = implode(',', $pfItemsList);
+        // Item keys
+        mysqli_query(
+            $db_link,
+            'DELETE FROM ' . $pre . 'sharekeys_items
+            WHERE object_id IN ('.$pfItemsList.') AND user_id NOT IN ('.TP_USER_ID.', '.$user_id.')'
+        );
+        // Files keys
+        mysqli_query(
+            $db_link,
+            'DELETE FROM ' . $pre . 'sharekeys_files
+            WHERE object_id IN ('.$pfItemsList.') AND user_id NOT IN ('.TP_USER_ID.', '.$user_id.')'
+        );
+        // Fields keys
+        mysqli_query(
+            $db_link,
+            'DELETE FROM ' . $pre . 'sharekeys_fields
+            WHERE object_id IN ('.$pfItemsList.') AND user_id NOT IN ('.TP_USER_ID.', '.$user_id.')'
+        );
+        // Logs keys
+        mysqli_query(
+            $db_link,
+            'DELETE FROM ' . $pre . 'sharekeys_logs
+            WHERE object_id IN ('.$pfItemsList.') AND user_id NOT IN ('.TP_USER_ID.', '.$user_id.')'
+        );
+    }
+}
+
+
+/**
+ * Permits to refresh the categories of folders
+ *
+ * @param array $folderIds
+ * @return void
+ */
+function installHandleFoldersCategories(
+    array $folderIds, $pre
+)
+{
+    global $db_link;
+    $filename = '../includes/config/settings.php';
+    include_once '../sources/main.functions.php';
+    $pass = defuse_return_decrypted(DB_PASSWD);
+    $server = DB_HOST;
+    $pre = DB_PREFIX;
+    $database = DB_NAME;
+    $port = intval(DB_PORT);
+    $user = DB_USER;
+    $arr_data = array();
+    $mysqli = new mysqli($server, $user, $pass, $database, $port);
+
+    // force full list of folders
+    if (count($folderIds) === 0) {
+        $result = $mysqli->query('SELECT id
+            FROM ' . $pre . 'nested_tree
+            WHERE personal_folder = 0',
+        );
+        $rowcount = $result->num_rows;
+        if ($rowcount > 0) {
+            while ($row = $result->fetch_assoc()) {
+                array_push($folderIds, $row['id']);
+            }
+        }
+    }
+
+    // Get complexity
+    defineComplexity();
+
+    // update
+    foreach ($folderIds as $folder) {
+        // Do we have Categories
+        // get list of associated Categories
+        $arrCatList = array();
+        $result = $mysqli->query('SELECT c.id, c.title, c.level, c.type, c.masked, c.order, c.encrypted_data, c.role_visibility, c.is_mandatory,
+            f.id_category AS category_id
+            FROM ' . $pre . 'categories_folders AS f
+            INNER JOIN ' . $pre . 'categories AS c ON (f.id_category = c.parent_id)
+            WHERE id_folder = '.$folder
+        );
+        $rowcount = $result->num_rows;
+        if ($rowcount > 0) {
+            while ($row = $result->fetch_assoc()) {
+                $arrCatList[$row['id']] = array(
+                    'id' => $row['id'],
+                    'title' => $row['title'],
+                    'level' => $row['level'],
+                    'type' => $row['type'],
+                    'masked' => $row['masked'],
+                    'order' => $row['order'],
+                    'encrypted_data' => $row['encrypted_data'],
+                    'role_visibility' => $row['role_visibility'],
+                    'is_mandatory' => $row['is_mandatory'],
+                    'category_id' => $row['category_id'],
+                );
+            }
+        }
+        $arr_data['categories'] = $arrCatList;
+
+        // Now get complexity
+        $valTemp = '';
+        $result = $mysqli->query('SELECT valeur
+            FROM ' . $pre . 'misc
+            WHERE type = "complex" AND intitule = '.$folder
+        );
+        $rowcount = $result->num_rows;
+        if ($rowcount > 0) {
+            while ($row = $result->fetch_assoc()) {
+                $valTemp = array(
+                    'value' => $row['valeur'],
+                    'text' => TP_PW_COMPLEXITY[$row['valeur']][1],
+                );
+            }
+        }
+        $arr_data['complexity'] = $valTemp;
+
+        // Now get Roles
+        $valTemp = '';
+        $result = $mysqli->query('SELECT t.title
+            FROM ' . $pre . 'roles_values as v
+            INNER JOIN ' . $pre . 'roles_title as t ON (v.role_id = t.id)
+            WHERE v.intitule = '.$folder.'
+            GROUP BY title'
+        );
+        $rowcount = $result->num_rows;
+        if ($rowcount > 0) {
+            while ($row = $result->fetch_assoc()) {
+                $valTemp .= (empty($valTemp) === true ? '' : ' - ') . $row['title'];
+            }
+        }
+        $arr_data['visibilityRoles'] = $valTemp;
+
+        // now save in DB
+        mysqli_query(
+            $db_link,
+            'UPDATE categories = "'.json_encode($arr_data).'"
+            FROM ' . $pre . 'nested_tree
+            WHERE id = '.$folder
+        );
+    }
+    
+    mysqli_free_result($result); 
+    mysqli_close($mysqli);
 }

@@ -269,7 +269,7 @@ if (!isset($_GET['step']) && !isset($post_step)) {
     }
     if (defined('DB_PASSWD_CLEAR') === false) {
         require_once '../sources/main.functions.php';
-        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+        //define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
     }
     //ETAPE 2
     echo '

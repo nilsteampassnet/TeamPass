@@ -1183,9 +1183,10 @@ if (isset($post_type)) {
             break;
 
         case 'perform_nestedtree_categories_population_3.0.0.18':
-            include_once '../sources/main.functions.php';
-            handleFoldersCategories(
-                []
+            include_once 'upgrade_operations.php';
+            installHandleFoldersCategories(
+                [],
+                $pre
             );
 
             echo '[{"error" : ""}]';
