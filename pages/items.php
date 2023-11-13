@@ -62,13 +62,13 @@ $checkUserAccess = new PerformChecks(
 $checkUserAccess->caseHandler();
 if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('items') === false) {
     // Not allowed page
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
+    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
 
 // Load language file
-require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user']['user_language'].'.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$superGlobal->get('user_language', 'SESSION', 'user').'.php';
 
 // Define Timezone
 date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
@@ -79,13 +79,11 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 
 // --------------------------------- //
 
-$superGlobal = new SuperGlobal();
-
 // Prepare SESSION variables
 $session_user_admin = $superGlobal->get('user_admin', 'SESSION');
 
 if ((int) $session_user_admin === 1) {
-    $_SESSION['groupes_visibles'] = $_SESSION['personal_visible_groups'];
+    $superGlobal->put('groupes_visibles', $superGlobal->get('personal_visible_groups', 'SESSION', 'user'), 'SESSION');
 }
 
 // Get list of users
@@ -437,8 +435,9 @@ foreach ($rows as $reccord) {
                             <div class="tab-pane" id="tab_4">
                                 <div id="form-item-field" class="hidden">
                                     <?php
-                                        if (isset($_SESSION['item_fields']) === true) {
-                                            foreach ($_SESSION['item_fields'] as $category) {
+                                        $session_item_fields = $superGlobal->get('item_fields', 'SESSION');
+                                        if (isset($session_item_fields) === true) {
+                                            foreach ($session_item_fields as $category) {
                                                 echo '
                                             <div class="callout callout-info form-item-category hidden" id="form-item-category-' . $category['id'] . '">
                                                 <h5>' . $category['title'] . '</h5>
@@ -680,7 +679,7 @@ foreach ($rows as $reccord) {
                     <!-- /.card-header -->
                     <div class="card-body collapse show" id="card-item-fields">
                         <?php
-                            foreach ($_SESSION['item_fields'] as $elem) {
+                            foreach ($session_item_fields as $elem) {
                                 echo '
                         <div class="callout callout-info card-item-category hidden" id="card-item-category-' . $elem['id'] . '">
                             <h5>' . $elem['title'] . '</h5>

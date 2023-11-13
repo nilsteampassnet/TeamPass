@@ -77,7 +77,7 @@ if (
     && filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== 'get_teampass_settings'
 ) {
     // Not allowed page
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
+    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }*/
@@ -99,7 +99,7 @@ if (
     isset($_SESSION['user_id']) === true
     && $checkUserAccess->userAccessPage('home') === false
 ) {
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
+    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error'); //not allowed page
     include __DIR__.'/../error.php';
     exit();
 } elseif ((isset($_SESSION['user_id']) === true
@@ -110,7 +110,7 @@ if (
     // continue
     mainQuery($SETTINGS);
 } else {
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
+    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error'); //not allowed page
     include __DIR__.'/../error.php';
     exit();
 }

@@ -12,10 +12,10 @@ class Aes
     /**
      * AES Cipher function: encrypt 'input' with Rijndael algorithm
      *
-     * @param input message as byte-array (16 bytes)
-     * @param w     key schedule as 2D byte-array (Nr+1 x Nb bytes) -
+     * @param $input message as byte-array (16 bytes)
+     * @param $w     key schedule as 2D byte-array (Nr+1 x Nb bytes) -
      *              generated from the cipher key by keyExpansion()
-     * @return ciphertext as byte-array (16 bytes)
+     * @return $ciphertext as byte-array (16 bytes)
      */
     public static function cipher($input, $w)
     {
@@ -125,8 +125,8 @@ class Aes
      * Key expansion for Rijndael cipher(): performs key expansion on cipher key
      * to generate a key schedule
      *
-     * @param key cipher key byte-array (16 bytes)
-     * @return key schedule as 2D byte-array (Nr+1 x Nb bytes)
+     * @param $key cipher key byte-array (16 bytes)
+     * @return $key schedule as 2D byte-array (Nr+1 x Nb bytes)
      */
     public static function keyExpansion($key)
     {
@@ -232,9 +232,9 @@ class aesctr extends Aes
      *
      * Unicode multi-byte character safe
      *
-     * @param plaintext string text to be encrypted
-     * @param password  the password to use to generate a key
-     * @param nBits     integer of bits to be used in the key (128, 192, or 256)
+     * @param $plaintext string text to be encrypted
+     * @param $password  the password to use to generate a key
+     * @param $nBits     integer of bits to be used in the key (128, 192, or 256)
      * @return          string text
      */
     public static function encrypt($plaintext, $password, $nBits)
@@ -313,9 +313,9 @@ class aesctr extends Aes
     /**
      * Decrypt a text encrypted by AES in counter mode of operation
      *
-     * @param ciphertext source text to be decrypted
-     * @param password   the password to use to generate a key
-     * @param nBits      integer of bits to be used in the key (128, 192, or 256)
+     * @param $ciphertext source text to be decrypted
+     * @param $password   the password to use to generate a key
+     * @param $nBits      integer of bits to be used in the key (128, 192, or 256)
      * @return           string text
      */
     public static function decrypt($ciphertext, $password, $nBits)
@@ -385,8 +385,8 @@ class aesctr extends Aes
     /*
     * Unsigned right shift function, since PHP has neither >>> operator nor unsigned ints
     *
-    * @param a  number to be shifted (32-bit integer)
-    * @param b  number of bits to shift a to the right (0..31)
+    * @param $a  number to be shifted (32-bit integer)
+    * @param $b  number of bits to shift a to the right (0..31)
     * @return   a right-shifted and zero-filled by b bits
     */
     private static function urs($a, $b)

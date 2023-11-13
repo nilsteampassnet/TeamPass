@@ -174,7 +174,7 @@ if (isset($SETTINGS['cpassman_dir']) === false || $SETTINGS['cpassman_dir'] === 
 if (file_exists($SETTINGS['cpassman_dir'] . '/includes/language/' . $session_user_language . '.php') === true) {
     $_SESSION['teampass']['lang'] = include $SETTINGS['cpassman_dir'] . '/includes/language/' . $session_user_language . '.php';
 } else {
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
+    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
     //not allowed page
     include $SETTINGS['cpassman_dir'] . '/error.php';
 }
@@ -960,7 +960,7 @@ if (($session_validite_pw === null
                         } elseif ((int) $session_user_admin === 1) {
                             include $SETTINGS['cpassman_dir'] . '/pages/admin.php';
                         } else {
-                            $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
+                            $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
                             //not allowed page
                             include $SETTINGS['cpassman_dir'] . '/error.php';
                         }
@@ -974,12 +974,12 @@ if (($session_validite_pw === null
                             ) {
                                 //include $SETTINGS['cpassman_dir'] . '/pages/' . $mngPages[$_GET['page']];
                             } else {
-                                $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
+                                $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
                                 //not allowed page
                                 include $SETTINGS['cpassman_dir'] . '/error.php';
                             }
                         } else {
-                            $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
+                            $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
                             //not allowed page
                             include $SETTINGS['cpassman_dir'] . '/error.php';
                         }

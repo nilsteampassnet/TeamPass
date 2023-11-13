@@ -20,6 +20,7 @@ use EZimuel\PHPSecureSession;
 use TeampassClasses\SuperGlobal\SuperGlobal;
 use PasswordLib\PasswordLib;
 use TeampassClasses\NestedTree\NestedTree;
+use Encryption\Crypt\aesctr;
 
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
@@ -100,7 +101,7 @@ $superGlobal->put('abspath', $abspath, 'SESSION');
 // Get POST with user info
 $post_user_info = json_decode(base64_decode(filter_input(INPUT_POST, 'info', FILTER_SANITIZE_FULL_SPECIAL_CHARS)));//print_r($post_user_info);
 $userLogin = $post_user_info[0];
-$userPassword = Encryption\Crypt\aesctr::decrypt(base64_decode($post_user_info[1]), 'cpm', 128);
+$userPassword = aesctr::decrypt(base64_decode($post_user_info[1]), 'cpm', 128);
 $userId = $post_user_info[2];
 
 // Get current version
