@@ -627,6 +627,15 @@ if ($res === false) {
     exit();
 }
 
+// Alter psk field in users
+try {
+    mysqli_query(
+        $db_link,
+        'ALTER TABLE `' . $pre . 'users` CHANGE `psk` `psk` VARCHAR(400) NULL DEFAULT NULL;'
+    );
+} catch (Exception $e) {
+    // Do nothing
+}
 
 //---<END 3.0.10
 
