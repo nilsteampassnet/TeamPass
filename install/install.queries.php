@@ -908,7 +908,7 @@ $SETTINGS = array (';
                             `author` varchar(50) NOT NULL,
                             `renewal_period` tinyint(4) NOT NULL DEFAULT '0',
                             `timestamp` varchar(50) DEFAULT NULL,
-                            `url` text NOT NULL DEFAULT '0',
+                            `url` text NOT NULL DEFAULT NULL,
                             `encryption_type` VARCHAR(50) DEFAULT NULL DEFAULT '0',
                             PRIMARY KEY (`increment_id`)
                             ) CHARSET=utf8;"
@@ -1363,12 +1363,13 @@ $SETTINGS = array (';
                 if ($task === 'settings.php') {
                     // first is to create teampass-seckey.txt
                     // 0- check if exists
-                    define('SECUREFILE', generateRandomKey());
+                    $filesecure = generateRandomKey();
+                    define('SECUREFILE', $filesecure);
                     $filename_seckey = $securePath . '/' . SECUREFILE;
 
                     if (file_exists($filename_seckey)) {
                         if (!copy($filename_seckey, $filename_seckey . '.' . date('Y_m_d', mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'))))) {
-                            echo '[{"error" : "File `$filename_seckey` already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "' . $post_index . '", "multiple" : "' . $post_multiple . '"}]';
+                            echo '[{"error" : "File `'.$filename_seckey.'` already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "' . $post_index . '", "multiple" : "' . $post_multiple . '"}]';
                             break;
                         } else {
                             unlink($filename);
