@@ -3,10 +3,10 @@ engines:
   phpcs:
     php_version: 7.4
 exclude_paths:
-  - "vendor/**"
-  - "plugins/**"
-  - "includes/libraries/cryptojs/**"
-  - "includes/libraries/csrfp/**"
-  - "includes/libraries/ezimuel/**"
-  - "includes/libraries/plupload/**"
-  - "includes/libraries/yubico/**"
+- "vendor/**"
+- "plugins/**"
+- "includes/libraries/cryptojs/**"
+- "includes/libraries/csrfp/**"
+- "includes/libraries/ezimuel/**"
+- "includes/libraries/plupload/**"
+- "includes/libraries/yubico/**"
