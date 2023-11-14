@@ -75,7 +75,7 @@ function checkPage()
         } else {
             jsonValues = {"absolute_path":$("#absolute_path").val(), "url_path":$("#url_path").val()};
             dataToUse = JSON.stringify(jsonValues);
-            tasks = ["misc*settings_creation", "folder*install", "folder*includes", "folder*includes/config", "folder*includes/avatars", "folder*includes/libraries/csrfp/libs", "folder*includes/libraries/csrfp/js", "folder*includes/libraries/csrfp/log",  "extension*mbstring", "extension*openssl", "extension*bcmath", "extension*iconv", "extension*gd", "extension*xml", "extension*curl", "version*php", "ini*max_execution_time", "extension*gmp", "folder*files", "folder*upload"];
+            tasks = ["folder*install", "folder*includes", "folder*includes/config", "folder*includes/avatars", "folder*includes/libraries/csrfp/libs", "folder*includes/libraries/csrfp/js", "folder*includes/libraries/csrfp/log",  "extension*mbstring", "extension*openssl", "extension*bcmath", "extension*iconv", "extension*gd", "extension*xml", "extension*curl", "version*php", "ini*max_execution_time", "extension*gmp", "folder*files", "folder*upload"];
             multiple = true;
             $("#hid_absolute_path").val($("#absolute_path").val());
             $("#hid_url_path").val($("#url_path").val());

@@ -31,7 +31,7 @@ if (file_exists('../includes/config/settings.php') === false) {
     $settings_sample = 'includes/config/settings.sample.php';
     $settings = 'includes/config/settings.php';
     if (copy('../'.$settings_sample, '../'.$settings) === false) {
-        echo '[{"error" : "File <i>' . $settings . '</i> could not be copied from <i>'.$settings_sample.'</i>.<br>Please do it on your own or change folder rights, and refresh the page!", "index" : "99", "multiple" : "' . $post_multiple . '"}]';
+        echo '[{"error" : "File <i>' . $settings . '</i> could not be copied from <i>'.$settings_sample.'</i>.<br>Please do it on your own or change folder rights, and click START button!", "index" : "99", "multiple" : "' . $post_multiple . '"}]';
         exit();
     }
 }
