@@ -186,27 +186,6 @@ define('MIN_PHP_VERSION', 7.4);
 		</div>
 	</div>';
 
-	// copy settings.sample.php to settings.php
-	$settings_sample = '../includes/config/settings.sample.php';
-	$settings = '../includes/config/settings.php';
-	if (file_exists($settings) === false) {
-		if (copy($settings_sample, $settings) === false) {
-			echo '
-	<div class="row">
-		<div class="col-12">
-			<div class="card card-warning">
-				<div class="card-header">
-					<h5>Your attention</h5>
-				</div>
-				<div class="card-body">
-					File ' . $settings . ' could not be copied from '.$settings_sample.'. Please do it on your own and refresh the page!
-				</div>
-			</div>
-		</div>
-	</div>';
-		}
-	}
-
 	echo '
 	<div class="row">
 		<div class="col-12">
@@ -217,6 +196,7 @@ define('MIN_PHP_VERSION', 7.4);
 				<div class="card-body">
 
 					<ul>
+					<li>File "/includes/config/settings.php is available"&nbsp;<span id="res2_check99"></span></li>
 					<li>Directory "/install/" is writable&nbsp;<span id="res2_check0"></span></li>
 					<li>Directory "/includes/" is writable&nbsp;<span id="res2_check1"></span></li>
 					<li>Directory "/includes/config/" is writable&nbsp;<span id="res2_check2"></span></li>
