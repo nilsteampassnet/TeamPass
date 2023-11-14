@@ -217,7 +217,7 @@ class MeekroDB {
       $mysql = new mysqli();
 
       $connect_flags = $this->connect_flags;
-      if (is_array($this->ssl)) {
+      if (is_array($this->ssl) && isset($this->ssl['key']) === true && empty($this->ssl['key']) === false) {
         // PHP produces a warning when trying to access undefined array keys
         $ssl_default = array('key' => NULL, 'cert' => NULL, 'ca_cert' => NULL, 'ca_path' => NULL, 'cipher' => NULL);
         $ssl = array_merge($ssl_default, $this->ssl);

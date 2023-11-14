@@ -891,7 +891,7 @@ $res = checkIndexExist(
     "ADD KEY `CACHE` (`increment_id`, `user_id`)"
 );
 if (!$res) {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding the INDEX CACHE to the cache_tree table! ' . mysqli_error($db_link) . '!"}]';
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding the INDEX CACHE to the cache_tree table! ' . addslashes(mysqli_error($db_link)) . '!"}]';
     mysqli_close($db_link);
     exit();
 }

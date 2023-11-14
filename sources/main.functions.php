@@ -49,10 +49,6 @@ use TeampassClasses\Encryption\Encryption;
 //use phpseclib3\Crypt\RSA;
 //use phpseclib3\Exception\NoKeyLoadedException;
 
-if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
-    //die('Hacking attempt...');
-}
-
 // Load config if $SETTINGS not defined
 if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir']) === true) {
     include_once __DIR__ . '/../includes/config/tp.config.php';
@@ -61,7 +57,7 @@ if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir'
 header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, must-revalidate');
 
-loadClasses();
+loadClasses('DB');
 
 /**
  * Convert language code to string.

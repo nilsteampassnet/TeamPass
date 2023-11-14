@@ -28,11 +28,9 @@ declare(strict_types=1);
 use voku\helper\AntiXSS;
 use TeampassClasses\SuperGlobal\SuperGlobal;
 use EZimuel\PHPSecureSession;
-use TeampassClasses\PerformChecks\PerformChecks;
 
 // Load functions
 require_once 'main.functions.php';
-loadClasses('DB');
 $superGlobal = new SuperGlobal();
 
 // Load config if $SETTINGS not defined
@@ -42,8 +40,6 @@ try {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
-// Include files
-$superGlobal = new SuperGlobal();
 
 /**
  * Redirection management.
@@ -52,7 +48,7 @@ $superGlobal = new SuperGlobal();
  *
  * @return string refresh page to url
  */
-function redirect($url)
+function teampassRedirect($url)
 {
     // Load AntiXSS
     $antiXss = new AntiXSS();
@@ -91,7 +87,7 @@ if (isset($server['https']) === true
     && isset($SETTINGS['enable_sts']) === true
     && (int) $SETTINGS['enable_sts'] === 1
 ) {
-    redirect('https://' . $server['http_host'] . $server['request_uri']);
+    teampassRedirect('https://' . $server['http_host'] . $server['request_uri']);
 }
 
 // Load pwComplexity

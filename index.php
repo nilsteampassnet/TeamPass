@@ -25,8 +25,6 @@ declare(strict_types=1);
  */
 
 use TeampassClasses\SuperGlobal\SuperGlobal;
-use EZimuel\PHPSecureSession;
-use TeampassClasses\PerformChecks\PerformChecks;
 
 header('X-XSS-Protection: 1; mode=block');
 header('X-Frame-Options: SameOrigin');
@@ -80,7 +78,6 @@ require_once __DIR__. '/includes/config/include.php';
 require_once __DIR__.'/sources/main.functions.php';
 
 // init
-loadClasses('DB');
 $superGlobal = new SuperGlobal();
 
 // Quick major version check -> upgrade needed?
@@ -95,7 +92,6 @@ if (isset($SETTINGS['teampass_version']) === true && version_compare(TP_VERSION,
     exit;
 }
 
-$superGlobal = new SuperGlobal();
 
 if (isset($SETTINGS['cpassman_url']) === false || $SETTINGS['cpassman_url'] === '') {
     $SETTINGS['cpassman_url'] = $superGlobal->get('REQUEST_URI', 'SERVER');
