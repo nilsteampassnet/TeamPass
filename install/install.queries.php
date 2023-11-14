@@ -908,7 +908,7 @@ $SETTINGS = array (';
                             `author` varchar(50) NOT NULL,
                             `renewal_period` tinyint(4) NOT NULL DEFAULT '0',
                             `timestamp` varchar(50) DEFAULT NULL,
-                            `url` text NOT NULL DEFAULT NULL,
+                            `url` text NULL DEFAULT NULL,
                             `encryption_type` VARCHAR(50) DEFAULT NULL DEFAULT '0',
                             PRIMARY KEY (`increment_id`)
                             ) CHARSET=utf8;"
@@ -1365,7 +1365,7 @@ $SETTINGS = array (';
                     // 0- check if exists
                     $filesecure = generateRandomKey();
                     define('SECUREFILE', $filesecure);
-                    $filename_seckey = $securePath . '/' . SECUREFILE;
+                    $filename_seckey = $securePath . '/' . $filesecure;
 
                     if (file_exists($filename_seckey)) {
                         if (!copy($filename_seckey, $filename_seckey . '.' . date('Y_m_d', mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'))))) {
@@ -1431,7 +1431,7 @@ define("DB_CONNECT_OPTIONS", array(
     MYSQLI_OPT_CONNECT_TIMEOUT => 10
 ));
 define("SECUREPATH", "' . $securePath . '");
-define("SECUREFILE", "' . SECUREFILE. '");
+define("SECUREFILE", "' . $filesecure. '");
 
 if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
     date_default_timezone_set($_SESSION[\'settings\'][\'timezone\']);
