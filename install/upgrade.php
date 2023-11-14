@@ -267,9 +267,9 @@ if (!isset($_GET['step']) && !isset($post_step)) {
     } else {
         $dbSettings = false;
     }
+    require_once '../sources/main.functions.php';
     if (defined('DB_PASSWD_CLEAR') === false) {
-        require_once '../sources/main.functions.php';
-        //define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
     }
     //ETAPE 2
     echo '
@@ -1236,7 +1236,7 @@ function getTime()
 
 function encode_utf8( s )
 {
-  return unescape( encodeURIComponent( s ) );
+    return unescape( encodeURIComponent( s ) );
 }
 
 </script>

@@ -87,7 +87,7 @@ if (mysqli_connect(
 // Get POST with operation to perform
 $post_operation = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
-if (isset($post_operation) === true && empty($post_operation) === false) {
+if (isset($post_operation) === true && empty($post_operation) === false && strpos($post_operation, 'step') === false) {
     if ($post_operation === '20230604_1') {
         // ---->
         // OPERATION - 20230604_1 - generate key for item_key
@@ -146,15 +146,9 @@ if (isset($post_operation) === true && empty($post_operation) === false) {
 
             installPurgeUnnecessaryKeys(true, 0,$pre);
     }
+    // Return back
+    echo '[{"finish":"'.$finish.'" , "next":"", "error":"", "total":"'.$total.'"}]';
 }
-
-// Close connection
-//mysqli_close($db_link);
-
-
-// Return back
-//echo '[{"finish":"'.$finish.'" , "next":"", "error":"", "total":"'.$total.'"}]';
-
 
 
 function populateItemsTable_CreatedAt($pre, $post_nb)
