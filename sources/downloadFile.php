@@ -24,34 +24,72 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-require_once 'SecureHandler.php';
+use voku\helper\AntiXSS;
+use TeampassClasses\NestedTree\NestedTree;
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
+use EZimuel\PHPSecureSession;
+use TeampassClasses\PerformChecks\PerformChecks;
+
+// Load functions
+require_once 'main.functions.php';
+
+// init
+loadClasses('DB');
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
 session_name('teampass_session');
 session_start();
-if (
-    isset($_SESSION['CPM']) === false
-    || $_SESSION['CPM'] !== 1
-    || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id'])
-    || isset($_SESSION['key']) === false || empty($_SESSION['key'])
-) {
-    die('Hacking attempt...');
-}
 
 // Load config if $SETTINGS not defined
-if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir'])) {
-    if (file_exists('../includes/config/tp.config.php')) {
-        include_once '../includes/config/tp.config.php';
-    } elseif (file_exists('./includes/config/tp.config.php')) {
-        include_once './includes/config/tp.config.php';
-    } elseif (file_exists('../../includes/config/tp.config.php')) {
-        include_once '../../includes/config/tp.config.php';
-    } else {
-        throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
-    }
+try {
+    include_once __DIR__.'/../includes/config/tp.config.php';
+} catch (Exception $e) {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
-// Include files
-require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-$superGlobal = new protect\SuperGlobal\SuperGlobal();
+// Do checks
+// Instantiate the class with posted data
+$checkUserAccess = new PerformChecks(
+    dataSanitizer(
+        [
+            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+        ],
+        [
+            'type' => 'trim|escape',
+        ],
+    ),
+    [
+        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
+        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+    ]
+);
+// Handle the case
+echo $checkUserAccess->caseHandler();
+if (
+    $checkUserAccess->userAccessPage('items') === false ||
+    $checkUserAccess->checkSession() === false
+) {
+    // Not allowed page
+    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+    include $SETTINGS['cpassman_dir'] . '/error.php';
+    exit;
+}
+
+// Define Timezone
+date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
+
+// Set header properties
+header('Content-type: text/html; charset=utf-8');
+header('Cache-Control: no-cache, no-store, must-revalidate');
+error_reporting(E_ERROR);
+set_time_limit(0);
+
+// --------------------------------- //
+
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
 // Prepare GET variables
 $get_filename = $superGlobal->get('name', 'GET');
 $get_fileid = $superGlobal->get('fileid', 'GET');
@@ -65,21 +103,6 @@ header('Expires: 0');
 if (isset($_GET['pathIsFiles']) && (int) $get_pathIsFiles === 1) {
     readfile($SETTINGS['path_to_files_folder'] . '/' . basename($get_filename));
 } else {
-    include_once 'main.functions.php';
-    require_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
-    // connect to the server
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
-    if (defined('DB_PASSWD_CLEAR') === false) {
-        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
-    }
-    DB::$host = DB_HOST;
-    DB::$user = DB_USER;
-    DB::$password = DB_PASSWD_CLEAR;
-    DB::$dbName = DB_NAME;
-    DB::$port = DB_PORT;
-    DB::$encoding = DB_ENCODING;
-    DB::$ssl = DB_SSL;
-    DB::$connect_options = DB_CONNECT_OPTIONS;
     // get file key
     $file_info = DB::queryfirstrow(
         'SELECT f.id AS id, f.file AS file, f.name AS name, f.status AS status, f.extension AS extension,

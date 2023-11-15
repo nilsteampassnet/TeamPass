@@ -7,17 +7,17 @@ use LdapRecord\LdapInterface;
 class Paginator extends AbstractPaginator
 {
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
-    protected function fetchCookie(): ?string
+    protected function fetchCookie()
     {
         return $this->query->controls[LDAP_CONTROL_PAGEDRESULTS]['value']['cookie'] ?? null;
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
-    protected function prepareServerControls(): void
+    protected function prepareServerControls()
     {
         $this->query->addControl(LDAP_CONTROL_PAGEDRESULTS, $this->isCritical, [
             'size' => $this->perPage, 'cookie' => '',
@@ -25,26 +25,30 @@ class Paginator extends AbstractPaginator
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
-    protected function applyServerControls(LdapInterface $ldap): void
+    protected function applyServerControls(LdapInterface $ldap)
     {
         $ldap->setOption(LDAP_OPT_SERVER_CONTROLS, $this->query->controls);
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
-    protected function updateServerControls(LdapInterface $ldap, mixed $resource): void
+    protected function updateServerControls(LdapInterface $ldap, $resource)
     {
+        $errorCode = 0;
+        $dn = $errorMessage = $refs = null;
         $controls = $this->query->controls;
 
-        $response = $ldap->parseResult(
-            result: $resource,
-            controls: $controls
+        $ldap->parseResult(
+            $resource,
+            $errorCode,
+            $dn,
+            $errorMessage,
+            $refs,
+            $controls
         );
-
-        $controls = array_merge($controls, $response->controls ?? []);
 
         $cookie = $controls[LDAP_CONTROL_PAGEDRESULTS]['value']['cookie'] ?? '';
 
@@ -55,9 +59,9 @@ class Paginator extends AbstractPaginator
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
-    protected function resetServerControls(LdapInterface $ldap): void
+    protected function resetServerControls(LdapInterface $ldap)
     {
         unset($this->query->controls[LDAP_CONTROL_PAGEDRESULTS]);
     }

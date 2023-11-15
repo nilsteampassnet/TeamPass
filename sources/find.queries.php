@@ -24,37 +24,70 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-require_once 'SecureHandler.php';
+use voku\helper\AntiXSS;
+use TeampassClasses\NestedTree\NestedTree;
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
+use EZimuel\PHPSecureSession;
+use TeampassClasses\PerformChecks\PerformChecks;
+
+// Load functions
+require_once 'main.functions.php';
+
+// init
+loadClasses('DB');
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
 session_name('teampass_session');
 session_start();
-if (! isset($_SESSION['CPM']) || $_SESSION['CPM'] === false || ! isset($_SESSION['key']) || empty($_SESSION['key'])) {
-    die('Hacking attempt...');
-}
 
-// Load config
-if (file_exists('../includes/config/tp.config.php')) {
-    include_once '../includes/config/tp.config.php';
-} elseif (file_exists('./includes/config/tp.config.php')) {
-    include_once './includes/config/tp.config.php';
-} else {
+// Load config if $SETTINGS not defined
+try {
+    include_once __DIR__.'/../includes/config/tp.config.php';
+} catch (Exception $e) {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
 // Do checks
-require_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
-require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
-if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'items', $SETTINGS) === false) {
+// Instantiate the class with posted data
+$checkUserAccess = new PerformChecks(
+    dataSanitizer(
+        [
+            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+        ],
+        [
+            'type' => 'trim|escape',
+        ],
+    ),
+    [
+        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
+        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+    ]
+);
+// Handle the case
+echo $checkUserAccess->caseHandler();
+if (
+    $checkUserAccess->userAccessPage('items') === false ||
+    $checkUserAccess->checkSession() === false
+) {
     // Not allowed page
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
+    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
 
-require_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user']['user_language'] . '.php';
-require_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
+// Define Timezone
+date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
+
+// Set header properties
 header('Content-type: text/html; charset=utf-8');
-header('Cache-Control: no-cache, must-revalidate');
-require_once 'main.functions.php';
+header('Cache-Control: no-cache, no-store, must-revalidate');
+error_reporting(E_ERROR);
+set_time_limit(0);
+
+// --------------------------------- //
+
 // if no folders are visible then return no results
 if (isset($_SESSION['groupes_visibles']) === false
     || empty($_SESSION['groupes_visibles']) === true
@@ -63,19 +96,6 @@ if (isset($_SESSION['groupes_visibles']) === false
     exit;
 }
 
-//Connect to DB
-require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
-if (defined('DB_PASSWD_CLEAR') === false) {
-    define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
-}
-DB::$host = DB_HOST;
-DB::$user = DB_USER;
-DB::$password = DB_PASSWD_CLEAR;
-DB::$dbName = DB_NAME;
-DB::$port = DB_PORT;
-DB::$encoding = DB_ENCODING;
-DB::$ssl = DB_SSL;
-DB::$connect_options = DB_CONNECT_OPTIONS;
 //Columns name
 $aColumns = ['c.id', 'c.label', 'c.login', 'c.description', 'c.tags', 'c.id_tree', 'c.folder', 'c.login', 'c.url', 'ci.data'];//
 $aSortTypes = ['ASC', 'DESC'];
@@ -90,9 +110,7 @@ if (isset($_GET['limited']) === false
     $folders = $_SESSION['groupes_visibles'];
 } else {
     // Build tree
-    $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'] . '/includes/libraries');
-    $tree->register();
-    $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+    $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
     $folders = $tree->getDescendants(filter_var($_GET['limited'], FILTER_SANITIZE_NUMBER_INT), true);
     $folders = array_keys($folders);
 }
@@ -342,8 +360,8 @@ if (isset($_GET['type']) === false) {
         }
         
         //col1
-        $sOutputItem .= '"<i class=\"fa fa-external-link-alt infotip mr-2\" title=\"' . langHdl('open_url_link') . '\" onClick=\"window.location.href=&#039;index.php?page=items&amp;group=' . $record['id_tree'] . '&amp;id=' . $record['id'] . '&#039;\" style=\"cursor:pointer;\"></i>' .
-        '<i class=\"fa fa-eye infotip mr-2 item-detail\" title=\"' . stripslashes(langHdl('see_item_title')) . '\" data-id=\"' . $record['id'] . '\" data-perso=\"' . $record['perso'] . '\" data-tree-id=\"' . $record['id_tree'] . '\" data-expired=\"' . $expired . '\" data-restricted-to=\"' . $restrictedTo . '\" data-rights=\"' . $right . '\" style=\"cursor:pointer;\"></i>' . $checkbox . '",' ;
+        $sOutputItem .= '"<i class=\"fa fa-external-link-alt infotip mr-2\" title=\"' . $lang->get('open_url_link') . '\" onClick=\"window.location.href=&#039;index.php?page=items&amp;group=' . $record['id_tree'] . '&amp;id=' . $record['id'] . '&#039;\" style=\"cursor:pointer;\"></i>' .
+        '<i class=\"fa fa-eye infotip mr-2 item-detail\" title=\"' . stripslashes($lang->get('see_item_title')) . '\" data-id=\"' . $record['id'] . '\" data-perso=\"' . $record['perso'] . '\" data-tree-id=\"' . $record['id_tree'] . '\" data-expired=\"' . $expired . '\" data-restricted-to=\"' . $restrictedTo . '\" data-rights=\"' . $right . '\" style=\"cursor:pointer;\"></i>' . $checkbox . '",' ;
         //col2
         $sOutputItem .= '"'.base64_encode('<span id=\"item_label-' . $record['id'] . '\">' . (str_replace("\\", "&#92;", (string) $record['label'])) . '</span>').'", ';   // replace backslash #3015
         //col3
@@ -668,7 +686,7 @@ if (isset($_GET['type']) === false) {
 
     $returnValues = [
         'html_json' => filter_var_array($arr_data, FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-        'message' => (string) $iTotal.' '.langHdl('find_message'),
+        'message' => (string) $iTotal.' '.$lang->get('find_message'),
         'total' => (int) $iTotal,
         'start' => (int) (isset($_GET['start']) === true && (int) $_GET['length'] !== -1) ? (int) $_GET['start'] + (int) $_GET['length'] : -1,
     ];

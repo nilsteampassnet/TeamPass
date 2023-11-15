@@ -19,18 +19,23 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-Use PasswordLib\PasswordLib;
-Use TeampassClasses\SuperGlobal\SuperGlobal;
-Use Hackzilla\PasswordGenerator\Generator\ComputerPasswordGenerator;
-Use Hackzilla\PasswordGenerator\RandomGenerator\Php7RandomGenerator;
-Use RobThree\Auth\TwoFactorAuth;
-Use EZimuel\PHPSecureSession;
-//Use DB;
+use PasswordLib\PasswordLib;
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
+use Hackzilla\PasswordGenerator\Generator\ComputerPasswordGenerator;
+use Hackzilla\PasswordGenerator\RandomGenerator\Php7RandomGenerator;
+use RobThree\Auth\TwoFactorAuth;
+use EZimuel\PHPSecureSession;
+use TeampassClasses\PerformChecks\PerformChecks;
 
-set_time_limit(600);
+// Load functions
+require_once 'main.functions.php';
+
+loadClasses('DB');
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
 
 if (isset($_SESSION) === false) {
-    //include_once 'SecureHandler.php';
     session_name('teampass_session');
     session_start();
     $_SESSION['CPM'] = 1;
@@ -47,42 +52,67 @@ try {
     include_once __DIR__.'/../includes/config/tp.config.php';
 } catch (Exception $e) {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
-    exit();
 }
+
+// Do checks
+// Instantiate the class with posted data
+$checkUserAccess = new PerformChecks(
+    dataSanitizer(
+        [
+            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+        ],
+        [
+            'type' => 'trim|escape',
+        ],
+    ),
+    [
+        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
+        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+    ]
+);
+/*// Handle the case
+echo $checkUserAccess->caseHandler();
+if (
+    ($checkUserAccess->userAccessPage('home') === false ||
+    $checkUserAccess->checkSession() === false)
+    && filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== 'get_teampass_settings'
+) {
+    // Not allowed page
+    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+    include $SETTINGS['cpassman_dir'] . '/error.php';
+    exit;
+}*/
 
 // Define Timezone
 date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
+set_time_limit(600);
 
 // DO CHECKS
-require_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
-require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 if (
     isset($post_type) === true
     && ($post_type === 'ga_generate_qr'
-        //|| $post_type === 'recovery_send_pw_by_email'
-        //|| $post_type === 'recovery_generate_new_password'
         || $post_type === 'get_teampass_settings')
 ) {
     // continue
     mainQuery($SETTINGS);
 } elseif (
     isset($_SESSION['user_id']) === true
-    && checkUser($_SESSION['user_id'], $_SESSION['key'], 'home', $SETTINGS) === false
+    && $checkUserAccess->userAccessPage('home') === false
 ) {
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
+    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error'); //not allowed page
     include __DIR__.'/../error.php';
     exit();
 } elseif ((isset($_SESSION['user_id']) === true
-        && isset($_SESSION['key'])) === true
+        && $superGlobal->get('key', 'SESSION') !== null)
     || (isset($post_type) === true
-        //&& $post_type === 'change_user_language'
         && null !== filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES))
 ) {
     // continue
     mainQuery($SETTINGS);
 } else {
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
+    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error'); //not allowed page
     include __DIR__.'/../error.php';
     exit();
 }
@@ -97,15 +127,13 @@ function mainQuery(array $SETTINGS)
     error_reporting(E_ERROR);
 
     // Includes
-    include_once __DIR__.'/../includes/language/' . $_SESSION['user']['user_language'] . '.php';
-    include_once __DIR__.'/../includes/config/settings.php';
     include_once __DIR__.'/../sources/main.functions.php';
 
     // Load libraries
     loadClasses('DB');
 
     // User's language loading
-    include_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user']['user_language'] . '.php';
+    $lang = new Language(); 
 
     // Prepare post variables
     $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
@@ -118,7 +146,7 @@ function mainQuery(array $SETTINGS)
         echo prepareExchangedData(
             array(
                 'error' => true,
-                'message' => langHdl('key_is_not_correct'),
+                'message' => $lang->get('key_is_not_correct'),
             ),
             'encode'
         );
@@ -354,6 +382,12 @@ function userHandler(string $post_type, /*php8 array|null|string*/ $dataReceived
                 (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
                 (string) $SETTINGS['cpassman_dir'],
                 (int) $SETTINGS['maximum_session_expiration_time'],
+            );
+
+        case 'save_user_location'://action_user
+            return userSaveIp(
+                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
+                (string) filter_var($dataReceived['action'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
             );
 
         /*
@@ -717,6 +751,35 @@ function userGetSessionTime(int $userid, string $dir, int $maximum_session_expir
 }
 
 /**
+ * Save the user's IP
+ *
+ * @param integer $userID
+ * @param string $action
+ * @return string
+ */
+function userSaveIp(int $userID, string $action): string
+{
+    if ($action === 'perform') {
+        DB::update(
+            prefixTable('users'),
+            array(
+                'user_ip' => getClientIpServer(),
+                'user_ip_lastdate' => time(),
+            ),
+            'id = %i',
+            $userID
+        );
+    }
+
+    return prepareExchangedData(
+        array(
+            'error' => false,
+        ),
+        'encode'
+    );
+}
+
+/**
  * Provides the number of items
  *
  * @param int   $userId     User ID
@@ -766,6 +829,9 @@ function changePassword(
     // Prepare variables
     $post_new_password_hashed = $pwdlib->createPasswordHash($post_new_password);
 
+    // Load user's language
+    $lang = new Language(); 
+
     // User has decided to change is PW
     if ($post_change_request === 'reset_user_password_expected'
         || $post_change_request === 'user_decides_to_change_password'
@@ -775,7 +841,7 @@ function changePassword(
             return prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -819,8 +885,8 @@ function changePassword(
             return prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => '<div style="margin:10px 0 10px 15px;">' . langHdl('complexity_level_not_reached') . '.<br>' .
-                        langHdl('expected_complexity_level') . ': <b>' . TP_PW_COMPLEXITY[$data['complexity']][1] . '</b></div>',
+                    'message' => '<div style="margin:10px 0 10px 15px;">' . $lang->get('complexity_level_not_reached') . '.<br>' .
+                        $lang->get('expected_complexity_level') . ': <b>' . TP_PW_COMPLEXITY[$data['complexity']][1] . '</b></div>',
                 ),
                 'encode'
             );
@@ -831,7 +897,7 @@ function changePassword(
             return prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('password_already_used'),
+                    'message' => $lang->get('password_already_used'),
                 ),
                 'encode'
             );
@@ -877,7 +943,7 @@ function changePassword(
         return prepareExchangedData(
             array(
                 'error' => true,
-                'message' => langHdl('pw_hash_not_correct'),
+                'message' => $lang->get('pw_hash_not_correct'),
             ),
             'encode'
         );
@@ -885,7 +951,7 @@ function changePassword(
     return prepareExchangedData(
         array(
             'error' => true,
-            'message' => langHdl('error_not_allowed_to'),
+            'message' => $lang->get('error_not_allowed_to'),
         ),
         'encode'
     );
@@ -902,6 +968,9 @@ function generateQRCode(
     array $SETTINGS
 ): string
 {
+    // Load user's language
+    $lang = new Language(); 
+    
     // is this allowed by setting
     if (isKeyExistingAndEqual('ga_reset_by_user', 0, $SETTINGS) === true
         && (null === $post_demand_origin || $post_demand_origin !== 'users_management_list')
@@ -910,7 +979,7 @@ function generateQRCode(
         return prepareExchangedData(
             array(
                 'error' => true,
-                'message' => "113 ".langHdl('error_not_allowed_to')." - ".isKeyExistingAndEqual('ga_reset_by_user', 1, $SETTINGS),
+                'message' => "113 ".$lang->get('error_not_allowed_to')." - ".isKeyExistingAndEqual('ga_reset_by_user', 1, $SETTINGS),
             ),
             'encode'
         );
@@ -944,7 +1013,7 @@ function generateQRCode(
         return prepareExchangedData(
             array(
                 'error' => true,
-                'message' => langHdl('no_user'),
+                'message' => $lang->get('no_user'),
                 'tst' => 1,
             ),
             'encode'
@@ -963,7 +1032,7 @@ function generateQRCode(
         return prepareExchangedData(
             array(
                 'error' => true,
-                'message' => langHdl('no_user'),
+                'message' => $lang->get('no_user'),
                 'tst' => $post_demand_origin,
             ),
             'encode'
@@ -974,7 +1043,7 @@ function generateQRCode(
         return prepareExchangedData(
             array(
                 'error' => true,
-                'message' => langHdl('no_email_set'),
+                'message' => $lang->get('no_email_set'),
             ),
             'encode'
         );
@@ -1001,11 +1070,11 @@ function generateQRCode(
     // send mail?
     if ((int) $post_send_mail === 1) {
         sendEmail(
-            langHdl('email_ga_subject'),
+            $lang->get('email_ga_subject'),
             str_replace(
                 '#2FACode#',
                 $gaTemporaryCode,
-                langHdl('email_ga_text')
+                $lang->get('email_ga_text')
             ),
             $data['email'],
             $SETTINGS
@@ -1020,7 +1089,7 @@ function generateQRCode(
                 'email_result' => str_replace(
                     '#email#',
                     '<b>' . obfuscateEmail($data['email']) . '</b>',
-                    addslashes(langHdl('admin_email_result_ok'))
+                    addslashes($lang->get('admin_email_result_ok'))
                 ),
             ),
             'encode'
@@ -1036,7 +1105,7 @@ function generateQRCode(
             'email_result' => str_replace(
                 '#email#',
                 '<b>' . obfuscateEmail($data['email']) . '</b>',
-                addslashes(langHdl('admin_email_result_ok'))
+                addslashes($lang->get('admin_email_result_ok'))
             ),
         ),
         'encode'
@@ -1293,8 +1362,9 @@ function generateBugReport(
         'duo_host'
     );
 
-    // Get data
-    //$post_data = json_decode($data, true);
+    // Load user's language
+    $lang = new Language(); 
+    
 
     // Read config file
     $list_of_options = '';
@@ -1381,7 +1451,7 @@ Tell us what happens instead
 
 **Web server:** ' . $_SERVER['SERVER_SOFTWARE'] . '
 
-**Database:** ' . ($link === false ? langHdl('undefined') : mysqli_get_server_info($link)) . '
+**Database:** ' . ($link === false ? $lang->get('undefined') : mysqli_get_server_info($link)) . '
 
 **PHP version:** ' . PHP_VERSION . '
 
@@ -1441,6 +1511,9 @@ function isUserPasswordCorrect(
     array $SETTINGS
 ): string
 {
+    // Load user's language
+    $lang = new Language(); 
+    
     if (isUserIdValid($post_user_id) === true) {
         // Check if user exists
         $userInfo = DB::queryFirstRow(
@@ -1496,7 +1569,7 @@ function isUserPasswordCorrect(
                 }
             }
 
-            // Use the password check
+            // use the password check
             // load passwordLib library
             $pwdlib = new PasswordLib();
             
@@ -1517,7 +1590,7 @@ function isUserPasswordCorrect(
     return prepareExchangedData(
         array(
             'error' => true,
-            'message' => langHdl('password_is_not_correct'),
+            'message' => $lang->get('password_is_not_correct'),
             //'debug' => isset($itemKey) === true ? base64_decode($itemKey) : '',
             //'debug2' => $_SESSION['user']['private_key'],
             //'debug3' => $post_user_password,
@@ -1534,6 +1607,9 @@ function changePrivateKeyEncryptionPassword(
     array $SETTINGS
 ): string
 {
+    // Load user's language
+    $lang = new Language(); 
+    
     if (empty($post_new_code) === true) {
         if (empty($_SESSION['user_pwd']) === false) {
             $post_new_code = $_SESSION['user_pwd'];
@@ -1542,7 +1618,7 @@ function changePrivateKeyEncryptionPassword(
             return prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_no_user_password_exists'),
+                    'message' => $lang->get('error_no_user_password_exists'),
                     'debug' => '',
                 ),
                 'encode'
@@ -1583,6 +1659,7 @@ function changePrivateKeyEncryptionPassword(
 
             // Load superGlobals
             $superGlobal = new SuperGlobal();
+$lang = new Language(); 
             $superGlobal->put('private_key', $privateKey, 'SESSION', 'user');
         }
 
@@ -1599,7 +1676,7 @@ function changePrivateKeyEncryptionPassword(
     return prepareExchangedData(
         array(
             'error' => true,
-            'message' => langHdl('error_no_user'),
+            'message' => $lang->get('error_no_user'),
             'debug' => '',
         ),
         'encode'
@@ -1614,6 +1691,9 @@ function initializeUserPassword(
     array $SETTINGS
 ): string
 {
+    // Load user's language
+    $lang = new Language(); 
+    
     if (isUserIdValid($post_user_id) === true) {
         // Get user info
         $userData = DB::queryFirstRow(
@@ -1677,7 +1757,7 @@ function initializeUserPassword(
             return prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('no_email_set'),
+                    'message' => $lang->get('no_email_set'),
                     'debug' => '',
                     'self_change' => $post_self_change,
                 ),
@@ -1689,7 +1769,7 @@ function initializeUserPassword(
         return prepareExchangedData(
             array(
                 'error' => true,
-                'message' => langHdl('no_email_set'),
+                'message' => $lang->get('no_email_set'),
                 'debug' => '',
             ),
             'encode'
@@ -1699,7 +1779,7 @@ function initializeUserPassword(
     return prepareExchangedData(
         array(
             'error' => true,
-            'message' => langHdl('error_no_user'),
+            'message' => $lang->get('error_no_user'),
             'debug' => '',
         ),
         'encode'
@@ -1747,6 +1827,9 @@ function generateOneTimeCode(
     array $SETTINGS
 ): string
 {
+    // Load user's language
+    $lang = new Language(); 
+    
     if (isUserIdValid($post_user_id) === true) {
         // Get user info
         $userData = DB::queryFirstRow(
@@ -1788,7 +1871,7 @@ function generateOneTimeCode(
         return prepareExchangedData(
             array(
                 'error' => true,
-                'message' => langHdl('no_email_set'),
+                'message' => $lang->get('no_email_set'),
             ),
             'encode'
         );
@@ -1797,7 +1880,7 @@ function generateOneTimeCode(
     return prepareExchangedData(
         array(
             'error' => true,
-            'message' => langHdl('error_no_user'),
+            'message' => $lang->get('error_no_user'),
         ),
         'encode'
     );
@@ -1809,6 +1892,9 @@ function startReEncryptingUserSharekeys(
     array $SETTINGS
 ): string
 {
+    // Load user's language
+    $lang = new Language(); 
+    
     if (isUserIdValid($post_user_id) === true) {
         // Check if user exists
         DB::queryFirstRow(
@@ -1818,9 +1904,6 @@ function startReEncryptingUserSharekeys(
             $post_user_id
         );
         if (DB::count() > 0) {
-            // Include libraries
-            include_once $SETTINGS['cpassman_dir'] . '/sources/aes.functions.php';
-
             // CLear old sharekeys
             if ($post_self_change === false) {
                 deleteUserObjetsKeys($post_user_id, $SETTINGS);
@@ -1843,7 +1926,7 @@ function startReEncryptingUserSharekeys(
         return prepareExchangedData(
             array(
                 'error' => true,
-                'message' => langHdl('error_no_user'),
+                'message' => $lang->get('error_no_user'),
             ),
             'encode'
         );
@@ -1852,7 +1935,7 @@ function startReEncryptingUserSharekeys(
     return prepareExchangedData(
         array(
             'error' => true,
-            'message' => langHdl('error_no_user'),
+            'message' => $lang->get('error_no_user'),
         ),
         'encode'
     );
@@ -1878,6 +1961,9 @@ function continueReEncryptingUserSharekeys(
     array   $SETTINGS
 ): string
 {
+    // Load user's language
+    $lang = new Language(); 
+    
     if (isUserIdValid($post_user_id) === true) {
         // Check if user exists
         $userInfo = DB::queryFirstRow(
@@ -1887,8 +1973,6 @@ function continueReEncryptingUserSharekeys(
             $post_user_id
         );
         if (isset($userInfo['public_key']) === true) {
-            // Include libraries
-            include_once $SETTINGS['cpassman_dir'] . '/sources/aes.functions.php';
             $return = [];
 
             // WHAT STEP TO PERFORM?
@@ -2011,7 +2095,7 @@ function continueReEncryptingUserSharekeys(
     return prepareExchangedData(
         array(
             'error' => true,
-            'message' => langHdl('error_no_user'),
+            'message' => $lang->get('error_no_user'),
             'extra' => $post_user_id,
         ),
         'encode'
@@ -2556,7 +2640,11 @@ function migrateTo3_DoUserPersonalItemsEncryption(
     string $post_user_psk,
     array $SETTINGS
 ) {
-    $next_step = '';  
+    $next_step = '';
+    
+    // Load user's language
+    $lang = new Language(); 
+    
     
     if (isUserIdValid($post_user_id) === true) {
         // Check if user exists
@@ -2578,7 +2666,7 @@ function migrateTo3_DoUserPersonalItemsEncryption(
                     return prepareExchangedData(
                         array(
                             'error' => true,
-                            'message' => langHdl('bad_psk'),
+                            'message' => $lang->get('bad_psk'),
                         ),
                         'encode'
                     );
@@ -2715,7 +2803,7 @@ function migrateTo3_DoUserPersonalItemsEncryption(
         return prepareExchangedData(
             array(
                 'error' => true,
-                'message' => langHdl('error_no_user'),
+                'message' => $lang->get('error_no_user'),
             ),
             'encode'
         );
@@ -2725,7 +2813,7 @@ function migrateTo3_DoUserPersonalItemsEncryption(
     return prepareExchangedData(
         array(
             'error' => true,
-            'message' => langHdl('error_no_user'),
+            'message' => $lang->get('error_no_user'),
         ),
         'encode'
     );
@@ -2738,6 +2826,9 @@ function getUserInfo(
     array $SETTINGS
 )
 {
+    // Load user's language
+    $lang = new Language(); 
+    
     if (isUserIdValid($post_user_id) === true) {
         // Get user info
         $userData = DB::queryFirstRow(
@@ -2760,7 +2851,7 @@ function getUserInfo(
     return prepareExchangedData(
         array(
             'error' => true,
-            'message' => langHdl('error_no_user'),
+            'message' => $lang->get('error_no_user'),
         ),
         'encode'
     );
@@ -2782,6 +2873,9 @@ function changeUserAuthenticationPassword(
     array $SETTINGS
 )
 {
+    // Load user's language
+    $lang = new Language(); 
+    
     if (isUserIdValid($post_user_id) === true) {
         // Get user info
         $userData = DB::queryFirstRow(
@@ -2800,7 +2894,7 @@ function changeUserAuthenticationPassword(
                 return prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('bad_password'),
+                        'message' => $lang->get('bad_password'),
                     ),
                     'encode'
                 );
@@ -2808,6 +2902,7 @@ function changeUserAuthenticationPassword(
 
             // Load superGlobals
             $superGlobal = new SuperGlobal();
+$lang = new Language(); 
 
             if ($superGlobal->get('private_key', 'SESSION', 'user') === $privateKey) {
                 // Encrypt it with new password
@@ -2837,7 +2932,7 @@ function changeUserAuthenticationPassword(
                 return prepareExchangedData(
                     array(
                         'error' => false,
-                        'message' => langHdl('done'),'',
+                        'message' => $lang->get('done'),'',
                     ),
                     'encode'
                 );
@@ -2847,7 +2942,7 @@ function changeUserAuthenticationPassword(
             return prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('bad_password'),
+                    'message' => $lang->get('bad_password'),
                 ),
                 'encode'
             );
@@ -2857,7 +2952,7 @@ function changeUserAuthenticationPassword(
     return prepareExchangedData(
         array(
             'error' => true,
-            'message' => langHdl('error_no_user'),
+            'message' => $lang->get('error_no_user'),
         ),
         'encode'
     );
@@ -2871,6 +2966,9 @@ function changeUserLDAPAuthenticationPassword(
     array $SETTINGS
 )
 {
+    // Load user's language
+    $lang = new Language(); 
+    
     if (isUserIdValid($post_user_id) === true) {
         // Get user info
         $userData = DB::queryFirstRow(
@@ -2911,7 +3009,7 @@ function changeUserLDAPAuthenticationPassword(
                 return prepareExchangedData(
                     array(
                         'error' => false,
-                        'message' => langHdl('done'),'',
+                        'message' => $lang->get('done'),'',
                     ),
                     'encode'
                 );
@@ -2925,7 +3023,7 @@ function changeUserLDAPAuthenticationPassword(
                 return prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('password_is_not_correct'),
+                        'message' => $lang->get('password_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -2971,12 +3069,13 @@ function changeUserLDAPAuthenticationPassword(
                     
                     // Load superGlobals
                     $superGlobal = new SuperGlobal();
+$lang = new Language(); 
                     $superGlobal->put('private_key', $privateKey, 'SESSION', 'user');
 
                     return prepareExchangedData(
                         array(
                             'error' => false,
-                            'message' => langHdl('done'),
+                            'message' => $lang->get('done'),
                         ),
                         'encode'
                     );
@@ -2987,7 +3086,7 @@ function changeUserLDAPAuthenticationPassword(
             return prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('bad_password'),
+                    'message' => $lang->get('bad_password'),
                 ),
                 'encode'
             );
@@ -2998,7 +3097,7 @@ function changeUserLDAPAuthenticationPassword(
     return prepareExchangedData(
         array(
             'error' => true,
-            'message' => langHdl('error_no_user'),
+            'message' => $lang->get('error_no_user'),
         ),
         'encode'
     );

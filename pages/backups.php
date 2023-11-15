@@ -24,33 +24,60 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-if (
-    isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
-    || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === true
-    || isset($_SESSION['key']) === false || empty($_SESSION['key']) === true
-) {
-    die('Hacking attempt...');
-}
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
+use TeampassClasses\NestedTree\NestedTree;
+use TeampassClasses\PerformChecks\PerformChecks;
 
-// Load config
-if (file_exists('../includes/config/tp.config.php') === true) {
-    include_once '../includes/config/tp.config.php';
-} elseif (file_exists('./includes/config/tp.config.php') === true) {
-    include_once './includes/config/tp.config.php';
-} else {
+// Load functions
+require_once __DIR__.'/../sources/main.functions.php';
+
+// init
+loadClasses('DB');
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
+
+// Load config if $SETTINGS not defined
+try {
+    include_once __DIR__.'/../includes/config/tp.config.php';
+} catch (Exception $e) {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
-/* do checks */
-require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
-if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'backups', $SETTINGS) === false) {
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
+// Do checks
+$checkUserAccess = new PerformChecks(
+    dataSanitizer(
+        [
+            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+        ],
+        [
+            'type' => 'trim|escape',
+        ],
+    ),
+    [
+        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
+        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+    ]
+);
+// Handle the case
+echo $checkUserAccess->caseHandler();
+if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('backups') === false) {
+    // Not allowed page
+    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
 
-// Load template
-require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
+// Define Timezone
+date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
+
+// Set header properties
+header('Content-type: text/html; charset=utf-8');
+header('Cache-Control: no-cache, no-store, must-revalidate');
+
+// --------------------------------- //
+
 // Decrypt key
 $localEncryptionKey = isset($SETTINGS['bck_script_passkey']) === true ?
     cryption($SETTINGS['bck_script_passkey'], '', 'decrypt', $SETTINGS)['string'] : '';
@@ -61,7 +88,7 @@ $localEncryptionKey = isset($SETTINGS['bck_script_passkey']) === true ?
     <div class="container-fluid">
         <div class="row mb-2">
             <div class="col-sm-12">
-                <h1 class="m-0 text-dark"><i class="fas fa-database mr-2"></i><?php echo langHdl('backups'); ?></h1>
+                <h1 class="m-0 text-dark"><i class="fas fa-database mr-2"></i><?php echo $lang->get('backups'); ?></h1>
             </div><!-- /.col -->
         </div><!-- /.row -->
     </div><!-- /.container-fluid -->
@@ -76,16 +103,16 @@ $localEncryptionKey = isset($SETTINGS['bck_script_passkey']) === true ?
             <div class='col-md-12'>
                 <div class='card card-primary'>
                     <div class='card-header'>
-                        <h3 class='card-title'><?php echo langHdl('backup_and_restore'); ?></h3>
+                        <h3 class='card-title'><?php echo $lang->get('backup_and_restore'); ?></h3>
                     </div>
 
                     <div class='card-body'>
                         <ul class="nav nav-tabs">
                             <li class="nav-item">
-                                <a class="nav-link active" data-toggle="tab" href="#oneshot" role="tab" aria-controls="oneshot"><?php echo langHdl('on_the_fly'); ?></a>
+                                <a class="nav-link active" data-toggle="tab" href="#oneshot" role="tab" aria-controls="oneshot"><?php echo $lang->get('on_the_fly'); ?></a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" data-toggle="tab" href="#scheduled" role="tab" aria-controls="scheduled"><?php echo langHdl('scheduled'); ?></a>
+                                <a class="nav-link" data-toggle="tab" href="#scheduled" role="tab" aria-controls="scheduled"><?php echo $lang->get('scheduled'); ?></a>
                             </li>
                         </ul>
 
@@ -94,21 +121,21 @@ $localEncryptionKey = isset($SETTINGS['bck_script_passkey']) === true ?
 
                                 <div class="mt-4">
                                     <div class="callout callout-info">
-                                        <h4><?php echo langHdl('admin_action_db_backup'); ?></h4>
+                                        <h4><?php echo $lang->get('admin_action_db_backup'); ?></h4>
                                         <small class="form-text text-muted mt-4">
-                                            <?php echo langHdl('explanation_for_oneshot_backup'); ?>
+                                            <?php echo $lang->get('explanation_for_oneshot_backup'); ?>
                                         </small>
 
                                         <div class="form-group mt-4">
                                             <div class="row mt-1">
                                                 <div class="col-3">
-                                                    <span class="text-bold"><?php echo langHdl('encrypt_key'); ?></span>
+                                                    <span class="text-bold"><?php echo $lang->get('encrypt_key'); ?></span>
                                                 </div>
                                                 <div class="col-9">
                                                     <div class="input-group mb-0">
                                                         <input type="text" class="form-control form-control-sm" id="onthefly-backup-key" value="<?php echo $localEncryptionKey; ?>">
                                                         <div class="input-group-append">
-                                                            <button class="btn btn-outline-secondary btn-no-click infotip key-generate" title="<?php echo langHdl('pw_generate'); ?>"><i class="fas fa-random"></i></button>
+                                                            <button class="btn btn-outline-secondary btn-no-click infotip key-generate" title="<?php echo $lang->get('pw_generate'); ?>"><i class="fas fa-random"></i></button>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -117,7 +144,7 @@ $localEncryptionKey = isset($SETTINGS['bck_script_passkey']) === true ?
 
                                             </div>
                                             <div class="row mt-3">
-                                                <button class="btn btn-info ml-1 start btn-choose-file" data-action="onthefly-backup"><?php echo langHdl('perform_backup'); ?></button>
+                                                <button class="btn btn-info ml-1 start btn-choose-file" data-action="onthefly-backup"><?php echo $lang->get('perform_backup'); ?></button>
                                             </div>
                                         </div>
                                     </div>
@@ -125,15 +152,15 @@ $localEncryptionKey = isset($SETTINGS['bck_script_passkey']) === true ?
 
                                 <div class="mt-4">
                                     <div class="callout callout-info">
-                                        <h4><?php echo langHdl('admin_action_db_restore'); ?></h4>
+                                        <h4><?php echo $lang->get('admin_action_db_restore'); ?></h4>
                                         <small class="form-text text-muted mt-4">
-                                            <?php echo langHdl('explanation_for_oneshot_restore'); ?>
+                                            <?php echo $lang->get('explanation_for_oneshot_restore'); ?>
                                         </small>
 
                                         <div class="form-group mt-4">
                                             <div class="row mt-1">
                                                 <div class="col-3">
-                                                    <span class="text-bold"><?php echo langHdl('encrypt_key'); ?></span>
+                                                    <span class="text-bold"><?php echo $lang->get('encrypt_key'); ?></span>
                                                 </div>
                                                 <div class="col-9">
                                                     <input type="text" class="form-control form-control-sm" id="onthefly-restore-key" value="<?php echo $localEncryptionKey; ?>">
@@ -141,10 +168,10 @@ $localEncryptionKey = isset($SETTINGS['bck_script_passkey']) === true ?
                                             </div>
                                             <div class="row mt-1">
                                                 <div class="col-3">
-                                                    <span class="text-bold"><?php echo langHdl('backup_select'); ?></span>
+                                                    <span class="text-bold"><?php echo $lang->get('backup_select'); ?></span>
                                                 </div>
                                                 <div class="col-9 input-group" id="onthefly-restore-file">
-                                                    <button class="btn btn-default btn-choose-file" id="onthefly-restore-file-select"><?php echo langHdl('choose_file'); ?></button>
+                                                    <button class="btn btn-default btn-choose-file" id="onthefly-restore-file-select"><?php echo $lang->get('choose_file'); ?></button>
                                                     <span class="ml-2" id="onthefly-restore-file-text"></span>
                                                 </div>
                                             </div>
@@ -152,7 +179,7 @@ $localEncryptionKey = isset($SETTINGS['bck_script_passkey']) === true ?
 
                                             </div>
                                             <div class="row mt-3">
-                                                <button class="btn btn-info ml-1 start" data-action="onthefly-restore"><?php echo langHdl('perform_restore'); ?></button>
+                                                <button class="btn btn-info ml-1 start" data-action="onthefly-restore"><?php echo $lang->get('perform_restore'); ?></button>
                                             </div>
                                         </div>
                                     </div>

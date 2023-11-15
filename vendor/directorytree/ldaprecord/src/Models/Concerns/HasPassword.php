@@ -12,11 +12,13 @@ trait HasPassword
     /**
      * Set the password on the user.
      *
+     * @param  string|array  $password
+     *
      * @throws ConnectionException
      */
-    public function setPasswordAttribute(array|string $password): void
+    public function setPasswordAttribute($password)
     {
-        $this->assertSecureConnection();
+        $this->validateSecureConnection();
 
         // Here we will attempt to determine the password hash method in use
         // by parsing the users hashed password (if it as available). If a
@@ -47,25 +49,31 @@ trait HasPassword
     /**
      * Alias for setting the password on the user.
      *
+     * @param  string|array  $password
+     *
      * @throws ConnectionException
      */
-    public function setUnicodepwdAttribute(array|string $password): void
+    public function setUnicodepwdAttribute($password)
     {
         $this->setPasswordAttribute($password);
     }
 
     /**
      * An accessor for retrieving the user's hashed password value.
+     *
+     * @return string|null
      */
-    public function getPasswordAttribute(): ?string
+    public function getPasswordAttribute()
     {
         return $this->getAttribute($this->getPasswordAttributeName())[0] ?? null;
     }
 
     /**
      * Get the name of the attribute that contains the user's password.
+     *
+     * @return string
      */
-    public function getPasswordAttributeName(): string
+    public function getPasswordAttributeName()
     {
         if (property_exists($this, 'passwordAttribute')) {
             return $this->passwordAttribute;
@@ -80,8 +88,10 @@ trait HasPassword
 
     /**
      * Get the name of the method to use for hashing the user's password.
+     *
+     * @return string
      */
-    public function getPasswordHashMethod(): string
+    public function getPasswordHashMethod()
     {
         if (property_exists($this, 'passwordHashMethod')) {
             return $this->passwordHashMethod;
@@ -96,8 +106,13 @@ trait HasPassword
 
     /**
      * Set the changed password.
+     *
+     * @param  string  $oldPassword
+     * @param  string  $newPassword
+     * @param  string  $attribute
+     * @return void
      */
-    protected function setChangedPassword(string $oldPassword, string $newPassword, string $attribute): void
+    protected function setChangedPassword($oldPassword, $newPassword, $attribute)
     {
         // Create batch modification for removing the old password.
         $this->addModification(
@@ -120,15 +135,13 @@ trait HasPassword
 
     /**
      * Set the password on the model.
+     *
+     * @param  string  $password
+     * @param  string  $attribute
+     * @return void
      */
-    protected function setPassword(string $password, string $attribute): void
+    protected function setPassword($password, $attribute)
     {
-        if (! $this->exists) {
-            $this->setRawAttribute($attribute, $password);
-
-            return;
-        }
-
         $this->addModification(
             $this->newBatchModification(
                 $attribute,
@@ -141,9 +154,14 @@ trait HasPassword
     /**
      * Encode / hash the given password.
      *
+     * @param  string  $method
+     * @param  string  $password
+     * @param  string  $salt
+     * @return string
+     *
      * @throws LdapRecordException
      */
-    protected function getHashedPassword(string $method, string $password, string $salt = null): string
+    protected function getHashedPassword($method, $password, $salt = null)
     {
         if (! method_exists(Password::class, $method)) {
             throw new LdapRecordException("Password hashing method [{$method}] does not exist.");
@@ -159,9 +177,11 @@ trait HasPassword
     /**
      * Validates that the current LDAP connection is secure.
      *
+     * @return void
+     *
      * @throws ConnectionException
      */
-    protected function assertSecureConnection(): void
+    protected function validateSecureConnection()
     {
         $connection = $this->getConnection();
 
@@ -180,11 +200,14 @@ trait HasPassword
 
     /**
      * Attempt to retrieve the password's salt.
+     *
+     * @param  string  $method
+     * @return string|null
      */
-    public function getPasswordSalt(string $method): ?string
+    public function getPasswordSalt($method)
     {
         if (! Password::hashMethodRequiresSalt($method)) {
-            return null;
+            return;
         }
 
         return Password::getSalt($this->password);
@@ -211,11 +234,15 @@ trait HasPassword
             $value = null
         );
 
-        return match ((int) $algo) {
-            Password::CRYPT_SALT_TYPE_MD5 => 'md5'.$method,
-            Password::CRYPT_SALT_TYPE_SHA256 => 'sha256'.$method,
-            Password::CRYPT_SALT_TYPE_SHA512 => 'sha512'.$method,
-            default => $method,
-        };
+        switch ($algo) {
+            case Password::CRYPT_SALT_TYPE_MD5:
+                return 'md5'.$method;
+            case Password::CRYPT_SALT_TYPE_SHA256:
+                return 'sha256'.$method;
+            case Password::CRYPT_SALT_TYPE_SHA512:
+                return 'sha512'.$method;
+            default:
+                return $method;
+        }
     }
 }

@@ -5,82 +5,88 @@ namespace LdapRecord;
 use Closure;
 use ErrorException;
 use Exception;
-use LDAP\Connection;
 
-/** @mixin Ldap */
 trait HandlesConnection
 {
     /**
      * The LDAP host that is currently connected.
+     *
+     * @var string|null
      */
-    protected ?string $host = null;
+    protected $host;
 
     /**
      * The LDAP connection resource.
      *
-     * @var Connection
+     * @var resource|null
      */
-    protected mixed $connection = null;
+    protected $connection;
 
     /**
      * The bound status of the connection.
+     *
+     * @var bool
      */
-    protected bool $bound = false;
+    protected $bound = false;
 
     /**
      * Whether the connection must be bound over SSL.
+     *
+     * @var bool
      */
-    protected bool $useSSL = false;
+    protected $useSSL = false;
 
     /**
      * Whether the connection must be bound over TLS.
+     *
+     * @var bool
      */
-    protected bool $useTLS = false;
+    protected $useTLS = false;
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
-    public function isUsingSSL(): bool
+    public function isUsingSSL()
     {
         return $this->useSSL;
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
-    public function isUsingTLS(): bool
+    public function isUsingTLS()
     {
         return $this->useTLS;
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
-    public function isBound(): bool
+    public function isBound()
     {
         return $this->bound;
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
-    public function isConnected(): bool
+    public function isConnected()
     {
         return ! is_null($this->connection);
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
-    public function canChangePasswords(): bool
+    public function canChangePasswords()
     {
         return $this->isUsingSSL() || $this->isUsingTLS();
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
-    public function ssl(bool $enabled = true): static
+    public function ssl($enabled = true)
     {
         $this->useSSL = $enabled;
 
@@ -88,9 +94,9 @@ trait HandlesConnection
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
-    public function tls(bool $enabled = true): static
+    public function tls($enabled = true)
     {
         $this->useTLS = $enabled;
 
@@ -98,9 +104,9 @@ trait HandlesConnection
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
-    public function setOptions(array $options = []): void
+    public function setOptions(array $options = [])
     {
         foreach ($options as $option => $value) {
             $this->setOption($option, $value);
@@ -108,33 +114,33 @@ trait HandlesConnection
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
-    public function getHost(): ?string
+    public function getHost()
     {
         return $this->host;
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
-    public function getConnection(): ?Connection
+    public function getConnection()
     {
         return $this->connection;
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
-    public function getProtocol(): string
+    public function getProtocol()
     {
         return $this->isUsingSSL() ? LdapInterface::PROTOCOL_SSL : LdapInterface::PROTOCOL;
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
-    public function getExtendedError(): ?string
+    public function getExtendedError()
     {
         return $this->getDiagnosticMessage();
     }
@@ -142,9 +148,12 @@ trait HandlesConnection
     /**
      * Convert warnings to exceptions for the given operation.
      *
+     * @param  Closure  $operation
+     * @return mixed
+     *
      * @throws LdapRecordException
      */
-    protected function executeFailableOperation(Closure $operation): mixed
+    protected function executeFailableOperation(Closure $operation)
     {
         // If some older versions of PHP, errors are reported instead of throwing
         // exceptions, which could be a significant detriment to our application.
@@ -163,8 +172,8 @@ trait HandlesConnection
             }
 
             // If the failed query operation was a based on a query being executed
-            // -- such as a search, read, or list, then we can safely return
-            // the failed response here and prevent throwing an exception.
+            // -- such as a search, read, or listing, then we can safely return
+            // the failed response here and prevent throwning an exception.
             if ($this->shouldBypassFailure($method = debug_backtrace()[1]['function'])) {
                 return $result;
             }
@@ -179,24 +188,46 @@ trait HandlesConnection
 
     /**
      * Determine if the failed operation should be bypassed.
+     *
+     * @param  string  $method
+     * @return bool
      */
-    protected function shouldBypassFailure(string $method): bool
+    protected function shouldBypassFailure($method)
     {
-        return in_array($method, ['search', 'read', 'list']);
+        return in_array($method, ['search', 'read', 'listing']);
     }
 
     /**
      * Determine if the error should be bypassed.
+     *
+     * @param  string  $error
+     * @return bool
      */
-    protected function shouldBypassError(string $error): bool
+    protected function shouldBypassError($error)
     {
         return $this->causedByPaginationSupport($error) || $this->causedBySizeLimit($error) || $this->causedByNoSuchObject($error);
     }
 
     /**
-     * Generates an LDAP connection string for each host given.
+     * Determine if the current PHP version supports server controls.
+     *
+     * @deprecated since v2.5.0
+     *
+     * @return bool
      */
-    protected function makeConnectionUris(array|string $hosts, string|int $port): string
+    public function supportsServerControlsInMethods()
+    {
+        return version_compare(PHP_VERSION, '7.3.0') >= 0;
+    }
+
+    /**
+     * Generates an LDAP connection string for each host given.
+     *
+     * @param  string|array  $hosts
+     * @param  string  $port
+     * @return string
+     */
+    protected function makeConnectionUris($hosts, $port)
     {
         // If an attempt to connect via SSL protocol is being performed,
         // and we are still using the default port, we will swap it
@@ -213,9 +244,15 @@ trait HandlesConnection
 
     /**
      * Assemble the host URI strings.
+     *
+     * @param  array|string  $hosts
+     * @param  string  $port
+     * @return array
      */
-    protected function assembleHostUris(array|string $hosts, string|int $port): array
+    protected function assembleHostUris($hosts, $port)
     {
-        return array_map(fn ($host) => "{$this->getProtocol()}{$host}:{$port}", (array) $hosts);
+        return array_map(function ($host) use ($port) {
+            return "{$this->getProtocol()}{$host}:{$port}";
+        }, (array) $hosts);
     }
 }

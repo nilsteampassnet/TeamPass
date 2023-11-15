@@ -24,28 +24,54 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
+
+use TeampassClasses\PerformChecks\PerformChecks;
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
+// Load functions
+require_once __DIR__.'/../sources/main.functions.php';
+
+// init
+loadClasses();
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
+
 if (
     isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
     || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === true
-    || isset($_SESSION['key']) === false || empty($_SESSION['key']) === true
+    || $superGlobal->get('key', 'SESSION') === null
 ) {
     die('Hacking attempt...');
 }
 
-// Load config
-if (file_exists('../includes/config/tp.config.php') === true) {
-    include_once '../includes/config/tp.config.php';
-} elseif (file_exists('./includes/config/tp.config.php') === true) {
-    include_once './includes/config/tp.config.php';
-} else {
-    throw new Exception('Error file "/includes/config/tp.config.php" not exists', 1);
+// Load config if $SETTINGS not defined
+try {
+    include_once __DIR__.'/../includes/config/tp.config.php';
+} catch (Exception $e) {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
-/* do checks */
-require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
-if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTINGS) === false) {
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
-    //not allowed page
+// Do checks
+$checkUserAccess = new PerformChecks(
+    dataSanitizer(
+        [
+            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+        ],
+        [
+            'type' => 'trim|escape',
+        ],
+    ),
+    [
+        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
+        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+    ]
+);
+// Handle the case
+echo $checkUserAccess->caseHandler();
+if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('utilities.logs') === false) {
+    // Not allowed page
+    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -169,13 +195,13 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
         },
         'preDrawCallback': function() {
             toastr.remove();
-            toastr.info('<?php echo langHdl('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+            toastr.info('<?php echo $lang->get('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
         },
         'drawCallback': function() {
             // Inform user
             toastr.remove();
             toastr.success(
-                '<?php echo langHdl('done'); ?>',
+                '<?php echo $lang->get('done'); ?>',
                 '', {
                     timeOut: 1000
                 }
@@ -217,13 +243,13 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
             },
             'preDrawCallback': function() {
                 toastr.remove();
-                toastr.info('<?php echo langHdl('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+                toastr.info('<?php echo $lang->get('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
             },
             'drawCallback': function() {
                 // Inform user
                 toastr.remove();
                 toastr.success(
-                    '<?php echo langHdl('done'); ?>',
+                    '<?php echo $lang->get('done'); ?>',
                     '', {
                         timeOut: 1000
                     }
@@ -266,13 +292,13 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
             },
             'preDrawCallback': function() {
                 toastr.remove();
-                toastr.info('<?php echo langHdl('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+                toastr.info('<?php echo $lang->get('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
             },
             'drawCallback': function() {
                 // Inform user
                 toastr.remove();
                 toastr.success(
-                    '<?php echo langHdl('done'); ?>',
+                    '<?php echo $lang->get('done'); ?>',
                     '', {
                         timeOut: 1000
                     }
@@ -315,13 +341,13 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
             },
             'preDrawCallback': function() {
                 toastr.remove();
-                toastr.info('<?php echo langHdl('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+                toastr.info('<?php echo $lang->get('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
             },
             'drawCallback': function() {
                 // Inform user
                 toastr.remove();
                 toastr.success(
-                    '<?php echo langHdl('done'); ?>',
+                    '<?php echo $lang->get('done'); ?>',
                     '', {
                         timeOut: 1000
                     }
@@ -364,13 +390,13 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
             },
             'preDrawCallback': function() {
                 toastr.remove();
-                toastr.info('<?php echo langHdl('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+                toastr.info('<?php echo $lang->get('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
             },
             'drawCallback': function() {
                 // Inform user
                 toastr.remove();
                 toastr.success(
-                    '<?php echo langHdl('done'); ?>',
+                    '<?php echo $lang->get('done'); ?>',
                     '', {
                         timeOut: 1000
                     }
@@ -464,13 +490,13 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
             },
             'preDrawCallback': function() {
                 toastr.remove();
-                toastr.info('<?php echo langHdl('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+                toastr.info('<?php echo $lang->get('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
             },
             'drawCallback': function() {
                 // Inform user
                 toastr.remove();
                 toastr.success(
-                    '<?php echo langHdl('done'); ?>',
+                    '<?php echo $lang->get('done'); ?>',
                     '', {
                         timeOut: 1000
                     }
@@ -495,8 +521,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
         .daterangepicker({
             locale: {
                 format: '<?php echo str_replace(['Y', 'm', 'd'], ['YYYY', 'MM', 'DD'], $SETTINGS['date_format']); ?>',
-                applyLabel: '<?php echo langHdl('apply'); ?>',
-                cancelLabel: '<?php echo langHdl('cancel'); ?>',
+                applyLabel: '<?php echo $lang->get('apply'); ?>',
+                cancelLabel: '<?php echo $lang->get('cancel'); ?>',
             }
         })
         .bind('keypress', function(e) {
@@ -529,7 +555,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
         if ($('#checkbox-purge-confirm').prop('checked') === true) {
             // inform user
             toastr.remove();
-            toastr.info('<?php echo langHdl('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+            toastr.info('<?php echo $lang->get('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
             // Prepare data
             var data = {
@@ -544,18 +570,18 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
             $.post(
                 "sources/utilities.queries.php", {
                     type: "purge_logs",
-                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                    key: "<?php echo $_SESSION['key']; ?>"
+                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                    key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
                 },
                 function(data) {
-                    data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                    data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                     console.log(data);
 
                     if (data.error !== false) {
                         // Show error
                         toastr.error(
                             data.message,
-                            '<?php echo langHdl('caution'); ?>', {
+                            '<?php echo $lang->get('caution'); ?>', {
                                 timeOut: 5000,
                                 progressBar: true
                             }
@@ -583,7 +609,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTING
         } else {
             toastr.remove();
             toastr.warning(
-                '<?php echo langHdl('please_confirm_by_clicking_checkbox'); ?>',
+                '<?php echo $lang->get('please_confirm_by_clicking_checkbox'); ?>',
                 '', {
                     timeOut: 5000,
                     progressBar: true

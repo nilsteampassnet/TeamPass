@@ -5,7 +5,6 @@ namespace LdapRecord\Models\OpenLDAP;
 use Illuminate\Contracts\Auth\Authenticatable;
 use LdapRecord\Models\Concerns\CanAuthenticate;
 use LdapRecord\Models\Concerns\HasPassword;
-use LdapRecord\Models\Relations\HasMany;
 
 class User extends Entry implements Authenticatable
 {
@@ -14,18 +13,24 @@ class User extends Entry implements Authenticatable
 
     /**
      * The password's attribute name.
+     *
+     * @var string
      */
-    protected string $passwordAttribute = 'userpassword';
+    protected $passwordAttribute = 'userpassword';
 
     /**
      * The password's hash method.
+     *
+     * @var string
      */
-    protected string $passwordHashMethod = 'ssha';
+    protected $passwordHashMethod = 'ssha';
 
     /**
      * The object classes of the LDAP model.
+     *
+     * @var array
      */
-    public static array $objectClasses = [
+    public static $objectClasses = [
         'top',
         'person',
         'organizationalperson',
@@ -34,9 +39,13 @@ class User extends Entry implements Authenticatable
 
     /**
      * The groups relationship.
+     *
+     * Retrieve groups that the user is a part of.
+     *
+     * @return \LdapRecord\Models\Relations\HasMany
      */
-    public function groups(): HasMany
+    public function groups()
     {
-        return $this->hasMany(Group::class, 'uniquemember');
+        return $this->hasMany(Group::class, 'memberuid', 'uid');
     }
 }

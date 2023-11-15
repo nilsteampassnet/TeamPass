@@ -24,6 +24,9 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
+
 // Automatic redirection
 $nextUrl = '';
 if (strpos($server['request_uri'], '?') > 0) {
@@ -33,8 +36,8 @@ if (strpos($server['request_uri'], '?') > 0) {
     );
 }
 
-require_once './includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-$superGlobal = new protect\SuperGlobal\SuperGlobal();
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
 $get = [];
 $get['post_type'] = $superGlobal->get('post_type', 'GET');
 if (isset($SETTINGS['duo']) === true && (int) $SETTINGS['duo'] === 1 && $get['post_type'] === 'duo' ) {
@@ -61,14 +64,14 @@ echo '
         <div class="card-header text-center">
             <h3>',
     isset($SETTINGS['custom_login_text']) === true
-        && empty($SETTINGS['custom_login_text']) === false ? $SETTINGS['custom_login_text'] : langHdl('index_get_identified'),
+        && empty($SETTINGS['custom_login_text']) === false ? $SETTINGS['custom_login_text'] : $lang->get('index_get_identified'),
     '
             </h3>
         </div>
 
         <div class="card-body login-card-body1">
             <div class="input-group has-feedback mb-2">
-                <div class="input-group-prepend infotip" title="' . langHdl('login') . '">
+                <div class="input-group-prepend infotip" title="' . $lang->get('login') . '">
                     <span class="input-group-text"><i class="fa-solid fa-user fa-fw"></i></span>
                 </div>';
 if (
@@ -89,7 +92,7 @@ if (
             <input type="text" id="login" class="form-control" placeholder="', filter_var($username, FILTER_SANITIZE_FULL_SPECIAL_CHARS), '" readonly>';
 } else {
     echo '
-            <input type="text" id="login" class="form-control" placeholder="' . langHdl('index_login') . '">';
+            <input type="text" id="login" class="form-control" placeholder="' . $lang->get('index_login') . '" value="'.(null !== $superGlobal->get('login', 'SESSION') && empty($superGlobal->get('login', 'SESSION')) === false ? filter_var($superGlobal->get('login', 'SESSION'), FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '').'">';
 }
 
 echo '
@@ -101,20 +104,20 @@ if (! (isset($SETTINGS['enable_http_request_login']) === true
         && (int) $SETTINGS['maintenance_mode'] === 1))) {
     echo '
         <div class="input-group has-feedback mb-2">
-            <div class="input-group-prepend infotip" title="' . langHdl('password') . '">
+            <div class="input-group-prepend infotip" title="' . $lang->get('password') . '">
                 <span class="input-group-text"><i class="fa-solid fa-lock fa-fw"></i></span>
             </div>
-            <input type="password" id="pw" class="form-control submit-button" placeholder="' . langHdl('index_password') . '">
+            <input type="password" id="pw" class="form-control submit-button" placeholder="' . $lang->get('index_password') . '">
         </div>';
 }
 
 echo '
         <div class="input-group has-feedback mb-2">
-            <div class="input-group-prepend infotip" title="' . langHdl('session_expiration_in_minutes') . '">
+            <div class="input-group-prepend infotip" title="' . $lang->get('session_expiration_in_minutes') . '">
                 <span class="input-group-text"><i class="fa-solid fa-clock fa-fw"></i></span>
             </div>
             <input type="text" id="session_duration" class="form-control submit-button" 
-            placeholder="' . langHdl('index_session_duration') .'&nbsp;(' . langHdl('minutes') . ')" 
+            placeholder="' . $lang->get('index_session_duration') .'&nbsp;(' . $lang->get('minutes') . ')" 
             value="', isset($SETTINGS['default_session_expiration_time']) === true ? $SETTINGS['default_session_expiration_time'] : '', '">
         </div>';
 // 2FA auth selector
@@ -124,7 +127,7 @@ echo '
         <input type="hidden" id="duo_state" value="', isset($get['duo_state']) === true && is_null($get['duo_state']) === false ? $get['duo_state'] : '', '">
         <div class="row mb-3 hidden" id="2fa_methods_selector">
             <div class="col-12">
-                <h8 class="login-box-msg">' . langHdl('2fa_authentication_selector') . '</h8>
+                <h8 class="login-box-msg">' . $lang->get('2fa_authentication_selector') . '</h8>
                 <div class="2fa-methods text-center mt-2">',
     isset($SETTINGS['google_authentication']) === true && (int) $SETTINGS['google_authentication'] === 1 ?
         '
@@ -158,14 +161,14 @@ if (isset($SETTINGS['google_authentication']) === true && (int) $SETTINGS['googl
     echo '
         <div id="div-2fa-google" class="mb-3 div-2fa-method hidden">
             <div class="input-group has-feedback mb-2">
-                <div class="input-group-prepend infotip" title="' . langHdl('mfa_unique_code') . '">
+                <div class="input-group-prepend infotip" title="' . $lang->get('mfa_unique_code') . '">
                     <span class="input-group-text"><i class="fa-solid fa-key fa-fw"></i></span>
                 </div>
-                <input type="text" id="ga_code" class="form-control submit-button" placeholder="' . langHdl('ga_identification_code') . '" />
+                <input type="text" id="ga_code" class="form-control submit-button" placeholder="' . $lang->get('ga_identification_code') . '" />
                 <span class="input-group-append">
                     <button type="button" class="btn btn-info btn-flat" onclick="send_user_new_temporary_ga_code()">
                         <i class="fa-solid fa-envelope form-control-feedback pointer infotip" 
-                    title="' . langHdl('i_need_to_generate_new_ga_code') . '"></i>
+                    title="' . $lang->get('i_need_to_generate_new_ga_code') . '"></i>
                     </button>
                 </span>
             </div>
@@ -183,7 +186,7 @@ if (isset($SETTINGS['enable_http_request_login']) === true
 <script>
 var seconds = 1;
 function updateLogonButton(timeToGo){
-    document.getElementById("but_identify_user").value = "' . langHdl('duration_login_attempt') . ' " + timeToGo;
+    document.getElementById("but_identify_user").value = "' . $lang->get('duration_login_attempt') . ' " + timeToGo;
 }
 $( window ).on( "load", function() {
     updateLogonButton(seconds);
@@ -213,15 +216,15 @@ if (isset($SETTINGS['yubico_authentication']) === true && (int) $SETTINGS['yubic
             <div class="col-8">
                 <div id="yubiko-new-key" class="alert alert-info hidden">
                     <p>
-                        <input type="text" size="10" id="yubico_user_id" class="form-control" placeholder="' . langHdl('yubico_user_id') . '">
+                        <input type="text" size="10" id="yubico_user_id" class="form-control" placeholder="' . $lang->get('yubico_user_id') . '">
                     </p>
                     <p>
-                    <input type="text" size="10" id="yubico_user_key" class="form-control" placeholder="' . langHdl('yubico_user_key') . '">
+                    <input type="text" size="10" id="yubico_user_key" class="form-control" placeholder="' . $lang->get('yubico_user_key') . '">
                     </p>
                 </div>
-                <input autocomplete="off" type="text" id="yubico_key" class="form-control submit-button" placeholder="' . langHdl('press_your_yubico_key') . '">
+                <input autocomplete="off" type="text" id="yubico_key" class="form-control submit-button" placeholder="' . $lang->get('press_your_yubico_key') . '">
                 <div class="row">
-                    <span class="ml-2 mt-1 font-weight-light small pointer" id="register-yubiko-key">' . langHdl('register_new_yubiko_key') . '</span>
+                    <span class="ml-2 mt-1 font-weight-light small pointer" id="register-yubiko-key">' . $lang->get('register_new_yubiko_key') . '</span>
                 </div>
             </div>
         </div>';
@@ -230,22 +233,22 @@ if (isset($SETTINGS['yubico_authentication']) === true && (int) $SETTINGS['yubic
 echo '
         <div class="row mb-3 mt-5">
             <div class="col-12">
-                <button id="but_identify_user" class="btn btn-primary btn-block">' . langHdl('log_in') . '</button>
+                <button id="but_identify_user" class="btn btn-primary btn-block">' . $lang->get('log_in') . '</button>
                 
                 <!-- In case of upgrade, the user has to provide his One Time Code -->
                 <div class="card-body user-one-time-code-card-body hidden">
-                    <h5 class="login-box-msg">' . langHdl('provide_personal_one_time_code') . '</h5>
+                    <h5 class="login-box-msg">' . $lang->get('provide_personal_one_time_code') . '</h5>
 
                     <div class="input-group has-feedback mb-2 mt-4">
                         <div class="input-group-prepend">
                             <span class="input-group-text"><i class="fa-solid fa-unlock-alt"></i></span>
                         </div>
-                        <input type="password" id="user-one-time-code" class="form-control" placeholder="' . langHdl('one_time_code') . '">
+                        <input type="password" id="user-one-time-code" class="form-control" placeholder="' . $lang->get('one_time_code') . '">
                     </div>
 
                     <div class="row mb-3">
                         <div class="col-12">
-                            <button id="but_confirm_otc" class="btn btn-primary btn-block">' . langHdl('confirm') . '</button>
+                            <button id="but_confirm_otc" class="btn btn-primary btn-block">' . $lang->get('confirm') . '</button>
                         </div>
                     </div>
                 </div>
@@ -260,10 +263,10 @@ echo '
 // In case of password change
 echo '
     <div class="card-body confirm-password-card-body hidden">
-        <h5 class="login-box-msg">' . langHdl('new_password_required') . '</h5>
+        <h5 class="login-box-msg">' . $lang->get('new_password_required') . '</h5>
 
         <div class="alert alert-info">
-            <div class="text-center"><i class="icon fa fa-info"></i>' . langHdl('password_strength') . '
+            <div class="text-center"><i class="icon fa fa-info"></i>' . $lang->get('password_strength') . '
             <span id="confirm-password-level" class="ml-2 font-weight-bold"></span></div>
         </div>
 
@@ -273,20 +276,20 @@ echo '
                     <div class="input-group-prepend">
                         <span class="input-group-text"><i class="fas fa-key"></i></span>
                     </div>
-                    <input type="password" id="current-user-password" class="form-control" placeholder="' . langHdl('current_password') . '">
+                    <input type="password" id="current-user-password" class="form-control" placeholder="' . $lang->get('current_password') . '">
                 </div>
             </div>
             <div class="input-group has-feedback mb-2 mt-4">
                 <div class="input-group-prepend">
                     <span class="input-group-text"><i class="fas fa-key"></i></span>
                 </div>
-                <input type="password" id="new-user-password" class="form-control" placeholder="' . langHdl('index_new_pw') . '">
+                <input type="password" id="new-user-password" class="form-control" placeholder="' . $lang->get('index_new_pw') . '">
             </div>
             <div class="input-group has-feedback mb-2">
                 <div class="input-group-prepend">
                     <span class="input-group-text"><i class="fas fa-key"></i></span>
                 </div>
-                <input type="password" id="new-user-password-confirm" class="form-control" placeholder="' . langHdl('index_change_pw_confirmation') . '">
+                <input type="password" id="new-user-password-confirm" class="form-control" placeholder="' . $lang->get('index_change_pw_confirmation') . '">
             </div>
             <div class="row mb-3">
                 <div class="col-md-12 offset-sm-4 text-center">
@@ -297,7 +300,7 @@ echo '
             </div>
             <div class="row mb-3">
                 <div class="col-12">
-                    <button id="but_confirm_new_password" class="btn btn-primary btn-block">' . langHdl('confirm') . '</button>
+                    <button id="but_confirm_new_password" class="btn btn-primary btn-block">' . $lang->get('confirm') . '</button>
                 </div>
             </div>
         </div>
@@ -305,20 +308,20 @@ echo '
 
     <div class="card-body hidden" id="card-user-treat-psk">
         <div class="alert alert-info">
-            <div class="text-center"><i class="icon fa fa-info"></i>' . langHdl('user_has_psk_info') . '</div>
+            <div class="text-center"><i class="icon fa fa-info"></i>' . $lang->get('user_has_psk_info') . '</div>
         </div>
         <div class="input-group has-feedback mb-2">
             <div class="input-group-prepend">
                 <span class="input-group-text"><i class="fas fa-key"></i></span>
             </div>
-            <input type="password" id="user-old-defuse-psk" class="form-control" placeholder="' . langHdl('home_personal_saltkey') . '">
+            <input type="password" id="user-old-defuse-psk" class="form-control" placeholder="' . $lang->get('home_personal_saltkey') . '">
         </div>
         <div class="row mb-3 mt-4">
             <div class="col-12">
-                <button id="but_confirm_defuse_psk" class="btn btn-primary btn-block">' . langHdl('launch') . '</button>
+                <button id="but_confirm_defuse_psk" class="btn btn-primary btn-block">' . $lang->get('launch') . '</button>
             </div>
             <div class="col-12 mt-3">
-                <button id="but_confirm_forgot_defuse_psk" class="btn btn-danger btn-block text-bold">' . langHdl('i_cannot_remember') . '</button>
+                <button id="but_confirm_forgot_defuse_psk" class="btn btn-danger btn-block text-bold">' . $lang->get('i_cannot_remember') . '</button>
             </div>
         </div>
     </div>

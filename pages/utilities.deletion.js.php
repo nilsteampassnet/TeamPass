@@ -24,28 +24,54 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
+
+use TeampassClasses\PerformChecks\PerformChecks;
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
+// Load functions
+require_once __DIR__.'/../sources/main.functions.php';
+
+// init
+loadClasses();
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
+
 if (
     isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
     || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === true
-    || isset($_SESSION['key']) === false || empty($_SESSION['key']) === true
+    || $superGlobal->get('key', 'SESSION') === null
 ) {
     die('Hacking attempt...');
 }
 
-// Load config
-if (file_exists('../includes/config/tp.config.php') === true) {
-    include_once '../includes/config/tp.config.php';
-} elseif (file_exists('./includes/config/tp.config.php') === true) {
-    include_once './includes/config/tp.config.php';
-} else {
-    throw new Exception('Error file "/includes/config/tp.config.php" not exists', 1);
+// Load config if $SETTINGS not defined
+try {
+    include_once __DIR__.'/../includes/config/tp.config.php';
+} catch (Exception $e) {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
-/* do checks */
-require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
-if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === false) {
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
-    //not allowed page
+// Do checks
+$checkUserAccess = new PerformChecks(
+    dataSanitizer(
+        [
+            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+        ],
+        [
+            'type' => 'trim|escape',
+        ],
+    ),
+    [
+        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
+        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+    ]
+);
+// Handle the case
+echo $checkUserAccess->caseHandler();
+if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('utilities.deletion') === false) {
+    // Not allowed page
+    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -71,27 +97,27 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
     $(function() {
         // Show spinner
         toastr.remove();
-        toastr.info('<?php echo langHdl('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+        toastr.info('<?php echo $lang->get('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
         // Do clean
-        $('#recycled-folders, #recycled-items').html('<div class="text-warning"><i class="fas fa-info mr-2"></i><?php echo langHdl('refreshing'); ?></div>');
+        $('#recycled-folders, #recycled-items').html('<div class="text-warning"><i class="fas fa-info mr-2"></i><?php echo $lang->get('refreshing'); ?></div>');
         $('#temp-message').remove();
 
         // Launch action
         $.post(
             'sources/utilities.queries.php', {
                 type: 'recycled_bin_elements',
-                key: '<?php echo $_SESSION['key']; ?>'
+                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
             },
             function(data) {
                 //decrypt data
-                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                 console.log(data);
                 if (data.error === true) {
                     // ERROR
                     toastr.remove();
                     toastr.error(
                         data.message,
-                        '<?php echo langHdl('error'); ?>', {
+                        '<?php echo $lang->get('error'); ?>', {
                             timeOut: 5000,
                             progressBar: true
                         }
@@ -101,7 +127,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     if (data.folders.length === 0) {
                         $('#recycled-folders, #recycled-items').html(
                             '<div class="alert alert-info" id="temp-message">' +
-                            '<?php echo langHdl('empty_list'); ?>' +
+                            '<?php echo $lang->get('empty_list'); ?>' +
                             '</div>'
                         )
 
@@ -124,7 +150,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     if (data.items.length === 0) {
                         $('#recycled-items').html(
                             '<div class="alert alert-info" id="temp-message">' +
-                            '<?php echo langHdl('empty_list'); ?>' +
+                            '<?php echo $lang->get('empty_list'); ?>' +
                             '</div>'
                         )
 
@@ -138,7 +164,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                                 '<td class=""><i class="far fa-user mr-1"></i>' + value.name + ' [' + value.login + ']</td>' +
                                 '<td class="font-italic"><i class="far fa-folder mr-1"></i>' + value.folder_label + '</td>' +
                                 (value.folder_deleted === true ?
-                                    '<td class=""><?php echo langHdl('belong_of_deleted_folder'); ?></td>' :
+                                    '<td class=""><?php echo $lang->get('belong_of_deleted_folder'); ?></td>' :
                                     '') +
                                 '</tr>';
                         });
@@ -162,7 +188,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     // OK
                     toastr.remove();
                     toastr.success(
-                        '<?php echo langHdl('done'); ?>',
+                        '<?php echo $lang->get('done'); ?>',
                         '', {
                             timeOut: 1000
                         }
@@ -200,11 +226,11 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             // Show text to user
             $('#recycled-bin-confirm-restore div').find('.card-body')
                 .html('<div class="callout callout-info"><h5>' +
-                    '<?php echo langHdl('number_of_selected_objects'); ?>: <span id="objects_counter" class="text-bold">' +
+                    '<?php echo $lang->get('number_of_selected_objects'); ?>: <span id="objects_counter" class="text-bold">' +
                     $('input:checkbox:checked').length + '</span></h5>' +
-                    '<?php echo langHdl('highlight_selected'); ?>:<i class="far fa-check-circle fa-lg ml-2 pointer text-success" id="highlight"></i>' +
+                    '<?php echo $lang->get('highlight_selected'); ?>:<i class="far fa-check-circle fa-lg ml-2 pointer text-success" id="highlight"></i>' +
                     '<i class="far fa-times-circle fa-lg ml-2 pointer text-danger" id="highlight-cancel"></i></div>' +
-                    '<div class="alert alert-info"><i class="fas fa-warning mr-2"></i><?php echo langHdl('confirm_selection_restore'); ?></div>');
+                    '<div class="alert alert-info"><i class="fas fa-warning mr-2"></i><?php echo $lang->get('confirm_selection_restore'); ?></div>');
 
             // Hide other confirm box
             $('#recycled-bin-confirm-restore').addClass('hidden');
@@ -218,11 +244,11 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             // Show text to user
             $('#recycled-bin-confirm-delete div').find('.card-body')
                 .html('<div class="callout callout-warning"><h5>' +
-                    '<?php echo langHdl('number_of_selected_objects'); ?>: <span id="objects_counter" class="text-bold">' +
+                    '<?php echo $lang->get('number_of_selected_objects'); ?>: <span id="objects_counter" class="text-bold">' +
                     $('input:checkbox:checked').length + '</span></h5>' +
-                    '<?php echo langHdl('highlight_selected'); ?>:<i class="far fa-check-circle fa-lg ml-2 pointer text-success" id="highlight"></i>' +
+                    '<?php echo $lang->get('highlight_selected'); ?>:<i class="far fa-check-circle fa-lg ml-2 pointer text-success" id="highlight"></i>' +
                     '<i class="far fa-times-circle fa-lg ml-2 pointer text-danger" id="highlight-cancel"></i></div>' +
-                    '<div class="alert alert-warning"><i class="fas fa-warning mr-2"></i><?php echo langHdl('confirm_selection_delete'); ?></div>');
+                    '<div class="alert alert-warning"><i class="fas fa-warning mr-2"></i><?php echo $lang->get('confirm_selection_delete'); ?></div>');
 
             // Hide other confirm box
             $('#recycled-bin-confirm-restore').addClass('hidden');
@@ -279,7 +305,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
     function restoreOrDelete(action, id) {
         // Show spinner
         toastr.remove();
-        toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+        toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
         // Prepare selected data
         var folders = [],
@@ -304,19 +330,19 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
         $.post(
             'sources/utilities.queries.php', {
                 type: action,
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                key: '<?php echo $_SESSION['key']; ?>'
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
             },
             function(data) {
                 //decrypt data
-                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
 
                 if (data.error === true) {
                     // ERROR
                     toastr.remove();
                     toastr.error(
                         data.message,
-                        '<?php echo langHdl('error'); ?>', {
+                        '<?php echo $lang->get('error'); ?>', {
                             timeOut: 5000,
                             progressBar: true
                         }
@@ -338,7 +364,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     // Inform user
                     toastr.remove();
                     toastr.success(
-                        '<?php echo langHdl('done'); ?>',
+                        '<?php echo $lang->get('done'); ?>',
                         '', {
                             timeOut: 5000
                         }

@@ -13,21 +13,25 @@ class Entry extends BaseEntry implements FreeIPA
 {
     /**
      * The attribute key that contains the models object GUID.
+     *
+     * @var string
      */
-    protected string $guidKey = 'ipauniqueid';
+    protected $guidKey = 'ipauniqueid';
 
     /**
      * The default attributes that should be mutated to dates.
+     *
+     * @var array
      */
-    protected array $defaultDates = [
+    protected $defaultDates = [
         'krblastpwdchange' => 'ldap',
         'krbpasswordexpiration' => 'ldap',
     ];
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
-    protected static function boot(): void
+    protected static function boot()
     {
         parent::boot();
 
@@ -39,8 +43,11 @@ class Entry extends BaseEntry implements FreeIPA
 
     /**
      * Create a new query builder.
+     *
+     * @param  Connection  $connection
+     * @return FreeIpaBuilder
      */
-    public function newQueryBuilder(Connection $connection): FreeIpaBuilder
+    public function newQueryBuilder(Connection $connection)
     {
         return new FreeIpaBuilder($connection);
     }

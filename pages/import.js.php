@@ -24,28 +24,54 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
+
+use TeampassClasses\PerformChecks\PerformChecks;
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
+// Load functions
+require_once __DIR__.'/../sources/main.functions.php';
+
+// init
+loadClasses();
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
+
 if (
     isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
     || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === true
-    || isset($_SESSION['key']) === false || empty($_SESSION['key']) === true
+    || $superGlobal->get('key', 'SESSION') === null
 ) {
     die('Hacking attempt...');
 }
 
-// Load config
-if (file_exists('../includes/config/tp.config.php') === true) {
-    include_once '../includes/config/tp.config.php';
-} elseif (file_exists('./includes/config/tp.config.php') === true) {
-    include_once './includes/config/tp.config.php';
-} else {
-    throw new Exception('Error file "/includes/config/tp.config.php" not exists', 1);
+// Load config if $SETTINGS not defined
+try {
+    include_once __DIR__.'/../includes/config/tp.config.php';
+} catch (Exception $e) {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
-/* do checks */
-require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
-if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === false) {
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
-    //not allowed page
+// Do checks
+$checkUserAccess = new PerformChecks(
+    dataSanitizer(
+        [
+            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+        ],
+        [
+            'type' => 'trim|escape',
+        ],
+    ),
+    [
+        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
+        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+    ]
+);
+// Handle the case
+echo $checkUserAccess->caseHandler();
+if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('import') === false) {
+    // Not allowed page
+    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -81,8 +107,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
         multi_selection: false,
         max_file_count: 1,
         url: "<?php echo $SETTINGS['cpassman_url']; ?>/sources/upload.files.php",
-        flash_swf_url: '<?php echo $SETTINGS['cpassman_url']; ?>/includes/libraries/Plupload/Moxie.swf',
-        silverlight_xap_url: '<?php echo $SETTINGS['cpassman_url']; ?>/includes/libraries/Plupload/Moxie.xap',
+        flash_swf_url: '<?php echo $SETTINGS['cpassman_url']; ?>/includes/libraries/plupload/js/Moxie.swf',
+        silverlight_xap_url: '<?php echo $SETTINGS['cpassman_url']; ?>/includes/libraries/plupload/js/Moxie.xap',
         filters: [{
             title: "CSV files",
             extensions: "csv"
@@ -100,7 +126,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                         ambiguous: true,
                         reason: "import_items_from_csv",
                         duration: 10,
-                        key: '<?php echo $_SESSION['key']; ?>'
+                        key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                     },
                     function(data) {
                         store.update(
@@ -110,6 +136,10 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                             }
                         );
 
+                        up.settings.multipart_params.PHPSESSID = "<?php echo session_id(); ?>";
+                        up.settings.multipart_params.type_upload = "import_items_from_csv";
+                        up.settings.multipart_params.user_token = data[0].token;
+
                         up.start();
                     },
                     "json"
@@ -118,17 +148,13 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
             BeforeUpload: function(up, file) {
                 // Show spinner
                 toastr.remove();
-                toastr.info('<i class="fas fa-cog fa-spin fa-2x"></i>');
-
-                up.settings.multipart_params = {
-                    "PHPSESSID": "<?php echo session_id(); ?>",
-                    "type_upload": "import_items_from_csv",
-                    "user_token": store.get('teampassApplication').uploadedFileId
-                };
+                toastr.info('<i class="fa-solid fa-ellipsis fa-2x fa-fade ml-2"></i>');
             },
             FileUploaded: function(upldr, file, object) {
-                var data = prepareExchangedData(object.response, "decode", "<?php echo $_SESSION['key']; ?>");
-                console.log(data)
+                var data = prepareExchangedData(object.response, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
+                if (debugJavascript === true) {
+                    console.log(data)
+                }
 
                 if (data.error === true) {
                     toastr.remove();
@@ -142,7 +168,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                 } else {
                     toastr.remove();
                     toastr.success(
-                        '<?php echo langHdl('done'); ?>',
+                        '<?php echo $lang->get('done'); ?>',
                         data.message, {
                             timeOut: 2000,
                             progressBar: true
@@ -260,7 +286,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
     function ImportCSV() {
         // Show spinner
         toastr.remove();
-        toastr.info('<i class="fas fa-cog fa-spin fa-2x"></i><?php echo langHdl('reading_file'); ?>');
+        toastr.info('<?php echo $lang->get('reading_file'); ?><i class="fa-solid fa-ellipsis fa-2x fa-fade ml-2"></i>');
 
         // Perform query
         $.post(
@@ -268,10 +294,10 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                 type: "import_file_format_csv",
                 file: store.get('teampassApplication').uploadedFileId,
                 folder_id: $('#import-csv-target-folder').val(),
-                key: '<?php echo $_SESSION['key']; ?>'
+                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
             },
             function(data) {
-                data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
                 console.log(data)
 
                 // CLear
@@ -285,7 +311,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                 if (data.error == "bad_structure") {
                     toastr.remove();
                     toastr.error(
-                        '<i class="fas fa-ban fa-lg mr-2"></i><?php echo addslashes(langHdl('import_error_no_read_possible')); ?>',
+                        '<i class="fas fa-ban fa-lg mr-2"></i><?php echo addslashes($lang->get('import_error_no_read_possible')); ?>',
                         '', {
                             timeOut: 10000,
                             closeButton: true,
@@ -334,7 +360,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
 
                     toastr.remove();
                     toastr.success(
-                        '<?php echo langHdl('done'); ?>',
+                        '<?php echo $lang->get('done'); ?>',
                         data.message, {
                             timeOut: 2000,
                             progressBar: true
@@ -349,7 +375,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
     function launchCSVItemsImport() {
         // Show spinner
         toastr.remove();
-        toastr.info('<i class="fas fa-cog fa-spin fa-2x"></i><?php echo langHdl('please_wait'); ?>');
+        toastr.info('<i class="fas fa-cog fa-spin fa-2x"></i><?php echo $lang->get('please_wait'); ?>');
 
         // Init
         var items = '',
@@ -378,7 +404,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
         if (arrItems.length === 0) {
             toastr.remove();
             toastr.error(
-                '<i class="fas fa-ban fa-lg mr-2"></i><?php echo langHdl('no_data_selected'); ?>',
+                '<i class="fas fa-ban fa-lg mr-2"></i><?php echo $lang->get('no_data_selected'); ?>',
                 '', {
                     timeOut: 10000,
                     closeButton: true,
@@ -399,17 +425,17 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
         $.post(
             "sources/import.queries.php", {
                 type: "import_items",
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                key: '<?php echo $_SESSION['key']; ?>'
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
             },
             function(data) {
-                data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
                 console.log(data)
 
                 if (data.error === true) {
                     toastr.remove();
                     toastr.error(
-                        '<i class="fas fa-ban fa-lg mr-2"></i><?php echo addslashes(langHdl('import_error_no_read_possible')); ?>',
+                        '<i class="fas fa-ban fa-lg mr-2"></i><?php echo addslashes($lang->get('import_error_no_read_possible')); ?>',
                         '', {
                             timeOut: 10000,
                             closeButton: true,
@@ -431,7 +457,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                     // Show
                     toastr.remove();
                     toastr.success(
-                        '<?php echo langHdl('number_of_items_imported'); ?> : ' + counter_treated_items,
+                        '<?php echo $lang->get('number_of_items_imported'); ?> : ' + counter_treated_items,
                         data.message, {
                             timeOut: 5000,
                             progressBar: true
@@ -458,8 +484,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
         multi_selection: false,
         max_file_count: 1,
         url: "<?php echo $SETTINGS['cpassman_url']; ?>/sources/upload.files.php",
-        flash_swf_url: '<?php echo $SETTINGS['cpassman_url']; ?>/includes/libraries/Plupload/Moxie.swf',
-        silverlight_xap_url: '<?php echo $SETTINGS['cpassman_url']; ?>/includes/libraries/Plupload/Moxie.xap',
+        flash_swf_url: '<?php echo $SETTINGS['cpassman_url']; ?>/includes/libraries/plupload/js/Moxie.swf',
+        silverlight_xap_url: '<?php echo $SETTINGS['cpassman_url']; ?>/includes/libraries/plupload/js/Moxie.xap',
         filters: [{
             title: "KEEPASS files",
             extensions: "xml"
@@ -477,7 +503,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                         ambiguous: true,
                         reason: "import_items_from_keepass",
                         duration: 10,
-                        key: '<?php echo $_SESSION['key']; ?>'
+                        key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                     },
                     function(data) {
                         store.update(
@@ -504,7 +530,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                 };
             },
             FileUploaded: function(upldr, file, object) {
-                var data = prepareExchangedData(object.response, "decode", "<?php echo $_SESSION['key']; ?>");
+                var data = prepareExchangedData(object.response, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
                 console.log(data)
 
                 if (data.error === true) {
@@ -520,7 +546,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                 } else {
                     toastr.remove();
                     toastr.success(
-                        '<?php echo langHdl('done'); ?>',
+                        '<?php echo $lang->get('done'); ?>',
                         data.message, {
                             timeOut: 2000,
                             progressBar: true
@@ -545,7 +571,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
             Error: function(up, data) {
                 toastr.warning(
                     data.message + ' (' + up.settings.max_file_size + ')',
-                    '<?php echo langHdl('caution'); ?>',
+                    '<?php echo $lang->get('caution'); ?>',
                     {
                         timeOut: 4000,
                         progressBar: true
@@ -574,7 +600,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
     function launchKeepassItemsImport() {
         // Show spinner
         $('#import-feedback-progress-text')
-            .html('<?php echo langHdl('reading_file'); ?>');
+            .html('<?php echo $lang->get('reading_file'); ?>');
             $('#import-feedback').removeClass('hidden');
         
         // block time counter
@@ -589,17 +615,17 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
         $.post(
             "sources/import.queries.php", {
                 type: "import_file_format_keepass",
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                key: '<?php echo $_SESSION['key']; ?>'
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
             },
             function(data) {
-                data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
                 console.log(data);
 
                 if (data.error === true) {
                     toastr.remove();
                     toastr.error(
-                        '<i class="fas fa-ban fa-lg mr-2"></i><?php echo addslashes(langHdl('import_error_no_read_possible')); ?>',
+                        '<i class="fas fa-ban fa-lg mr-2"></i><?php echo addslashes($lang->get('import_error_no_read_possible')); ?>',
                         '', {
                             timeOut: 10000,
                             closeButton: true,
@@ -621,24 +647,24 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                     }
                     // Show spinner
                     $('#import-feedback-progress-text')
-                        .html('<i class="fas fa-cog fa-spin ml-4 mr-2"></i><?php echo langHdl('folder'); ?> <?php echo langHdl('at_creation'); ?>');
+                        .html('<i class="fas fa-cog fa-spin ml-4 mr-2"></i><?php echo $lang->get('folder'); ?> <?php echo $lang->get('at_creation'); ?>');
 
                     console.info("Now creating folders")
                     //console.log(data);
                     $.post(
                         "sources/import.queries.php", {
                             type: "keepass_create_folders",
-                            data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                            key: '<?php echo $_SESSION['key']; ?>'
+                            data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                            key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                         },
                         function(data) {
-                            data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                            data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
                             //console.log(data)
 
                             if (data.error === true) {
                                 toastr.remove();
                                 toastr.error(
-                                    '<i class="fas fa-ban fa-lg mr-2"></i><?php echo addslashes(langHdl('import_error_no_read_possible')); ?>',
+                                    '<i class="fas fa-ban fa-lg mr-2"></i><?php echo addslashes($lang->get('import_error_no_read_possible')); ?>',
                                     '', {
                                         timeOut: 10000,
                                         closeButton: true,
@@ -672,7 +698,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                                     // Isolate first item
                                     if (itemsList.length > 0) {
                                         $('#import-feedback-progress-text')
-                                            .html('<i class="fas fa-cog fa-spin ml-4 mr-2"></i><?php echo langHdl('operation_progress');?> ('+((counter*100)/itemsNumber).toFixed(2)+'%) - <i>'+itemsList[0].Title + '</i>');
+                                            .html('<i class="fas fa-cog fa-spin ml-4 mr-2"></i><?php echo $lang->get('operation_progress');?> ('+((counter*100)/itemsNumber).toFixed(2)+'%) - <i>'+itemsList[0].Title + '</i>');
 
                                         data = {
                                             'edit-all': $('#import-keepass-edit-all-checkbox').prop('checked') === true ? 1 : 0,
@@ -686,11 +712,11 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                                         $.post(
                                             "sources/import.queries.php", {
                                                 type: "keepass_create_items",
-                                                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                                                key: '<?php echo $_SESSION['key']; ?>'
+                                                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                                                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                                             },
                                             function(data) {
-                                                data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                                                data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
                                                 //console.info("Done")
                                                 //console.log(data)
 
@@ -698,7 +724,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                                                     // ERROR
                                                     toastr.remove();
                                                     toastr.error(
-                                                        '<i class="fas fa-ban fa-lg mr-2"></i><?php echo addslashes(langHdl('import_error_no_read_possible')); ?>',
+                                                        '<i class="fas fa-ban fa-lg mr-2"></i><?php echo addslashes($lang->get('import_error_no_read_possible')); ?>',
                                                         '', {
                                                             timeOut: 10000,
                                                             closeButton: true,
@@ -744,7 +770,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                                         // Show
                                         toastr.remove();
                                         toastr.success(
-                                            '<?php echo langHdl('done'); ?>',
+                                            '<?php echo $lang->get('done'); ?>',
                                             data.message, {
                                                 timeOut: 2000,
                                                 progressBar: true

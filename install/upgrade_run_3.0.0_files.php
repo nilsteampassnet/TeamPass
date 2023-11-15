@@ -16,18 +16,26 @@
  * @see       https://www.teampass.net
  */
 
-set_time_limit(600);
+use EZimuel\PHPSecureSession;
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
+use PasswordLib\PasswordLib;
+use Defuse\Crypto\File;
+use Defuse\Crypto\Key;
+use Defuse\Crypto\Exception as CryptoException;
 
+// Load functions
+require_once __DIR__.'/../sources/main.functions.php';
 
-require_once '../sources/SecureHandler.php';
+// init
+loadClasses('DB');
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
 session_name('teampass_session');
 session_start();
 error_reporting(E_ERROR | E_PARSE);
-$_SESSION['db_encoding'] = 'utf8';
+set_time_limit(600);
 $_SESSION['CPM'] = 1;
-
-// prepare Encryption class calls
-use Defuse\Crypto\File;
 
 require_once '../includes/language/english.php';
 require_once '../includes/config/include.php';
@@ -43,8 +51,8 @@ $post_nb = filter_input(INPUT_POST, 'nb', FILTER_SANITIZE_NUMBER_INT);
 $post_start = filter_input(INPUT_POST, 'start', FILTER_SANITIZE_NUMBER_INT);
 
 // Load libraries
-require_once '../includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-$superGlobal = new protect\SuperGlobal\SuperGlobal();
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
 
 // Some init
 $_SESSION['settings']['loaded'] = '';
@@ -154,20 +162,20 @@ while ($file_info = mysqli_fetch_array($rows)) {
             // Now decrypt the file
             $err = '';
             try {
-                \Defuse\Crypto\File::decryptFile(
+                File::decryptFile(
                     $SETTINGS['path_to_upload_folder'].'/'.$file_info['file'],
                     $SETTINGS['path_to_upload_folder'].'/'.$file_info['file'].'.delete',
-                    \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key)
+                    Key::loadFromAsciiSafeString($ascii_key)
                 );
-            } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
+            } catch (CryptoException\WrongKeyOrModifiedCiphertextException $ex) {
                 $err = 'An attack! Either the wrong key was loaded, or the ciphertext has changed since it was created either corrupted in the database or intentionally modified by someone trying to carry out an attack.';
-            } catch (Defuse\Crypto\Exception\BadFormatException $ex) {
+            } catch (CryptoException\BadFormatException $ex) {
                 $err = $ex;
-            } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
+            } catch (CryptoException\EnvironmentIsBrokenException $ex) {
                 $err = $ex;
-            } catch (Defuse\Crypto\Exception\CryptoException $ex) {
+            } catch (CryptoException\CryptoException $ex) {
                 $err = $ex;
-            } catch (Defuse\Crypto\Exception\IOException $ex) {
+            } catch (CryptoException\IOException $ex) {
                 $err = $ex;
             }
             if (empty($err) === false) {

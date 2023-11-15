@@ -3,13 +3,9 @@
 namespace Illuminate\Validation;
 
 use Illuminate\Contracts\Validation\Rule as RuleContract;
-use Illuminate\Contracts\Validation\ValidatorAwareRule;
-use Illuminate\Translation\CreatesPotentiallyTranslatedStrings;
 
-class ClosureValidationRule implements RuleContract, ValidatorAwareRule
+class ClosureValidationRule implements RuleContract
 {
-    use CreatesPotentiallyTranslatedStrings;
-
     /**
      * The callback that validates the attribute.
      *
@@ -25,18 +21,11 @@ class ClosureValidationRule implements RuleContract, ValidatorAwareRule
     public $failed = false;
 
     /**
-     * The validation error messages.
+     * The validation error message.
      *
-     * @var array
+     * @var string|null
      */
-    public $messages = [];
-
-    /**
-     * The current validator.
-     *
-     * @var \Illuminate\Validation\Validator
-     */
-    protected $validator;
+    public $message;
 
     /**
      * Create a new Closure based validation rule.
@@ -60,35 +49,22 @@ class ClosureValidationRule implements RuleContract, ValidatorAwareRule
     {
         $this->failed = false;
 
-        $this->callback->__invoke($attribute, $value, function ($attribute, $message = null) {
+        $this->callback->__invoke($attribute, $value, function ($message) {
             $this->failed = true;
 
-            return $this->pendingPotentiallyTranslatedString($attribute, $message);
+            $this->message = $message;
         });
 
         return ! $this->failed;
     }
 
     /**
-     * Get the validation error messages.
+     * Get the validation error message.
      *
      * @return string
      */
     public function message()
     {
-        return $this->messages;
-    }
-
-    /**
-     * Set the current validator.
-     *
-     * @param  \Illuminate\Validation\Validator  $validator
-     * @return $this
-     */
-    public function setValidator($validator)
-    {
-        $this->validator = $validator;
-
-        return $this;
+        return $this->message;
     }
 }

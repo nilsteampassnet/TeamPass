@@ -25,47 +25,40 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-if (file_exists('../sources/SecureHandler.php')) {
-    include_once '../sources/SecureHandler.php';
-} elseif (file_exists('./sources/SecureHandler.php')) {
-    include_once './sources/SecureHandler.php';
-} else {
-    throw new Exception("Error file '/sources/SecureHandler.php' not exists", 1);
-}
-if (isset($_SESSION) === false) {
-    session_name('teampass_session');
-    session_start();
-}
-if (isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1) {
-    die('Hacking attempt...');
-}
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
+use EZimuel\PHPSecureSession;
+use TeampassClasses\PerformChecks\PerformChecks;
 
-// Load config
-if (file_exists('../includes/config/tp.config.php')) {
-    include_once '../includes/config/tp.config.php';
-} elseif (file_exists('./includes/config/tp.config.php')) {
-    include_once './includes/config/tp.config.php';
-} else {
+// Load functions
+require_once __DIR__.'/sources/main.functions.php';
+
+// init
+loadClasses('DB');
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
+
+// Load config if $SETTINGS not defined
+try {
+    include_once __DIR__.'/includes/config/tp.config.php';
+} catch (Exception $e) {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
+
+
+// Define Timezone
+date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
+
+// Set header properties
+header('Content-type: text/html; charset=utf-8');
+header('Cache-Control: no-cache, no-store, must-revalidate');
+
+// --------------------------------- //
 
 if (
     filter_input(INPUT_POST, 'session', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== null
     && filter_input(INPUT_POST, 'session', FILTER_SANITIZE_FULL_SPECIAL_CHARS) === 'expired'
 ) {
-    //Include files
-    require_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
-    require_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
-    require_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
-    require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
-    // connect to DB
-    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
-    if (defined('DB_PASSWD_CLEAR') === false) {
-        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
-    }
-
-    // Include main functions used by TeamPass
-    require_once 'sources/main.functions.php';
     // Update table by deleting ID
     if (isset($_SESSION['user_id'])) {
         DB::update(
@@ -83,7 +76,6 @@ if (
         logEvents($SETTINGS, 'user_connection', 'disconnect', (string) $_SESSION['user_id'], $_SESSION['login']);
     }
 } else {
-    require_once $SETTINGS['cpassman_dir'] . '/sources/main.queries.php';
     $errorCode = '';
     if (@$_SESSION['error']['code'] === ERR_NOT_ALLOWED) {
         $errorCode = 'ERROR NOT ALLOWED';
@@ -103,7 +95,7 @@ if (
                 <h3><i class="fas fa-warning text-danger"></i> Oops! <?php echo $errorCode; ?>.</h3>
 
                 <p>
-                    For security reason, you have been disconnected. Click to <a href="./includes/core/logout.php?token=<?php echo isset($_SESSION['key']) === true ? $_SESSION['key'] : ''; ?>">log in</a>.
+                    For security reason, you have been disconnected. Click to <a href="./includes/core/logout.php?token=<?php echo $superGlobal->get('key', 'SESSION'); ?>">log in</a>.
                 </p>
 
             </div>

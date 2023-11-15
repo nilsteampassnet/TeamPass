@@ -24,62 +24,79 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-require_once 'SecureHandler.php';
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
+use EZimuel\PHPSecureSession;
+use TeampassClasses\PerformChecks\PerformChecks;
+use TeampassClasses\NestedTree\NestedTree;
+
+// Load functions
+require_once 'main.functions.php';
+
+// init
+loadClasses('DB');
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
 session_name('teampass_session');
 session_start();
-if (! isset($_SESSION['CPM']) || $_SESSION['CPM'] === false || ! isset($_SESSION['key']) || empty($_SESSION['key'])) {
-    die('Hacking attempt...');
-}
 
-// Load config
-if (file_exists('../includes/config/tp.config.php')) {
-    include_once '../includes/config/tp.config.php';
-} elseif (file_exists('./includes/config/tp.config.php')) {
-    include_once './includes/config/tp.config.php';
-} else {
+// Load config if $SETTINGS not defined
+try {
+    include_once __DIR__.'/../includes/config/tp.config.php';
+} catch (Exception $e) {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
 // Do checks
-require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
-require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
-if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === false) {
+// Instantiate the class with posted data
+$checkUserAccess = new PerformChecks(
+    dataSanitizer(
+        [
+            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+        ],
+        [
+            'type' => 'trim|escape',
+        ],
+    ),
+    [
+        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
+        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+    ]
+);
+// Handle the case
+echo $checkUserAccess->caseHandler();
+if (
+    $checkUserAccess->userAccessPage('folders') === false ||
+    $checkUserAccess->checkSession() === false
+) {
     // Not allowed page
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
-    include $SETTINGS['cpassman_dir'].'/error.php';
+    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+    include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
 
-require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user']['user_language'].'.php';
-require_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+// Define Timezone
+date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
+
+// Set header properties
 header('Content-type: text/html; charset=utf-8');
-header('Cache-Control: no-cache, must-revalidate');
-require_once 'main.functions.php';
-// Connect to mysql server
-require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-if (defined('DB_PASSWD_CLEAR') === false) {
-    define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
-}
-DB::$host = DB_HOST;
-DB::$user = DB_USER;
-DB::$password = DB_PASSWD_CLEAR;
-DB::$dbName = DB_NAME;
-DB::$port = DB_PORT;
-DB::$encoding = DB_ENCODING;
-DB::$ssl = DB_SSL;
-DB::$connect_options = DB_CONNECT_OPTIONS;
-// Class loader
-require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
+header('Cache-Control: no-cache, no-store, must-revalidate');
+
+// --------------------------------- //
+// Load tree
+$tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+
 // Ensure Complexity levels are translated
 if (defined('TP_PW_COMPLEXITY') === false) {
     define(
         'TP_PW_COMPLEXITY',
         [
-            TP_PW_STRENGTH_1 => [TP_PW_STRENGTH_1, langHdl('complex_level1'), 'fas fa-thermometer-empty text-danger'],
-            TP_PW_STRENGTH_2 => [TP_PW_STRENGTH_2, langHdl('complex_level2'), 'fas fa-thermometer-quarter text-warning'],
-            TP_PW_STRENGTH_3 => [TP_PW_STRENGTH_3, langHdl('complex_level3'), 'fas fa-thermometer-half text-warning'],
-            TP_PW_STRENGTH_4 => [TP_PW_STRENGTH_4, langHdl('complex_level4'), 'fas fa-thermometer-three-quarters text-success'],
-            TP_PW_STRENGTH_5 => [TP_PW_STRENGTH_5, langHdl('complex_level5'), 'fas fa-thermometer-full text-success'],
+            TP_PW_STRENGTH_1 => [TP_PW_STRENGTH_1, $lang->get('complex_level1'), 'fas fa-thermometer-empty text-danger'],
+            TP_PW_STRENGTH_2 => [TP_PW_STRENGTH_2, $lang->get('complex_level2'), 'fas fa-thermometer-quarter text-warning'],
+            TP_PW_STRENGTH_3 => [TP_PW_STRENGTH_3, $lang->get('complex_level3'), 'fas fa-thermometer-half text-warning'],
+            TP_PW_STRENGTH_4 => [TP_PW_STRENGTH_4, $lang->get('complex_level4'), 'fas fa-thermometer-three-quarters text-success'],
+            TP_PW_STRENGTH_5 => [TP_PW_STRENGTH_5, $lang->get('complex_level5'), 'fas fa-thermometer-full text-success'],
         ]
     );
 }
@@ -107,9 +124,7 @@ if (isset($_GET['search']) === true
 }
 
 //Build tree
-$tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'].'/includes/libraries');
-$tree->register();
-$tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+$tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 $treeDesc = $tree->getDescendants();
 /*
    * Output
@@ -131,7 +146,7 @@ foreach ($treeDesc as $t) {
         // get $t->parent_id
         $data = DB::queryFirstRow('SELECT title FROM '.prefixTable('nested_tree').' WHERE id = %i', $t->parent_id);
         if ($t->nlevel === 1) {
-            $data['title'] = langHdl('root');
+            $data['title'] = $lang->get('root');
         }
 
         // get rights on this folder
@@ -177,7 +192,7 @@ foreach ($treeDesc as $t) {
             ) {
                 $sOutput .= '"<input type=\"checkbox\" class=\"cb_selected_folder\" data-id=\"'.$t->id.'\" id=\"checkbox-'.$t->id.'\" data-row=\"'.$x.'\" />';
                 if ($tree->numDescendants($t->id) > 0) {
-                    $sOutput .= '<i class=\"fa fa-folder-minus fa-sm infotip ml-2 pointer icon-collapse\" data-id=\"'.$t->id.'\" title=\"'.langHdl('edit').'\"></i>';
+                    $sOutput .= '<i class=\"fa fa-folder-minus fa-sm infotip ml-2 pointer icon-collapse\" data-id=\"'.$t->id.'\" title=\"'.$lang->get('edit').'\"></i>';
                 }
 
                 $sOutput .= '"';
@@ -186,7 +201,7 @@ foreach ($treeDesc as $t) {
             }
             $sOutput .= ',';
             //col2
-            $sOutput .= '"<span id=\"folder-'.$t->id.'\" data-id=\"'.$t->id.'\" class=\"infotip edit-text field-title pointer\" data-html=\"true\" title=\"'.langHdl('id').': '.$t->id.'<br>'.langHdl('level').': '.$t->nlevel.'<br>'.langHdl('nb_items').': '.DB::count().'\">'.addslashes(str_replace("'", '&lsquo;', $t->title)).'</span>"';
+            $sOutput .= '"<span id=\"folder-'.$t->id.'\" data-id=\"'.$t->id.'\" class=\"infotip edit-text field-title pointer\" data-html=\"true\" title=\"'.$lang->get('id').': '.$t->id.'<br>'.$lang->get('level').': '.$t->nlevel.'<br>'.$lang->get('nb_items').': '.DB::count().'\">'.addslashes(str_replace("'", '&lsquo;', $t->title)).'</span>"';
             $sOutput .= ',';
             //col3 - PARENT
             $sOutput .= '"<small class=\"text-muted ml-1\">'.$path.'</small>"';

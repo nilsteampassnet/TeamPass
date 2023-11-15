@@ -24,28 +24,53 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
+use TeampassClasses\PerformChecks\PerformChecks;
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
+// Load functions
+require_once __DIR__.'/../sources/main.functions.php';
+
+// init
+loadClasses();
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
+
 if (
     isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
     || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === true
-    || isset($_SESSION['key']) === false || empty($_SESSION['key']) === true
+    || $superGlobal->get('key', 'SESSION') === null
 ) {
     die('Hacking attempt...');
 }
 
-// Load config
-if (file_exists('../includes/config/tp.config.php') === true) {
-    include_once '../includes/config/tp.config.php';
-} elseif (file_exists('./includes/config/tp.config.php') === true) {
-    include_once './includes/config/tp.config.php';
-} else {
-    throw new Exception('Error file "/includes/config/tp.config.php" not exists', 1);
+// Load config if $SETTINGS not defined
+try {
+    include_once __DIR__.'/../includes/config/tp.config.php';
+} catch (Exception $e) {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
-/* do checks */
-require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
-if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === false) {
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
-    //not allowed page
+// Do checks
+$checkUserAccess = new PerformChecks(
+    dataSanitizer(
+        [
+            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+        ],
+        [
+            'type' => 'trim|escape',
+        ],
+    ),
+    [
+        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
+        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+    ]
+);
+// Handle the case
+echo $checkUserAccess->caseHandler();
+if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('roles') === false) {
+    // Not allowed page
+    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -78,7 +103,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
     // Preapre select drop list
     $('#roles-list.select2').select2({
         language: '<?php echo $_SESSION['user_language_code']; ?>',
-        placeholder: '<?php echo langHdl('select_a_role'); ?>',
+        placeholder: '<?php echo $lang->get('select_a_role'); ?>',
         allowClear: true
     });
     $('#roles-list').val('').change();
@@ -114,11 +139,11 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
             $('#role-detail-header').html(
                 $(this).find(':selected').text() +
                 ' <i class="' + $(this).find(':selected').data('complexity-icon') + ' infotip ml-3" ' +
-                'title="<?php echo langHdl('complexity'); ?>: ' +
+                'title="<?php echo $lang->get('complexity'); ?>: ' +
                 $(this).find(':selected').data('complexity-text') + '"></i>' +
                 (parseInt($(this).find(':selected').data('allow-edit-all')) === 1 ?
                     '<i class="ml-3 fas fa-exclamation-triangle text-warning infotip" ' +
-                    'title="<?php echo langHdl('role_can_edit_any_visible_item'); ?>"></i>' :
+                    'title="<?php echo $lang->get('role_can_edit_any_visible_item'); ?>"></i>' :
                     '')
             );
 
@@ -139,17 +164,17 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
 
         // Show spinner
         toastr.remove();
-        toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+        toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
         // Build matrix
         $.post(
             'sources/roles.queries.php', {
                 type: 'build_matrix',
                 role_id: selectedRoleId,
-                key: '<?php echo $_SESSION['key']; ?>'
+                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
             },
             function(data) {
-                data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                 console.log(data);
                 if (data.error === true) {
                     // Show error
@@ -171,25 +196,25 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                         // Access
                         access = '';
                         if (value.access === 'W') {
-                            access = '<i class="fas fa-indent mr-2 text-success infotip" title="<?php echo langHdl('add_allowed'); ?>"></i>' +
-                                '<i class="fas fa-pen mr-2 text-success infotip" title="<?php echo langHdl('edit_allowed'); ?>"></i>' +
-                                '<i class="fas fa-eraser mr-2 text-success infotip" title="<?php echo langHdl('delete_allowed'); ?>"></i>';
+                            access = '<i class="fas fa-indent mr-2 text-success infotip" title="<?php echo $lang->get('add_allowed'); ?>"></i>' +
+                                '<i class="fas fa-pen mr-2 text-success infotip" title="<?php echo $lang->get('edit_allowed'); ?>"></i>' +
+                                '<i class="fas fa-eraser mr-2 text-success infotip" title="<?php echo $lang->get('delete_allowed'); ?>"></i>';
                         } else if (value.access === 'ND') {
-                            access = '<i class="fas fa-indent mr-2 text-success infotip" title="<?php echo langHdl('add_allowed'); ?>"></i>' +
-                                '<i class="fas fa-pen mr-2 text-success infotip" title="<?php echo langHdl('edit_allowed'); ?>"></i>' +
-                                '<i class="fas fa-eraser mr-2 text-danger infotip" title="<?php echo langHdl('delete_not_allowed'); ?>"></i>';
+                            access = '<i class="fas fa-indent mr-2 text-success infotip" title="<?php echo $lang->get('add_allowed'); ?>"></i>' +
+                                '<i class="fas fa-pen mr-2 text-success infotip" title="<?php echo $lang->get('edit_allowed'); ?>"></i>' +
+                                '<i class="fas fa-eraser mr-2 text-danger infotip" title="<?php echo $lang->get('delete_not_allowed'); ?>"></i>';
                         } else if (value.access === 'NE') {
-                            access = '<i class="fas fa-indent mr-2 text-success infotip" title="<?php echo langHdl('add_allowed'); ?>"></i>' +
-                                '<i class="fas fa-pen mr-2 text-danger infotip" title="<?php echo langHdl('edit_not_allowed'); ?>"></i>' +
-                                '<i class="fas fa-eraser mr-2 text-success infotip" title="<?php echo langHdl('delete_allowed'); ?>"></i>';
+                            access = '<i class="fas fa-indent mr-2 text-success infotip" title="<?php echo $lang->get('add_allowed'); ?>"></i>' +
+                                '<i class="fas fa-pen mr-2 text-danger infotip" title="<?php echo $lang->get('edit_not_allowed'); ?>"></i>' +
+                                '<i class="fas fa-eraser mr-2 text-success infotip" title="<?php echo $lang->get('delete_allowed'); ?>"></i>';
                         } else if (value.access === 'NDNE') {
-                            access = '<i class="fas fa-indent mr-2 text-success infotip" title="<?php echo langHdl('add_allowed'); ?>"></i>' +
-                                '<i class="fas fa-pen mr-2 text-danger infotip" title="<?php echo langHdl('edit_not_allowed'); ?>"></i>' +
-                                '<i class="fas fa-eraser mr-2 text-danger infotip" title="<?php echo langHdl('delete_not_allowed'); ?>"></i>';
+                            access = '<i class="fas fa-indent mr-2 text-success infotip" title="<?php echo $lang->get('add_allowed'); ?>"></i>' +
+                                '<i class="fas fa-pen mr-2 text-danger infotip" title="<?php echo $lang->get('edit_not_allowed'); ?>"></i>' +
+                                '<i class="fas fa-eraser mr-2 text-danger infotip" title="<?php echo $lang->get('delete_not_allowed'); ?>"></i>';
                         } else if (value.access === 'R') {
-                            access = '<i class="fas fa-book-reader mr-2 text-warning infotip" title="<?php echo langHdl('read_only'); ?>"></i>';
+                            access = '<i class="fas fa-book-reader mr-2 text-warning infotip" title="<?php echo $lang->get('read_only'); ?>"></i>';
                         } else {
-                            access = '<i class="fas fa-ban mr-2 text-danger infotip" title="<?php echo langHdl('no_access'); ?>"></i>';
+                            access = '<i class="fas fa-ban mr-2 text-danger infotip" title="<?php echo $lang->get('no_access'); ?>"></i>';
                         }
 
                         // Build path
@@ -233,7 +258,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
 
                     // Adapt select
                     $('#folders-depth').val('').change();
-                    $('#folders-depth').append('<option value="all"><?php echo langHdl('all'); ?></option>');
+                    $('#folders-depth').append('<option value="all"><?php echo $lang->get('all'); ?></option>');
                     for (x = 1; x < max_folder_depth; x++) {
                         $('#folders-depth').append('<option value="' + x + '">' + x + '</option>');
                     }
@@ -242,7 +267,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                     // Inform user
                     toastr.remove();
                     toastr.info(
-                        '<?php echo langHdl('done'); ?>',
+                        '<?php echo $lang->get('done'); ?>',
                         '', {
                             timeOut: 1000
                         }
@@ -264,7 +289,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
 
             // Show spinner
             toastr.remove();
-            toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
             // Show selection of folders
             var selected_cb = $(this),
@@ -272,7 +297,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
 
             // change language string
             if ($(this).attr('id') === 'cb-all-selection') {
-                $('#cb-all-selection-lang').html('<?php echo langHdl('unselect_all'); ?>');
+                $('#cb-all-selection-lang').html('<?php echo $lang->get('unselect_all'); ?>');
             }
 
             // Now get subfolders
@@ -280,10 +305,10 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                 'sources/folders.queries.php', {
                     type: 'select_sub_folders',
                     id: id,
-                    key: '<?php echo $_SESSION['key']; ?>'
+                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                 },
                 function(data) {
-                    data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                    data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                     // check/uncheck checkbox
                     if (data.subfolders !== '') {
                         $.each(JSON.parse(data.subfolders), function(i, value) {
@@ -294,7 +319,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
 
                     toastr.remove();
                     toastr.info(
-                        '<?php echo langHdl('done'); ?>',
+                        '<?php echo $lang->get('done'); ?>',
                         '', {
                             timeOut: 1000
                         }
@@ -310,7 +335,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
 
             // Show spinner
             toastr.remove();
-            toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
             // Show selection of folders
             var selected_cb = $(this),
@@ -318,7 +343,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
 
             // change language string
             if ($(this).attr('id') === 'cb-all-selection') {
-                $('#cb-all-selection-lang').html('<?php echo langHdl('select_all'); ?>');
+                $('#cb-all-selection-lang').html('<?php echo $lang->get('select_all'); ?>');
             }
 
             // Now get subfolders
@@ -326,10 +351,10 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                 'sources/folders.queries.php', {
                     type: 'select_sub_folders',
                     id: id,
-                    key: '<?php echo $_SESSION['key']; ?>'
+                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                 },
                 function(data) {
-                    data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                    data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                     // check/uncheck checkbox
                     if (data.subfolders !== '') {
                         $.each(JSON.parse(data.subfolders), function(i, value) {
@@ -340,7 +365,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
 
                     toastr.remove();
                     toastr.info(
-                        '<?php echo langHdl('done'); ?>',
+                        '<?php echo $lang->get('done'); ?>',
                         '', {
                             timeOut: 1000
                         }
@@ -374,37 +399,37 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
             '<tr class="temp-row"><td colspan="' + $(currentRow).children('td').length + '">' +
             '<div class="card card-warning card-outline">' +
             '<div class="card-body">' +
-            '<div class="form-group ml-2 mt-2"><?php echo langHdl('right_types_label'); ?></div>' +
+            '<div class="form-group ml-2 mt-2"><?php echo $lang->get('right_types_label'); ?></div>' +
             '<div class="form-group ml-2">' +
             '<input type="radio" class="form-radio-input form-control ml-1" id="right-write" name="right" data-type="W">' +
-            '<label class="form-radio-label pointer mr-2" for="right-write"><?php echo langHdl('write'); ?></label>' +
+            '<label class="form-radio-label pointer mr-2" for="right-write"><?php echo $lang->get('write'); ?></label>' +
             '<input type="radio" class="form-radio-input form-control ml-1" id="right-read" name="right" data-type="R">' +
-            '<label class="form-radio-label pointer mr-2" for="right-read"><?php echo langHdl('read'); ?></label>' +
+            '<label class="form-radio-label pointer mr-2" for="right-read"><?php echo $lang->get('read'); ?></label>' +
             '<input type="radio" class="form-radio-input form-control ml-1" id="right-noaccess" name="right" data-type="">' +
-            '<label class="form-radio-label pointer" for="right-noaccess"><?php echo langHdl('no_access'); ?></label>' +
+            '<label class="form-radio-label pointer" for="right-noaccess"><?php echo $lang->get('no_access'); ?></label>' +
             '</div>' +
             '<div class="form-group ml-2" id="folder-rights-tuned">' +
             '<div class="form-check">' +
             '<input type="checkbox" class="form-check-input form-control cb-right" id="right-no-delete">' +
-            '<label class="form-check-label pointer ml-2" for="right-no-delete"><?php echo langHdl('role_cannot_delete_item'); ?></label>' +
+            '<label class="form-check-label pointer ml-2" for="right-no-delete"><?php echo $lang->get('role_cannot_delete_item'); ?></label>' +
             '</div>' +
             '<div class="form-check">' +
             '<input type="checkbox" class="form-check-input form-control cb-right" id="right-no-edit">' +
-            '<label class="form-check-label pointer ml-2" for="right-no-edit"><?php echo langHdl('role_cannot_edit_item'); ?></label>' +
+            '<label class="form-check-label pointer ml-2" for="right-no-edit"><?php echo $lang->get('role_cannot_edit_item'); ?></label>' +
             '</div>' +
             '</div>' +
             '<div class="callout callout-danger">' +
             '<div class="form-group mt-2">' +
             '<input type="checkbox" class="form-check-input form-item-control" id="propagate-rights-to-descendants">' +
             '<label class="form-check-label ml-2" for="propagate-rights-to-descendants">' +
-            '<?php echo langHdl('propagate_rights_to_descendants'); ?>' +
+            '<?php echo $lang->get('propagate_rights_to_descendants'); ?>' +
             '</label>' +
             '</div>' +
             '</div>' +
             '</div>' +
             '<div class="card-footer">' +
-            '<button type="button" class="btn btn-warning tp-action" data-action="submit" data-id="' + currentFolderEdited + '"><?php echo langHdl('submit'); ?></button>' +
-            '<button type="button" class="btn btn-default float-right tp-action" data-action="cancel"><?php echo langHdl('cancel'); ?></button>' +
+            '<button type="button" class="btn btn-warning tp-action" data-action="submit" data-id="' + currentFolderEdited + '"><?php echo $lang->get('submit'); ?></button>' +
+            '<button type="button" class="btn btn-default float-right tp-action" data-action="cancel"><?php echo $lang->get('cancel'); ?></button>' +
             '</div>' +
             '</div>' +
             '</td></tr>'
@@ -472,7 +497,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
 
             // Show spinner
             toastr.remove();
-            toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
             // Sanitize value
             value = fieldDomPurifierWithWarning('#form-role-label');
@@ -496,11 +521,11 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
             $.post(
                 'sources/roles.queries.php', {
                     type: 'change_role_definition',
-                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                    key: '<?php echo $_SESSION['key']; ?>'
+                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                 },
                 function(data) { //decrypt data
-                    data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');                    
+                    data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>');                    
                     console.log('DID CHANGES')
                     console.log(data);
 
@@ -520,11 +545,11 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                             $('#role-detail-header').html(
                                 $('#form-role-label').val() +
                                 '<i class="' + data.icon + ' infotip ml-3" ' +
-                                'title="<?php echo langHdl('complexity'); ?>: ' +
+                                'title="<?php echo $lang->get('complexity'); ?>: ' +
                                 $('#form-complexity-list').find(':selected').text() + '"></i>' +
                                 (parseInt(data.allow_pw_change) === 1 ?
                                     '<i class="ml-3 fas fa-exclamation-triangle text-warning infotip" ' +
-                                    'title="<?php echo langHdl('role_can_edit_any_visible_item'); ?>"></i>' :
+                                    'title="<?php echo $lang->get('role_can_edit_any_visible_item'); ?>"></i>' :
                                     '')
                             );
                             $('.infotip').tooltip();
@@ -557,7 +582,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                         // OK
                         toastr.remove();
                         toastr.info(
-                            '<?php echo langHdl('done'); ?>',
+                            '<?php echo $lang->get('done'); ?>',
                             '', {
                                 timeOut: 1000
                             }
@@ -595,7 +620,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
         } else if ($(this).data('action') === 'delete' && $('#button-delete').hasClass('disabled') === false) {
             // SHOW ROLE DELETION FORM
             if ($('#card-role-details').hasClass('hidden') === false) {
-                $('#span-role-delete').html('- <?php echo langHdl('role'); ?> <b>' + selectedFolderText + '</b>');
+                $('#span-role-delete').html('- <?php echo $lang->get('role'); ?> <b>' + selectedFolderText + '</b>');
 
                 $('#card-role-deletion').removeClass('hidden');
                 $('#card-role-definition, #card-role-details, #card-role-selection').addClass('hidden');
@@ -605,7 +630,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
             // SHOW LDAP SYNC FORM
             console.log('LDAP SYNC');
             if ($('#card-roles-ldap-sync').hasClass('hidden') === true) {
-                //$('#span-role-delete').html('- <?php echo langHdl('role'); ?> <b>' + selectedFolderText + '</b>');
+                //$('#span-role-delete').html('- <?php echo $lang->get('role'); ?> <b>' + selectedFolderText + '</b>');
 
                 $('#card-roles-ldap-sync').removeClass('hidden');
                 $('#card-role-definition, #card-role-details, #card-role-selection').addClass('hidden');
@@ -643,7 +668,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
 
             // Show spinner
             toastr.remove();
-            toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
             // Get list of selected folders
             var selectedFolders = [];
@@ -682,11 +707,11 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
             $.post(
                 'sources/roles.queries.php', {
                     type: 'change_access_right_on_folder',
-                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                    key: '<?php echo $_SESSION['key']; ?>'
+                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                 },
                 function(data) { //decrypt data
-                    data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                    data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
 
                     if (data.error === true) {
                         // ERROR
@@ -704,7 +729,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                         // OK
                         toastr.remove();
                         toastr.info(
-                            '<?php echo langHdl('done'); ?>',
+                            '<?php echo $lang->get('done'); ?>',
                             '', {
                                 timeOut: 1000
                             }
@@ -721,7 +746,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
 
             // Show spinner
             toastr.remove();
-            toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
             // Prepare data
             var data = {
@@ -732,12 +757,12 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
             $.post(
                 'sources/roles.queries.php', {
                     type: 'delete_role',
-                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                    key: '<?php echo $_SESSION['key']; ?>'
+                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                 },
                 function(data) {
                     //decrypt data
-                    data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                    data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
 
                     if (data.error === true) {
                         // ERROR
@@ -756,7 +781,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                         selectedOption.remove();
                         $("#roles-list").select2({
                             language: '<?php echo $_SESSION['user_language_code']; ?>',
-                            placeholder: '<?php echo langHdl('select_a_role'); ?>',
+                            placeholder: '<?php echo $lang->get('select_a_role'); ?>',
                             allowClear: true
                         });
 
@@ -768,7 +793,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                         // OK
                         toastr.remove();
                         toastr.info(
-                            '<?php echo langHdl('done'); ?>',
+                            '<?php echo $lang->get('done'); ?>',
                             '', {
                                 timeOut: 1000
                             }
@@ -789,7 +814,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
 
             // Show spinner
             toastr.remove();
-            toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
             // Prepare data
             var data = {
@@ -803,12 +828,12 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
             $.post(
                 'sources/roles.queries.php', {
                     type: 'map_role_with_adgroup',
-                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                    key: '<?php echo $_SESSION['key']; ?>'
+                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                 },
                 function(data) {
                     //decrypt data
-                    data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                    data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
 
                     if (data.error === true) {
                         // ERROR
@@ -830,7 +855,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                         // OK
                         toastr.remove();
                         toastr.info(
-                            '<?php echo langHdl('done'); ?>',
+                            '<?php echo $lang->get('done'); ?>',
                             '', {
                                 timeOut: 1000
                             }
@@ -852,7 +877,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
     function refreshLdapGroups() {
         // FIND ALL USERS IN LDAP
         //toastr.remove();
-        toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i><span class="close-toastr-progress"></span>');
+        toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i><span class="close-toastr-progress"></span>');
 
         $('#row-ldap-body')
             .addClass('overlay')
@@ -861,11 +886,11 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
         $.post(
             "sources/roles.queries.php", {
                 type: "get_list_of_groups_in_ldap",
-                key: "<?php echo $_SESSION['key']; ?>"
+                key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
             },
             function(data) {
                 //decrypt data
-                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                 console.log(data)
 
                 if (data.error === true) {
@@ -873,7 +898,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                     //toastr.remove();
                     toastr.error(
                         data.message,
-                        '<?php echo langHdl('caution'); ?>', {
+                        '<?php echo $lang->get('caution'); ?>', {
                             timeOut: 5000,
                             progressBar: true
                         }
@@ -891,7 +916,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                             '<td>' + ad_group.ad_group_title + '</td>' +
                             '<td><i class="fa-solid fa-arrow-right-long"></i></td>' +
                             '<td class="pointer change_adgroup_mapping" data-id="'+ad_group.ad_group_id+'">' + 
-                                (ad_group.role_title === "" ? '<i class="fa-solid fa-xmark text-danger infotip" title="<?php echo langHdl('none'); ?>"></i>' : ad_group.role_title) + 
+                                (ad_group.role_title === "" ? '<i class="fa-solid fa-xmark text-danger infotip" title="<?php echo $lang->get('none'); ?>"></i>' : ad_group.role_title) + 
                             '</td>' +
                             '</tr>';
                     });
@@ -901,7 +926,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                     $('.infotip').tooltip('update');
 
                     // prepare select
-                    rolesSelectOptions = '<option value="-1"><?php echo langHdl('none'); ?></option>';;
+                    rolesSelectOptions = '<option value="-1"><?php echo $lang->get('none'); ?></option>';;
                     $.each(data.teampass_groups, function(i, role) {
                         rolesSelectOptions += '<option value="' + role.id + '">' + role.title + '</option>';
                     });
@@ -915,7 +940,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
 
                     // Inform user
                     toastr.success(
-                        '<?php echo langHdl('done'); ?>',
+                        '<?php echo $lang->get('done'); ?>',
                         '', {
                             timeOut: 1000
                         }
@@ -942,14 +967,14 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
             '<tr class="temp-row"><td colspan="' + $(currentRow).children('td').length + '">' +
             '<div class="card card-warning card-outline">' +
             '<div class="card-body">' +
-            '<div class="form-group ml-2 mt-2"><?php echo langHdl('select_adgroup_mapping'); ?></div>' +
+            '<div class="form-group ml-2 mt-2"><?php echo $lang->get('select_adgroup_mapping'); ?></div>' +
             '<div class="form-group ml-2">' +
             '<select class="select-role form-control form-item-control">' +
                 store.get('teampassApplication').rolesSelectOptions + '</select>' +
             '</div>' +
             '<div class="card-footer">' +
-            '<button type="button" class="btn btn-warning tp-action" data-action="do-adgroup-role-mapping" data-id="' + groupId + '"><?php echo langHdl('submit'); ?></button>' +
-            '<button type="button" class="btn btn-default float-right tp-action" data-action="cancel"><?php echo langHdl('cancel'); ?></button>' +
+            '<button type="button" class="btn btn-warning tp-action" data-action="do-adgroup-role-mapping" data-id="' + groupId + '"><?php echo $lang->get('submit'); ?></button>' +
+            '<button type="button" class="btn btn-default float-right tp-action" data-action="cancel"><?php echo $lang->get('cancel'); ?></button>' +
             '</div>' +
             '</div>' +
             '</td></tr>'
@@ -1005,17 +1030,17 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
         } else {
             // Show spinner
             toastr.remove();
-            toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
             // Load the rights for this folder
             $.post(
                 'sources/roles.queries.php', {
                     type: 'build_matrix',
                     role_id: $('#folders-compare').val(),
-                    key: '<?php echo $_SESSION['key']; ?>'
+                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                 },
                 function(data) {
-                    data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                    data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                     if (data.error !== false) {
                         // Show error
                         toastr.remove();
@@ -1040,7 +1065,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                         // Inform user
                         toastr.remove();
                         toastr.info(
-                            '<?php echo langHdl('done'); ?>',
+                            '<?php echo $lang->get('done'); ?>',
                             '', {
                                 timeOut: 1000
                             }
@@ -1059,25 +1084,25 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                 // Access
                 access = '';
                 if (value.access === 'W') {
-                    access = '<i class="fas fa-indent mr-2 text-success infotip" title="<?php echo langHdl('add_allowed'); ?>"></i>' +
-                        '<i class="fas fa-pen mr-2 text-success infotip" title="<?php echo langHdl('edit_allowed'); ?>"></i>' +
-                        '<i class="fas fa-eraser mr-2 text-success infotip" title="<?php echo langHdl('delete_allowed'); ?>"></i>';
+                    access = '<i class="fas fa-indent mr-2 text-success infotip" title="<?php echo $lang->get('add_allowed'); ?>"></i>' +
+                        '<i class="fas fa-pen mr-2 text-success infotip" title="<?php echo $lang->get('edit_allowed'); ?>"></i>' +
+                        '<i class="fas fa-eraser mr-2 text-success infotip" title="<?php echo $lang->get('delete_allowed'); ?>"></i>';
                 } else if (value.access === 'ND') {
-                    access = '<i class="fas fa-indent mr-2 text-success infotip" title="<?php echo langHdl('add_allowed'); ?>"></i>' +
-                        '<i class="fas fa-pen mr-2 text-success infotip" title="<?php echo langHdl('edit_allowed'); ?>"></i>' +
-                        '<i class="fas fa-eraser mr-2 text-danger infotip" title="<?php echo langHdl('delete_not_allowed'); ?>"></i>';
+                    access = '<i class="fas fa-indent mr-2 text-success infotip" title="<?php echo $lang->get('add_allowed'); ?>"></i>' +
+                        '<i class="fas fa-pen mr-2 text-success infotip" title="<?php echo $lang->get('edit_allowed'); ?>"></i>' +
+                        '<i class="fas fa-eraser mr-2 text-danger infotip" title="<?php echo $lang->get('delete_not_allowed'); ?>"></i>';
                 } else if (value.access === 'NE') {
-                    access = '<i class="fas fa-indent mr-2 text-success infotip" title="<?php echo langHdl('add_allowed'); ?>"></i>' +
-                        '<i class="fas fa-pen mr-2 text-danger infotip" title="<?php echo langHdl('edit_not_allowed'); ?>"></i>' +
-                        '<i class="fas fa-eraser mr-2 text-success infotip" title="<?php echo langHdl('delete_allowed'); ?>"></i>';
+                    access = '<i class="fas fa-indent mr-2 text-success infotip" title="<?php echo $lang->get('add_allowed'); ?>"></i>' +
+                        '<i class="fas fa-pen mr-2 text-danger infotip" title="<?php echo $lang->get('edit_not_allowed'); ?>"></i>' +
+                        '<i class="fas fa-eraser mr-2 text-success infotip" title="<?php echo $lang->get('delete_allowed'); ?>"></i>';
                 } else if (value.access === 'NDNE') {
-                    access = '<i class="fas fa-indent mr-2 text-success infotip" title="<?php echo langHdl('add_allowed'); ?>"></i>' +
-                        '<i class="fas fa-pen mr-2 text-danger infotip" title="<?php echo langHdl('edit_not_allowed'); ?>"></i>' +
-                        '<i class="fas fa-eraser mr-2 text-danger infotip" title="<?php echo langHdl('delete_not_allowed'); ?>"></i>';
+                    access = '<i class="fas fa-indent mr-2 text-success infotip" title="<?php echo $lang->get('add_allowed'); ?>"></i>' +
+                        '<i class="fas fa-pen mr-2 text-danger infotip" title="<?php echo $lang->get('edit_not_allowed'); ?>"></i>' +
+                        '<i class="fas fa-eraser mr-2 text-danger infotip" title="<?php echo $lang->get('delete_not_allowed'); ?>"></i>';
                 } else if (value.access === 'R') {
-                    access = '<i class="fas fa-book-reader mr-2 text-warning infotip" title="<?php echo langHdl('read_only'); ?>"></i>';
+                    access = '<i class="fas fa-book-reader mr-2 text-warning infotip" title="<?php echo $lang->get('read_only'); ?>"></i>';
                 } else {
-                    access = '<i class="fas fa-ban mr-2 text-danger infotip" title="<?php echo langHdl('no_access'); ?>"></i>';
+                    access = '<i class="fas fa-ban mr-2 text-danger infotip" title="<?php echo $lang->get('no_access'); ?>"></i>';
                 }
                 row.find('td:last-child').html(access).removeClass('hidden');
             }

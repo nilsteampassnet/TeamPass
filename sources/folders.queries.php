@@ -19,58 +19,70 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
+use TeampassClasses\NestedTree\NestedTree;
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
+use EZimuel\PHPSecureSession;
+use TeampassClasses\PerformChecks\PerformChecks;
 
-require_once 'SecureHandler.php';
+// Load functions
+require_once 'main.functions.php';
+
+// init
+loadClasses('DB');
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
 session_name('teampass_session');
 session_start();
-if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] === false || !isset($_SESSION['key']) || empty($_SESSION['key'])) {
-    die('Hacking attempt...');
-}
 
-// Load config
-if (file_exists('../includes/config/tp.config.php')) {
-    include_once '../includes/config/tp.config.php';
-} elseif (file_exists('./includes/config/tp.config.php')) {
-    include_once './includes/config/tp.config.php';
-} else {
+// Load config if $SETTINGS not defined
+try {
+    include_once __DIR__.'/../includes/config/tp.config.php';
+} catch (Exception $e) {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
 // Do checks
-require_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
-require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
-if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === false) {
+// Instantiate the class with posted data
+$checkUserAccess = new PerformChecks(
+    dataSanitizer(
+        [
+            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+        ],
+        [
+            'type' => 'trim|escape',
+        ],
+    ),
+    [
+        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
+        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+    ]
+);
+// Handle the case
+echo $checkUserAccess->caseHandler();
+if (
+    $checkUserAccess->userAccessPage('folders') === false ||
+    $checkUserAccess->checkSession() === false
+) {
     // Not allowed page
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
+    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
     include $SETTINGS['cpassman_dir'] . '/error.php';
-    exit();
+    exit;
 }
 
-/*
- * Define Timezone
-**/
-if (isset($SETTINGS['timezone']) === true) {
-    date_default_timezone_set($SETTINGS['timezone']);
-} else {
-    date_default_timezone_set('UTC');
-}
+// Define Timezone
+date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
 
-require_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
+// Set header properties
 header('Content-type: text/html; charset=utf-8');
-require_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user']['user_language'] . '.php';
-require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
-require_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
+header('Cache-Control: no-cache, no-store, must-revalidate');
 
-// Connect to mysql server
-require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
-if (defined('DB_PASSWD_CLEAR') === false) {
-    define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
-}
+// --------------------------------- //
 
-//Load Tree
-$tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
-$tree->register();
-$tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+
+// Load tree
+$tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
 // Prepare post variables
 $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
@@ -82,11 +94,11 @@ if (defined('TP_PW_COMPLEXITY') === false) {
     define(
         'TP_PW_COMPLEXITY',
         array(
-            TP_PW_STRENGTH_1 => array(TP_PW_STRENGTH_1, langHdl('complex_level1'), 'fas fa-thermometer-empty text-danger'),
-            TP_PW_STRENGTH_2 => array(TP_PW_STRENGTH_2, langHdl('complex_level2'), 'fas fa-thermometer-quarter text-warning'),
-            TP_PW_STRENGTH_3 => array(TP_PW_STRENGTH_3, langHdl('complex_level3'), 'fas fa-thermometer-half text-warning'),
-            TP_PW_STRENGTH_4 => array(TP_PW_STRENGTH_4, langHdl('complex_level4'), 'fas fa-thermometer-three-quarters text-success'),
-            TP_PW_STRENGTH_5 => array(TP_PW_STRENGTH_5, langHdl('complex_level5'), 'fas fa-thermometer-full text-success'),
+            TP_PW_STRENGTH_1 => array(TP_PW_STRENGTH_1, $lang->get('complex_level1'), 'fas fa-thermometer-empty text-danger'),
+            TP_PW_STRENGTH_2 => array(TP_PW_STRENGTH_2, $lang->get('complex_level2'), 'fas fa-thermometer-quarter text-warning'),
+            TP_PW_STRENGTH_3 => array(TP_PW_STRENGTH_3, $lang->get('complex_level3'), 'fas fa-thermometer-half text-warning'),
+            TP_PW_STRENGTH_4 => array(TP_PW_STRENGTH_4, $lang->get('complex_level4'), 'fas fa-thermometer-three-quarters text-success'),
+            TP_PW_STRENGTH_5 => array(TP_PW_STRENGTH_5, $lang->get('complex_level5'), 'fas fa-thermometer-full text-success'),
         )
     );
 }
@@ -98,11 +110,11 @@ if (null !== $post_type) {
          */
         case 'build_matrix':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -111,7 +123,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_not_allowed_to'),
+                        'message' => $lang->get('error_not_allowed_to'),
                     ),
                     'encode'
                 );
@@ -132,7 +144,7 @@ if (null !== $post_type) {
                     // get $t->parent_id
                     $data = DB::queryFirstRow('SELECT title FROM ' . prefixTable('nested_tree') . ' WHERE id = %i', $t->parent_id);
                     if ($t->nlevel == 1) {
-                        $data['title'] = langHdl('root');
+                        $data['title'] = $lang->get('root');
                     }
 
                     // get rights on this folder
@@ -204,11 +216,11 @@ if (null !== $post_type) {
 
             // Send the complexity levels
             $complexity = array(
-                array('value' => TP_PW_STRENGTH_1, 'text' => langHdl('complex_level1')),
-                array('value' => TP_PW_STRENGTH_2, 'text' => langHdl('complex_level2')),
-                array('value' => TP_PW_STRENGTH_3, 'text' => langHdl('complex_level3')),
-                array('value' => TP_PW_STRENGTH_4, 'text' => langHdl('complex_level4')),
-                array('value' => TP_PW_STRENGTH_5, 'text' => langHdl('complex_level5')),
+                array('value' => TP_PW_STRENGTH_1, 'text' => $lang->get('complex_level1')),
+                array('value' => TP_PW_STRENGTH_2, 'text' => $lang->get('complex_level2')),
+                array('value' => TP_PW_STRENGTH_3, 'text' => $lang->get('complex_level3')),
+                array('value' => TP_PW_STRENGTH_4, 'text' => $lang->get('complex_level4')),
+                array('value' => TP_PW_STRENGTH_5, 'text' => $lang->get('complex_level5')),
             );
 
             echo prepareExchangedData(
@@ -228,11 +240,11 @@ if (null !== $post_type) {
         // CASE where selecting/deselecting sub-folders
         case 'select_sub_folders':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -241,7 +253,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_not_allowed_to'),
+                        'message' => $lang->get('error_not_allowed_to'),
                     ),
                     'encode'
                 );
@@ -252,7 +264,6 @@ if (null !== $post_type) {
 
             // get sub folders
             $subfolders = array();
-            $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
             // Get through each subfolder
             $folders = $tree->getDescendants($post_id, false);
@@ -273,11 +284,11 @@ if (null !== $post_type) {
             //CASE where UPDATING a new group
         case 'update_folder':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -286,7 +297,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_not_allowed_to'),
+                        'message' => $lang->get('error_not_allowed_to'),
                     ),
                     'encode'
                 );
@@ -319,7 +330,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_only_numbers_in_folder_name'),
+                        'message' => $lang->get('error_only_numbers_in_folder_name'),
                     ),
                     'encode'
                 );
@@ -347,7 +358,7 @@ if (null !== $post_type) {
                     echo prepareExchangedData(
                         array(
                             'error' => true,
-                            'message' => langHdl('error_group_exist'),
+                            'message' => $lang->get('error_group_exist'),
                         ),
                         'encode'
                     );
@@ -404,7 +415,7 @@ if (null !== $post_type) {
                         echo prepareExchangedData(
                             array(
                                 'error' => true,
-                                'message' => langHdl('error_folder_complexity_lower_than_top_folder')
+                                'message' => $lang->get('error_folder_complexity_lower_than_top_folder')
                                     . ' [<b>' . TP_PW_COMPLEXITY[$data['valeur']][1] . '</b>]',
                             ),
                             'encode'
@@ -468,7 +479,6 @@ if (null !== $post_type) {
                 [$dataFolder['id']]
             );
 
-            $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
             $tree->rebuild();
 
             echo prepareExchangedData(
@@ -485,11 +495,11 @@ if (null !== $post_type) {
         //CASE where ADDING a new group
         case 'add_folder':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -498,7 +508,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_not_allowed_to'),
+                        'message' => $lang->get('error_not_allowed_to'),
                     ),
                     'encode'
                 );
@@ -531,7 +541,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_only_numbers_in_folder_name'),
+                        'message' => $lang->get('error_only_numbers_in_folder_name'),
                     ),
                     'encode'
                 );
@@ -545,7 +555,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_not_allowed_to'),
+                        'message' => $lang->get('error_not_allowed_to'),
                     ),
                     'encode'
                 );
@@ -568,7 +578,7 @@ if (null !== $post_type) {
                     echo prepareExchangedData(
                         array(
                             'error' => true,
-                            'message' => langHdl('error_group_exist'),
+                            'message' => $lang->get('error_group_exist'),
                         ),
                         'encode'
                     );
@@ -617,7 +627,7 @@ if (null !== $post_type) {
                         echo prepareExchangedData(
                             array(
                                 'error' => true,
-                                'message' => langHdl('error_folder_complexity_lower_than_top_folder')
+                                'message' => $lang->get('error_folder_complexity_lower_than_top_folder')
                                     . ' [<b>' . TP_PW_COMPLEXITY[$data['valeur']][1] . '</b>]',
                             ),
                             'encode'
@@ -685,7 +695,6 @@ if (null !== $post_type) {
                 }
 
                 // rebuild tree
-                $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
                 $tree->rebuild();
 
 
@@ -826,7 +835,7 @@ if (null !== $post_type) {
 
             } else {
                 $error = true;
-                $errorMessage = langHdl('error_not_allowed_to');
+                $errorMessage = $lang->get('error_not_allowed_to');
             }
 
             echo prepareExchangedData(
@@ -843,11 +852,11 @@ if (null !== $post_type) {
         // CASE where DELETING multiple groups
         case 'delete_folders':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -856,7 +865,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_not_allowed_to'),
+                        'message' => $lang->get('error_not_allowed_to'),
                     ),
                     'encode'
                 );
@@ -876,7 +885,6 @@ if (null !== $post_type) {
             );
 
             //decrypt and retreive data in JSON format
-            $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
             $folderForDel = array();
 
             foreach ($post_folders as $folderId) {
@@ -930,11 +938,7 @@ if (null !== $post_type) {
                                 }
 
                                 //Update CACHE table
-                                updateCacheTable(
-                                    'delete_value',
-                                    $SETTINGS,
-                                    (int) $item['id']
-                                );
+                                updateCacheTable('delete_value',(int) $item['id']);
 
                                 // --> build json tree  
                                 // update cache_tree
@@ -986,12 +990,11 @@ if (null !== $post_type) {
             }
 
             //rebuild tree
-            $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
             $tree->rebuild();
 
             // reload cache table
             include_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
-            updateCacheTable('reload', $SETTINGS, null);
+            updateCacheTable('reload', null);
 
             // Update timestamp
             DB::update(
@@ -1016,11 +1019,11 @@ if (null !== $post_type) {
 
         case 'copy_folder':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -1029,7 +1032,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_not_allowed_to'),
+                        'message' => $lang->get('error_not_allowed_to'),
                     ),
                     'encode'
                 );
@@ -1047,18 +1050,13 @@ if (null !== $post_type) {
             $post_target_folder_id = filter_var($dataReceived['target_folder_id'], FILTER_SANITIZE_NUMBER_INT);
             $post_folder_label = filter_var($dataReceived['folder_label'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
-            //Load Tree
-            $tree = new SplClassLoader('Tree\NestedTree', './includes/libraries');
-            $tree->register();
-            $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
-
             // Test if target folder is Read-only
             // If it is then stop
             if (in_array($post_target_folder_id, $_SESSION['read_only_folders']) === true) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_not_allowed_to'),
+                        'message' => $lang->get('error_not_allowed_to'),
                     ),
                     'encode'
                 );
@@ -1258,7 +1256,7 @@ if (null !== $post_type) {
                             echo prepareExchangedData(
                                 array(
                                     'error' => true,
-                                    'message' => langHdl('error_not_allowed_to'),
+                                    'message' => $lang->get('error_not_allowed_to'),
                                 ),
                                 'encode'
                             );
@@ -1394,7 +1392,7 @@ if (null !== $post_type) {
                                     echo prepareExchangedData(
                                         array(
                                             'error' => true,
-                                            'message' => langHdl('error_cannot_open_file'),
+                                            'message' => $lang->get('error_cannot_open_file'),
                                         ),
                                         'encode'
                                     );
@@ -1460,12 +1458,11 @@ if (null !== $post_type) {
             }
 
             // rebuild tree
-            $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
             $tree->rebuild();
 
             // reload cache table
             include_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
-            updateCacheTable('reload', $SETTINGS, NULL);
+            updateCacheTable('reload', NULL);
 
             // Update timestamp
             DB::update(
@@ -1493,11 +1490,11 @@ if (null !== $post_type) {
         // CASE where selecting/deselecting sub-folders
         case 'refresh_folders_list':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -1506,7 +1503,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_not_allowed_to'),
+                        'message' => $lang->get('error_not_allowed_to'),
                     ),
                     'encode'
                 );
@@ -1520,7 +1517,7 @@ if (null !== $post_type) {
                     $subfolders,
                     array(
                         'id' => 0,
-                        'label' => langHdl('root'),
+                        'label' => $lang->get('root'),
                         'level' => 0,
                         'path' => ''
                     )
@@ -1528,7 +1525,6 @@ if (null !== $post_type) {
             }
 
             // get sub folders
-            $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
             // Get through each subfolder
             $folders = $tree->getDescendants(0, false);

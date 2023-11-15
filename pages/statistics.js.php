@@ -24,28 +24,53 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
+use TeampassClasses\PerformChecks\PerformChecks;
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
+// Load functions
+require_once __DIR__.'/../sources/main.functions.php';
+
+// init
+loadClasses();
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
+
 if (
     isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
     || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === true
-    || isset($_SESSION['key']) === false || empty($_SESSION['key']) === true
+    || $superGlobal->get('key', 'SESSION') === null
 ) {
     die('Hacking attempt...');
 }
 
-// Load config
-if (file_exists('../includes/config/tp.config.php') === true) {
-    include_once '../includes/config/tp.config.php';
-} elseif (file_exists('./includes/config/tp.config.php') === true) {
-    include_once './includes/config/tp.config.php';
-} else {
-    throw new Exception('Error file "/includes/config/tp.config.php" not exists', 1);
+// Load config if $SETTINGS not defined
+try {
+    include_once __DIR__.'/../includes/config/tp.config.php';
+} catch (Exception $e) {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
-/* do checks */
-require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
-if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'statistics', $SETTINGS) === false) {
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
-    //not allowed page
+// Do checks
+$checkUserAccess = new PerformChecks(
+    dataSanitizer(
+        [
+            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+        ],
+        [
+            'type' => 'trim|escape',
+        ],
+    ),
+    [
+        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
+        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+    ]
+);
+// Handle the case
+echo $checkUserAccess->caseHandler();
+if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('statistics') === false) {
+    // Not allowed page
+    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -65,7 +90,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'statistics', $SETTINGS) =
     $(document).on('click', '#statistics-save', function() {
         // SHow user
         toastr.remove();
-        toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+        toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
         // Send query
         saveOptions();
@@ -92,12 +117,12 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'statistics', $SETTINGS) =
         $.post(
             "sources/admin.queries.php", {
                 type: "get_values_for_statistics",
-                key: '<?php echo $_SESSION['key']; ?>'
+                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
             },
             function(data) {
                 //decrypt data
                 try {
-                    data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                    data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                 } catch (e) {
                     // error
                     $("#message_box").html("An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />" + data).show().fadeOut(4000);
@@ -167,13 +192,13 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'statistics', $SETTINGS) =
                 type: "save_sending_statistics",
                 list: list,
                 status: $("#send_stats_input").val(),
-                key: "<?php echo $_SESSION['key']; ?>"
+                key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
             },
             function(data) {
                 if (data[0].error === false) {
                     toastr.remove();
                     toastr.success(
-                        '<?php echo langHdl('done'); ?>',
+                        '<?php echo $lang->get('done'); ?>',
                         '', {
                             timeOut: 1000
                         }
@@ -185,7 +210,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'statistics', $SETTINGS) =
                         $.post(
                             "sources/main.queries.php", {
                                 type: "sending_statistics",
-                                key: "<?php echo $_SESSION['key']; ?>"
+                                key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
                             }
                         );
                     }

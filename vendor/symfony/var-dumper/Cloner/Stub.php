@@ -23,7 +23,6 @@ class Stub
     public const TYPE_ARRAY = 3;
     public const TYPE_OBJECT = 4;
     public const TYPE_RESOURCE = 5;
-    public const TYPE_SCALAR = 6;
 
     public const STRING_BINARY = 1;
     public const STRING_UTF8 = 2;
@@ -40,7 +39,7 @@ class Stub
     public $position = 0;
     public $attr = [];
 
-    private static array $defaultProperties = [];
+    private static $defaultProperties = [];
 
     /**
      * @internal

@@ -25,6 +25,56 @@ declare(strict_types=1);
   * @see       https://www.teampass.net
   */
 
+use TeampassClasses\PerformChecks\PerformChecks;
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
+// Load functions
+require_once __DIR__.'/../sources/main.functions.php';
+
+// init
+loadClasses();
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
+
+if (
+    isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
+    || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === true
+    || $superGlobal->get('key', 'SESSION') === null
+) {
+    die('Hacking attempt...');
+}
+
+// Load config if $SETTINGS not defined
+try {
+    include_once __DIR__.'/../includes/config/tp.config.php';
+} catch (Exception $e) {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
+
+// Do checks
+$checkUserAccess = new PerformChecks(
+    dataSanitizer(
+        [
+            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+        ],
+        [
+            'type' => 'trim|escape',
+        ],
+    ),
+    [
+        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
+        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+    ]
+);
+// Handle the case
+echo $checkUserAccess->caseHandler();
+if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('search') === false) {
+    // Not allowed page
+    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+    include $SETTINGS['cpassman_dir'] . '/error.php';
+    exit;
+}
 $var = [];
 $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-asterisk mr-2"></i><i class="fas fa-asterisk mr-2"></i><i class="fas fa-asterisk mr-2"></i><i class="fas fa-asterisk"></i>';
 
@@ -174,20 +224,20 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         $.post(
             'sources/items.queries.php', {
                 type: 'show_details_item',
-                data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
-                key: '<?php echo $_SESSION['key']; ?>'
+                data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'),
+                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
             },
             function(data) {
                 //decrypt data
-                data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                 console.info(data);
                 var return_html = '';
                 if (data.show_detail_option !== 0 || data.show_details === 0) {
                     //item expired
-                    return_html = '<?php echo langHdl('not_allowed_to_see_pw_is_expired'); ?>';
+                    return_html = '<?php echo $lang->get('not_allowed_to_see_pw_is_expired'); ?>';
                 } else if (data.show_details === '0') {
                     //Admin cannot see Item
-                    return_html = '<?php echo langHdl('not_allowed_to_see_pw'); ?>';
+                    return_html = '<?php echo $lang->get('not_allowed_to_see_pw'); ?>';
                 } else {
                     return_html = '<td colspan="7">' +
                         '<div class="card card-info">' +
@@ -197,7 +247,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                         '<div class="card-body">' +
                         (data.description === '' ? '' : '<div class="form-group">' + data.description + '</div>') +
                         '<div class="form-group">' +
-                        '<label class="form-group-label"><?php echo langHdl('pw'); ?>' +
+                        '<label class="form-group-label"><?php echo $lang->get('pw'); ?>' +
                         '<button type="button" class="btn btn-gray ml-2" id="btn-copy-pwd" data-id="' + data.id + '" data-label="' + data.label + '"><i class="fas fa-copy"></i></button>' +
                         '<button type="button" class="btn btn-gray btn-show-pwd ml-2" data-id="' + data.id + '"><i class="fas fa-eye pwd-show-spinner"></i></button>' +
                         '</label>' +
@@ -207,21 +257,21 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                         '</div>' +
                         (data.login === '' ? '' :
                             '<div class="form-group">' +
-                            '<label class="form-group-label"><?php echo langHdl('index_login'); ?>' +
+                            '<label class="form-group-label"><?php echo $lang->get('index_login'); ?>' +
                             '<button type="button" class="btn btn-gray ml-2" id="btn-copy-login" data-id="' + data.id + '"><i class="fas fa-copy"></i></button>' +
                             '</label>' +
                             '<span class="ml-2" id="login-item_' + data.id + '">' + data.login + '</span>' +
                             '</div>') +
                         (data.url === '' ? '' :
                             '<div class="form-group">' +
-                            '<label class="form-group-label"><?php echo langHdl('url'); ?>' +
+                            '<label class="form-group-label"><?php echo $lang->get('url'); ?>' +
                             '<button type="button" class="btn btn-gray ml-2" id="btn-copy-url" data-id="' + data.id + '"><i class="fas fa-copy"></i></button>' +
                             '</label>' +
                             '<span class="ml-2" id="url-item_' + data.id + '">' + data.url + '</span>' +
                             '</div>') +
                         '</div>' +
                         '<div class="card-footer">' +
-                        '<button type="button" class="btn btn-info float-right" id="cancel"><?php echo langHdl('cancel'); ?></button>' +
+                        '<button type="button" class="btn btn-info float-right" id="cancel"><?php echo $lang->get('cancel'); ?></button>' +
                         '</div>' +
                         '</div>' +
                         '</td>';
@@ -259,17 +309,17 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                                 async: false,
                                 url: 'sources/items.queries.php',
                                 data: 'type=show_item_password&item_id=' + $('#btn-copy-pwd').data('id') +
-                                    '&key=<?php echo $_SESSION['key']; ?>',
+                                    '&key=<?php echo $superGlobal->get('key', 'SESSION'); ?>',
                                 dataType: "",
                                 success: function(data) {
                                     //decrypt data
                                     try {
-                                        data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                                        data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
                                     } catch (e) {
                                         // error
                                         toastr.remove();
                                         toastr.warning(
-                                            '<?php echo langHdl('no_item_to_display'); ?>'
+                                            '<?php echo $lang->get('no_item_to_display'); ?>'
                                         );
                                         return false;
                                     }
@@ -301,7 +351,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                         if (store.get('teampassSettings').clipboard_life_duration === undefined || parseInt(store.get('teampassSettings').clipboard_life_duration) === 0) {
                             toastr.remove();
                             toastr.info(
-                                '<?php echo langHdl('copy_to_clipboard'); ?>',
+                                '<?php echo $lang->get('copy_to_clipboard'); ?>',
                                 '', {
                                     timeOut: 2000,
                                     positionClass: 'toast-top-right',
@@ -311,7 +361,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                         } else {
                             toastr.remove();
                             toastr.warning(
-                                '<?php echo langHdl('clipboard_will_be_cleared'); ?>',
+                                '<?php echo $lang->get('clipboard_will_be_cleared'); ?>',
                                 '', {
                                     timeOut: store.get('teampassSettings').clipboard_life_duration * 1000,
                                     progressBar: true
@@ -336,7 +386,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     .on('success', function(e) {
                         toastr.remove();
                         toastr.info(
-                            '<?php echo langHdl('copy_to_clipboard'); ?>',
+                            '<?php echo $lang->get('copy_to_clipboard'); ?>',
                             '', {
                                 timeOut: 2000,
                                 positionClass: 'toast-top-right',
@@ -355,7 +405,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     .on('success', function(e) {
                         toastr.remove();
                         toastr.info(
-                            '<?php echo langHdl('copy_to_clipboard'); ?>',
+                            '<?php echo $lang->get('copy_to_clipboard'); ?>',
                             '', {
                                 timeOut: 2000,
                                 positionClass: 'toast-top-right',
@@ -394,7 +444,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         if (mouseStillDown === true) {
             // Prepare data to show
             // Is data crypted?
-            var data = unCryptData($('#pwd-hidden_' + itemId).val(), '<?php echo $_SESSION['key']; ?>');
+            var data = unCryptData($('#pwd-hidden_' + itemId).val(), '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
 
             if (data !== false) {
                 $('#pwd-hidden_' + itemId).val(
@@ -436,7 +486,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             $(this).addClass('pwd-shown');
             // Prepare data to show
             // Is data crypted?
-            var data = unCryptData($('#pwd-hidden_' + itemId).val(), '<?php echo $_SESSION['key']; ?>');
+            var data = unCryptData($('#pwd-hidden_' + itemId).val(), '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
             if (data !== false && data !== undefined) {
                 $('#pwd-hidden_' + itemId).val(
                     data.password
@@ -490,9 +540,9 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 $('#search-select')
                     .addClass('menuset')
                     .html(
-                        '<?php echo langHdl('actions'); ?>' +
-                        '<i class="fas fa-share ml-2 pointer infotip mass-operation" title="<?php echo langHdl('move_items'); ?>" data-action="move"></i>' +
-                        '<i class="fas fa-trash ml-2 pointer infotip mass-operation" title="<?php echo langHdl('delete_items'); ?>" data-action="delete"></i>'
+                        '<?php echo $lang->get('actions'); ?>' +
+                        '<i class="fas fa-share ml-2 pointer infotip mass-operation" title="<?php echo $lang->get('move_items'); ?>" data-action="move"></i>' +
+                        '<i class="fas fa-trash ml-2 pointer infotip mass-operation" title="<?php echo $lang->get('delete_items'); ?>" data-action="delete"></i>'
                     );
 
                 // Prepare tooltips
@@ -531,27 +581,27 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                         if (item.disabled === 0) {
                             folders += '<option value="' + item.id + '">' + item.title +
                                 '   [' +
-                                (item.path === '' ? '<?php echo langHdl('root'); ?>' : item.path) +
+                                (item.path === '' ? '<?php echo $lang->get('root'); ?>' : item.path) +
                                 ']</option>';
                         }
                     });
 
-                    htmlFolders = '<div><?php echo langHdl('import_keepass_to_folder'); ?>:&nbsp;&nbsp;' +
+                    htmlFolders = '<div><?php echo $lang->get('import_keepass_to_folder'); ?>:&nbsp;&nbsp;' +
                         '<select class="form-control form-item-control select2" style="width:100%;" id="mass_move_destination_folder_id">' + folders + '</select>' +
                         '</div>';
 
                     //display to user
                     $('#dialog-mass-operation-html').html(
-                        '<?php echo langHdl('you_decided_to_move_items'); ?>: ' +
+                        '<?php echo $lang->get('you_decided_to_move_items'); ?>: ' +
                         '<div><ul>' + sel_items_txt + '</ul></div>' + htmlFolders +
-                        '<div class="mt-3 alert alert-info"><i class="fas fa-warning fa-lg mr-2"></i><?php echo langHdl('confirm_item_move'); ?></div>'
+                        '<div class="mt-3 alert alert-info"><i class="fas fa-warning fa-lg mr-2"></i><?php echo $lang->get('confirm_item_move'); ?></div>'
                     );
 
                 } else if (selectedAction === 'delete') {
                     $('#dialog-mass-operation-html').html(
-                        '<?php echo langHdl('you_decided_to_delete_items'); ?>: ' +
+                        '<?php echo $lang->get('you_decided_to_delete_items'); ?>: ' +
                         '<div><ul>' + sel_items_txt + '</ul></div>' +
-                        '<div class="mt-3 alert alert-danger"><i class="fas fa-warning fa-lg mr-2"></i><?php echo langHdl('confirm_deletion'); ?></div>'
+                        '<div class="mt-3 alert alert-danger"><i class="fas fa-warning fa-lg mr-2"></i><?php echo $lang->get('confirm_deletion'); ?></div>'
                     );
                 }
             });
@@ -573,7 +623,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         if (selectedItems === "") {
             toastr.remove();
             toastr.warning(
-                '<?php echo langHdl('none_selected_text'); ?>',
+                '<?php echo $lang->get('none_selected_text'); ?>',
                 '', {
                     timeOut: 5000,
                     progressBar: true
@@ -584,7 +634,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
         // Show to user
         toastr.remove();
-        toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+        toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
         if (selectedAction === 'delete') {
             // Delete selected items
@@ -597,12 +647,12 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             $.post(
                 'sources/items.queries.php', {
                     type: 'mass_delete_items',
-                    data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
-                    key: '<?php echo $_SESSION['key']; ?>'
+                    data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'),
+                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                 },
                 function(data) {
                     //decrypt data
-                    data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                    data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                     console.info(data);
 
                     //check if format error
@@ -622,7 +672,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
                         toastr.remove();
                         toastr.info(
-                            '<?php echo langHdl('done'); ?>',
+                            '<?php echo $lang->get('done'); ?>',
                             '', {
                                 timeOut: 1000
                             }
@@ -648,12 +698,12 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             $.post(
                 'sources/items.queries.php', {
                     type: 'mass_move_items',
-                    data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
-                    key: '<?php echo $_SESSION['key']; ?>'
+                    data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'),
+                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                 },
                 function(data) {
                     //decrypt data
-                    data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                    data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                     console.info(data);
 
                     //check if format error
@@ -673,7 +723,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
                         toastr.remove();
                         toastr.info(
-                            '<?php echo langHdl('done'); ?>',
+                            '<?php echo $lang->get('done'); ?>',
                             '', {
                                 timeOut: 1000
                             }
@@ -699,7 +749,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             return prepareExchangedData(
                 data.substr(7),
                 'decode',
-                '<?php echo $_SESSION['key']; ?>'
+                '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
             )
         }
         return false;
@@ -720,8 +770,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         $.post(
             "sources/items.logs.php", {
                 type: "log_action_on_item",
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                key: "<?php echo $_SESSION['key']; ?>"
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
             }
         );
     }

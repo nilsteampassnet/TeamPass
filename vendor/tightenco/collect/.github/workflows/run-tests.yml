@@ -10,7 +10,7 @@ jobs:
     strategy:
       matrix:
         os: [Ubuntu, macOS]
-        php: [8.0, 8.1, 8.2]
+        php: [7.3, 7.4, 8.0, 8.1]
 
         include:
           - os: Ubuntu

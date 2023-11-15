@@ -24,8 +24,6 @@
 
 // Load config
 require_once __DIR__.'/../includes/config/tp.config.php';
-
-// Do checks
 require_once __DIR__.'/../includes/config/include.php';
 require_once __DIR__.'/../includes/config/settings.php';
 header('Content-type: text/html; charset=utf-8');
@@ -59,10 +57,10 @@ function doLog(string $status, string $job, int $enable_tasks_log = 0, int $id =
         }
 
         // Read start_time
-        $start_time = DB::queryFirstField(
+        /*$start_time = DB::queryFirstField(
             'SELECT created_at FROM '.prefixTable('processes_logs').' WHERE increment_id = %i',
             $id
-        );
+        );*/
         
         // Case is an update
         DB::update(

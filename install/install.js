@@ -297,6 +297,7 @@ function doGetJson(task)
                     }
                 } else {
                     $("#res"+step+"_check"+data[0].index).html('<i class="fas fa-check text-success"></i>');
+                    $("#res"+step+"_check99").html('<i class="fas fa-check text-success"></i>');
                 }
 
                 if (data[0].result !== undefined && data[0].result !== "" ) {

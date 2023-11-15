@@ -23,50 +23,69 @@ declare(strict_types=1);
 use Goodby\CSV\Import\Standard\Lexer;
 use Goodby\CSV\Import\Standard\Interpreter;
 use Goodby\CSV\Import\Standard\LexerConfig;
+use voku\helper\AntiXSS;
+use TeampassClasses\NestedTree\NestedTree;
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
+use EZimuel\PHPSecureSession;
+use TeampassClasses\PerformChecks\PerformChecks;
 
-require_once 'SecureHandler.php';
+// Load functions
+require_once 'main.functions.php';
+
+// init
+loadClasses('DB');
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
 session_name('teampass_session');
 session_start();
-if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] === false || !isset($_SESSION['key']) || empty($_SESSION['key'])) {
-    die('Hacking attempt...');
-}
 
-// Load config
-if (file_exists('../includes/config/tp.config.php')) {
-    include_once '../includes/config/tp.config.php';
-} elseif (file_exists('./includes/config/tp.config.php')) {
-    include_once './includes/config/tp.config.php';
-} else {
+// Load config if $SETTINGS not defined
+try {
+    include_once __DIR__.'/../includes/config/tp.config.php';
+} catch (Exception $e) {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
 // Do checks
-require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
-require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
-if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'items', $SETTINGS) === false) {
+// Instantiate the class with posted data
+$checkUserAccess = new PerformChecks(
+    dataSanitizer(
+        [
+            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+        ],
+        [
+            'type' => 'trim|escape',
+        ],
+    ),
+    [
+        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
+        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+    ]
+);
+// Handle the case
+echo $checkUserAccess->caseHandler();
+if (
+    $checkUserAccess->userAccessPage('import') === false ||
+    $checkUserAccess->checkSession() === false
+) {
     // Not allowed page
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
-    include $SETTINGS['cpassman_dir'].'/error.php';
-    exit();
+    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+    include $SETTINGS['cpassman_dir'] . '/error.php';
+    exit;
 }
 
-/*
- * Define Timezone
-**/
-if (isset($SETTINGS['timezone']) === true) {
-    date_default_timezone_set($SETTINGS['timezone']);
-} else {
-    date_default_timezone_set('UTC');
-}
+// Define Timezone
+date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
 
-require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user']['user_language'].'.php';
-require_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+// Set header properties
 header('Content-type: text/html; charset=utf-8');
-header('Cache-Control: no-cache, must-revalidate');
-require_once 'main.functions.php';
-
-// No time limit
+header('Cache-Control: no-cache, no-store, must-revalidate');
+error_reporting(E_ERROR);
 set_time_limit(0);
+
+// --------------------------------- //
 
 // Set some constants for program readability
 define('KP_PATH', 0);
@@ -78,26 +97,8 @@ define('KP_URL', 5);
 define('KP_UUID', 6);
 define('KP_NOTES', 7);
 
-// Connect to mysql server
-require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-if (defined('DB_PASSWD_CLEAR') === false) {
-    define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
-}
 
-// Class loader
-require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
-
-//Load Tree
-$tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
-$tree->register();
-$tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
-
-//Load AES
-$aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
-$aes->register();
-
-//User's language loading
-require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user']['user_language'].'.php';
+$tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
 // POST Varaibles
 $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
@@ -108,11 +109,11 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
     //Check if import CSV file format is what expected
     case 'import_file_format_csv':
         // Check KEY and rights
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -133,7 +134,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
             WHERE increment_id = %i AND type = "temp_file"',
             $post_operation_id
         );
-
+        
         // Delete operation id
         DB::delete(
             prefixTable('misc'),
@@ -153,16 +154,11 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
         if ($fp = fopen($file, 'r')) {
             // data from CSV
             $valuesToImport = array();
-            // load libraries
-            include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Goodby/CSV/Import/Standard/Lexer.php';
-            include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Goodby/CSV/Import/Standard/Interpreter.php';
-            include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Goodby/CSV/Import/Standard/LexerConfig.php';
 
             // Lexer configuration
             $config = new LexerConfig();
             $lexer = new Lexer($config);
             $config->setIgnoreHeaderLine('true');
-            // extract data from CSV file
             $interpreter = new Interpreter();
             $interpreter->addObserver(function (array $row) use (&$valuesToImport) {
                 $valuesToImport[] = array(
@@ -242,7 +238,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('cannot_open_file'),
+                    'message' => $lang->get('cannot_open_file'),
                 ),
                 'encode'
             );
@@ -284,11 +280,11 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
     //Insert into DB the items the user has selected
     case 'import_items':
         // Check KEY and rights
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -442,11 +438,11 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
     //Check if import KEEPASS file format is what expected
     case 'import_file_format_keepass':
         // Check KEY and rights
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -605,11 +601,11 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
     // KEEPASS - CREATE FOLDERS
     case 'keepass_create_folders':
         // Check KEY and rights
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -677,11 +673,11 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
     // KEEPASS - CREATE ITEMS
     case 'keepass_create_items':
         // Check KEY and rights
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );

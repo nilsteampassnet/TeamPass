@@ -7,7 +7,7 @@ use Elegant\Sanitizer\Contracts\Filter;
 class Lowercase implements Filter
 {
     /**
-     * Converts the given string to all lowercase.
+     * Lowercase the given string.
      *
      * @param mixed $value
      * @param array $options

@@ -3,19 +3,25 @@
 namespace TeampassClasses\SuperGlobal;
 
 /**
- * Teampass - a collaborative passwords manager
- *
+ * Teampass - a collaborative passwords manager.
+ * ---
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * ---
  *
- * @category  Teampass
- * @package   SuperGlobal.php
- * @author    Nils Laumaillé <nils@teampass.net>
- * @copyright 2009-2019 Nils Laumaillé
+ * @project   Teampass
+ * @file      SuperGlobal.php
+ * ---
+ *
+ * @author    Nils Laumaillé (nils@teampass.net)
+ *
+ * @copyright 2009-2023 Teampass.net
+ *
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
- * @version   GIT: <git_id>
- * @link      http://www.teampass.net
+ * ---
+ *
+ * @see       https://www.teampass.net
  */
 
 /**
@@ -31,7 +37,6 @@ class SuperGlobal
      */
     protected function dataSanitizerCall($key)
     {
-        include_once __DIR__ . '/../../../../sources/main.functions.php';
         return  dataSanitizer(
             ['key' => $key],
             ['key' => 'trim|escape'],
@@ -42,10 +47,10 @@ class SuperGlobal
     /**
      * Sets a variable
      *
-     * @param  string            $key         Key to use
-     * @param  string|array|bool $value Value to put
-     * @param  string            $type        Type of super global
-     * @param  string            $special     Is this a special superglobal definition
+     * @param  string                $key       Key to use
+     * @param  string|array|bool|int $value     Value to put
+     * @param  string                $type      Type of super global
+     * @param  string                $special   Is this a special superglobal definition
      * @return void
      */
     public static function put($key, $value, $type, $special = false)
@@ -102,6 +107,8 @@ class SuperGlobal
             return (isset($_GET[$key]) === true ? $this->dataSanitizerCall($_GET[$key])['key']  : null);
         } elseif ($type === 'COOKIE') {
             return (isset($_COOKIE[$key]) === true ? $this->dataSanitizerCall($_COOKIE[$key])['key'] : null);
+        } elseif ($type === 'POST') {
+            return (isset($_POST[$key]) === true ? $this->dataSanitizerCall($_POST[$key])['key']  : null);
         }
     }
 

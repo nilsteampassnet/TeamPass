@@ -139,7 +139,7 @@ class MessageBag implements Jsonable, JsonSerializable, MessageBagContract, Mess
     /**
      * Determine if messages exist for any of the given keys.
      *
-     * @param  array|string|null  $keys
+     * @param  array|string  $keys
      * @return bool
      */
     public function hasAny($keys = [])
@@ -157,19 +157,6 @@ class MessageBag implements Jsonable, JsonSerializable, MessageBagContract, Mess
         }
 
         return false;
-    }
-
-    /**
-     * Determine if messages don't exist for all of the given keys.
-     *
-     * @param  array|string|null  $key
-     * @return bool
-     */
-    public function missing($key)
-    {
-        $keys = is_array($key) ? $key : func_get_args();
-
-        return ! $this->hasAny($keys);
     }
 
     /**
@@ -206,7 +193,7 @@ class MessageBag implements Jsonable, JsonSerializable, MessageBagContract, Mess
             );
         }
 
-        if (str_contains($key, '*')) {
+        if (Str::contains($key, '*')) {
             return $this->getMessagesForWildcardKey($key, $format);
         }
 
@@ -264,19 +251,6 @@ class MessageBag implements Jsonable, JsonSerializable, MessageBagContract, Mess
     }
 
     /**
-     * Remove a message from the message bag.
-     *
-     * @param  string  $key
-     * @return $this
-     */
-    public function forget($key)
-    {
-        unset($this->messages[$key]);
-
-        return $this;
-    }
-
-    /**
      * Format an array of messages.
      *
      * @param  array  $messages
@@ -286,10 +260,6 @@ class MessageBag implements Jsonable, JsonSerializable, MessageBagContract, Mess
      */
     protected function transform($messages, $format, $messageKey)
     {
-        if ($format == ':message') {
-            return (array) $messages;
-        }
-
         return collect((array) $messages)
             ->map(function ($message) use ($format, $messageKey) {
                 // We will simply spin through the given messages and transform each one
@@ -398,7 +368,8 @@ class MessageBag implements Jsonable, JsonSerializable, MessageBagContract, Mess
      *
      * @return int
      */
-    public function count(): int
+    #[\ReturnTypeWillChange]
+    public function count()
     {
         return count($this->messages, COUNT_RECURSIVE) - count($this->messages);
     }
@@ -418,7 +389,8 @@ class MessageBag implements Jsonable, JsonSerializable, MessageBagContract, Mess
      *
      * @return array
      */
-    public function jsonSerialize(): array
+    #[\ReturnTypeWillChange]
+    public function jsonSerialize()
     {
         return $this->toArray();
     }

@@ -24,28 +24,53 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
+use TeampassClasses\PerformChecks\PerformChecks;
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
+// Load functions
+require_once __DIR__.'/../sources/main.functions.php';
+
+// init
+loadClasses();
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
+
 if (
     isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
     || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === true
-    || isset($_SESSION['key']) === false || empty($_SESSION['key']) === true
+    || $superGlobal->get('key', 'SESSION') === null
 ) {
     die('Hacking attempt...');
 }
 
-// Load config
-if (file_exists('../includes/config/tp.config.php') === true) {
-    include_once '../includes/config/tp.config.php';
-} elseif (file_exists('./includes/config/tp.config.php') === true) {
-    include_once './includes/config/tp.config.php';
-} else {
-    throw new Exception('Error file "/includes/config/tp.config.php" not exists', 1);
+// Load config if $SETTINGS not defined
+try {
+    include_once __DIR__.'/../includes/config/tp.config.php';
+} catch (Exception $e) {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
-/* do checks */
-require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
-if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === false) {
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
-    //not allowed page
+// Do checks
+$checkUserAccess = new PerformChecks(
+    dataSanitizer(
+        [
+            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+        ],
+        [
+            'type' => 'trim|escape',
+        ],
+    ),
+    [
+        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
+        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+    ]
+);
+// Handle the case
+echo $checkUserAccess->caseHandler();
+if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('folders') === false) {
+    // Not allowed page
+    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -105,7 +130,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             }
             // Show spinner
             toastr.remove();
-            toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
             // Prepare data
             var data = {
@@ -124,19 +149,19 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             $.post(
                 'sources/folders.queries.php', {
                     type: 'add_folder',
-                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                    key: '<?php echo $_SESSION['key']; ?>'
+                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                 },
                 function(data) {
                     //decrypt data
-                    data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                    data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                     console.log(data)
                     if (data.error === true) {
                         // ERROR
                         toastr.remove();
                         toastr.error(
                             data.message,
-                            '<?php echo langHdl('error'); ?>', {
+                            '<?php echo $lang->get('error'); ?>', {
                                 timeOut: 5000,
                                 progressBar: true
                             }
@@ -149,10 +174,10 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                         $.post(
                             'sources/folders.queries.php', {
                                 type: 'refresh_folders_list',
-                                key: '<?php echo $_SESSION['key']; ?>'
+                                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                             },
                             function(data) { //decrypt data
-                                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                                data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                                 console.log(data);
 
                                 // prepare options list
@@ -188,7 +213,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             if ($('#table-folders input[type=checkbox]:checked').length === 0) {
                 toastr.remove();
                 toastr.warning(
-                    '<?php echo langHdl('you_need_to_select_at_least_one_folder'); ?>',
+                    '<?php echo $lang->get('you_need_to_select_at_least_one_folder'); ?>',
                     '', {
                         timeOut: 5000,
                         progressBar: true
@@ -218,7 +243,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             //--- DELETE FOLDERS
             // Show spinner
             toastr.remove();
-            toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
             // Get list of selected folders
             var selectedFolders = [];
@@ -237,18 +262,18 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             $.post(
                 'sources/folders.queries.php', {
                     type: 'delete_folders',
-                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                    key: '<?php echo $_SESSION['key']; ?>'
+                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                 },
                 function(data) { //decrypt data
-                    data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                    data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
 
                     if (data.error === true) {
                         // ERROR
                         toastr.remove();
                         toastr.error(
                             data.message,
-                            '<?php echo langHdl('error'); ?>', {
+                            '<?php echo $lang->get('error'); ?>', {
                                 timeOut: 5000,
                                 progressBar: true
                             }
@@ -264,7 +289,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                         // OK
                         toastr.remove();
                         toastr.success(
-                            '<?php echo langHdl('done'); ?>',
+                            '<?php echo $lang->get('done'); ?>',
                             '', {
                                 timeOut: 1000
                             }
@@ -305,23 +330,23 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
 
         // Show spinner
         toastr.remove();
-        toastr.info('<?php echo langHdl('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+        toastr.info('<?php echo $lang->get('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
         // Build matrix
         $.post(
             'sources/folders.queries.php', {
                 type: 'build_matrix',
-                key: '<?php echo $_SESSION['key']; ?>'
+                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
             },
             function(data) {
-                data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                 console.log(data);
                 if (data.error !== false) {
                     // Show error
                     toastr.remove();
                     toastr.error(
                         data.message,
-                        '<?php echo langHdl('error'); ?>', {
+                        '<?php echo $lang->get('error'); ?>', {
                             timeOut: 5000,
                             progressBar: true
                         }
@@ -336,7 +361,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                         path = '',
                         parentsClass = '',
                         max_folder_depth = 0,
-                        foldersSelect = '<option value="0"><?php echo langHdl('root'); ?></option>';
+                        foldersSelect = '<option value="0"><?php echo $lang->get('root'); ?></option>';
 
                     $(data.matrix).each(function(i, value) {
                         // List of parents
@@ -356,14 +381,14 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                             columns += '<input type="checkbox" class="checkbox-folder" id="cb-' + value.id + '" data-id="' + value.id + '">';
 
                             if (value.numOfChildren > 0) {
-                                columns += '<i class="fas fa-folder-minus infotip ml-2 pointer icon-collapse" data-id="' + value.id + '" title="<?php echo langHdl('collapse'); ?>"></i>';
+                                columns += '<i class="fas fa-folder-minus infotip ml-2 pointer icon-collapse" data-id="' + value.id + '" title="<?php echo $lang->get('collapse'); ?>"></i>';
                             }
                         }
                         columns += '</td>';
 
                         // Column 2
                         columns += '<td class="modify pointer" min-width="200px">' +
-                            '<span id="folder-' + value.id + '" data-id="' + value.id + '" class="infotip folder-name" data-html="true" title="<?php echo langHdl('id'); ?>: ' + value.id + '<br><?php echo langHdl('level'); ?>: ' + value.level + '<br><?php echo langHdl('nb_items'); ?>: ' + value.nbItems + '">' + value.title + '</span></td>';
+                            '<span id="folder-' + value.id + '" data-id="' + value.id + '" class="infotip folder-name" data-html="true" title="<?php echo $lang->get('id'); ?>: ' + value.id + '<br><?php echo $lang->get('level'); ?>: ' + value.level + '<br><?php echo $lang->get('nb_items'); ?>: ' + value.nbItems + '">' + value.title + '</span></td>';
 
 
                         // Column 3
@@ -384,7 +409,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                         if (value.folderComplexity.value !== undefined) {
                             columns += '<i class="' + value.folderComplexity.class + ' infotip" data-value="' + value.folderComplexity.value + '" title="' + value.folderComplexity.text + '"></i>';
                         } else {
-                            columns += '<i class="fas fa-exclamation-triangle text-danger infotip" data-value="" title="<?php echo langHdl('no_value_defined_please_fix'); ?>"></i>';
+                            columns += '<i class="fas fa-exclamation-triangle text-danger infotip" data-value="" title="<?php echo $lang->get('no_value_defined_please_fix'); ?>"></i>';
                         }
                         columns += '</td>';
 
@@ -467,7 +492,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
 
                     // Adapt select
                     $('#folders-depth').empty();
-                    $('#folders-depth').append('<option value="all"><?php echo langHdl('all'); ?></option>');
+                    $('#folders-depth').append('<option value="all"><?php echo $lang->get('all'); ?></option>');
                     for (x = 1; x < max_folder_depth; x++) {
                         $('#folders-depth').append('<option value="' + x + '">' + x + '</option>');
                     }
@@ -476,7 +501,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     // Inform user
                     toastr.remove();
                     toastr.success(
-                        '<?php echo langHdl('done'); ?>',
+                        '<?php echo $lang->get('done'); ?>',
                         '', {
                             timeOut: 1000
                         }
@@ -495,10 +520,10 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
         $.post(
             'sources/folders.queries.php', {
                 type: 'select_sub_folders',
-                key: '<?php echo $_SESSION['key']; ?>'
+                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
             },
             function(data) { //decrypt data
-                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
 
             }
         );
@@ -546,7 +571,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
 
             // Show spinner
             toastr.remove();
-            toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
             // Show selection of folders
             var selected_cb = $(this),
@@ -557,10 +582,10 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 'sources/folders.queries.php', {
                     type: 'select_sub_folders',
                     id: id,
-                    key: '<?php echo $_SESSION['key']; ?>'
+                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                 },
                 function(data) {
-                    data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                    data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                     console.log(data)
                     // check/uncheck checkbox
                     if (data.subfolders !== '') {
@@ -572,7 +597,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
 
                     toastr.remove();
                     toastr.success(
-                        '<?php echo langHdl('done'); ?>',
+                        '<?php echo $lang->get('done'); ?>',
                         '', {
                             timeOut: 1000
                         }
@@ -588,7 +613,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
 
             // Show spinner
             toastr.remove();
-            toastr.info('<?php echo langHdl('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+            toastr.info('<?php echo $lang->get('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
             // Show selection of folders
             var selected_cb = $(this),
@@ -599,10 +624,10 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 'sources/folders.queries.php', {
                     type: 'select_sub_folders',
                     id: id,
-                    key: '<?php echo $_SESSION['key']; ?>'
+                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                 },
                 function(data) {
-                    data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                    data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                     // check/uncheck checkbox
                     if (data.subfolders !== '') {
                         $.each(JSON.parse(data.subfolders), function(i, value) {
@@ -613,7 +638,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
 
                     toastr.remove();
                     toastr.success(
-                        '<?php echo langHdl('done'); ?>',
+                        '<?php echo $lang->get('done'); ?>',
                         '', {
                             timeOut: 1000
                         }
@@ -657,50 +682,50 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             '<div class="card card-warning card-outline form">' +
             '<div class="card-body">' +
             '<div class="form-group ml-2">' +
-            '<label for="folder-edit-title"><?php echo langHdl('label'); ?></label>' +
+            '<label for="folder-edit-title"><?php echo $lang->get('label'); ?></label>' +
             '<input type="text" class="form-control clear-me purify" id="folder-edit-title" data-field="title" value="' + folderTitle + '">' +
             '</div>' +
             '<div class="form-group ml-2">' +
-            '<label for="folder-edit-parent"><?php echo langHdl('parent'); ?></label><br>' +
+            '<label for="folder-edit-parent"><?php echo $lang->get('parent'); ?></label><br>' +
             '<select id="folder-edit-parent" class="form-control form-item-control select2 clear-me">' + store.get('teampassApplication').foldersSelect + '</select>' +
             '</div>' +
             '<div class="form-group ml-2">' +
-            '<label for="folder-edit-complexity"><?php echo langHdl('password_minimal_complexity_target'); ?></label><br>' +
+            '<label for="folder-edit-complexity"><?php echo $lang->get('password_minimal_complexity_target'); ?></label><br>' +
             '<select id="folder-edit-complexity" class="form-control form-item-control select2 clear-me">' + store.get('teampassApplication').complexityOptions + '</select>' +
             '</div>' +
             '<div class="form-group ml-2">' +
-            '<label for="folder-edit-renewal"><?php echo langHdl('renewal_delay'); ?></label>' +
+            '<label for="folder-edit-renewal"><?php echo $lang->get('renewal_delay'); ?></label>' +
             '<input type="text" class="form-control clear-me" id="folder-edit-renewal" value="' + folderRenewal + '">' +
             '</div>' +
             '<div class="form-group ml-2">' +
-            '<label><?php echo langHdl('icon'); ?></label>' +
+            '<label><?php echo $lang->get('icon'); ?></label>' +
             '<input type="text" class="form-control form-folder-control purify" id="folder-edit-icon" data-field="icon" value="'+folderIcon+'">' +
             '<small class="form-text text-muted">' +
-            '<?php echo langHdl('fontawesome_icon_tip'); ?><a href="<?php echo FONTAWESOME_URL;?>" target="_blank"><i class="fas fa-external-link-alt ml-1"></i></a>' +
+            '<?php echo $lang->get('fontawesome_icon_tip'); ?><a href="<?php echo FONTAWESOME_URL;?>" target="_blank"><i class="fas fa-external-link-alt ml-1"></i></a>' +
             '</small>' +
             '</div>' +
             '<div class="form-group ml-2">' +
-            '<label><?php echo langHdl('icon_on_selection'); ?></label>' +
+            '<label><?php echo $lang->get('icon_on_selection'); ?></label>' +
             '<input type="text" class="form-control form-folder-control purify" id="folder-edit-icon-selected" data-field="iconSelected" value="'+folderIconSelection+'">' +
             '<small class="form-text text-muted">' +
-            '<?php echo langHdl('fontawesome_icon_tip'); ?><a href="<?php echo FONTAWESOME_URL;?>" target="_blank"><i class="fas fa-external-link-alt ml-1"></i></a>' +
+            '<?php echo $lang->get('fontawesome_icon_tip'); ?><a href="<?php echo FONTAWESOME_URL;?>" target="_blank"><i class="fas fa-external-link-alt ml-1"></i></a>' +
             '</small>' +
             '</div>' +
             '<div class="form-group ml-2" id="folder-rights-tuned">' +
-            '<label><?php echo langHdl('special'); ?></label>' +
+            '<label><?php echo $lang->get('special'); ?></label>' +
             '<div class="form-check">' +
             '<input type="checkbox" class="form-check-input form-control" id="folder-edit-add-restriction">' +
-            '<label class="form-check-label pointer ml-2" for="folder-edit-add-restriction"><?php echo langHdl('create_without_password_minimal_complexity_target'); ?></label>' +
+            '<label class="form-check-label pointer ml-2" for="folder-edit-add-restriction"><?php echo $lang->get('create_without_password_minimal_complexity_target'); ?></label>' +
             '</div>' +
             '<div class="form-check">' +
             '<input type="checkbox" class="form-check-input form-control" id="folder-edit-edit-restriction">' +
-            '<label class="form-check-label pointer ml-2" for="folder-edit-edit-restriction"><?php echo langHdl('edit_without_password_minimal_complexity_target'); ?></label>' +
+            '<label class="form-check-label pointer ml-2" for="folder-edit-edit-restriction"><?php echo $lang->get('edit_without_password_minimal_complexity_target'); ?></label>' +
             '</div>' +
             '</div>' +
             '</div>' +
             '<div class="card-footer">' +
-            '<button type="button" class="btn btn-warning tp-action-edit" data-action="submit" data-id="' + currentFolderEdited + '"><?php echo langHdl('submit'); ?></button>' +
-            '<button type="button" class="btn btn-default float-right tp-action-edit" data-action="cancel"><?php echo langHdl('cancel'); ?></button>' +
+            '<button type="button" class="btn btn-warning tp-action-edit" data-action="submit" data-id="' + currentFolderEdited + '"><?php echo $lang->get('submit'); ?></button>' +
+            '<button type="button" class="btn btn-default float-right tp-action-edit" data-action="cancel"><?php echo $lang->get('cancel'); ?></button>' +
             '</div>' +
             '</div>' +
             '</td></tr>'
@@ -773,19 +798,19 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             $.post(
                 'sources/folders.queries.php', {
                     type: 'update_folder',
-                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                    key: '<?php echo $_SESSION['key']; ?>'
+                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                 },
                 function(data) {
                     //decrypt data
-                    data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                    data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
 
                     if (data.error === true) {
                         // ERROR
                         toastr.remove();
                         toastr.error(
                             data.message,
-                            '<?php echo langHdl('error'); ?>', {
+                            '<?php echo $lang->get('error'); ?>', {
                                 timeOut: 5000,
                                 progressBar: true
                             }

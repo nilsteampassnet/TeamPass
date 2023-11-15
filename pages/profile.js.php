@@ -24,28 +24,54 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
+
+use TeampassClasses\PerformChecks\PerformChecks;
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
+// Load functions
+require_once __DIR__.'/../sources/main.functions.php';
+
+// init
+loadClasses();
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
+
 if (
     isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
     || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === true
-    || isset($_SESSION['key']) === false || empty($_SESSION['key']) === true
+    || $superGlobal->get('key', 'SESSION') === null
 ) {
     die('Hacking attempt...');
 }
 
-// Load config
-if (file_exists('../includes/config/tp.config.php') === true) {
-    include_once '../includes/config/tp.config.php';
-} elseif (file_exists('./includes/config/tp.config.php') === true) {
-    include_once './includes/config/tp.config.php';
-} else {
-    throw new Exception('Error file "/includes/config/tp.config.php" not exists', 1);
+// Load config if $SETTINGS not defined
+try {
+    include_once __DIR__.'/../includes/config/tp.config.php';
+} catch (Exception $e) {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
-/* do checks */
-require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
-if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === false) {
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
-    //not allowed page
+// Do checks
+$checkUserAccess = new PerformChecks(
+    dataSanitizer(
+        [
+            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+        ],
+        [
+            'type' => 'trim|escape',
+        ],
+    ),
+    [
+        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
+        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+    ]
+);
+// Handle the case
+echo $checkUserAccess->caseHandler();
+if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('profile') === false) {
+    // Not allowed page
+    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -95,8 +121,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
             quality: '90'
         },
         url: '<?php echo $SETTINGS['cpassman_url']; ?>/sources/upload.files.php',
-        flash_swf_url: '<?php echo $SETTINGS['cpassman_url']; ?>/includes/libraries/Plupload/Moxie.swf',
-        silverlight_xap_url: '<?php echo $SETTINGS['cpassman_url']; ?>/includes/libraries/Plupload/Moxie.xap',
+        flash_swf_url: '<?php echo $SETTINGS['cpassman_url']; ?>/includes/libraries/plupload/js/Moxie.swf',
+        silverlight_xap_url: '<?php echo $SETTINGS['cpassman_url']; ?>/includes/libraries/plupload/js/Moxie.xap',
         init: {
             FilesAdded: function(up, files) {
                 // generate and save token
@@ -112,7 +138,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                         lowercase: true,
                         reason: 'avatar_profile_upload',
                         duration: 10,
-                        key: '<?php echo $_SESSION['key']; ?>'
+                        key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                     },
                     function(data) {
                         $('#profile-user-token').val(data[0].token);
@@ -132,7 +158,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
             },
             FileUploaded: function(upldr, file, object) {
                 // Decode returned data
-                var myData = prepareExchangedData(object.response, 'decode', '<?php echo $_SESSION['key']; ?>');
+                var myData = prepareExchangedData(object.response, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                 // update form
                 $('#profile-user-avatar').attr('src', 'includes/avatars/' + myData.filename);
                 $('#profile-avatar-file-list').html('').addClass('hidden');
@@ -202,14 +228,14 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
         $.post(
             "sources/users.queries.php", {
                 type: 'user_profile_update',
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
                 isprofileupdate: true,
-                key: "<?php echo $_SESSION['key']; ?>"
+                key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
             },
             function(data) {
                 //decrypt data
                 try {
-                    data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                    data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
                 } catch (e) {
                     // error
                     toastr.remove();
@@ -248,7 +274,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                         // Inform user
                         toastr.remove();
                         toastr.info(
-                            '<?php echo langHdl('alert_page_will_reload') . ' ... ' . langHdl('please_wait'); ?>',
+                            '<?php echo $lang->get('alert_page_will_reload') . ' ... ' . $lang->get('please_wait'); ?>',
                             '', {
                                 timeOut: 3000,
                                 progressBar: true
@@ -259,7 +285,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                         // just inform user
                         toastr.remove();
                         toastr.info(
-                            '<?php echo langHdl('done'); ?>',
+                            '<?php echo $lang->get('done'); ?>',
                             '', {
                                 timeOut: 2000,
                                 progressBar: true
@@ -299,10 +325,10 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                 capitalize: "true",
                 symbols: "false",
                 secure: "false",
-                key: '<?php echo $_SESSION['key']; ?>'
+                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
             },
             function(data) {
-                data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
 
                 if (data.key !== "") {
                     newApiKey = data.key;
@@ -319,18 +345,18 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                     $.post(
                         "sources/users.queries.php", {
                             type: "save_user_change",
-                            data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                            data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
                             isprofileupdate: true,
-                            key: "<?php echo $_SESSION['key']; ?>"
+                            key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
                         },
                         function(data) {
-                            data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                            data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                             $("#" + target).text(newApiKey);
                             if (silent === false) {
                                 $('#profile-tabs a[href="#tab_information"]').tab('show');
                                 toastr.remove();
                                 toastr.info(
-                                    '<?php echo langHdl('done'); ?>',
+                                    '<?php echo $lang->get('done'); ?>',
                                     '', {
                                         timeOut: 2000,
                                         progressBar: true
@@ -349,32 +375,32 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
     $("#profile-password").simplePassMeter({
         "requirements": {},
         "container": "#profile-password-strength",
-        "defaultText": "<?php echo langHdl('index_pw_level_txt'); ?>",
+        "defaultText": "<?php echo $lang->get('index_pw_level_txt'); ?>",
         "ratings": [
             {
                 "minScore": <?php echo TP_PW_STRENGTH_1;?>,
                 "className": "meterWarn",
-                "text": "<?php echo langHdl('complex_level1'); ?>"
+                "text": "<?php echo $lang->get('complex_level1'); ?>"
             },
             {
                 "minScore": <?php echo TP_PW_STRENGTH_2;?>,
                 "className": "meterWarn",
-                "text": "<?php echo langHdl('complex_level2'); ?>"
+                "text": "<?php echo $lang->get('complex_level2'); ?>"
             },
             {
                 "minScore": <?php echo TP_PW_STRENGTH_3;?>,
                 "className": "meterGood",
-                "text": "<?php echo langHdl('complex_level3'); ?>"
+                "text": "<?php echo $lang->get('complex_level3'); ?>"
             },
             {
                 "minScore": <?php echo TP_PW_STRENGTH_4;?>,
                 "className": "meterGood",
-                "text": "<?php echo langHdl('complex_level4'); ?>"
+                "text": "<?php echo $lang->get('complex_level4'); ?>"
             },
             {
                 "minScore": <?php echo TP_PW_STRENGTH_5;?>,
                 "className": "meterExcel",
-                "text": "<?php echo langHdl('complex_level5'); ?>"
+                "text": "<?php echo $lang->get('complex_level5'); ?>"
             }
         ]
     });
@@ -396,7 +422,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
         ) {
             toastr.remove();
             toastr.error(
-                '<?php echo langHdl('index_pw_error_identical'); ?>',
+                '<?php echo $lang->get('index_pw_error_identical'); ?>',
                 '', {
                     timeOut: 10000,
                     closeButton: true,
@@ -421,18 +447,18 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
             "sources/main.queries.php", {
                 type: "change_pw",
                 type_category: 'action_password',
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                key: "<?php echo $_SESSION['key']; ?>"
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
             },
             function(data) {
-                data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                 console.log(data);
 
                 if (data.error === true) {
                     $('#profile-password').focus();
                     toastr.remove();
                     toastr.warning(
-                        '<?php echo langHdl('your_attention_is_required'); ?>',
+                        '<?php echo $lang->get('your_attention_is_required'); ?>',
                         data.message, {
                             timeOut: 10000,
                             closeButton: true,
@@ -443,7 +469,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                     $('#profile-password, #profile-password-confirm').val('');
                     toastr.remove();
                     toastr.success(
-                        '<?php echo langHdl('done'); ?>',
+                        '<?php echo $lang->get('done'); ?>',
                         data.message, {
                             timeOut: 2000,
                             progressBar: true
@@ -462,32 +488,32 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
     $("#profile-saltkey").simplePassMeter({
         "requirements": {},
         "container": "#profile-saltkey-strength",
-        "defaultText": "<?php echo langHdl('index_pw_level_txt'); ?>",
+        "defaultText": "<?php echo $lang->get('index_pw_level_txt'); ?>",
         "ratings": [
             {
                 "minScore": <?php echo TP_PW_STRENGTH_1;?>,
                 "className": "meterWarn",
-                "text": "<?php echo langHdl('complex_level1'); ?>"
+                "text": "<?php echo $lang->get('complex_level1'); ?>"
             },
             {
                 "minScore": <?php echo TP_PW_STRENGTH_2;?>,
                 "className": "meterWarn",
-                "text": "<?php echo langHdl('complex_level2'); ?>"
+                "text": "<?php echo $lang->get('complex_level2'); ?>"
             },
             {
                 "minScore": <?php echo TP_PW_STRENGTH_3;?>,
                 "className": "meterGood",
-                "text": "<?php echo langHdl('complex_level3'); ?>"
+                "text": "<?php echo $lang->get('complex_level3'); ?>"
             },
             {
                 "minScore": <?php echo TP_PW_STRENGTH_4;?>,
                 "className": "meterGood",
-                "text": "<?php echo langHdl('complex_level4'); ?>"
+                "text": "<?php echo $lang->get('complex_level4'); ?>"
             },
             {
                 "minScore": <?php echo TP_PW_STRENGTH_5;?>,
                 "className": "meterExcel",
-                "text": "<?php echo langHdl('complex_level5'); ?>"
+                "text": "<?php echo $lang->get('complex_level5'); ?>"
             }
         ]
     });
@@ -501,7 +527,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
         }
     });
 
-    $('#profile-keys_download-date').text('<?php echo $_SESSION['user']['keys_recovery_time'] === NULL ? langHdl('none') : date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $_SESSION['user']['keys_recovery_time']); ?>');
+    $('#profile-keys_download-date').text('<?php echo $_SESSION['user']['keys_recovery_time'] === NULL ? $lang->get('none') : date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $_SESSION['user']['keys_recovery_time']); ?>');
 
     $("#open-dialog-keys-download").on('click', function(event) {
         event.preventDefault();
@@ -510,10 +536,10 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
         // Prepare modal
         showModalDialogBox(
             '#warningModal',
-            '<i class="fa-solid fa-user-shield fa-lg warning mr-2"></i><?php echo langHdl('caution'); ?>',
-            '<?php echo langHdl('download_recovery_keys_confirmation'); ?>',
-            '<?php echo langHdl('download'); ?>',
-            '<?php echo langHdl('close'); ?>',
+            '<i class="fa-solid fa-user-shield fa-lg warning mr-2"></i><?php echo $lang->get('caution'); ?>',
+            '<?php echo $lang->get('download_recovery_keys_confirmation'); ?>',
+            '<?php echo $lang->get('download'); ?>',
+            '<?php echo $lang->get('close'); ?>',
             false,
             false,
             false
@@ -545,7 +571,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
 
             // SHow user
             toastr.remove();
-            toastr.info('<?php echo langHdl('in_progress'); ?><i class="fa-solid fa-circle-notch fa-spin fa-2x ml-3"></i>');
+            toastr.info('<?php echo $lang->get('in_progress'); ?><i class="fa-solid fa-circle-notch fa-spin fa-2x ml-3"></i>');
 
             var data = {
                 'user_id': store.get('teampassUser').user_id,
@@ -555,25 +581,25 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                 "sources/main.queries.php", {
                     'type': "user_recovery_keys_download",
                     'type_category': 'action_key',
-                    'data': prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                    'key': '<?php echo $_SESSION['key']; ?>'
+                    'data': prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                    'key': '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                 },
                 function(data) {
-                    data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                    data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
                     if (debugJavascript === true) console.log(data)
                     if (data.error === true) {
                         // error
                         toastr.remove();
                         toastr.error(
                             data.message,
-                            '<?php echo langHdl('caution'); ?>', {
+                            '<?php echo $lang->get('caution'); ?>', {
                                 timeOut: 5000,
                                 progressBar: true
                             }
                         );
 
                         // Enable buttons
-                        $("#user-current-defuse-psk-progress").html('<?php echo langHdl('provide_current_psk_and_click_launch'); ?>');
+                        $("#user-current-defuse-psk-progress").html('<?php echo $lang->get('provide_current_psk_and_click_launch'); ?>');
                         $('#button_do_sharekeys_reencryption, #button_close_sharekeys_reencryption').removeAttr('disabled');
                         return false;
                     } else {

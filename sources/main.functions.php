@@ -26,28 +26,29 @@ declare(strict_types=1);
 
 use LdapRecord\Connection;
 use ForceUTF8\Encoding;
-Use Elegant\Sanitizer\Sanitizer;
-Use voku\helper\AntiXSS;
-Use Hackzilla\PasswordGenerator\Generator\ComputerPasswordGenerator;
-Use Hackzilla\PasswordGenerator\RandomGenerator\Php7RandomGenerator;
-Use TeampassClasses\SuperGlobal\SuperGlobal;
-Use TeampassClasses\NestedTree\NestedTree;
-Use Defuse\Crypto\Key;
-Use Defuse\Crypto\Crypto;
-Use Defuse\Crypto\KeyProtectedByPassword;
-Use Defuse\Crypto\File;
+use Elegant\Sanitizer\Sanitizer;
+use voku\helper\AntiXSS;
+use Hackzilla\PasswordGenerator\Generator\ComputerPasswordGenerator;
+use Hackzilla\PasswordGenerator\RandomGenerator\Php7RandomGenerator;
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
+use TeampassClasses\NestedTree\NestedTree;
+use Defuse\Crypto\Key;
+use Defuse\Crypto\Crypto;
+use Defuse\Crypto\KeyProtectedByPassword;
+use Defuse\Crypto\File as CryptoFile;
+use Defuse\Crypto\Exception as CryptoException;
 use PHPMailer\PHPMailer\PHPMailer;
-Use phpseclib\Crypt\RSA;
-Use phpseclib\Crypt\AES;
-Use PasswordLib\PasswordLib;
-Use Symfony\Component\Process\Process;
-Use Symfony\Component\Process\PhpExecutableFinder;
-Use TeampassClasses\Encryption\Encryption;
-//Use DB;
-
-if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
-    //die('Hacking attempt...');
-}
+use phpseclib\Crypt\RSA;
+use phpseclib\Crypt\AES;
+use PasswordLib\PasswordLib;
+use Symfony\Component\Process\Exception\ProcessFailedException;
+use Symfony\Component\Process\Process;
+use Symfony\Component\Process\PhpExecutableFinder;
+use TeampassClasses\Encryption\Encryption;
+//use phpseclib3\Crypt\PublicKeyLoader;
+//use phpseclib3\Crypt\RSA;
+//use phpseclib3\Exception\NoKeyLoadedException;
 
 // Load config if $SETTINGS not defined
 if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir']) === true) {
@@ -57,8 +58,7 @@ if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir'
 header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, must-revalidate');
 
-loadClasses();
-
+loadClasses('DB');
 
 /**
  * Convert language code to string.
@@ -72,9 +72,9 @@ function langHdl(string $string): string
         return 'ERROR in language strings!';
     }
 
-    // Load superglobal
-    //include_once __DIR__.'/../includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+    // Load
     $superGlobal = new SuperGlobal();
+    $antiXss = new AntiXSS();
     // Get language string
     $session_language = $superGlobal->get(trim($string), 'SESSION', 'lang');
     if (is_null($session_language) === true) {
@@ -95,8 +95,7 @@ function langHdl(string $string): string
     if (empty($session_language) === true) {
         return trim($string);
     }
-    //return (string) str_replace("'",  "&apos;", $session_language);
-    return (string) $session_language;
+    return (string) $antiXss->xss_clean($session_language);//esc_html($session_language);
 }
 
 /**
@@ -128,6 +127,29 @@ function bCrypt(
 }
 
 /**
+ * Checks if a string is hex encoded
+ *
+ * @param string $str
+ * @return boolean
+ */
+function isHex(string $str): bool
+{
+    if ((int) phpversion() >= 8) {
+        // Code for PHP 8
+        if (str_starts_with(strtolower($str), '0x')) {
+            $str = substr($str, 2);
+        }
+    } else {
+        if (substr($str, 0, 2 ) === "0x") {
+            $str = substr($str, 2);
+        }
+    }
+    
+
+    return ctype_xdigit($str);
+}
+
+/**
  * Defuse cryption function.
  *
  * @param string $message   what to de/crypt
@@ -142,23 +164,6 @@ function cryption(string $message, string $ascii_key, string $type, ?array $SETT
     $ascii_key = empty($ascii_key) === true ? file_get_contents(SECUREPATH.'/'.SECUREFILE) : $ascii_key;
     $err = false;
     
-    /*$path = __DIR__.'/../includes/libraries/Encryption/Encryption/';
-
-    include_once $path . 'Exception/CryptoException.php';
-    include_once $path . 'Exception/BadFormatException.php';
-    include_once $path . 'Exception/EnvironmentIsBrokenException.php';
-    include_once $path . 'Exception/IOException.php';
-    include_once $path . 'Exception/WrongKeyOrModifiedCiphertextException.php';
-    include_once $path . 'Crypto.php';
-    include_once $path . 'Encoding.php';
-    include_once $path . 'DerivedKeys.php';
-    include_once $path . 'Key.php';
-    include_once $path . 'KeyOrPassword.php';
-    include_once $path . 'File.php';
-    include_once $path . 'RuntimeTests.php';
-    include_once $path . 'KeyProtectedByPassword.php';
-    include_once $path . 'Core.php';*/
-    
     // convert KEY
     $key = Key::loadFromAsciiSafeString($ascii_key);
     try {
@@ -167,18 +172,17 @@ function cryption(string $message, string $ascii_key, string $type, ?array $SETT
         } elseif ($type === 'decrypt') {
             $text = Crypto::decrypt($message, $key);
         }
-    } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
+    } catch (CryptoException\WrongKeyOrModifiedCiphertextException $ex) {
         $err = 'an attack! either the wrong key was loaded, or the ciphertext has changed since it was created either corrupted in the database or intentionally modified by someone trying to carry out an attack.';
-    } catch (Defuse\Crypto\Exception\BadFormatException $ex) {
+    } catch (CryptoException\BadFormatException $ex) {
         $err = $ex;
-    } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
+    } catch (CryptoException\EnvironmentIsBrokenException $ex) {
         $err = $ex;
-    } catch (Defuse\Crypto\Exception\CryptoException $ex) {
+    } catch (CryptoException\CryptoException $ex) {
         $err = $ex;
-    } catch (Defuse\Crypto\Exception\IOException $ex) {
+    } catch (CryptoException\IOException $ex) {
         $err = $ex;
     }
-    //echo \Defuse\Crypto\Crypto::decrypt($message, $key).' ## ';
 
     return [
         'string' => $text ?? '',
@@ -193,30 +197,6 @@ function cryption(string $message, string $ascii_key, string $type, ?array $SETT
  */
 function defuse_generate_key()
 {
-    // load PhpEncryption library
-    /*if (file_exists('../includes/config/tp.config.php') === true) {
-        $path = '../includes/libraries/Encryption/Encryption/';
-    } elseif (file_exists('./includes/config/tp.config.php') === true) {
-        $path = './includes/libraries/Encryption/Encryption/';
-    } else {
-        $path = '../includes/libraries/Encryption/Encryption/';
-    }
-
-    include_once $path . 'Exception/CryptoException.php';
-    include_once $path . 'Exception/BadFormatException.php';
-    include_once $path . 'Exception/EnvironmentIsBrokenException.php';
-    include_once $path . 'Exception/IOException.php';
-    include_once $path . 'Exception/WrongKeyOrModifiedCiphertextException.php';
-    include_once $path . 'Crypto.php';
-    include_once $path . 'Encoding.php';
-    include_once $path . 'DerivedKeys.php';
-    include_once $path . 'Key.php';
-    include_once $path . 'KeyOrPassword.php';
-    include_once $path . 'File.php';
-    include_once $path . 'RuntimeTests.php';
-    include_once $path . 'KeyProtectedByPassword.php';
-    include_once $path . 'Core.php';*/
-
     $key = Key::createNewRandomKey();
     $key = $key->saveToAsciiSafeString();
     return $key;
@@ -231,30 +211,6 @@ function defuse_generate_key()
  */
 function defuse_generate_personal_key(string $psk): string
 {
-    // load PhpEncryption library
-    /*if (file_exists('../includes/config/tp.config.php') === true) {
-        $path = '../includes/libraries/Encryption/Encryption/';
-    } elseif (file_exists('./includes/config/tp.config.php') === true) {
-        $path = './includes/libraries/Encryption/Encryption/';
-    } else {
-        $path = '../includes/libraries/Encryption/Encryption/';
-    }
-
-    include_once $path . 'Exception/CryptoException.php';
-    include_once $path . 'Exception/BadFormatException.php';
-    include_once $path . 'Exception/EnvironmentIsBrokenException.php';
-    include_once $path . 'Exception/IOException.php';
-    include_once $path . 'Exception/WrongKeyOrModifiedCiphertextException.php';
-    include_once $path . 'Crypto.php';
-    include_once $path . 'Encoding.php';
-    include_once $path . 'DerivedKeys.php';
-    include_once $path . 'Key.php';
-    include_once $path . 'KeyOrPassword.php';
-    include_once $path . 'File.php';
-    include_once $path . 'RuntimeTests.php';
-    include_once $path . 'KeyProtectedByPassword.php';
-    include_once $path . 'Core.php';*/
-    
     $protected_key = KeyProtectedByPassword::createRandomPasswordProtectedKey($psk);
     return $protected_key->saveToAsciiSafeString(); // save this in user table
 }
@@ -269,37 +225,13 @@ function defuse_generate_personal_key(string $psk): string
  */
 function defuse_validate_personal_key(string $psk, string $protected_key_encoded): string
 {
-    // load PhpEncryption library
-    /*if (file_exists('../includes/config/tp.config.php') === true) {
-        $path = '../includes/libraries/Encryption/Encryption/';
-    } elseif (file_exists('./includes/config/tp.config.php') === true) {
-        $path = './includes/libraries/Encryption/Encryption/';
-    } else {
-        $path = '../includes/libraries/Encryption/Encryption/';
-    }
-
-    include_once $path . 'Exception/CryptoException.php';
-    include_once $path . 'Exception/BadFormatException.php';
-    include_once $path . 'Exception/EnvironmentIsBrokenException.php';
-    include_once $path . 'Exception/IOException.php';
-    include_once $path . 'Exception/WrongKeyOrModifiedCiphertextException.php';
-    include_once $path . 'Crypto.php';
-    include_once $path . 'Encoding.php';
-    include_once $path . 'DerivedKeys.php';
-    include_once $path . 'Key.php';
-    include_once $path . 'KeyOrPassword.php';
-    include_once $path . 'File.php';
-    include_once $path . 'RuntimeTests.php';
-    include_once $path . 'KeyProtectedByPassword.php';
-    include_once $path . 'Core.php';*/
-
     try {
         $protected_key_encoded = KeyProtectedByPassword::loadFromAsciiSafeString($protected_key_encoded);
         $user_key = $protected_key_encoded->unlockKey($psk);
         $user_key_encoded = $user_key->saveToAsciiSafeString();
-    } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
+    } catch (CryptoException\EnvironmentIsBrokenException $ex) {
         return 'Error - Major issue as the encryption is broken.';
-    } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
+    } catch (CryptoException\WrongKeyOrModifiedCiphertextException $ex) {
         return 'Error - The saltkey is not the correct one.';
     }
 
@@ -403,18 +335,7 @@ function identifyUserRights(
     $idFonctions,
     $SETTINGS
 ) {
-    //load ClassLoader
-    /*include_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
-    // Load superglobal
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';*/
     $superGlobal = new SuperGlobal();
-
-    // Load class DB
-    loadClasses('DB');
-    
-    //Build tree
-    /*$tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'] . '/includes/libraries');
-    $tree->register();*/
     $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
     // Check if user is ADMINISTRATOR    
@@ -451,7 +372,7 @@ function identifyUserRights(
  *
  * @param string $idFonctions Roles of user
  * @param array  $SETTINGS    Teampass settings
- * @param array  $tree        Tree of folders
+ * @param object $tree        Tree of folders
  *
  * @return bool
  */
@@ -503,7 +424,6 @@ function identAdmin($idFonctions, $SETTINGS, $tree)
             array_push($globalsVisibleFolders, $persfld['id']);
             array_push($globalsPersonalVisibleFolders, $persfld['id']);
             // get all descendants
-            $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
             $tree->rebuild();
             $tst = $tree->getDescendants($persfld['id']);
             foreach ($tst as $t) {
@@ -860,17 +780,17 @@ function identUserGetPFList(
  * 
  * @return void
  */
-function updateCacheTable(string $action, array $SETTINGS, ?int $ident = null): void
+function updateCacheTable(string $action, ?int $ident = null): void
 {
     if ($action === 'reload') {
         // Rebuild full cache table
-        cacheTableRefresh($SETTINGS);
+        cacheTableRefresh();
     } elseif ($action === 'update_value' && is_null($ident) === false) {
         // UPDATE an item
-        cacheTableUpdate($SETTINGS, $ident);
+        cacheTableUpdate($ident);
     } elseif ($action === 'add_value' && is_null($ident) === false) {
         // ADD an item
-        cacheTableAdd($SETTINGS, $ident);
+        cacheTableAdd($ident);
     } elseif ($action === 'delete_value' && is_null($ident) === false) {
         // DELETE an item
         DB::delete(prefixTable('cache'), 'id = %i', $ident);
@@ -880,11 +800,9 @@ function updateCacheTable(string $action, array $SETTINGS, ?int $ident = null): 
 /**
  * Cache table - refresh.
  *
- * @param array $SETTINGS Teampass settings
- * 
  * @return void
  */
-function cacheTableRefresh(array $SETTINGS): void
+function cacheTableRefresh(): void
 {
     // Load class DB
     loadClasses('DB');
@@ -970,17 +888,15 @@ function cacheTableRefresh(array $SETTINGS): void
 /**
  * Cache table - update existing value.
  *
- * @param array  $SETTINGS Teampass settings
  * @param int    $ident    Ident format
  * 
  * @return void
  */
-function cacheTableUpdate(array $SETTINGS, ?int $ident = null): void
+function cacheTableUpdate(?int $ident = null): void
 {
-    $superGlobal = new SuperGlobal();
-
     // Load class DB
     loadClasses('DB');
+    $superGlobal = new SuperGlobal();
 
     //Load Tree
     $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
@@ -1045,15 +961,13 @@ function cacheTableUpdate(array $SETTINGS, ?int $ident = null): void
 /**
  * Cache table - add new value.
  *
- * @param array  $SETTINGS Teampass settings
  * @param int    $ident    Ident format
  * 
  * @return void
  */
-function cacheTableAdd(array $SETTINGS, ?int $ident = null): void
+function cacheTableAdd(?int $ident = null): void
 {
     $superGlobal = new SuperGlobal();
-    // Get superglobals
     $globalsUserId = $superGlobal->get('user_id', 'SESSION');
 
     // Load class DB
@@ -1284,12 +1198,14 @@ function sendEmail(
     $silent = true,
     $cron = false
 ) {
+    $lang = new Language(); 
+
     // CAse where email not defined
     if ($email === 'none' || empty($email) === true) {
         return json_encode(
             [
                 'error' => true,
-                'message' => langHdl('forgot_my_pw_email_sent'),
+                'message' => $lang->get('forgot_my_pw_email_sent'),
             ]
         );
     }
@@ -1309,7 +1225,7 @@ function sendEmail(
         return json_encode(
             [
                 'error' => false,
-                'message' => langHdl('forgot_my_pw_email_sent'),
+                'message' => $lang->get('forgot_my_pw_email_sent'),
             ]
         );
     }
@@ -1325,7 +1241,7 @@ function sendEmail(
     return json_encode(
         [
             'error' => false,
-            'message' => langHdl('share_sent_ok'),
+            'message' => $lang->get('share_sent_ok'),
         ]
     );
 }
@@ -1341,15 +1257,11 @@ function buildEmail(
     $cron = false
 )
 {
-    // Load superglobal
-    $superGlobal = new SuperGlobal();
-    // Get user language
-    include_once $SETTINGS['cpassman_dir'] . '/includes/language/' . (null !== $superGlobal->get('user_language', 'SESSION', 'user') ? $superGlobal->get('user_language', 'SESSION', 'user') : 'english') . '.php';
     // load PHPMailer
     $mail = new PHPMailer(true);
 
     // send to user
-    $mail->setLanguage('en', $SETTINGS['cpassman_dir'] . '/includes/libraries/PHPMailer/PHPMailer/language/');
+    $mail->setLanguage('en', $SETTINGS['cpassman_dir'] . '/vendor/phpmailer/phpmailer/language/');
     $mail->SMTPDebug = isset($SETTINGS['email_debug_level']) === true && $cron === false && $silent === false ? $SETTINGS['email_debug_level'] : 0;
     $mail->Port = (int) $SETTINGS['email_port'];
     //COULD BE USED
@@ -1582,6 +1494,7 @@ function prepareExchangedData($data, string $type, ?string $key = null)
             true
         );
     }
+    return '';
 }
 
 
@@ -1708,7 +1621,7 @@ function send_syslog($message, $host, $port, $component = 'teampass'): void
  * @param string $label    Label
  * @param string $who      Who
  * @param string $login    Login
- * @param string $field_1  Field
+ * @param string|int $field_1  Field
  * 
  * @return void
  */
@@ -1718,7 +1631,7 @@ function logEvents(
     string $label, 
     string $who, 
     ?string $login = null, 
-    ?string $field_1 = null
+    $field_1 = null
 ): void
 {
     if (empty($who)) {
@@ -1883,7 +1796,7 @@ function notifyOnChange(int $item_id, string $action, array $SETTINGS): void
             prefixTable('emails'),
             [
                 'timestamp' => time(),
-                'subject' => langHdl('email_on_open_notification_subject'),
+                'subject' => $lang->get('email_on_open_notification_subject'),
                 'body' => str_replace(
                     ['#tp_user#', '#tp_item#', '#tp_link#'],
                     [
@@ -1891,7 +1804,7 @@ function notifyOnChange(int $item_id, string $action, array $SETTINGS): void
                         addslashes($item_label),
                         $SETTINGS['cpassman_url'] . '/index.php?page=items&group=' . $dataItem['id_tree'] . '&id=' . $item_id,
                     ],
-                    langHdl('email_on_open_notification_mail')
+                    $lang->get('email_on_open_notification_mail')
                 ),
                 'receivers' => $globalsNotifiedEmails,
                 'status' => '',
@@ -1915,6 +1828,7 @@ function notifyChangesToSubscribers(int $item_id, string $label, array $changes,
 {
     // Load superglobal
     $superGlobal = new SuperGlobal();
+    $lang = new Language(); 
     // Get superglobals
     $globalsUserId = $superGlobal->get('user_id', 'SESSION');
     $globalsLastname = $superGlobal->get('lastname', 'SESSION');
@@ -1943,11 +1857,11 @@ function notifyChangesToSubscribers(int $item_id, string $label, array $changes,
             prefixTable('emails'),
             [
                 'timestamp' => time(),
-                'subject' => langHdl('email_subject_item_updated'),
+                'subject' => $lang->get('email_subject_item_updated'),
                 'body' => str_replace(
                     ['#item_label#', '#folder_name#', '#item_id#', '#url#', '#name#', '#lastname#', '#changes#'],
                     [$label, $path, $item_id, $SETTINGS['cpassman_url'], $globalsName, $globalsLastname, $htmlChanges],
-                    langHdl('email_body_item_updated')
+                    $lang->get('email_body_item_updated')
                 ),
                 'receivers' => implode(',', $notification),
                 'status' => '',
@@ -2075,14 +1989,14 @@ function handleConfigFile($action, $SETTINGS, $field = null, $value = null)
             }
 
             if (stristr($line, "'" . $field . "' => '")) {
-                $data[$inc] = "    '" . $field . "' => '" . htmlspecialchars_decode($value, ENT_COMPAT) . "',\n";
+                $data[$inc] = "    '" . $field . "' => '" . htmlspecialchars_decode($value ?? '', ENT_COMPAT) . "',\n";
                 $bFound = true;
                 break;
             }
             ++$inc;
         }
         if ($bFound === false) {
-            $data[$inc] = "    '" . $field . "' => '" . htmlspecialchars_decode($value, ENT_COMPAT). "',\n);\n";
+            $data[$inc] = "    '" . $field . "' => '" . htmlspecialchars_decode($value ?? '', ENT_COMPAT). "',\n);\n";
         }
     }
 
@@ -2212,7 +2126,7 @@ function prepareFileWithDefuse(
     if (empty($password) === true || is_null($password) === true) {
         // get KEY to define password
         $ascii_key = file_get_contents(SECUREPATH.'/'.SECUREFILE);
-        $password = \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key);
+        $password = Key::loadFromAsciiSafeString($ascii_key);
     }
 
     $err = '';
@@ -2254,33 +2168,17 @@ function defuseFileEncrypt(
     array $SETTINGS,
     string $password = null
 ) {
-    // load PhpEncryption library
-    /*$path_to_encryption = '/includes/libraries/Encryption/Encryption/';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Exception/CryptoException.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Exception/BadFormatException.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Exception/IOException.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Exception/EnvironmentIsBrokenException.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Exception/WrongKeyOrModifiedCiphertextException.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Crypto.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Encoding.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'DerivedKeys.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Key.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'KeyOrPassword.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'File.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'RuntimeTests.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'KeyProtectedByPassword.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Core.php';*/
     try {
-        File::encryptFileWithPassword(
+        CryptoFile::encryptFileWithPassword(
             $source_file,
             $target_file,
             $password
         );
-    } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
+    } catch (CryptoException\WrongKeyOrModifiedCiphertextException $ex) {
         $err = 'wrong_key';
-    } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
+    } catch (CryptoException\EnvironmentIsBrokenException $ex) {
         $err = $ex;
-    } catch (Defuse\Crypto\Exception\IOException $ex) {
+    } catch (CryptoException\IOException $ex) {
         $err = $ex;
     }
 
@@ -2304,33 +2202,17 @@ function defuseFileDecrypt(
     array $SETTINGS,
     string $password = null
 ) {
-    // load PhpEncryption library
-    /*$path_to_encryption = '/includes/libraries/Encryption/Encryption/';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Exception/CryptoException.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Exception/BadFormatException.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Exception/IOException.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Exception/EnvironmentIsBrokenException.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Exception/WrongKeyOrModifiedCiphertextException.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Crypto.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Encoding.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'DerivedKeys.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Key.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'KeyOrPassword.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'File.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'RuntimeTests.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'KeyProtectedByPassword.php';
-    include_once $SETTINGS['cpassman_dir'] . $path_to_encryption . 'Core.php';*/
     try {
-        File::decryptFileWithPassword(
+        CryptoFile::decryptFileWithPassword(
             $source_file,
             $target_file,
             $password
         );
-    } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
+    } catch (CryptoException\WrongKeyOrModifiedCiphertextException $ex) {
         $err = 'wrong_key';
-    } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
+    } catch (CryptoException\EnvironmentIsBrokenException $ex) {
         $err = $ex;
-    } catch (Defuse\Crypto\Exception\IOException $ex) {
+    } catch (CryptoException\IOException $ex) {
         $err = $ex;
     }
 
@@ -2366,9 +2248,6 @@ function debugTeampass(string $text): void
 function fileDelete(string $file, array $SETTINGS): void
 {
     // Load AntiXSS
-    /*include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/portable-ascii-master/src/voku/helper/ASCII.php';
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/portable-utf8-master/src/voku/helper/UTF8.php';
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/anti-xss-master/src/voku/helper/AntiXSS.php';*/
     $antiXss = new AntiXSS();
     $file = $antiXss->xss_clean($file);
     if (is_file($file)) {
@@ -2554,6 +2433,7 @@ function performDBQuery(array $SETTINGS, string $fields, string $table): array
 
     // Load class DB
     loadClasses('DB');
+    
     // Insert log in DB
     return DB::query(
         'SELECT ' . $fields . '
@@ -2596,19 +2476,30 @@ function formatSizeUnits(int $bytes): string
  */
 function generateUserKeys(string $userPwd): array
 {
-    // Load classes
-    $rsa = new Crypt_RSA();
-    $cipher = new Crypt_AES();
-    // Create the private and public key
-    $res = $rsa->createKey(4096);
-    // Encrypt the privatekey
-    $cipher->setPassword($userPwd);
-    $privatekey = $cipher->encrypt($res['privatekey']);
-    return [
-        'private_key' => base64_encode($privatekey),
-        'public_key' => base64_encode($res['publickey']),
-        'private_key_clear' => base64_encode($res['privatekey']),
-    ];
+    //if (WIP === false) {
+        // Load classes
+        $rsa = new Crypt_RSA();
+        $cipher = new Crypt_AES();
+        // Create the private and public key
+        $res = $rsa->createKey(4096);
+        // Encrypt the privatekey
+        $cipher->setPassword($userPwd);
+        $privatekey = $cipher->encrypt($res['privatekey']);
+        return [
+            'private_key' => base64_encode($privatekey),
+            'public_key' => base64_encode($res['publickey']),
+            'private_key_clear' => base64_encode($res['privatekey']),
+        ];
+    /*} else {
+        // Create the keys
+        $keys = RSA::createKey();
+
+        return [
+            'private_key' => base64_encode($keys->withPassword($userPwd)->toString('PKCS8')),
+            'public_key' => base64_encode($keys->getPublicKey()),
+            'private_key_clear' => base64_encode($keys->toString('PKCS8')),
+        ];
+    }*/
 }
 
 /**
@@ -2617,20 +2508,33 @@ function generateUserKeys(string $userPwd): array
  * @param string $userPwd        User password
  * @param string $userPrivateKey User private key
  *
- * @return string
+ * @return string|object
  */
-function decryptPrivateKey(string $userPwd, string $userPrivateKey): string
+function decryptPrivateKey(string $userPwd, string $userPrivateKey)
 {
     if (empty($userPwd) === false) {
-        // Load classes
-        $cipher = new Crypt_AES();
-        // Encrypt the privatekey
-        $cipher->setPassword($userPwd);
-        try {
-            return base64_encode((string) $cipher->decrypt(base64_decode($userPrivateKey)));
-        } catch (Exception $e) {
-            return $e;
-        }
+        //if (WIP === false) {
+            // Load classes
+            $cipher = new Crypt_AES();
+            // Encrypt the privatekey
+            $cipher->setPassword($userPwd);
+            try {
+                return base64_encode((string) $cipher->decrypt(base64_decode($userPrivateKey)));
+            } catch (Exception $e) {
+                return $e;
+            }
+        /*} else {
+            //echo $userPrivateKey." ;; ".($userPwd)." ;;";
+            // Load and decrypt the private key
+            try {
+                $privateKey = PublicKeyLoader::loadPrivateKey(base64_decode($userPrivateKey), $userPwd)->withHash('sha1')->withMGFHash('sha1');
+                print_r($privateKey);
+                return base64_encode((string) $$privateKey);
+            } catch (NoKeyLoadedException $e) {
+                print_r($e);
+                return $e;
+            }
+        }*/
     }
     return '';
 }
@@ -2646,15 +2550,26 @@ function decryptPrivateKey(string $userPwd, string $userPrivateKey): string
 function encryptPrivateKey(string $userPwd, string $userPrivateKey): string
 {
     if (empty($userPwd) === false) {
-        // Load classes
-        $cipher = new Crypt_AES();
-        // Encrypt the privatekey
-        $cipher->setPassword($userPwd);        
-        try {
-            return base64_encode($cipher->encrypt(base64_decode($userPrivateKey)));
-        } catch (Exception $e) {
-            return $e;
-        }
+        //if (WIP === false) {
+            // Load classes
+            $cipher = new Crypt_AES();
+            // Encrypt the privatekey
+            $cipher->setPassword($userPwd);        
+            try {
+                return base64_encode($cipher->encrypt(base64_decode($userPrivateKey)));
+            } catch (Exception $e) {
+                return $e;
+            }
+        /*} else {
+            // Load the private key
+            $privateKey = PublicKeyLoader::load(base64_decode($userPrivateKey));
+
+            try {
+                return base64_encode($privateKey->withPassword($userPwd));
+            } catch (Exception $e) {
+                return $e;
+            }
+        }*/
     }
     return '';
 }
@@ -2669,16 +2584,20 @@ function encryptPrivateKey(string $userPwd, string $userPrivateKey): string
  */
 function doDataEncryption(string $data, string $key = NULL): array
 {
-    // Load classes
-    $cipher = new Crypt_AES(CRYPT_AES_MODE_CBC);
-    // Generate an object key
-    $objectKey = is_null($key) === true ? uniqidReal(KEY_LENGTH) : $key;
-    // Set it as password
-    $cipher->setPassword($objectKey);
-    return [
-        'encrypted' => base64_encode($cipher->encrypt($data)),
-        'objectKey' => base64_encode($objectKey),
-    ];
+    //if (WIP === false) {
+        // Load classes
+        $cipher = new Crypt_AES(CRYPT_AES_MODE_CBC);
+        // Generate an object key
+        $objectKey = is_null($key) === true ? uniqidReal(KEY_LENGTH) : $key;
+        // Set it as password
+        $cipher->setPassword($objectKey);
+        return [
+            'encrypted' => base64_encode($cipher->encrypt($data)),
+            'objectKey' => base64_encode($objectKey),
+        ];
+    /*} else {
+
+    }*/
 }
 
 /**
@@ -2691,11 +2610,15 @@ function doDataEncryption(string $data, string $key = NULL): array
  */
 function doDataDecryption(string $data, string $key): string
 {
-    // Load classes
-    $cipher = new Crypt_AES();
-    // Set the object key
-    $cipher->setPassword(base64_decode($key));
-    return base64_encode((string) $cipher->decrypt(base64_decode($data)));
+    //if (WIP === false) {
+        // Load classes
+        $cipher = new Crypt_AES();
+        // Set the object key
+        $cipher->setPassword(base64_decode($key));
+        return base64_encode((string) $cipher->decrypt(base64_decode($data)));
+    /*} else {
+
+    }*/
 }
 
 /**
@@ -2708,11 +2631,15 @@ function doDataDecryption(string $data, string $key): string
  */
 function encryptUserObjectKey(string $key, string $publicKey): string
 {
-    // Load classes
-    $rsa = new Crypt_RSA();
-    $rsa->loadKey(base64_decode($publicKey));
-    // Encrypt
-    return base64_encode($rsa->encrypt(base64_decode($key)));
+    //if (WIP === false) {
+        // Load classes
+        $rsa = new Crypt_RSA();
+        $rsa->loadKey(base64_decode($publicKey));
+        // Encrypt
+        return base64_encode($rsa->encrypt(base64_decode($key)));
+    /*} else {
+
+    }*/
 }
 
 /**
@@ -2725,20 +2652,24 @@ function encryptUserObjectKey(string $key, string $publicKey): string
  */
 function decryptUserObjectKey(string $key, string $privateKey): string
 {
-    // Load classes
-    $rsa = new Crypt_RSA();
-    $rsa->loadKey(base64_decode($privateKey));
-    // Decrypt
-    try {
-        $tmpValue = $rsa->decrypt(base64_decode($key));
-        if (is_bool($tmpValue) === false) {
-            $ret = base64_encode((string) /** @scrutinizer ignore-type */$tmpValue);
-        } else {
-            $ret = '';
+    //if (WIP === false) {
+        // Load classes
+        $rsa = new Crypt_RSA();
+        $rsa->loadKey(base64_decode($privateKey));
+        // Decrypt
+        try {
+            $tmpValue = $rsa->decrypt(base64_decode($key));
+            if (is_bool($tmpValue) === false) {
+                $ret = base64_encode((string) /** @scrutinizer ignore-type */$tmpValue);
+            } else {
+                $ret = '';
+            }
+        } catch (Exception $e) {
+            return $e;
         }
-    } catch (Exception $e) {
-        return $e;
-    }
+        /*} else {
+
+        }*/
 
     return $ret;
 }
@@ -2756,31 +2687,34 @@ function encryptFile(string $fileInName, string $fileInPath): array
     if (defined('FILE_BUFFER_SIZE') === false) {
         define('FILE_BUFFER_SIZE', 128 * 1024);
     }
+    //if (WIP === false) {
+        // Load classes
+        $cipher = new Crypt_AES();
+        // Generate an object key
+        $objectKey = uniqidReal(32);
+        // Set it as password
+        $cipher->setPassword($objectKey);
+        // Prevent against out of memory
+        $cipher->enableContinuousBuffer();
+        //$cipher->disablePadding();
 
-    // Load classes
-    $cipher = new Crypt_AES();
-    // Generate an object key
-    $objectKey = uniqidReal(32);
-    // Set it as password
-    $cipher->setPassword($objectKey);
-    // Prevent against out of memory
-    $cipher->enableContinuousBuffer();
-    //$cipher->disablePadding();
+        // Encrypt the file content
+        $plaintext = file_get_contents(
+            filter_var($fileInPath . '/' . $fileInName, FILTER_SANITIZE_URL)
+        );
+        $ciphertext = $cipher->encrypt($plaintext);
+        // Save new file
+        $hash = md5($plaintext);
+        $fileOut = $fileInPath . '/' . TP_FILE_PREFIX . $hash;
+        file_put_contents($fileOut, $ciphertext);
+        unlink($fileInPath . '/' . $fileInName);
+        return [
+            'fileHash' => base64_encode($hash),
+            'objectKey' => base64_encode($objectKey),
+        ];
+    /*} else {
 
-    // Encrypt the file content
-    $plaintext = file_get_contents(
-        filter_var($fileInPath . '/' . $fileInName, FILTER_SANITIZE_URL)
-    );
-    $ciphertext = $cipher->encrypt($plaintext);
-    // Save new file
-    $hash = md5($plaintext);
-    $fileOut = $fileInPath . '/' . TP_FILE_PREFIX . $hash;
-    file_put_contents($fileOut, $ciphertext);
-    unlink($fileInPath . '/' . $fileInName);
-    return [
-        'fileHash' => base64_encode($hash),
-        'objectKey' => base64_encode($objectKey),
-    ];
+    }*/
 }
 
 /**
@@ -2797,20 +2731,25 @@ function decryptFile(string $fileName, string $filePath, string $key): string
     if (! defined('FILE_BUFFER_SIZE')) {
         define('FILE_BUFFER_SIZE', 128 * 1024);
     }
-
+    
     // Get file name
     $fileName = base64_decode($fileName);
-    // Load classes
-    $cipher = new Crypt_AES();
-    // Set the object key
-    $cipher->setPassword(base64_decode($key));
-    // Prevent against out of memory
-    $cipher->enableContinuousBuffer();
-    $cipher->disablePadding();
-    // Get file content
-    $ciphertext = file_get_contents($filePath . '/' . TP_FILE_PREFIX . $fileName);
-    // Decrypt file content and return
-    return base64_encode($cipher->decrypt($ciphertext));
+
+    //if (WIP === false) {
+        // Load classes
+        $cipher = new Crypt_AES();
+        // Set the object key
+        $cipher->setPassword(base64_decode($key));
+        // Prevent against out of memory
+        $cipher->enableContinuousBuffer();
+        $cipher->disablePadding();
+        // Get file content
+        $ciphertext = file_get_contents($filePath . '/' . TP_FILE_PREFIX . $fileName);
+        // Decrypt file content and return
+        return base64_encode($cipher->decrypt($ciphertext));
+    /*} else {
+        
+    }*/
 }
 
 /**
@@ -3422,15 +3361,18 @@ function isValueSetEmpty($value, $boolean = true) : bool
  */
 function defineComplexity() : void
 {
+    // Load user's language
+    $lang = new Language(); 
+    
     if (defined('TP_PW_COMPLEXITY') === false) {
         define(
             'TP_PW_COMPLEXITY',
             [
-                TP_PW_STRENGTH_1 => array(TP_PW_STRENGTH_1, langHdl('complex_level1'), 'fas fa-thermometer-empty text-danger'),
-                TP_PW_STRENGTH_2 => array(TP_PW_STRENGTH_2, langHdl('complex_level2'), 'fas fa-thermometer-quarter text-warning'),
-                TP_PW_STRENGTH_3 => array(TP_PW_STRENGTH_3, langHdl('complex_level3'), 'fas fa-thermometer-half text-warning'),
-                TP_PW_STRENGTH_4 => array(TP_PW_STRENGTH_4, langHdl('complex_level4'), 'fas fa-thermometer-three-quarters text-success'),
-                TP_PW_STRENGTH_5 => array(TP_PW_STRENGTH_5, langHdl('complex_level5'), 'fas fa-thermometer-full text-success'),
+                TP_PW_STRENGTH_1 => array(TP_PW_STRENGTH_1, $lang->get('complex_level1'), 'fas fa-thermometer-empty text-danger'),
+                TP_PW_STRENGTH_2 => array(TP_PW_STRENGTH_2, $lang->get('complex_level2'), 'fas fa-thermometer-quarter text-warning'),
+                TP_PW_STRENGTH_3 => array(TP_PW_STRENGTH_3, $lang->get('complex_level3'), 'fas fa-thermometer-half text-warning'),
+                TP_PW_STRENGTH_4 => array(TP_PW_STRENGTH_4, $lang->get('complex_level4'), 'fas fa-thermometer-three-quarters text-success'),
+                TP_PW_STRENGTH_5 => array(TP_PW_STRENGTH_5, $lang->get('complex_level5'), 'fas fa-thermometer-full text-success'),
             ]
         );
     }
@@ -3830,6 +3772,7 @@ function handleUserKeys(
     string $recovery_private_key = ''
 ): string
 {
+    $lang = new Language(); 
 
     // prepapre background tasks for item keys generation        
     $userTP = DB::queryFirstRow(
@@ -3852,7 +3795,7 @@ function handleUserKeys(
             return prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('pw_hash_not_correct'),
+                    'message' => $lang->get('pw_hash_not_correct'),
                 ),
                 'encode'
             );
@@ -3905,7 +3848,7 @@ function handleUserKeys(
                     'creator_pwd' => $userTP['pw'],
                     'send_email' => $sendEmailToUser === true ? 1 : 0,
                     'otp_provided_new_value' => 1,
-                    'email_body' => empty($emailBody) === true ? '' : langHdl($emailBody),
+                    'email_body' => empty($emailBody) === true ? '' : $lang->get($emailBody),
                     'user_self_change' => $user_self_change === true ? 1 : 0,
                 ]),
                 'updated_at' => '',
@@ -4200,7 +4143,9 @@ function purgeUnnecessaryKeys(bool $allUsers = true, int $user_id=0)
 {
     if ($allUsers === true) {
         // Load class DB
-        loadClasses('DB');
+        if (class_exists('DB') === false) {
+            loadClasses('DB');
+        }
 
         $users = DB::query(
             'SELECT id
@@ -4341,9 +4286,11 @@ function handleUserRecoveryKeysDownload(int $userId, array $SETTINGS):string
  */
 function loadClasses(string $className = ''): void
 {
-    include_once __DIR__. '/../sources/main.functions.php';
-    include_once __DIR__. '/../includes/config/include.php';
-    include_once __DIR__. '/../includes/config/settings.php';
+    require_once __DIR__. '/../includes/config/include.php';
+    require_once __DIR__. '/../includes/config/settings.php';
+    if (phpversion() < 8) {
+        require_once __DIR__. '/../includes/libraries/string.polyfill.php';
+    }
     require_once __DIR__.'/../vendor/autoload.php';
 
     if (defined('DB_PASSWD_CLEAR') === false) {
@@ -4374,8 +4321,7 @@ function loadClasses(string $className = ''): void
 function getCurrectPage($SETTINGS)
 {
     // Load libraries
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-    $superGlobal = new protect\SuperGlobal\SuperGlobal();
+    $superGlobal = new SuperGlobal();
 
     // Parse the url
     parse_str(
@@ -4389,4 +4335,16 @@ function getCurrectPage($SETTINGS)
     return $result['page'];
 }
 
+/**
+ * Permits to return value if set
+ *
+ * @param string|int $value
+ * @param string|int|null $retFalse
+ * @param string|int $retTrue
+ * @return mixed
+ */
+function returnIfSet($value, $retFalse = '', $retTrue = null)
+{
 
+    return isset($value) === true ? ($retTrue === null ? $value : $retTrue) : $retFalse;
+}

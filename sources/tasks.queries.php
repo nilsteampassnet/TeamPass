@@ -19,32 +19,27 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-Use EZimuel\PHPSecureSession;
-Use Symfony\Component\Process\Process;
-Use TeampassClasses\PerformChecks\PerformChecks;
-
+use EZimuel\PHPSecureSession;
+use Symfony\Component\Process\Exception\ProcessFailedException;
+use Symfony\Component\Process\Process;
+use TeampassClasses\PerformChecks\PerformChecks;
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
 // Load functions
 require_once 'main.functions.php';
 
 // init
 loadClasses('DB');
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
 session_name('teampass_session');
 session_start();
-if (
-    isset($_SESSION['CPM']) === false
-    || $_SESSION['CPM'] !== 1
-    || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id'])
-    || isset($_SESSION['key']) === false || empty($_SESSION['key'])
-) {
-    die('Hacking attempt...');
-}
 
 // Load config if $SETTINGS not defined
 try {
     include_once __DIR__.'/../includes/config/tp.config.php';
 } catch (Exception $e) {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
-    exit();
 }
 
 // Do checks
@@ -52,27 +47,38 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => isset($_POST['type']) === true ? $_POST['type'] : '',
+            'type' => returnIfSet($superGlobal->get('type', 'POST')),
         ],
         [
             'type' => 'trim|escape',
         ],
-    )
+    ),
+    [
+        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
+        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+    ]
 );
 // Handle the case
-$checkUserAccess->caseHandler();
-if ($checkUserAccess->userAccessPage($_SESSION['user_id'], $_SESSION['key'], 'options', $SETTINGS) === false) {
+echo $checkUserAccess->caseHandler();
+if (
+    $checkUserAccess->userAccessPage('tasks') === false ||
+    $checkUserAccess->checkSession() === false
+) {
     // Not allowed page
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
+    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
 
-require_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user']['user_language'] . '.php';
+// Define Timezone
+date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
 
+// Set header properties
 header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, no-store, must-revalidate');
 
+// --------------------------------- //
 
 // Prepare POST variables
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
@@ -82,11 +88,11 @@ $post_task = filter_input(INPUT_POST, 'task', FILTER_SANITIZE_FULL_SPECIAL_CHARS
 
 if (null !== $post_type) {
     // Do checks
-    if ($post_key !== $_SESSION['key']) {
+    if ($post_key !== $superGlobal->get('key', 'SESSION')) {
         echo prepareExchangedData(
             array(
                 'error' => true,
-                'message' => langHdl('key_is_not_correct'),
+                'message' => $lang->get('key_is_not_correct'),
             ),
             'encode'
         );
@@ -95,7 +101,7 @@ if (null !== $post_type) {
         echo prepareExchangedData(
             array(
                 'error' => true,
-                'message' => langHdl('error_not_allowed_to'),
+                'message' => $lang->get('error_not_allowed_to'),
             ),
             'encode'
         );
@@ -107,12 +113,12 @@ if (null !== $post_type) {
 
     switch ($post_type) {
         case 'perform_task':
-            echo performTask($post_task, $SETTINGS['cpassman_dir'], $phpBinaryPath, $SETTINGS['date_format'].' '.$SETTINGS['time_format']);
+            echo performTask($post_task, $phpBinaryPath, $SETTINGS['date_format'].' '.$SETTINGS['time_format']);
 
             break;
 
         case 'load_last_tasks_execution':
-            echo loadLastTasksExec($SETTINGS['date_format'].' '.$SETTINGS['time_format'], $SETTINGS['cpassman_dir']);
+            echo loadLastTasksExec($SETTINGS['date_format'].' '.$SETTINGS['time_format']);
 
             break;  
     }
@@ -122,10 +128,9 @@ if (null !== $post_type) {
  * Load the last tasks execution
  *
  * @param string $datetimeFormat
- * @param string $dir
  * @return string
  */
-function loadLastTasksExec(string $datetimeFormat, string $dir): string
+function loadLastTasksExec(string $datetimeFormat): string
 {
     $lastExec = [];
 
@@ -222,12 +227,11 @@ function loadLastTasksExec_getBadge(string $processLabel): string
  * Perform a task
  *
  * @param string $task
- * @param string $dir
  * @param string $phpBinaryPath
  * @param string $datetimeFormat
  * @return string
  */
-function performTask(string $task, string $dir, string $phpBinaryPath, string $datetimeFormat): string
+function performTask(string $task, string $phpBinaryPath, string $datetimeFormat): string
 {
     switch ($task) {
         case 'users_personal_folder_task':

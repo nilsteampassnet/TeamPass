@@ -24,13 +24,33 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-require_once '../../sources/SecureHandler.php';
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
+use EZimuel\PHPSecureSession;
+use TeampassClasses\PerformChecks\PerformChecks;
+use TeampassClasses\NestedTree\NestedTree;
+
+// Load functions
+require_once __DIR__.'/../../sources/main.functions.php';
+
+// init
+loadClasses('DB');
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
 session_name('teampass_session');
 session_start();
 
+// Load config if $SETTINGS not defined
+try {
+    include_once __DIR__.'/../../includes/config/tp.config.php';
+} catch (Exception $e) {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
+
 // Load superglobal library
-require_once '../../includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-$superGlobal = new protect\SuperGlobal\SuperGlobal();
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
+$tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 $get = [];
 $get['user_id'] = $superGlobal->get('user_id', 'GET');
 
@@ -45,18 +65,6 @@ if (isset($_SESSION['user_id']) === true && empty($_SESSION['user_id']) === fals
 }
 
 if (empty($user_id) === false && isset($_SESSION['CPM']) === true) {
-    // connect to the server
-    include_once '../../sources/main.functions.php';
-    include_once '../../includes/config/settings.php';
-    include_once '../../includes/libraries/Database/Meekrodb/db.class.php';
-    DB::$host = DB_HOST;
-    DB::$user = DB_USER;
-    DB::$password = defuseReturnDecrypted(DB_PASSWD, $SETTINGS);
-    DB::$dbName = DB_NAME;
-    DB::$port = DB_PORT;
-    DB::$encoding = DB_ENCODING;
-    DB::$ssl = DB_SSL;
-    DB::$connect_options = DB_CONNECT_OPTIONS;
     // clear in db
     DB::update(
         DB_PREFIX.'users',
@@ -73,7 +81,6 @@ if (empty($user_id) === false && isset($_SESSION['CPM']) === true) {
     if (isset($SETTINGS['log_connections']) === true
         && (int) $SETTINGS['log_connections'] === 1
     ) {
-        include_once '../../sources/main.functions.php';
         logEvents($SETTINGS, 'user_connection', 'disconnect', (string) $user_id, isset($_SESSION['login']) === true ? $_SESSION['login'] : '');
     }
 }
@@ -81,7 +88,6 @@ if (empty($user_id) === false && isset($_SESSION['CPM']) === true) {
 // erase session table
 session_destroy();
 $_SESSION = [];
-require_once '../../sources/SecureHandler.php';
 session_name('teampass_session');
 session_start();
 $_SESSION['CPM'] = 1;

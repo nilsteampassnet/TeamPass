@@ -22,6 +22,10 @@
  *
  * @see       https://www.teampass.net
  */
+
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
+
 class ItemController extends BaseController
 {
 
@@ -33,8 +37,9 @@ class ItemController extends BaseController
      */
     public function inFoldersAction(array $userData): void
     {
-        $superGlobal = new protect\SuperGlobal\SuperGlobal();
-        $strErrorDesc = '';
+        $superGlobal = new SuperGlobal();
+$lang = new Language(); 
+        $strErrorDesc = $responseData = $strErrorHeader = '';
         $requestMethod = $superGlobal->get('REQUEST_METHOD', 'SERVER');
 
         // get parameters
@@ -124,8 +129,9 @@ class ItemController extends BaseController
      */
     public function addAction(array $userData)
     {
-        $superGlobal = new protect\SuperGlobal\SuperGlobal();
-        $strErrorDesc = '';
+        $superGlobal = new SuperGlobal();
+$lang = new Language(); 
+        $strErrorDesc = $strErrorHeader = '';
         $requestMethod = $superGlobal->get('REQUEST_METHOD', 'SERVER');
 
         if (strtoupper($requestMethod) === 'POST') {
@@ -181,7 +187,8 @@ class ItemController extends BaseController
      */
     public function getAction(array $userData): void
     {
-        $superGlobal = new protect\SuperGlobal\SuperGlobal();
+        $superGlobal = new SuperGlobal();
+$lang = new Language(); 
         $strErrorDesc = '';
         $sqlExtra = '';
         $responseData = '';

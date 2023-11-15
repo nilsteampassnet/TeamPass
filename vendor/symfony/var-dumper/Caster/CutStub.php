@@ -20,14 +20,14 @@ use Symfony\Component\VarDumper\Cloner\Stub;
  */
 class CutStub extends Stub
 {
-    public function __construct(mixed $value)
+    public function __construct($value)
     {
         $this->value = $value;
 
         switch (\gettype($value)) {
             case 'object':
                 $this->type = self::TYPE_OBJECT;
-                $this->class = $value::class;
+                $this->class = \get_class($value);
 
                 if ($value instanceof \Closure) {
                     ReflectionCaster::castClosure($value, [], $this, true, Caster::EXCLUDE_VERBOSE);

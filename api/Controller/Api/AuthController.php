@@ -23,6 +23,8 @@
  * @see       https://www.teampass.net
  */
 
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
 
 class AuthController extends BaseController
 {
@@ -31,10 +33,9 @@ class AuthController extends BaseController
      */
     public function authorizeAction()
     {
-        $superGlobal = new protect\SuperGlobal\SuperGlobal();
-        $strErrorDesc = '';
-        $responseData = '';
-        $strErrorHeader = '';
+        $superGlobal = new SuperGlobal();
+$lang = new Language(); 
+        $strErrorDesc = $responseData = $strErrorHeader = '';
         $requestMethod = $superGlobal->get('REQUEST_METHOD', 'SERVER');
         $arrQueryStringParams = $this->getQueryStringParams();
 

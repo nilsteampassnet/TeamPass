@@ -16,8 +16,10 @@ class Entry extends BaseEntry implements ActiveDirectory
 {
     /**
      * The default attributes that should be mutated to dates.
+     *
+     * @var array
      */
-    protected array $defaultDates = [
+    protected $defaultDates = [
         'whenchanged' => 'windows',
         'whencreated' => 'windows',
         'dscorepropagationdata' => 'windows',
@@ -25,73 +27,83 @@ class Entry extends BaseEntry implements ActiveDirectory
 
     /**
      * The attribute key that contains the Object SID.
+     *
+     * @var string
      */
-    protected string $sidKey = 'objectsid';
+    protected $sidKey = 'objectsid';
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
-    public function getObjectSidKey(): string
+    public function getObjectSidKey()
     {
         return $this->sidKey;
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
-    public function getObjectSid(): ?string
+    public function getObjectSid()
     {
         return $this->getFirstAttribute($this->sidKey);
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
-    public function getConvertedSid($sid = null): ?string
+    public function getConvertedSid($sid = null)
     {
         try {
-            return $this->newObjectSid(
-                (string) ($sid ?? $this->getObjectSid())
+            return (string) $this->newObjectSid(
+                $sid ?? $this->getObjectSid()
             );
-        } catch (InvalidArgumentException) {
-            return null;
+        } catch (InvalidArgumentException $e) {
+            return;
         }
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
-    public function getBinarySid($sid = null): ?string
+    public function getBinarySid($sid = null)
     {
         try {
             return $this->newObjectSid(
                 $sid ?? $this->getObjectSid()
             )->getBinary();
-        } catch (InvalidArgumentException) {
-            return null;
+        } catch (InvalidArgumentException $e) {
+            return;
         }
     }
 
     /**
      * Make a new object Sid instance.
+     *
+     * @param  string  $value
+     * @return Sid
      */
-    protected function newObjectSid(string $value): Sid
+    protected function newObjectSid($value)
     {
         return new Sid($value);
     }
 
     /**
      * Create a new query builder.
+     *
+     * @param  Connection  $connection
+     * @return ActiveDirectoryBuilder
      */
-    public function newQueryBuilder(Connection $connection): ActiveDirectoryBuilder
+    public function newQueryBuilder(Connection $connection)
     {
         return new ActiveDirectoryBuilder($connection);
     }
 
     /**
      * Determine if the object is deleted.
+     *
+     * @return bool
      */
-    public function isDeleted(): bool
+    public function isDeleted()
     {
         return strtoupper((string) $this->getFirstAttribute('isDeleted')) === 'TRUE';
     }
@@ -99,9 +111,12 @@ class Entry extends BaseEntry implements ActiveDirectory
     /**
      * Restore a deleted object.
      *
+     * @param  string|null  $newParentDn
+     * @return bool
+     *
      * @throws \LdapRecord\LdapRecordException
      */
-    public function restore(string $newParentDn = null): bool
+    public function restore($newParentDn = null)
     {
         if (! $this->isDeleted()) {
             return false;
@@ -123,22 +138,25 @@ class Entry extends BaseEntry implements ActiveDirectory
         $this->setRawAttribute('distinguishedname', $newDn);
 
         $this->save(['isDeleted' => null]);
-
-        return true;
     }
 
     /**
      * Get the objects restore location.
+     *
+     * @return string
      */
-    protected function getDefaultRestoreLocation(): ?string
+    protected function getDefaultRestoreLocation()
     {
         return $this->getFirstAttribute('lastKnownParent') ?? $this->getParentDn($this->getParentDn($this->getDn()));
     }
 
     /**
      * Convert the attributes for JSON serialization.
+     *
+     * @param  array  $attributes
+     * @return array
      */
-    protected function convertAttributesForJson(array $attributes = []): array
+    protected function convertAttributesForJson(array $attributes = [])
     {
         $attributes = parent::convertAttributesForJson($attributes);
 
@@ -156,8 +174,11 @@ class Entry extends BaseEntry implements ActiveDirectory
 
     /**
      * Convert the attributes from JSON serialization.
+     *
+     * @param  array  $attributes
+     * @return array
      */
-    protected function convertAttributesFromJson(array $attributes = []): array
+    protected function convertAttributesFromJson(array $attributes = [])
     {
         $attributes = parent::convertAttributesFromJson($attributes);
 

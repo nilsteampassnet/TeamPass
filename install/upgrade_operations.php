@@ -16,21 +16,28 @@
  * @see       https://www.teampass.net
  */
 
-set_time_limit(600);
+use EZimuel\PHPSecureSession;
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
+use PasswordLib\PasswordLib;
 
+// Load functions
+require_once __DIR__.'/../sources/main.functions.php';
 
-require_once __DIR__.'/../sources/SecureHandler.php';
+// init
+loadClasses('DB');
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
 session_name('teampass_session');
 session_start();
 error_reporting(E_ERROR | E_PARSE);
+set_time_limit(600);
 $_SESSION['CPM'] = 1;
 
 //include librairies
 require_once __DIR__.'/../includes/language/english.php';
 require_once __DIR__.'/../includes/config/include.php';
 require_once __DIR__.'/../includes/config/settings.php';
-require_once __DIR__.'/../sources/main.functions.php';
-require_once __DIR__.'/../includes/libraries/Tree/NestedTree/NestedTree.php';
 require_once __DIR__.'/tp.functions.php';
 require_once __DIR__.'/libs/aesctr.php';
 require_once __DIR__.'/../includes/config/tp.config.php';
@@ -40,8 +47,8 @@ $post_nb = filter_input(INPUT_POST, 'nb', FILTER_SANITIZE_NUMBER_INT);
 $post_start = filter_input(INPUT_POST, 'start', FILTER_SANITIZE_NUMBER_INT);
 
 // Load libraries
-require_once __DIR__.'/../includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-$superGlobal = new protect\SuperGlobal\SuperGlobal();
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
 
 // Some init
 $_SESSION['settings']['loaded'] = '';
@@ -80,14 +87,10 @@ if (mysqli_connect(
     exit();
 }
 
-// Load libraries
-require_once __DIR__.'/../includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-$superGlobal = new protect\SuperGlobal\SuperGlobal();
-
 // Get POST with operation to perform
 $post_operation = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
-if (isset($post_operation) === true && empty($post_operation) === false) {
+if (isset($post_operation) === true && empty($post_operation) === false && strpos($post_operation, 'step') === false) {
     if ($post_operation === '20230604_1') {
         // ---->
         // OPERATION - 20230604_1 - generate key for item_key
@@ -144,17 +147,11 @@ if (isset($post_operation) === true && empty($post_operation) === false) {
             // OPERATION - 20231017_1 - remove all existing keys
             // if item is personal and user is not owner
 
-            purgeUnnecessaryKeys(true);
+            installPurgeUnnecessaryKeys(true, 0,$pre);
     }
+    // Return back
+    echo '[{"finish":"'.$finish.'" , "next":"", "error":"", "total":"'.$total.'"}]';
 }
-
-// Close connection
-mysqli_close($db_link);
-
-
-// Return back
-echo '[{"finish":"'.$finish.'" , "next":"", "error":"", "total":"'.$total.'"}]';
-
 
 
 function populateItemsTable_CreatedAt($pre, $post_nb)
@@ -231,4 +228,280 @@ function populateItemsTable_DeletedAt($pre)
     }
 
     return 1;
+}
+
+
+/**
+ * Delete unnecessary keys for personal items
+ *
+ * @param boolean $allUsers
+ * @param integer $user_id
+ * @return void
+ */
+function installPurgeUnnecessaryKeys(bool $allUsers = true, int $user_id=0, string $pre)
+{
+    global $db_link;
+    if ($allUsers === true) {
+        $users = mysqli_query(
+            $db_link,
+            'SELECT id
+            FROM ' . $pre . 'users
+            WHERE id NOT IN ('.OTV_USER_ID.', '.TP_USER_ID.', '.SSH_USER_ID.', '.API_USER_ID.')
+            ORDER BY login ASC'
+        );
+        while ($user = mysqli_fetch_assoc($users)) {
+            installPurgeUnnecessaryKeysForUser((int) $user['id'], $pre);
+        }
+    } else {
+        installPurgeUnnecessaryKeysForUser((int) $user_id, $pre);
+    }
+}
+
+/**
+ * Delete unnecessary keys for personal items
+ *
+ * @param integer $user_id
+ * @return void
+ */
+function installPurgeUnnecessaryKeysForUser(int $user_id=0, string $pre)
+{
+    global $db_link;
+    if ($user_id === 0) {
+        return;
+    }
+
+    $result = mysqli_query(
+        $db_link,
+        'SELECT id
+        FROM ' . $pre . 'items AS i
+        INNER JOIN ' . $pre . 'log_items AS li ON li.id_item = i.id
+        WHERE i.perso = 1 AND li.action = "at_creation" AND li.id_user IN ('.TP_USER_ID.', '.$user_id.')',
+    );
+    $rowcount = mysqli_num_rows($result);
+    if ($rowcount > 0) {
+        // Build list of items id
+        $pfItemsList = [];
+        while ($row = mysqli_fetch_assoc($result)) {
+            array_push($pfItemsList, $row['id']);
+        }
+
+        /*$personalItem = mysqli_fetch_column($result, 0);*/
+        $pfItemsList = implode(',', $pfItemsList);
+        // Item keys
+        mysqli_query(
+            $db_link,
+            'DELETE FROM ' . $pre . 'sharekeys_items
+            WHERE object_id IN ('.$pfItemsList.') AND user_id NOT IN ('.TP_USER_ID.', '.$user_id.')'
+        );
+        // Files keys
+        mysqli_query(
+            $db_link,
+            'DELETE FROM ' . $pre . 'sharekeys_files
+            WHERE object_id IN ('.$pfItemsList.') AND user_id NOT IN ('.TP_USER_ID.', '.$user_id.')'
+        );
+        // Fields keys
+        mysqli_query(
+            $db_link,
+            'DELETE FROM ' . $pre . 'sharekeys_fields
+            WHERE object_id IN ('.$pfItemsList.') AND user_id NOT IN ('.TP_USER_ID.', '.$user_id.')'
+        );
+        // Logs keys
+        mysqli_query(
+            $db_link,
+            'DELETE FROM ' . $pre . 'sharekeys_logs
+            WHERE object_id IN ('.$pfItemsList.') AND user_id NOT IN ('.TP_USER_ID.', '.$user_id.')'
+        );
+    }
+}
+
+
+/**
+ * Permits to refresh the categories of folders
+ *
+ * @param array $folderIds
+ * @return void
+ */
+function installHandleFoldersCategories(
+    array $folderIds, $pre
+)
+{
+    global $db_link;
+    $filename = '../includes/config/settings.php';
+    include_once '../sources/main.functions.php';
+    $pass = defuse_return_decrypted(DB_PASSWD);
+    $server = DB_HOST;
+    $pre = DB_PREFIX;
+    $database = DB_NAME;
+    $port = intval(DB_PORT);
+    $user = DB_USER;
+    $arr_data = array();
+    $mysqli2 = new mysqli($server, $user, $pass, $database, $port);
+
+    // force full list of folders
+    if (count($folderIds) === 0) {
+        $result = $mysqli2->query('SELECT id
+            FROM ' . $pre . 'nested_tree
+            WHERE personal_folder = 0',
+        );
+        $rowcount = $result->num_rows;
+        if ($rowcount > 0) {
+            while ($row = $result->fetch_assoc()) {
+                array_push($folderIds, $row['id']);
+            }
+        }
+    }
+
+    // Get complexity
+    defineComplexity();
+
+    // update
+    foreach ($folderIds as $folder) {
+        // Do we have Categories
+        // get list of associated Categories
+        $arrCatList = array();
+        $result = $mysqli2->query('SELECT c.id, c.title, c.level, c.type, c.masked, c.order, c.encrypted_data, c.role_visibility, c.is_mandatory,
+            f.id_category AS category_id
+            FROM ' . $pre . 'categories_folders AS f
+            INNER JOIN ' . $pre . 'categories AS c ON (f.id_category = c.parent_id)
+            WHERE id_folder = '.$folder
+        );
+        $rowcount = $result->num_rows;
+        if ($rowcount > 0) {
+            while ($row = $result->fetch_assoc()) {
+                $arrCatList[$row['id']] = array(
+                    'id' => $row['id'],
+                    'title' => $row['title'],
+                    'level' => $row['level'],
+                    'type' => $row['type'],
+                    'masked' => $row['masked'],
+                    'order' => $row['order'],
+                    'encrypted_data' => $row['encrypted_data'],
+                    'role_visibility' => $row['role_visibility'],
+                    'is_mandatory' => $row['is_mandatory'],
+                    'category_id' => $row['category_id'],
+                );
+            }
+        }
+        $arr_data['categories'] = $arrCatList;
+
+        // Now get complexity
+        $valTemp = '';
+        $result = $mysqli2->query('SELECT valeur
+            FROM ' . $pre . 'misc
+            WHERE type = "complex" AND intitule = '.$folder
+        );
+        $rowcount = $result->num_rows;
+        if ($rowcount > 0) {
+            while ($row = $result->fetch_assoc()) {
+                $valTemp = array(
+                    'value' => $row['valeur'],
+                    'text' => TP_PW_COMPLEXITY[$row['valeur']][1],
+                );
+            }
+        }
+        $arr_data['complexity'] = $valTemp;
+
+        // Now get Roles
+        $valTemp = '';
+        $result = $mysqli2->query('SELECT t.title
+            FROM ' . $pre . 'roles_values as v
+            INNER JOIN ' . $pre . 'roles_title as t ON (v.role_id = t.id)
+            WHERE v.folder_id = '.$folder.'
+            GROUP BY title'
+        );
+        $rowcount = $result->num_rows;
+        if ($rowcount > 0) {
+            while ($row = $result->fetch_assoc()) {
+                $valTemp .= (empty($valTemp) === true ? '' : ' - ') . $row['title'];
+            }
+        }
+        $arr_data['visibilityRoles'] = $valTemp;
+
+        // now save in DB
+        $mysqli2->query('UPDATE categories = "'.json_encode($arr_data).'"
+            FROM ' . $pre . 'nested_tree
+            WHERE id = '.$folder
+        );
+    }
+    
+    mysqli_close($mysqli2);
+}
+
+/**
+ * Permits to handle the Teampass config file
+ * $action accepts "rebuild" and "update"
+ *
+ * @param string $action   Action to perform
+ * @param array  $SETTINGS Teampass settings
+ * @param string $field    Field to refresh
+ * @param string $value    Value to set
+ *
+ * @return string|bool
+ */
+function installHandleConfigFile($action, $SETTINGS, $field = null, $value = null)
+{
+    $tp_config_file = $SETTINGS['cpassman_dir'] . '/includes/config/tp.config.php';
+    $filename = '../includes/config/settings.php';
+    include_once '../sources/main.functions.php';
+    $pass = defuse_return_decrypted(DB_PASSWD);
+    $server = DB_HOST;
+    $pre = DB_PREFIX;
+    $database = DB_NAME;
+    $port = intval(DB_PORT);
+    $user = DB_USER;
+    $arr_data = array();
+    $mysqli2 = new mysqli($server, $user, $pass, $database, $port);
+
+    if (file_exists($tp_config_file) === false || $action === 'rebuild') {
+        // perform a copy
+        if (file_exists($tp_config_file)) {
+            if (! copy($tp_config_file, $tp_config_file . '.' . date('Y_m_d_His', time()))) {
+                return "ERROR: Could not copy file '" . $tp_config_file . "'";
+            }
+        }
+
+        // regenerate
+        $data = [];
+        $data[0] = "<?php\n";
+        $data[1] = "global \$SETTINGS;\n";
+        $data[2] = "\$SETTINGS = array (\n";
+
+        $result = $mysqli2->query('SELECT *
+            FROM ' . $pre . 'misc
+            WHERE type = "admin"'
+        );
+        $rowcount = $result->num_rows;
+        if ($rowcount > 0) {
+            while ($row = $result->fetch_assoc()) {
+                array_push($data, "    '" . $row['intitule'] . "' => '" . htmlspecialchars_decode($row['valeur'], ENT_COMPAT) . "',\n");
+            }
+        }
+        array_push($data, ");\n");
+        $data = array_unique($data);
+    // ---
+    } elseif ($action === 'update' && empty($field) === false) {
+        $data = file($tp_config_file);
+        $inc = 0;
+        $bFound = false;
+        foreach ($data as $line) {
+            if (stristr($line, ');')) {
+                break;
+            }
+
+            if (stristr($line, "'" . $field . "' => '")) {
+                $data[$inc] = "    '" . $field . "' => '" . htmlspecialchars_decode($value ?? '', ENT_COMPAT) . "',\n";
+                $bFound = true;
+                break;
+            }
+            ++$inc;
+        }
+        if ($bFound === false) {
+            $data[$inc] = "    '" . $field . "' => '" . htmlspecialchars_decode($value ?? '', ENT_COMPAT). "',\n);\n";
+        }
+    }
+    mysqli_close($mysqli2);
+
+    // update file
+    file_put_contents($tp_config_file, implode('', $data ?? []));
+    return true;
 }

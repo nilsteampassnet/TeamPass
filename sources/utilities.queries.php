@@ -21,53 +21,70 @@ declare(strict_types=1);
 use TiBeN\CrontabManager\CrontabJob;
 use TiBeN\CrontabManager\CrontabAdapter;
 use TiBeN\CrontabManager\CrontabRepository;
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
+use EZimuel\PHPSecureSession;
+use TeampassClasses\PerformChecks\PerformChecks;
+use TeampassClasses\NestedTree\NestedTree;
 
-require_once 'SecureHandler.php';
+// Load functions
+require_once 'main.functions.php';
+
+// init
+loadClasses('DB');
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
 session_name('teampass_session');
 session_start();
-if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] === false || !isset($_SESSION['key']) || empty($_SESSION['key'])) {
-    die('Hacking attempt...');
-}
 
-// Load config
-if (file_exists('../includes/config/tp.config.php')) {
-    include_once '../includes/config/tp.config.php';
-} elseif (file_exists('./includes/config/tp.config.php')) {
-    include_once './includes/config/tp.config.php';
-} else {
+
+// Load config if $SETTINGS not defined
+try {
+    include_once __DIR__.'/../includes/config/tp.config.php';
+} catch (Exception $e) {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
 // Do checks
-require_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
-require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
-if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.database', $SETTINGS) === false) {
+// Instantiate the class with posted data
+$checkUserAccess = new PerformChecks(
+    dataSanitizer(
+        [
+            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+        ],
+        [
+            'type' => 'trim|escape',
+        ],
+    ),
+    [
+        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
+        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+    ]
+);
+// Handle the case
+echo $checkUserAccess->caseHandler();
+if (
+    $checkUserAccess->userAccessPage('utilities.database') === false ||
+    $checkUserAccess->checkSession() === false
+) {
     // Not allowed page
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
+    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
     include $SETTINGS['cpassman_dir'] . '/error.php';
-    exit();
+    exit;
 }
 
-/*
- * Define Timezone
-**/
-if (isset($SETTINGS['timezone']) === true) {
-    date_default_timezone_set($SETTINGS['timezone']);
-} else {
-    date_default_timezone_set('UTC');
-}
+// Define Timezone
+date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
 
-require_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user']['user_language'] . '.php';
-require_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
+// Set header properties
 header('Content-type: text/html; charset=utf-8');
-header('Cache-Control: no-cache, must-revalidate');
-require_once 'main.functions.php';
+header('Cache-Control: no-cache, no-store, must-revalidate');
 
-//Connect to DB
-require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
-if (defined('DB_PASSWD_CLEAR') === false) {
-    define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
-}
+// --------------------------------- //
+
+// Load tree
+$tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
 // Prepare POST variables
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
@@ -80,11 +97,11 @@ if (null !== $post_type) {
             //CASE list of recycled elements
         case 'recycled_bin_elements':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -93,7 +110,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_not_allowed_to'),
+                        'message' => $lang->get('error_not_allowed_to'),
                     ),
                     'encode'
                 );
@@ -175,11 +192,11 @@ if (null !== $post_type) {
         //CASE recycle selected recycled elements
         case 'restore_selected_objects':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -188,7 +205,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_not_allowed_to'),
+                        'message' => $lang->get('error_not_allowed_to'),
                     ),
                     'encode'
                 );
@@ -295,7 +312,7 @@ if (null !== $post_type) {
                 );
             }
 
-            updateCacheTable('reload', $SETTINGS, null);
+            updateCacheTable('reload', null);
 
             // send data
             echo prepareExchangedData(
@@ -310,11 +327,11 @@ if (null !== $post_type) {
         //CASE delete selected recycled elements
         case 'delete_selected_objects':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -323,7 +340,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_not_allowed_to'),
+                        'message' => $lang->get('error_not_allowed_to'),
                     ),
                     'encode'
                 );
@@ -424,7 +441,7 @@ if (null !== $post_type) {
                 );
             }
 
-            updateCacheTable('reload', $SETTINGS, NULL);
+            updateCacheTable('reload', NULL);
 
             // send data
             echo prepareExchangedData(
@@ -441,11 +458,11 @@ if (null !== $post_type) {
         */
         case 'purge_logs':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -454,7 +471,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_not_allowed_to'),
+                        'message' => $lang->get('error_not_allowed_to'),
                     ),
                     'encode'
                 );
@@ -613,7 +630,7 @@ if (null !== $post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -623,11 +640,11 @@ if (null !== $post_type) {
         //CASE show process detail
         case 'show_process_detail':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -636,7 +653,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_not_allowed_to'),
+                        'message' => $lang->get('error_not_allowed_to'),
                     ),
                     'encode'
                 );
@@ -743,11 +760,11 @@ if (null !== $post_type) {
         //CASE delete a task
         case 'task_delete':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -756,7 +773,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_not_allowed_to'),
+                        'message' => $lang->get('error_not_allowed_to'),
                     ),
                     'encode'
                 );
@@ -811,11 +828,11 @@ if (null !== $post_type) {
         //CASE handle crontab job
         case 'handle_crontab_job':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -824,16 +841,12 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_not_allowed_to'),
+                        'message' => $lang->get('error_not_allowed_to'),
                     ),
                     'encode'
                 );
                 break;
             }
-
-            require_once __DIR__.'/../includes/libraries/TiBeN/CrontabManager/CrontabAdapter.php';
-            require_once __DIR__.'/../includes/libraries/TiBeN/CrontabManager/CrontabJob.php';
-            require_once __DIR__.'/../includes/libraries/TiBeN/CrontabManager/CrontabRepository.php';
 
             // get PHP binary path
             $phpBinaryPath = getPHPBinary();

@@ -24,28 +24,54 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
+
+use TeampassClasses\PerformChecks\PerformChecks;
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
+// Load functions
+require_once __DIR__.'/../sources/main.functions.php';
+
+// init
+loadClasses();
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
+
 if (
     isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
     || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === true
-    || isset($_SESSION['key']) === false || empty($_SESSION['key']) === true
+    || $superGlobal->get('key', 'SESSION') === null
 ) {
     die('Hacking attempt...');
 }
 
-// Load config
-if (file_exists('../includes/config/tp.config.php') === true) {
-    include_once '../includes/config/tp.config.php';
-} elseif (file_exists('./includes/config/tp.config.php') === true) {
-    include_once './includes/config/tp.config.php';
-} else {
-    throw new Exception('Error file "/includes/config/tp.config.php" not exists', 1);
+// Load config if $SETTINGS not defined
+try {
+    include_once __DIR__.'/../includes/config/tp.config.php';
+} catch (Exception $e) {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
-/* do checks */
-require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
-if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === false) {
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
-    //not allowed page
+// Do checks
+$checkUserAccess = new PerformChecks(
+    dataSanitizer(
+        [
+            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+        ],
+        [
+            'type' => 'trim|escape',
+        ],
+    ),
+    [
+        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
+        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+    ]
+);
+// Handle the case
+echo $checkUserAccess->caseHandler();
+if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('ldap') === false) {
+    // Not allowed page
+    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -62,7 +88,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
         $('#ldap-test-config-results-text').html('');
         if ($(this).data('action') === 'ldap-test-config') {
             toastr.remove();
-            toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
             var data = {
                 'username': $('#ldap-test-config-username').val(),
@@ -72,11 +98,11 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
             $.post(
                 "sources/ldap.queries.php", {
                     type: "ldap_test_configuration",
-                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                    key: "<?php echo $_SESSION['key']; ?>"
+                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                    key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
                 },
                 function(data) {
-                    data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                    data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                     console.log(data);
 
                     if (data.error === true) {
@@ -84,7 +110,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
                         toastr.remove();
                         toastr.error(
                             data.message,
-                            '<?php echo langHdl('caution'); ?>', {
+                            '<?php echo $lang->get('caution'); ?>', {
                                 //timeOut: 5000,
                                 progressBar: true
                             }
@@ -96,7 +122,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
                         // Inform user
                         toastr.remove();
                         toastr.success(
-                            '<?php echo langHdl('done'); ?>',
+                            '<?php echo $lang->get('done'); ?>',
                             '', {
                                 timeOut: 1000
                             }
@@ -120,13 +146,13 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
         $.post(
             "sources/admin.queries.php", {
                 type: "get_list_of_roles",
-                key: "<?php echo $_SESSION['key']; ?>"
+                key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
             },
             function(data) {
-                data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
 
-                var html_admin_by = '<option value="">-- <?php echo langHdl('select'); ?> --</option>',
-                    html_roles = '<option value="">-- <?php echo langHdl('select'); ?> --</option>',
+                var html_admin_by = '<option value="">-- <?php echo $lang->get('select'); ?> --</option>',
+                    html_roles = '<option value="">-- <?php echo $lang->get('select'); ?> --</option>',
                     selected_admin_by = 0,
                     selected_role = 0;
 
@@ -137,7 +163,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
                     if (data[i].selected_role === 1) {
                         selected_role = data[i].id;
                     }
-                    html_admin_by += '<option value="' + data[i].id + '"><?php echo langHdl('managers_of') . ' '; ?>' + data[i].title + '</option>';
+                    html_admin_by += '<option value="' + data[i].id + '"><?php echo $lang->get('managers_of') . ' '; ?>' + data[i].title + '</option>';
                     html_roles += '<option value="' + data[i].id + '">' + data[i].title + '</option>';
                 }
                 $("#ldap_new_user_is_administrated_by").append(html_admin_by);

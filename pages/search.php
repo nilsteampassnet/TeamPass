@@ -24,34 +24,60 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-if (
-    isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
-    || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === true
-    || isset($_SESSION['key']) === false || empty($_SESSION['key']) === true
-) {
-    die('Hacking attempt...');
-}
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
+use TeampassClasses\NestedTree\NestedTree;
+use TeampassClasses\PerformChecks\PerformChecks;
 
-// Load config
-if (file_exists('../includes/config/tp.config.php') === true) {
-    include_once '../includes/config/tp.config.php';
-} elseif (file_exists('./includes/config/tp.config.php') === true) {
-    include_once './includes/config/tp.config.php';
-} else {
+// Load functions
+require_once __DIR__.'/../sources/main.functions.php';
+
+// init
+loadClasses('DB');
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
+
+// Load config if $SETTINGS not defined
+try {
+    include_once __DIR__.'/../includes/config/tp.config.php';
+} catch (Exception $e) {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
-/* do checks */
-require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
-if (checkUser($_SESSION['user_id'], $_SESSION['key'], curPage($SETTINGS), $SETTINGS) === false) {
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
-    //not allowed page
+// Do checks
+$checkUserAccess = new PerformChecks(
+    dataSanitizer(
+        [
+            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+        ],
+        [
+            'type' => 'trim|escape',
+        ],
+    ),
+    [
+        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
+        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+    ]
+);
+// Handle the case
+echo $checkUserAccess->caseHandler();
+if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('search') === false) {
+    // Not allowed page
+    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
 
-// Load
-require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
+// Define Timezone
+date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
+
+// Set header properties
+header('Content-type: text/html; charset=utf-8');
+header('Cache-Control: no-cache, no-store, must-revalidate');
+
+// --------------------------------- //
+ 
 
 ?>
 
@@ -60,7 +86,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
     <div class="container-fluid">
         <div class="row mb-2">
             <div class="col-sm-6">
-                <h1 class="m-0 text-dark"><i class="fas fa-search mr-2"></i><?php echo langHdl('find'); ?></h1>
+                <h1 class="m-0 text-dark"><i class="fas fa-search mr-2"></i><?php echo $lang->get('find'); ?></h1>
             </div><!-- /.col -->
         </div><!-- /.row -->
     </div><!-- /.container-fluid -->
@@ -72,7 +98,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
     <div class="card-header">
         <h3 class="card-title">
             <i class="fas fa-bug mr-2"></i>
-            <?php echo langHdl('mass_operation'); ?>
+            <?php echo $lang->get('mass_operation'); ?>
         </h3>
     </div>
     <div class="card-body">
@@ -83,8 +109,8 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
         </div>
     </div>
     <div class="card-footer">
-        <button class="btn btn-primary mr-2" id="dialog-mass-operation-button"><?php echo langHdl('perform'); ?></button>
-        <button class="btn btn-default float-right close-element"><?php echo langHdl('cancel'); ?></button>
+        <button class="btn btn-primary mr-2" id="dialog-mass-operation-button"><?php echo $lang->get('perform'); ?></button>
+        <button class="btn btn-default float-right close-element"><?php echo $lang->get('cancel'); ?></button>
     </div>
 </div>
 <!-- /.MASS OPERATION -->
@@ -103,12 +129,12 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                         <thead>
                             <tr>
                                 <th></th>
-                                <th><?php echo langHdl('label'); ?></th>
-                                <th><?php echo langHdl('login'); ?></th>
-                                <th><?php echo langHdl('description'); ?></th>
-                                <th><?php echo langHdl('tags'); ?></th>
-                                <th><?php echo langHdl('url'); ?></th>
-                                <th><?php echo langHdl('group'); ?></th>
+                                <th><?php echo $lang->get('label'); ?></th>
+                                <th><?php echo $lang->get('login'); ?></th>
+                                <th><?php echo $lang->get('description'); ?></th>
+                                <th><?php echo $lang->get('tags'); ?></th>
+                                <th><?php echo $lang->get('url'); ?></th>
+                                <th><?php echo $lang->get('group'); ?></th>
                             </tr>
                         </thead>
                         <tbody>

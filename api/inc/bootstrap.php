@@ -23,16 +23,23 @@
  * @see       https://www.teampass.net
  */
 
+
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
+
 define("API_ROOT_PATH", __DIR__ . "/..");
 
 // include main configuration file
-require API_ROOT_PATH . '/../includes/config/settings.php';
-require API_ROOT_PATH . '/../includes/config/tp.config.php';
 require API_ROOT_PATH . '/../sources/main.functions.php';
 
+// init
+loadClasses('DB');
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
+
 // Load superglobal
-require API_ROOT_PATH. '/../includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-$superGlobal = new protect\SuperGlobal\SuperGlobal();
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
 
 // include the base controller file
 require API_ROOT_PATH . "/Controller/Api/BaseController.php";
@@ -81,9 +88,9 @@ function folderAction(array $actions, array $userData)
  */
 function apiIsEnabled(): string
 {
-    require API_ROOT_PATH . '/../includes/config/tp.config.php';
+    require_once API_ROOT_PATH . '/../includes/config/tp.config.php';
 
-    if ((int) $SETTINGS['api'] === 1) {
+    if (isset($SETTINGS) === true && isset($SETTINGS['api']) === true && (int) $SETTINGS['api'] === 1) {
         return json_encode(
             [
                 'error' => false,

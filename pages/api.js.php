@@ -24,28 +24,54 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
+use TeampassClasses\PerformChecks\PerformChecks;
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
+
+// Load functions
+require_once __DIR__.'/../sources/main.functions.php';
+
+// init
+loadClasses();
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
+
 if (
     isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
     || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === true
-    || isset($_SESSION['key']) === false || empty($_SESSION['key']) === true
+    || $superGlobal->get('key', 'SESSION') === null
 ) {
     die('Hacking attempt...');
 }
 
-// Load config
-if (file_exists('../includes/config/tp.config.php') === true) {
-    include_once '../includes/config/tp.config.php';
-} elseif (file_exists('./includes/config/tp.config.php') === true) {
-    include_once './includes/config/tp.config.php';
-} else {
-    throw new Exception('Error file "/includes/config/tp.config.php" not exists', 1);
+// Load config if $SETTINGS not defined
+try {
+    include_once __DIR__.'/../includes/config/tp.config.php';
+} catch (Exception $e) {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
-/* do checks */
-require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
-if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'api', $SETTINGS) === false) {
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
-    //not allowed page
+// Do checks
+$checkUserAccess = new PerformChecks(
+    dataSanitizer(
+        [
+            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+        ],
+        [
+            'type' => 'trim|escape',
+        ],
+    ),
+    [
+        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
+        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+    ]
+);
+// Handle the case
+echo $checkUserAccess->caseHandler();
+if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('api') === false) {
+    // Not allowed page
+    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -86,18 +112,18 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'api', $SETTINGS) === fals
         $.post(
             'sources/admin.queries.php', {
                 type: 'admin_action_api_save_key',
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                key: '<?php echo $_SESSION['key']; ?>'
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
             },
             function(data) {
                 //decrypt data
-                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
 
                 if (data.error === true) {
                     // ERROR
                     toastr.remove();
                     toastr.warning(
-                        '<?php echo langHdl('none_selected_text'); ?>',
+                        '<?php echo $lang->get('none_selected_text'); ?>',
                         '', {
                             timeOut: 5000,
                             progressBar: true
@@ -107,7 +133,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'api', $SETTINGS) === fals
                     $('#table-api-keys')
                         .append(
                             '<tr data-id("' + data.keyId + '")>' +
-                            '<td width="50px"><i class="fas fa-trash infotip pointer" title="<?php echo langHdl('del_button'); ?>"></i></td>' +
+                            '<td width="50px"><i class="fas fa-trash infotip pointer" title="<?php echo $lang->get('del_button'); ?>"></i></td>' +
                             '<td><span class="edit-api-key">' + $('#new_api_key_label').val() + '</span></td>' +
                             '<td>' + data.key + '</td>' +
                             '</tr>'
@@ -131,10 +157,10 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'api', $SETTINGS) === fals
             // Prepare modal
             showModalDialogBox(
                 '#warningModal',
-                '<i class="fas fa-minus-square fa-lg warning mr-2"></i><?php echo langHdl('please_confirm'); ?>',
-                '<?php echo langHdl('please_confirm_deletion'); ?>',
-                '<?php echo langHdl('confirm'); ?>',
-                '<?php echo langHdl('cancel'); ?>'
+                '<i class="fas fa-minus-square fa-lg warning mr-2"></i><?php echo $lang->get('please_confirm'); ?>',
+                '<?php echo $lang->get('please_confirm_deletion'); ?>',
+                '<?php echo $lang->get('confirm'); ?>',
+                '<?php echo $lang->get('cancel'); ?>'
             );
 
             // Actions on modal buttons
@@ -144,7 +170,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'api', $SETTINGS) === fals
             $(document).on('click', '#warningModalButtonAction', function() {
                 // SHow user
                 toastr.remove();
-                toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+                toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
                 // Prepare data
                 var data = {
@@ -156,18 +182,18 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'api', $SETTINGS) === fals
                 $.post(
                     'sources/admin.queries.php', {
                         type: 'admin_action_api_save_key',
-                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                        key: '<?php echo $_SESSION['key']; ?>'
+                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                        key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                     },
                     function(data) {
                         //decrypt data
-                        data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                        data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
 
                         if (data.error === true) {
                             // ERROR
                             toastr.remove();
                             toastr.warning(
-                                '<?php echo langHdl('none_selected_text'); ?>',
+                                '<?php echo $lang->get('none_selected_text'); ?>',
                                 '', {
                                     timeOut: 5000,
                                     progressBar: true
@@ -217,19 +243,19 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'api', $SETTINGS) === fals
         $.post(
             'sources/admin.queries.php', {
                 type: 'admin_action_api_save_key',
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                key: '<?php echo $_SESSION['key']; ?>'
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
             },
             function(data) {
                 //decrypt data
-                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
 
                 if (data.error === true) {
                     $(cell).html('<span class="edit-api-key pointer">' + oldLabel + '</span>');
                     // ERROR
                     toastr.remove();
                     toastr.warning(
-                        '<?php echo langHdl('none_selected_text'); ?>',
+                        '<?php echo $lang->get('none_selected_text'); ?>',
                         '', {
                             timeOut: 5000,
                             progressBar: true
@@ -256,7 +282,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'api', $SETTINGS) === fals
         if ($('#new_api_ip_value').val() === '' || $('#new_api_ip_label').val() === '') {
             toastr.remove();
             toastr.warning(
-                '<?php echo langHdl('fields_with_mandatory_information_are_missing'); ?>',
+                '<?php echo $lang->get('fields_with_mandatory_information_are_missing'); ?>',
                 '', {
                     timeOut: 5000,
                     progressBar: true
@@ -286,18 +312,18 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'api', $SETTINGS) === fals
         $.post(
             'sources/admin.queries.php', {
                 type: 'admin_action_api_save_ip',
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                key: '<?php echo $_SESSION['key']; ?>'
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
             },
             function(data) {
                 //decrypt data
-                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
 
                 if (data.error === true) {
                     // ERROR
                     toastr.remove();
                     toastr.warning(
-                        '<?php echo langHdl('none_selected_text'); ?>',
+                        '<?php echo $lang->get('none_selected_text'); ?>',
                         '', {
                             timeOut: 5000,
                             progressBar: true
@@ -307,7 +333,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'api', $SETTINGS) === fals
                     $('#table-api-ips')
                         .append(
                             '<tr data-id="' + data.ipId + '">' +
-                            '<td width="50px"><i class="fas fa-trash infotip pointer" title="<?php echo langHdl('del_button'); ?>"></i></td>' +
+                            '<td width="50px"><i class="fas fa-trash infotip pointer" title="<?php echo $lang->get('del_button'); ?>"></i></td>' +
                             '<td><span class="edit-api-ip pointer" data-field="label">' + $('#new_api_ip_label').val() + '</span></td>' +
                             '<td><span class="edit-api-ip pointer" data-field="value">' + $('#new_api_ip_value').val() + '</span></td>' +
                             '</tr>'
@@ -331,10 +357,10 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'api', $SETTINGS) === fals
             // Prepare modal
             showModalDialogBox(
                 '#warningModal',
-                '<i class="fas fa-minus-square fa-lg warning mr-2"></i><?php echo langHdl('please_confirm'); ?>',
-                '<?php echo langHdl('please_confirm_deletion'); ?>',
-                '<?php echo langHdl('confirm'); ?>',
-                '<?php echo langHdl('cancel'); ?>'
+                '<i class="fas fa-minus-square fa-lg warning mr-2"></i><?php echo $lang->get('please_confirm'); ?>',
+                '<?php echo $lang->get('please_confirm_deletion'); ?>',
+                '<?php echo $lang->get('confirm'); ?>',
+                '<?php echo $lang->get('cancel'); ?>'
             );
 
             // Actions on modal buttons
@@ -344,7 +370,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'api', $SETTINGS) === fals
             $(document).on('click', '#warningModalButtonAction', function() {
                 // SHow user
                 toastr.remove();
-                toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+                toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
                 // Prepare data
                 var data = {
@@ -356,18 +382,18 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'api', $SETTINGS) === fals
                 $.post(
                     'sources/admin.queries.php', {
                         type: 'admin_action_api_save_ip',
-                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                        key: '<?php echo $_SESSION['key']; ?>'
+                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                        key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                     },
                     function(data) {
                         //decrypt data
-                        data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                        data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
 
                         if (data.error === true) {
                             // ERROR
                             toastr.remove();
                             toastr.warning(
-                                '<?php echo langHdl('none_selected_text'); ?>',
+                                '<?php echo $lang->get('none_selected_text'); ?>',
                                 '', {
                                     timeOut: 5000,
                                     progressBar: true
@@ -421,19 +447,19 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'api', $SETTINGS) === fals
         $.post(
             'sources/admin.queries.php', {
                 type: 'admin_action_api_save_ip',
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                key: '<?php echo $_SESSION['key']; ?>'
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
             },
             function(data) {
                 //decrypt data
-                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
 
                 if (data.error === true) {
                     $(cell).html('<span class="edit-api-ip pointer">' + oldLabel + '</span>');
                     // ERROR
                     toastr.remove();
                     toastr.warning(
-                        '<?php echo langHdl('none_selected_text'); ?>',
+                        '<?php echo $lang->get('none_selected_text'); ?>',
                         '', {
                             timeOut: 5000,
                             progressBar: true

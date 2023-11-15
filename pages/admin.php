@@ -26,32 +26,55 @@ declare(strict_types=1);
 use TiBeN\CrontabManager\CrontabJob;
 use TiBeN\CrontabManager\CrontabAdapter;
 use TiBeN\CrontabManager\CrontabRepository;
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
+use EZimuel\PHPSecureSession;
+use TeampassClasses\PerformChecks\PerformChecks;
+use TeampassClasses\Encryption\Encryption;
 
-if (isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
-    || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === true
-    || isset($_SESSION['key']) === false || empty($_SESSION['key']) === true
-) {
-    die('Hacking attempt...');
-}
+// Load functions
+require_once __DIR__.'/../sources/main.functions.php';
 
-// Load config
-if (file_exists('../includes/config/tp.config.php') === true) {
-    include_once '../includes/config/tp.config.php';
-} elseif (file_exists('./includes/config/tp.config.php') === true) {
-    include_once './includes/config/tp.config.php';
-} else {
+// init
+loadClasses('DB');
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
+//session_name('teampass_session');
+//session_start();
+
+// Load config if $SETTINGS not defined
+try {
+    include_once __DIR__.'/../includes/config/tp.config.php';
+} catch (Exception $e) {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
-// Load template
-require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
-/* do checks */
-require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
-if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'admin', $SETTINGS) === false) {
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
+// Do checks
+// Instantiate the class with posted data
+$checkUserAccess = new PerformChecks(
+    dataSanitizer(
+        [
+            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+        ],
+        [
+            'type' => 'trim|escape',
+        ],
+    ),
+    [
+        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
+        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+    ]
+);
+// Handle the case
+echo $checkUserAccess->caseHandler();
+if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('admin') === false) {
+    // Not allowed page
+    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
+
 ?>
 
 <!-- Content Header (Page header) -->
@@ -59,12 +82,12 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'admin', $SETTINGS) === fa
     <div class="container-fluid">
         <div class="row mb-2">
             <div class="col-sm-6">
-                <h1 class="m-0 text-dark"><?php echo langHdl('admin'); ?></h1>
+                <h1 class="m-0 text-dark"><?php echo $lang->get('admin'); ?></h1>
             </div><!-- /.col -->
             <div class="col-sm-6">
                 <ol class="breadcrumb float-sm-right">
-                    <li class="breadcrumb-item"><a href="index.php?page=admin"><?php echo langHdl('admin'); ?></a></li>
-                    <li class="breadcrumb-item active"><?php echo langHdl('admin_main'); ?></li>
+                    <li class="breadcrumb-item"><a href="index.php?page=admin"><?php echo $lang->get('admin'); ?></a></li>
+                    <li class="breadcrumb-item active"><?php echo $lang->get('admin_main'); ?></li>
                 </ol>
             </div><!-- /.col -->
         </div><!-- /.row -->
@@ -97,35 +120,35 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'admin', $SETTINGS) === fa
                     <div class="card-header">
                         <h3 class="card-title">
                             <i class="fas fa-bullhorn mr-2"></i>
-                            <?php echo langHdl('communication_means'); ?>
+                            <?php echo $lang->get('communication_means'); ?>
                         </h3>
                     </div>
                     <!-- /.card-header -->
                     <div class="card-body">
                         <div class="callout callout-info">
                             <h5><i class="fas fa-globe fa-lg fa-fw mr-2"></i>
-                                <a class="text-info" target="_blank" href="#" class="link"><?php echo langHdl('website_canal'); ?></a></h5>
+                                <a class="text-info" target="_blank" href="#" class="link"><?php echo $lang->get('website_canal'); ?></a></h5>
                         </div>
                         <div class="callout callout-info">
-                            <h5><i class="fas fa-book fa-lg fa-fw mr-2"></i><?php echo langHdl('documentation_canal'); ?>
+                            <h5><i class="fas fa-book fa-lg fa-fw mr-2"></i><?php echo $lang->get('documentation_canal'); ?>
                                 <a class="text-info" target="_blank" href="https://documentation.teampass.net/#/">ReadTheDoc</a></h5>
                         </div>
                         <div class="callout callout-info">
-                            <h5><i class="fas fa-bug fa-lg fa-fw mr-2"></i><?php echo langHdl('bug_canal'); ?>
+                            <h5><i class="fas fa-bug fa-lg fa-fw mr-2"></i><?php echo $lang->get('bug_canal'); ?>
                                 <a class="text-info" target="_blank" href="https://github.com/nilsteampassnet/TeamPass/issues">Github</a></h5>
                         </div>
                         <!--
                         <div class="callout callout-info">
-                            <h5><i class="fas fa-lightbulb fa-lg fa-fw mr-2"></i><?php echo langHdl('feature_request_canal'); ?>
+                            <h5><i class="fas fa-lightbulb fa-lg fa-fw mr-2"></i><?php echo $lang->get('feature_request_canal'); ?>
                                 <a class="text-info" target="_blank" href="https://teampass.userecho.com">User Echo</a></h5>
                         </div>
                         <div class="callout callout-info">
-                            <h5><i class="fas fa-hands-helping fa-lg fa-fw mr-2"></i><?php echo langHdl('feature_support_canal'); ?>
+                            <h5><i class="fas fa-hands-helping fa-lg fa-fw mr-2"></i><?php echo $lang->get('feature_support_canal'); ?>
                                 <a class="text-info" target="_blank" href="https://www.reddit.com/r/TeamPass">Reddit</a></h5>
                         </div>
                         <div class="callout callout-info">
-                            <h5><i class="fas fa-donate fa-lg fa-fw mr-2"></i><?php echo langHdl('consider_a_donation'); ?>
-                                <a class="text-info" target="_blank" href="https://teampass.net/donation"><?php echo langHdl('more_information'); ?></a></h5>
+                            <h5><i class="fas fa-donate fa-lg fa-fw mr-2"></i><?php echo $lang->get('consider_a_donation'); ?>
+                                <a class="text-info" target="_blank" href="https://teampass.net/donation"><?php echo $lang->get('more_information'); ?></a></h5>
                         </div>
                         -->
                     </div>
@@ -142,11 +165,11 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'admin', $SETTINGS) === fa
 ?>
                 <!--
                 <div class="alert bg-lightblue disabled" role="alert">
-                    <p><i class="fa-regular fa-eye mr-2"></i><?php echo langHdl('currently_using_version')." <b>".TP_VERSION.".<i>".TP_VERSION_MINOR."</i></b>"; ?></p>
+                    <p><i class="fa-regular fa-eye mr-2"></i><?php echo $lang->get('currently_using_version')." <b>".TP_VERSION.".<i>".TP_VERSION_MINOR."</i></b>"; ?></p>
                     <p><i class="fa-solid fa-code-commit mr-2"></i>
                     <?php
                         //$version = file_get_contents('version.txt', false, null, 543);
-                        //echo langHdl('git_commit_value')." <b>".$version.
+                        //echo $lang->get('git_commit_value')." <b>".$version.
                         //    '</b><href="'.GITHUB_COMMIT_URL.$version.'" target="_blank"><i class="fa-solid fa-up-right-from-square ml-2" pointer></i></a>'; 
                     ?></p>
                 </div>
@@ -156,12 +179,12 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'admin', $SETTINGS) === fa
                     <div class="card-header">
                         <h3 class="card-title">
                             <i class="fa-solid fa-barcode mr-2"></i>
-                            <?php echo langHdl('teampass_information'); ?>
+                            <?php echo $lang->get('teampass_information'); ?>
                         </h3>
                     </div>
                     <!-- /.card-header -->
                     <div class="card-body">
-                        <p><i class="fa-regular fa-eye mr-2"></i><?php echo langHdl('currently_using_version')." <b>".TP_VERSION.".<i>".TP_VERSION_MINOR."</i></b>"; ?></p>
+                        <p><i class="fa-regular fa-eye mr-2"></i><?php echo $lang->get('currently_using_version')." <b>".TP_VERSION.".<i>".TP_VERSION_MINOR."</i></b>"; ?></p>
                         <?php   
                         if (isset($SETTINGS['enable_tasks_manager']) === true && (int) $SETTINGS['enable_tasks_manager'] === 0) {
                             echo '<div class="alert bg-orange disabled" role="alert">
@@ -173,9 +196,6 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'admin', $SETTINGS) === fa
                             ?>
                             <div class="">
 <?php
-require_once __DIR__.'/../includes/libraries/TiBeN/CrontabManager/CrontabAdapter.php';
-require_once __DIR__.'/../includes/libraries/TiBeN/CrontabManager/CrontabJob.php';
-require_once __DIR__.'/../includes/libraries/TiBeN/CrontabManager/CrontabRepository.php';
 
 // Instantiate the adapter and repository
 try {
@@ -184,10 +204,10 @@ try {
     if (count($results) === 0) {
         ?>
                             <div class="callout callout-info alert-dismissible mt-3" role="alert">
-                                <h5><i class="fa-solid fa-info mr-2"></i><?php echo langHdl('information'); ?></h5>
-                                <?php echo str_replace("#teampass_path#", $SETTINGS['cpassman_dir'], langHdl('tasks_information')); ?>
+                                <h5><i class="fa-solid fa-info mr-2"></i><?php echo $lang->get('information'); ?></h5>
+                                <?php echo str_replace("#teampass_path#", $SETTINGS['cpassman_dir'], $lang->get('tasks_information')); ?>
                                 <div class="mt-2">
-                                    <a href="index.php?page=tasks#settings" class="btn btn-info" role="button"><i class="fa-solid fa-arrow-up-right-from-square mr-2"></i><?php echo langHdl('open_tasks_settings'); ?></a>
+                                    <a href="index.php?page=tasks#settings" class="btn btn-info" role="button"><i class="fa-solid fa-arrow-up-right-from-square mr-2"></i><?php echo $lang->get('open_tasks_settings'); ?></a>
                                 </div>
                             </div>
         <?php
@@ -195,7 +215,7 @@ try {
         $job = (array) $results[0];//print_r($job);
         ?>
                             <div>
-                                <i class="fa-solid fa-circle-check text-success mr-2"></i><?php echo langHdl('tasks_cron_running'); ?>
+                                <i class="fa-solid fa-circle-check text-success mr-2"></i><?php echo $lang->get('tasks_cron_running'); ?>
                                 <div class="ml-3 mt-1">
                                     <span class=""><code><?php echo $job['taskCommandLine']; ?></code></span>
                                 </div>
@@ -220,7 +240,7 @@ catch (Exception $e) {
                     <div class="card-header">
                         <h3 class="card-title">
                             <i class="fa-solid fa-plug mr-2"></i>
-                            <?php echo langHdl('server'); ?>
+                            <?php echo $lang->get('server'); ?>
                         </h3>
                     </div>
                     <!-- /.card-header -->
@@ -306,7 +326,7 @@ catch (Exception $e) {
                         <div class="card-header">
                             <h3 class="card-title">
                                 <i class="fas fa-info-circle mr-2"></i>
-                                <?php echo langHdl('information'); ?>
+                                <?php echo $lang->get('information'); ?>
                             </h3>
                         </div>
                         <!-- /.card-header -->

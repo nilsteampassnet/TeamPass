@@ -24,33 +24,61 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-if (
-    isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
-    || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === true
-    || isset($_SESSION['key']) === false || empty($_SESSION['key']) === true
-) {
-    die('Hacking attempt...');
-}
 
-// Load config
-if (file_exists('../includes/config/tp.config.php') === true) {
-    include_once '../includes/config/tp.config.php';
-} elseif (file_exists('./includes/config/tp.config.php') === true) {
-    include_once './includes/config/tp.config.php';
-} else {
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
+use TeampassClasses\NestedTree\NestedTree;
+use TeampassClasses\PerformChecks\PerformChecks;
+
+// Load functions
+require_once __DIR__.'/../sources/main.functions.php';
+
+// init
+loadClasses('DB');
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
+
+// Load config if $SETTINGS not defined
+try {
+    include_once __DIR__.'/../includes/config/tp.config.php';
+} catch (Exception $e) {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
-/* do checks */
-require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
-if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'ldap', $SETTINGS) === false) {
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
+// Do checks
+$checkUserAccess = new PerformChecks(
+    dataSanitizer(
+        [
+            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+        ],
+        [
+            'type' => 'trim|escape',
+        ],
+    ),
+    [
+        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
+        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+    ]
+);
+// Handle the case
+echo $checkUserAccess->caseHandler();
+if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('ldap') === false) {
+    // Not allowed page
+    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
 
-// Load template
-require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
+// Define Timezone
+date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
+
+// Set header properties
+header('Content-type: text/html; charset=utf-8');
+header('Cache-Control: no-cache, no-store, must-revalidate');
+
+// --------------------------------- //
+ 
 // LDAP type currently loaded
 $ldap_type = $SETTINGS['ldap_type'] ?? '';
 
@@ -61,7 +89,7 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
     <div class="container-fluid">
         <div class="row mb-2">
             <div class="col-sm-12">
-                <h1 class="m-0 text-dark"><i class="fas fa-id-card mr-2"></i><?php echo langHdl('ldap'); ?></h1>
+                <h1 class="m-0 text-dark"><i class="fas fa-id-card mr-2"></i><?php echo $lang->get('ldap'); ?></h1>
             </div><!-- /.col -->
         </div><!-- /.row -->
     </div><!-- /.container-fluid -->
@@ -79,14 +107,14 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
                     ?>
                     <div class="alert alert-danger">
                         <h5><i class="icon fa fa-ban"></i> Alert!</h5>
-                        <?php echo langHdl('ldap_extension_not_loaded'); ?>
+                        <?php echo $lang->get('ldap_extension_not_loaded'); ?>
                     </div>
                 <?php
                 } else {
                     ?>
                     <div class='card card-primary'>
                         <div class='card-header'>
-                            <h3 class='card-title'><?php echo langHdl('admin_ldap_configuration'); ?></h3>
+                            <h3 class='card-title'><?php echo $lang->get('admin_ldap_configuration'); ?></h3>
                         </div>
                         <!-- /.card-header -->
                         <!-- form start -->
@@ -95,9 +123,9 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
 
                                 <div class='row mb-5'>
                                     <div class='col-10'>
-                                        <?php echo langHdl('settings_ldap_mode'); ?>
+                                        <?php echo $lang->get('settings_ldap_mode'); ?>
                                         <small id='passwordHelpBlock' class='form-text text-muted'>
-                                            <?php echo langHdl('settings_ldap_mode_tip'); ?>
+                                            <?php echo $lang->get('settings_ldap_mode_tip'); ?>
                                         </small>
                                     </div>
                                     <div class='col-2'>
@@ -107,9 +135,9 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
 
                                 <div class='row mb-2 tr-ldap'>
                                     <div class='col-5'>
-                                        <?php echo langHdl('hosts'); ?>
+                                        <?php echo $lang->get('hosts'); ?>
                                         <small id='passwordHelpBlock' class='form-text text-muted'>
-                                            <?php echo langHdl('settings_ldap_hosts_tip'); ?>
+                                            <?php echo $lang->get('settings_ldap_hosts_tip'); ?>
                                         </small>
                                     </div>
                                     <div class='col-7'>
@@ -119,9 +147,9 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
 
                                 <div class='row mb-2 tr-ldap'>
                                     <div class='col-5'>
-                                        <?php echo langHdl('settings_ldap_port'); ?>
+                                        <?php echo $lang->get('settings_ldap_port'); ?>
                                         <small id='passwordHelpBlock' class='form-text text-muted'>
-                                            <?php echo langHdl('settings_ldap_port_tip'); ?>
+                                            <?php echo $lang->get('settings_ldap_port_tip'); ?>
                                         </small>
                                     </div>
                                     <div class='col-7'>
@@ -131,9 +159,9 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
 
                                 <div class='row mb-2 tr-ldap'>
                                     <div class='col-5'>
-                                        <?php echo langHdl('base_distiguished_name'); ?>
+                                        <?php echo $lang->get('base_distiguished_name'); ?>
                                         <small id='passwordHelpBlock' class='form-text text-muted'>
-                                            <?php echo langHdl('settings_ldap_bdn_tip'); ?>
+                                            <?php echo $lang->get('settings_ldap_bdn_tip'); ?>
                                         </small>
                                     </div>
                                     <div class='col-7'>
@@ -143,9 +171,9 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
 
                                 <div class='row mb-2 tr-ldap'>
                                     <div class='col-5'>
-                                        <?php echo langHdl('username'); ?>
+                                        <?php echo $lang->get('username'); ?>
                                         <small id='passwordHelpBlock' class='form-text text-muted'>
-                                            <?php echo langHdl('settings_ldap_username_tip'); ?>
+                                            <?php echo $lang->get('settings_ldap_username_tip'); ?>
                                         </small>
                                     </div>
                                     <div class='col-7'>
@@ -155,9 +183,9 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
 
                                 <div class='row mb-2 tr-ldap'>
                                     <div class='col-5'>
-                                        <?php echo langHdl('password'); ?>
+                                        <?php echo $lang->get('password'); ?>
                                         <small id='passwordHelpBlock' class='form-text text-muted'>
-                                            <?php echo langHdl('settings_ldap_password_tip'); ?>
+                                            <?php echo $lang->get('settings_ldap_password_tip'); ?>
                                         </small>
                                     </div>
                                     <div class='col-7'>
@@ -167,9 +195,9 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
 
                                 <div class='row mb-2 tr-ldap'>
                                     <div class='col-5'>
-                                        <?php echo langHdl('settings_ldap_user_dn_attribute'); ?>
+                                        <?php echo $lang->get('settings_ldap_user_dn_attribute'); ?>
                                         <small id='passwordHelpBlock' class='form-text text-muted'>
-                                            <?php echo langHdl('settings_ldap_user_dn_attribute_tip'); ?>
+                                            <?php echo $lang->get('settings_ldap_user_dn_attribute_tip'); ?>
                                         </small>
                                     </div>
                                     <div class='col-7'>
@@ -179,9 +207,9 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
 
                                 <div class='row mb-2 tr-ldap'>
                                     <div class='col-5'>
-                                        <?php echo langHdl('settings_ldap_user_attribute'); ?>
+                                        <?php echo $lang->get('settings_ldap_user_attribute'); ?>
                                         <small id='passwordHelpBlock' class='form-text text-muted'>
-                                            <?php echo langHdl('settings_ldap_user_attribute_tip'); ?>
+                                            <?php echo $lang->get('settings_ldap_user_attribute_tip'); ?>
                                         </small>
                                     </div>
                                     <div class='col-7'>
@@ -191,9 +219,9 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
 
                                 <div class='row mb-2 tr-ldap'>
                                     <div class='col-5'>
-                                        <?php echo langHdl('settings_ldap_additional_user_dn'); ?>
+                                        <?php echo $lang->get('settings_ldap_additional_user_dn'); ?>
                                         <small id='passwordHelpBlock' class='form-text text-muted'>
-                                            <?php echo langHdl('settings_ldap_additional_user_dn_tip'); ?>
+                                            <?php echo $lang->get('settings_ldap_additional_user_dn_tip'); ?>
                                         </small>
                                     </div>
                                     <div class='col-7'>
@@ -203,9 +231,9 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
 
                                 <div class='row mb-2 tr-ldap'>
                                     <div class='col-5'>
-                                        <?php echo langHdl('settings_ldap_user_object_filter'); ?>
+                                        <?php echo $lang->get('settings_ldap_user_object_filter'); ?>
                                         <small id='passwordHelpBlock' class='form-text text-muted'>
-                                            <?php echo langHdl('settings_ldap_user_object_filter_tip'); ?>
+                                            <?php echo $lang->get('settings_ldap_user_object_filter_tip'); ?>
                                         </small>
                                     </div>
                                     <div class='col-7'>
@@ -215,9 +243,9 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
 
                                 <div class='row mb-2 tr-ldap'>
                                     <div class='col-5'>
-                                        <?php echo langHdl('settings_ldap_group_object_filter'); ?>
+                                        <?php echo $lang->get('settings_ldap_group_object_filter'); ?>
                                         <small id='passwordHelpBlock' class='form-text text-muted'>
-                                            <?php echo langHdl('settings_ldap_group_object_filter_tip'); ?>
+                                            <?php echo $lang->get('settings_ldap_group_object_filter_tip'); ?>
                                         </small>
                                     </div>
                                     <div class='col-7'>
@@ -227,11 +255,11 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
 
                                 <div class='row mb-2'>
                                     <div class='col-5'>
-                                        <?php echo langHdl('settings_ldap_type'); ?>
+                                        <?php echo $lang->get('settings_ldap_type'); ?>
                                     </div>
                                     <div class='col-7'>
                                         <select class='form-control form-control-sm' id='ldap_type'>
-                                            <option value=''>-- <?php echo langHdl('select'); ?> --</option>
+                                            <option value=''>-- <?php echo $lang->get('select'); ?> --</option>
                                             <option value="ActiveDirectory" <?php echo isset($SETTINGS['ldap_type']) === true && $SETTINGS['ldap_type'] === 'ActiveDirectory' ? ' selected' : ''; ?>>Active Directory</option>
                                             <option value="OpenLDAP" <?php echo isset($SETTINGS['ldap_type']) === true && $SETTINGS['ldap_type'] === 'OpenLDAP' ? ' selected' : ''; ?>>OpenLDAP</option>
                                             <option value="FreeIPA" <?php echo isset($SETTINGS['ldap_type']) === true && $SETTINGS['ldap_type'] === 'FreeIPA' ? ' selected' : ''; ?>>FreeIPA</option>
@@ -248,11 +276,11 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
 <!--
                                 <div class='row mb-2'>
                                     <div class='col-5'>
-                                        <?php echo langHdl('settings_ldap_type'); ?>
+                                        <?php echo $lang->get('settings_ldap_type'); ?>
                                     </div>
                                     <div class='col-7'>
                                         <select class='form-control form-control-sm' id='ldap_type'>
-                                            <option value=''>-- <?php echo langHdl('select'); ?> --</option>
+                                            <option value=''>-- <?php echo $lang->get('select'); ?> --</option>
                                             <option value="windows" <?php echo isset($SETTINGS['ldap_type']) === true && $SETTINGS['ldap_type'] === 'windows' ? ' selected' : ''; ?>>Windows / Active Directory</option>
                                             <option value="posix" <?php echo isset($SETTINGS['ldap_type']) === true && $SETTINGS['ldap_type'] === 'posix' ? ' selected' : ''; ?>>Posix / OpenLDAP (RFC2307)</option>
                                             <option value="posix-search" <?php echo isset($SETTINGS['ldap_type']) === true && $SETTINGS['ldap_type'] === 'posix-search' ? ' selected' : ''; ?>>Posix / OpenLDAP (RFC2307) Search Based</option>
@@ -262,7 +290,7 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
 
                                 <div class='row mb-2 tr-ldap tr-windows tr-posix tr-posix-search<?php echo isset($ldap_type) === true ? '' : ' hidden'; ?>'>
                                     <div class='col-5'>
-                                        <?php echo langHdl('settings_ldap_domain'); ?>
+                                        <?php echo $lang->get('settings_ldap_domain'); ?>
                                     </div>
                                     <div class='col-7'>
                                         <input type='text' class='form-control form-control-sm setting-ldap' id='ldap_suffix' value='<?php echo $SETTINGS['ldap_suffix'] ?? ''; ?>'>
@@ -271,7 +299,7 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
 
                                 <div class='row mb-2 tr-windows tr-ldap tr-posix<?php echo isset($ldap_type) === true && $ldap_type !== 'posix-search' ? '' : ' hidden'; ?>'>
                                     <div class='col-5'>
-                                        <?php echo langHdl('settings_ldap_domain_dn'); ?>
+                                        <?php echo $lang->get('settings_ldap_domain_dn'); ?>
                                     </div>
                                     <div class='col-7'>
                                         <input type='text' class='form-control form-control-sm setting-ldap' id='ldap_domain_dn' value='<?php echo $SETTINGS['ldap_domain_dn'] ?? ''; ?>'>
@@ -280,9 +308,9 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
 
                                 <div class='row mb-2 tr-ldap tr-posix-search<?php echo isset($ldap_type) === true && $ldap_type === 'posix-search' ? '' : ' hidden'; ?>'>
                                     <div class='col-5'>
-                                        <?php echo langHdl('settings_ldap_object_class'); ?>
+                                        <?php echo $lang->get('settings_ldap_object_class'); ?>
                                         <small id='passwordHelpBlock' class='form-text text-muted'>
-                                            <?php echo langHdl('settings_ldap_object_class_tip'); ?>
+                                            <?php echo $lang->get('settings_ldap_object_class_tip'); ?>
                                         </small>
                                     </div>
                                     <div class='col-7'>
@@ -292,9 +320,9 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
 
                                 <div class='row mb-2 tr-ldap tr-posix-search<?php echo isset($ldap_type) === true && $ldap_type === 'posix-search' ? '' : ' hidden'; ?>'>
                                     <div class='col-5'>
-                                        <?php echo langHdl('settings_ldap_user_attribute'); ?>
+                                        <?php echo $lang->get('settings_ldap_user_attribute'); ?>
                                         <small id='passwordHelpBlock' class='form-text text-muted'>
-                                            <?php echo langHdl('settings_ldap_user_attribute_tip'); ?>
+                                            <?php echo $lang->get('settings_ldap_user_attribute_tip'); ?>
                                         </small>
                                     </div>
                                     <div class='col-7'>
@@ -304,9 +332,9 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
 
                                 <div class='row mb-2 tr-ldap tr-posix-search<?php echo isset($ldap_type) === true && $ldap_type === 'posix-search' ? '' : ' hidden'; ?>'>
                                     <div class='col-5'>
-                                        <?php echo langHdl('settings_ldap_usergroup'); ?>
+                                        <?php echo $lang->get('settings_ldap_usergroup'); ?>
                                         <small id='passwordHelpBlock' class='form-text text-muted'>
-                                            <?php echo langHdl('settings_ldap_usergroup_tip'); ?>
+                                            <?php echo $lang->get('settings_ldap_usergroup_tip'); ?>
                                         </small>
                                     </div>
                                     <div class='col-7'>
@@ -316,9 +344,9 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
 
                                 <div class='row mb-2 tr-ldap tr-posix-search<?php echo isset($ldap_type) === true && $ldap_type === 'posix-search' ? '' : ' hidden'; ?>'>
                                     <div class='col-5'>
-                                        <?php echo langHdl('settings_ldap_bind_dn'); ?>
+                                        <?php echo $lang->get('settings_ldap_bind_dn'); ?>
                                         <small id='passwordHelpBlock' class='form-text text-muted'>
-                                            <?php echo langHdl('settings_ldap_bind_dn_tip'); ?>
+                                            <?php echo $lang->get('settings_ldap_bind_dn_tip'); ?>
                                         </small>
                                     </div>
                                     <div class='col-7'>
@@ -328,9 +356,9 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
 
                                 <div class='row mb-2 tr-ldap tr-posix-search<?php echo isset($ldap_type) === true && $ldap_type === 'posix-search' ? '' : ' hidden'; ?>'>
                                     <div class='col-5'>
-                                        <?php echo langHdl('settings_ldap_bind_passwd'); ?>
+                                        <?php echo $lang->get('settings_ldap_bind_passwd'); ?>
                                         <small id='passwordHelpBlock' class='form-text text-muted'>
-                                            <?php echo langHdl('settings_ldap_bind_passwd_tip'); ?>
+                                            <?php echo $lang->get('settings_ldap_bind_passwd_tip'); ?>
                                         </small>
                                     </div>
                                     <div class='col-7'>
@@ -340,9 +368,9 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
 
                                 <div class='row mb-2 tr-ldap tr-windows<?php echo isset($ldap_type) === true && $ldap_type === 'posix-search' ? '' : ' hidden'; ?>'>
                                     <div class='col-5'>
-                                        <?php echo langHdl('settings_ldap_search_base'); ?>
+                                        <?php echo $lang->get('settings_ldap_search_base'); ?>
                                         <small id='passwordHelpBlock' class='form-text text-muted'>
-                                            <?php echo langHdl('settings_ldap_search_base_tip'); ?>
+                                            <?php echo $lang->get('settings_ldap_search_base_tip'); ?>
                                         </small>
                                     </div>
                                     <div class='col-7'>
@@ -352,9 +380,9 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
 
                                 <div class='row mb-2 tr-ldap tr-posix-search<?php echo isset($ldap_type) === true && $ldap_type === 'windows' ? '' : ' hidden'; ?>'>
                                     <div class='col-5'>
-                                        <?php echo langHdl('settings_ldap_allowed_usergroup'); ?>
+                                        <?php echo $lang->get('settings_ldap_allowed_usergroup'); ?>
                                         <small id='passwordHelpBlock' class='form-text text-muted'>
-                                            <?php echo langHdl('settings_ldap_allowed_usergroup_tip'); ?>
+                                            <?php echo $lang->get('settings_ldap_allowed_usergroup_tip'); ?>
                                         </small>
                                     </div>
                                     <div class='col-7'>
@@ -364,9 +392,9 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
 
                                 <div class='row mb-2 tr-ldap tr-posix-search<?php echo isset($ldap_type) === true && $ldap_type === 'windows' ? '' : ' hidden'; ?>'>
                                     <div class='col-5'>
-                                        <?php echo langHdl('settings_ldap_domain_controler'); ?>
+                                        <?php echo $lang->get('settings_ldap_domain_controler'); ?>
                                         <small id='passwordHelpBlock' class='form-text text-muted'>
-                                            <?php echo langHdl('settings_ldap_domain_controler_tip'); ?>
+                                            <?php echo $lang->get('settings_ldap_domain_controler_tip'); ?>
                                         </small>
                                     </div>
                                     <div class='col-7'>
@@ -376,7 +404,7 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
 
                                 <div class='row mb-2 tr-ldap tr-windows tr-posix tr-posix-search'>
                                     <div class='col-10'>
-                                        <?php echo langHdl('settings_ldap_port'); ?>
+                                        <?php echo $lang->get('settings_ldap_port'); ?>
                                     </div>
                                     <div class='col-2'>
                                         <input type='text' class='form-control form-control-sm setting-ldap' id='ldap_port' value='<?php echo $SETTINGS['ldap_port'] ?? '389'; ?>'>
@@ -385,7 +413,7 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
 -->
                                 <div class='row mb-2 tr-ldap'>
                                     <div class='col-10'>
-                                        <?php echo langHdl('settings_ldap_ssl'); ?>
+                                        <?php echo $lang->get('settings_ldap_ssl'); ?>
                                     </div>
                                     <div class='col-2'>
                                         <div class='toggle toggle-modern' id='ldap_ssl' data-toggle-on='<?php echo isset($SETTINGS['ldap_ssl']) === true && $SETTINGS['ldap_ssl'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='ldap_ssl_input' value='<?php echo isset($SETTINGS['ldap_ssl']) && (int) $SETTINGS['ldap_ssl'] === 1 ? 1 : 0; ?>'>
@@ -394,7 +422,7 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
 
                                 <div class='row mb-2 tr-ldap'>
                                     <div class='col-10'>
-                                        <?php echo langHdl('settings_ldap_tls'); ?>
+                                        <?php echo $lang->get('settings_ldap_tls'); ?>
                                     </div>
                                     <div class='col-2'>
                                         <div class='toggle toggle-modern' id='ldap_tls' data-toggle-on='<?php echo isset($SETTINGS['ldap_tls']) === true && $SETTINGS['ldap_tls'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='ldap_tls_input' value='<?php echo isset($SETTINGS['ldap_tls']) && (int) $SETTINGS['ldap_tls'] === 1 ? 1 : 0; ?>'>
@@ -403,9 +431,9 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
 
                                 <div class='row mb-2'>
                                     <div class='col-5'>
-                                        <?php echo langHdl('settings_ldap_tls_certifacte_check'); ?>
+                                        <?php echo $lang->get('settings_ldap_tls_certifacte_check'); ?>
                                         <small id='passwordHelpBlock' class='form-text text-muted'>
-                                            <?php echo langHdl('settings_ldap_tls_certifacte_check_tip'); ?>
+                                            <?php echo $lang->get('settings_ldap_tls_certifacte_check_tip'); ?>
                                         </small>
                                     </div>
                                     <div class='col-7'>
@@ -421,9 +449,9 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
 
                                 <div class='row mb-2 tr-ldap'>
                                     <div class='col-10'>
-                                        <?php echo langHdl('settings_ldap_and_local_authentication'); ?>
+                                        <?php echo $lang->get('settings_ldap_and_local_authentication'); ?>
                                         <small id='passwordHelpBlock' class='form-text text-muted'>
-                                            <?php echo langHdl('settings_ldap_and_local_authentication_tip'); ?>
+                                            <?php echo $lang->get('settings_ldap_and_local_authentication_tip'); ?>
                                         </small>
                                     </div>
                                     <div class='col-2'>
@@ -433,9 +461,9 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
 
                                 <div class='row mb-2 tr-ldap'>
                                     <div class='col-10'>
-                                        <?php echo langHdl('settings_ad_users_with_ad_groups'); ?>
+                                        <?php echo $lang->get('settings_ad_users_with_ad_groups'); ?>
                                         <small id='passwordHelpBlock' class='form-text text-muted'>
-                                            <?php echo langHdl('settings_ad_users_with_ad_groups_tip'); ?>
+                                            <?php echo $lang->get('settings_ad_users_with_ad_groups_tip'); ?>
                                         </small>
                                     </div>
                                     <div class='col-2'>
@@ -445,9 +473,9 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
 
                                 <div class='row mb-2 tr-ldap'>
                                     <div class='col-5'>
-                                        <?php echo langHdl('settings_ldap_guid_attibute'); ?>
+                                        <?php echo $lang->get('settings_ldap_guid_attibute'); ?>
                                         <small id='passwordHelpBlock' class='form-text text-muted'>
-                                            <?php echo langHdl('settings_ldap_guid_attibute_tip'); ?>
+                                            <?php echo $lang->get('settings_ldap_guid_attibute_tip'); ?>
                                         </small>
                                     </div>
                                     <div class='col-7'>
@@ -458,9 +486,9 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
                                 <!--<?php if (defined('WIP') === true && WIP === true) { ?>-->
                                 <div class='row mb-2 tr-ldap'>
                                     <div class='col-10'>
-                                        <?php echo langHdl('settings_ad_user_auto_creation'); ?>
+                                        <?php echo $lang->get('settings_ad_user_auto_creation'); ?>
                                         <small id='passwordHelpBlock' class='form-text text-muted'>
-                                            <?php echo langHdl('settings_ad_user_auto_creation_tip'); ?>
+                                            <?php echo $lang->get('settings_ad_user_auto_creation_tip'); ?>
                                         </small>
                                     </div>
                                     <div class='col-2'>
@@ -471,9 +499,9 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
 
                                 <div class='row mb-2 tr-ldap'>
                                     <div class='col-10'>
-                                        <?php echo langHdl('settings_disable_forgot_password_link'); ?>
+                                        <?php echo $lang->get('settings_disable_forgot_password_link'); ?>
                                         <small id='passwordHelpBlock' class='form-text text-muted'>
-                                            <?php echo langHdl('settings_disable_forgot_password_link_tip'); ?>
+                                            <?php echo $lang->get('settings_disable_forgot_password_link_tip'); ?>
                                         </small>
                                     </div>
                                     <div class='col-2'>
@@ -483,7 +511,7 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
 
                                 <div class='row mb-2 tr-ldap'>
                                     <div class='col-5'>
-                                        <?php echo langHdl('newly_created_user_is_administrated_by'); ?>
+                                        <?php echo $lang->get('newly_created_user_is_administrated_by'); ?>
                                     </div>
                                     <div class='col-7'>
                                         <select class='form-control form-control-sm select2' id='ldap_new_user_is_administrated_by'>
@@ -497,7 +525,7 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
 
                     <div class='card card-primary'>
                         <div class='card-header'>
-                            <h3 class='card-title'><?php echo langHdl('actions'); ?></h3>
+                            <h3 class='card-title'><?php echo $lang->get('actions'); ?></h3>
                         </div>
                         <!-- /.card-header -->
                         <!-- form start -->
@@ -506,7 +534,7 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
                                 <ul class='nav nav-tabs' id='' role='tablist'>
                                     <li class='nav-item'>
                                         <a class='nav-link active' id='test-tab' data-toggle='tab' href='#test' role='tab' aria-controls='test' aria-selected='true'>
-                                            <i class='fas fa-vial mr-2'></i><?php echo langHdl('ldap_test_config'); ?>
+                                            <i class='fas fa-vial mr-2'></i><?php echo $lang->get('ldap_test_config'); ?>
                                         </a>
                                     </li>
                                 </ul>
@@ -514,7 +542,7 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
                                     <div class='tab-pane fade show active' id='test' role='tabpanel' aria-labelledby='test-tab'>
                                         <div class='row mb-2'>
                                             <div class='col-8'>
-                                                <?php echo langHdl('ldap_test_username'); ?>
+                                                <?php echo $lang->get('ldap_test_username'); ?>
                                             </div>
                                             <div class='col-4'>
                                                 <input type='text' class='form-control' id='ldap-test-config-username' value=''>
@@ -522,7 +550,7 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
                                         </div>
                                         <div class='row mb-2'>
                                             <div class='col-8'>
-                                                <?php echo langHdl('ldap_test_username_pwd'); ?>
+                                                <?php echo $lang->get('ldap_test_username_pwd'); ?>
                                             </div>
                                             <div class='col-4'>
                                                 <input type='password' class='form-control' id='ldap-test-config-pwd' value=''>
@@ -530,7 +558,7 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
                                         </div>
                                         <div class='card mb-2 hidden info' id='ldap-test-config-results'>
                                             <div class='card-header'>
-                                                <?php echo langHdl('output'); ?>
+                                                <?php echo $lang->get('output'); ?>
                                             </div>
                                             <div class='card-body'>
                                                 <p class='card-text' id='ldap-test-config-results-text'></p>
@@ -538,7 +566,7 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
                                         </div>
                                         <div class='row mb-2'>
                                             <button type='button' class='btn btn-primary btn-sm tp-action mr-2' data-action='ldap-test-config'>
-                                                <i class='fas fa-cog mr-2'></i><?php echo langHdl('perform'); ?>
+                                                <i class='fas fa-cog mr-2'></i><?php echo $lang->get('perform'); ?>
                                             </button>
                                         </div>
                                     </div>

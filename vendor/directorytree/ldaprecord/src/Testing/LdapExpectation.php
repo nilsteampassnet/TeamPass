@@ -3,9 +3,7 @@
 namespace LdapRecord\Testing;
 
 use Closure;
-use Exception;
 use LdapRecord\LdapRecordException;
-use LdapRecord\LdapResultResponse;
 use PHPUnit\Framework\Constraint\Callback;
 use PHPUnit\Framework\Constraint\Constraint;
 use PHPUnit\Framework\Constraint\IsEqual;
@@ -15,76 +13,91 @@ class LdapExpectation
 {
     /**
      * The value to return from the expectation.
+     *
+     * @var mixed
      */
-    protected mixed $value = null;
+    protected $value;
 
     /**
      * The exception to throw from the expectation.
+     *
+     * @var null|LdapRecordException|\Exception
      */
-    protected ?Exception $exception = null;
+    protected $exception;
 
     /**
-     * The tracked number of times the expectation should be called.
+     * The amount of times the expectation should be called.
+     *
+     * @var int
      */
-    protected int $count = 1;
-
-    /**
-     * The original number of times the expectation should be called.
-     */
-    protected int $originalCount = 1;
-
-    /**
-     * The actual number of times the expectation was called.
-     */
-    protected int $called = 0;
+    protected $count = 1;
 
     /**
      * The method that the expectation belongs to.
+     *
+     * @var string
      */
-    protected ?string $method = null;
+    protected $method;
 
     /**
      * The methods argument's.
+     *
+     * @var array
      */
-    protected array $args = [];
+    protected $args = [];
 
     /**
      * Whether the same expectation should be returned indefinitely.
+     *
+     * @var bool
      */
-    protected bool $indefinitely = true;
+    protected $indefinitely = true;
 
     /**
      * Whether the expectation should return errors.
+     *
+     * @var bool
      */
-    protected bool $errors = false;
+    protected $errors = false;
 
     /**
      * The error number to return.
+     *
+     * @var int
      */
-    protected ?string $errorCode = null;
+    protected $errorCode = 1;
 
     /**
      * The last error string to return.
+     *
+     * @var string
      */
-    protected ?string $errorMessage = null;
+    protected $errorMessage = '';
 
     /**
      * The diagnostic message string to return.
+     *
+     * @var string
      */
-    protected ?string $errorDiagnosticMessage = null;
+    protected $errorDiagnosticMessage = '';
 
     /**
      * Constructor.
+     *
+     * @param  string  $method
      */
-    public function __construct(string $method)
+    public function __construct($method)
     {
         $this->method = $method;
     }
 
     /**
      * Set the arguments that the operation should receive.
+     *
+     * @param  mixed  $args
+     * @return $this
      */
-    public function with(mixed $args): static
+    public function with($args)
     {
         $this->args = array_map(function ($arg) {
             if ($arg instanceof Closure) {
@@ -103,8 +116,11 @@ class LdapExpectation
 
     /**
      * Set the expected value to return.
+     *
+     * @param  mixed  $value
+     * @return $this
      */
-    public function andReturn(mixed $value): static
+    public function andReturn($value)
     {
         $this->value = $value;
 
@@ -112,62 +128,31 @@ class LdapExpectation
     }
 
     /**
-     * Set the expected value to return true.
-     */
-    public function andReturnTrue(): static
-    {
-        return $this->andReturn(true);
-    }
-
-    /**
-     * Set the expected value to return false.
-     */
-    public function andReturnFalse(): static
-    {
-        return $this->andReturn(false);
-    }
-
-    /**
      * The error message to return from the expectation.
+     *
+     * @param  int  $code
+     * @param  string  $error
+     * @param  string  $diagnosticMessage
+     * @return $this
      */
-    public function andReturnError(int $errorCode = 1, string $errorMessage = '', string $diagnosticMessage = ''): static
+    public function andReturnError($code = 1, $error = '', $diagnosticMessage = '')
     {
         $this->errors = true;
 
-        $this->errorCode = $errorCode;
-        $this->errorMessage = $errorMessage;
+        $this->errorCode = $code;
+        $this->errorMessage = $error;
         $this->errorDiagnosticMessage = $diagnosticMessage;
 
         return $this;
     }
 
     /**
-     * Return an error LDAP result response.
-     */
-    public function andReturnErrorResponse(int $code = 1, string $errorMessage = null): static
-    {
-        return $this->andReturnResponse($code, $errorMessage);
-    }
-
-    /**
-     * Return an LDAP result response.
-     */
-    public function andReturnResponse(
-        int $errorCode = 0,
-        string $matchedDn = null,
-        string $errorMessage = null,
-        array $referrals = [],
-        array $controls = []
-    ): static {
-        return $this->andReturn(
-            new LdapResultResponse($errorCode, $matchedDn, $errorMessage, $referrals, $controls)
-        );
-    }
-
-    /**
      * Set the expected exception to throw.
+     *
+     * @param  string|\Exception|LdapRecordException  $exception
+     * @return $this
      */
-    public function andThrow(string|Exception $exception): static
+    public function andThrow($exception)
     {
         if (is_string($exception)) {
             $exception = new LdapRecordException($exception);
@@ -180,36 +165,45 @@ class LdapExpectation
 
     /**
      * Set the expectation to be only called once.
+     *
+     * @return $this
      */
-    public function once(): static
+    public function once()
     {
-        return $this->times();
+        return $this->times(1);
     }
 
     /**
      * Set the expectation to be only called twice.
+     *
+     * @return $this
      */
-    public function twice(): static
+    public function twice()
     {
         return $this->times(2);
     }
 
     /**
      * Set the expectation to be called the given number of times.
+     *
+     * @param  int  $count
+     * @return $this
      */
-    public function times(int $count = 1): static
+    public function times($count = 1)
     {
         $this->indefinitely = false;
 
-        $this->originalCount = $this->count = $count;
+        $this->count = $count;
 
         return $this;
     }
 
     /**
      * Get the method the expectation belongs to.
+     *
+     * @return string
      */
-    public function getMethod(): string
+    public function getMethod()
     {
         if (is_null($this->method)) {
             throw new UnexpectedValueException('An expectation must have a method.');
@@ -220,26 +214,12 @@ class LdapExpectation
 
     /**
      * Get the expected call count.
+     *
+     * @return int
      */
-    public function getExpectedCount(): int
+    public function getExpectedCount()
     {
         return $this->count;
-    }
-
-    /**
-     * Get the original expected call count.
-     */
-    public function getOriginalExpectedCount(): int
-    {
-        return $this->originalCount;
-    }
-
-    /**
-     * Get the count that the expectation was called.
-     */
-    public function getCalledCount(): int
-    {
-        return $this->called;
     }
 
     /**
@@ -247,77 +227,75 @@ class LdapExpectation
      *
      * @return Constraint[]
      */
-    public function getExpectedArgs(): array
+    public function getExpectedArgs()
     {
         return $this->args;
     }
 
     /**
      * Get the expected exception.
+     *
+     * @return null|\Exception|LdapRecordException
      */
-    public function getExpectedException(): ?Exception
+    public function getExpectedException()
     {
         return $this->exception;
     }
 
     /**
      * Get the expected value.
+     *
+     * @return mixed
      */
-    public function getExpectedValue(): mixed
+    public function getExpectedValue()
     {
         return $this->value;
     }
 
     /**
-     * Determine whether the expectation can be called indefinitely.
-     */
-    public function isIndefinite(): bool
-    {
-        return $this->indefinitely;
-    }
-
-    /**
      * Determine whether the expectation is returning an error.
+     *
+     * @return bool
      */
-    public function isReturningError(): bool
+    public function isReturningError()
     {
         return $this->errors;
     }
 
     /**
-     * Get the expected error code.
+     * @return int
      */
-    public function getExpectedErrorCode(): ?int
+    public function getExpectedErrorCode()
     {
         return $this->errorCode;
     }
 
     /**
-     * Get the expected error message.
+     * @return string
      */
-    public function getExpectedErrorMessage(): ?string
+    public function getExpectedErrorMessage()
     {
         return $this->errorMessage;
     }
 
     /**
-     * Get the expected diagnostic message.
+     * @return string
      */
-    public function getExpectedErrorDiagnosticMessage(): ?string
+    public function getExpectedErrorDiagnosticMessage()
     {
         return $this->errorDiagnosticMessage;
     }
 
     /**
-     * Decrement the expected count of the expectation.
+     * Decrement the call count of the expectation.
+     *
+     * @return $this
      */
-    public function decrementExpectedCount(): static
+    public function decrementCallCount()
     {
         if (! $this->indefinitely) {
             $this->count -= 1;
         }
-
-        $this->called++;
 
         return $this;
     }

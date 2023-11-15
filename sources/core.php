@@ -24,33 +24,35 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
-    die('Please login...');
-}
 
-// Load config
-if (file_exists('../includes/config/tp.config.php')) {
-    include_once '../includes/config/tp.config.php';
-} elseif (file_exists('./includes/config/tp.config.php')) {
-    include_once './includes/config/tp.config.php';
-} else {
+use voku\helper\AntiXSS;
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
+
+// Load functions
+require_once 'main.functions.php';
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
+
+// Load config if $SETTINGS not defined
+try {
+    include_once __DIR__.'/../includes/config/tp.config.php';
+} catch (Exception $e) {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
+
 
 /**
  * Redirection management.
  *
  * @param string $url new url
  *
- * @return string refresh page to url
+ * @return void refresh page to url
  */
-function redirect($url)
+function teampassRedirect($url)
 {
     // Load AntiXSS
-    include_once '../includes/libraries/portable-ascii-master/src/voku/helper/ASCII.php';
-    include_once '../includes/libraries/portable-utf8-master/src/voku/helper/UTF8.php';
-    include_once '../includes/libraries/anti-xss-master/src/voku/helper/AntiXSS.php';
-    $antiXss = new voku\helper\AntiXSS();
+    $antiXss = new AntiXSS();
     if (! headers_sent()) {    //If headers not sent yet... then do php redirect
         header('Location: ' . $antiXss->xss_clean($url));
     }
@@ -64,9 +66,7 @@ function redirect($url)
     echo '</noscript>';
 }
 
-// Include files
-require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-$superGlobal = new protect\SuperGlobal\SuperGlobal();
+
 // Prepare GET variables
 $server = [];
 $server['https'] = $superGlobal->get('HTTPS', 'SERVER');
@@ -88,7 +88,7 @@ if (isset($server['https']) === true
     && isset($SETTINGS['enable_sts']) === true
     && (int) $SETTINGS['enable_sts'] === 1
 ) {
-    redirect('https://' . $server['http_host'] . $server['request_uri']);
+    teampassRedirect('https://' . $server['http_host'] . $server['request_uri']);
 }
 
 // Load pwComplexity
@@ -98,11 +98,11 @@ if (defined('TP_PW_COMPLEXITY') === false) {
         define(
             'TP_PW_COMPLEXITY',
             [
-                TP_PW_STRENGTH_1 => [TP_PW_STRENGTH_1, langHdl('complex_level1'), 'fas fa-thermometer-empty text-danger'],
-                TP_PW_STRENGTH_2 => [TP_PW_STRENGTH_2, langHdl('complex_level2'), 'fas fa-thermometer-quarter text-warning'],
-                TP_PW_STRENGTH_3 => [TP_PW_STRENGTH_3, langHdl('complex_level3'), 'fas fa-thermometer-half text-warning'],
-                TP_PW_STRENGTH_4 => [TP_PW_STRENGTH_4, langHdl('complex_level4'), 'fas fa-thermometer-three-quarters text-success'],
-                TP_PW_STRENGTH_5 => [TP_PW_STRENGTH_5, langHdl('complex_level5'), 'fas fa-thermometer-full text-success'],
+                TP_PW_STRENGTH_1 => [TP_PW_STRENGTH_1, $lang->get('complex_level1'), 'fas fa-thermometer-empty text-danger'],
+                TP_PW_STRENGTH_2 => [TP_PW_STRENGTH_2, $lang->get('complex_level2'), 'fas fa-thermometer-quarter text-warning'],
+                TP_PW_STRENGTH_3 => [TP_PW_STRENGTH_3, $lang->get('complex_level3'), 'fas fa-thermometer-half text-warning'],
+                TP_PW_STRENGTH_4 => [TP_PW_STRENGTH_4, $lang->get('complex_level4'), 'fas fa-thermometer-three-quarters text-success'],
+                TP_PW_STRENGTH_5 => [TP_PW_STRENGTH_5, $lang->get('complex_level5'), 'fas fa-thermometer-full text-success'],
             ]
         );
     }
@@ -242,7 +242,7 @@ if (empty($_SESSION['sessionDuration']) === false) {
 
 // get some init
 if (isset($_SESSION['user_id']) === false || (int) $_SESSION['user_id'] === 0) {
-    $_SESSION['key'] = GenerateCryptKey(50, false, true, true, false, true, ['cpassman_dir' => '.']);
+    $superGlobal->put('key', GenerateCryptKey(50, false, true, true, false, true, ['cpassman_dir' => '.']), 'SESSION');
     $_SESSION['user_id'] = 0;
     $_SESSION['id'] = 1;
 }
@@ -254,7 +254,7 @@ if (
     && (int) $_SESSION['user_id'] !== 0
     && (empty($_SESSION['sessionDuration']) === true
         || $_SESSION['sessionDuration'] < time()
-        || empty($_SESSION['key']) === true
+        || $superGlobal->get('key', 'SESSION') === null
         || empty($dataSession['key_tempo']) === true)
 ) {
     // Update table by deleting ID

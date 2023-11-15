@@ -2,75 +2,80 @@
 
 namespace LdapRecord\Models\Attributes;
 
-use Stringable;
-
-class EscapedValue implements Stringable
+class EscapedValue
 {
     /**
      * The value to be escaped.
+     *
+     * @var string
      */
-    protected mixed $value;
+    protected $value;
 
     /**
      * The characters to ignore when escaping.
+     *
+     * @var string
      */
-    protected string $ignore;
+    protected $ignore;
 
     /**
      * The escape flags.
+     *
+     * @var int
      */
-    protected int $flags;
+    protected $flags;
 
     /**
      * Constructor.
+     *
+     * @param  string  $value
+     * @param  string  $ignore
+     * @param  int  $flags
      */
-    public function __construct(mixed $value, string $ignore = '', int $flags = 0)
+    public function __construct($value, $ignore = '', $flags = 0)
     {
-        $this->value = $value;
+        $this->value = (string) $value;
         $this->ignore = $ignore;
         $this->flags = $flags;
     }
 
     /**
-     * Un-escapes a hexadecimal string into its original string representation.
+     * Get the escaped value.
+     *
+     * @return string
      */
-    public static function unescape(string $value): string
+    public function __toString()
     {
-        return preg_replace_callback(
-            '/\\\([0-9A-Fa-f]{2})/',
-            fn ($matches) => chr(hexdec($matches[1])),
-            $value
-        );
+        return (string) $this->get();
     }
 
     /**
      * Get the escaped value.
+     *
+     * @return mixed
      */
-    public function __toString(): string
+    public function get()
     {
-        return $this->get();
-    }
-
-    /**
-     * Get the escaped value.
-     */
-    public function get(): string
-    {
-        return ldap_escape((string) $this->value, $this->ignore, $this->flags);
+        return ldap_escape($this->value, $this->ignore, $this->flags);
     }
 
     /**
      * Get the raw (unescaped) value.
+     *
+     * @return mixed
      */
-    public function getRaw(): mixed
+    public function raw()
     {
         return $this->value;
     }
 
     /**
      * Set the characters to exclude from being escaped.
+     *
+     * @param  string  $characters
+     * @return $this
      */
-    public function ignore(string $characters): static
+    public function ignore($characters)
     {
         $this->ignore = $characters;
 
@@ -79,8 +84,10 @@ class EscapedValue implements Stringable
 
     /**
      * Prepare the value to be escaped for use in a distinguished name.
+     *
+     * @return $this
      */
-    public function forDn(): static
+    public function dn()
     {
         $this->flags = LDAP_ESCAPE_DN;
 
@@ -89,8 +96,10 @@ class EscapedValue implements Stringable
 
     /**
      * Prepare the value to be escaped for use in a filter.
+     *
+     * @return $this
      */
-    public function forFilter(): static
+    public function filter()
     {
         $this->flags = LDAP_ESCAPE_FILTER;
 
@@ -99,8 +108,10 @@ class EscapedValue implements Stringable
 
     /**
      * Prepare the value to be escaped for use in a distinguished name and filter.
+     *
+     * @return $this
      */
-    public function forDnAndFilter(): static
+    public function both()
     {
         $this->flags = LDAP_ESCAPE_FILTER + LDAP_ESCAPE_DN;
 

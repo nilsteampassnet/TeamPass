@@ -1,11 +1,17 @@
 <?php
 
+use Hackzilla\PasswordGenerator\Generator\ComputerPasswordGenerator;
+use Hackzilla\PasswordGenerator\RandomGenerator\Php7RandomGenerator;
+use Defuse\Crypto\Key;
+use Defuse\Crypto\Crypto;
+use Defuse\Crypto\Exception as CryptoException;
+
 // new SECUREFILE - 3.0.0.23
 function handleSecurefileConstant()
 {
     if (defined('SECUREFILE') === false || SECUREFILE === 'teampass-seckey.txt' || file_exists(SECUREPATH.'/teampass-seckey.txt') === true) {
         // Anonymize the file if needed
-        define('SECUREFILE', generateRandomKey(25));
+        define('SECUREFILE', generateRandomKey());
     
         // manage the file itself by renaming it
         if (rename(SECUREPATH.'/teampass-seckey.txt', SECUREPATH.'/'.SECUREFILE) === false) {
@@ -118,26 +124,6 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
  */
 function defuseCryption($message, $ascii_key, $type)
 {
-    // load PhpEncryption library
-    $path = __DIR__.'/../includes/libraries/Encryption/Encryption/';
-
-    if (!class_exists('Defuse\Crypto\Crypto', false)) {
-		include_once $path . 'Exception/CryptoException.php';
-		include_once $path . 'Exception/BadFormatException.php';
-		include_once $path . 'Exception/EnvironmentIsBrokenException.php';
-		include_once $path . 'Exception/IOException.php';
-		include_once $path . 'Exception/WrongKeyOrModifiedCiphertextException.php';
-		include_once $path . 'Crypto.php';
-		include_once $path . 'Encoding.php';
-		include_once $path . 'DerivedKeys.php';
-		include_once $path . 'Key.php';
-		include_once $path . 'KeyOrPassword.php';
-		include_once $path . 'File.php';
-		include_once $path . 'RuntimeTests.php';
-		include_once $path . 'KeyProtectedByPassword.php';
-		include_once $path . 'Core.php';
-	}
-
     include_once '../includes/config/settings.php';
 
     // init
@@ -148,23 +134,23 @@ function defuseCryption($message, $ascii_key, $type)
     }
     
     // convert KEY
-    $key = \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key);
+    $key = Key::loadFromAsciiSafeString($ascii_key);
 
     try {
         if ($type === 'encrypt') {
-            $text = \Defuse\Crypto\Crypto::encrypt($message, $key);
+            $text = Crypto::encrypt($message, $key);
         } elseif ($type === 'decrypt') {
-            $text = \Defuse\Crypto\Crypto::decrypt($message, $key);
+            $text = Crypto::decrypt($message, $key);
         }
-    } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
+    } catch (CryptoException\WrongKeyOrModifiedCiphertextException $ex) {
         $err = 'an attack! either the wrong key was loaded, or the ciphertext has changed since it was created either corrupted in the database or intentionally modified by someone trying to carry out an attack.';
-    } catch (Defuse\Crypto\Exception\BadFormatException $ex) {
+    } catch (CryptoException\BadFormatException $ex) {
         $err = $ex;
-    } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
+    } catch (CryptoException\EnvironmentIsBrokenException $ex) {
         $err = $ex;
-    } catch (Defuse\Crypto\Exception\CryptoException $ex) {
+    } catch (CryptoException\CryptoException $ex) {
         $err = $ex;
-    } catch (Defuse\Crypto\Exception\IOException $ex) {
+    } catch (CryptoException\IOException $ex) {
         $err = $ex;
     }
 
@@ -199,9 +185,9 @@ function defuse_return_decrypted($value)
  *
  * @param string $val A string
  *
- * @return void
+ * @return string
  */
-function getSettingValue($val)
+function getSettingValue($val): string
 {
     $val = trim(strstr($val, "="));
     return trim(str_replace('"', '', substr($val, 1, strpos($val, ";") - 1)));
@@ -242,7 +228,7 @@ function addColumnIfNotExist($dbname, $column, $columnAttr = "VARCHAR(255) NULL"
  *
  * @return boolean
  */
-function removeColumnIfNotExist($table, $column)
+function removeColumnIfNotExist($table, $column): bool
 {
     global $db_link;
     $exists = false;
@@ -255,6 +241,7 @@ function removeColumnIfNotExist($table, $column)
     if ($exists === true) {
         return mysqli_query($db_link, "ALTER TABLE `$table` DROP `$column`;");
     }
+    return false;
 }
 
 /**
@@ -341,11 +328,7 @@ function cleanFields($txt)
  */
 function generateRandomKey()
 {
-    // load passwordLib library
-    $path = '../includes/libraries/PasswordGenerator/Generator/';
-    include_once $path.'ComputerPasswordGenerator.php';
-
-    $generator = new PasswordGenerator\Generator\ComputerPasswordGenerator();
+    $generator = new ComputerPasswordGenerator();
 
     $generator->setLength(40);
     $generator->setSymbols(false);
@@ -422,7 +405,7 @@ function changeColumnName($table, $oldName, $newName, $type): void
     global $db_link;
 
     // check if column already exists
-    $columns = mysqli_query($db_link, "show columns from `" . $pre . $table . "`");
+    $columns = mysqli_query($db_link, "show columns from `" . $table . "`");
     while ($col = mysqli_fetch_assoc($columns)) {
         if ((string) $col['Field'] === $oldName) {
             // change column name
@@ -471,4 +454,50 @@ function findPhpBinary(): array
         'path' => $phpPath,
         'error' => false,
     ];
+}
+
+/**
+ * delete all files and directories
+ *
+ * @param array $folders
+ * @return void
+ */
+function deleteAll(array $folders)
+{
+
+    foreach($folders as $folder) {
+        deleteAllFolder($folder);
+    }
+}
+
+/**
+ * Delete recursively a folder
+ *
+ * @param string $str
+ * @return void
+ */
+function deleteAllFolder(string $str)
+{
+    // Check for files 
+    if (is_file($str)) { 
+        // If it is file then remove by 
+        // using unlink function 
+        @unlink($str); 
+    } 
+    // If it is a directory. 
+    elseif (is_dir($str)) { 
+        // Get the list of the files in this 
+        // directory 
+        $scan = glob(rtrim($str, '/').'/*'); 
+
+        // Loop through the list of files 
+        foreach($scan as $index=>$path) { 
+
+            // Call recursive function 
+            deleteAllFolder($path); 
+        } 
+
+        // Remove the directory itself 
+        @rmdir($str); 
+    } 
 }

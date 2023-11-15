@@ -184,7 +184,9 @@ define('MIN_PHP_VERSION', 7.4);
 				</div>
 			</div>
 		</div>
-	</div>
+	</div>';
+
+	echo '
 	<div class="row">
 		<div class="col-12">
 			<div class="card card-primary">
@@ -194,6 +196,7 @@ define('MIN_PHP_VERSION', 7.4);
 				<div class="card-body">
 
 					<ul>
+					<li>File "/includes/config/settings.php is available"&nbsp;<span id="res2_check99"></span></li>
 					<li>Directory "/install/" is writable&nbsp;<span id="res2_check0"></span></li>
 					<li>Directory "/includes/" is writable&nbsp;<span id="res2_check1"></span></li>
 					<li>Directory "/includes/config/" is writable&nbsp;<span id="res2_check2"></span></li>

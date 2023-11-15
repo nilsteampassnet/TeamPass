@@ -3,6 +3,7 @@
  * This file has implementation for csrfProtector class.
  */
 
+Use EZimuel\PHPSecureSession;
 include __DIR__ ."/csrfpCookieConfig.php";      // cookie config class
 include __DIR__ ."/csrfpDefaultLogger.php";     // Logger class
 include __DIR__ ."/csrfpAction.php";            // Actions enumerator
@@ -131,7 +132,6 @@ if (!defined('__CSRF_PROTECTOR__')) {
 
             // Start session in case its not, and unit test is not going on
             if (session_id() == '' && !defined('__CSRFP_UNIT_TEST__')) {
-                require_once __DIR__ . '/../../../../../sources/SecureHandler.php';
                 session_name('teampass_session');
                 session_start();
                 $_SESSION['CPM'] = 1;

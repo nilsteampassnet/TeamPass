@@ -20,71 +20,73 @@ declare(strict_types=1);
  */
 
 
-require_once 'SecureHandler.php';
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
+use EZimuel\PHPSecureSession;
+use TeampassClasses\PerformChecks\PerformChecks;
+use TeampassClasses\NestedTree\NestedTree;
+use TeampassClasses\Encryption\Encryption;
+use Duo\DuoUniversal\Client;
+use Duo\DuoUniversal\DuoException;
+use Defuse\Crypto\Crypto;
+use Defuse\Crypto\Key;
+use Defuse\Crypto\Exception as CryptoException;
+
+// Load functions
+require_once 'main.functions.php';
+
+// init
+loadClasses('DB');
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
 session_name('teampass_session');
 session_start();
-if (
-    isset($_SESSION['CPM']) === false
-    || $_SESSION['CPM'] !== 1
-    || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id'])
-    || isset($_SESSION['key']) === false || empty($_SESSION['key'])
-) {
-    die('Hacking attempt...');
-}
 
 // Load config if $SETTINGS not defined
-if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir'])) {
-    if (file_exists('../includes/config/tp.config.php')) {
-        include_once '../includes/config/tp.config.php';
-    } elseif (file_exists('./includes/config/tp.config.php')) {
-        include_once './includes/config/tp.config.php';
-    } elseif (file_exists('../../includes/config/tp.config.php')) {
-        include_once '../../includes/config/tp.config.php';
-    } else {
-        throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
-    }
+try {
+    include_once __DIR__.'/../includes/config/tp.config.php';
+} catch (Exception $e) {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
-/* do checks */
-require_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
-require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
-if (!checkUser($_SESSION['user_id'], $_SESSION['key'], 'options', $SETTINGS)) {
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
+// Do checks
+// Instantiate the class with posted data
+$checkUserAccess = new PerformChecks(
+    dataSanitizer(
+        [
+            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+        ],
+        [
+            'type' => 'trim|escape',
+        ],
+    ),
+    [
+        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
+        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+    ]
+);
+// Handle the case
+echo $checkUserAccess->caseHandler();
+if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('admin') === false) {
+    // Not allowed page
+    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
 
-require_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user']['user_language'] . '.php';
-require_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
-require_once $SETTINGS['cpassman_dir'] . '/includes/config/tp.config.php';
+// Define Timezone
+date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
 
+// Set header properties
 header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, no-store, must-revalidate');
 
-require_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
+// --------------------------------- //
 
-// connect to the server
-require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
-if (defined('DB_PASSWD_CLEAR') === false) {
-    define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
-}
-DB::$host = DB_HOST;
-DB::$user = DB_USER;
-DB::$password = DB_PASSWD_CLEAR;
-DB::$dbName = DB_NAME;
-DB::$port = DB_PORT;
-DB::$encoding = DB_ENCODING;
-DB::$ssl = DB_SSL;
-DB::$connect_options = DB_CONNECT_OPTIONS;
 
-//Load Tree
-$tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
-$tree->register();
-$tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
-
-//Load AES
-$aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
-$aes->register();
+// Load tree
+$tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
 // Prepare POST variables
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
@@ -166,11 +168,11 @@ switch ($post_type) {
         //CASE for creating a DB backup
     case 'admin_action_db_backup':
         // Check KEY
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -181,7 +183,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -279,7 +281,7 @@ switch ($post_type) {
             //update LOG
             logEvents($SETTINGS, 'admin_action', 'dataBase backup', (string) $_SESSION['user_id'], $_SESSION['login']);
 
-            echo '[{"result":"db_backup" , "href":"sources/downloadFile.php?name=' . urlencode($filename) . '&sub=files&file=' . $filename . '&type=sql&key=' . $_SESSION['key'] . '&key_tmp=' . $_SESSION['key_tmp'] . '&pathIsFiles=1"}]';
+            echo '[{"result":"db_backup" , "href":"sources/downloadFile.php?name=' . urlencode($filename) . '&sub=files&file=' . $filename . '&type=sql&key=' . $superGlobal->get('key', 'SESSION') . '&key_tmp=' . $_SESSION['key_tmp'] . '&pathIsFiles=1"}]';
         }
         break;
 
@@ -287,11 +289,11 @@ switch ($post_type) {
         //CASE for restoring a DB backup
     case 'admin_action_db_restore':
         // Check KEY
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -302,7 +304,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -378,11 +380,11 @@ switch ($post_type) {
         //CASE for optimizing the DB
     case 'admin_action_db_optimize':
         // Check KEY
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -393,7 +395,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -458,7 +460,7 @@ switch ($post_type) {
         echo prepareExchangedData(
             array(
                 'error' => false,
-                'message' => langHdl('last_execution') . ' ' .
+                'message' => $lang->get('last_execution') . ' ' .
                     date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) time()) .
                     '<i class="fas fa-check text-success ml-2"></i>',
             ),
@@ -473,11 +475,11 @@ switch ($post_type) {
     */
     case 'admin_action_reload_cache_table':
         // Check KEY
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -488,7 +490,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -496,7 +498,7 @@ switch ($post_type) {
         }
 
         require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
-        updateCacheTable('reload', $SETTINGS, NULL);
+        updateCacheTable('reload', NULL);
 
         // Log
         logEvents(
@@ -511,7 +513,7 @@ switch ($post_type) {
         echo prepareExchangedData(
             [
                 'error' => false,
-                'message' => langHdl('last_execution') . ' ' .
+                'message' => $lang->get('last_execution') . ' ' .
                     date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) time()) .
                     '<i class="fas fa-check text-success mr-2"></i>',
             ],
@@ -524,11 +526,11 @@ switch ($post_type) {
     */
     case 'admin_action_rebuild_config_file':
         // Check KEY
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 [
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ],
                 'encode'
             );
@@ -539,7 +541,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -574,7 +576,7 @@ switch ($post_type) {
         echo prepareExchangedData(
             array(
                 'error' => false,
-                'message' => langHdl('last_execution') . ' ' .
+                'message' => $lang->get('last_execution') . ' ' .
                     date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) time()) .
                     '<i class="fas fa-check text-success ml-2"></i>',
             ),
@@ -587,11 +589,11 @@ switch ($post_type) {
     */
     case 'admin_action_backup_decrypt':
         // Check KEY
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -602,7 +604,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -632,19 +634,13 @@ switch ($post_type) {
                 $err = '';
 
                 // it means that file is DEFUSE encrypted
-                include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/Crypto.php';
-                include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/DerivedKeys.php';
-                include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/KeyOrPassword.php';
-                include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/File.php';
-                include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/Core.php';
-
                 try {
-                    \Defuse\Crypto\File::decryptFileWithPassword(
+                    File::decryptFileWithPassword(
                         $SETTINGS['bck_script_path'] . '/' . $post_option . '.sql',
                         $SETTINGS['bck_script_path'] . '/' . str_replace('encrypted', 'clear', $filename) . '.sql',
                         base64_decode($SETTINGS['bck_script_key'])
                     );
-                } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
+                } catch (CryptoException\WrongKeyOrModifiedCiphertextException $ex) {
                     $err = 'An attack! Either the wrong key was loaded, or the ciphertext has changed since it was created either corrupted in the database or intentionally modified by someone trying to carry out an attack.';
                 }
 
@@ -662,20 +658,17 @@ switch ($post_type) {
                     fclose($inF);
                 }
 
-                $return = Encryption\Crypt\aesctr::decrypt(
-                    /* @scrutinizer ignore-type */
-                    $return,
-                    /* @scrutinizer ignore-type */
-                    base64_decode($tp_settings['bck_script_key']),
-                    256
+                $return = Encryption::decrypt(
+                    /* @scrutinizer ignore-type */ $return,
+                    /* @scrutinizer ignore-type */base64_decode($tp_settings['bck_script_key']),
                 );
 
                 //save the file
                 $handle = fopen($tp_settings['bck_script_path'] . '/' . $filename . '.clear.sql', 'w+');
-                if ($handle !== false) {
-                    fwrite($handle, $return);
-                    fclose($handle);
+                if ($handle !== false && is_null($return) === false) {
+                    fwrite($handle, /** @scrutinizer ignore-type */ $return);
                 }
+                fclose($handle);
             }
             $result = 'backup_decrypt_success';
             $msg = $tp_settings['bck_script_path'] . '/' . $filename . '.clear.sql';
@@ -691,11 +684,11 @@ switch ($post_type) {
     */
     case 'admin_action_change_salt_key___start':
         // Check KEY
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -706,7 +699,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -809,11 +802,11 @@ switch ($post_type) {
     */
     case 'admin_action_change_salt_key___encrypt':
         // Check KEY
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                     'nextAction' => '',
                     'nbOfItems' => '',
                 ),
@@ -826,7 +819,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -1191,11 +1184,11 @@ switch ($post_type) {
     */
     case 'admin_action_change_salt_key___end':
         // Check KEY
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -1206,7 +1199,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -1241,11 +1234,11 @@ switch ($post_type) {
     */
     case 'admin_action_change_salt_key___restore_backup':
         // Check KEY
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -1256,7 +1249,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -1318,11 +1311,11 @@ switch ($post_type) {
     */
     case 'admin_action_change_salt_key___delete_backup':
         // Check KEY
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -1333,7 +1326,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -1363,11 +1356,11 @@ switch ($post_type) {
     */
     case 'admin_email_test_configuration':
         // Check KEY
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -1379,18 +1372,17 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('no_email_set'),
+                    'message' => $lang->get('no_email_set'),
                 ),
                 'encode'
             );
-            break;
         } else {
             require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
 
             //send email
             sendEmail(
-                langHdl('admin_email_test_subject'),
-                langHdl('admin_email_test_body'),
+                $lang->get('admin_email_test_subject'),
+                $lang->get('admin_email_test_body'),
                 $_SESSION['user_email'],
                 $SETTINGS
             );
@@ -1401,7 +1393,6 @@ switch ($post_type) {
                 ),
                 'encode'
             );
-            break;
         }
         break;
 
@@ -1410,11 +1401,11 @@ switch ($post_type) {
     */
     case 'admin_email_send_backlog':
         // Check KEY
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -1499,11 +1490,11 @@ switch ($post_type) {
     */
     case 'admin_email_send_backlog_old':
         // Check KEY
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -1558,11 +1549,11 @@ switch ($post_type) {
     */
     case 'admin_action_attachments_cryption':
         // Check KEY
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -1573,7 +1564,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -1610,7 +1601,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -1632,11 +1623,11 @@ switch ($post_type) {
      */
     case 'admin_action_attachments_cryption_continu':
         // Check KEY
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -1647,7 +1638,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -1665,17 +1656,6 @@ switch ($post_type) {
         $continu = true;
         $newFilesList = array();
         $message = '';
-
-        // load PhpEncryption library
-        include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/Crypto.php';
-        include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/Encoding.php';
-        include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/DerivedKeys.php';
-        include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/Key.php';
-        include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/KeyOrPassword.php';
-        include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/File.php';
-        include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/RuntimeTests.php';
-        include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/KeyProtectedByPassword.php';
-        include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/Core.php';
 
         // treat 10 files
         foreach ($post_list as $file) {
@@ -1746,7 +1726,7 @@ switch ($post_type) {
                 $post_option === 'attachments-decrypt' ? 'clear' : 'encrypted'
             );
 
-            $message = langHdl('last_execution') . ' ' .
+            $message = $lang->get('last_execution') . ' ' .
                 date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) time()) .
                 '<i class="fas fa-check text-success ml-2 mr-3"></i>';
         }
@@ -1768,11 +1748,11 @@ switch ($post_type) {
      */
     case 'admin_action_api_save_key':
         // Check KEY
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -1783,7 +1763,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -1863,11 +1843,11 @@ switch ($post_type) {
     */
     case 'admin_action_api_save_ip':
         // Check KEY
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -1878,7 +1858,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -1980,11 +1960,11 @@ switch ($post_type) {
         //Libraries call
         require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
         // Check KEY
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -2002,35 +1982,26 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('data_are_missing'),
+                    'message' => $lang->get('data_are_missing'),
                 ),
                 'encode'
             );
             break;
         }
 
-        // Load Duo Web SDK
-        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/php-jwt/BeforeValidException.php';
-        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/php-jwt/ExpiredException.php';
-        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/php-jwt/SignatureInvalidException.php';
-        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/php-jwt/JWT.php';
-        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/php-jwt/Key.php';
-        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/DuoUniversal/DuoException.php';
-        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/DuoUniversal/Client.php';
-
         // Run Duo Config Check
         try {
-            $duo_client = new Duo\DuoUniversal\Client(
+            $duo_client = new Client(
                 $dataReceived['duo_ikey'],
                 $dataReceived['duo_skey'],
                 $dataReceived['duo_host'],
                 $SETTINGS['cpassman_url'].'/'.DUO_CALLBACK
             );
-        } catch (Duo\DuoUniversal\DuoException $e) {
+        } catch (DuoException $e) {
             echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('duo_config_error') . "<br/>Duo: " . $e->getMessage(),
+                        'message' => $lang->get('duo_config_error') . "<br/>Duo: " . $e->getMessage(),
                     ),
                     'encode'
             );
@@ -2040,17 +2011,17 @@ switch ($post_type) {
         // Run healthcheck against Duo with the config
         try {
             $duo_client->healthCheck();
-        } catch (Duo\DuoUniversal\DuoException $e) {
+        } catch (DuoException $e) {
             /*if ($SETTINGS['duo_failmode'] == "OPEN") {
                 # If we're failing open, errors in 2FA still allow for success
-                $duo_error = langHdl('duo_error_failopen');
+                $duo_error = $lang->get('duo_error_failopen');
                 $data["duo_check"] = "open";
             } else {
                 # Duo has failed and is unavailable, redirect user to the login page
-                $duo_error = langHdl('duo_error_secure');
+                $duo_error = $lang->get('duo_error_secure');
                 $data["duo_check"] = "failed";
             }*/
-            $duo_error = langHdl('duo_error_check_config') . "<br/>Duo: " . $e->getMessage();
+            $duo_error = $lang->get('duo_error_check_config') . "<br/>Duo: " . $e->getMessage();
             echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -2073,11 +2044,11 @@ switch ($post_type) {
 
     case 'save_google_options':
         // Check KEY and rights
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -2157,11 +2128,11 @@ switch ($post_type) {
 
     case 'save_agses_options':
         // Check KEY and rights
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -2266,11 +2237,11 @@ switch ($post_type) {
 
     case 'save_option_change':
         // Check KEY and rights
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -2409,7 +2380,7 @@ switch ($post_type) {
             array(
                 'error' => false,
                 'misc' => $counter . ' ; ' . $SETTINGS[$post_field],
-                'message' => empty($post_translate) === false ? langHdl($post_translate) : '',
+                'message' => empty($post_translate) === false ? $lang->get($post_translate) : '',
             ),
             'encode'
         );
@@ -2417,11 +2388,11 @@ switch ($post_type) {
 
     case 'get_values_for_statistics':
         // Check KEY and rights
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -2438,11 +2409,11 @@ switch ($post_type) {
 
     case 'save_sending_statistics':
         // Check KEY and rights
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -2519,11 +2490,11 @@ switch ($post_type) {
 
     case 'is_backup_table_existing':
         // Check KEY and rights
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -2544,11 +2515,11 @@ switch ($post_type) {
 
     case 'get_list_of_roles':
         // Check KEY and rights
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -2560,7 +2531,7 @@ switch ($post_type) {
             $json,
             array(
                 'id' => 0,
-                'title' => langHdl('god'),
+                'title' => $lang->get('god'),
                 'selected_administrated_by' => isset($SETTINGS['ldap_new_user_is_administrated_by']) && $SETTINGS['ldap_new_user_is_administrated_by'] === '0' ? 1 : 0,
                 'selected_role' => isset($SETTINGS['ldap_new_user_role']) && $SETTINGS['ldap_new_user_role'] === '0' ? 1 : 0,
             )

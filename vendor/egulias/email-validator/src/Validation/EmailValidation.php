@@ -3,7 +3,7 @@
 namespace Egulias\EmailValidator\Validation;
 
 use Egulias\EmailValidator\EmailLexer;
-use Egulias\EmailValidator\Result\InvalidEmail;
+use Egulias\EmailValidator\Exception\InvalidEmail;
 use Egulias\EmailValidator\Warning\Warning;
 
 interface EmailValidation
@@ -16,19 +16,19 @@ interface EmailValidation
      *
      * @return bool
      */
-    public function isValid(string $email, EmailLexer $emailLexer) : bool;
+    public function isValid($email, EmailLexer $emailLexer);
 
     /**
      * Returns the validation error.
      *
      * @return InvalidEmail|null
      */
-    public function getError() : ?InvalidEmail;
+    public function getError();
 
     /**
      * Returns the validation warnings.
      *
      * @return Warning[]
      */
-    public function getWarnings() : array;
+    public function getWarnings();
 }

@@ -23,34 +23,60 @@ declare(strict_types=1);
  *
  * @see       https://www.teampass.net
  */
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
+use TeampassClasses\NestedTree\NestedTree;
+use TeampassClasses\PerformChecks\PerformChecks;
 
-if (
-    isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
-    || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === true
-    || isset($_SESSION['key']) === false || empty($_SESSION['key']) === true
-) {
-    die('Hacking attempt...');
-}
+// Load functions
+require_once __DIR__.'/../sources/main.functions.php';
 
-// Load config
-if (file_exists('../includes/config/tp.config.php') === true) {
-    include_once '../includes/config/tp.config.php';
-} elseif (file_exists('./includes/config/tp.config.php') === true) {
-    include_once './includes/config/tp.config.php';
-} else {
+// init
+loadClasses('DB');
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
+
+// Load config if $SETTINGS not defined
+try {
+    include_once __DIR__.'/../includes/config/tp.config.php';
+} catch (Exception $e) {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
-/* do checks */
-require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
-if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.renewal', $SETTINGS) === false) {
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
+// Do checks
+$checkUserAccess = new PerformChecks(
+    dataSanitizer(
+        [
+            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+        ],
+        [
+            'type' => 'trim|escape',
+        ],
+    ),
+    [
+        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
+        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+    ]
+);
+// Handle the case
+echo $checkUserAccess->caseHandler();
+if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('utilities.renewal') === false) {
+    // Not allowed page
+    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
 
-// Load template
-require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
+// Define Timezone
+date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
+
+// Set header properties
+header('Content-type: text/html; charset=utf-8');
+header('Cache-Control: no-cache, no-store, must-revalidate');
+
+// --------------------------------- //
+
 
 ?>
 
@@ -59,7 +85,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
     <div class="container-fluid">
         <div class="row mb-2">
             <div class="col-sm-12">
-                <h1 class="m-0 text-dark"><i class="fas fa-calendar mr-2"></i><?php echo langHdl('renewal'); ?></h1>
+                <h1 class="m-0 text-dark"><i class="fas fa-calendar mr-2"></i><?php echo $lang->get('renewal'); ?></h1>
             </div><!-- /.col -->
         </div><!-- /.row -->
     </div><!-- /.container-fluid -->
@@ -79,12 +105,12 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                 <i class="fas fa-lightbulb text-warning fa-lg"></i>
                             </div>
                             <div class="col-11">
-                                <?php echo langHdl('renewal_page_info'); ?>
+                                <?php echo $lang->get('renewal_page_info'); ?>
                             </div>
                         </div>
                         <div class="row">
                             <div class="d-inline p-2">
-                                <?php echo langHdl('select_date_showing_items_expiration'); ?>
+                                <?php echo $lang->get('select_date_showing_items_expiration'); ?>
                             </div>
                             <div class="d-inline p-2">
                                 <div class="input-group date inline">
@@ -97,9 +123,9 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                 <thead>
                                     <tr>
                                         <th style=""></th>
-                                        <th style=""><?php echo langHdl('label'); ?></th>
-                                        <th style=""><?php echo langHdl('expiration_date'); ?></th>
-                                        <th style=""><?php echo langHdl('folder'); ?></th>
+                                        <th style=""><?php echo $lang->get('label'); ?></th>
+                                        <th style=""><?php echo $lang->get('expiration_date'); ?></th>
+                                        <th style=""><?php echo $lang->get('folder'); ?></th>
                                     </tr>
                                 </thead>
                             </table>

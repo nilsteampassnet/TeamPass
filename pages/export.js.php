@@ -24,28 +24,54 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
+
+use TeampassClasses\PerformChecks\PerformChecks;
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
+// Load functions
+require_once __DIR__.'/../sources/main.functions.php';
+
+// init
+loadClasses();
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
+
 if (
     isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
     || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === true
-    || isset($_SESSION['key']) === false || empty($_SESSION['key']) === true
+    || $superGlobal->get('key', 'SESSION') === null
 ) {
     die('Hacking attempt...');
 }
 
-// Load config
-if (file_exists('../includes/config/tp.config.php') === true) {
-    include_once '../includes/config/tp.config.php';
-} elseif (file_exists('./includes/config/tp.config.php') === true) {
-    include_once './includes/config/tp.config.php';
-} else {
-    throw new Exception('Error file "/includes/config/tp.config.php" not exists', 1);
+// Load config if $SETTINGS not defined
+try {
+    include_once __DIR__.'/../includes/config/tp.config.php';
+} catch (Exception $e) {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
-/* do checks */
-require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
-if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === false) {
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
-    //not allowed page
+// Do checks
+$checkUserAccess = new PerformChecks(
+    dataSanitizer(
+        [
+            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+        ],
+        [
+            'type' => 'trim|escape',
+        ],
+    ),
+    [
+        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
+        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+    ]
+);
+// Handle the case
+echo $checkUserAccess->caseHandler();
+if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('export') === false) {
+    // Not allowed page
+    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -78,10 +104,10 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
             var self = this,
                 $rendered = decorated.call(this),
                 $selectAll = $(
-                    '<button class="btn btn-xs btn-primary" type="button" style="margin-left:6px;"><i class="far fa-check-square mr-1"></i><?php echo langHdl('select_all'); ?></button>'
+                    '<button class="btn btn-xs btn-primary" type="button" style="margin-left:6px;"><i class="far fa-check-square mr-1"></i><?php echo $lang->get('select_all'); ?></button>'
                 ),
                 $unselectAll = $(
-                    '<button class="btn btn-xs btn-primary" type="button" style="margin-left:6px;"><i class="far fa-square mr-1"></i><?php echo langHdl('unselect_all'); ?></button>'
+                    '<button class="btn btn-xs btn-primary" type="button" style="margin-left:6px;"><i class="far fa-square mr-1"></i><?php echo $lang->get('unselect_all'); ?></button>'
                 ),
                 $btnContainer = $('<div style="margin:3px 0px 3px 0px;">').append($selectAll).append($unselectAll);
             if (!this.$element.prop("multiple")) {
@@ -174,11 +200,11 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
         i18n : {
             t: function (key) {
                 var phrases = {
-                    weak: '<?php echo langHdl('complex_level1'); ?>',
-                    normal: '<?php echo langHdl('complex_level2'); ?>',
-                    medium: '<?php echo langHdl('complex_level3'); ?>',
-                    strong: '<?php echo langHdl('complex_level4'); ?>',
-                    veryStrong: '<?php echo langHdl('complex_level5'); ?>'
+                    weak: '<?php echo $lang->get('complex_level1'); ?>',
+                    normal: '<?php echo $lang->get('complex_level2'); ?>',
+                    medium: '<?php echo $lang->get('complex_level3'); ?>',
+                    strong: '<?php echo $lang->get('complex_level4'); ?>',
+                    veryStrong: '<?php echo $lang->get('complex_level5'); ?>'
                 };
                 var result = phrases[key];
 
@@ -196,12 +222,12 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
 
     function exportItemsToFile() {
         toastr.remove();
-        toastr.info('<i class="fas fa-circle-notch fa-spin fa-2x mr-2"></i><?php echo langHdl('exporting_items'); ?> ...');
+        toastr.info('<i class="fas fa-circle-notch fa-spin fa-2x mr-2"></i><?php echo $lang->get('exporting_items'); ?> ...');
 
         $('#export-progress')
             .removeClass('hidden')
             .find('span')
-            .html('<?php echo langHdl('starting'); ?>');
+            .html('<?php echo $lang->get('starting'); ?>');
 
         //Get list of selected folders
         var ids = [];
@@ -211,11 +237,11 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
         
         // No selection of folders done
         if (ids.length === 0) {
-            $('#export-progress').find('span').html('<i class="fas fa-exclamation-triangle text-danger mr-2 fa-lg"></i><?php echo langHdl('error_no_selected_folder'); ?>');
+            $('#export-progress').find('span').html('<i class="fas fa-exclamation-triangle text-danger mr-2 fa-lg"></i><?php echo $lang->get('error_no_selected_folder'); ?>');
 
             toastr.remove();
             toastr.success(
-                '<?php echo langHdl('done'); ?>',
+                '<?php echo $lang->get('done'); ?>',
                 '', {
                     timeOut: 1000
                 }
@@ -223,11 +249,11 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
 
             return;
         } else if (null === $('#export-format').val()) {
-            $('#export-progress').find('span').html('<i class="fas fa-exclamation-triangle text-danger mr-2 fa-lg"></i><?php echo langHdl('export_format_type'); ?>');
+            $('#export-progress').find('span').html('<i class="fas fa-exclamation-triangle text-danger mr-2 fa-lg"></i><?php echo $lang->get('export_format_type'); ?>');
 
             toastr.remove();
             toastr.success(
-                '<?php echo langHdl('done'); ?>',
+                '<?php echo $lang->get('done'); ?>',
                 '', {
                     timeOut: 1000
                 }
@@ -239,12 +265,12 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
         // Get PDF encryption password and make sure it is set
         if (($('#export-password').val() == '') && ($('#export-format').val() === 'pdf' || $('#export-format').val() === 'html')) {
             $('#export-progress').find('span')
-                .html('<i class="fas fa-exclamation-triangle text-danger mr-2 fa-lg"></i><?php echo langHdl('pdf_password_warning'); ?>');
+                .html('<i class="fas fa-exclamation-triangle text-danger mr-2 fa-lg"></i><?php echo $lang->get('pdf_password_warning'); ?>');
 
 
             toastr.remove();
             toastr.success(
-                '<?php echo langHdl('done'); ?>',
+                '<?php echo $lang->get('done'); ?>',
                 '', {
                     timeOut: 1000
                 }
@@ -289,14 +315,14 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
 
                     toastr.remove();
                     toastr.success(
-                        '<?php echo langHdl('done'); ?>',
+                        '<?php echo $lang->get('done'); ?>',
                         '', {
                             timeOut: 1000
                         }
                     );
                     
                     //decrypt data
-                    data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                    data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                     
                     // download VSC file
                     download(new Blob([data.csv_content]), $('#export-filename').val() + ".csv", "text/csv");//decodeURI(data[0].content)
@@ -319,19 +345,19 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
 
         $("#export-progress")
             .find('span')
-            .html(' <i class="fas fa-spinner fa-pulse mr-2"></i><?php echo langHdl('operation_progress'); ?> <b>' +
+            .html(' <i class="fas fa-spinner fa-pulse mr-2"></i><?php echo $lang->get('operation_progress'); ?> <b>' +
                 Math.round((totalFolders - counterRemainingFolders) * 100 / totalFolders).toFixed() +
                 '%</b> ...');
 
         $.post(
             'sources/export.queries.php', {
                 type: 'export_prepare_data',
-                data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
-                key: '<?php echo $_SESSION['key']; ?>'
+                data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'),
+                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
             },
             function(data) {
                 //decrypt data
-                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                 //console.log(data);
                 var exportTag = data.exportTag;
 
@@ -341,7 +367,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                     toastr.remove();
                     toastr.error(
                         data.message,
-                        '<?php echo langHdl('error'); ?>', {
+                        '<?php echo $lang->get('error'); ?>', {
                             timeOut: 5000,
                             progressBar: true
                         }
@@ -370,8 +396,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                             // Build XMLHttpRequest parameters
                             var data = new FormData();
                             data.append('type', 'finalize_export_pdf');
-                            data.append('data', prepareExchangedData(JSON.stringify(dataLocal), 'encode', '<?php echo $_SESSION['key']; ?>'));
-                            data.append('key', '<?php echo $_SESSION['key']; ?>');
+                            data.append('data', prepareExchangedData(JSON.stringify(dataLocal), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'));
+                            data.append('key', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
 
                             // Build XMLHttpRequest
                             var xhr = new XMLHttpRequest();
@@ -401,7 +427,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
 
                                     toastr.remove();
                                     toastr.success(
-                                        '<?php echo langHdl('done'); ?>',
+                                        '<?php echo $lang->get('done'); ?>',
                                         '', {
                                             timeOut: 1000
                                         }
@@ -416,9 +442,9 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                                                     export_tag: exportTag,
                                                 }),
                                                 'encode',
-                                                '<?php echo $_SESSION['key']; ?>'
+                                                '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                                             ),
-                                            key: '<?php echo $_SESSION['key']; ?>'
+                                            key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                                         }
                                     );
 
@@ -454,7 +480,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
         if (vars.password == "") {
             toastr.remove();
             toastr.error(
-                '<?php echo langHdl('password_cannot_be_empty'); ?>',
+                '<?php echo $lang->get('password_cannot_be_empty'); ?>',
                 '', {
                     timeOut: 2000
                 }
@@ -465,7 +491,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
         if (parseInt($("#offline_pw_strength_value").val()) < parseInt($("#min_offline_pw_strength_value").val())) {
             toastr.remove();
             toastr.error(
-                '<?php echo langHdl('error_complex_not_enought'); ?>',
+                '<?php echo $lang->get('error_complex_not_enought'); ?>',
                 '', {
                     timeOut: 2000
                 }
@@ -480,13 +506,13 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                 data: prepareExchangedData(
                     JSON.stringify(vars),
                     'encode',
-                    '<?php echo $_SESSION['key']; ?>'
+                    '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                 ),
-                key: '<?php echo $_SESSION['key']; ?>'
+                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
             },
             function(data) {
                 //decrypt data
-                data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
                 //console.log(data);
 
                 if (data.error === true) {
@@ -514,7 +540,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                 } else {
                     toastr.remove();
                     toastr.error(
-                        '<?php echo langHdl('error_unknown'); ?>',
+                        '<?php echo $lang->get('error_unknown'); ?>',
                         '',
                         {
                             timeOut: 3000
@@ -539,7 +565,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
             idsArray = idsArray.slice(numberInLoop);
             cpt = parseInt(idsToTreat.length);
 
-            $('#export-progress').find('span').html('<i class="fas fa-cog fa-spin mr-2"></i><?php echo langhdl('please_wait'); ?> - ' + Math.round((parseInt(cpt)*100)/parseInt(number)) + "%");
+            $('#export-progress').find('span').html('<i class="fas fa-cog fa-spin mr-2"></i><?php echo $lang->get('please_wait'); ?> - ' + Math.round((parseInt(cpt)*100)/parseInt(number)) + "%");
 
             jqData = {
                 idsList : idsToTreat,
@@ -558,13 +584,13 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                         data: prepareExchangedData(
                         JSON.stringify(jqData),
                         'encode',
-                        '<?php echo $_SESSION['key']; ?>'
+                        '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                     ),
-                    key: '<?php echo $_SESSION['key']; ?>'
+                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                 },
                 function(data) {
                     //decrypt data
-                    data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                    data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
                     //console.log(data);
 
                     if (data.error === true) {
@@ -599,9 +625,9 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                                         export_tag: export_tag,
                                     }),
                                     'encode',
-                                    '<?php echo $_SESSION['key']; ?>'
+                                    '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                                 ),
-                                key: '<?php echo $_SESSION['key']; ?>'
+                                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                             }
                         );
 
@@ -616,13 +642,13 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
                                         password : password,
                                     }),
                                     'encode',
-                                    '<?php echo $_SESSION['key']; ?>'
+                                    '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                                 ),
-                                key: '<?php echo $_SESSION['key']; ?>'
+                                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                             },
                             function(data) {
                                 //decrypt data
-                                data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                                data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
 
                                 $('#export-progress').find('span').html('');
                                 $('#export-progress').addClass('hidden')
@@ -630,7 +656,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
 
                                 toastr.remove();
                                 toastr.success(
-                                    '<?php echo langHdl('done'); ?>',
+                                    '<?php echo $lang->get('done'); ?>',
                                     '',
                                     {
                                         timeOut: 1000

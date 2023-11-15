@@ -18,29 +18,32 @@ declare(strict_types=1);
  * ---
  * @see       https://www.teampass.net
  */
-Use TeampassClasses\SuperGlobal\SuperGlobal;
-Use TeampassClasses\PerformChecks\PerformChecks;
-Use voku\helper\AntiXSS;
-Use EZimuel\PHPSecureSession;
-Use TeampassClasses\NestedTree\NestedTree;
+
+
+use voku\helper\AntiXSS;
+use TeampassClasses\NestedTree\NestedTree;
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
+use EZimuel\PHPSecureSession;
+use TeampassClasses\PerformChecks\PerformChecks;
+use GibberishAES\GibberishAES;
+
 
 // Load functions
 require_once 'main.functions.php';
 
 // init
 loadClasses('DB');
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
 session_name('teampass_session');
 session_start();
-if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] === false || !isset($_SESSION['key']) || empty($_SESSION['key'])) {
-    die('Hacking attempt...');
-}
 
-// Load config
+// Load config if $SETTINGS not defined
 try {
     include_once __DIR__.'/../includes/config/tp.config.php';
 } catch (Exception $e) {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
-    exit();
 }
 
 // Do checks
@@ -48,28 +51,40 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => isset($_POST['type']) === true ? $_POST['type'] : '',
+            'type' => returnIfSet($superGlobal->get('type', 'POST')),
         ],
         [
             'type' => 'trim|escape',
         ],
-    )
+    ),
+    [
+        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
+        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+    ]
 );
 // Handle the case
-$checkUserAccess->caseHandler();
-if ($checkUserAccess->userAccessPage($_SESSION['user_id'], $_SESSION['key'], 'items', $SETTINGS) === false) {
+echo $checkUserAccess->caseHandler();
+if (
+    $checkUserAccess->userAccessPage('items') === false ||
+    $checkUserAccess->checkSession() === false
+) {
     // Not allowed page
-    //echo "> ".$_SESSION['user_id']." < - > ".$_SESSION['key']." <";
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
+    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
 
-// No time limit
+// Define Timezone
+date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
+
+// Set header properties
+header('Content-type: text/html; charset=utf-8');
+header('Cache-Control: no-cache, no-store, must-revalidate');
+error_reporting(E_ERROR);
 set_time_limit(0);
 
-header('Content-type: text/html; charset=utf-8');
-error_reporting(E_ERROR);
+// --------------------------------- //
 
 // Prepare nestedTree
 $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
@@ -230,10 +245,10 @@ if (null !== $post_type) {
 
                                 $full_listing[$i] = array(
                                     'id' => $record['id'],
-                                    'label' => html_entity_decode($record['label'], ENT_QUOTES | ENT_XHTML, 'UTF-8'),
-                                    'description' => html_entity_decode($record['description'], ENT_QUOTES | ENT_XHTML, 'UTF-8'),
-                                    'pw' => html_entity_decode($pw, ENT_QUOTES | ENT_XHTML, 'UTF-8'),
-                                    'login' => html_entity_decode($record['login'], ENT_QUOTES | ENT_XHTML, 'UTF-8'),
+                                    'label' => empty($record['label']) === true ? '' : html_entity_decode($record['label'], ENT_QUOTES | ENT_XHTML, 'UTF-8'),
+                                    'description' => empty($record['description']) === true ? '' : html_entity_decode($record['description'], ENT_QUOTES | ENT_XHTML, 'UTF-8'),
+                                    'pw' => empty($pw) === true ? '' : html_entity_decode($pw, ENT_QUOTES | ENT_XHTML, 'UTF-8'),
+                                    'login' => empty($record['login']) === true ? '' : html_entity_decode($record['login'], ENT_QUOTES | ENT_XHTML, 'UTF-8'),
                                     'restricted_to' => isset($record['restricted_to']) === true ? $record['restricted_to'] : '',
                                     'perso' => $record['perso'] === '0' ? 'False' : 'True',
                                     'url' => $record['url'] !== 'none' && is_null($record['url']) === false && empty($record['url']) === false ? htmlspecialchars_decode($record['url']) : '',
@@ -282,11 +297,11 @@ if (null !== $post_type) {
          */
         case 'clean_export_table':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -311,11 +326,11 @@ if (null !== $post_type) {
          */
         case 'export_prepare_data':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -485,11 +500,11 @@ if (null !== $post_type) {
 
         case 'finalize_export_pdf':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -520,8 +535,7 @@ if (null !== $post_type) {
                 $prev_path = '';
 
                 //Prepare the PDF file
-                require_once($SETTINGS['cpassman_dir'] . '/includes/libraries/Pdf/tcpdf/config/tcpdf_config.php');
-                include $SETTINGS['cpassman_dir'] . '/includes/libraries/Pdf/tcpdf/tcpdf.php';
+                include $SETTINGS['cpassman_dir'] . '/vendor/tecnickcom/tcpdf/tcpdf.php';
 
                 $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
                 $pdf->SetProtection(array('print'), $dataReceived['pdf_password'], null);
@@ -657,11 +671,11 @@ if (null !== $post_type) {
             //CASE export in HTML format
         case 'export_to_html_format':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -682,7 +696,6 @@ if (null !== $post_type) {
             // - prepare export file
             // - get full list of objects id to export
             include $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
-            include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/GibberishAES/GibberishAES.php';
             $idsList = array();
 
             // query
@@ -730,7 +743,7 @@ if (null !== $post_type) {
                 echo (string) prepareExchangedData(
                     [
                         'error' => true,
-                        'message' => langHdl('error_while_creating_file'),
+                        'message' => $lang->get('error_while_creating_file'),
                         'detail' => $SETTINGS['path_to_files_folder'] . $inputData['filename'],
                     ],
                     'encode'
@@ -773,11 +786,11 @@ if (null !== $post_type) {
     <div>
     <table id="itemsTable">
         <thead><tr>
-            <th style="width:15%;">' . langHdl('label') . '</th>
-            <th style="width:10%;">' . langHdl('pw') . '</th>
-            <th style="width:30%;">' . langHdl('description') . '</th>
-            <th style="width:5%;">' . langHdl('user_login') . '</th>
-            <th style="width:20%;">' . langHdl('url') . '</th>
+            <th style="width:15%;">' . $lang->get('label') . '</th>
+            <th style="width:10%;">' . $lang->get('pw') . '</th>
+            <th style="width:30%;">' . $lang->get('description') . '</th>
+            <th style="width:5%;">' . $lang->get('user_login') . '</th>
+            <th style="width:20%;">' . $lang->get('url') . '</th>
         </tr></thead>
         <tbody id="itemsTable_tbody">'
             );
@@ -802,11 +815,11 @@ if (null !== $post_type) {
         //CASE export in HTML format - Iteration loop
         case 'export_to_html_format_loop':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -833,7 +846,6 @@ if (null !== $post_type) {
             $full_listing = array();
             $items_id_list = array();
             include $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
-            include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/GibberishAES/GibberishAES.php';
 
             // query
             $rows = DB::query(
@@ -851,7 +863,7 @@ if (null !== $post_type) {
                     echo (string) prepareExchangedData(
                         [
                             'error' => true,
-                            'message' => langHdl('error_while_creating_file'),
+                            'message' => $lang->get('error_while_creating_file'),
                             'detail' => $SETTINGS['path_to_files_folder'] . $inputData['filename'],
                         ],
                         'encode'
@@ -862,20 +874,24 @@ if (null !== $post_type) {
                 $lineType = 'line1';
                 foreach ($rows as $record) {
                     // decrypt PW
-                    if (empty($post_salt_key) === false && null !== $post_salt_key) {
-                        $pw = cryption(
-                            $record['pw'],
-                            mysqli_escape_string($link, stripslashes($post_salt_key)),
-                            'decrypt',
-                            $SETTINGS
-                        );
+                    if (isHex($record['pw']) === true) {
+                        if (empty($post_salt_key) === false && null !== $post_salt_key) {
+                            $pw = cryption(
+                                $record['pw'],
+                                mysqli_escape_string($link, stripslashes($post_salt_key)),
+                                'decrypt',
+                                $SETTINGS
+                            );
+                        } else {
+                            $pw = cryption(
+                                $record['pw'],
+                                '',
+                                'decrypt',
+                                $SETTINGS
+                            );
+                        }
                     } else {
-                        $pw = cryption(
-                            $record['pw'],
-                            '',
-                            'decrypt',
-                            $SETTINGS
-                        );
+                        $pw = $record['pw'];
                     }
 
                     // Build line
@@ -936,11 +952,11 @@ if (null !== $post_type) {
         //CASE export in HTML format - Iteration loop
         case 'export_to_html_format_finalize':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -959,7 +975,6 @@ if (null !== $post_type) {
             
             // Load includes
             include $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
-            require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Encryption/GibberishAES/GibberishAES.php';
 
             // read the content of the temporary file
             $handle = fopen($inputData['filename'].'.txt', 'r');
@@ -967,7 +982,7 @@ if (null !== $post_type) {
                 echo (string) prepareExchangedData(
                     [
                         'error' => true,
-                        'message' => langHdl('error_while_creating_file'),
+                        'message' => $lang->get('error_while_creating_file'),
                         'detail' => $SETTINGS['path_to_files_folder'] . $inputData['filename'],
                     ],
                     'encode'
@@ -979,7 +994,7 @@ if (null !== $post_type) {
                 echo (string) prepareExchangedData(
                     [
                         'error' => true,
-                        'message' => langHdl('error_while_creating_file'),
+                        'message' => $lang->get('error_while_creating_file'),
                         'detail' => $SETTINGS['path_to_files_folder'] . $inputData['filename'],
                     ],
                     'encode'
@@ -992,7 +1007,6 @@ if (null !== $post_type) {
             }
 
             // Encrypt its content
-            //$contents = GibberishAES::enc($contents, $post_pdf_password);
             $encrypted_text = '';
             $chunks = explode('|#|#|', chunk_split($contents, 10000, '|#|#|'));
             foreach ($chunks as $chunk) {
@@ -1009,7 +1023,7 @@ if (null !== $post_type) {
                 echo (string) prepareExchangedData(
                     [
                         'error' => true,
-                        'message' => langHdl('error_while_creating_file'),
+                        'message' => $lang->get('error_while_creating_file'),
                         'detail' => $SETTINGS['path_to_files_folder'] . $inputData['filename'],
                     ],
                     'encode'
@@ -1127,10 +1141,12 @@ if (null !== $post_type) {
 
             fclose($outstream);
 
+            //clean table
+            DB::query('TRUNCATE TABLE ' . prefixTable('export'));
+
             echo (string) prepareExchangedData(
                 [
                     'error' => false,
-                    //'message' => 'file treatment finished',
                     'filelink' => $inputData['file_link'] ,
                 ],
                 'encode'

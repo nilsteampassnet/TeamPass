@@ -24,31 +24,28 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-if (file_exists('../sources/SecureHandler.php')) {
-    include_once '../sources/SecureHandler.php';
-} elseif (file_exists('./sources/SecureHandler.php')) {
-    include_once './sources/SecureHandler.php';
-} else {
-    throw new Exception("Error file '/sources/SecureHandler.php' not exists", 1);
-}
-if (isset($_SESSION) === false) {
-    session_name('teampass_session');
-    session_start();
-}
-if (isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1) {
-    die('Hacking attempt...');
-}
 
-// Load config
-if (file_exists('../includes/config/tp.config.php') === true) {
-    include_once '../includes/config/tp.config.php';
-} elseif (file_exists('./includes/config/tp.config.php') === true) {
-    include_once './includes/config/tp.config.php';
-} else {
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
+use TeampassClasses\NestedTree\NestedTree;
+
+
+// Load functions
+require_once __DIR__.'/../../sources/main.functions.php';
+loadClasses('DB');
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
+
+// Load config if $SETTINGS not defined
+try {
+    include_once __DIR__.'/../includes/config/tp.config.php';
+} catch (Exception $e) {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
-require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-$superGlobal = new protect\SuperGlobal\SuperGlobal();
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
+// Load tree
+$tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 ?>
 <body class="hold-transition login-page ">
     <div class="login-box" style="margin-top:100px; width:700px;">
@@ -64,22 +61,6 @@ if (!empty($superGlobal->get('code', 'GET')) === true
     && !empty($superGlobal->get('stamp', 'GET')) === true
     && !empty($superGlobal->get('key', 'GET')) === true
 ) {
-    //Include files
-    include_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
-    include_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
-    include_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
-    include_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
-    // Open MYSQL database connection
-    include_once './includes/libraries/Database/Meekrodb/db.class.php';
-    DB::$host = DB_HOST;
-    DB::$user = DB_USER;
-    DB::$password = defuseReturnDecrypted(DB_PASSWD, $SETTINGS);
-    DB::$dbName = DB_NAME;
-    DB::$port = DB_PORT;
-    DB::$encoding = DB_ENCODING;
-    DB::$ssl = DB_SSL;
-    DB::$connect_options = DB_CONNECT_OPTIONS;
-
     if (isset($SETTINGS['otv_is_enabled']) === false
         || (int) $SETTINGS['otv_is_enabled'] === 0
     ) {

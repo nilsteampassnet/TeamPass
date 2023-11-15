@@ -24,33 +24,60 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-if (
-    isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
-    || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === true
-    || isset($_SESSION['key']) === false || empty($_SESSION['key']) === true
-) {
-    die('Hacking attempt...');
-}
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
+use TeampassClasses\NestedTree\NestedTree;
+use TeampassClasses\PerformChecks\PerformChecks;
 
-// Load config
-if (file_exists('../includes/config/tp.config.php') === true) {
-    include_once '../includes/config/tp.config.php';
-} elseif (file_exists('./includes/config/tp.config.php') === true) {
-    include_once './includes/config/tp.config.php';
-} else {
+// Load functions
+require_once __DIR__.'/../sources/main.functions.php';
+
+// init
+loadClasses('DB');
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
+
+// Load config if $SETTINGS not defined
+try {
+    include_once __DIR__.'/../includes/config/tp.config.php';
+} catch (Exception $e) {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
-/* do checks */
-require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
-if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === false) {
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
+// Do checks
+$checkUserAccess = new PerformChecks(
+    dataSanitizer(
+        [
+            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+        ],
+        [
+            'type' => 'trim|escape',
+        ],
+    ),
+    [
+        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
+        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+    ]
+);
+// Handle the case
+echo $checkUserAccess->caseHandler();
+if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('mfa') === false) {
+    // Not allowed page
+    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
 
-// Load template
-require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
+// Define Timezone
+date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
+
+// Set header properties
+header('Content-type: text/html; charset=utf-8');
+header('Cache-Control: no-cache, no-store, must-revalidate');
+
+// --------------------------------- //
+ 
 
 ?>
 
@@ -60,7 +87,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
         <div class="row mb-2">
             <div class="col-sm-6">
                 <h1 class="m-0 text-dark">
-                    <i class="fas fa-qrcode mr-2"></i><?php echo langHdl('mfa'); ?>
+                    <i class="fas fa-qrcode mr-2"></i><?php echo $lang->get('mfa'); ?>
                 </h1>
             </div><!-- /.col -->
         </div><!-- /.row -->
@@ -74,16 +101,16 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
             <div class="col-12">
                 <div class="card card-primary">
                     <div class="card-header">
-                        <h3 class='card-title'><?php echo langHdl('mfa_configuration'); ?></h3>
+                        <h3 class='card-title'><?php echo $lang->get('mfa_configuration'); ?></h3>
                     </div>
 
                     <div class="card-body">
 
                         <div class="row mb-4">
                             <div class="col-9">
-                                <?php echo langHdl('2factors_expected_for_admin'); ?>
+                                <?php echo $lang->get('2factors_expected_for_admin'); ?>
                                 <small class='form-text text-muted'>
-                                    <?php echo langHdl('2factors_expected_for_admin_tip'); ?>
+                                    <?php echo $lang->get('2factors_expected_for_admin_tip'); ?>
                                 </small>
                             </div>
                             <div class="col-3">
@@ -93,9 +120,9 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
 
                         <div class="row mb-4">
                             <div class="col-6">
-                                <?php echo langHdl('mfa_for_roles'); ?>
+                                <?php echo $lang->get('mfa_for_roles'); ?>
                                 <small class='form-text text-muted'>
-                                    <?php echo langHdl('mfa_for_roles_tip'); ?>
+                                    <?php echo $lang->get('mfa_for_roles_tip'); ?>
                                 </small>
                             </div>
                             <div class='col-6'>
@@ -123,14 +150,14 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
 
                         <ul class="nav nav-tabs mb-4">
                             <li class="nav-item">
-                                <a class="nav-link active" data-toggle="tab" href="#google" aria-controls="google" aria-selected="true"><?php echo langHdl('google_2fa'); ?></a>
+                                <a class="nav-link active" data-toggle="tab" href="#google" aria-controls="google" aria-selected="true"><?php echo $lang->get('google_2fa'); ?></a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" data-toggle="tab" href="#duo" role="tab" aria-controls="duo" aria-selected="false"><?php echo langHdl('duo_security'); ?></a>
+                                <a class="nav-link" data-toggle="tab" href="#duo" role="tab" aria-controls="duo" aria-selected="false"><?php echo $lang->get('duo_security'); ?></a>
                             </li>
                             <!--
                                 <li class="nav-item">
-                                <a class="nav-link" data-toggle="tab" href="#yubico" role="tab" aria-controls="yubico" aria-selected="false"><?php echo langHdl('yubico'); ?></a>
+                                <a class="nav-link" data-toggle="tab" href="#yubico" role="tab" aria-controls="yubico" aria-selected="false"><?php echo $lang->get('yubico'); ?></a>
                             </li>
                                 -->
                         </ul>
@@ -139,9 +166,9 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                             <div class="tab-pane fade show active" id="google" role="tabpanel" aria-labelledby="google-tab">
                                 <div class="row mb-2">
                                     <div class="col-9">
-                                        <?php echo langHdl('admin_2factors_authentication_setting'); ?>
+                                        <?php echo $lang->get('admin_2factors_authentication_setting'); ?>
                                         <small class='form-text text-muted'>
-                                            <?php echo langHdl('admin_2factors_authentication_setting_tip'); ?>
+                                            <?php echo $lang->get('admin_2factors_authentication_setting_tip'); ?>
                                         </small>
                                     </div>
                                     <div class="col-3">
@@ -151,9 +178,9 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
 
                                 <div class="row mb-2">
                                     <div class="col-9">
-                                        <?php echo langHdl('admin_ga_website_name'); ?>
+                                        <?php echo $lang->get('admin_ga_website_name'); ?>
                                         <small class='form-text text-muted'>
-                                            <?php echo langHdl('admin_ga_website_name_tip'); ?>
+                                            <?php echo $lang->get('admin_ga_website_name_tip'); ?>
                                         </small>
                                     </div>
                                     <div class="col-3">
@@ -163,9 +190,9 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
 
                                 <div class="row mb-2">
                                     <div class="col-9">
-                                        <?php echo langHdl('ga_reset_by_user'); ?>
+                                        <?php echo $lang->get('ga_reset_by_user'); ?>
                                         <small class='form-text text-muted'>
-                                            <?php echo langHdl('ga_reset_by_user_tip'); ?>
+                                            <?php echo $lang->get('ga_reset_by_user_tip'); ?>
                                         </small>
                                     </div>
                                     <div class="col-3">
@@ -178,12 +205,12 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                             <div class="tab-pane" id="duo" role="tabpanel" aria-labelledby="duo-tab">
                                 <div class="row mb-2">
                                     <div class="col-9">
-                                        <?php echo langHdl('settings_duo'); ?>
+                                        <?php echo $lang->get('settings_duo'); ?>
                                         <small id="passwordHelpBlock" class="form-text text-muted">
-                                            <?php echo langHdl('settings_duo_tip'); ?>
+                                            <?php echo $lang->get('settings_duo_tip'); ?>
                                         </small>
                                         <div>
-                                            <small><a href="<?php echo DUO_ADMIN_URL_INFO; ?>" target="_blank"><?php echo langHdl('more_information'); ?></a></small>
+                                            <small><a href="<?php echo DUO_ADMIN_URL_INFO; ?>" target="_blank"><?php echo $lang->get('more_information'); ?></a></small>
                                         </div>
                                     </div>
                                     <div class="col-3">
@@ -193,16 +220,16 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
 
                                 <div class="row mb-2">
                                     <div class="col-9">
-                                        <?php echo langHdl('admin_duo_intro'); ?>
+                                        <?php echo $lang->get('admin_duo_intro'); ?>
                                         <small id="passwordHelpBlock" class="form-text text-muted">
-                                            <?php echo langHdl('settings_duo_explanation'); ?>
+                                            <?php echo $lang->get('settings_duo_explanation'); ?>
                                         </small>
                                     </div>
                                 </div>
 
                                 <div class="row mb-2">
                                     <div class="col-5">
-                                        <?php echo langHdl('admin_duo_ikey'); ?>
+                                        <?php echo $lang->get('admin_duo_ikey'); ?>
                                     </div>
                                     <div class="col-7">
                                         <input type="text" class="form-control form-control-sm purify" data-field="label" id="duo_ikey" value="<?php echo isset($SETTINGS['duo_ikey']) === true ? $SETTINGS['duo_ikey'] : ''; ?>">
@@ -210,7 +237,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                 </div>
                                 <div class="row mb-2">
                                     <div class="col-5">
-                                        <?php echo langHdl('admin_duo_skey'); ?>
+                                        <?php echo $lang->get('admin_duo_skey'); ?>
                                     </div>
                                     <div class="col-7">
                                         <input type="text" class="form-control form-control-sm purify" data-field="label" id="duo_skey" value="<?php echo isset($SETTINGS['duo_skey']) === true ? $SETTINGS['duo_skey'] : ''; ?>">
@@ -218,7 +245,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                 </div>
                                 <div class="row mb-2">
                                     <div class="col-5">
-                                        <?php echo langHdl('admin_duo_host'); ?>
+                                        <?php echo $lang->get('admin_duo_host'); ?>
                                     </div>
                                     <div class="col-7">
                                         <input type="text" class="form-control form-control-sm purify" data-field="label" id="duo_host" value="<?php echo isset($SETTINGS['duo_host']) === true ? $SETTINGS['duo_host'] : ''; ?>">
@@ -227,7 +254,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
 
                                 <div class="row mb-2">
                                     <button class="btn btn-primary" id="button-duo-config-check">
-                                        <?php echo langHdl('duo-run-config-check'); ?>
+                                        <?php echo $lang->get('duo-run-config-check'); ?>
                                     </button>
                                 </div>
                             </div>
@@ -236,9 +263,9 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                             <div class="tab-pane" id="yubico" role="tabpanel" aria-labelledby="yubico-tab">
                                 <div class="row mb-2">
                                     <div class="col-9">
-                                        <?php echo langHdl('admin_yubico_authentication_setting'); ?>
+                                        <?php echo $lang->get('admin_yubico_authentication_setting'); ?>
                                         <small id="passwordHelpBlock" class="form-text text-muted">
-                                            <?php echo langHdl('yubico_authentication_tip'); ?>
+                                            <?php echo $lang->get('yubico_authentication_tip'); ?>
                                         </small>
                                     </div>
                                     <div class="col-3">

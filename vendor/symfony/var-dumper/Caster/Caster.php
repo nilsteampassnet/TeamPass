@@ -36,8 +36,6 @@ class Caster
     public const PREFIX_VIRTUAL = "\0~\0";
     public const PREFIX_DYNAMIC = "\0+\0";
     public const PREFIX_PROTECTED = "\0*\0";
-    // usage: sprintf(Caster::PATTERN_PRIVATE, $class, $property)
-    public const PATTERN_PRIVATE = "\0%s\0%s";
 
     /**
      * Casts objects to arrays and adds the dynamic property prefix.
@@ -49,7 +47,7 @@ class Caster
         if ($hasDebugInfo) {
             try {
                 $debugInfo = $obj->__debugInfo();
-            } catch (\Throwable) {
+            } catch (\Throwable $e) {
                 // ignore failing __debugInfo()
                 $hasDebugInfo = false;
             }
@@ -63,7 +61,7 @@ class Caster
 
         if ($a) {
             static $publicProperties = [];
-            $debugClass ??= get_debug_type($obj);
+            $debugClass = $debugClass ?? get_debug_type($obj);
 
             $i = 0;
             $prefixedKeys = [];

@@ -16,21 +16,30 @@
  * @see       https://www.teampass.net
  */
 
-set_time_limit(600);
+use EZimuel\PHPSecureSession;
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
+use PasswordLib\PasswordLib;
+use TeampassClasses\NestedTree\NestedTree;
+use Encryption\Crypt\aesctr;
 
+// Load functions
+require_once __DIR__.'/../sources/main.functions.php';
 
-require_once '../sources/SecureHandler.php';
+// init
+loadClasses('DB');
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
 session_name('teampass_session');
 session_start();
 error_reporting(E_ERROR | E_PARSE);
+set_time_limit(600);
 $_SESSION['CPM'] = 1;
 
 //include librairies
 require_once '../includes/language/english.php';
 require_once '../includes/config/include.php';
 require_once '../includes/config/settings.php';
-require_once '../sources/main.functions.php';
-require_once '../includes/libraries/Tree/NestedTree/NestedTree.php';
 require_once 'tp.functions.php';
 require_once 'libs/aesctr.php';
 require_once '../includes/config/tp.config.php';
@@ -46,7 +55,7 @@ if ($ret['error'] === true) {
 define('DB_PASSWD_CLEAR', defuse_return_decrypted(DB_PASSWD));
 
 //Build tree
-$tree = new Tree\NestedTree\NestedTree(
+$tree = new NestedTree(
     $pre . 'nested_tree',
     'id',
     'parent_id',
@@ -84,8 +93,8 @@ if (mysqli_connect(
 }
 
 // Load libraries
-require_once '../includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-$superGlobal = new protect\SuperGlobal\SuperGlobal();
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
 
 // Set Session
 $superGlobal->put('db_encoding', 'utf8', 'SESSION');
@@ -95,7 +104,7 @@ $superGlobal->put('abspath', $abspath, 'SESSION');
 // Get POST with user info
 $post_user_info = json_decode(base64_decode(filter_input(INPUT_POST, 'info', FILTER_SANITIZE_FULL_SPECIAL_CHARS)));//print_r($post_user_info);
 $userLogin = $post_user_info[0];
-$userPassword = Encryption\Crypt\aesctr::decrypt(base64_decode($post_user_info[1]), 'cpm', 128);
+$userPassword = aesctr::decrypt(base64_decode($post_user_info[1]), 'cpm', 128);
 $userId = $post_user_info[2];
 
 // Get current version
@@ -885,7 +894,7 @@ $res = checkIndexExist(
     "ADD KEY `CACHE` (`increment_id`, `user_id`)"
 );
 if (!$res) {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding the INDEX CACHE to the cache_tree table! ' . mysqli_error($db_link) . '!"}]';
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding the INDEX CACHE to the cache_tree table! ' . addslashes(mysqli_error($db_link)) . '!"}]';
     mysqli_close($db_link);
     exit();
 }

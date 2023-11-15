@@ -24,28 +24,54 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
+use TeampassClasses\PerformChecks\PerformChecks;
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
+
+// Load functions
+require_once __DIR__.'/../sources/main.functions.php';
+
+// init
+loadClasses();
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
+
 if (
     isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
     || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === true
-    || isset($_SESSION['key']) === false || empty($_SESSION['key']) === true
+    || $superGlobal->get('key', 'SESSION') === null
 ) {
     die('Hacking attempt...');
 }
 
-// Load config
-if (file_exists('../includes/config/tp.config.php') === true) {
-    include_once '../includes/config/tp.config.php';
-} elseif (file_exists('./includes/config/tp.config.php') === true) {
-    include_once './includes/config/tp.config.php';
-} else {
-    throw new Exception('Error file "/includes/config/tp.config.php" not exists', 1);
+// Load config if $SETTINGS not defined
+try {
+    include_once __DIR__.'/../includes/config/tp.config.php';
+} catch (Exception $e) {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
-/* do checks */
-require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
-if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === false) {
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
-    //not allowed page
+// Do checks
+$checkUserAccess = new PerformChecks(
+    dataSanitizer(
+        [
+            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+        ],
+        [
+            'type' => 'trim|escape',
+        ],
+    ),
+    [
+        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
+        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+    ]
+);
+// Handle the case
+echo $checkUserAccess->caseHandler();
+if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('users') === false) {
+    // Not allowed page
+    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -122,19 +148,19 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                         '</button>' +
                         '<ul class="dropdown-menu" role="menu">' +
                         ($(data).data('auth-type') === 'local' ?
-                            '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="new-password"><i class="fas fa-lock mr-2"></i><?php echo langHdl('change_login_password'); ?></li>' :
+                            '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="new-password"><i class="fas fa-lock mr-2"></i><?php echo $lang->get('change_login_password'); ?></li>' :
                             ''
                         ) +
-                        '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="edit"><i class="fas fa-pen mr-2"></i><?php echo langHdl('edit'); ?></li>' +
+                        '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="edit"><i class="fas fa-pen mr-2"></i><?php echo $lang->get('edit'); ?></li>' +
                         ($(data).data('otp-provided') !== ""?
-                            '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="new-otp"><i class="fas fa-mask mr-2"></i><?php echo langHdl('generate_new_otp'); ?></li>' :
+                            '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="new-otp"><i class="fas fa-mask mr-2"></i><?php echo $lang->get('generate_new_otp'); ?></li>' :
                             ''
                         ) +
-                        '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '" data-action="logs"><i class="fas fa-newspaper mr-2"></i><?php echo langHdl('see_logs'); ?></li>' +
-                        '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="qrcode"><i class="fas fa-qrcode mr-2"></i><?php echo langHdl('user_ga_code'); ?></li>' +
-                        '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '"data-action="access-rights"><i class="fas fa-sitemap mr-2"></i><?php echo langHdl('user_folders_rights'); ?></li>' +
-                        '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '"data-action="disable-user"><i class="fas fa-user-slash text-warning mr-2" disabled></i><?php echo langHdl('disable_enable'); ?></li>' +
-                        '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '"data-action="delete-user"><i class="fas fa-user-minus text-danger mr-2" disabled></i><?php echo langHdl('delete'); ?></li>' +
+                        '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '" data-action="logs"><i class="fas fa-newspaper mr-2"></i><?php echo $lang->get('see_logs'); ?></li>' +
+                        '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="qrcode"><i class="fas fa-qrcode mr-2"></i><?php echo $lang->get('user_ga_code'); ?></li>' +
+                        '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '"data-action="access-rights"><i class="fas fa-sitemap mr-2"></i><?php echo $lang->get('user_folders_rights'); ?></li>' +
+                        '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '"data-action="disable-user"><i class="fas fa-user-slash text-warning mr-2" disabled></i><?php echo $lang->get('disable_enable'); ?></li>' +
+                        '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '"data-action="delete-user"><i class="fas fa-user-minus text-danger mr-2" disabled></i><?php echo $lang->get('delete'); ?></li>' +
                         '</ul>' +
                         '</div>';
                 }
@@ -169,7 +195,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
         ],
         'preDrawCallback': function() {
             toastr.info(
-                '<?php echo langHdl('loading'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i><span class="close-toastr-progress"></span>',
+                '<?php echo $lang->get('loading'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i><span class="close-toastr-progress"></span>',
                 ''
             );
         },
@@ -265,8 +291,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
 
         showModalDialogBox(
             '#warningModal',
-            '<i class="fas fa-user-shield fa-lg warning mr-2"></i><?php echo langHdl('caution'); ?>',
-            '<?php echo langHdl('sending_email_message'); ?>',
+            '<i class="fas fa-user-shield fa-lg warning mr-2"></i><?php echo $lang->get('caution'); ?>',
+            '<?php echo $lang->get('sending_email_message'); ?>',
             '',
             '',
             true,
@@ -278,8 +304,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
         if (store.get('teampassApplication').formUserAction === "add_new_user") {
             var data = {
                 'receipt': $('#form-email').val(),
-                'subject': 'TEAMPASS - <?php echo langHdl('temporary_encryption_code');?>',
-                'body': '<?php echo langHdl('email_body_new_user');?>',
+                'subject': 'TEAMPASS - <?php echo $lang->get('temporary_encryption_code');?>',
+                'body': '<?php echo $lang->get('email_body_new_user');?>',
                 'pre_replace' : {
                     '#code#' : store.get('teampassUser').admin_new_user_temporary_encryption_code,
                     '#login#' : store.get('teampassUser').admin_new_user_login,
@@ -289,8 +315,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
         } else {
             var data = {
                 'receipt': $('#form-email').val(),
-                'subject': 'TEAMPASS - <?php echo langHdl('temporary_encryption_code');?>',
-                'body': '<?php echo langHdl('email_body_temporary_encryption_code');?>',
+                'subject': 'TEAMPASS - <?php echo $lang->get('temporary_encryption_code');?>',
+                'body': '<?php echo $lang->get('email_body_temporary_encryption_code');?>',
                 'pre_replace' : {
                     '#enc_code#' : store.get('teampassUser').admin_new_user_temporary_encryption_code,
                 }
@@ -302,11 +328,11 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             'sources/main.queries.php', {
                 type: 'mail_me',
                 type_category: 'action_mail',
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                key: '<?php echo $_SESSION['key']; ?>'
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
             },
             function(data) {
-                data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                 //console.log(data);
 
                 if (data.error !== false) {
@@ -340,7 +366,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     // Inform user
                     toastr.remove();
                     toastr.success(
-                        '<?php echo langHdl('done'); ?>',
+                        '<?php echo $lang->get('done'); ?>',
                         '', {
                             timeOut: 1000
                         }
@@ -355,8 +381,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                         'sources/main.queries.php', {
                             type: 'user_is_ready',
                             type_category: 'action_user',
-                            data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                            key: '<?php echo $_SESSION['key']; ?>'
+                            data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                            key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                         },
                         function(data) {
                             if (debugJavascript === true) console.log('User has been created');
@@ -412,17 +438,17 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             'sources/users.queries.php', {
                 type: 'is_login_available',
                 login: $('#form-login').val(),
-                key: '<?php echo $_SESSION['key']; ?>'
+                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
             },
             function(data) {
-                data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                 if (debugJavascript === true) console.log(data);
                 if (data.error !== false) {
                     // Show error
                     toastr.remove();
                     toastr.error(
                         data.message,
-                        '<?php echo langHdl('caution'); ?>', {
+                        '<?php echo $lang->get('caution'); ?>', {
                             timeOut: 5000,
                             progressBar: true
                         }
@@ -458,11 +484,11 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
         $.post(
             "sources/users.queries.php", {
                 type: "create_new_user_tasks",
-                data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
-                key: '<?php echo $_SESSION['key']; ?>'
+                data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'),
+                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
             },
             function(data) {
-                data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
                 if (debugJavascript === true)  {
                     console.info("Réception des données :")
                     console.log(data);
@@ -473,7 +499,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     toastr.remove();
                     toastr.error(
                         data.message,
-                        '<?php echo langHdl('caution'); ?>', {
+                        '<?php echo $lang->get('caution'); ?>', {
                             timeOut: 5000,
                             progressBar: true
                         }
@@ -486,7 +512,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
 
                     // Inform user
                     toastr.success(
-                        '<?php echo langHdl('done'); ?>',
+                        '<?php echo $lang->get('done'); ?>',
                         '', {
                             timeOut: 2000
                         }
@@ -520,19 +546,19 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
 
         // Prepare progress string
         if (step === 'step0') {
-            stepText = '<?php echo langHdl('inititialization'); ?>';
+            stepText = '<?php echo $lang->get('inititialization'); ?>';
         } else if (step === 'step10') {
-            stepText = '<?php echo langHdl('items'); ?>';
+            stepText = '<?php echo $lang->get('items'); ?>';
         } else if (step === 'step20') {
-            stepText = '<?php echo langHdl('logs'); ?>';
+            stepText = '<?php echo $lang->get('logs'); ?>';
         } else if (step === 'step30') {
-            stepText = '<?php echo langHdl('suggestions'); ?>';
+            stepText = '<?php echo $lang->get('suggestions'); ?>';
         } else if (step === 'step40') {
-            stepText = '<?php echo langHdl('fields'); ?>';
+            stepText = '<?php echo $lang->get('fields'); ?>';
         } else if (step === 'step50') {
-            stepText = '<?php echo langHdl('files'); ?>';
+            stepText = '<?php echo $lang->get('files'); ?>';
         } else if (step === 'step60') {
-            stepText = '<?php echo langHdl('personal_items'); ?>';
+            stepText = '<?php echo $lang->get('personal_items'); ?>';
         }
 
         if (step !== 'finished') {
@@ -542,16 +568,16 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 $nbItemsToConvert = '';
             }
             // Inform user
-            $("#warningModalBody").html('<b><?php echo langHdl('encryption_keys'); ?> - ' +
+            $("#warningModalBody").html('<b><?php echo $lang->get('encryption_keys'); ?> - ' +
                 stepText + '</b> [' + start + ' - ' + (parseInt(start) + <?php echo NUMBER_ITEMS_IN_BATCH;?>) + ']<span id="warningModalBody_extra">' + $nbItemsToConvert + '</span> ' +
-                '... <?php echo langHdl('please_wait'); ?><i class="fas fa-spinner fa-pulse ml-3 text-primary"></i>');
+                '... <?php echo $lang->get('please_wait'); ?><i class="fas fa-spinner fa-pulse ml-3 text-primary"></i>');
 
             // If expected, show the OPT to the admin
             if (constVisibleOTP === true) {
                 toastr.info(
-                    '<?php echo langHdl('show_encryption_code_to_admin');?> <div><input class="form-control form-item-control flex-nowrap" value="' + userTemporaryCode + '" readonly></div>'
-                    + '<br /><button type="button" class="btn clear"><?php echo langHdl('close');?></button>',
-                    '<?php echo langHdl('information'); ?>',
+                    '<?php echo $lang->get('show_encryption_code_to_admin');?> <div><input class="form-control form-item-control flex-nowrap" value="' + userTemporaryCode + '" readonly></div>'
+                    + '<br /><button type="button" class="btn clear"><?php echo $lang->get('close');?></button>',
+                    '<?php echo $lang->get('information'); ?>',
                     {
                         extendedTimeOut: 0,
                         timeOut: 0,
@@ -582,11 +608,11 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 "sources/main.queries.php", {
                     type: "user_sharekeys_reencryption_next",
                     type_category: 'action_key',
-                    data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
-                    key: '<?php echo $_SESSION['key']; ?>'
+                    data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'),
+                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                 },
                 function(data) {
-                    data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                    data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
                     if (debugJavascript === true) {
                         console.info("Réception des données :")
                         console.log(data);
@@ -597,7 +623,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                         toastr.remove();
                         toastr.error(
                             data.message,
-                            '<?php echo langHdl('caution'); ?>', {
+                            '<?php echo $lang->get('caution'); ?>', {
                                 timeOut: 5000,
                                 progressBar: true
                             }
@@ -625,20 +651,20 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             // Ask user
             showModalDialogBox(
                 '#warningModal',
-                '<i class="fas fa-envelope-open-text fa-lg warning mr-2"></i><?php echo langHdl('information'); ?>',
-                '<i class="fas fa-info-circle mr-2"></i><?php echo langHdl('send_user_password_by_email'); ?>'+
+                '<i class="fas fa-envelope-open-text fa-lg warning mr-2"></i><?php echo $lang->get('information'); ?>',
+                '<i class="fas fa-info-circle mr-2"></i><?php echo $lang->get('send_user_password_by_email'); ?>'+
                 '<div class="row">'+
                     (store.get('teampassApplication').formUserAction === "add_new_user" ?
-                    '<div class="col-lg-2"><button type="button" class="btn btn-block btn-secondary mr-2"  id="warningModal-button-user-pwd"><?php echo langHdl('show_user_password'); ?></button></div>'+
-                    '<div class="col-lg-4 hidden" id="warningModal-user-pwd"><div><?php echo langHdl('user_password'); ?><input class="form-control form-item-control" value="'+store.get('teampassUser').admin_new_user_password+'"></div>'+
-                    '<div><?php echo langHdl('user_temporary_encryption_code'); ?><input class="form-control form-item-control" value="'+store.get('teampassUser').admin_new_user_temporary_encryption_code+'"></div></div>'
+                    '<div class="col-lg-2"><button type="button" class="btn btn-block btn-secondary mr-2"  id="warningModal-button-user-pwd"><?php echo $lang->get('show_user_password'); ?></button></div>'+
+                    '<div class="col-lg-4 hidden" id="warningModal-user-pwd"><div><?php echo $lang->get('user_password'); ?><input class="form-control form-item-control" value="'+store.get('teampassUser').admin_new_user_password+'"></div>'+
+                    '<div><?php echo $lang->get('user_temporary_encryption_code'); ?><input class="form-control form-item-control" value="'+store.get('teampassUser').admin_new_user_temporary_encryption_code+'"></div></div>'
                     :
-                    '<div class="col-lg-2"><button type="button" class="btn btn-block btn-secondary mr-2"  id="warningModal-button-user-pwd"><?php echo langHdl('show_user_temporary_encryption_code'); ?></button></div>'+
+                    '<div class="col-lg-2"><button type="button" class="btn btn-block btn-secondary mr-2"  id="warningModal-button-user-pwd"><?php echo $lang->get('show_user_temporary_encryption_code'); ?></button></div>'+
                     '<div class="col-lg-4 hidden" id="warningModal-user-pwd"><input class="form-control form-item-control" value="'+store.get('teampassUser').admin_new_user_temporary_encryption_code+'"></div></div>'
                     )+
                 '</div>',
-                '<?php echo langHdl('send_by_email'); ?>',
-                '<?php echo langHdl('close'); ?>',
+                '<?php echo $lang->get('send_by_email'); ?>',
+                '<?php echo $lang->get('close'); ?>',
                 true,
                 false,
                 false
@@ -728,7 +754,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
         } else if ($(this).data('action') === 'edit') {
             // SHow user
             toastr.remove();
-            toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
             // EDIT EXISTING USER
             $('#row-list, #group-create-special-folder, #group-delete-user').addClass('hidden');
@@ -764,11 +790,11 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             $.post(
                 "sources/users.queries.php", {
                     type: "get_user_info",
-                    data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
-                    key: "<?php echo $_SESSION['key']; ?>"
+                    data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'),
+                    key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
                 },
                 function(data) {
-                    data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                    data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                     if (debugJavascript === true) console.log(data);
 
                     if (data.error === false) {
@@ -852,7 +878,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                         // Inform user
                         toastr.remove();
                         toastr.success(
-                            '<?php echo langHdl('done'); ?>',
+                            '<?php echo $lang->get('done'); ?>',
                             '', {
                                 timeOut: 1000
                             }
@@ -861,7 +887,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                         toastr.remove();
                         toastr.error(
                             data.message,
-                            '<?php echo langHdl('caution'); ?>', {
+                            '<?php echo $lang->get('caution'); ?>', {
                                 timeOut: 5000,
                                 progressBar: true
                             }
@@ -928,8 +954,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 if (validated === false) {
                     toastr.remove();
                     toastr.error(
-                        '<?php echo langHdl('fields_with_mandatory_information_are_missing'); ?>',
-                        '<?php echo langHdl('caution'); ?>', {
+                        '<?php echo $lang->get('fields_with_mandatory_information_are_missing'); ?>',
+                        '<?php echo $lang->get('caution'); ?>', {
                             timeOut: 5000,
                             progressBar: true
                         }
@@ -939,7 +965,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
 
                 // SHow user
                 toastr.remove();
-                toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+                toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
                 // Get number of items to treat
                 data_tmp = {
@@ -949,11 +975,11 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     'sources/main.queries.php', {
                         type: 'get_number_of_items_to_treat',
                         type_category: 'action_system',
-                        data: prepareExchangedData(JSON.stringify(data_tmp), "encode", "<?php echo $_SESSION['key']; ?>"),
-                        key: "<?php echo $_SESSION['key']; ?>"
+                        data: prepareExchangedData(JSON.stringify(data_tmp), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                        key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
                     },
                     function(data_tmp) {
-                        data_tmp = prepareExchangedData(data_tmp, 'decode', '<?php echo $_SESSION['key']; ?>');
+                        data_tmp = prepareExchangedData(data_tmp, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
 
                         store.update(
                             'teampassUser',
@@ -1003,11 +1029,11 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 $.post(
                     'sources/users.queries.php', {
                         type: store.get('teampassApplication').formUserAction,
-                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                        key: "<?php echo $_SESSION['key']; ?>"
+                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                        key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
                     },
                     function(data) {
-                        data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                        data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                         if (debugJavascript === true) console.log(data);
 
                         if (data.error !== false) {
@@ -1015,7 +1041,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                             toastr.remove();
                             toastr.error(
                                 data.message,
-                                '<?php echo langHdl('caution'); ?>', {
+                                '<?php echo $lang->get('caution'); ?>', {
                                     timeOut: 5000,
                                     progressBar: true
                                 }
@@ -1024,7 +1050,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                             // Inform user
                             toastr.remove();
                             toastr.success(
-                                '<?php echo langHdl('new_user_info_by_mail'); ?>',
+                                '<?php echo $lang->get('new_user_info_by_mail'); ?>',
                                 '', {
                                     timeOut: 4000
                                 }
@@ -1034,7 +1060,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                             // Inform user
                             toastr.remove();
                             toastr.success(
-                                '<?php echo langHdl('done'); ?>',
+                                '<?php echo $lang->get('done'); ?>',
                                 '', {
                                     timeOut: 2000
                                 }
@@ -1071,7 +1097,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 // No change performed on form
                 toastr.remove();
                 toastr.success(
-                    '<?php echo langHdl('no_change_performed'); ?>',
+                    '<?php echo $lang->get('no_change_performed'); ?>',
                     '', {
                         timeOut: 1000
                     }
@@ -1096,7 +1122,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             );
         } else if ($(this).data('action') === 'qrcode') {
             toastr.remove();
-            toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
             // This sends a GA Code by email to user
             data = {
@@ -1109,11 +1135,11 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 'sources/main.queries.php', {
                     type: 'ga_generate_qr',
                     type_category: 'action_user',
-                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                    key: "<?php echo $_SESSION['key']; ?>"
+                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                    key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
                 },
                 function(data) {
-                    data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                    data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                     if (debugJavascript === true) console.log(data);
 
                     if (data.error !== false) {
@@ -1121,7 +1147,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                         toastr.remove();
                         toastr.error(
                             data.message,
-                            '<?php echo langHdl('caution'); ?>', {
+                            '<?php echo $lang->get('caution'); ?>', {
                                 timeOut: 5000,
                                 progressBar: true
                             }
@@ -1130,7 +1156,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                         // Inform user
                         toastr.remove();
                         toastr.success(
-                            '<?php echo langHdl('share_sent_ok'); ?>',
+                            '<?php echo $lang->get('share_sent_ok'); ?>',
                             '', {
                                 timeOut: 1000
                             }
@@ -1148,18 +1174,18 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             $.post(
                 "sources/users.queries.php", {
                     type: "get-user-infos",
-                    data: prepareExchangedData(JSON.stringify(data_to_send), 'encode', '<?php echo $_SESSION['key']; ?>'),
-                    key: '<?php echo $_SESSION['key']; ?>'
+                    data: prepareExchangedData(JSON.stringify(data_to_send), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'),
+                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                 },
                 function(data) {
-                    data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                    data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                     
                     if (data.error === true) {
                         // error
                         toastr.remove();
                         toastr.error(
                             data.message,
-                            '<?php echo langHdl('caution'); ?>', {
+                            '<?php echo $lang->get('caution'); ?>', {
                                 timeOut: 5000,
                                 progressBar: true
                             }
@@ -1170,7 +1196,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                             toastr.remove();
                             toastr.warning(
                                 data.message,
-                                '<?php echo langHdl('user_encryption_ongoing'); ?>', {
+                                '<?php echo $lang->get('user_encryption_ongoing'); ?>', {
                                     timeOut: 10000,
                                     progressBar: true
                                 }
@@ -1181,8 +1207,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
 
                             // PRepare info
                             $('#dialog-admin-change-user-password-info')
-                                .html('<i class="icon fas fa-info mr-2"></i><?php echo langHdl('admin_change_user_password_info'); ?>');
-                            $("#dialog-admin-change-user-password-progress").html('<?php echo langHdl('provide_current_psk_and_click_launch'); ?>');
+                                .html('<i class="icon fas fa-info mr-2"></i><?php echo $lang->get('admin_change_user_password_info'); ?>');
+                            $("#dialog-admin-change-user-password-progress").html('<?php echo $lang->get('provide_current_psk_and_click_launch'); ?>');
 
                             // SHow form
                             $('#dialog-admin-change-user-password').removeClass('hidden');
@@ -1200,8 +1226,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
 
             // PRepare info
             $('#dialog-admin-change-user-password-info')
-                .html('<i class="icon fas fa-info mr-2"></i><?php echo langHdl('admin_change_user_encryption_code_info'); ?>');
-            $("#dialog-admin-change-user-password-progress").html('<?php echo langHdl('provide_current_psk_and_click_launch'); ?>');
+                .html('<i class="icon fas fa-info mr-2"></i><?php echo $lang->get('admin_change_user_encryption_code_info'); ?>');
+            $("#dialog-admin-change-user-password-progress").html('<?php echo $lang->get('provide_current_psk_and_click_launch'); ?>');
 
             // SHow form
             $('#dialog-admin-change-user-password').removeClass('hidden');
@@ -1253,7 +1279,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 ],
                 'preDrawCallback': function() {
                     toastr.remove();
-                    toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+                    toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
                 },
                 'drawCallback': function() {
                     // Tooltips
@@ -1262,7 +1288,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     // Inform user
                     toastr.remove();
                     toastr.success(
-                        '<?php echo langHdl('done'); ?>',
+                        '<?php echo $lang->get('done'); ?>',
                         '', {
                             timeOut: 1000
                         }
@@ -1281,7 +1307,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
 
             // Show spinner
             toastr.remove();
-            toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
             $('#row-folders-results').html('');
 
@@ -1290,10 +1316,10 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 'sources/users.queries.php', {
                     type: 'user_folders_rights',
                     user_id: userID,
-                    key: '<?php echo $_SESSION['key']; ?>'
+                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                 },
                 function(data) {
-                    data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                    data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                     if (debugJavascript === true) console.log(data);
 
                     if (data.error !== false) {
@@ -1301,7 +1327,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                         toastr.remove();
                         toastr.error(
                             data.message,
-                            '<?php echo langHdl('caution'); ?>', {
+                            '<?php echo $lang->get('caution'); ?>', {
                                 timeOut: 5000,
                                 progressBar: true
                             }
@@ -1315,7 +1341,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                         // Inform user
                         toastr.remove();
                         toastr.success(
-                            '<?php echo langHdl('done'); ?>',
+                            '<?php echo $lang->get('done'); ?>',
                             '', {
                                 timeOut: 1000
                             }
@@ -1330,13 +1356,13 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             var userID = $(this).data('id');
             showModalDialogBox(
                 '#warningModal',
-                '<i class="fas fa-exclamation-circle fa-lg warning mr-2"></i><?php echo langHdl('your_attention_please'); ?>',
+                '<i class="fas fa-exclamation-circle fa-lg warning mr-2"></i><?php echo $lang->get('your_attention_please'); ?>',
                 '<div class="form-group">'+
-                    '<span class="mr-3"><?php echo langHdl('user_disable_status'); ?></span>'+
+                    '<span class="mr-3"><?php echo $lang->get('user_disable_status'); ?></span>'+
                     '<input type="checkbox" class="form-check-input form-control flat-blue" id="user-disabled">' +
                 '</div>',
-                '<?php echo langHdl('perform'); ?>',
-                '<?php echo langHdl('cancel'); ?>'
+                '<?php echo $lang->get('perform'); ?>',
+                '<?php echo $lang->get('cancel'); ?>'
             );
             $('input[type="checkbox"].flat-blue').iCheck({
                 checkboxClass: 'icheckbox_flat-blue',
@@ -1345,7 +1371,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
 
                 // Show spinner
                 toastr.remove();
-                toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+                toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
                 $('#warningModal').modal('hide');
 
                 var data = {
@@ -1357,11 +1383,11 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 $.post(
                     'sources/users.queries.php', {
                         type: 'manage_user_disable_status',
-                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                        key: '<?php echo $_SESSION['key']; ?>'
+                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                        key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                     },
                     function(data) {
-                        data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                        data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                         if (debugJavascript === true) console.log(data);
 
                         if (data.error !== false) {
@@ -1369,7 +1395,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                             toastr.remove();
                             toastr.error(
                                 data.message,
-                                '<?php echo langHdl('caution'); ?>', {
+                                '<?php echo $lang->get('caution'); ?>', {
                                     timeOut: 5000,
                                     progressBar: true
                                 }
@@ -1377,7 +1403,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                         } else {
                             // Show icon or not
                             if ($('#user-disabled').prop('checked') === true) {
-                                $('#user-login-'+userID).before('<i class="fas fa-user-slash infotip text-danger mr-2" title="<?php echo langHdl('account_is_locked');?>" id="user-disable-'+userID+'"></i>');
+                                $('#user-login-'+userID).before('<i class="fas fa-user-slash infotip text-danger mr-2" title="<?php echo $lang->get('account_is_locked');?>" id="user-disable-'+userID+'"></i>');
                             } else {
                                 $('#user-disable-'+userID).remove();
                             }
@@ -1388,7 +1414,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                             // Inform user
                             toastr.remove();
                             toastr.success(
-                                '<?php echo langHdl('done'); ?>',
+                                '<?php echo $lang->get('done'); ?>',
                                 '', {
                                     timeOut: 1000
                                 }
@@ -1406,13 +1432,13 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             var userID = $(this).data('id');
             showModalDialogBox(
                 '#warningModal',
-                '<i class="fas fa-exclamation-circle fa-lg warning mr-2"></i><?php echo langHdl('your_attention_please'); ?>',
+                '<i class="fas fa-exclamation-circle fa-lg warning mr-2"></i><?php echo $lang->get('your_attention_please'); ?>',
                 '<div class="form-group">'+
-                    '<span class="mr-3"><?php echo langHdl('by_clicking_this_checkbox_confirm_user_deletion'); ?></span>'+
+                    '<span class="mr-3"><?php echo $lang->get('by_clicking_this_checkbox_confirm_user_deletion'); ?></span>'+
                     '<input type="checkbox" class="form-check-input form-control flat-blue" id="user-to-delete">' +
                 '</div>',
-                '<?php echo langHdl('perform'); ?>',
-                '<?php echo langHdl('cancel'); ?>'
+                '<?php echo $lang->get('perform'); ?>',
+                '<?php echo $lang->get('cancel'); ?>'
             );
             $('input[type="checkbox"].flat-blue').iCheck({
                 checkboxClass: 'icheckbox_flat-blue',
@@ -1425,7 +1451,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
 
                 // Show spinner
                 toastr.remove();
-                toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+                toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
                 $('#warningModal').modal('hide');
 
                 var data = {
@@ -1436,11 +1462,11 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 $.post(
                     'sources/users.queries.php', {
                         type: 'delete_user',
-                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                        key: '<?php echo $_SESSION['key']; ?>'
+                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                        key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                     },
                     function(data) {
-                        data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                        data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                         if (debugJavascript === true) console.log(data);
 
                         if (data.error !== false) {
@@ -1448,7 +1474,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                             toastr.remove();
                             toastr.error(
                                 data.message,
-                                '<?php echo langHdl('caution'); ?>', {
+                                '<?php echo $lang->get('caution'); ?>', {
                                     timeOut: 5000,
                                     progressBar: true
                                 }
@@ -1462,7 +1488,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                             // Inform user
                             toastr.remove();
                             toastr.success(
-                                '<?php echo langHdl('done'); ?>',
+                                '<?php echo $lang->get('done'); ?>',
                                 '', {
                                     timeOut: 1000
                                 }
@@ -1479,7 +1505,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
         } else if ($(this).data('action') === 'refresh') {
             $('.form').addClass('hidden');
             $('#users-list').removeClass('hidden');
-            toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
             oTable.ajax.reload();
             //
             // --- END
@@ -1490,16 +1516,16 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
 
             // Show spinner
             toastr.remove();
-            toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
             // Load list of users
             $.post(
                 'sources/users.queries.php', {
                     type: 'get_list_of_users_for_sharing',
-                    key: '<?php echo $_SESSION['key']; ?>'
+                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                 },
                 function(data) {
-                    data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                    data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                     if (debugJavascript === true) console.log(data);
 
                     if (data.error !== false) {
@@ -1507,7 +1533,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                         toastr.remove();
                         toastr.error(
                             data.message,
-                            '<?php echo langHdl('caution'); ?>', {
+                            '<?php echo $lang->get('caution'); ?>', {
                                 timeOut: 5000,
                                 progressBar: true
                             }
@@ -1529,7 +1555,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                         // Inform user
                         toastr.remove();
                         toastr.success(
-                            '<?php echo langHdl('done'); ?>',
+                            '<?php echo $lang->get('done'); ?>',
                             '', {
                                 timeOut: 1000
                             }
@@ -1543,7 +1569,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
         } else if ($(this).data('action') === 'do-propagate') {
             // Show spinner
             toastr.remove();
-            toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
 
             // destination users
@@ -1570,19 +1596,19 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             $.post(
                 "sources/users.queries.php", {
                     type: "update_users_rights_sharing",
-                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                    key: "<?php echo $_SESSION['key']; ?>"
+                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                    key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
                 },
                 function(data) {
                     //decrypt data
-                    data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                    data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
 
                     if (data.error === true) {
                         // ERROR
                         toastr.remove();
                         toastr.error(
                             data.message,
-                            '<?php echo langHdl('caution'); ?>', {
+                            '<?php echo $lang->get('caution'); ?>', {
                                 timeOut: 5000,
                                 progressBar: true
                             }
@@ -1610,7 +1636,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                         // Inform user
                         toastr.remove();
                         toastr.success(
-                            '<?php echo langHdl('done'); ?>',
+                            '<?php echo $lang->get('done'); ?>',
                             '', {
                                 timeOut: 1000
                             }
@@ -1663,8 +1689,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 // ERROR
                 toastr.remove();
                 toastr.error(
-                    '<?php echo langHdl('error_field_is_mandatory'); ?>',
-                    '<?php echo langHdl('caution'); ?>', {
+                    '<?php echo $lang->get('error_field_is_mandatory'); ?>',
+                    '<?php echo $lang->get('caution'); ?>', {
                         timeOut: 5000,
                         progressBar: true
                     }
@@ -1686,12 +1712,12 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                 $.post(
                     'sources/roles.queries.php', {
                         type: 'change_role_definition',
-                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                        key: '<?php echo $_SESSION['key']; ?>'
+                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                        key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                     },
                     function(data) {
                         //decrypt data
-                        data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                        data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                         if (debugJavascript === true) console.log(data);
 
                         if (data.error === true) {
@@ -1699,7 +1725,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                             toastr.remove();
                             toastr.error(
                                 data.message,
-                                '<?php echo langHdl('caution'); ?>', {
+                                '<?php echo $lang->get('caution'); ?>', {
                                     timeOut: 5000,
                                     progressBar: true
                                 }
@@ -1728,18 +1754,18 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             $.post(
                 "sources/users.queries.php", {
                     type: "get-user-infos",
-                    data: prepareExchangedData(JSON.stringify(data_to_send), 'encode', '<?php echo $_SESSION['key']; ?>'),
-                    key: '<?php echo $_SESSION['key']; ?>'
+                    data: prepareExchangedData(JSON.stringify(data_to_send), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'),
+                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                 },
                 function(data) {
-                    data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                    data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
 
                     if (data.error === true) {
                         // error
                         toastr.remove();
                         toastr.error(
                             data.message,
-                            '<?php echo langHdl('caution'); ?>', {
+                            '<?php echo $lang->get('caution'); ?>', {
                                 timeOut: 5000,
                                 progressBar: true
                             }
@@ -1750,7 +1776,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                             toastr.remove();
                             toastr.warning(
                                 data.message,
-                                '<?php echo langHdl('user_encryption_ongoing'); ?>', {
+                                '<?php echo $lang->get('user_encryption_ongoing'); ?>', {
                                     timeOut: 10000,
                                     progressBar: true
                                 }
@@ -1759,12 +1785,12 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                             var userID = data.user_infos.id;
                             showModalDialogBox(
                                 '#warningModal',
-                                '<i class="fas fa-exclamation-circle fa-lg warning mr-2"></i><?php echo langHdl('your_attention_please'); ?>',
+                                '<i class="fas fa-exclamation-circle fa-lg warning mr-2"></i><?php echo $lang->get('your_attention_please'); ?>',
                                 '<div class="form-group">'+
-                                    '<span class="mr-3"><?php echo langHdl('generate_new_otp_informations'); ?></span>'+
+                                    '<span class="mr-3"><?php echo $lang->get('generate_new_otp_informations'); ?></span>'+
                                 '</div>',
-                                '<?php echo langHdl('perform'); ?>',
-                                '<?php echo langHdl('cancel'); ?>'
+                                '<?php echo $lang->get('perform'); ?>',
+                                '<?php echo $lang->get('cancel'); ?>'
                             );
                             
                             $(document).on('click', '#warningModalButtonAction', function() {                
@@ -1772,7 +1798,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
 
                                 // Show spinner
                                 toastr.remove();
-                                toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i><span class="close-toastr-progress"></span>');
+                                toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i><span class="close-toastr-progress"></span>');
 
                                 // generate keys
                                 generateUserKeys(
@@ -1961,8 +1987,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             $.post(
                 'sources/users.queries.php', {
                     type: 'save_user_change',
-                    data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
-                    key: '<?php echo $_SESSION['key']; ?>'
+                    data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'),
+                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                 },
                 function(data) {
                     if (change.is('input') === true) {
@@ -2011,7 +2037,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
         }
 
         // FIND ALL USERS IN LDAP
-        toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i><span class="close-toastr-progress"></span>');
+        toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i><span class="close-toastr-progress"></span>');
 
         $('#row-ldap-body')
             .addClass('overlay')
@@ -2020,18 +2046,18 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
         $.post(
             "sources/users.queries.php", {
                 type: "get_list_of_users_in_ldap",
-                key: "<?php echo $_SESSION['key']; ?>"
+                key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
             },
             function(data) {
                 //decrypt data
-                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                 if (debugJavascript === true) console.log(data)
 
                 if (data.error === true) {
                     // ERROR
                     toastr.error(
                         data.message,
-                        '<?php echo langHdl('caution'); ?>', {
+                        '<?php echo $lang->get('caution'); ?>', {
                             timeOut: 5000,
                             progressBar: true
                         }
@@ -2067,12 +2093,12 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                                     group = regex[0].replace('cn=', '').replace(',', '');
                                     // Check if this user has this group in Teampass
                                     if (entry.teampass !== undefined && entry.ldap_groups.filter(p => p.title === group).length > 0) {
-                                        html += group + '<i class="far fa-check-circle text-success ml-2 infotip" title="<?php echo langHdl('user_has_this_role_in_teampass'); ?>"></i><br>';
+                                        html += group + '<i class="far fa-check-circle text-success ml-2 infotip" title="<?php echo $lang->get('user_has_this_role_in_teampass'); ?>"></i><br>';
                                     } else {
                                         // Check if this group exists in Teampass and propose to add it
                                         tmp = data.teampass_groups.filter(p => p.title === group);
                                         if (tmp.length > 0 && entry.userInTeampass === 0) {
-                                            html += group + '<i class="fas fa-user-graduate text-primary ml-2 pointer infotip action-add-role-to-user" title="<?php echo langHdl('add_user_to_role'); ?>" data-user-id="' + entry.userInTeampass + '" data-role-id="' + tmp[0].id + '"></i><br>';
+                                            html += group + '<i class="fas fa-user-graduate text-primary ml-2 pointer infotip action-add-role-to-user" title="<?php echo $lang->get('add_user_to_role'); ?>" data-user-id="' + entry.userInTeampass + '" data-role-id="' + tmp[0].id + '"></i><br>';
                                         } else {
                                             html += group + '<br>';
                                         }
@@ -2082,11 +2108,11 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                             });
                             html += '</td><td>';
                             // Action icons
-                            html += (entry.userInTeampass === 0 ? '<i class="fas fa-user-plus text-warning ml-2 infotip pointer add-user-icon" title="<?php echo langHdl('add_user_in_teampass'); ?>" data-user-login="' + userLogin + '" data-user-email="' + (entry.mail !== undefined ? entry.mail[0] : '') + '" data-user-name="' + (entry.givenname !== undefined ? entry.givenname[0] : '') + '" data-user-lastname="' + (entry.sn !== undefined ? entry.sn[0] : '') + '"></i>' : '');
+                            html += (entry.userInTeampass === 0 ? '<i class="fas fa-user-plus text-warning ml-2 infotip pointer add-user-icon" title="<?php echo $lang->get('add_user_in_teampass'); ?>" data-user-login="' + userLogin + '" data-user-email="' + (entry.mail !== undefined ? entry.mail[0] : '') + '" data-user-name="' + (entry.givenname !== undefined ? entry.givenname[0] : '') + '" data-user-lastname="' + (entry.sn !== undefined ? entry.sn[0] : '') + '"></i>' : '');
 
                             // Only of not admin
                             /*if (userLogin !== 'admin') {
-                                html += (entry.teampass.auth === 'ldap' ? '<i class="fas fa-link text-success ml-2 infotip pointer auth-local" title="<?php echo langHdl('ldap_user_password_is_used_for_authentication'); ?>" data-user-id="' + entry.teampass.id + '"></i>' : '<i class="fas fa-unlink text-orange ml-2 infotip pointer auth-ldap" title="<?php echo langHdl('local_user_password_is_used_for_authentication'); ?>" data-user-id="' + entry.teampass.id + '"></i>');
+                                html += (entry.teampass.auth === 'ldap' ? '<i class="fas fa-link text-success ml-2 infotip pointer auth-local" title="<?php echo $lang->get('ldap_user_password_is_used_for_authentication'); ?>" data-user-id="' + entry.teampass.id + '"></i>' : '<i class="fas fa-unlink text-orange ml-2 infotip pointer auth-ldap" title="<?php echo $lang->get('local_user_password_is_used_for_authentication'); ?>" data-user-id="' + entry.teampass.id + '"></i>');
                             }*/
 
                             html += '</td></tr>';
@@ -2102,7 +2128,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     // Build list box of new roles that could be created
                     $('#ldap-new-role-selection')
                         .empty()
-                        .append('<option value="">--- <?php echo langHdl('select'); ?> ---</option>');
+                        .append('<option value="">--- <?php echo $lang->get('select'); ?> ---</option>');
                     $.each(data.ldap_groups, function(i, group) {
                         tmp = data.teampass_groups.filter(p => p.title === group);
                         if (tmp.length === 0) {
@@ -2114,7 +2140,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
 
                     // Inform user
                     toastr.success(
-                        '<?php echo langHdl('done'); ?>',
+                        '<?php echo $lang->get('done'); ?>',
                         '', {
                             timeOut: 1000
                         }
@@ -2132,7 +2158,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
      */
     function addRoleToUser() {
         toastr.remove();
-        toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+        toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
         // prepare data
         var data = {
@@ -2145,11 +2171,11 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
         $.post(
             'sources/users.queries.php', {
                 type: 'save_user_change',
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                key: "<?php echo $_SESSION['key']; ?>"
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
             },
             function(data) {
-                data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                 if (debugJavascript === true) console.log(data);
 
                 if (data.error !== false) {
@@ -2157,7 +2183,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     toastr.remove();
                     toastr.error(
                         data.message,
-                        '<?php echo langHdl('caution'); ?>', {
+                        '<?php echo $lang->get('caution'); ?>', {
                             timeOut: 5000,
                             progressBar: true
                         }
@@ -2167,14 +2193,14 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     $('.selected-role')
                         .removeClass('fas fa-user-graduate text-primary pointer action-add-role-to-user')
                         .addClass('far fa-check-circle text-success')
-                        .prop('title', '<?php echo langHdl('user_has_this_role_in_teampass'); ?>');
+                        .prop('title', '<?php echo $lang->get('user_has_this_role_in_teampass'); ?>');
 
                     $('.infotip').tooltip();
 
                     // Inform user
                     toastr.remove();
                     toastr.success(
-                        '<?php echo langHdl('done'); ?>',
+                        '<?php echo $lang->get('done'); ?>',
                         '', {
                             timeOut: 1000
                         }
@@ -2189,8 +2215,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
         $(this).addClass('selected-role');
 
         toastr.warning(
-            '&nbsp;<button type="button" class="btn clear btn-toastr" style="width:100%;" onclick="addRoleToUser()"><?php echo langHdl('please_confirm'); ?></button>',
-            '<?php echo langHdl('info'); ?>', {
+            '&nbsp;<button type="button" class="btn clear btn-toastr" style="width:100%;" onclick="addRoleToUser()"><?php echo $lang->get('please_confirm'); ?></button>',
+            '<?php echo $lang->get('info'); ?>', {
                 positionClass: 'toast-top-center',
                 closeButton: true
             }
@@ -2200,7 +2226,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
     // Enable/disable ldap sync on user
     $(document).on('click', '.action-change-ldap-synchronization', function() {
         toastr.remove();
-        toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+        toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
         // prepare data
         var data = {
@@ -2214,11 +2240,11 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
         $.post(
             'sources/users.queries.php', {
                 type: 'save_user_change',
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                key: "<?php echo $_SESSION['key']; ?>"
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
             },
             function(data) {
-                data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                 if (debugJavascript === true) console.log(data);
 
                 if (data.error !== false) {
@@ -2226,7 +2252,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     toastr.remove();
                     toastr.error(
                         data.message,
-                        '<?php echo langHdl('caution'); ?>', {
+                        '<?php echo $lang->get('caution'); ?>', {
                             timeOut: 5000,
                             progressBar: true
                         }
@@ -2250,7 +2276,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     // Inform user
                     toastr.remove();
                     toastr.success(
-                        '<?php echo langHdl('done'); ?>',
+                        '<?php echo $lang->get('done'); ?>',
                         '', {
                             timeOut: 1000
                         }
@@ -2269,7 +2295,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
     function addUserInTeampass() {
         $('#warningModal').modal('hide');
         toastr.remove();
-        toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i><span class="close-toastr-progress"></span>');
+        toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i><span class="close-toastr-progress"></span>');
 
         // what roles
         var roles = [];
@@ -2297,11 +2323,11 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
         $.post(
             'sources/users.queries.php', {
                 type: 'add_user_from_ldap',
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                key: "<?php echo $_SESSION['key']; ?>"
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
             },
             function(data) {
-                data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                 if (debugJavascript === true) console.log(data);
                 userTemporaryCode = data.user_code;
                 constVisibleOTP = data.visible_otp;
@@ -2311,7 +2337,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     toastr.remove();
                     toastr.error(
                         data.message,
-                        '<?php echo langHdl('caution'); ?>', {
+                        '<?php echo $lang->get('caution'); ?>', {
                             timeOut: 5000,
                             progressBar: true
                         }
@@ -2352,18 +2378,18 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             'sources/main.queries.php', {
                 type: 'generate_temporary_encryption_key',
                 type_category: 'action_key',
-                data: prepareExchangedData(JSON.stringify(parameters), "encode", "<?php echo $_SESSION['key']; ?>"),
-                key: "<?php echo $_SESSION['key']; ?>"
+                data: prepareExchangedData(JSON.stringify(parameters), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
             },
             function(data_otc) {
-                data_otc = prepareExchangedData(data_otc, 'decode', '<?php echo $_SESSION['key']; ?>');
+                data_otc = prepareExchangedData(data_otc, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
 
                 if (data_otc.error !== false) {
                     // Show error
                     toastr.remove();
                     toastr.error(
                         data_otc.message,
-                        '<?php echo langHdl('caution'); ?>', {
+                        '<?php echo $lang->get('caution'); ?>', {
                             timeOut: 5000,
                             progressBar: true
                         }
@@ -2373,11 +2399,11 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     if (data_otc.visible_otp === true) {
                         showModalDialogBox(
                             '#warningModal',
-                            '<i class="fa-solid fa-user-secret mr-2"></i><<?php echo langHdl('your_attention_is_required'); ?>',
-                            '<?php echo langHdl('show_encryption_code_to_admin'); ?>' +
+                            '<i class="fa-solid fa-user-secret mr-2"></i><<?php echo $lang->get('your_attention_is_required'); ?>',
+                            '<?php echo $lang->get('show_encryption_code_to_admin'); ?>' +
                             '<div><input class="form-control form-item-control flex-nowrap ml-2" value="' + data_otc.code + '" readonly></div>',
                             '',
-                            '<?php echo langHdl('close'); ?>'
+                            '<?php echo $lang->get('close'); ?>'
                         );
                     }
 
@@ -2395,18 +2421,18 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     $.post(
                         "sources/users.queries.php", {
                             type: "create_new_user_tasks",
-                            data: prepareExchangedData(JSON.stringify(data_to_send), 'encode', '<?php echo $_SESSION['key']; ?>'),
-                            key: '<?php echo $_SESSION['key']; ?>'
+                            data: prepareExchangedData(JSON.stringify(data_to_send), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'),
+                            key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                         },
                         function(data_tasks) {
-                            data_tasks = prepareExchangedData(data_tasks, "decode", "<?php echo $_SESSION['key']; ?>");
+                            data_tasks = prepareExchangedData(data_tasks, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
                             
                             if (data_tasks.error === true) {
                                 // error
                                 toastr.remove();
                                 toastr.error(
                                     data_tasks.message,
-                                    '<?php echo langHdl('caution'); ?>', {
+                                    '<?php echo $lang->get('caution'); ?>', {
                                         timeOut: 5000,
                                         progressBar: true
                                     }
@@ -2426,7 +2452,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                                 oTable.ajax.reload();
 
                                 toastr.success(
-                                    '<?php echo langHdl('done'); ?>',
+                                    '<?php echo $lang->get('done'); ?>',
                                     '', {
                                         timeOut: 1000
                                     }
@@ -2447,7 +2473,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
      */
     function changeUserAuthType(auth) {
         toastr.remove();
-        toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+        toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
         // prepare data
         var data = {
@@ -2459,11 +2485,11 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
         $.post(
             'sources/users.queries.php', {
                 type: 'change_user_auth_type',
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                key: "<?php echo $_SESSION['key']; ?>"
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
             },
             function(data) {
-                data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                 if (debugJavascript === true) console.log(data);
 
                 if (data.error !== false) {
@@ -2471,7 +2497,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
                     toastr.remove();
                     toastr.error(
                         data.message,
-                        '<?php echo langHdl('caution'); ?>', {
+                        '<?php echo $lang->get('caution'); ?>', {
                             timeOut: 5000,
                             progressBar: true
                         }
@@ -2490,26 +2516,26 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
 
             showModalDialogBox(
                 '#warningModal',
-                '<i class="fas fa-user-plus fa-lg warning mr-2"></i><?php echo langHdl('new_ldap_user_info'); ?> <b>'+$(this)[0].dataset.userLogin+'</b>',
+                '<i class="fas fa-user-plus fa-lg warning mr-2"></i><?php echo $lang->get('new_ldap_user_info'); ?> <b>'+$(this)[0].dataset.userLogin+'</b>',
                 '<div class="form-group">'+
-                    '<label for="ldap-user-name"><?php echo langHdl('name'); ?></label>'+
+                    '<label for="ldap-user-name"><?php echo $lang->get('name'); ?></label>'+
                     '<input readonly type="text" class="form-control required" id="ldap-user-name" value="'+ $(this).attr('data-user-name')+'">'+
                 '</div>'+
                 '<div class="form-group">'+
-                    '<label for="ldap-user-name"><?php echo langHdl('lastname'); ?></label>'+
+                    '<label for="ldap-user-name"><?php echo $lang->get('lastname'); ?></label>'+
                     '<input readonly type="text" class="form-control required" id="ldap-user-lastname" value="'+ $(this).attr('data-user-lastname')+'">'+
                 '</div>'+
                 '<div class="form-group">'+
-                    '<label for="ldap-user-name"><?php echo langHdl('email'); ?></label>'+
+                    '<label for="ldap-user-name"><?php echo $lang->get('email'); ?></label>'+
                     '<input readonly type="text" class="form-control required" id="ldap-user-email" value="'+ $(this).attr('data-user-email')+'">'+
                 '</div>'+
                 '<div class="form-group">'+
-                    '<label for="ldap-user-roles"><?php echo langHdl('roles'); ?></label>'+
+                    '<label for="ldap-user-roles"><?php echo $lang->get('roles'); ?></label>'+
                     '<select id="ldap-user-roles" class="form-control form-item-control select2 required" style="width:100%;" multiple="multiple">'+
                     '<?php echo $optionsRoles; ?></select>'+
                 '</div>',
-                '<?php echo langHdl('perform'); ?>',
-                '<?php echo langHdl('cancel'); ?>'
+                '<?php echo $lang->get('perform'); ?>',
+                '<?php echo $lang->get('cancel'); ?>'
             );
             $(document).on('click', '#warningModalButtonAction', function(event) {
                 event.preventDefault();
@@ -2527,8 +2553,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             $(this).addClass('selected-user');
 
             toastr.warning(
-                '&nbsp;<button type="button" class="btn clear btn-toastr" style="width:100%;" onclick="changeUserAuthType(\'ldap\')"><?php echo langHdl('please_confirm'); ?></button>',
-                '<?php echo langHdl('change_authentification_type_to_ldap'); ?>', {
+                '&nbsp;<button type="button" class="btn clear btn-toastr" style="width:100%;" onclick="changeUserAuthType(\'ldap\')"><?php echo $lang->get('please_confirm'); ?></button>',
+                '<?php echo $lang->get('change_authentification_type_to_ldap'); ?>', {
                     positionClass: 'toast-top-center',
                     closeButton: true
                 }
@@ -2538,8 +2564,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
             $(this).addClass('selected-user');
 
             toastr.warning(
-                '&nbsp;<button type="button" class="btn clear btn-toastr" style="width:100%;" onclick="changeUserAuthType(\'local\')"><?php echo langHdl('please_confirm'); ?></button>',
-                '<?php echo langHdl('change_authentification_type_to_local'); ?>', {
+                '&nbsp;<button type="button" class="btn clear btn-toastr" style="width:100%;" onclick="changeUserAuthType(\'local\')"><?php echo $lang->get('please_confirm'); ?></button>',
+                '<?php echo $lang->get('change_authentification_type_to_local'); ?>', {
                     positionClass: 'toast-top-center',
                     closeButton: true
                 }

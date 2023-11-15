@@ -26,34 +26,52 @@ declare(strict_types=1);
 use TiBeN\CrontabManager\CrontabJob;
 use TiBeN\CrontabManager\CrontabAdapter;
 use TiBeN\CrontabManager\CrontabRepository;
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
+use TeampassClasses\NestedTree\NestedTree;
+use TeampassClasses\PerformChecks\PerformChecks;
 
-if (
-    isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
-    || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === true
-    || isset($_SESSION['key']) === false || empty($_SESSION['key']) === true
-) {
-    die('Hacking attempt...');
-}
-
-// Load config
-if (file_exists('../includes/config/tp.config.php') === true) {
-    include_once '../includes/config/tp.config.php';
-} elseif (file_exists('./includes/config/tp.config.php') === true) {
-    include_once './includes/config/tp.config.php';
-} else {
+// Load config if $SETTINGS not defined
+try {
+    include_once __DIR__.'/../includes/config/tp.config.php';
+} catch (Exception $e) {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
-/* do checks */
-require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
-if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'tasks', $SETTINGS) === false) {
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
+// Do checks
+$checkUserAccess = new PerformChecks(
+    dataSanitizer(
+        [
+            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+        ],
+        [
+            'type' => 'trim|escape',
+        ],
+    ),
+    [
+        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
+        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+    ]
+);
+// Handle the case
+echo $checkUserAccess->caseHandler();
+if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('tasks') === false) {
+    // Not allowed page
+    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
 
-// Load template
-require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
+
+// Define Timezone
+date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
+
+// Set header properties
+header('Content-type: text/html; charset=utf-8');
+header('Cache-Control: no-cache, no-store, must-revalidate');
+
+// --------------------------------- //
 
 ?>
 
@@ -63,7 +81,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
         <div class="row mb-2">
             <div class="col-sm-6">
                 <h1 class="m-0 text-dark">
-                    <i class="fa-solid fa-tasks mr-2"></i><?php echo langHdl('tasks_manager'); ?>
+                    <i class="fa-solid fa-tasks mr-2"></i><?php echo $lang->get('tasks_manager'); ?>
                 </h1>
             </div><!-- /.col -->
         </div><!-- /.row -->
@@ -80,13 +98,13 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                     <div class="card-body">
                         <ul class="nav nav-tabs" id="tasksSettingsPage">
                             <li class="nav-item">
-                                <a class="nav-link" data-toggle="tab" href="#settings" aria-controls="settings" aria-selected="false"><?php echo langHdl('settings'); ?></a>
+                                <a class="nav-link" data-toggle="tab" href="#settings" aria-controls="settings" aria-selected="false"><?php echo $lang->get('settings'); ?></a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link active" data-toggle="tab" href="#in_progress" aria-controls="in_progress" aria-selected="true"><?php echo langHdl('in_progress'); ?></a>
+                                <a class="nav-link active" data-toggle="tab" href="#in_progress" aria-controls="in_progress" aria-selected="true"><?php echo $lang->get('in_progress'); ?></a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" data-toggle="tab" href="#finished" role="tab" aria-controls="done" aria-selected="false"><?php echo langHdl('done'); ?></a>
+                                <a class="nav-link" data-toggle="tab" href="#finished" role="tab" aria-controls="done" aria-selected="false"><?php echo $lang->get('done'); ?></a>
                             </li>
                         </ul>
 
@@ -98,9 +116,6 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
 
                                     <div class="">
                                         <?php
-require_once __DIR__.'/../includes/libraries/TiBeN/CrontabManager/CrontabAdapter.php';
-require_once __DIR__.'/../includes/libraries/TiBeN/CrontabManager/CrontabJob.php';
-require_once __DIR__.'/../includes/libraries/TiBeN/CrontabManager/CrontabRepository.php';
 
 // Instantiate the adapter and repository
 try {
@@ -109,12 +124,12 @@ try {
     if (count($results) === 0) {
         ?>
                                             <div class="callout callout-info alert-dismissible mt-3">
-                                                <h5><i class="fa-solid fa-info mr-2"></i><?php echo langHdl('information'); ?></h5>
-                                                <?php echo str_replace("#teampass_path#", $SETTINGS['cpassman_dir'], langHdl('tasks_information')); ?>
+                                                <h5><i class="fa-solid fa-info mr-2"></i><?php echo $lang->get('information'); ?></h5>
+                                                <?php echo str_replace("#teampass_path#", $SETTINGS['cpassman_dir'], $lang->get('tasks_information')); ?>
                                             </div>
                                             <div class="alert alert-warning mt-2 " role="alert">
-                                                <i class="fa-solid fa-cancel mr-2"></i><?php echo langHdl('tasks_cron_not_running'); ?><br />
-                                                <button class="btn btn-default action" type="button" data-type="add-new-job"><i class="fa-solid fa-play mr-2"></i><?php echo langHdl('add_new_job'); ?></button>
+                                                <i class="fa-solid fa-cancel mr-2"></i><?php echo $lang->get('tasks_cron_not_running'); ?><br />
+                                                <button class="btn btn-default action" type="button" data-type="add-new-job"><i class="fa-solid fa-play mr-2"></i><?php echo $lang->get('add_new_job'); ?></button>
                                                 <div id="add-new-job-result">
 
                                                 </div>
@@ -123,7 +138,7 @@ try {
     } else {
         ?>
                                             <div class="alert alert-success mt-2 " role="alert">
-                                                <i class="fa-solid fa-check mr-2"></i><?php echo langHdl('tasks_cron_running'); ?>
+                                                <i class="fa-solid fa-check mr-2"></i><?php echo $lang->get('tasks_cron_running'); ?>
                                             </div>
         <?php
     }
@@ -133,11 +148,11 @@ catch (Exception $e) {
 }?>
                                     </div>
 
-                                    <h5><i class="fa-solid fa-hourglass-half mr-2"></i><?php echo langHdl('frequency'); ?><i class="fa-solid fa-rotate fa-spin ml-2 hidden text-info" id="go_refresh"></i></h5>
+                                    <h5><i class="fa-solid fa-hourglass-half mr-2"></i><?php echo $lang->get('frequency'); ?><i class="fa-solid fa-rotate fa-spin ml-2 hidden text-info" id="go_refresh"></i></h5>
 
                                     <div class='row ml-1 mt-3 mb-2'>
                                         <div class='col-9'>
-                                            <i class="fa-solid fa-inbox mr-2"></i><?php echo langHdl('sending_emails')." (".langHdl('in_minutes').")"; ?>
+                                            <i class="fa-solid fa-inbox mr-2"></i><?php echo $lang->get('sending_emails')." (".$lang->get('in_minutes').")"; ?>
                                             <span class="badge badge-secondary ml-2" id="sending_emails_job_frequency_badge"></span>
                                         </div>
                                         <div class='col-2'>
@@ -150,7 +165,7 @@ catch (Exception $e) {
 
                                     <div class='row ml-1 mb-2'>
                                         <div class='col-9'>
-                                            <i class="fa-solid fa-user-cog mr-2"></i><?php echo langHdl('user_keys_management')." (".langHdl('in_minutes').")"; ?>
+                                            <i class="fa-solid fa-user-cog mr-2"></i><?php echo $lang->get('user_keys_management')." (".$lang->get('in_minutes').")"; ?>
                                             <span class="badge badge-secondary ml-2" id="user_keys_job_frequency_badge"></span>
                                         </div>
                                         <div class='col-2'>
@@ -163,7 +178,7 @@ catch (Exception $e) {
 
                                     <div class='row ml-1 mb-2'>
                                         <div class='col-9'>
-                                            <i class="fa-solid fa-tower-observation mr-2"></i><?php echo langHdl('items_management')." (".langHdl('in_minutes').")"; ?>
+                                            <i class="fa-solid fa-tower-observation mr-2"></i><?php echo $lang->get('items_management')." (".$lang->get('in_minutes').")"; ?>
                                             <span class="badge badge-secondary ml-2" id="items_ops_job_frequency_badge"></span>
                                         </div>
                                         <div class='col-2'>
@@ -176,7 +191,7 @@ catch (Exception $e) {
 
                                     <div class='row ml-1 mb-2'>
                                         <div class='col-9'>
-                                            <i class="fa-solid fa-chart-simple mr-2"></i><?php echo langHdl('items_and_folders_statistics')." (".langHdl('in_minutes').")"; ?>
+                                            <i class="fa-solid fa-chart-simple mr-2"></i><?php echo $lang->get('items_and_folders_statistics')." (".$lang->get('in_minutes').")"; ?>
                                             <span class="badge badge-secondary ml-2" id="items_statistics_job_frequency_badge"></span>
                                         </div>
                                         <div class='col-2'>
@@ -189,20 +204,20 @@ catch (Exception $e) {
 
                                     <div class='row ml-1 mb-2'>
                                         <div class='col-9'>
-                                            <i class="fa-solid fa-screwdriver-wrench mr-2"></i><?php echo langHdl('maintenance_operations'); ?>
+                                            <i class="fa-solid fa-screwdriver-wrench mr-2"></i><?php echo $lang->get('maintenance_operations'); ?>
                                         </div>
                                     </div>
 
                                     <div class='row ml-1 mb-2'>
                                         <div class='col-8'>
-                                            <i class="fa-solid fa-person-shelter ml-4 mr-2"></i><span id="users_personal_folder_task_text"><?php echo langHdl('users_personal_folder'); ?></span>
+                                            <i class="fa-solid fa-person-shelter ml-4 mr-2"></i><span id="users_personal_folder_task_text"><?php echo $lang->get('users_personal_folder'); ?></span>
                                             <span class="badge badge-secondary ml-2" id="users_personal_folder_task_badge"></span>
                                         </div>
                                         <div class='col-2'>
                                             <?php
                                             $task = isset($SETTINGS['users_personal_folder_task']) === true ? explode(";", $SETTINGS['users_personal_folder_task']) : [];
                                             ?>
-                                            <input type='text' disabled class='form-control form-control-sm' id='users_personal_folder_task_parameter' value='<?php echo isset($task[0]) === true && empty($task[0]) === false ? langHdl($task[0])." ".(isset($task[2]) === true ? strtolower(langHdl('day')).' '.$task[2].' ' : '').langHdl('at')." ".$task[1] : langHdl('not_defined') ?>'>
+                                            <input type='text' disabled class='form-control form-control-sm' id='users_personal_folder_task_parameter' value='<?php echo isset($task[0]) === true && empty($task[0]) === false ? $lang->get($task[0])." ".(isset($task[2]) === true ? strtolower($lang->get('day')).' '.$task[2].' ' : '').$lang->get('at')." ".$task[1] : $lang->get('not_defined') ?>'>
                                             <input type='hidden' disabled class='form-control form-control-sm' id='users_personal_folder_task_parameter_value' value='<?php echo isset($task[0]) === true ? $task[0].";".$task[1].(isset($task[2]) === true ? ';'.$task[2] : '') : '';?>'>
                                         </div>
                                         <div class='col-2'>
@@ -223,14 +238,14 @@ catch (Exception $e) {
 
                                     <div class='row ml-1 mb-2'>
                                         <div class='col-8'>
-                                            <i class="fa-solid fa-binoculars ml-4 mr-2"></i><span id="clean_orphan_objects_task_text"><?php echo langHdl('clean_orphan_objects'); ?></span>
+                                            <i class="fa-solid fa-binoculars ml-4 mr-2"></i><span id="clean_orphan_objects_task_text"><?php echo $lang->get('clean_orphan_objects'); ?></span>
                                             <span class="badge badge-secondary ml-2" id="clean_orphan_objects_task_badge"></span>
                                         </div>
                                         <div class='col-2'>
                                             <?php
                                             $task = isset($SETTINGS['clean_orphan_objects_task']) === true ? explode(";", $SETTINGS['clean_orphan_objects_task']) : [];
                                             ?>
-                                            <input type='text' disabled class='form-control form-control-sm' id='clean_orphan_objects_task_parameter' value='<?php echo isset($task[0]) === true && empty($task[0]) === false ? langHdl($task[0])." ".(isset($task[2]) === true ? strtolower(langHdl('day')).' '.$task[2].' ' : '').langHdl('at')." ".$task[1] : langHdl('not_defined') ?>'>
+                                            <input type='text' disabled class='form-control form-control-sm' id='clean_orphan_objects_task_parameter' value='<?php echo isset($task[0]) === true && empty($task[0]) === false ? $lang->get($task[0])." ".(isset($task[2]) === true ? strtolower($lang->get('day')).' '.$task[2].' ' : '').$lang->get('at')." ".$task[1] : $lang->get('not_defined') ?>'>
                                             <input type='hidden' disabled class='form-control form-control-sm' id='clean_orphan_objects_task_parameter_value' value='<?php echo isset($task[0]) === true ? $task[0].";".$task[1].(isset($task[2]) === true ? ';'.$task[2] : '') : '';?>'>
                                         </div>
                                         <div class='col-2'>
@@ -245,14 +260,14 @@ catch (Exception $e) {
 
                                     <div class='row ml-1 mb-2'>
                                         <div class='col-8'>
-                                            <i class="fa-solid fa-broom ml-4 mr-2"></i><span id="purge_temporary_files_task_text"><?php echo langHdl('purge_temporary_files'); ?></span>
+                                            <i class="fa-solid fa-broom ml-4 mr-2"></i><span id="purge_temporary_files_task_text"><?php echo $lang->get('purge_temporary_files'); ?></span>
                                             <span class="badge badge-secondary ml-2" id="purge_temporary_files_task_badge"></span>
                                         </div>
                                         <div class='col-2'>
                                             <?php
                                             $task = isset($SETTINGS['purge_temporary_files_task']) === true ? explode(";", $SETTINGS['purge_temporary_files_task']) : [];
                                             ?>
-                                            <input type='text' disabled class='form-control form-control-sm' id='purge_temporary_files_task_parameter' value='<?php echo isset($task[0]) === true && empty($task[0]) === false ? langHdl($task[0])." ".(isset($task[2]) === true ? strtolower(langHdl('day')).' '.$task[2].' ' : '').langHdl('at')." ".$task[1] : langHdl('not_defined') ?>'>
+                                            <input type='text' disabled class='form-control form-control-sm' id='purge_temporary_files_task_parameter' value='<?php echo isset($task[0]) === true && empty($task[0]) === false ? $lang->get($task[0])." ".(isset($task[2]) === true ? strtolower($lang->get('day')).' '.$task[2].' ' : '').$lang->get('at')." ".$task[1] : $lang->get('not_defined') ?>'>
                                             <input type='hidden' disabled class='form-control form-control-sm' id='purge_temporary_files_task_parameter_value' value='<?php echo isset($task[0]) === true ? $task[0].";".$task[1].(isset($task[2]) === true ? ';'.$task[2] : '') : '';?>'>
                                         </div>
                                         <div class='col-2'>
@@ -267,14 +282,14 @@ catch (Exception $e) {
 
                                     <div class='row ml-1 mb-2'>
                                         <div class='col-8'>
-                                            <i class="fa-solid fa-sliders ml-4 mr-2"></i><span id="rebuild_config_file_task_text"><?php echo langHdl('rebuild_config_file'); ?></span>
+                                            <i class="fa-solid fa-sliders ml-4 mr-2"></i><span id="rebuild_config_file_task_text"><?php echo $lang->get('rebuild_config_file'); ?></span>
                                             <span class="badge badge-secondary ml-2" id="rebuild_config_file_task_badge"></span>
                                         </div>
                                         <div class='col-2'>
                                             <?php
                                             $task = isset($SETTINGS['rebuild_config_file_task']) === true ? explode(";", $SETTINGS['rebuild_config_file_task']) : [];
                                             ?>
-                                            <input type='text' disabled class='form-control form-control-sm' id='rebuild_config_file_task_parameter' value='<?php echo isset($task[0]) === true && empty($task[0]) === false ? langHdl($task[0])." ".(isset($task[2]) === true ? strtolower(langHdl('day')).' '.$task[2].' ' : '').langHdl('at')." ".$task[1] : langHdl('not_defined') ?>'>
+                                            <input type='text' disabled class='form-control form-control-sm' id='rebuild_config_file_task_parameter' value='<?php echo isset($task[0]) === true && empty($task[0]) === false ? $lang->get($task[0])." ".(isset($task[2]) === true ? strtolower($lang->get('day')).' '.$task[2].' ' : '').$lang->get('at')." ".$task[1] : $lang->get('not_defined') ?>'>
                                             <input type='hidden' disabled class='form-control form-control-sm' id='rebuild_config_file_task_parameter_value' value='<?php echo isset($task[0]) === true ? $task[0].";".$task[1].(isset($task[2]) === true ? ';'.$task[2] : '') : ''; ?>'>
                                         </div>
                                         <div class='col-2'>
@@ -289,14 +304,14 @@ catch (Exception $e) {
 
                                     <div class='row ml-1 mb-4'>
                                         <div class='col-8'>
-                                            <i class="fa-solid fa-database ml-4 mr-2"></i><span id="reload_cache_table_task_text"><?php echo langHdl('admin_action_reload_cache_table'); ?></span>
+                                            <i class="fa-solid fa-database ml-4 mr-2"></i><span id="reload_cache_table_task_text"><?php echo $lang->get('admin_action_reload_cache_table'); ?></span>
                                             <span class="badge badge-secondary ml-2" id="reload_cache_table_task_badge"></span>
                                         </div>
                                         <div class='col-2'>
                                             <?php
                                             $task = isset($SETTINGS['reload_cache_table_task']) === true ? explode(";", $SETTINGS['reload_cache_table_task']) : [];
                                             ?>
-                                            <input type='text' disabled class='form-control form-control-sm' id='reload_cache_table_task_parameter' value='<?php echo isset($task[0]) === true && empty($task[0]) === false ? langHdl($task[0])." ".(isset($task[2]) === true ? strtolower(langHdl('day')).' '.$task[2].' ' : '').langHdl('at')." ".$task[1] : langHdl('not_defined') ?>'>
+                                            <input type='text' disabled class='form-control form-control-sm' id='reload_cache_table_task_parameter' value='<?php echo isset($task[0]) === true && empty($task[0]) === false ? $lang->get($task[0])." ".(isset($task[2]) === true ? strtolower($lang->get('day')).' '.$task[2].' ' : '').$lang->get('at')." ".$task[1] : $lang->get('not_defined') ?>'>
                                             <input type='hidden' disabled class='form-control form-control-sm' id='reload_cache_table_task_parameter_value' value='<?php echo isset($task[0]) === true ? $task[0].";".$task[1].(isset($task[2]) === true ? ';'.$task[2] : '') : '';?>'>
                                         </div>
                                         <div class='col-2'>
@@ -311,9 +326,9 @@ catch (Exception $e) {
 
                                     <div class='row mb-3 option'>
                                         <div class='col-10'>
-                                        <h5><i class="fa-solid fa-rss mr-2"></i><?php echo langHdl('enable_tasks_log'); ?></h5>
+                                        <h5><i class="fa-solid fa-rss mr-2"></i><?php echo $lang->get('enable_tasks_log'); ?></h5>
                                             <small class='form-text text-muted'>
-                                                <?php echo langHdl('enable_tasks_log_tip'); ?>
+                                                <?php echo $lang->get('enable_tasks_log_tip'); ?>
                                             </small>
                                         </div>
                                         <div class='col-2'>
@@ -323,9 +338,9 @@ catch (Exception $e) {
 
                                     <div class='row mb-3 option'>
                                         <div class='col-10'>
-                                        <h5><i class="fa-solid fa-hourglass-start mr-2"></i><?php echo langHdl('maximum_time_script_allowed_to_run'); ?></h5>
+                                        <h5><i class="fa-solid fa-hourglass-start mr-2"></i><?php echo $lang->get('maximum_time_script_allowed_to_run'); ?></h5>
                                             <small id='passwordHelpBlock' class='form-text text-muted'>
-                                                <?php echo langHdl('maximum_time_script_allowed_to_run_tip'); ?>
+                                                <?php echo $lang->get('maximum_time_script_allowed_to_run_tip'); ?>
                                             </small>
                                         </div>
                                         <div class='col-2'>
@@ -335,9 +350,9 @@ catch (Exception $e) {
 
                                     <div class='row mb-3 option'>
                                         <div class='col-10'>
-                                        <h5><i class="fa-solid fa-object-group mr-2"></i><?php echo langHdl('maximum_number_of_items_to_treat'); ?></h5>
+                                        <h5><i class="fa-solid fa-object-group mr-2"></i><?php echo $lang->get('maximum_number_of_items_to_treat'); ?></h5>
                                             <small id='passwordHelpBlock' class='form-text text-muted'>
-                                                <?php echo langHdl('maximum_number_of_items_to_treat_tip'); ?>
+                                                <?php echo $lang->get('maximum_number_of_items_to_treat_tip'); ?>
                                             </small>
                                         </div>
                                         <div class='col-2'>
@@ -347,9 +362,9 @@ catch (Exception $e) {
 
                                     <div class='row mb-3 option'>
                                         <div class='col-10'>
-                                        <h5><i class="fa-solid fa-stopwatch-20 mr-2"></i><?php echo langHdl('refresh_data_every_on_screen'); ?></h5>
+                                        <h5><i class="fa-solid fa-stopwatch-20 mr-2"></i><?php echo $lang->get('refresh_data_every_on_screen'); ?></h5>
                                             <small id='passwordHelpBlock' class='form-text text-muted'>
-                                                <?php echo langHdl('refresh_data_every_on_screen_tip'); ?>
+                                                <?php echo $lang->get('refresh_data_every_on_screen_tip'); ?>
                                             </small>
                                         </div>
                                         <div class='col-2'>
@@ -365,10 +380,10 @@ catch (Exception $e) {
                                     <thead>
                                         <tr>
                                             <th style=""></th>
-                                            <th style=""><?php echo langHdl('created_at'); ?></th>
-                                            <th style=""><?php echo langHdl('updated_at'); ?></th>
-                                            <th style=""><?php echo langHdl('type'); ?></th>
-                                            <th style=""><?php echo langHdl('user'); ?></th>
+                                            <th style=""><?php echo $lang->get('created_at'); ?></th>
+                                            <th style=""><?php echo $lang->get('updated_at'); ?></th>
+                                            <th style=""><?php echo $lang->get('type'); ?></th>
+                                            <th style=""><?php echo $lang->get('user'); ?></th>
                                         </tr>
                                     </thead>
                                 </table>
@@ -379,12 +394,12 @@ catch (Exception $e) {
                                     <thead>
                                         <tr>
                                             <th style=""></th>
-                                            <th style=""><?php echo langHdl('created_at'); ?></th>
-                                            <th style=""><?php echo langHdl('started_at'); ?></th>
-                                            <th style=""><?php echo langHdl('finished_at'); ?></th>
-                                            <th style=""><?php echo langHdl('execution_time'); ?></th>
-                                            <th style=""><?php echo langHdl('type'); ?></th>
-                                            <th style=""><?php echo langHdl('user'); ?></th>
+                                            <th style=""><?php echo $lang->get('created_at'); ?></th>
+                                            <th style=""><?php echo $lang->get('started_at'); ?></th>
+                                            <th style=""><?php echo $lang->get('finished_at'); ?></th>
+                                            <th style=""><?php echo $lang->get('execution_time'); ?></th>
+                                            <th style=""><?php echo $lang->get('type'); ?></th>
+                                            <th style=""><?php echo $lang->get('user'); ?></th>
                                         </tr>
                                     </thead>
                                 </table>
@@ -403,7 +418,7 @@ catch (Exception $e) {
         <div class="col-12">
             <div class="card card-primary">
                 <div class="card-header">
-                    <h3 class="card-title"><?php echo langHdl('logs_for_user'); ?> <span id="row-logs-title"></span></h3>
+                    <h3 class="card-title"><?php echo $lang->get('logs_for_user'); ?> <span id="row-logs-title"></span></h3>
                 </div>
 
                 <!-- /.card-header -->
@@ -412,9 +427,9 @@ catch (Exception $e) {
                     <table id="table-logs" class="table table-striped table-responsive" style="width:100%">
                         <thead>
                             <tr>
-                                <th><?php echo langHdl('date'); ?></th>
-                                <th><?php echo langHdl('activity'); ?></th>
-                                <th><?php echo langHdl('label'); ?></th>
+                                <th><?php echo $lang->get('date'); ?></th>
+                                <th><?php echo $lang->get('activity'); ?></th>
+                                <th><?php echo $lang->get('label'); ?></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -424,7 +439,7 @@ catch (Exception $e) {
                 </div>
 
                 <div class="card-footer">
-                    <button type="button" class="btn btn-default float-right tp-action" data-action="cancel"><?php echo langHdl('cancel'); ?></button>
+                    <button type="button" class="btn btn-default float-right tp-action" data-action="cancel"><?php echo $lang->get('cancel'); ?></button>
                 </div>
             </div>
         </div>
@@ -435,11 +450,11 @@ catch (Exception $e) {
         <div class="modal-dialog modal-sm">
         <div class="modal-content">
             <div class="modal-header">
-            <h4 class="modal-title"><?php echo langHdl('please_confirm_deletion'); ?></h4>
+            <h4 class="modal-title"><?php echo $lang->get('please_confirm_deletion'); ?></h4>
             </div>
             <div class="modal-footer">
-            <button type="button" class="btn btn-primary" id="modal-btn-delete" data-id=""><?php echo langHdl('yes'); ?></button>
-            <button type="button" class="btn btn-default" id="modal-btn-cancel"><?php echo langHdl('cancel'); ?></button>
+            <button type="button" class="btn btn-primary" id="modal-btn-delete" data-id=""><?php echo $lang->get('yes'); ?></button>
+            <button type="button" class="btn btn-default" id="modal-btn-cancel"><?php echo $lang->get('cancel'); ?></button>
             </div>
         </div>
         </div>
@@ -450,27 +465,27 @@ catch (Exception $e) {
         <div class="modal-dialog modal-sm">
         <div class="modal-content">
             <div class="modal-header">
-                <h4 class="modal-title"><i class="fa-solid fa-calendar-check mr-2"></i><?php echo langHdl('task_scheduling'); ?></h4>
+                <h4 class="modal-title"><i class="fa-solid fa-calendar-check mr-2"></i><?php echo $lang->get('task_scheduling'); ?></h4>
             </div>
             
             <div class="modal-body" id="taskSchedulingModalBody">
                 <div>
-                    <h5><i class="fa-solid fa-clock-rotate-left mr-2"></i><?php echo langHdl('frequency'); ?></h5>              
+                    <h5><i class="fa-solid fa-clock-rotate-left mr-2"></i><?php echo $lang->get('frequency'); ?></h5>              
                     <select class='form-control form-control-sm no-save' id='task-define-modal-frequency' style="width:100%;">
                         <?php
-                        echo '<optgroup label="'.langHdl('run_once').'">
-                        <option value="hourly">'.langHdl('hourly').'</option>
-                        <option value="daily">'.langHdl('daily').'</option>
-                        <option value="monthly">'.langHdl('monthly').'</option>
+                        echo '<optgroup label="'.$lang->get('run_once').'">
+                        <option value="hourly">'.$lang->get('hourly').'</option>
+                        <option value="daily">'.$lang->get('daily').'</option>
+                        <option value="monthly">'.$lang->get('monthly').'</option>
                         </optgroup>
-                        <optgroup label="'.langHdl('run_weekday').'">
-                        <option value="monday">'.langHdl('monday').'</option>
-                        <option value="tuesday">'.langHdl('tuesday').'</option>
-                        <option value="wednesday">'.langHdl('wednesday').'</option>
-                        <option value="thursday">'.langHdl('thursday').'</option>
-                        <option value="friday">'.langHdl('friday').'</option>
-                        <option value="saturday">'.langHdl('saturday').'</option>
-                        <option value="sunday">'.langHdl('sunday').'</option>
+                        <optgroup label="'.$lang->get('run_weekday').'">
+                        <option value="monday">'.$lang->get('monday').'</option>
+                        <option value="tuesday">'.$lang->get('tuesday').'</option>
+                        <option value="wednesday">'.$lang->get('wednesday').'</option>
+                        <option value="thursday">'.$lang->get('thursday').'</option>
+                        <option value="friday">'.$lang->get('friday').'</option>
+                        <option value="saturday">'.$lang->get('saturday').'</option>
+                        <option value="sunday">'.$lang->get('sunday').'</option>
                         </optgroup>';
                         ?>
                     </select>
@@ -478,11 +493,11 @@ catch (Exception $e) {
 
                 <div id="task-define-modal-parameter-monthly" class="hidden ml-2">
                     <div class="row mt-2">
-                        <h5><?php echo langHdl('day_of_month'); ?></h5>              
+                        <h5><?php echo $lang->get('day_of_month'); ?></h5>              
                         <select class='form-control form-control-sm no-save' id='task-define-modal-parameter-monthly-value' style="width:100%;">
                             <?php
                             for ($i=1; $i<=31; $i++) {
-                                echo '<option value="'.$i.'">'.langHdl('day').' '.$i.'</option>';
+                                echo '<option value="'.$i.'">'.$lang->get('day').' '.$i.'</option>';
                             }
                             ?>
                         </select>
@@ -491,23 +506,23 @@ catch (Exception $e) {
 
                 <div id="task-define-modal-parameter-daily" class="hidden ml-2">
                     <div class="row mt-2">
-                        <h5 class=""><?php echo langHdl('at'); ?></h5>
+                        <h5 class=""><?php echo $lang->get('at'); ?></h5>
                         <input type="time" class="form-control form-control-sm no-save" id="task-define-modal-parameter-daily-value" min="00:00" max="23:59"/>
                     </div>
                 </div>
 
                 <div id="task-define-modal-parameter-hourly" class="ml-2">
                     <div class="row mt-2">
-                        <h5><?php echo langHdl('at'); ?></h5>              
+                        <h5><?php echo $lang->get('at'); ?></h5>              
                         <input type="time" class="form-control form-control-sm no-save" id="task-define-modal-parameter-hourly-value" min="00:00" max="00:59"/>
                     </div>
                 </div>
             </div>
 
             <div class="modal-footer">
-                <button type="button" class="btn btn-warning" id="modal-btn-task-reset" data-id=""><?php echo langHdl('reset'); ?></button>
-                <button type="button" class="btn btn-primary" id="modal-btn-task-save" data-id=""><?php echo langHdl('save'); ?></button>
-                <button type="button" class="btn btn-default" id="modal-btn-task-cancel"><?php echo langHdl('cancel'); ?></button>
+                <button type="button" class="btn btn-warning" id="modal-btn-task-reset" data-id=""><?php echo $lang->get('reset'); ?></button>
+                <button type="button" class="btn btn-primary" id="modal-btn-task-save" data-id=""><?php echo $lang->get('save'); ?></button>
+                <button type="button" class="btn btn-default" id="modal-btn-task-cancel"><?php echo $lang->get('cancel'); ?></button>
                 <input type="hidden" id="task-define-modal-type"/>
             </div>
         </div>

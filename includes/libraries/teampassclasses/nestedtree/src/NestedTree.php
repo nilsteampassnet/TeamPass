@@ -110,16 +110,10 @@ class NestedTree
             $nleft = 0;
             $nright = 0;
             $parent_id = 0;
-            $personal_folder = 0;
-            $fa_icon = '';
-            $fa_icon_selected = '';
         } else {
             $nleft = $node->nleft;
             $nright = $node->nright;
             $parent_id = $node->$idField;
-            $personal_folder = $node->personal_folder;
-            $fa_icon = $node->fa_icon;
-            $fa_icon_selected = $node->fa_icon_selected;
         }
 
         if ($childrenOnly) {

@@ -22,6 +22,8 @@
  *
  * @see       https://www.teampass.net
  */
+use TeampassClasses\NestedTree\NestedTree;
+
 require_once API_ROOT_PATH . "/Model/Database.php";
 
 class ItemModel extends Database
@@ -46,7 +48,8 @@ class ItemModel extends Database
             LEFT JOIN ".prefixTable('nested_tree')." as t ON (t.id = i.id_tree) ".
             $sqlExtra . 
             " ORDER BY i.id ASC" .
-            ($limit > 0 ? " LIMIT ?". ["i", $limit] : '')
+            //($limit > 0 ? " LIMIT ?". ["i", $limit] : '')
+            ($limit > 0 ? " LIMIT ". $limit : '')
         );
         $ret = [];
         foreach ($rows as $row) {
@@ -79,8 +82,7 @@ class ItemModel extends Database
             
 
             // get path to item
-            require_once API_ROOT_PATH. '/../includes/libraries/Tree/NestedTree/NestedTree.php';
-            $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+            $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
             $arbo = $tree->getPath($row['id_tree'], false);
             $path = '';
             foreach ($arbo as $elem) {
@@ -124,6 +126,7 @@ class ItemModel extends Database
     public function addItem(string $idTree, string $userName, string $hostname, string $password) : bool
     {
         // TODO ecrire
+        
         return true;
     }
 }

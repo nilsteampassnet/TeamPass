@@ -20,55 +20,72 @@ declare(strict_types=1);
  */
 
 
-require_once 'SecureHandler.php';
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
+use EZimuel\PHPSecureSession;
+use TeampassClasses\PerformChecks\PerformChecks;
+use TeampassClasses\NestedTree\NestedTree;
+
+// Load functions
+require_once 'main.functions.php';
+
+// init
+loadClasses('DB');
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
 session_name('teampass_session');
 session_start();
-if (
-    isset($_SESSION['CPM']) === false
-    || $_SESSION['CPM'] !== 1
-    || isset($_SESSION['key']) === false
-    || empty($_SESSION['key']) === true
-) {
-    die('Hacking attempt...');
+
+// Load config if $SETTINGS not defined
+try {
+    include_once __DIR__.'/../includes/config/tp.config.php';
+} catch (Exception $e) {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
-// Load config
-include __DIR__.'/../includes/config/tp.config.php';
-
-// includes
-require_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
-require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
-require_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user']['user_language'] . '.php';
-require_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
-
-// header
-header('Content-type: text/html; charset=utf-8');
-header('Cache-Control: no-cache, must-revalidate');
+// Do checks
+// Instantiate the class with posted data
+$checkUserAccess = new PerformChecks(
+    dataSanitizer(
+        [
+            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+        ],
+        [
+            'type' => 'trim|escape',
+        ],
+    ),
+    [
+        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
+        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+    ]
+);
+// Handle the case
+echo $checkUserAccess->caseHandler();
+if (
+    $checkUserAccess->userAccessPage('items') === false ||
+    $checkUserAccess->checkSession() === false
+) {
+    // Not allowed page
+    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+    include $SETTINGS['cpassman_dir'] . '/error.php';
+    exit;
+}
 
 // Define Timezone
-if (isset($SETTINGS['timezone'])) {
-    date_default_timezone_set($SETTINGS['timezone']);
-} else {
-    date_default_timezone_set('UTC');
-}
+date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
 
-// Connect to mysql server
-require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
-if (defined('DB_PASSWD_CLEAR') === false) {
-    define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
-}
-DB::$host = DB_HOST;
-DB::$user = DB_USER;
-DB::$password = DB_PASSWD_CLEAR;
-DB::$dbName = DB_NAME;
-DB::$port = DB_PORT;
-DB::$encoding = DB_ENCODING;
-DB::$ssl = DB_SSL;
-DB::$connect_options = DB_CONNECT_OPTIONS;
+// Set header properties
+header('Content-type: text/html; charset=utf-8');
+header('Cache-Control: no-cache, no-store, must-revalidate');
 
-// Superglobal load
-require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-$superGlobal = new protect\SuperGlobal\SuperGlobal();
+// --------------------------------- //
+
+// Load tree
+$tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
 
 // Prepare sanitization
 $data = [
@@ -137,8 +154,7 @@ $goTreeRefresh = loadTreeStrategy(
 // We don't use the cache if an ID of folder is provided
 if ($goTreeRefresh['state'] === true || empty($inputData['nodeId']) === false || $inputData['userTreeLoadStrategy'] === 'sequential') {
     // Build tree
-    require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Tree/NestedTree/NestedTree.php';
-    $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+    $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
     if (
         isset($inputData['limitedFolders']) === true
@@ -274,7 +290,7 @@ function showFolderToUser(
  *
  * @param int     $nodeId                            Id
  * @param stdClass   $currentNode                       Tree info
- * @param Tree\NestedTree\NestedTree   $tree                              The tree
+ * @param NestedTree   $tree                              The tree
  * @param array   $listFoldersLimitedKeys            Limited
  * @param array   $listRestrictedFoldersForItemsKeys Restricted
  * @param int     $last_visible_parent               Visible parent
@@ -288,7 +304,7 @@ function showFolderToUser(
 function recursiveTree(
     int $nodeId,
     stdClass $currentNode,
-    Tree\NestedTree\NestedTree $tree,
+    NestedTree $tree,
     array $listFoldersLimitedKeys,
     array $listRestrictedFoldersForItemsKeys,
     int $last_visible_parent,
@@ -298,8 +314,6 @@ function recursiveTree(
     array &$ret_json = array()
 ) {
     $text = '';
-    $title = '';
-    $show_but_block = false;
     
     // Load config
     include __DIR__.'/../includes/config/tp.config.php';
@@ -356,7 +370,7 @@ function recursiveTree(
  *
  * @param integer $nodeId
  * @param stdClass $currentNode
- * @param Tree\NestedTree\NestedTree $tree
+ * @param NestedTree $tree
  * @param array $listFoldersLimitedKeys
  * @param array $listRestrictedFoldersForItemsKeys
  * @param integer $last_visible_parent
@@ -373,7 +387,7 @@ function recursiveTree(
 function handleNode(
     int $nodeId,
     stdClass $currentNode,
-    Tree\NestedTree\NestedTree $tree,
+    NestedTree $tree,
     array $listFoldersLimitedKeys,
     array $listRestrictedFoldersForItemsKeys,
     int $last_visible_parent,
@@ -481,6 +495,9 @@ function prepareNodeJson(
     array $SETTINGS
 ): array
 {
+    // Load user's language
+    $lang = new Language(); 
+
     // prepare json return for current node
     $parent = $currentNode->parent_id === '0' ? '#' : 'li_' . $currentNode->parent_id;
 
@@ -530,7 +547,7 @@ function prepareNodeJson(
                 'text' => '<i class="'.$currentNode->fa_icon.' tree-folder mr-2" data-folder="'.$currentNode->fa_icon.'"  data-folder-selected="'.$currentNode->fa_icon_selected.'"></i>'.'<i class="fas fa-times fa-xs text-danger mr-1 ml-1"></i>'.$text.$currentNode->title.$nodeData['html'],
                 'li_attr' => array(
                     'class' => '',
-                    'title' => 'ID [' . $nodeId . '] ' . langHdl('no_access'),
+                    'title' => 'ID [' . $nodeId . '] ' . $lang->get('no_access'),
                 ),
             )
         );
@@ -553,7 +570,7 @@ function prepareNodeJson(
  * @param integer $nbItemsInFolder
  * @param integer $nbItemsInSubfolders
  * @param integer $nbSubfolders
- * @param integer $session_list_folders_limited
+ * @param array $session_list_folders_limited
  * @param integer $show_only_accessible_folders
  * @param integer $tree_counters
  * @param bool $session_user_read_only
@@ -561,7 +578,7 @@ function prepareNodeJson(
  * @param array $listRestrictedFoldersForItemsKeys
  * @param array $session_list_restricted_folders_for_items
  * @param array $session_personal_folder
- * @param Tree\NestedTree\NestedTree $tree
+ * @param NestedTree $tree
  * @return array
  */
 function prepareNodeData(
@@ -580,16 +597,19 @@ function prepareNodeData(
     array $listRestrictedFoldersForItemsKeys,
     array $session_list_restricted_folders_for_items,
     array $session_personal_folder,
-    Tree\NestedTree\NestedTree $tree
+    NestedTree $tree
 ): array
 {
+    // Load user's language
+    $lang = new Language(); 
+
     if (in_array($nodeId, $session_groupes_visibles) === true) {
         // special case for READ-ONLY folder
         if (in_array($nodeId, $session_read_only_folders) === true) {
             return [
                 'html' => '<i class="far fa-eye fa-xs mr-1 ml-1"></i>'.
                     ($tree_counters === 1 ? '<span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' . $nodeId . '">' . $nbItemsInFolder .'/'.$nbItemsInSubfolders .'/'.$nbSubfolders. '</span>'  : ''),
-                'title' => langHdl('read_only_account'),
+                'title' => $lang->get('read_only_account'),
                 'restricted' => 1,
                 'folderClass' => 'folder_not_droppable',
                 'show_but_block' => false,
@@ -604,7 +624,7 @@ function prepareNodeData(
             return [
                 'html' => '<i class="far fa-eye fa-xs mr-1"></i>'.
                     ($tree_counters === 1 ? '<span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' . $nodeId . '">' . $nbItemsInFolder .'/'.$nbItemsInSubfolders .'/'.$nbSubfolders. '</span>'  : ''),
-                'title' => langHdl('read_only_account'),
+                'title' => $lang->get('read_only_account'),
                 'restricted' => 0,
                 'folderClass' => 'folder',
                 'show_but_block' => false,
@@ -690,7 +710,7 @@ function prepareNodeData(
 
     return [
         'html' => '',
-        'title' => isset($title) === true ? $title : '',
+        'title' => '',
         'restricted' => 1,
         'folderClass' => 'folder_not_droppable',
         'show_but_block' => true,

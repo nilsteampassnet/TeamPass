@@ -2,14 +2,14 @@
 
 namespace LdapRecord\Models\FreeIPA;
 
-use LdapRecord\Models\Relations\HasMany;
-
 class Group extends Entry
 {
     /**
      * The object classes of the LDAP model.
+     *
+     * @var array
      */
-    public static array $objectClasses = [
+    public static $objectClasses = [
         'top',
         'groupofnames',
         'nestedgroup',
@@ -21,16 +21,20 @@ class Group extends Entry
      * The groups relationship.
      *
      * Retrieves groups that the current group is apart of.
+     *
+     * @return \LdapRecord\Models\Relations\HasMany
      */
-    public function groups(): HasMany
+    public function groups()
     {
         return $this->hasMany(self::class, 'member');
     }
 
     /**
      * Retrieve the members of the group.
+     *
+     * @return \LdapRecord\Models\Relations\HasMany
      */
-    public function members(): HasMany
+    public function members()
     {
         return $this->hasMany(User::class, 'memberof')->using($this, 'member');
     }

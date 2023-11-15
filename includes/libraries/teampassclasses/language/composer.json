@@ -1,0 +1,19 @@
+{
+    "name": "teampassclasses/language",
+    "description": "Perform the language translations.",
+    "type": "library",
+    "license": "GPL-3.0-only",
+    "keywords": [
+        "language"
+    ],
+    "authors": [
+        {
+            "name": "Nils Laumaillé"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "TeampassClasses\\Language\\": "src/"
+        }
+    }
+}

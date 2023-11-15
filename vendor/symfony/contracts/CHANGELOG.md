@@ -1,23 +1,6 @@
 CHANGELOG
 =========
 
-3.3
----
-
- * Add option `crypto_method` to `HttpClientInterface` to define the minimum TLS version to accept
-
-3.2
----
-
- * Allow `ServiceSubscriberInterface::getSubscribedServices()` to return `SubscribedService[]`
-
-3.0
----
-
- * Bump to PHP 8 minimum
- * Add native return types
- * Remove deprecated features
-
 2.5
 ---
 

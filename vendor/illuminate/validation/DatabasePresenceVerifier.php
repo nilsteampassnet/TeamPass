@@ -4,6 +4,7 @@ namespace Illuminate\Validation;
 
 use Closure;
 use Illuminate\Database\ConnectionResolverInterface;
+use Illuminate\Support\Str;
 
 class DatabasePresenceVerifier implements DatabasePresenceVerifierInterface
 {
@@ -106,7 +107,7 @@ class DatabasePresenceVerifier implements DatabasePresenceVerifierInterface
             $query->whereNull($key);
         } elseif ($extraValue === 'NOT_NULL') {
             $query->whereNotNull($key);
-        } elseif (str_starts_with($extraValue, '!')) {
+        } elseif (Str::startsWith($extraValue, '!')) {
             $query->where($key, '!=', mb_substr($extraValue, 1));
         } else {
             $query->where($key, $extraValue);

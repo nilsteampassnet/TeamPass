@@ -130,10 +130,10 @@ var CSRFP = {
 	 * Initialises the CSRFProtector js script.
 	 */
 	_init: function () {
-		this.CSRFP_TOKEN = document.getElementById(
-			CSRFP_FIELD_TOKEN_NAME).value;
-
 		try {
+			this.CSRFP_TOKEN = document.getElementById(
+				CSRFP_FIELD_TOKEN_NAME).value;
+
 			var csrfFieldElem = document.getElementById(CSRFP_FIELD_URLS);
 			this.checkForUrls = JSON.parse(csrfFieldElem.value);
 		} catch (exception) {

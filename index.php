@@ -24,6 +24,9 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
+
 header('X-XSS-Protection: 1; mode=block');
 header('X-Frame-Options: SameOrigin');
 header("Cache-Control: no-cache, no-store, must-revalidate");
@@ -57,10 +60,10 @@ csrfProtector::init();
 session_id();
 
 // Load config
-if (file_exists(__DIR__.'/includes/config/tp.config.php') === true) {
+try {
     include_once __DIR__.'/includes/config/tp.config.php';
-} else {
-    throw new Exception('Error file "/includes/config/tp.config.php" not exists', 1);
+} catch (Exception $e) {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
 // initialize session
@@ -71,9 +74,14 @@ if (isset($SETTINGS['cpassman_dir']) === false || $SETTINGS['cpassman_dir'] === 
     $SETTINGS['cpassman_dir'] = __DIR__;
 }
 
-// Include files
-require_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
-require_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
+// Load functions
+require_once __DIR__. '/includes/config/include.php';
+require_once __DIR__.'/sources/main.functions.php';
+
+// init
+$superGlobal = new SuperGlobal();
+//$lang = new Language(); 
+
 // Quick major version check -> upgrade needed?
 if (isset($SETTINGS['teampass_version']) === true && version_compare(TP_VERSION, $SETTINGS['teampass_version']) > 0) {
     // Perform redirection
@@ -86,29 +94,11 @@ if (isset($SETTINGS['teampass_version']) === true && version_compare(TP_VERSION,
     exit;
 }
 
-require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-$superGlobal = new protect\SuperGlobal\SuperGlobal();
 
 if (isset($SETTINGS['cpassman_url']) === false || $SETTINGS['cpassman_url'] === '') {
     $SETTINGS['cpassman_url'] = $superGlobal->get('REQUEST_URI', 'SERVER');
 }
 
-// Include files
-require_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
-require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
-// Open MYSQL database connection
-require_once './includes/libraries/Database/Meekrodb/db.class.php';
-if (defined('DB_PASSWD_CLEAR') === false) {
-    define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
-}
-DB::$host = DB_HOST;
-DB::$user = DB_USER;
-DB::$password = DB_PASSWD_CLEAR;
-DB::$dbName = DB_NAME;
-DB::$port = DB_PORT;
-DB::$encoding = DB_ENCODING;
-DB::$ssl = DB_SSL;
-DB::$connect_options = DB_CONNECT_OPTIONS;
 // Load Core library
 require_once $SETTINGS['cpassman_dir'] . '/sources/core.php';
 // Prepare POST variables
@@ -172,19 +162,11 @@ if ($session_user_id === null && $post_language === null && $session_user_langua
         $session_user_language = $SETTINGS['default_language'];
     }
 }
+$lang = new Language($session_user_language, __DIR__. '/includes/language/'); 
 
 if (isset($SETTINGS['cpassman_dir']) === false || $SETTINGS['cpassman_dir'] === '') {
     $SETTINGS['cpassman_dir'] = __DIR__;
     $SETTINGS['cpassman_url'] = (string) $server['request_uri'];
-}
-
-// Load user languages files
-if (file_exists($SETTINGS['cpassman_dir'] . '/includes/language/' . $session_user_language . '.php') === true) {
-    $_SESSION['teampass']['lang'] = include $SETTINGS['cpassman_dir'] . '/includes/language/' . $session_user_language . '.php';
-} else {
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
-    //not allowed page
-    include $SETTINGS['cpassman_dir'] . '/error.php';
 }
 
 // Some template adjust
@@ -279,7 +261,6 @@ if (($session_validite_pw === null
     && empty($session_user_id) === false
 ) {
     ?>
-
     <body class="hold-transition sidebar-mini layout-navbar-fixed layout-fixed">
         <div class="wrapper">
 
@@ -287,7 +268,7 @@ if (($session_validite_pw === null
             <nav class="main-header navbar navbar-expand navbar-white navbar-light border-bottom">
                 <!-- User encryption still ongoing -->
                 <div id="user_not_ready" class="alert alert-warning hidden pointer p-2 mt-2" style="position:absolute; left:200px;">
-                    <span class="align-middle infotip ml-2" title="<?php echo langHdl('keys_encryption_not_ready'); ?>"><?php echo langHdl('account_not_ready'); ?><span id="user_not_ready_progress"></span><i class="fa-solid fa-hourglass-half fa-beat-fade mr-2 ml-2"></i></span>
+                    <span class="align-middle infotip ml-2" title="<?php echo $lang->get('keys_encryption_not_ready'); ?>"><?php echo $lang->get('account_not_ready'); ?><span id="user_not_ready_progress"></span><i class="fa-solid fa-hourglass-half fa-beat-fade mr-2 ml-2"></i></span>
                 </div>
 
                 <!-- Left navbar links -->
@@ -300,12 +281,12 @@ if (($session_validite_pw === null
                             ?>
                         <li class="nav-item d-none d-sm-inline-block">
                             <a class="nav-link" href="#">
-                                <i class="far fa-arrow-alt-circle-right columns-position tree-increase infotip" title="<?php echo langHdl('move_right_columns_separator'); ?>"></i>
+                                <i class="far fa-arrow-alt-circle-right columns-position tree-increase infotip" title="<?php echo $lang->get('move_right_columns_separator'); ?>"></i>
                             </a>
                         </li>
                         <li class="nav-item d-none d-sm-inline-block">
                             <a class="nav-link" href="#">
-                                <i class="far fa-arrow-alt-circle-left columns-position tree-decrease infotip" title="<?php echo langHdl('move_left_columns_separator'); ?>"></i>
+                                <i class="far fa-arrow-alt-circle-left columns-position tree-decrease infotip" title="<?php echo $lang->get('move_left_columns_separator'); ?>"></i>
                             </a>
                         </li>
                     <?php
@@ -314,7 +295,7 @@ if (($session_validite_pw === null
 
                 <!-- Right navbar links -->
                 <ul class="navbar-nav ml-auto">
-                    <span class="fa-stack infotip pointer hidden mr-2" title="<?php echo langHdl('get_your_recovery_keys'); ?>" id="open_user_keys_management" style="vertical-align: top;">
+                    <span class="fa-stack infotip pointer hidden mr-2" title="<?php echo $lang->get('get_your_recovery_keys'); ?>" id="open_user_keys_management" style="vertical-align: top;">
                         <i class="fa-solid fa-circle text-danger fa-stack-2x"></i>
                         <i class="fa-solid fa-bell fa-shake fa-stack-1x fa-inverse"></i>
                     </span>
@@ -328,37 +309,37 @@ if (($session_validite_pw === null
 
                             <div class="dropdown-menu dropdown-menu-right">
                                 <a class="dropdown-item user-menu" href="#" data-name="increase_session">
-                                    <i class="far fa-clock fa-fw mr-2"></i><?php echo langHdl('index_add_one_hour'); ?></a>
+                                    <i class="far fa-clock fa-fw mr-2"></i><?php echo $lang->get('index_add_one_hour'); ?></a>
                                 <div class="dropdown-divider"></div>
                                 <a class="dropdown-item user-menu" href="#" data-name="profile">
-                                    <i class="fa-solid fa-user-circle fa-fw mr-2"></i><?php echo langHdl('my_profile'); ?>
+                                    <i class="fa-solid fa-user-circle fa-fw mr-2"></i><?php echo $lang->get('my_profile'); ?>
                                 </a>
                                 <?php
                                     if (empty($session_auth_type) === false && $session_auth_type !== 'ldap') {
                                         ?>
                                     <a class="dropdown-item user-menu" href="#" data-name="password-change">
-                                        <i class="fa-solid fa-lock fa-fw mr-2"></i><?php echo langHdl('index_change_pw'); ?>
+                                        <i class="fa-solid fa-lock fa-fw mr-2"></i><?php echo $lang->get('index_change_pw'); ?>
                                     </a>
                                 <?php
                                     } elseif ($session_auth_type === 'ldap') {
                                         ?>
                                     <a class="dropdown-item user-menu" href="#" data-name="sync-new-ldap-password">
-                                        <i class="fa-solid fa-key fa-fw mr-2"></i><?php echo langHdl('sync_new_ldap_password'); ?>
+                                        <i class="fa-solid fa-key fa-fw mr-2"></i><?php echo $lang->get('sync_new_ldap_password'); ?>
                                     </a>
                                 <?php
                                     } ?>
                                 <a class="dropdown-item user-menu<?php echo (int) $session_user_admin === 1 ? ' hidden' : '';?>" href="#" data-name="generate-new_keys">
-                                    <i class="fa-solid fa-spray-can-sparkles fa-fw mr-2"></i><?php echo langHdl('generate_new_keys'); ?>
+                                    <i class="fa-solid fa-spray-can-sparkles fa-fw mr-2"></i><?php echo $lang->get('generate_new_keys'); ?>
                                 </a>
                                 <div class="dropdown-divider"></div>
                                 <a class="dropdown-item user-menu" href="#" data-name="logout">
-                                    <i class="fa-solid fa-sign-out-alt fa-fw mr-2"></i><?php echo langHdl('disconnect'); ?>
+                                    <i class="fa-solid fa-sign-out-alt fa-fw mr-2"></i><?php echo $lang->get('disconnect'); ?>
                                 </a>
                             </div>
                         </div>
                     </li>
                     <li>
-                        <span class="align-middle infotip ml-2 text-info" title="<?php echo langHdl('index_expiration_in'); ?>" id="countdown"></span>
+                        <span class="align-middle infotip ml-2 text-info" title="<?php echo $lang->get('index_expiration_in'); ?>" id="countdown"></span>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" data-widget="control-sidebar" data-slide="true" href="#" id="controlsidebar"><i class="fa-solid fa-th-large"></i></a>
@@ -388,7 +369,7 @@ if (($session_validite_pw === null
                         <a href="#" data-name="items" class="nav-link', $get['page'] === 'items' ? ' active' : '', '">
                         <i class="nav-icon fa-solid fa-key"></i>
                         <p>
-                            ' . langHdl('pw') . '
+                            ' . $lang->get('pw') . '
                         </p>
                         </a>
                     </li>';
@@ -401,7 +382,7 @@ if (($session_validite_pw === null
                         <a href="#" data-name="import" class="nav-link', $get['page'] === 'import' ? ' active' : '', '">
                         <i class="nav-icon fa-solid fa-file-import"></i>
                         <p>
-                            ' . langHdl('import') . '
+                            ' . $lang->get('import') . '
                         </p>
                         </a>
                     </li>';
@@ -422,7 +403,7 @@ if (($session_validite_pw === null
                         <a href="#" data-name="export" class="nav-link', $get['page'] === 'export' ? ' active' : '', '">
                         <i class="nav-icon fa-solid fa-file-export"></i>
                         <p>
-                            ' . langHdl('export') . '
+                            ' . $lang->get('export') . '
                         </p>
                         </a>
                     </li>';
@@ -436,7 +417,7 @@ if (($session_validite_pw === null
                         <a href="#" data-name="offline" class="nav-link', $get['page'] === 'offline' ? ' active' : '' ,'">
                         <i class="nav-icon fa-solid fa-plug"></i>
                         <p>
-                            '.langHdl('offline').'
+                            '.$lang->get('offline').'
                         </p>
                         </a>
                     </li>';
@@ -449,7 +430,7 @@ if (($session_validite_pw === null
                         <a href="#" data-name="search" class="nav-link', $get['page'] === 'search' ? ' active' : '', '">
                         <i class="nav-icon fa-solid fa-search"></i>
                         <p>
-                            ' . langHdl('find') . '
+                            ' . $lang->get('find') . '
                         </p>
                         </a>
                     </li>';
@@ -465,7 +446,7 @@ if (($session_validite_pw === null
                         <a href="#" data-name="favourites" class="nav-link', $get['page'] === 'admin' ? ' favourites' : '', '">
                         <i class="nav-icon fa-solid fa-star"></i>
                         <p>
-                            ' . langHdl('favorites') . '
+                            ' . $lang->get('favorites') . '
                         </p>
                         </a>
                     </li>';
@@ -479,7 +460,7 @@ if (($session_validite_pw === null
                             <a href="#" data-name="kb" class="nav-link', $get['page'] === 'kb' ? ' active' : '' ,'">
                             <i class="nav-icon fa-solid fa-map-signs"></i>
                             <p>
-    '.langHdl('kb_menu').'
+    '.$lang->get('kb_menu').'
                             </p>
                             </a>
                         </li>';
@@ -495,7 +476,7 @@ if (($session_validite_pw === null
                         <a href="#" data-name="suggestion" class="nav-link', $get['page'] === 'suggestion' ? ' active' : '', '">
                         <i class="nav-icon fa-solid fa-lightbulb"></i>
                         <p>
-                            ' . langHdl('suggestion_menu') . '
+                            ' . $lang->get('suggestion_menu') . '
                         </p>
                         </a>
                     </li>';
@@ -508,7 +489,7 @@ if (($session_validite_pw === null
                         <a href="#" data-name="admin" class="nav-link', $get['page'] === 'admin' ? ' active' : '', '">
                         <i class="nav-icon fa-solid fa-info"></i>
                         <p>
-                            ' . langHdl('admin_main') . '
+                            ' . $lang->get('admin_main') . '
                         </p>
                         </a>
                     </li>
@@ -516,7 +497,7 @@ if (($session_validite_pw === null
                         <a href="#" class="nav-link">
                             <i class="nav-icon fa-solid fa-wrench"></i>
                             <p>
-                                ' . langHdl('admin_settings') . '
+                                ' . $lang->get('admin_settings') . '
                                 <i class="fa-solid fa-angle-left right"></i>
                             </p>
                         </a>
@@ -524,55 +505,55 @@ if (($session_validite_pw === null
                             <li class="nav-item">
                                 <a href="#" data-name="options" class="nav-link', $get['page'] === 'options' ? ' active' : '', '">
                                     <i class="fa-solid fa-check-double nav-icon"></i>
-                                    <p>' . langHdl('options') . '</p>
+                                    <p>' . $lang->get('options') . '</p>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a href="#" data-name="2fa" class="nav-link', $get['page'] === '2fa' ? ' active' : '', '">
                                     <i class="fa-solid fa-qrcode nav-icon"></i>
-                                    <p>' . langHdl('mfa_short') . '</p>
+                                    <p>' . $lang->get('mfa_short') . '</p>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a href="#" data-name="api" class="nav-link', $get['page'] === 'api' ? ' active' : '', '">
                                     <i class="fa-solid fa-cubes nav-icon"></i>
-                                    <p>' . langHdl('api') . '</p>
+                                    <p>' . $lang->get('api') . '</p>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a href="#" data-name="backups" class="nav-link', $get['page'] === 'backups' ? ' active' : '', '">
                                     <i class="fa-solid fa-database nav-icon"></i>
-                                    <p>' . langHdl('backups') . '</p>
+                                    <p>' . $lang->get('backups') . '</p>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a href="#" data-name="emails" class="nav-link', $get['page'] === 'emails' ? ' active' : '', '">
                                     <i class="fa-solid fa-envelope nav-icon"></i>
-                                    <p>' . langHdl('emails') . '</p>
+                                    <p>' . $lang->get('emails') . '</p>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a href="#" data-name="fields" class="nav-link', $get['page'] === 'fields' ? ' active' : '', '">
                                     <i class="fa-solid fa-keyboard nav-icon"></i>
-                                    <p>' . langHdl('fields') . '</p>
+                                    <p>' . $lang->get('fields') . '</p>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a href="#" data-name="ldap" class="nav-link', $get['page'] === 'ldap' ? ' active' : '', '">
                                     <i class="fa-solid fa-id-card nav-icon"></i>
-                                    <p>' . langHdl('ldap') . '</p>
+                                    <p>' . $lang->get('ldap') . '</p>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a href="#" data-name="uploads" class="nav-link', $get['page'] === 'uploads' ? ' active' : '', '">
                                     <i class="fa-solid fa-file-upload nav-icon"></i>
-                                    <p>' . langHdl('uploads') . '</p>
+                                    <p>' . $lang->get('uploads') . '</p>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a href="#" data-name="statistics" class="nav-link', $get['page'] === 'statistics' ? ' active' : '', '">
                                     <i class="fa-solid fa-chart-bar nav-icon"></i>
-                                    <p>' . langHdl('statistics') . '</p>
+                                    <p>' . $lang->get('statistics') . '</p>
                                 </a>
                             </li>
                         </ul>
@@ -583,7 +564,7 @@ if (($session_validite_pw === null
                     <li class="nav-item">
                         <a href="#" data-name="tasks" class="nav-link', $get['page'] === 'tasks' ? ' active' : '', '">
                         <i class="fa-solid fa-tasks nav-icon"></i>
-                        <p>' . langHdl('tasks') . '</p>
+                        <p>' . $lang->get('tasks') . '</p>
                         </a>
                     </li>';
                     }
@@ -599,7 +580,7 @@ if (($session_validite_pw === null
                         <a href="#" data-name="folders" class="nav-link', $get['page'] === 'folders' ? ' active' : '', '">
                         <i class="nav-icon fa-solid fa-folder-open"></i>
                         <p>
-                            ' . langHdl('folders') . '
+                            ' . $lang->get('folders') . '
                         </p>
                         </a>
                     </li>
@@ -607,7 +588,7 @@ if (($session_validite_pw === null
                         <a href="#" data-name="roles" class="nav-link', $get['page'] === 'roles' ? ' active' : '', '">
                         <i class="nav-icon fa-solid fa-graduation-cap"></i>
                         <p>
-                            ' . langHdl('roles') . '
+                            ' . $lang->get('roles') . '
                         </p>
                         </a>
                     </li>
@@ -615,38 +596,38 @@ if (($session_validite_pw === null
                         <a href="#" data-name="users" class="nav-link', $get['page'] === 'users' ? ' active' : '', '">
                         <i class="nav-icon fa-solid fa-users"></i>
                         <p>
-                            ' . langHdl('users') . '
+                            ' . $lang->get('users') . '
                         </p>
                         </a>
                     </li>
                     <li class="nav-item has-treeview', $menuUtilities === true ? ' menu-open' : '', '">
                         <a href="#" class="nav-link">
                         <i class="nav-icon fa-solid fa-cubes"></i>
-                        <p>' . langHdl('admin_views') . '<i class="fa-solid fa-angle-left right"></i></p>
+                        <p>' . $lang->get('admin_views') . '<i class="fa-solid fa-angle-left right"></i></p>
                         </a>
                         <ul class="nav nav-treeview">
                             <li class="nav-item">
                                 <a href="#" data-name="utilities.renewal" class="nav-link', $get['page'] === 'utilities.renewal' ? ' active' : '', '">
                                 <i class="far fa-calendar-alt nav-icon"></i>
-                                <p>' . langHdl('renewal') . '</p>
+                                <p>' . $lang->get('renewal') . '</p>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a href="#" data-name="utilities.deletion" class="nav-link', $get['page'] === 'utilities.deletion' ? ' active' : '', '">
                                 <i class="fa-solid fa-trash-alt nav-icon"></i>
-                                <p>' . langHdl('deletion') . '</p>
+                                <p>' . $lang->get('deletion') . '</p>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a href="#" data-name="utilities.logs" class="nav-link', $get['page'] === 'utilities.logs' ? ' active' : '', '">
                                 <i class="fa-solid fa-history nav-icon"></i>
-                                <p>' . langHdl('logs') . '</p>
+                                <p>' . $lang->get('logs') . '</p>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a href="#" data-name="utilities.database" class="nav-link', $get['page'] === 'utilities.database' ? ' active' : '', '">
                                 <i class="fa-solid fa-database nav-icon"></i>
-                                <p>' . langHdl('database') . '</p>
+                                <p>' . $lang->get('database') . '</p>
                                 </a>
                             </li>
                         </ul>
@@ -657,14 +638,16 @@ if (($session_validite_pw === null
                     <!-- /.sidebar-menu -->
                 <div class="menu-footer">
                     <div class="" id="sidebar-footer">
-                        <i class="fa-solid fa-clock-o mr-2 infotip text-info pointer" title="<?php echo langHdl('server_time') . ' ' .
+                        <i class="fa-solid fa-clock-o mr-2 infotip text-info pointer" title="<?php echo $lang->get('server_time') . ' ' .
                             date($SETTINGS['date_format'], (int) $server['request_time']) . ' - ' .
                             date($SETTINGS['time_format'], (int) $server['request_time']); ?>"></i>
-                        <i class="fa-solid fa-users mr-2 infotip text-info pointer" title="<?php echo $session_nb_users_online . ' ' . langHdl('users_online'); ?>"></i>
-                        <a href="<?php echo DOCUMENTATION_URL; ?>" target="_blank" class="text-info"><i class="fa-solid fa-book mr-2 infotip" title="<?php echo langHdl('documentation_canal'); ?>"></i></a>
-                        <a href="<?php echo HELP_URL; ?>" target="_blank" class="text-info"><i class="fa-solid fa-life-ring mr-2 infotip" title="<?php echo langHdl('admin_help'); ?>"></i></a>
-                        <i class="fa-solid fa-bug infotip pointer text-info" title="<?php echo langHdl('bugs_page'); ?>" onclick="generateBugReport()"></i>
+                        <i class="fa-solid fa-users mr-2 infotip text-info pointer" title="<?php echo $session_nb_users_online . ' ' . $lang->get('users_online'); ?>"></i>
+                        <a href="<?php echo DOCUMENTATION_URL; ?>" target="_blank" class="text-info"><i class="fa-solid fa-book mr-2 infotip" title="<?php echo $lang->get('documentation_canal'); ?>"></i></a>
+                        <a href="<?php echo HELP_URL; ?>" target="_blank" class="text-info"><i class="fa-solid fa-life-ring mr-2 infotip" title="<?php echo $lang->get('admin_help'); ?>"></i></a>
+                        <i class="fa-solid fa-bug infotip pointer text-info" title="<?php echo $lang->get('bugs_page'); ?>" onclick="generateBugReport()"></i>
                     </div>
+                    <?php
+    ?>
                 </div>
                 </div>
                 <!-- /.sidebar -->
@@ -678,7 +661,7 @@ if (($session_validite_pw === null
                     <div class="card-header">
                         <h3 class="card-title">
                             <i class="fa-solid fa-bug mr-2"></i>
-                            <?php echo langHdl('defect_report'); ?>
+                            <?php echo $lang->get('defect_report'); ?>
                         </h3>
                     </div>
                     <div class="card-body">
@@ -686,16 +669,16 @@ if (($session_validite_pw === null
                             <div class="col-sm-12 col-md-12">
                                 <div class="mb-2 alert alert-info">
                                     <i class="icon fa-solid fa-info mr-2"></i>
-                                    <?php echo langHdl('bug_report_to_github'); ?>
+                                    <?php echo $lang->get('bug_report_to_github'); ?>
                                 </div>
-                                <textarea class="form-control" style="min-height:300px;" id="dialog-bug-report-text" placeholder="<?php echo langHdl('please_wait_while_loading'); ?>"></textarea>
+                                <textarea class="form-control" style="min-height:300px;" id="dialog-bug-report-text" placeholder="<?php echo $lang->get('please_wait_while_loading'); ?>"></textarea>
                             </div>
                         </div>
                     </div>
                     <div class="card-footer">
-                        <button class="btn btn-primary mr-2 clipboard-copy" data-clipboard-text="dialog-bug-report-text" id="dialog-bug-report-select-button"><?php echo langHdl('copy_to_clipboard'); ?></button>
-                        <button class="btn btn-primary" id="dialog-bug-report-github-button"><?php echo langHdl('open_bug_report_in_github'); ?></button>
-                        <button class="btn btn-default float-right close-element"><?php echo langHdl('close'); ?></button>
+                        <button class="btn btn-primary mr-2 clipboard-copy" data-clipboard-text="dialog-bug-report-text" id="dialog-bug-report-select-button"><?php echo $lang->get('copy_to_clipboard'); ?></button>
+                        <button class="btn btn-primary" id="dialog-bug-report-github-button"><?php echo $lang->get('open_bug_report_in_github'); ?></button>
+                        <button class="btn btn-default float-right close-element"><?php echo $lang->get('close'); ?></button>
                     </div>
                 </div>
                 <!-- /.DEFECT REPORT -->
@@ -706,7 +689,7 @@ if (($session_validite_pw === null
                     <div class="card-header">
                         <h3 class="card-title">
                             <i class="fa-solid fa-bullhorn mr-2"></i>
-                            <?php echo langHdl('your_attention_is_required'); ?>
+                            <?php echo $lang->get('your_attention_is_required'); ?>
                         </h3>
                     </div>
                     <div class="card-body">
@@ -716,13 +699,13 @@ if (($session_validite_pw === null
                                 </div>
                                 <div class="input-group mb-3">
                                     <div class="input-group-prepend">
-                                        <span class="input-group-text"><?php echo langHdl('provide_your_current_password'); ?></span>
+                                        <span class="input-group-text"><?php echo $lang->get('provide_your_current_password'); ?></span>
                                     </div>
                                     <input type="password" class="form-control" id="profile-current-password">
                                 </div>
                                 <div class="input-group mb-3">
                                     <div class="input-group-prepend">
-                                        <span class="input-group-text"><?php echo langHdl('index_new_pw'); ?></span>
+                                        <span class="input-group-text"><?php echo $lang->get('index_new_pw'); ?></span>
                                     </div>
                                     <input type="password" class="form-control" id="profile-password">
                                     <div class="input-group-append" style="margin: 0px;">
@@ -732,19 +715,19 @@ if (($session_validite_pw === null
                                 </div>
                                 <div class="input-group mb-3">
                                     <div class="input-group-prepend">
-                                        <span class="input-group-text"><?php echo langHdl('index_change_pw_confirmation'); ?></span>
+                                        <span class="input-group-text"><?php echo $lang->get('index_change_pw_confirmation'); ?></span>
                                     </div>
                                     <input type="password" class="form-control" id="profile-password-confirm">
                                 </div>
                                 <div class="form-control mt-3 font-weight-light grey" id="dialog-user-change-password-progress">
-                                    <?php echo langHdl('provide_current_psk_and_click_launch'); ?>
+                                    <?php echo $lang->get('provide_current_psk_and_click_launch'); ?>
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div class="card-footer">
-                        <button class="btn btn-primary" id="dialog-user-change-password-do"><?php echo langHdl('launch'); ?></button>
-                        <button class="btn btn-default float-right" id="dialog-user-change-password-close"><?php echo langHdl('close'); ?></button>
+                        <button class="btn btn-primary" id="dialog-user-change-password-do"><?php echo $lang->get('launch'); ?></button>
+                        <button class="btn btn-default float-right" id="dialog-user-change-password-close"><?php echo $lang->get('close'); ?></button>
                     </div>
                 </div>
                 <!-- /.USER CHANGE AUTH PASSWORD -->
@@ -755,7 +738,7 @@ if (($session_validite_pw === null
                     <div class="card-header">
                         <h3 class="card-title">
                             <i class="fa-solid fa-bullhorn mr-2"></i>
-                            <?php echo langHdl('your_attention_is_required'); ?>
+                            <?php echo $lang->get('your_attention_is_required'); ?>
                         </h3>
                     </div>
                     <div class="card-body">
@@ -765,25 +748,25 @@ if (($session_validite_pw === null
                                 </div>
                                 <div class="input-group mb-3">
                                     <div class="input-group-prepend">
-                                        <span class="input-group-text"><?php echo langHdl('provide_your_previous_password'); ?></span>
+                                        <span class="input-group-text"><?php echo $lang->get('provide_your_previous_password'); ?></span>
                                     </div>
                                     <input type="password" class="form-control" id="dialog-ldap-user-change-password-old">
                                 </div>
                                 <div class="input-group mb-3">
                                     <div class="input-group-prepend">
-                                        <span class="input-group-text"><?php echo langHdl('provide_your_current_password'); ?></span>
+                                        <span class="input-group-text"><?php echo $lang->get('provide_your_current_password'); ?></span>
                                     </div>
                                     <input type="password" class="form-control" id="dialog-ldap-user-change-password-current">
                                 </div>
                                 <div class="form-control mt-3 font-weight-light grey" id="dialog-ldap-user-change-password-progress">
-                                    <?php echo langHdl('provide_current_psk_and_click_launch'); ?>
+                                    <?php echo $lang->get('provide_current_psk_and_click_launch'); ?>
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div class="card-footer">
-                        <button class="btn btn-primary" id="dialog-ldap-user-change-password-do"><?php echo langHdl('launch'); ?></button>
-                        <button class="btn btn-default float-right" id="dialog-ldap-user-change-password-close"><?php echo langHdl('close'); ?></button>
+                        <button class="btn btn-primary" id="dialog-ldap-user-change-password-do"><?php echo $lang->get('launch'); ?></button>
+                        <button class="btn btn-default float-right" id="dialog-ldap-user-change-password-close"><?php echo $lang->get('close'); ?></button>
                     </div>
                 </div>
                 <!-- /.LDAP USER HAS CHANGED AUTH PASSWORD -->
@@ -794,7 +777,7 @@ if (($session_validite_pw === null
                     <div class="card-header">
                         <h3 class="card-title">
                             <i class="fa-solid fa-bullhorn mr-2"></i>
-                            <?php echo langHdl('your_attention_is_required'); ?>
+                            <?php echo $lang->get('your_attention_is_required'); ?>
                         </h3>
                     </div>
                     <div class="card-body">
@@ -803,7 +786,7 @@ if (($session_validite_pw === null
                                 <div class="mb-2 alert alert-info" id="dialog-admin-change-user-password-info">
                                 </div>
                                 <div class="form-control mt-3 font-weight-light grey" id="dialog-admin-change-user-password-progress">
-                                    <?php echo langHdl('provide_current_psk_and_click_launch'); ?>
+                                    <?php echo $lang->get('provide_current_psk_and_click_launch'); ?>
                                 </div>
                             </div>
                         </div>
@@ -811,8 +794,8 @@ if (($session_validite_pw === null
                         <input type="hidden" id="admin_change_user_encryption_code_target_user" value="">
                     </div>
                     <div class="card-footer">
-                        <button class="btn btn-primary" id="dialog-admin-change-user-password-do"><?php echo langHdl('launch'); ?></button>
-                        <button class="btn btn-default float-right" id="dialog-admin-change-user-password-close"><?php echo langHdl('close'); ?></button>
+                        <button class="btn btn-primary" id="dialog-admin-change-user-password-do"><?php echo $lang->get('launch'); ?></button>
+                        <button class="btn btn-default float-right" id="dialog-admin-change-user-password-close"><?php echo $lang->get('close'); ?></button>
                     </div>
                 </div>
                 <!-- /.ADMIN ASKS FOR USER PASSWORD CHANGE -->
@@ -823,7 +806,7 @@ if (($session_validite_pw === null
                     <div class="card-header">
                         <h3 class="card-title">
                             <i class="fa-solid fa-bullhorn mr-2"></i>
-                            <?php echo langHdl('your_attention_is_required'); ?>
+                            <?php echo $lang->get('your_attention_is_required'); ?>
                         </h3>
                     </div>
                     <div class="card-body">
@@ -833,25 +816,25 @@ if (($session_validite_pw === null
                                 </div>
                                 <div class="input-group mb-3">
                                     <div class="input-group-prepend">
-                                        <span class="input-group-text"><?php echo langHdl('provide_your_current_password'); ?></span>
+                                        <span class="input-group-text"><?php echo $lang->get('provide_your_current_password'); ?></span>
                                     </div>
                                     <input type="password" class="form-control" id="dialog-user-temporary-code-current-password">
                                 </div>
                                 <div class="input-group mb-3">
                                     <div class="input-group-prepend">
-                                        <span class="input-group-text"><?php echo langHdl('temporary_encryption_code'); ?></span>
+                                        <span class="input-group-text"><?php echo $lang->get('temporary_encryption_code'); ?></span>
                                     </div>
                                     <input type="password" class="form-control" id="dialog-user-temporary-code-value">
                                 </div>
                                 <div class="form-control mt-3 font-weight-light grey" id="dialog-user-temporary-code-progress">
-                                    <?php echo langHdl('provide_current_psk_and_click_launch'); ?>
+                                    <?php echo $lang->get('provide_current_psk_and_click_launch'); ?>
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div class="card-footer">
-                        <button class="btn btn-primary" id="dialog-user-temporary-code-do"><?php echo langHdl('launch'); ?></button>
-                        <button class="btn btn-default float-right" id="dialog-user-temporary-code-close"><?php echo langHdl('close'); ?></button>
+                        <button class="btn btn-primary" id="dialog-user-temporary-code-do"><?php echo $lang->get('launch'); ?></button>
+                        <button class="btn btn-default float-right" id="dialog-user-temporary-code-close"><?php echo $lang->get('close'); ?></button>
                     </div>
                 </div>
                 <!-- /.USER PROVIDES TEMPORARY CODE -->
@@ -862,7 +845,7 @@ if (($session_validite_pw === null
                     <div class="card-header">
                         <h3 class="card-title">
                             <i class="fa-solid fa-bullhorn mr-2"></i>
-                            <?php echo langHdl('your_attention_is_required'); ?>
+                            <?php echo $lang->get('your_attention_is_required'); ?>
                         </h3>
                     </div>
                     <div class="card-body">
@@ -870,15 +853,15 @@ if (($session_validite_pw === null
                             <div class="col-sm-12 col-md-12">
                                 <div class="mb-2 alert alert-info" id="warning-text-reencryption">
                                     <i class="icon fa-solid fa-info mr-2"></i>
-                                    <?php echo langHdl('objects_encryption_explanation'); ?>
+                                    <?php echo $lang->get('objects_encryption_explanation'); ?>
                                 </div>
                             </div>
                         </div>
                         <input type="hidden" id="sharekeys_reencryption_target_user" value="">
                     </div>
                     <div class="card-footer">
-                        <button class="btn btn-primary" id="button_do_sharekeys_reencryption"><?php echo langHdl('launch'); ?></button>
-                        <button class="btn btn-default float-right" id="button_close_sharekeys_reencryption"><?php echo langHdl('close'); ?></button>
+                        <button class="btn btn-primary" id="button_do_sharekeys_reencryption"><?php echo $lang->get('launch'); ?></button>
+                        <button class="btn btn-default float-right" id="button_close_sharekeys_reencryption"><?php echo $lang->get('close'); ?></button>
                     </div>
                 </div>
                 <!-- /.ENCRYPTION KEYS GENERATION -->
@@ -889,7 +872,7 @@ if (($session_validite_pw === null
                     <div class="card-header">
                         <h3 class="card-title">
                             <i class="fa-solid fa-bullhorn mr-2"></i>
-                            <?php echo langHdl('your_attention_is_required'); ?>
+                            <?php echo $lang->get('your_attention_is_required'); ?>
                         </h3>
                     </div>
                     <div class="card-body">
@@ -897,26 +880,26 @@ if (($session_validite_pw === null
                             <div class="col-sm-12 col-md-12">
                                 <div class="mb-2 alert alert-info" id="warning-text-reencryption">
                                     <i class="icon fa-solid fa-info mr-2"></i>
-                                    <?php echo langHdl('help_for_launching_items_encryption'); ?>
+                                    <?php echo $lang->get('help_for_launching_items_encryption'); ?>
                                 </div>
 
                                 <div class="input-group mb-3">
                                     <div class="input-group-prepend">
-                                        <span class="input-group-text"><?php echo langHdl('temporary_encryption_code'); ?></span>
+                                        <span class="input-group-text"><?php echo $lang->get('temporary_encryption_code'); ?></span>
                                     </div>
                                     <input type="password" class="form-control" id="dialog-ldap-user-build-keys-database-code">
                                 </div>
                                 
                                 <div class="form-control mt-3 font-weight-light grey" id="dialog-ldap-user-build-keys-database-progress">
-                                    <?php echo langHdl('provide_current_psk_and_click_launch'); ?>
+                                    <?php echo $lang->get('provide_current_psk_and_click_launch'); ?>
                                 </div>
                             </div>
                         </div>
                         <input type="hidden" id="sharekeys_reencryption_target_user" value="">
                     </div>
                     <div class="card-footer">
-                        <button class="btn btn-primary" id="dialog-ldap-user-build-keys-database-do"><?php echo langHdl('launch'); ?></button>
-                        <button class="btn btn-default float-right" id="dialog-ldap-user-build-keys-database-close"><?php echo langHdl('close'); ?></button>
+                        <button class="btn btn-primary" id="dialog-ldap-user-build-keys-database-do"><?php echo $lang->get('launch'); ?></button>
+                        <button class="btn btn-default float-right" id="dialog-ldap-user-build-keys-database-close"><?php echo $lang->get('close'); ?></button>
                     </div>
                 </div>
                 <!-- /.ENCRYPTION KEYS GENERATION -->
@@ -926,7 +909,7 @@ if (($session_validite_pw === null
                     <div class="card-header">
                         <h3 class="card-title">
                             <i class="fa-solid fa-bullhorn mr-2"></i>
-                            <?php echo langHdl('your_attention_is_required'); ?>
+                            <?php echo $lang->get('your_attention_is_required'); ?>
                         </h3>
                     </div>
                     <div class="card-body">
@@ -934,23 +917,23 @@ if (($session_validite_pw === null
                             <div class="col-sm-12 col-md-12">
                                 <div class="mb-2 alert alert-info" id="warning-text-changing-password">
                                     <i class="icon fa-solid fa-info mr-2"></i>
-                                    <?php echo langHdl('objects_encryption_explanation'); ?>
+                                    <?php echo $lang->get('objects_encryption_explanation'); ?>
                                 </div>
                                 <div class="input-group mb-3">
                                     <div class="input-group-prepend">
-                                        <span class="input-group-text"><?php echo langHdl('personal_salt_key'); ?></span>
+                                        <span class="input-group-text"><?php echo $lang->get('personal_salt_key'); ?></span>
                                     </div>
                                     <input type="password" class="form-control" id="user-current-defuse-psk">
                                 </div>
                                 <div class="form-control mt-3 font-weight-light grey" id="user-current-defuse-psk-progress">
-                                    <?php echo langHdl('provide_current_psk_and_click_launch'); ?>
+                                    <?php echo $lang->get('provide_current_psk_and_click_launch'); ?>
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div class="card-footer">
-                        <button class="btn btn-primary" id="button_do_personal_items_reencryption"><?php echo langHdl('launch'); ?></button>
-                        <button class="btn btn-default float-right" id="button_close_personal_items_reencryption"><?php echo langHdl('close'); ?></button>
+                        <button class="btn btn-primary" id="button_do_personal_items_reencryption"><?php echo $lang->get('launch'); ?></button>
+                        <button class="btn btn-default float-right" id="button_close_personal_items_reencryption"><?php echo $lang->get('close'); ?></button>
                     </div>
                 </div>
                 <!-- /.ENCRYPTION PERSONAL ITEMS GENERATION -->
@@ -966,7 +949,7 @@ if (($session_validite_pw === null
                         } elseif ((int) $session_user_admin === 1) {
                             include $SETTINGS['cpassman_dir'] . '/pages/admin.php';
                         } else {
-                            $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
+                            $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
                             //not allowed page
                             include $SETTINGS['cpassman_dir'] . '/error.php';
                         }
@@ -980,27 +963,26 @@ if (($session_validite_pw === null
                             ) {
                                 //include $SETTINGS['cpassman_dir'] . '/pages/' . $mngPages[$_GET['page']];
                             } else {
-                                $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
+                                $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
                                 //not allowed page
                                 include $SETTINGS['cpassman_dir'] . '/error.php';
                             }
                         } else {
-                            $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
+                            $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
                             //not allowed page
                             include $SETTINGS['cpassman_dir'] . '/error.php';
                         }
                     } elseif (empty($get['page']) === false) {
                         include $SETTINGS['cpassman_dir'] . '/pages/' . $get['page'] . '.php';
                     } else {
-                        $_SESSION['error']['code'] = ERR_NOT_EXIST;
+                        $superGlobal->put('code', ERR_NOT_EXIST, 'SESSION', 'error');
                         //page doesn't exist
                         include $SETTINGS['cpassman_dir'].'/error.php';
                     }
 
     // Case where login attempts have been identified
-    if (isset($_SESSION['unsuccessfull_login_attempts']) === true
-        && $_SESSION['unsuccessfull_login_attempts_nb'] !== 0
-        && $_SESSION['unsuccessfull_login_attempts_shown'] === false
+    if ((int) $superGlobal->get('unsuccessfull_login_attempts', 'SESSION') !== 0
+        && (bool) $superGlobal->get('unsuccessfull_login_attempts_shown', 'SESSION') === false
     ) {
         ?>
                     <input type="hidden" id="user-login-attempts" value="1">
@@ -1014,7 +996,7 @@ if (($session_validite_pw === null
             <aside class="control-sidebar control-sidebar-dark">
                 <!-- Control sidebar content goes here -->
                 <div class="p-3">
-                    <h5><?php echo langHdl('last_items_title'); ?></h5>
+                    <h5><?php echo $lang->get('last_items_title'); ?></h5>
                     <div>
                         <ul class="list-unstyled" id="index-last-pwds">
                         </ul>
@@ -1027,7 +1009,7 @@ if (($session_validite_pw === null
             <footer class="main-footer">
                 <!-- To the right -->
                 <div class="float-right d-none d-sm-inline">
-                    <?php echo langHdl('version_alone'); ?>&nbsp;<?php echo TP_VERSION; ?>
+                    <?php echo $lang->get('version_alone'); ?>&nbsp;<?php echo TP_VERSION; ?>
                 </div>
                 <!-- Default to the left -->
                 <strong>Copyright &copy; <?php echo TP_COPYRIGHT; ?> <a href="<?php echo TEAMPASS_URL; ?>"><?php echo TP_TOOL_NAME; ?></a>.</strong> All rights reserved.
@@ -1038,7 +1020,7 @@ if (($session_validite_pw === null
     <?php
         /* MAIN PAGE */
         echo '
-<input type="hidden" id="temps_restant" value="', $_SESSION['sessionDuration'] ?? '', '" />';
+<input type="hidden" id="temps_restant" value="', $superGlobal->get('sessionDuration', 'SESSION') ?? '', '" />';
 // display an item in the context of OTV link
 } elseif (($session_validite_pw === null
         || empty($session_validite_pw) === true
@@ -1050,7 +1032,7 @@ if (($session_validite_pw === null
     ) {
         include './includes/core/otv.php';
     } else {
-        $_SESSION['error']['code'] = ERR_VALID_SESSION;
+        $superGlobal->put('code', ERR_VALID_SESSION, 'SESSION', 'error');
         $superGlobal->put(
             'initial_url',
             filter_var(
@@ -1145,8 +1127,8 @@ if (($session_validite_pw === null
     <!-- STORE.JS -->
     <script type="text/javascript" src="plugins/store.js/dist/store.everything.min.js"></script>
     <!-- cryptojs-aesphp -->
-    <script type="text/javascript" src="includes/libraries/Encryption/CryptoJs/crypto-js.js"></script>
-    <script type="text/javascript" src="includes/libraries/Encryption/CryptoJs/encryption.js"></script>
+    <script type="text/javascript" src="includes/libraries/cryptojs/crypto-js.js"></script>
+    <script type="text/javascript" src="includes/libraries/cryptojs/encryption.js"></script>
     <!-- pace -->
     <script type="text/javascript" data-pace-options='{ "ajax": true, "eventLag": false }' src="plugins/pace-progress/pace.min.js"></script>
     <!-- clipboardjs -->
@@ -1183,7 +1165,7 @@ if (($session_validite_pw === null
         <!-- Sortable -->
         <!--<script src="./plugins/sortable/jquery.sortable.js"></script>-->
         <!-- PLUPLOAD -->
-        <script type="text/javascript" src="includes/libraries/Plupload/plupload.full.min.js"></script>
+        <script type="text/javascript" src="includes/libraries/plupload/js/plupload.full.min.js"></script>
         <!-- DataTables -->
         <link rel="stylesheet" src="./plugins/datatables/css/jquery.dataTables.min.css">
         <link rel="stylesheet" src="./plugins/datatables/css/dataTables.bootstrap4.min.css">
@@ -1211,7 +1193,7 @@ if (($session_validite_pw === null
             <link rel="stylesheet" href="./plugins/timepicker/bootstrap-timepicker.min.css">
             <script src="./plugins/timepicker/bootstrap-timepicker.min.js"></script>
             <!-- PLUPLOAD -->
-            <script type="text/javascript" src="includes/libraries/Plupload/plupload.full.min.js"></script>
+            <script type="text/javascript" src="includes/libraries/plupload/js/plupload.full.min.js"></script>
             <!-- VALIDATE -->
             <script type="text/javascript" src="plugins/jquery-validation/jquery.validate.js"></script>
             <!-- PWSTRENGHT -->
@@ -1248,7 +1230,7 @@ if (($session_validite_pw === null
             <!-- FILESAVER -->
             <script type="text/javascript" src="plugins/downloadjs/download.js"></script>
             <!-- PLUPLOAD -->
-            <script type="text/javascript" src="includes/libraries/Plupload/plupload.full.min.js"></script>
+            <script type="text/javascript" src="includes/libraries/plupload/js/plupload.full.min.js"></script>
         <?php
         } elseif ($get['page'] === 'export') {
             ?>
@@ -1301,10 +1283,7 @@ $get = [];
 $get['page'] = $superGlobal->get('page', 'GET') === null ? '' : $superGlobal->get('page', 'GET');
 
 // Load links, css and javascripts
-if (
-    isset($_SESSION['CPM']) === true
-    && isset($SETTINGS['cpassman_dir']) === true
-) {
+if (isset($SETTINGS['cpassman_dir']) === true) {
     include_once $SETTINGS['cpassman_dir'] . '/includes/core/load.js.php';
     if ($menuAdmin === true) {
         include_once $SETTINGS['cpassman_dir'] . '/pages/admin.js.php';

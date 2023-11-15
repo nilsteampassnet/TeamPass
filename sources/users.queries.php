@@ -19,36 +19,66 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-Use LdapRecord\Connection;
+use LdapRecord\Connection;
+use TeampassClasses\NestedTree\NestedTree;
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
+use EZimuel\PHPSecureSession;
+use TeampassClasses\PerformChecks\PerformChecks;
+use PasswordLib\PasswordLib;
 
-require_once 'SecureHandler.php';
+
+// Load functions
+require_once 'main.functions.php';
+
+// init
+loadClasses('DB');
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
 session_name('teampass_session');
 session_start();
-if (
-    isset($_SESSION['CPM']) === false
-    || $_SESSION['CPM'] != 1
-    || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id'])
-    || isset($_SESSION['key']) === false || empty($_SESSION['key'])
-) {
-    die('Hacking attempt...');
-}
 
 // Load config if $SETTINGS not defined
-if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir'])) {
-    if (file_exists('../includes/config/tp.config.php')) {
-        include_once '../includes/config/tp.config.php';
-    } elseif (file_exists('./includes/config/tp.config.php')) {
-        include_once './includes/config/tp.config.php';
-    } elseif (file_exists('../../includes/config/tp.config.php')) {
-        include_once '../../includes/config/tp.config.php';
-    } else {
-        throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
-    }
+try {
+    include_once __DIR__.'/../includes/config/tp.config.php';
+} catch (Exception $e) {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
-/* do checks */
-require_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
-require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
+// Do checks
+$checkUserAccess = new PerformChecks(
+    dataSanitizer(
+        [
+            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+        ],
+        [
+            'type' => 'trim|escape',
+        ],
+    ),
+    [
+        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
+        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+    ]
+);
+// Handle the case
+echo $checkUserAccess->caseHandler();
+if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('profile') === false) {
+    // Not allowed page
+    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+    include $SETTINGS['cpassman_dir'] . '/error.php';
+    exit;
+}
+
+// Define Timezone
+date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
+
+// Set header properties
+header('Content-type: text/html; charset=utf-8');
+header('Cache-Control: no-cache, no-store, must-revalidate');
+
+// --------------------------------- //
+
 // Prepare post variables
 $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
@@ -56,34 +86,9 @@ $post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS
 $isprofileupdate = filter_input(INPUT_POST, 'isprofileupdate', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $password_do_not_change = 'do_not_change';
 
-// DO check for "users" rights
-if (
-    (checkUser($_SESSION['user_id'], $_SESSION['key'], 'users', $SETTINGS) === false)
-    && (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === false 
-        && (null === $isprofileupdate || $isprofileupdate === false)
-        && !in_array($post_type, ['user_profile_update','save_user_change'], true))
-) {
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-    include $SETTINGS['cpassman_dir'] . '/error.php';
-    exit();
-}
-
-require_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
-header('Content-type: text/html; charset=utf-8');
-require_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user']['user_language'] . '.php';
-require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
-require_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
-
-// Connect to mysql server
-require_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
-if (defined('DB_PASSWD_CLEAR') === false) {
-    define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
-}
 
 //Load Tree
-$tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
-$tree->register();
-$tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+$tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
 if (null !== $post_type) {
     switch ($post_type) {
@@ -92,11 +97,11 @@ if (null !== $post_type) {
          */
         case 'add_new_user':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -105,7 +110,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_not_allowed_to'),
+                        'message' => $lang->get('error_not_allowed_to'),
                     ),
                     'encode'
                 );
@@ -143,7 +148,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_empty_data'),
+                        'message' => $lang->get('error_empty_data'),
                     ),
                     'encode'
                 );
@@ -164,7 +169,7 @@ if (null !== $post_type) {
                     echo prepareExchangedData(
                         array(
                             'error' => true,
-                            'message' => langHdl('error_not_allowed_to'),
+                            'message' => $lang->get('error_not_allowed_to'),
                         ),
                         'encode'
                     );
@@ -178,9 +183,7 @@ if (null !== $post_type) {
                 $userKeys = generateUserKeys($password);
 
                 // load passwordLib library
-                $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
-                $pwdlib->register();
-                $pwdlib = new PasswordLib\PasswordLib();
+                $pwdlib = new PasswordLib();
 
                 // Prepare variables
                 $hashedPassword = $pwdlib->createPasswordHash($password);
@@ -188,7 +191,7 @@ if (null !== $post_type) {
                     echo prepareExchangedData(
                         array(
                             'error' => true,
-                            'message' => langHdl('pw_hash_not_correct'),
+                            'message' => $lang->get('pw_hash_not_correct'),
                         ),
                         'encode'
                     );
@@ -322,7 +325,7 @@ if (null !== $post_type) {
                     true,
                     true,
                     false,
-                    (string) langHdl('email_body_user_config_6'),
+                    (string) $lang->get('email_body_user_config_6'),
                 );
 
                 // update LOG
@@ -348,7 +351,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_user_exists'),
+                        'message' => $lang->get('error_user_exists'),
                     ),
                     'encode'
                 );
@@ -360,11 +363,11 @@ if (null !== $post_type) {
          */
         case 'delete_user':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -373,7 +376,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_not_allowed_to'),
+                        'message' => $lang->get('error_not_allowed_to'),
                     ),
                     'encode'
                 );
@@ -451,7 +454,7 @@ if (null !== $post_type) {
                         }
                     }
                     // rebuild tree
-                    $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+                    $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
                     $tree->rebuild();
                 }
 
@@ -501,7 +504,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => false,
-                        'message' => langHdl('error_not_allowed_to'),
+                        'message' => $lang->get('error_not_allowed_to'),
                     ),
                     'encode'
                 );
@@ -513,8 +516,8 @@ if (null !== $post_type) {
          */
         case 'can_create_root_folder':
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($_SESSION['key'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
-                echo prepareExchangedData(array('error' => 'not_allowed', 'error_text' => langHdl('error_not_allowed_to')), 'encode');
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($superGlobal->get('key', 'SESSION'), FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
+                echo prepareExchangedData(array('error' => 'not_allowed', 'error_text' => $lang->get('error_not_allowed_to')), 'encode');
                 break;
             }
 
@@ -552,10 +555,10 @@ if (null !== $post_type) {
         case 'admin':
             // Check KEY
             if (
-                filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($_SESSION['key'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)
+                filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($superGlobal->get('key', 'SESSION'), FILTER_SANITIZE_FULL_SPECIAL_CHARS)
                 || $_SESSION['is_admin'] !== '1'
             ) {
-                echo prepareExchangedData(array('error' => 'not_allowed', 'error_text' => langHdl('error_not_allowed_to')), 'encode');
+                echo prepareExchangedData(array('error' => 'not_allowed', 'error_text' => $lang->get('error_not_allowed_to')), 'encode');
                 exit();
             }
 
@@ -596,8 +599,8 @@ if (null !== $post_type) {
          */
         case 'gestionnaire':
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($_SESSION['key'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
-                echo prepareExchangedData(array('error' => 'not_allowed', 'error_text' => langHdl('error_not_allowed_to')), 'encode');
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($superGlobal->get('key', 'SESSION'), FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
+                echo prepareExchangedData(array('error' => 'not_allowed', 'error_text' => $lang->get('error_not_allowed_to')), 'encode');
                 break;
             }
 
@@ -641,8 +644,8 @@ if (null !== $post_type) {
          */
         case 'read_only':
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($_SESSION['key'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
-                echo prepareExchangedData(array('error' => 'not_allowed', 'error_text' => langHdl('error_not_allowed_to')), 'encode');
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($superGlobal->get('key', 'SESSION'), FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
+                echo prepareExchangedData(array('error' => 'not_allowed', 'error_text' => $lang->get('error_not_allowed_to')), 'encode');
                 break;
             }
 
@@ -683,8 +686,8 @@ if (null !== $post_type) {
          */
         case 'can_manage_all_users':
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($_SESSION['key'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
-                echo prepareExchangedData(array('error' => 'not_allowed', 'error_text' => langHdl('error_not_allowed_to')), 'encode');
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($superGlobal->get('key', 'SESSION'), FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
+                echo prepareExchangedData(array('error' => 'not_allowed', 'error_text' => $lang->get('error_not_allowed_to')), 'encode');
                 break;
             }
 
@@ -726,8 +729,8 @@ if (null !== $post_type) {
          */
         case 'personal_folder':
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($_SESSION['key'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
-                echo prepareExchangedData(array('error' => 'not_allowed', 'error_text' => langHdl('error_not_allowed_to')), 'encode');
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($superGlobal->get('key', 'SESSION'), FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
+                echo prepareExchangedData(array('error' => 'not_allowed', 'error_text' => $lang->get('error_not_allowed_to')), 'encode');
                 break;
             }
 
@@ -767,7 +770,7 @@ if (null !== $post_type) {
          */
         case 'unlock_account':
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($_SESSION['key'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($superGlobal->get('key', 'SESSION'), FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
@@ -849,7 +852,7 @@ if (null !== $post_type) {
         case 'user_log_items':
             $nb_pages = 1;
             $logs = $sql_filter = '';
-            $pages = '<table style=\'border-top:1px solid #969696;\'><tr><td>' . langHdl('pages') . '&nbsp;:&nbsp;</td>';
+            $pages = '<table style=\'border-top:1px solid #969696;\'><tr><td>' . $lang->get('pages') . '&nbsp;:&nbsp;</td>';
 
             // Prepare POST variables
             $post_nb_items_by_page = filter_input(INPUT_POST, 'nb_items_by_page', FILTER_SANITIZE_NUMBER_INT);
@@ -948,22 +951,22 @@ if (null !== $post_type) {
                         // extract action done
                         $label = '';
                         if ($tmp[0] == 'at_user_initial_pwd_changed') {
-                            $label = langHdl('log_user_initial_pwd_changed');
+                            $label = $lang->get('log_user_initial_pwd_changed');
                         } elseif ($tmp[0] == 'at_user_email_changed') {
-                            $label = langHdl('log_user_email_changed') . $tmp[1];
+                            $label = $lang->get('log_user_email_changed') . $tmp[1];
                         } elseif ($tmp[0] == 'at_user_added') {
-                            $label = langHdl('log_user_created');
+                            $label = $lang->get('log_user_created');
                         } elseif ($tmp[0] == 'at_user_locked') {
-                            $label = langHdl('log_user_locked');
+                            $label = $lang->get('log_user_locked');
                         } elseif ($tmp[0] == 'at_user_unlocked') {
-                            $label = langHdl('log_user_unlocked');
+                            $label = $lang->get('log_user_unlocked');
                         } elseif ($tmp[0] == 'at_user_pwd_changed') {
-                            $label = langHdl('log_user_pwd_changed');
+                            $label = $lang->get('log_user_pwd_changed');
                         }
                         // prepare log
                         $logs .= '<tr><td>' . date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['date']) . '</td><td align=\"center\">' . $label . '</td><td align=\"center\">' . $user['login'] . '</td><td align=\"center\"></td></tr>';
                     } else {
-                        $logs .= '<tr><td>' . date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['date']) . '</td><td align=\"center\">' . str_replace('"', '\"', $record['label']) . '</td><td align=\"center\">' . $record['login'] . '</td><td align=\"center\">' . langHdl($record['action']) . '</td></tr>';
+                        $logs .= '<tr><td>' . date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['date']) . '</td><td align=\"center\">' . str_replace('"', '\"', $record['label']) . '</td><td align=\"center\">' . $record['login'] . '</td><td align=\"center\">' . $lang->get($record['action']) . '</td></tr>';
                     }
                 }
             }
@@ -1037,7 +1040,7 @@ if (null !== $post_type) {
          */
         case 'disconnect_user':
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($_SESSION['key'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($superGlobal->get('key', 'SESSION'), FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
@@ -1077,7 +1080,7 @@ if (null !== $post_type) {
          */
         case 'disconnect_all_users':
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($_SESSION['key'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($superGlobal->get('key', 'SESSION'), FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
@@ -1122,11 +1125,11 @@ if (null !== $post_type) {
          */
         case 'get_user_info':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -1135,7 +1138,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_not_allowed_to'),
+                        'message' => $lang->get('error_not_allowed_to'),
                     ),
                     'encode'
                 );
@@ -1172,23 +1175,22 @@ if (null !== $post_type) {
                 $arrFldAllowed = array();
 
                 //Build tree
-                $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'] . '/includes/libraries');
-                $tree->register();
-                $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+                $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
                 // get FUNCTIONS
                 $functionsList = array();
                 $selected = '';
                 $users_functions = array_filter(array_unique(explode(';', empty($rowUser['fonction_id'].';'.$rowUser['roles_from_ad_groups']) === true ? '' : $rowUser['fonction_id'].';'.$rowUser['roles_from_ad_groups'])));
                 // array of roles for actual user
-                $my_functions = explode(';', $_SESSION['fonction_id']);
+                //$my_functions = explode(';', $rowUser['fonction_id']);
 
                 $rows = DB::query('SELECT id,title,creator_id FROM ' . prefixTable('roles_title'));
                 foreach ($rows as $record) {
                     if (
                         (int) $_SESSION['is_admin'] === 1
                         || (((int) $_SESSION['user_manager'] === 1 || (int) $_SESSION['user_can_manage_all_users'] === 1)
-                            && (in_array($record['id'], $my_functions) || $record['creator_id'] == $_SESSION['user_id']))
+                            //&& (in_array($record['id'], $my_functions) || $record['creator_id'] == $_SESSION['user_id'])
+                            )
                     ) {
                         if (in_array($record['id'], $users_functions)) {
                             $selected = 'selected';
@@ -1227,7 +1229,7 @@ if (null !== $post_type) {
                 array_push(
                     $managedBy,
                     array(
-                        'title' => langHdl('administrators_only'),
+                        'title' => $lang->get('administrators_only'),
                         'id' => 0,
                     )
                 );
@@ -1250,7 +1252,7 @@ if (null !== $post_type) {
                         array_push(
                             $managedBy,
                             array(
-                                'title' => langHdl('managers_of') . ' ' . $fonction['title'],
+                                'title' => $lang->get('managers_of') . ' ' . $fonction['title'],
                                 'id' => $fonction['id'],
                                 'selected' => $selected,
                             )
@@ -1262,7 +1264,7 @@ if (null !== $post_type) {
                     array_push(
                         $arrMngBy,
                         array(
-                            'title' => langHdl('administrators_only'),
+                            'title' => $lang->get('administrators_only'),
                             'id' => '0',
                         )
                     );
@@ -1332,9 +1334,9 @@ if (null !== $post_type) {
 
                 // get USER STATUS
                 if ($rowUser['disabled'] == 1) {
-                    $arrData['info'] = langHdl('user_info_locked') . '<br><input type="checkbox" value="unlock" name="1" class="chk">&nbsp;<label for="1">' . langHdl('user_info_unlock_question') . '</label><br><input type="checkbox"  value="delete" id="account_delete" class="chk mr-2" name="2" onclick="confirmDeletion()">label for="2">' . langHdl('user_info_delete_question') . '</label>';
+                    $arrData['info'] = $lang->get('user_info_locked') . '<br><input type="checkbox" value="unlock" name="1" class="chk">&nbsp;<label for="1">' . $lang->get('user_info_unlock_question') . '</label><br><input type="checkbox"  value="delete" id="account_delete" class="chk mr-2" name="2" onclick="confirmDeletion()">label for="2">' . $lang->get('user_info_delete_question') . '</label>';
                 } else {
-                    $arrData['info'] = langHdl('user_info_active') . '<br><input type="checkbox" value="lock" class="chk">&nbsp;' . langHdl('user_info_lock_question');
+                    $arrData['info'] = $lang->get('user_info_active') . '<br><input type="checkbox" value="lock" class="chk">&nbsp;' . $lang->get('user_info_lock_question');
                 }
 
                 $arrData['error'] = false;
@@ -1368,7 +1370,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_not_allowed_to'),
+                        'message' => $lang->get('error_not_allowed_to'),
                     ),
                     'encode'
                 );
@@ -1381,11 +1383,11 @@ if (null !== $post_type) {
          */
         case 'store_user_changes':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -1394,7 +1396,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_not_allowed_to'),
+                        'message' => $lang->get('error_not_allowed_to'),
                     ),
                     'encode'
                 );
@@ -1439,7 +1441,7 @@ if (null !== $post_type) {
                     echo prepareExchangedData(
                         array(
                             'error' => true,
-                            'message' => langHdl('at_least_one_administrator_is_requested'),
+                            'message' => $lang->get('at_least_one_administrator_is_requested'),
                         ),
                         'encode'
                     );
@@ -1496,9 +1498,7 @@ if (null !== $post_type) {
                 && $post_id === $_SESSION['user_id']
             ) {
                 // load passwordLib library
-                $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
-                $pwdlib->register();
-                $pwdlib = new PasswordLib\PasswordLib();
+                $pwdlib = new PasswordLib();
 
                 $changeArray['pw'] = $pwdlib->createPasswordHash($post_password);
                 $changeArray['key_tempo'] = '';
@@ -1514,7 +1514,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_empty_data'),
+                        'message' => $lang->get('error_empty_data'),
                     ),
                     'encode'
                 );
@@ -1526,7 +1526,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_no_email'),
+                        'message' => $lang->get('error_no_email'),
                     ),
                     'encode'
                 );
@@ -1582,7 +1582,7 @@ if (null !== $post_type) {
                             }
                         }
                         // rebuild tree
-                        $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+                        $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
                         $tree->rebuild();
                     }
                     // update LOG
@@ -1642,7 +1642,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_not_allowed_to'),
+                        'message' => $lang->get('error_not_allowed_to'),
                     ),
                     'encode'
                 );
@@ -1654,11 +1654,11 @@ if (null !== $post_type) {
          */
         case 'user_edit_login':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -1667,7 +1667,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_not_allowed_to'),
+                        'message' => $lang->get('error_not_allowed_to'),
                     ),
                     'encode'
                 );
@@ -1714,11 +1714,11 @@ if (null !== $post_type) {
          */
         case 'is_login_available':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -1727,7 +1727,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_not_allowed_to'),
+                        'message' => $lang->get('error_not_allowed_to'),
                     ),
                     'encode'
                 );
@@ -1756,11 +1756,11 @@ if (null !== $post_type) {
          */
         case 'user_folders_rights':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -1769,7 +1769,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_not_allowed_to'),
+                        'message' => $lang->get('error_not_allowed_to'),
                     ),
                     'encode'
                 );
@@ -1782,9 +1782,7 @@ if (null !== $post_type) {
             $arrData = array();
 
             //Build tree
-            $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'] . '/includes/libraries');
-            $tree->register();
-            $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+            $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
             // get User info
             $rowUser = DB::queryFirstRow(
@@ -1857,30 +1855,30 @@ if (null !== $post_type) {
 
                             // manage right icon
                             if ($fld['type'] == 'W') {
-                                $label = '<i class="fas fa-indent infotip text-success mr-2" title="' . langHdl('write') . '"></i>' .
-                                    '<i class="fas fa-edit infotip text-success mr-2" title="' . langHdl('edit') . '"></i>' .
-                                    '<i class="fas fa-eraser infotip text-success" title="' . langHdl('delete') . '"></i>';
+                                $label = '<i class="fas fa-indent infotip text-success mr-2" title="' . $lang->get('write') . '"></i>' .
+                                    '<i class="fas fa-edit infotip text-success mr-2" title="' . $lang->get('edit') . '"></i>' .
+                                    '<i class="fas fa-eraser infotip text-success" title="' . $lang->get('delete') . '"></i>';
                             } elseif ($fld['type'] == 'ND') {
-                                $label = '<i class="fas fa-indent infotip text-warning mr-2" title="' . langHdl('write') . '"></i>' .
-                                    '<i class="fas fa-edit infotip text-success mr-2" title="' . langHdl('edit') . '"></i>' .
-                                    '<i class="fas fa-eraser infotip text-danger" title="' . langHdl('no_delete') . '"></i>';
+                                $label = '<i class="fas fa-indent infotip text-warning mr-2" title="' . $lang->get('write') . '"></i>' .
+                                    '<i class="fas fa-edit infotip text-success mr-2" title="' . $lang->get('edit') . '"></i>' .
+                                    '<i class="fas fa-eraser infotip text-danger" title="' . $lang->get('no_delete') . '"></i>';
                             } elseif ($fld['type'] == 'NE') {
-                                $label = '<i class="fas fa-indent infotip text-warning mr-2" title="' . langHdl('write') . '"></i>' .
-                                    '<i class="fas fa-edit infotip text-danger mr-2" title="' . langHdl('no_edit') . '"></i>' .
-                                    '<i class="fas fa-eraser infotip text-success" title="' . langHdl('delete') . '"></i>';
+                                $label = '<i class="fas fa-indent infotip text-warning mr-2" title="' . $lang->get('write') . '"></i>' .
+                                    '<i class="fas fa-edit infotip text-danger mr-2" title="' . $lang->get('no_edit') . '"></i>' .
+                                    '<i class="fas fa-eraser infotip text-success" title="' . $lang->get('delete') . '"></i>';
                             } elseif ($fld['type'] == 'NDNE') {
-                                $label = '<i class="fas fa-indent infotip text-warning mr-2" title="' . langHdl('write') . '"></i>' .
-                                    '<i class="fas fa-edit infotip text-danger mr-2" title="' . langHdl('no_edit') . '"></i>' .
-                                    '<i class="fas fa-eraser infotip text-danger" title="' . langHdl('no_delete') . '"></i>';
+                                $label = '<i class="fas fa-indent infotip text-warning mr-2" title="' . $lang->get('write') . '"></i>' .
+                                    '<i class="fas fa-edit infotip text-danger mr-2" title="' . $lang->get('no_edit') . '"></i>' .
+                                    '<i class="fas fa-eraser infotip text-danger" title="' . $lang->get('no_delete') . '"></i>';
                             } elseif ($fld['type'] == '') {
-                                $label = '<i class="fas fa-eye-slash infotip text-danger mr-2" title="' . langHdl('no_access') . '"></i>';
+                                $label = '<i class="fas fa-eye-slash infotip text-danger mr-2" title="' . $lang->get('no_access') . '"></i>';
                             } else {
-                                $label = '<i class="fas fa-eye infotip text-info mr-2" title="' . langHdl('read') . '"></i>';
+                                $label = '<i class="fas fa-eye infotip text-info mr-2" title="' . $lang->get('read') . '"></i>';
                             }
 
                             $html .= '<tr><td>' . $ident . $row['title'] .
                                 ' <small class="text-info">[' . $row['id'] . ']</small>'.
-                                ($fld['special'] === true ? '<i class="fas fa-user-tag infotip text-primary ml-5" title="' . langHdl('user_specific_right') . '"></i>' : '').
+                                ($fld['special'] === true ? '<i class="fas fa-user-tag infotip text-primary ml-5" title="' . $lang->get('user_specific_right') . '"></i>' : '').
                                 '</td><td>' . $label . '</td></tr>';
                             break;
                         }
@@ -1909,11 +1907,11 @@ if (null !== $post_type) {
          */
         case 'get_list_of_users_for_sharing':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -1922,7 +1920,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_not_allowed_to'),
+                        'message' => $lang->get('error_not_allowed_to'),
                     ),
                     'encode'
                 );
@@ -1980,7 +1978,7 @@ if (null !== $post_type) {
                         WHERE id = %i',
                         $role
                     );
-                    array_push($foldersAllowed, $tmp !== null ? $tmp['title'] : langHdl('none'));
+                    array_push($foldersAllowed, $tmp !== null ? $tmp['title'] : $lang->get('none'));
                     array_push($foldersAllowedIds, $tmp !== null ? $tmp['id'] : -1);
                 }
 
@@ -1993,7 +1991,7 @@ if (null !== $post_type) {
                         WHERE id = %i',
                         $role
                     );
-                    array_push($foldersForbidden, $tmp !== null ? $tmp['title'] : langHdl('none'));
+                    array_push($foldersForbidden, $tmp !== null ? $tmp['title'] : $lang->get('none'));
                     array_push($foldersForbiddenIds, $tmp !== null ? $tmp['id'] : -1);
                 }
 
@@ -2007,7 +2005,7 @@ if (null !== $post_type) {
                         'login' => $record['login'],
                         'groups' => implode(', ', $groups),
                         'groupIds' => $groupIds,
-                        'managedBy' => $managedBy=== null ? langHdl('administrator') : $managedBy['title'],
+                        'managedBy' => $managedBy=== null ? $lang->get('administrator') : $managedBy['title'],
                         'managedById' => $managedBy === null ? 0 : $managedBy['id'],
                         'foldersAllowed' => implode(', ', $foldersAllowed),
                         'foldersAllowedIds' => $foldersAllowedIds,
@@ -2038,11 +2036,11 @@ if (null !== $post_type) {
          */
         case 'update_users_rights_sharing':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -2051,7 +2049,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_not_allowed_to'),
+                        'message' => $lang->get('error_not_allowed_to'),
                     ),
                     'encode'
                 );
@@ -2134,11 +2132,11 @@ if (null !== $post_type) {
          */
         case 'user_profile_update':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -2153,7 +2151,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('no_user'),
+                        'message' => $lang->get('no_user'),
                     ),
                     'encode'
                 );
@@ -2222,7 +2220,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('json_error_format'),
+                        'message' => $lang->get('json_error_format'),
                     ),
                     'encode'
                 );
@@ -2244,11 +2242,11 @@ if (null !== $post_type) {
             //CASE where refreshing table
         case 'save_user_change':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -2257,7 +2255,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_not_allowed_to'),
+                        'message' => $lang->get('error_not_allowed_to'),
                     ),
                     'encode'
                 );
@@ -2294,7 +2292,7 @@ if (null !== $post_type) {
                     echo prepareExchangedData(
                         array(
                             'error' => true,
-                            'message' => langHdl('user_not_exists'),
+                            'message' => $lang->get('user_not_exists'),
                         ),
                         'encode'
                     );
@@ -2361,84 +2359,16 @@ if (null !== $post_type) {
 
             break;
 
-            /*
-         * STORE USER LOCATION
-         */
-        case 'save_user_location':
-            // Check KEY
-            if ($post_key !== $_SESSION['key']) {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
-                    ),
-                    'encode'
-                );
-                break;
-            }
-
-            // Manage 1st step - is this needed?
-            if (filter_input(INPUT_POST, 'step', FILTER_SANITIZE_FULL_SPECIAL_CHARS) === 'refresh') {
-                $record = DB::queryFirstRow(
-                    'SELECT user_ip_lastdate
-                    FROM ' . prefixTable('users') . '
-                    WHERE id = %i',
-                    $_SESSION['user_id']
-                );
-
-                if (
-                    empty($record['user_ip_lastdate']) === true
-                    || (time() - $record['user_ip_lastdate']) > TP_ONE_DAY_SECONDS
-                ) {
-                    echo prepareExchangedData(
-                        array(
-                            'refresh' => true,
-                            'error' => '',
-                        ),
-                        'encode'
-                    );
-                    break;
-                }
-            } elseif (filter_input(INPUT_POST, 'step', FILTER_SANITIZE_FULL_SPECIAL_CHARS) === 'perform') {
-                DB::update(
-                    prefixTable('users'),
-                    array(
-                        'user_ip' => getClientIpServer(),
-                        'user_ip_lastdate' => time(),
-                    ),
-                    'id = %i',
-                    $_SESSION['user_id']
-                );
-
-                echo prepareExchangedData(
-                    array(
-                        'refresh' => false,
-                        'error' => '',
-                    ),
-                    'encode'
-                );
-            }
-
-            echo prepareExchangedData(
-                array(
-                    'refresh' => '',
-                    'error' => false,
-                ),
-                'encode'
-            );
-
-            break;
-
-            /*
-            * GET LDAP LIST OF USERS
-            */
+        /*
+        * GET LDAP LIST OF USERS
+        */
         case 'get_list_of_users_in_ldap':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -2599,11 +2529,11 @@ if (null !== $post_type) {
          */
         case 'add_user_from_ldap':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -2631,7 +2561,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('user_must_have_login_and_email'),
+                        'message' => $lang->get('user_must_have_login_and_email'),
                     ),
                     'encode'
                 );
@@ -2651,7 +2581,7 @@ if (null !== $post_type) {
                     echo prepareExchangedData(
                         array(
                             'error' => true,
-                            'message' => langHdl('error_empty_data'),
+                            'message' => $lang->get('error_empty_data'),
                         ),
                         'encode'
                     );
@@ -2659,9 +2589,7 @@ if (null !== $post_type) {
                 }
 
                 // load passwordLib library
-                $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
-                $pwdlib->register();
-                $pwdlib = new PasswordLib\PasswordLib();
+                $pwdlib = new PasswordLib();
 
                 // Prepare variables
                 $password = generateQuickPassword(12, true);
@@ -2670,7 +2598,7 @@ if (null !== $post_type) {
                     echo prepareExchangedData(
                         array(
                             'error' => true,
-                            'message' => langHdl('error_not_allowed_to'),
+                            'message' => $lang->get('error_not_allowed_to'),
                         ),
                         'encode'
                     );
@@ -2680,7 +2608,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_user_exists'),
+                        'message' => $lang->get('error_user_exists'),
                     ),
                     'encode'
                 );
@@ -2750,20 +2678,18 @@ if (null !== $post_type) {
                 );
 
                 // Rebuild tree
-                $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'] . '/includes/libraries');
-                $tree->register();
-                $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+                $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
                 $tree->rebuild();
             }
 
             // Send email to new user
             if (isset($SETTINGS['enable_tasks_manager']) === false || (int) $SETTINGS['enable_tasks_manager'] === 0) {
                 sendEmail(
-                    langHdl('email_subject_new_user'),
+                    $lang->get('email_subject_new_user'),
                     str_replace(
                         array('#tp_login#', '#enc_code#', '#tp_link#'),
                         array(addslashes($post_login), addslashes($password), $SETTINGS['email_server_url']),
-                        langHdl('email_body_user_added_from_ldap_encryption_code')
+                        $lang->get('email_body_user_added_from_ldap_encryption_code')
                     ),
                     $post_email,
                     $SETTINGS
@@ -2791,11 +2717,11 @@ if (null !== $post_type) {
         */
         case 'finishing_user_keys_creation':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -2829,11 +2755,11 @@ if (null !== $post_type) {
                 $post_userId
             );
             sendEmail(
-                'TEAMPASS - ' . langHdl('temporary_encryption_code'),
+                'TEAMPASS - ' . $lang->get('temporary_encryption_code'),
                 str_replace(
                     array('#enc_code#'),
                     array($post_otp),
-                    langHdl('email_body_user_added_from_ldap_encryption_code')
+                    $lang->get('email_body_user_added_from_ldap_encryption_code')
                 ),
                 $userInfo['email'],
                 $SETTINGS
@@ -2855,11 +2781,11 @@ if (null !== $post_type) {
          */
         case 'change_user_auth_type':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -2882,7 +2808,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('user_not_exists'),
+                        'message' => $lang->get('user_not_exists'),
                     ),
                     'encode'
                 );
@@ -2910,7 +2836,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('user_not_exists'),
+                        'message' => $lang->get('user_not_exists'),
                     ),
                     'encode'
                 );
@@ -2932,11 +2858,11 @@ if (null !== $post_type) {
          */
         case 'change_user_privkey_with_otc':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -2959,7 +2885,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('data_are_missing'),
+                        'message' => $lang->get('data_are_missing'),
                     ),
                     'encode'
                 );
@@ -2978,7 +2904,7 @@ if (null !== $post_type) {
                 // Error - user not exists
                 echo prepareExchangedData(
                     array(
-                        'message' => langHdl('user_not_exists'),
+                        'message' => $lang->get('user_not_exists'),
                         'error' => true,
                     ),
                     'encode'
@@ -2990,7 +2916,7 @@ if (null !== $post_type) {
                 // Error - user has private key
                 echo prepareExchangedData(
                     array(
-                        'message' => langHdl('error_no_user_encryption_keys'),
+                        'message' => $lang->get('error_no_user_encryption_keys'),
                         'error' => true,
                     ),
                     'encode'
@@ -3062,11 +2988,11 @@ if (null !== $post_type) {
          */
         case 'manage_user_disable_status':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -3089,7 +3015,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('user_not_exists'),
+                        'message' => $lang->get('user_not_exists'),
                     ),
                     'encode'
                 );
@@ -3127,7 +3053,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('user_not_exists'),
+                        'message' => $lang->get('user_not_exists'),
                     ),
                     'encode'
                 );
@@ -3146,11 +3072,11 @@ if (null !== $post_type) {
 
         case "create_new_user_tasks":
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -3180,7 +3106,7 @@ if (null !== $post_type) {
                         'new_user_code' => cryption($post_user_code, '','encrypt', $SETTINGS)['string'],
                         'owner_id' => (int) $_SESSION['user_id'],
                         'creator_pwd' => cryption($_SESSION['user_pwd'], '','encrypt', $SETTINGS)['string'],
-                        'email_body' => langHdl('email_body_user_config_5'),
+                        'email_body' => $lang->get('email_body_user_config_5'),
                         'send_email' => 1,
                     ]),
                     'updated_at' => '',
@@ -3310,11 +3236,11 @@ if (null !== $post_type) {
          */
         case 'generate_new_otp__preparation':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -3323,7 +3249,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_not_allowed_to'),
+                        'message' => $lang->get('error_not_allowed_to'),
                     ),
                     'encode'
                 );
@@ -3389,11 +3315,11 @@ if (null !== $post_type) {
         */
         case 'get_generate_keys_progress':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -3402,7 +3328,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_not_allowed_to'),
+                        'message' => $lang->get('error_not_allowed_to'),
                     ),
                     'encode'
                 );
@@ -3469,11 +3395,11 @@ if (null !== $post_type) {
          */
         case "get-user-infos":
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -3482,7 +3408,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_not_allowed_to'),
+                        'message' => $lang->get('error_not_allowed_to'),
                     ),
                     'encode'
                 );

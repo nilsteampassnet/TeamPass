@@ -24,34 +24,59 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-if (
-    isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
-    || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === true
-    || isset($_SESSION['key']) === false || empty($_SESSION['key']) === true
-) {
-    die('Hacking attempt...');
-}
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
+use TeampassClasses\NestedTree\NestedTree;
+use TeampassClasses\PerformChecks\PerformChecks;
 
-// Load config
-if (file_exists('../includes/config/tp.config.php') === true) {
-    include_once '../includes/config/tp.config.php';
-} elseif (file_exists('./includes/config/tp.config.php') === true) {
-    include_once './includes/config/tp.config.php';
-} else {
+// Load functions
+require_once __DIR__.'/../sources/main.functions.php';
+
+// init
+loadClasses('DB');
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
+
+// Load config if $SETTINGS not defined
+try {
+    include_once __DIR__.'/../includes/config/tp.config.php';
+} catch (Exception $e) {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
-/* do checks */
-require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
-if (checkUser($_SESSION['user_id'], $_SESSION['key'], curPage($SETTINGS), $SETTINGS) === false) {
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
-    //not allowed page
+// Do checks
+$checkUserAccess = new PerformChecks(
+    dataSanitizer(
+        [
+            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+        ],
+        [
+            'type' => 'trim|escape',
+        ],
+    ),
+    [
+        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
+        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+    ]
+);
+// Handle the case
+echo $checkUserAccess->caseHandler();
+if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('export') === false) {
+    // Not allowed page
+    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
 
-// Load
-require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
+// Define Timezone
+date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
+
+// Set header properties
+header('Content-type: text/html; charset=utf-8');
+header('Cache-Control: no-cache, no-store, must-revalidate');
+
+// --------------------------------- //
 
 ?>
 
@@ -60,7 +85,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
     <div class="container-fluid">
         <div class="row mb-2">
             <div class="col-sm-6">
-                <h1 class="m-0 text-dark"><i class="fas fa-file-export mr-2"></i><?php echo langHdl('export_items'); ?></h1>
+                <h1 class="m-0 text-dark"><i class="fas fa-file-export mr-2"></i><?php echo $lang->get('export_items'); //$lang->get('export_items'); ?></h1>
             </div><!-- /.col -->
         </div><!-- /.row -->
     </div><!-- /.container-fluid -->
@@ -76,28 +101,28 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
 
                     <div class="row mt-3">
                         <div class="form-group col-12">
-                            <label><?php echo langHdl('select_folders_to_export'); ?></label>
+                            <label><?php echo $lang->get('select_folders_to_export'); ?></label>
                             <select class="form-control select2-all" style="width:100%;" id="export-folders" multiple>
                             </select>
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label><?php echo langHdl('export_format_type'); ?></label>
+                        <label><?php echo $lang->get('export_format_type'); ?></label>
                         <select class="form-control select2" style="width:100%;" id="export-format">
-                            <option value="csv"><?php echo langHdl('csv'); ?></option>
+                            <option value="csv"><?php echo $lang->get('csv'); ?></option>
                             <?php
                             if (isset($SETTINGS['settings_offline_mode']) === true && (int) $SETTINGS['settings_offline_mode'] === 1) {
-                                echo '<option value="html">'.strtoupper(langHdl('html')).'</option>';
+                                echo '<option value="html">'.strtoupper($lang->get('html')).'</option>';
                             }
                             ?>
-                            <option value="pdf"><?php echo langHdl('pdf'); ?></option>
+                            <option value="pdf"><?php echo $lang->get('pdf'); ?></option>
                         </select>
                     </div>
 
                     <div id="pwd" class="hidden">
                         <div class="form-group mb-1" id="pdf-password">
-                            <label><?php echo langHdl('file_protection_password'); ?></label>
+                            <label><?php echo $lang->get('file_protection_password'); ?></label>
                             <input type="password" class="form-control form-item-control col-md-12" id="export-password">
                         </div>
                         <div class="container-fluid">
@@ -111,7 +136,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                     </div>
 
                     <div class="form-group mt-3">
-                        <label><?php echo langHdl('filename'); ?></label>
+                        <label><?php echo $lang->get('filename'); ?></label>
                         <input type="text" class="form-control form-item-control" id="export-filename" value="Teampass_export_<?php echo time(); ?>">
                     </div>
 
@@ -125,9 +150,9 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
 
                 <div class="card-footer">
                     <a class="hidden" href='' target='_blank' id="download-export-file">
-                        <button type="button" class="btn btn-success"><i class="fa-solid fa-file-export mr-2"></i><?php echo langHdl('download'); ?></button>
+                        <button type="button" class="btn btn-success"><i class="fa-solid fa-file-export mr-2"></i><?php echo $lang->get('download'); ?></button>
                     </a>
-                    <button type="submit" class="btn btn-primary" id="form-item-export-perform"><?php echo langHdl('perform'); ?></button>
+                    <button type="submit" class="btn btn-primary" id="form-item-export-perform"><?php echo $lang->get('perform'); ?></button>
                 </div>
             </div>
         </div>

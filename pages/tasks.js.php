@@ -24,28 +24,54 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
+
+use TeampassClasses\PerformChecks\PerformChecks;
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
+// Load functions
+require_once __DIR__.'/../sources/main.functions.php';
+
+// init
+loadClasses();
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
+
 if (
     isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
     || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === true
-    || isset($_SESSION['key']) === false || empty($_SESSION['key']) === true
+    || $superGlobal->get('key', 'SESSION') === null
 ) {
     die('Hacking attempt...');
 }
 
-// Load config
-if (file_exists('../includes/config/tp.config.php') === true) {
-    include_once '../includes/config/tp.config.php';
-} elseif (file_exists('./includes/config/tp.config.php') === true) {
-    include_once './includes/config/tp.config.php';
-} else {
-    throw new Exception('Error file "/includes/config/tp.config.php" not exists', 1);
+// Load config if $SETTINGS not defined
+try {
+    include_once __DIR__.'/../includes/config/tp.config.php';
+} catch (Exception $e) {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
-/* do checks */
-require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
-if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'tasks', $SETTINGS) === false) {
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
-    //not allowed page
+// Do checks
+$checkUserAccess = new PerformChecks(
+    dataSanitizer(
+        [
+            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+        ],
+        [
+            'type' => 'trim|escape',
+        ],
+    ),
+    [
+        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
+        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+    ]
+);
+// Handle the case
+echo $checkUserAccess->caseHandler();
+if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('tasks') === false) {
+    // Not allowed page
+    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -56,7 +82,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'tasks', $SETTINGS) === fa
     //<![CDATA[
 
     var oTableProcesses,
-        oTableProcessesDone;
+        oTableProcessesDone,
+        manuelTaskIsRunning = false;
 
 
     // Prepare tooltips
@@ -93,13 +120,13 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'tasks', $SETTINGS) === fa
         },
         'preDrawCallback': function() {
             toastr.remove();
-            toastr.info('<?php echo langHdl('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+            toastr.info('<?php echo $lang->get('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
         },
         'drawCallback': function() {
             // Inform user
             toastr.remove();
             toastr.success(
-                '<?php echo langHdl('refreshed'); ?>',
+                '<?php echo $lang->get('refreshed'); ?>',
                 '', {
                     timeOut: 1000
                 }
@@ -166,13 +193,13 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'tasks', $SETTINGS) === fa
             },
             'preDrawCallback': function() {
                 toastr.remove();
-                toastr.info('<?php echo langHdl('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+                toastr.info('<?php echo $lang->get('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
             },
             'drawCallback': function() {
                 // Inform user
                 toastr.remove();
                 toastr.success(
-                    '<?php echo langHdl('done'); ?>',
+                    '<?php echo $lang->get('done'); ?>',
                     '', {
                         timeOut: 1000
                     }
@@ -199,23 +226,23 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'tasks', $SETTINGS) === fa
 
     $(document).on('click', '.action', function() {
         toastr.remove();
-        toastr.info('<?php echo langHdl('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+        toastr.info('<?php echo $lang->get('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
         if ($(this).data('type') === "task-detail") {
             $.post(
                 "sources/utilities.queries.php", {
                     type: "show_process_detail",
                     id: $(this).data('id'),
-                    key: "<?php echo $_SESSION['key']; ?>"
+                    key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
                 },
                 function(data) {
-                    data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                    data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
                     console.log(data)
 
                     // Inform user
                     toastr.remove();
                     toastr.success(
-                        '<?php echo langHdl('done'); ?>',
+                        '<?php echo $lang->get('done'); ?>',
                         '', {
                             timeOut: 1000
                         }
@@ -257,12 +284,12 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'tasks', $SETTINGS) === fa
                     // display tasks
                     showModalDialogBox(
                         '#warningModal',
-                        '<i class="fas fa-tasks fa-lg mr-2"></i><?php echo langHdl('process_details'); ?>',
+                        '<i class="fas fa-tasks fa-lg mr-2"></i><?php echo $lang->get('process_details'); ?>',
                         '<div class="form-group">'+
                         html+
                         '</div>',
                         '',
-                        '<?php echo langHdl('close'); ?>'
+                        '<?php echo $lang->get('close'); ?>'
                     );
 
                 }
@@ -272,17 +299,17 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'tasks', $SETTINGS) === fa
             $.post(
                 "sources/utilities.queries.php", {
                     type: "handle_crontab_job",
-                    key: "<?php echo $_SESSION['key']; ?>"
+                    key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
                 },
                 function(data) {
-                    data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                    data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
                     console.log(data)
 
                     // Inform user
                     toastr.remove();
                     toastr.success(
-                        '<?php echo langHdl('alert_page_will_reload'); ?>',
-                        '<?php echo langHdl('done'); ?>', {
+                        '<?php echo $lang->get('alert_page_will_reload'); ?>',
+                        '<?php echo $lang->get('done'); ?>', {
                             timeOut: 5000,
                             progressBar: true
                         }
@@ -323,16 +350,16 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'tasks', $SETTINGS) === fa
         // Handle delete task
         $("#modal-btn-delete").on("click", function() {
             toastr.remove();
-            toastr.info('<?php echo langHdl('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+            toastr.info('<?php echo $lang->get('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
             
             $.post(
                 "sources/utilities.queries.php", {
                     type: "task_delete",
                     id: $(this).data('id'),
-                    key: "<?php echo $_SESSION['key']; ?>"
+                    key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
                 },
                 function(data) {
-                    data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                    data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
                     console.log(data)
 
                     $("#task-delete-user-confirm").modal('hide');
@@ -343,7 +370,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'tasks', $SETTINGS) === fa
                     // Inform user
                     toastr.remove();
                     toastr.success(
-                        '<?php echo langHdl('done'); ?>',
+                        '<?php echo $lang->get('done'); ?>',
                         '', {
                             timeOut: 1000
                         }
@@ -387,18 +414,18 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'tasks', $SETTINGS) === fa
             $.post(
                 "sources/admin.queries.php", {
                     type: "save_option_change",
-                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                    key: "<?php echo $_SESSION['key']; ?>"
+                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                    key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
                 },
                 function(data) {
                     // Handle server answer
                     try {
-                        data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                        data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
                     } catch (e) {
                         // error
                         toastr.remove();
                         toastr.error(
-                            '<?php echo langHdl('server_answer_error') . '<br />' . langHdl('server_returned_data') . ':<br />'; ?>' + data.error,
+                            '<?php echo $lang->get('server_answer_error') . '<br />' . $lang->get('server_returned_data') . ':<br />'; ?>' + data.error,
                             '', {
                                 closeButton: true,
                                 positionClass: 'toastr-top-right'
@@ -410,7 +437,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'tasks', $SETTINGS) === fa
                     if (data.error === false) {
                         toastr.remove();
                         toastr.success(
-                            '<?php echo langHdl('saved'); ?>',
+                            '<?php echo $lang->get('saved'); ?>',
                             '', {
                                 timeOut: 2000,
                                 progressBar: true
@@ -421,11 +448,11 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'tasks', $SETTINGS) === fa
                         $('#'+field+'_parameter_value').val(frequency === null ? '' : frequency + ';' +value,);
                         param = value.split(';');
                         if (param.length === 1) {
-                            txt = ' <?php echo langHdl('at');?> ' + param[0];
+                            txt = ' <?php echo $lang->get('at');?> ' + param[0];
                         } else {
-                            txt = ' <?php echo langHdl('day');?> ' + param[1] + ' <?php echo langHdl('at');?> ' + param[0];
+                            txt = ' <?php echo $lang->get('day');?> ' + param[1] + ' <?php echo $lang->get('at');?> ' + param[0];
                         }
-                        $('#'+field+'_parameter').val(frequency === null ? '<?php echo langHdl('not_defined');?>' : (data.message + txt));
+                        $('#'+field+'_parameter').val(frequency === null ? '<?php echo $lang->get('not_defined');?>' : (data.message + txt));
                         $("#task-define-modal").modal('hide');
                         $('#task-define-modal-type, #task-define-modal-parameter-hourly-value, #task-define-modal-parameter-daily-value, #task-define-modal-frequency').val('');
                     }
@@ -485,10 +512,10 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'tasks', $SETTINGS) === fa
         // Prepare modal
         showModalDialogBox(
             '#warningModal',
-            '<i class="fa-regular fa-circle-check fa-lg text-warning mr-2"></i><?php echo langHdl('your_attention_please'); ?>',
-            '<?php echo langHdl('please_confirm_task_to_be_run'); ?>: <strong>' + $('#'+$(this).data('task')+'_text').text() + '</strong>',
-            '<?php echo langHdl('perform'); ?>',
-            '<?php echo langHdl('close'); ?>',
+            '<i class="fa-regular fa-circle-check fa-lg text-warning mr-2"></i><?php echo $lang->get('your_attention_please'); ?>',
+            '<?php echo $lang->get('please_confirm_task_to_be_run'); ?>: <strong>' + $('#'+$(this).data('task')+'_text').text() + '</strong>',
+            '<?php echo $lang->get('perform'); ?>',
+            '<?php echo $lang->get('close'); ?>',
             false,
             false,
             false
@@ -500,6 +527,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'tasks', $SETTINGS) === fa
             e.preventDefault();
             let launchedTask = $(taskButton).data('task'),
                 launchedButton = $(taskButton);
+            manuelTaskIsRunning = true;
 
             // Inform user
             $('<i class="fa-solid fa-circle-notch fa-spin ml-2 text-teal" id="'+launchedTask+'_spinner"></i>').insertAfter($(this));
@@ -507,7 +535,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'tasks', $SETTINGS) === fa
 
             toastr.remove();
             toastr.success(
-                '<?php echo langHdl('started'); ?>',
+                '<?php echo $lang->get('started'); ?>',
                 '', {
                     timeOut: 2000,
                     progressBar: true
@@ -520,29 +548,30 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'tasks', $SETTINGS) === fa
                 {
                     type: "perform_task",
                     task: launchedTask,
-                    key: "<?php echo $_SESSION['key']; ?>"
+                    key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
                 },
                 function(data) {
                     // Handle server answer
                     try {
-                        data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                        data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
                     } catch (e) {
                         // error
                         toastr.remove();
                         toastr.error(
-                            '<?php echo langHdl('server_answer_error') . '<br />' . langHdl('server_returned_data') . ':<br />'; ?>' + data.error,
+                            '<?php echo $lang->get('server_answer_error') . '<br />' . $lang->get('server_returned_data') . ':<br />'; ?>' + data.error,
                             '', {
                                 closeButton: true,
                                 positionClass: 'toastr-top-right'
                             }
                         );
+                        manuelTaskIsRunning = false;
                         return false;
                     }
                     console.log(data);
                     if (data.error === false) {
                         toastr.remove();
                         toastr.success(
-                            '<?php echo langHdl('done'); ?>',
+                            '<?php echo $lang->get('done'); ?>',
                             '', {
                                 timeOut: 2000,
                                 progressBar: true
@@ -553,6 +582,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'tasks', $SETTINGS) === fa
                     $('#'+launchedTask+'_spinner').remove();
                     launchedButton.prop('disabled', false);
                     requestRunning = false;
+                    manuelTaskIsRunning = false;
                     $('#warningModal').modal('hide');
                 }
             );
@@ -562,22 +592,24 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'tasks', $SETTINGS) === fa
     // get last tasks execution
     function refreshTasksTime()
     {
+        if (manuelTaskIsRunning === true ) return false;
+
         $('#go_refresh').removeClass('hidden');
         $.post(
             "sources/tasks.queries.php",
             {
                 type: "load_last_tasks_execution",
-                key: "<?php echo $_SESSION['key']; ?>"
+                key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
             },
             function(data) {
                 // Handle server answer
                 try {
-                    data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                    data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
                 } catch (e) {
                     // error
                     toastr.remove();
                     toastr.error(
-                        '<?php echo langHdl('server_answer_error') . '<br />' . langHdl('server_returned_data') . ':<br />'; ?>' + data.error,
+                        '<?php echo $lang->get('server_answer_error') . '<br />' . $lang->get('server_returned_data') . ':<br />'; ?>' + data.error,
                         '', {
                             closeButton: true,
                             positionClass: 'toastr-top-right'

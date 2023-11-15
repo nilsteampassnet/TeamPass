@@ -31,7 +31,7 @@ ini_set('session.use_only_cookies', 1);
 // Uses a secure connection (HTTPS) if possible
 ini_set('session.cookie_secure', 0);
 
-require_once '../sources/SecureHandler.php';
+require_once './libs/SecureHandler.php';
 session_name('teampass_session');
 session_start();
 //Session teampass tag
@@ -267,8 +267,8 @@ if (!isset($_GET['step']) && !isset($post_step)) {
     } else {
         $dbSettings = false;
     }
+    require_once '../sources/main.functions.php';
     if (defined('DB_PASSWD_CLEAR') === false) {
-        require_once '../sources/main.functions.php';
         define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
     }
     //ETAPE 2
@@ -515,7 +515,7 @@ if (!isset($_GET['step']) && !isset($post_step)) {
 
     echo '
         <div class="mt-5">
-        <a href="#" class="btn btn-primary" onclick="javascript:window.location.href=\'', (isset($_SERVER['HTTPS']) && ($_SERVER['HTTPS'] == 'on' || $_SERVER['HTTPS'] == 1) || isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https') ? 'https' : 'http', '://'.$_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'], 0, strrpos($_SERVER['PHP_SELF'], '/') - 8).'\';"><b>Open TeamPass</b></a>
+        <a href="#" class="btn btn-primary" onclick="javascript:window.location.href=\'', (isset($_SERVER['HTTPS']) && ($_SERVER['HTTPS'] == 'on' || $_SERVER['HTTPS'] == 1) || isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https') ? 'https' : 'http', '://'.$_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'], 0, strrpos($_SERVER['PHP_SELF'], '/') - 8).'/index.php\';"><b>Open TeamPass</b></a>
         </div>';
 }
 
@@ -1236,7 +1236,7 @@ function getTime()
 
 function encode_utf8( s )
 {
-  return unescape( encodeURIComponent( s ) );
+    return unescape( encodeURIComponent( s ) );
 }
 
 </script>

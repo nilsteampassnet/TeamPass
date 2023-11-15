@@ -24,42 +24,68 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-require_once 'SecureHandler.php';
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
+use EZimuel\PHPSecureSession;
+use TeampassClasses\PerformChecks\PerformChecks;
+use TeampassClasses\NestedTree\NestedTree;
+
+// Load functions
+require_once 'main.functions.php';
+
+// init
+loadClasses('DB');
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
 session_name('teampass_session');
 session_start();
-if (! isset($_SESSION['CPM']) || $_SESSION['CPM'] === false || ! isset($_SESSION['key']) || empty($_SESSION['key'])) {
-    die('Hacking attempt...');
-}
 
-// Load config
-if (file_exists('../includes/config/tp.config.php')) {
-    include_once '../includes/config/tp.config.php';
-} elseif (file_exists('./includes/config/tp.config.php')) {
-    include_once './includes/config/tp.config.php';
-} else {
+// Load config if $SETTINGS not defined
+try {
+    include_once __DIR__.'/../includes/config/tp.config.php';
+} catch (Exception $e) {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
 // Do checks
-require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
-require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
-if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === false) {
+// Instantiate the class with posted data
+$checkUserAccess = new PerformChecks(
+    dataSanitizer(
+        [
+            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+        ],
+        [
+            'type' => 'trim|escape',
+        ],
+    ),
+    [
+        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
+        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+    ]
+);
+// Handle the case
+echo $checkUserAccess->caseHandler();
+if (
+    $checkUserAccess->userAccessPage('users') === false ||
+    $checkUserAccess->checkSession() === false
+) {
     // Not allowed page
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
-    include $SETTINGS['cpassman_dir'].'/error.php';
+    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+    include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
 
-require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user']['user_language'].'.php';
-require_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+// Define Timezone
+date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
+
+// Set header properties
 header('Content-type: text/html; charset=utf-8');
-header('Cache-Control: no-cache, must-revalidate');
-require_once 'main.functions.php';
-// Connect to mysql server
-require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-if (defined('DB_PASSWD_CLEAR') === false) {
-    define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
-}
+header('Cache-Control: no-cache, no-store, must-revalidate');
+
+// --------------------------------- //
+// Load tree
+$tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
 //Columns name
 $aColumns = ['date', 'label', 'action'];
@@ -151,16 +177,16 @@ foreach ($rows as $record) {
     ) {
         if (strpos($record['label'], 'at_') === 0) {
             if (strpos($record['label'], '#') >= 0) {
-                $col2 = preg_replace('/#[\s\S]+?#/', '', langHdl($record['label']));
+                $col2 = preg_replace('/#[\s\S]+?#/', '', $lang->get($record['label']));
             } else {
-                $col2 = str_replace('"', '\"', langHdl($record['label']));
+                $col2 = str_replace('"', '\"', $lang->get($record['label']));
             }
         } else {
             $col2 = str_replace('"', '\"', $record['label']);
         }
         $col3 = '';
     } else {
-        $col2 = langHdl($record['action']).' '.langHdl('id').' '.$record['id'];
+        $col2 = $lang->get($record['action']).' '.$lang->get('id').' '.$record['id'];
         $col3 = str_replace('"', '\"', $record['label']);
     }
 

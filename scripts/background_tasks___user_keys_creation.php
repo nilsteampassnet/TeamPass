@@ -22,40 +22,39 @@
  * @see       https://www.teampass.net
  */
 
-use Symfony\Component\Process\Process;
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
 
-require_once __DIR__.'/../sources/SecureHandler.php';
+// Load functions
+require_once __DIR__.'/../sources/main.functions.php';
+
+// init
+loadClasses('DB');
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
 session_name('teampass_session');
 session_start();
 
-// Load config
-require_once __DIR__.'/../includes/config/tp.config.php';
-require_once __DIR__.'/background_tasks___functions.php';
+// Load config if $SETTINGS not defined
+try {
+    include_once __DIR__.'/../includes/config/tp.config.php';
+} catch (Exception $e) {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
 
+// Define Timezone
+date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
+
+// Set header properties
+header('Content-type: text/html; charset=utf-8');
+header('Cache-Control: no-cache, no-store, must-revalidate');
+error_reporting(E_ERROR);
 // increase the maximum amount of time a script is allowed to run
 set_time_limit($SETTINGS['task_maximum_run_time']);
 
-// Do checks
-require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
-require_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
-header('Content-type: text/html; charset=utf-8');
-header('Cache-Control: no-cache, must-revalidate');
-require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
-// Connect to mysql server
-require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-if (defined('DB_PASSWD_CLEAR') === false) {
-    define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
-}
-DB::$host = DB_HOST;
-DB::$user = DB_USER;
-DB::$password = DB_PASSWD_CLEAR;
-DB::$dbName = DB_NAME;
-DB::$port = DB_PORT;
-DB::$encoding = DB_ENCODING;
-DB::$ssl = DB_SSL;
-DB::$connect_options = DB_CONNECT_OPTIONS;
+// --------------------------------- //
 
-
+require_once __DIR__.'/background_tasks___functions.php';
 
 // Get PHP binary
 $phpBinaryPath = getPHPBinary();
@@ -330,14 +329,13 @@ function performUserCreationKeys(
                 $logID = doLog('start', 'user_keys-ITEMS', (isset($SETTINGS['enable_tasks_log']) === true ? (int) $SETTINGS['enable_tasks_log'] : 0));
                 $return = cronContinueReEncryptingUserSharekeysStep20(
                     $post_user_id,
-                    $post_self_change,
                     $post_start,
                     $post_length,
                     $userInfo['public_key'],
                     $SETTINGS,
                     $extra_arguments
                 );
-                $logID = doLog('end', '', (isset($SETTINGS['enable_tasks_log']) === true ? (int) $SETTINGS['enable_tasks_log'] : 0), $logID, $return['treated_items']);
+                doLog('end', '', (isset($SETTINGS['enable_tasks_log']) === true ? (int) $SETTINGS['enable_tasks_log'] : 0), $logID, $return['treated_items']);
                 provideLog('[STEP][20][FINISHED]', $SETTINGS);
             }
 
@@ -391,7 +389,6 @@ function performUserCreationKeys(
                 provideLog('[STEP][60][START][INDEX]['.$post_start.']', $SETTINGS);
                 $return = cronContinueReEncryptingUserSharekeysStep60(
                     $post_user_id,
-                    $post_self_change,
                     $post_start,
                     $post_length,
                     $userInfo['public_key'],
@@ -445,7 +442,6 @@ function getOwnerInfo(int $owner_id, string $owner_pwd, array $SETTINGS): array
  * Handle step 1
  *
  * @param integer $post_user_id
- * @param boolean $post_self_change
  * @param integer $post_start
  * @param integer $post_length
  * @param string $user_public_key
@@ -455,7 +451,6 @@ function getOwnerInfo(int $owner_id, string $owner_pwd, array $SETTINGS): array
  */
 function cronContinueReEncryptingUserSharekeysStep20(
     int $post_user_id,
-    bool $post_self_change,
     int $post_start,
     int $post_length,
     string $user_public_key,
@@ -678,7 +673,6 @@ function cronContinueReEncryptingUserSharekeysStep40(
 {
     // get user private key
     $ownerInfo = getOwnerInfo($extra_arguments['owner_id'], $extra_arguments['creator_pwd'], $SETTINGS);
-    $userInfo = getOwnerInfo($extra_arguments['new_user_id'], $extra_arguments['new_user_pwd'], $SETTINGS);
 
     // Loop on fields
     $rows = DB::query(
@@ -858,7 +852,6 @@ function cronContinueReEncryptingUserSharekeysStep50(
  * Handle step 5
  *
  * @param integer $post_user_id
- * @param boolean $post_self_change
  * @param integer $post_start
  * @param integer $post_length
  * @param string $user_public_key
@@ -868,7 +861,6 @@ function cronContinueReEncryptingUserSharekeysStep50(
  */
 function cronContinueReEncryptingUserSharekeysStep60(
     int $post_user_id,
-    bool $post_self_change,
     int $post_start,
     int $post_length,
     string $user_public_key,
@@ -1025,6 +1017,8 @@ function cronContinueReEncryptingUserSharekeysStep10(
     array $extra_arguments
 ): array
 {
+    $lang = new Language();
+
     // IF USER IS NOT THE SAME
     if ((int) $post_user_id === (int) $extra_arguments['owner_id']) {
         return [
@@ -1060,8 +1054,8 @@ function cronContinueReEncryptingUserSharekeysStep10(
     if (isset($extra_arguments['send_email']) === true && (int) $extra_arguments['send_email'] === 1) {
         sendMailToUser(
             filter_var($userInfo['email'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-            empty($extra_arguments['email_body']) === false ? $extra_arguments['email_body'] : langHdl('email_body_user_config_1'),
-            'TEAMPASS - ' . langHdl('login_credentials'),
+            empty($extra_arguments['email_body']) === false ? $extra_arguments['email_body'] : $lang->get('email_body_user_config_1'),
+            'TEAMPASS - ' . $lang->get('login_credentials'),
             (array) filter_var_array(
                 [
                     '#code#' => cryption($extra_arguments['new_user_code'], '','decrypt', $SETTINGS)['string'],

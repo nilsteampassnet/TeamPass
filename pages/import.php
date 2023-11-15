@@ -24,34 +24,60 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-if (
-    isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
-    || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === true
-    || isset($_SESSION['key']) === false || empty($_SESSION['key']) === true
-) {
-    die('Hacking attempt...');
-}
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
+use TeampassClasses\NestedTree\NestedTree;
+use TeampassClasses\PerformChecks\PerformChecks;
 
-// Load config
-if (file_exists('../includes/config/tp.config.php') === true) {
-    include_once '../includes/config/tp.config.php';
-} elseif (file_exists('./includes/config/tp.config.php') === true) {
-    include_once './includes/config/tp.config.php';
-} else {
+// Load functions
+require_once __DIR__.'/../sources/main.functions.php';
+
+// init
+loadClasses('DB');
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
+
+// Load config if $SETTINGS not defined
+try {
+    include_once __DIR__.'/../includes/config/tp.config.php';
+} catch (Exception $e) {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
-/* do checks */
-require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
-if (checkUser($_SESSION['user_id'], $_SESSION['key'], curPage($SETTINGS), $SETTINGS) === false) {
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
-    //not allowed page
+// Do checks
+$checkUserAccess = new PerformChecks(
+    dataSanitizer(
+        [
+            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+        ],
+        [
+            'type' => 'trim|escape',
+        ],
+    ),
+    [
+        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
+        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+    ]
+);
+// Handle the case
+echo $checkUserAccess->caseHandler();
+if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('import') === false) {
+    // Not allowed page
+    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
 
-// Load
-require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
+// Define Timezone
+date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
+
+// Set header properties
+header('Content-type: text/html; charset=utf-8');
+header('Cache-Control: no-cache, no-store, must-revalidate');
+
+// --------------------------------- //
+ 
 
 ?>
 
@@ -60,7 +86,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
     <div class="container-fluid">
         <div class="row mb-2">
             <div class="col-sm-6">
-                <h1 class="m-0 text-dark"><i class="fas fa-file-import mr-2"></i><?php echo langHdl('import_new_items'); ?></h1>
+                <h1 class="m-0 text-dark"><i class="fas fa-file-import mr-2"></i><?php echo $lang->get('import_new_items'); ?></h1>
             </div><!-- /.col -->
         </div><!-- /.row -->
     </div><!-- /.container-fluid -->
@@ -74,14 +100,14 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
             <div class="card">
                 <div class="card-body">
                     <div class="callout callout-primary mb-3">
-                        <?php echo langHdl('data_type_for_import'); ?>
+                        <?php echo $lang->get('data_type_for_import'); ?>
                     </div>
                     <ul class="nav nav-tabs mb-3" id="import-type">
                         <li class="nav-item">
-                            <a class="nav-link active" data-toggle="tab" href="#csv" role="tab" aria-controls="csv" aria-selected="true"><?php echo langHdl('csv'); ?></a>
+                            <a class="nav-link active" data-toggle="tab" href="#csv" role="tab" aria-controls="csv" aria-selected="true"><?php echo $lang->get('csv'); ?></a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" data-toggle="tab" href="#keepass" role="tab" aria-controls="keepass" aria-selected="false"><?php echo langHdl('keepass'); ?></a>
+                            <a class="nav-link" data-toggle="tab" href="#keepass" role="tab" aria-controls="keepass" aria-selected="false"><?php echo $lang->get('keepass'); ?></a>
                         </li>
                     </ul>
 
@@ -91,17 +117,17 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                         <div class="tab-pane fade show active" id="csv" role="tabpanel" aria-labelledby="csv-tab">
                             <div class="callout callout-info">
                                 <i class="far fa-lightbulb text-warning fa-lg mr-2"></i>
-                                <a href="<?php echo READTHEDOC_URL; ?>" target="_blank" class="text-info"><?php echo langHdl('get_tips_about_importation'); ?></a>
+                                <a href="<?php echo READTHEDOC_URL; ?>" target="_blank" class="text-info"><?php echo $lang->get('get_tips_about_importation'); ?></a>
                             </div>
 
                             <div class="row mt-3">
                                 <div class="col-6" id="import-csv-upload-zone">
-                                    <h5 class=""><?php echo langHdl('select_file'); ?></h5>
+                                    <h5 class=""><?php echo $lang->get('select_file'); ?></h5>
 
                                     <div>
                                         <div class="custom-file">
                                             <input type="file" class="custom-file-input" id="import-csv-attach-pickfile-csv">
-                                            <label class="custom-file-label" for="import-csv-attach-pickfile-csv" id="import-csv-attach-pickfile-csv-text"><?php echo langHdl('select_file'); ?></label>
+                                            <label class="custom-file-label" for="import-csv-attach-pickfile-csv" id="import-csv-attach-pickfile-csv-text"><?php echo $lang->get('select_file'); ?></label>
                                         </div>
                                     </div>
                                 </div>
@@ -110,15 +136,15 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                             <!-- OPTIONS -->
                             <div class="row mt-3 hidden csv-setup">
                                 <div class="col-6">
-                                    <h5><?php echo langHdl('options'); ?></h5>
+                                    <h5><?php echo $lang->get('options'); ?></h5>
                                     <div class="form-group">
                                         <input type="checkbox" class="flat-blue import-csv-cb" id="import-csv-edit-all-checkbox">
-                                        <label for="import-csv-edit-all-checkbox" class="ml-2"><?php echo langHdl('import_csv_anyone_can_modify_txt'); ?></label>
+                                        <label for="import-csv-edit-all-checkbox" class="ml-2"><?php echo $lang->get('import_csv_anyone_can_modify_txt'); ?></label>
                                     </div>
 
                                     <div class="form-group">
                                         <input type="checkbox" class="flat-blue import-csv-cb" id="import-csv-edit-role-checkbox">
-                                        <label for="import-csv-edit-role-checkbox" class="ml-2"><?php echo langHdl('import_csv_anyone_can_modify_in_role_txt'); ?></label>
+                                        <label for="import-csv-edit-role-checkbox" class="ml-2"><?php echo $lang->get('import_csv_anyone_can_modify_in_role_txt'); ?></label>
                                     </div>
                                 </div>
                             </div>
@@ -126,8 +152,8 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                             <!-- TARGET FOLDER -->
                             <div class="row mt-3 hidden csv-setup">
                                 <div class="form-group col-12">
-                                    <h5><?php echo langHdl('target_folder'); ?></h5>
-                                    <label><?php echo langHdl('where_shall_items_be_created'); ?></label>
+                                    <h5><?php echo $lang->get('target_folder'); ?></h5>
+                                    <label><?php echo $lang->get('where_shall_items_be_created'); ?></label>
                                     <select class="form-control select2" style="width:100%;" id="import-csv-target-folder"></select>
                                 </div>
                             </div>
@@ -140,7 +166,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                                             <div class="card-header">
                                                 <h4 class="card-title">
                                                     <a data-toggle="collapse" data-parent="#accordion" href="#collapseOne">
-                                                        <?php echo langHdl('selected_items_to_be_imported'); ?>:
+                                                        <?php echo $lang->get('selected_items_to_be_imported'); ?>:
                                                         <span class="ml-2 text-bold" id="csv-items-number"></span>
                                                     </a>
                                                 </h4>
@@ -159,17 +185,17 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                         <div class="tab-pane fade" id="keepass" role="tabpanel" aria-labelledby="keepass-tab">
                             <div class="callout callout-info">
                                 <i class="far fa-lightbulb text-warning fa-lg mr-2"></i>
-                                <a href="<?php echo READTHEDOC_URL; ?>" target="_blank" class="text-info"><?php echo langHdl('get_tips_about_importation'); ?></a>
+                                <a href="<?php echo READTHEDOC_URL; ?>" target="_blank" class="text-info"><?php echo $lang->get('get_tips_about_importation'); ?></a>
                             </div>
 
                             <div class="row mt-3">
                                 <div class="col-6" id="import-keepass-upload-zone">
-                                    <h5 class=""><?php echo langHdl('select_file'); ?></h5>
+                                    <h5 class=""><?php echo $lang->get('select_file'); ?></h5>
 
                                     <div>
                                         <div class="custom-file">
                                             <input type="file" class="custom-file-input" id="import-keepass-attach-pickfile-keepass">
-                                            <label class="custom-file-label" for="import-keepass-attach-pickfile-keepass" id="import-keepass-attach-pickfile-keepass-text"><?php echo langHdl('select_file'); ?></label>
+                                            <label class="custom-file-label" for="import-keepass-attach-pickfile-keepass" id="import-keepass-attach-pickfile-keepass-text"><?php echo $lang->get('select_file'); ?></label>
                                         </div>
                                     </div>
                                 </div>
@@ -178,15 +204,15 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                             <!-- OPTIONS -->
                             <div class="row mt-3 hidden keepass-setup">
                                 <div class="col-6">
-                                    <h5><?php echo langHdl('options'); ?></h5>
+                                    <h5><?php echo $lang->get('options'); ?></h5>
                                     <div class="form-group">
                                         <input type="checkbox" class="flat-blue import-csv-keepass" id="import-keepass-edit-all-checkbox">
-                                        <label for="import-keepass-edit-all-checkbox" class="ml-2"><?php echo langHdl('import_csv_anyone_can_modify_txt'); ?></label>
+                                        <label for="import-keepass-edit-all-checkbox" class="ml-2"><?php echo $lang->get('import_csv_anyone_can_modify_txt'); ?></label>
                                     </div>
 
                                     <div class="form-group">
                                         <input type="checkbox" class="flat-blue import-keepass-cb" id="import-keepass-edit-role-checkbox">
-                                        <label for="import-keepass-edit-role-checkbox" class="ml-2"><?php echo langHdl('import_csv_anyone_can_modify_in_role_txt'); ?></label>
+                                        <label for="import-keepass-edit-role-checkbox" class="ml-2"><?php echo $lang->get('import_csv_anyone_can_modify_in_role_txt'); ?></label>
                                     </div>
                                 </div>
                             </div>
@@ -194,8 +220,8 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                             <!-- TARGET FOLDER -->
                             <div class="row mt-3 hidden keepass-setup">
                                 <div class="form-group col-12">
-                                    <h5><?php echo langHdl('target_folder'); ?></h5>
-                                    <label><?php echo langHdl('where_shall_items_be_created'); ?></label>
+                                    <h5><?php echo $lang->get('target_folder'); ?></h5>
+                                    <label><?php echo $lang->get('where_shall_items_be_created'); ?></label>
                                     <select class="form-control select2" style="width:100%;" id="import-keepass-target-folder"></select>
                                 </div>
                             </div>
@@ -205,7 +231,7 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
 
                     <!-- FEEDBACK -->
                     <div class="row alert alert-info mt-3 hidden" id="import-feedback">
-                        <h5><i class="icon fas fa-info-circle mr-2"></i><?php echo langHdl('info'); ?></h5>
+                        <h5><i class="icon fas fa-info-circle mr-2"></i><?php echo $lang->get('info'); ?></h5>
                         <div class="row hidden" id="import-feedback-result"></div>
                         <div class="row" id="import-feedback-progress">
                             <span id="import-feedback-progress-text"></span>
@@ -213,8 +239,8 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
                     </div>
                 </div>
                 <div class="card-footer">
-                    <button type="submit" class="btn btn-primary" id="form-item-import-perform"><?php echo langHdl('perform'); ?></button>
-                    <button type="submit" class="btn btn-default float-right" id="form-item-import-cancel"><?php echo langHdl('cancel'); ?></button>
+                    <button type="submit" class="btn btn-primary" id="form-item-import-perform"><?php echo $lang->get('perform'); ?></button>
+                    <button type="submit" class="btn btn-default float-right" id="form-item-import-cancel"><?php echo $lang->get('cancel'); ?></button>
                 </div>
             </div>
         </div>

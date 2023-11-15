@@ -12,35 +12,45 @@ class BatchModification
      * The array keys to be used in batch modifications.
      */
     public const KEY_ATTRIB = 'attrib';
-
     public const KEY_MODTYPE = 'modtype';
-
     public const KEY_VALUES = 'values';
 
     /**
      * The attribute of the modification.
+     *
+     * @var string|null
      */
-    protected ?string $attribute = null;
+    protected $attribute;
 
     /**
      * The original value of the attribute before modification.
+     *
+     * @var array
      */
-    protected array $original = [];
+    protected $original = [];
 
     /**
      * The values of the modification.
+     *
+     * @var array
      */
-    protected array $values = [];
+    protected $values = [];
 
     /**
      * The modtype integer of the batch modification.
+     *
+     * @var int|null
      */
-    protected ?int $type = null;
+    protected $type;
 
     /**
      * Constructor.
+     *
+     * @param  string|null  $attribute
+     * @param  string|int|null  $type
+     * @param  array  $values
      */
-    public function __construct(string $attribute = null, int $type = null, array $values = [])
+    public function __construct($attribute = null, $type = null, array $values = [])
     {
         $this->setAttribute($attribute)
             ->setType($type)
@@ -49,8 +59,11 @@ class BatchModification
 
     /**
      * Set the original value of the attribute before modification.
+     *
+     * @param  array|string  $original
+     * @return $this
      */
-    public function setOriginal(array|string $original = []): static
+    public function setOriginal($original = [])
     {
         $this->original = $this->normalizeAttributeValues($original);
 
@@ -59,16 +72,21 @@ class BatchModification
 
     /**
      * Returns the original value of the attribute before modification.
+     *
+     * @return array
      */
-    public function getOriginal(): array
+    public function getOriginal()
     {
         return $this->original;
     }
 
     /**
      * Set the attribute of the modification.
+     *
+     * @param  string  $attribute
+     * @return $this
      */
-    public function setAttribute(string $attribute = null): static
+    public function setAttribute($attribute)
     {
         $this->attribute = $attribute;
 
@@ -77,22 +95,27 @@ class BatchModification
 
     /**
      * Returns the attribute of the modification.
+     *
+     * @return string
      */
-    public function getAttribute(): string
+    public function getAttribute()
     {
         return $this->attribute;
     }
 
     /**
      * Set the values of the modification.
+     *
+     * @param  array  $values
+     * @return $this
      */
-    public function setValues(array $values = []): static
+    public function setValues(array $values = [])
     {
         // Null and empty values must also not be added to a batch
         // modification. Passing null or empty values will result
         // in an exception when trying to save the modification.
         $this->values = array_filter($this->normalizeAttributeValues($values), function ($value) {
-            return is_numeric($value) && $this->valueIsResetInteger((int) $value) || ! empty($value);
+            return is_numeric($value) && $this->valueIsResetInteger((int) $value) ?: ! empty($value);
         });
 
         return $this;
@@ -100,8 +123,11 @@ class BatchModification
 
     /**
      * Normalize all of the attribute values.
+     *
+     * @param  array|string  $values
+     * @return array
      */
-    protected function normalizeAttributeValues(array|string $values = []): array
+    protected function normalizeAttributeValues($values = [])
     {
         // We must convert all of the values to strings. Only strings can
         // be used in batch modifications, otherwise we will we will
@@ -111,16 +137,21 @@ class BatchModification
 
     /**
      * Returns the values of the modification.
+     *
+     * @return array
      */
-    public function getValues(): array
+    public function getValues()
     {
         return $this->values;
     }
 
     /**
      * Set the type of the modification.
+     *
+     * @param  int|null  $type
+     * @return $this
      */
-    public function setType(int $type = null): static
+    public function setType($type = null)
     {
         if (is_null($type)) {
             return $this;
@@ -137,16 +168,20 @@ class BatchModification
 
     /**
      * Returns the type of the modification.
+     *
+     * @return int
      */
-    public function getType(): ?int
+    public function getType()
     {
         return $this->type;
     }
 
     /**
      * Determines if the batch modification is valid in its current state.
+     *
+     * @return bool
      */
-    public function isValid(): bool
+    public function isValid()
     {
         return ! is_null($this->get());
     }
@@ -154,8 +189,10 @@ class BatchModification
     /**
      * Builds the type of modification automatically
      * based on the current and original values.
+     *
+     * @return $this
      */
-    public function build(): static
+    public function build()
     {
         switch (true) {
             case empty($this->original) && empty($this->values):
@@ -171,8 +208,10 @@ class BatchModification
 
     /**
      * Determine the batch modification type from the original values.
+     *
+     * @return $this
      */
-    protected function determineBatchTypeFromOriginal(): static
+    protected function determineBatchTypeFromOriginal()
     {
         $added = $this->getAddedValues();
         $removed = $this->getRemovedValues();
@@ -191,8 +230,10 @@ class BatchModification
 
     /**
      * Get the values that were added to the attribute.
+     *
+     * @return array
      */
-    protected function getAddedValues(): array
+    protected function getAddedValues()
     {
         return array_values(
             array_diff($this->values, $this->original)
@@ -201,8 +242,10 @@ class BatchModification
 
     /**
      * Get the values that were removed from the attribute.
+     *
+     * @return array
      */
-    protected function getRemovedValues(): array
+    protected function getRemovedValues()
     {
         return array_values(
             array_diff($this->original, $this->values)
@@ -211,8 +254,10 @@ class BatchModification
 
     /**
      * Returns the built batch modification array.
+     *
+     * @return array|null
      */
-    public function get(): ?array
+    public function get()
     {
         switch ($this->type) {
             case LDAP_MODIFY_BATCH_REMOVE_ALL:
@@ -234,14 +279,17 @@ class BatchModification
                 ];
             default:
                 // If the modtype isn't recognized, we'll return null.
-                return null;
+                return;
         }
     }
 
     /**
      * Determines if the given modtype is valid.
+     *
+     * @param  int  $type
+     * @return bool
      */
-    protected function isValidType(int $type): bool
+    protected function isValidType($type)
     {
         return in_array($type, [
             LDAP_MODIFY_BATCH_REMOVE_ALL,

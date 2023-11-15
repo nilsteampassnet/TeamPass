@@ -23,6 +23,8 @@
  * @see       https://www.teampass.net
  */
 
+//use Controler\Api\BaseController;
+
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Methods: POST");
@@ -33,7 +35,9 @@ require __DIR__ . "/inc/bootstrap.php";
 // sanitize url segments
 $base = new BaseController();
 $uri = $base->getUriSegments();
-//$uriCount = count($uri)-1;
+if (is_array($uri) === false || is_string($uri) === true) {
+    $uri = [$uri];  // ensure $uril is table
+}
 
 // Prepare DB password
 if (defined('DB_PASSWD_CLEAR') === false) {
@@ -78,7 +82,7 @@ if ($uri[0] === 'authorize') {
     } elseif ($controller === 'user') {
         require API_ROOT_PATH . "/Controller/Api/UserController.php";
         $objFeedController = new UserController();
-        $strMethodName = $action . 'Action';
+        $strMethodName = (string) $action . 'Action';
         $objFeedController->{$strMethodName}();
 
     // action related to ITEM

@@ -24,59 +24,69 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-require_once 'SecureHandler.php';
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
+use EZimuel\PHPSecureSession;
+use TeampassClasses\PerformChecks\PerformChecks;
+use TeampassClasses\NestedTree\NestedTree;
+
+// Load functions
+require_once 'main.functions.php';
+
+// init
+loadClasses('DB');
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
 session_name('teampass_session');
 session_start();
-if (! isset($_SESSION['CPM']) || $_SESSION['CPM'] === false || ! isset($_SESSION['key']) || empty($_SESSION['key'])) {
-    die('Hacking attempt...');
-}
 
-// Load config
-if (file_exists('../includes/config/tp.config.php')) {
-    include_once '../includes/config/tp.config.php';
-} elseif (file_exists('./includes/config/tp.config.php')) {
-    include_once './includes/config/tp.config.php';
-} else {
+// Load config if $SETTINGS not defined
+try {
+    include_once __DIR__.'/../includes/config/tp.config.php';
+} catch (Exception $e) {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
 // Do checks
-require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
-require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
-if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'utilities.logs', $SETTINGS) === false) {
+// Instantiate the class with posted data
+$checkUserAccess = new PerformChecks(
+    dataSanitizer(
+        [
+            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+        ],
+        [
+            'type' => 'trim|escape',
+        ],
+    ),
+    [
+        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
+        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+    ]
+);
+// Handle the case
+echo $checkUserAccess->caseHandler();
+if (
+    $checkUserAccess->userAccessPage('utilities.logs') === false ||
+    $checkUserAccess->checkSession() === false
+) {
     // Not allowed page
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
-    include $SETTINGS['cpassman_dir'].'/error.php';
+    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+    include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
 
-/*
- * Define Timezone
-*/
-if (isset($SETTINGS['timezone']) === true) {
-    date_default_timezone_set($SETTINGS['timezone']);
-} else {
-    date_default_timezone_set('UTC');
-}
+// Define Timezone
+date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
 
-require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user']['user_language'].'.php';
-require_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+// Set header properties
 header('Content-type: text/html; charset=utf-8');
-header('Cache-Control: no-cache, must-revalidate');
-require_once 'main.functions.php';
-//Connect to DB
-include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-if (defined('DB_PASSWD_CLEAR') === false) {
-    define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
-}
-DB::$host = DB_HOST;
-DB::$user = DB_USER;
-DB::$password = DB_PASSWD_CLEAR;
-DB::$dbName = DB_NAME;
-DB::$port = DB_PORT;
-DB::$encoding = DB_ENCODING;
-DB::$ssl = DB_SSL;
-DB::$connect_options = DB_CONNECT_OPTIONS;
+header('Cache-Control: no-cache, no-store, must-revalidate');
+
+// --------------------------------- //
+// Load tree
+$tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+
 // prepare the queries
 if (isset($_GET['action']) === true) {
     //init SQL variables
@@ -349,7 +359,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         for ($i = 0; $i < count($aColumns); ++$i) {
             $sWhere .= $aColumns[$i]." LIKE '%".filter_var($_GET['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' OR ";
         }
-        $sWhere = substr_replace($sWhere, '', -3).') ';
+        $sWhere = substr_replace((string) $sWhere, '', -3).') ';
     }
 
     $iTotal = DB::queryFirstField(
@@ -384,20 +394,20 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         $sOutput_item .= '"'.htmlspecialchars(stripslashes((string) $record['login']), ENT_QUOTES).'", ';
         //col3
         if ($record['label'] === 'at_user_added') {
-            $cell = langHdl('user_creation');
+            $cell = $lang->get('user_creation');
         } elseif ($record['label'] === 'at_user_deleted' || $record['label'] === 'user_deleted') {
-            $cell = langHdl('user_deletion');
+            $cell = $lang->get('user_deletion');
         } elseif ($record['label'] === 'at_user_updated') {
-            $cell = langHdl('user_updated');
+            $cell = $lang->get('user_updated');
         } elseif (strpos($record['label'], 'at_user_email_changed') !== false) {
             $change = explode(':', $record['label']);
-            $cell = langHdl('log_user_email_changed').' '.$change[1];
+            $cell = $lang->get('log_user_email_changed').' '.$change[1];
         } elseif ($record['label'] === 'at_user_new_keys') {
-            $cell = langHdl('new_keys_generated');
+            $cell = $lang->get('new_keys_generated');
         } elseif ($record['label'] === 'at_user_keys_download') {
-            $cell = langHdl('user_keys_downloaded');
+            $cell = $lang->get('user_keys_downloaded');
         } elseif ($record['label'] === 'at_2fa_google_code_send_by_email') {
-            $cell = langHdl('mfa_code_send_by_email');
+            $cell = $lang->get('mfa_code_send_by_email');
         } else {
             $cell = htmlspecialchars(stripslashes((string) $record['label']), ENT_QUOTES);
         }
@@ -455,7 +465,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
             for ($i = 0; $i < count($aColumns); ++$i) {
                 $sWhere .= $aColumns[$i]." LIKE '%".filter_var($_GET['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' OR ";
             }
-            $sWhere = substr_replace($sWhere, '', -3).') ';
+            $sWhere = substr((string) $sWhere, 0, -3).') ';
         }
     }
     
@@ -502,12 +512,12 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         //col2
         $sOutput_item .= '"'.htmlspecialchars(stripslashes((string) $record['name']), ENT_QUOTES).' '.htmlspecialchars(stripslashes((string) $record['lastname']), ENT_QUOTES).' ['.htmlspecialchars(stripslashes((string) $record['login']), ENT_QUOTES).']", ';
         //col4
-        $sOutput_item .= '"'.htmlspecialchars(stripslashes(langHdl($record['action'])), ENT_QUOTES).'", ';
+        $sOutput_item .= '"'.htmlspecialchars(stripslashes($lang->get($record['action'])), ENT_QUOTES).'", ';
         //col5
         if ($record['perso'] === 1) {
-            $sOutput_item .= '"'.htmlspecialchars(stripslashes(langHdl('yes')), ENT_QUOTES).'"';
+            $sOutput_item .= '"'.htmlspecialchars(stripslashes($lang->get('yes')), ENT_QUOTES).'"';
         } else {
-            $sOutput_item .= '"'.htmlspecialchars(stripslashes(langHdl('no')), ENT_QUOTES).'"';
+            $sOutput_item .= '"'.htmlspecialchars(stripslashes($lang->get('no')), ENT_QUOTES).'"';
         }
 
         //Finish the line
@@ -585,9 +595,9 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         $sOutput .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['auth_date']).'", ';
         //col2 - 3
         if ($record['label'] === 'password_is_not_correct' || $record['label'] === 'user_not_exists') {
-            $sOutput .= '"'.langHdl($record['label']).'", "'.$record['field_1'].'", ';
+            $sOutput .= '"'.$lang->get($record['label']).'", "'.$record['field_1'].'", ';
         } else {
-            $sOutput .= '"'.langHdl($record['label']).'", "", ';
+            $sOutput .= '"'.$lang->get($record['label']).'", "", ';
         }
 
         //col3
@@ -818,11 +828,11 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         $sOutput .= '"'.htmlspecialchars(stripslashes((string) $record['name']), ENT_QUOTES).' '.htmlspecialchars(stripslashes((string) $record['lastname']), ENT_QUOTES).' ['.htmlspecialchars(stripslashes((string) $record['login']), ENT_QUOTES).']", ';
         //col3
         if ($record['admin'] === '1') {
-            $user_role = langHdl('god');
-        } elseif (langHdl('gestionnaire') === 1) {
-            $user_role = langHdl('gestionnaire');
+            $user_role = $lang->get('god');
+        } elseif ($lang->get('gestionnaire') === 1) {
+            $user_role = $lang->get('gestionnaire');
         } else {
-            $user_role = langHdl('user');
+            $user_role = $lang->get('user');
         }
         $sOutput .= '"'.$user_role.'", ';
         //col4
@@ -999,11 +1009,11 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         $sOutput .= '"'.gmdate('H:i:s', (int) $record['finished_at'] - (is_null($record['started_at']) === false ? (int) $record['started_at'] : (int) $record['created_at'])).'",';
         //col5
         if ($record['process_type'] === 'create_user_keys') {
-            $processIcon = '<i class=\"fa-solid fa-user-gear infotip\" title=\"'.langHdl('user_creation').'\"></i>';
+            $processIcon = '<i class=\"fa-solid fa-user-gear infotip\" title=\"'.$lang->get('user_creation').'\"></i>';
         } else if ($record['process_type'] === 'send_email') {
-            $processIcon = '<i class=\"fa-solid fa-envelope-circle-check infotip\" title=\"'.langHdl('send_email_to_user').'\"></i>';
+            $processIcon = '<i class=\"fa-solid fa-envelope-circle-check infotip\" title=\"'.$lang->get('send_email_to_user').'\"></i>';
         } else if ($record['process_type'] === 'user_build_cache_tree') {
-            $processIcon = '<i class=\"fa-solid fa-folder-tree infotip\" title=\"'.langHdl('reload_user_cache_table').'\"></i>';
+            $processIcon = '<i class=\"fa-solid fa-folder-tree infotip\" title=\"'.$lang->get('reload_user_cache_table').'\"></i>';
         } else {
             $processIcon = '<i class=\"fa-solid fa-question\"></i> ('.$record['process_type'].')';
         }

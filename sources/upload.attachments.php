@@ -20,34 +20,70 @@ declare(strict_types=1);
  */
 
 
-require_once './SecureHandler.php';
+use voku\helper\AntiXSS;
+use TeampassClasses\NestedTree\NestedTree;
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
+use EZimuel\PHPSecureSession;
+use TeampassClasses\PerformChecks\PerformChecks;
+
+
+// Load functions
+require_once 'main.functions.php';
+
+// init
+loadClasses('DB');
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
 session_name('teampass_session');
 session_start();
-if (
-    isset($_SESSION['CPM']) === false || $_SESSION['CPM'] != 1
-    || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id'])
-    || isset($_SESSION['key']) === false || empty($_SESSION['key'])
-) {
-    die('Hacking attempt...');
-}
 
 // Load config if $SETTINGS not defined
-if (file_exists('../includes/config/tp.config.php')) {
-    include_once '../includes/config/tp.config.php';
-} elseif (file_exists('./includes/config/tp.config.php')) {
-    include_once './includes/config/tp.config.php';
-} else {
+try {
+    include_once __DIR__.'/../includes/config/tp.config.php';
+} catch (Exception $e) {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
-/* do checks */
-require_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
-require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
-if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'items', $SETTINGS) !== true) {
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
+// Do checks
+// Instantiate the class with posted data
+$checkUserAccess = new PerformChecks(
+    dataSanitizer(
+        [
+            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+        ],
+        [
+            'type' => 'trim|escape',
+        ],
+    ),
+    [
+        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
+        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+    ]
+);
+// Handle the case
+echo $checkUserAccess->caseHandler();
+if (
+    $checkUserAccess->userAccessPage('items') === false ||
+    $checkUserAccess->checkSession() === false
+) {
+    // Not allowed page
+    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
     include $SETTINGS['cpassman_dir'] . '/error.php';
-    exit();
+    exit;
 }
+
+// Define Timezone
+date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
+
+// Set header properties
+header('Content-type: text/html; charset=utf-8');
+header('Cache-Control: no-cache, no-store, must-revalidate');
+error_reporting(E_ERROR);
+set_time_limit(0);
+
+// --------------------------------- //
 
 //check for session
 if (null !== filter_input(INPUT_POST, 'PHPSESSID', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
@@ -71,9 +107,6 @@ $post_randomId = filter_input(INPUT_POST, 'randomId', FILTER_SANITIZE_NUMBER_INT
 $post_isPersonal = filter_input(INPUT_POST, 'isPersonal', FILTER_SANITIZE_NUMBER_INT);
 $post_fileSize= filter_input(INPUT_POST, 'file_size', FILTER_SANITIZE_NUMBER_INT);
 
-// load functions
-require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
-
 // Get parameters
 $chunk = isset($_REQUEST['chunk']) ? (int) $_REQUEST['chunk'] : 0;
 $chunks = isset($_REQUEST['chunks']) ? (int) $_REQUEST['chunks'] : 0;
@@ -84,21 +117,6 @@ if (null === $post_user_token) {
     handleAttachmentError('No user token found.', 110);
     exit();
 } else {
-    //Connect to mysql server
-    include_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
-    if (defined('DB_PASSWD_CLEAR') === false) {
-        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
-    }
-    DB::$host = DB_HOST;
-    DB::$user = DB_USER;
-    DB::$password = DB_PASSWD_CLEAR;
-    DB::$dbName = DB_NAME;
-    DB::$port = DB_PORT;
-    DB::$encoding = DB_ENCODING;
-    DB::$ssl = DB_SSL;
-    DB::$connect_options = DB_CONNECT_OPTIONS;
-
     // delete expired tokens
     DB::delete(prefixTable('tokens'), 'end_timestamp < %i', time());
 

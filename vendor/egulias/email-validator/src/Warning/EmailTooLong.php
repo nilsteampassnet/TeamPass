@@ -6,7 +6,7 @@ use Egulias\EmailValidator\EmailParser;
 
 class EmailTooLong extends Warning
 {
-    public const CODE = 66;
+    const CODE = 66;
 
     public function __construct()
     {

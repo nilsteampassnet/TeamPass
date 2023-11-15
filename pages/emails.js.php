@@ -24,28 +24,54 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
+
+use TeampassClasses\PerformChecks\PerformChecks;
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
+// Load functions
+require_once __DIR__.'/../sources/main.functions.php';
+
+// init
+loadClasses();
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
+
 if (
     isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
     || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === true
-    || isset($_SESSION['key']) === false || empty($_SESSION['key']) === true
+    || $superGlobal->get('key', 'SESSION') === null
 ) {
     die('Hacking attempt...');
 }
 
-// Load config
-if (file_exists('../includes/config/tp.config.php') === true) {
-    include_once '../includes/config/tp.config.php';
-} elseif (file_exists('./includes/config/tp.config.php') === true) {
-    include_once './includes/config/tp.config.php';
-} else {
-    throw new Exception('Error file "/includes/config/tp.config.php" not exists', 1);
+// Load config if $SETTINGS not defined
+try {
+    include_once __DIR__.'/../includes/config/tp.config.php';
+} catch (Exception $e) {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
-/* do checks */
-require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
-if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === false) {
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
-    //not allowed page
+// Do checks
+$checkUserAccess = new PerformChecks(
+    dataSanitizer(
+        [
+            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+        ],
+        [
+            'type' => 'trim|escape',
+        ],
+    ),
+    [
+        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
+        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+    ]
+);
+// Handle the case
+echo $checkUserAccess->caseHandler();
+if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('emails') === false) {
+    // Not allowed page
+    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -59,23 +85,23 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
         var action = $(this).data('action');
 
         toastr.remove();
-        toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+        toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
         if (action === 'send-test-email') {
             $.post(
                 'sources/admin.queries.php', {
                     type: 'admin_email_test_configuration',
-                    key: '<?php echo $_SESSION['key']; ?>'
+                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
                 },
                 function(data) {
                     //decrypt data
-                    data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                    data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
                     console.log(data);
                     if (data.error === true) {
                         // ERROR
                         toastr.remove();
                         toastr.warning(
-                            '<?php echo langHdl('none_selected_text'); ?>',
+                            '<?php echo $lang->get('none_selected_text'); ?>',
                             '', {
                                 timeOut: 5000,
                                 progressBar: true
@@ -85,7 +111,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
                         // Inform user
                         toastr.remove();
                         toastr.success(
-                            '<?php echo langHdl('done'); ?>',
+                            '<?php echo $lang->get('done'); ?>',
                             '', {
                                 timeOut: 1000
                             }
@@ -104,21 +130,21 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
     function sendEmailsBacklog(counter = "") {
         $('#unsent-emails-progress')
             .html('<i class="fas fa-cog fa-spin ml-2"></i>' +
-                '<?php echo langHdl('remaining_emails_to_send'); ?> ' + counter);
+                '<?php echo $lang->get('remaining_emails_to_send'); ?> ' + counter);
         $.post(
             'sources/admin.queries.php', {
                 type: 'admin_email_send_backlog',
-                key: '<?php echo $_SESSION['key']; ?>'
+                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
             },
             function(data) {
                 //decrypt data
-                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
 
                 if (data.error === true) {
                     // ERROR
                     toastr.remove();
                     toastr.warning(
-                        '<?php echo langHdl('none_selected_text'); ?>',
+                        '<?php echo $lang->get('none_selected_text'); ?>',
                         '', {
                             timeOut: 5000,
                             progressBar: true
@@ -130,11 +156,11 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], '2fa', $SETTINGS) === fals
                     } else {
                         $('#unsent-emails-progress')
                             .html('<i class="fas fa-check ml-2 text-success mr-2"></i>' +
-                                '<?php echo langHdl('done'); ?>');
+                                '<?php echo $lang->get('done'); ?>');
                         // Inform user
                         toastr.remove();
                         toastr.success(
-                            '<?php echo langHdl('done'); ?>',
+                            '<?php echo $lang->get('done'); ?>',
                             '', {
                                 timeOut: 1000
                             }

@@ -4,16 +4,10 @@ namespace Illuminate\Validation;
 
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Support\Traits\Macroable;
-use Illuminate\Validation\Rules\Can;
 use Illuminate\Validation\Rules\Dimensions;
-use Illuminate\Validation\Rules\Enum;
-use Illuminate\Validation\Rules\ExcludeIf;
 use Illuminate\Validation\Rules\Exists;
-use Illuminate\Validation\Rules\File;
-use Illuminate\Validation\Rules\ImageFile;
 use Illuminate\Validation\Rules\In;
 use Illuminate\Validation\Rules\NotIn;
-use Illuminate\Validation\Rules\ProhibitedIf;
 use Illuminate\Validation\Rules\RequiredIf;
 use Illuminate\Validation\Rules\Unique;
 
@@ -22,23 +16,11 @@ class Rule
     use Macroable;
 
     /**
-     * Get a can constraint builder instance.
-     *
-     * @param  string  $ability
-     * @param  mixed  ...$arguments
-     * @return \Illuminate\Validation\Rules\Can
-     */
-    public static function can($ability, ...$arguments)
-    {
-        return new Can($ability, $arguments);
-    }
-
-    /**
      * Create a new conditional rule set.
      *
      * @param  callable|bool  $condition
-     * @param  array|string|\Closure  $rules
-     * @param  array|string|\Closure  $defaultRules
+     * @param  array|string  $rules
+     * @param  array|string  $defaultRules
      * @return \Illuminate\Validation\ConditionalRules
      */
     public static function when($condition, $rules, $defaultRules = [])
@@ -47,26 +29,14 @@ class Rule
     }
 
     /**
-     * Create a new nested rule set.
+     * Get a dimensions constraint builder instance.
      *
-     * @param  callable  $callback
-     * @return \Illuminate\Validation\NestedRules
+     * @param  array  $constraints
+     * @return \Illuminate\Validation\Rules\Dimensions
      */
-    public static function forEach($callback)
+    public static function dimensions(array $constraints = [])
     {
-        return new NestedRules($callback);
-    }
-
-    /**
-     * Get a unique constraint builder instance.
-     *
-     * @param  string  $table
-     * @param  string  $column
-     * @return \Illuminate\Validation\Rules\Unique
-     */
-    public static function unique($table, $column = 'NULL')
-    {
-        return new Unique($table, $column);
+        return new Dimensions($constraints);
     }
 
     /**
@@ -123,66 +93,14 @@ class Rule
     }
 
     /**
-     * Get a exclude_if constraint builder instance.
+     * Get a unique constraint builder instance.
      *
-     * @param  callable|bool  $callback
-     * @return \Illuminate\Validation\Rules\ExcludeIf
+     * @param  string  $table
+     * @param  string  $column
+     * @return \Illuminate\Validation\Rules\Unique
      */
-    public static function excludeIf($callback)
+    public static function unique($table, $column = 'NULL')
     {
-        return new ExcludeIf($callback);
-    }
-
-    /**
-     * Get a prohibited_if constraint builder instance.
-     *
-     * @param  callable|bool  $callback
-     * @return \Illuminate\Validation\Rules\ProhibitedIf
-     */
-    public static function prohibitedIf($callback)
-    {
-        return new ProhibitedIf($callback);
-    }
-
-    /**
-     * Get an enum constraint builder instance.
-     *
-     * @param  string  $type
-     * @return \Illuminate\Validation\Rules\Enum
-     */
-    public static function enum($type)
-    {
-        return new Enum($type);
-    }
-
-    /**
-     * Get a file constraint builder instance.
-     *
-     * @return \Illuminate\Validation\Rules\File
-     */
-    public static function file()
-    {
-        return new File;
-    }
-
-    /**
-     * Get an image file constraint builder instance.
-     *
-     * @return \Illuminate\Validation\Rules\ImageFile
-     */
-    public static function imageFile()
-    {
-        return new ImageFile;
-    }
-
-    /**
-     * Get a dimensions constraint builder instance.
-     *
-     * @param  array  $constraints
-     * @return \Illuminate\Validation\Rules\Dimensions
-     */
-    public static function dimensions(array $constraints = [])
-    {
-        return new Dimensions($constraints);
+        return new Unique($table, $column);
     }
 }
