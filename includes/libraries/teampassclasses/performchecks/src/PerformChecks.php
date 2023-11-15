@@ -20,7 +20,6 @@ Use DB;
  * @see       https://www.teampass.net
  */
 
-Use EZimuel\PHPSecureSession;
 
 class PerformChecks
 {

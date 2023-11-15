@@ -43,6 +43,7 @@ class ComposerStaticInitf8d0a111ac97059c58e49ca16fe551d0
             'TeampassClasses\\SuperGlobal\\' => 28,
             'TeampassClasses\\PerformChecks\\' => 30,
             'TeampassClasses\\NestedTree\\' => 27,
+            'TeampassClasses\\Language\\' => 25,
             'TeampassClasses\\Encryption\\' => 27,
         ),
         'S' => 
@@ -155,6 +156,10 @@ class ComposerStaticInitf8d0a111ac97059c58e49ca16fe551d0
         array (
             0 => __DIR__ . '/..' . '/teampassclasses/nestedtree/src',
         ),
+        'TeampassClasses\\Language\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/teampassclasses/language/src',
+        ),
         'TeampassClasses\\Encryption\\' => 
         array (
             0 => __DIR__ . '/..' . '/teampassclasses/encryption/src',
@@ -261,8 +266,8 @@ class ComposerStaticInitf8d0a111ac97059c58e49ca16fe551d0
         ),
         'Illuminate\\Support\\' => 
         array (
-            0 => __DIR__ . '/..' . '/illuminate/macroable',
-            1 => __DIR__ . '/..' . '/illuminate/collections',
+            0 => __DIR__ . '/..' . '/illuminate/collections',
+            1 => __DIR__ . '/..' . '/illuminate/macroable',
             2 => __DIR__ . '/..' . '/illuminate/support',
         ),
         'Illuminate\\Filesystem\\' => 

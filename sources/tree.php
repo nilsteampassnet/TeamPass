@@ -314,7 +314,6 @@ function recursiveTree(
     array &$ret_json = array()
 ) {
     $text = '';
-    $title = '';
     
     // Load config
     include __DIR__.'/../includes/config/tp.config.php';

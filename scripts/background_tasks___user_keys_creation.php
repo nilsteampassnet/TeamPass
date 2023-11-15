@@ -677,7 +677,6 @@ function cronContinueReEncryptingUserSharekeysStep40(
 {
     // get user private key
     $ownerInfo = getOwnerInfo($extra_arguments['owner_id'], $extra_arguments['creator_pwd'], $SETTINGS);
-    $userInfo = getOwnerInfo($extra_arguments['new_user_id'], $extra_arguments['new_user_pwd'], $SETTINGS);
 
     // Loop on fields
     $rows = DB::query(

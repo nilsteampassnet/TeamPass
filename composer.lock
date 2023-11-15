@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "a6e012069800d6a93259bd1d15f4e2b0",
+    "content-hash": "134b04f4896b6f9cca339c5e919f79b2",
     "packages": [
         {
             "name": "defuse/php-encryption",
@@ -3427,6 +3427,36 @@
             }
         },
         {
+            "name": "teampassclasses/language",
+            "version": "dev-master",
+            "dist": {
+                "type": "path",
+                "url": "includes/libraries/teampassclasses/language",
+                "reference": "55cdb8efe5ff68793d345e23c31c615102fa9f60"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "TeampassClasses\\Language\\": "src/"
+                }
+            },
+            "license": [
+                "GPL-3.0-only"
+            ],
+            "authors": [
+                {
+                    "name": "Nils Laumaillé"
+                }
+            ],
+            "description": "Perform the language translations.",
+            "keywords": [
+                "language"
+            ],
+            "transport-options": {
+                "relative": true
+            }
+        },
+        {
             "name": "teampassclasses/nestedtree",
             "version": "dev-master",
             "dist": {
@@ -4025,7 +4055,8 @@
         "teampassclasses/superglobal": 20,
         "ezimuel/php-secure-session": 20,
         "teampassclasses/performchecks": 20,
-        "teampassclasses/encryption": 20
+        "teampassclasses/encryption": 20,
+        "teampassclasses/language": 20
     },
     "prefer-stable": true,
     "prefer-lowest": false,

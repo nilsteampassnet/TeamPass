@@ -3,19 +3,25 @@
 namespace TeampassClasses\SuperGlobal;
 
 /**
- * Teampass - a collaborative passwords manager
- *
+ * Teampass - a collaborative passwords manager.
+ * ---
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * ---
  *
- * @category  Teampass
- * @package   SuperGlobal.php
- * @author    Nils Laumaillé <nils@teampass.net>
- * @copyright 2009-2019 Nils Laumaillé
+ * @project   Teampass
+ * @file      SuperGlobal.php
+ * ---
+ *
+ * @author    Nils Laumaillé (nils@teampass.net)
+ *
+ * @copyright 2009-2023 Teampass.net
+ *
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
- * @version   GIT: <git_id>
- * @link      http://www.teampass.net
+ * ---
+ *
+ * @see       https://www.teampass.net
  */
 
 /**

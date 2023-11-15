@@ -3580,6 +3580,39 @@
             "install-path": "../teampassclasses/encryption"
         },
         {
+            "name": "teampassclasses/language",
+            "version": "dev-master",
+            "version_normalized": "dev-master",
+            "dist": {
+                "type": "path",
+                "url": "includes/libraries/teampassclasses/language",
+                "reference": "55cdb8efe5ff68793d345e23c31c615102fa9f60"
+            },
+            "type": "library",
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "TeampassClasses\\Language\\": "src/"
+                }
+            },
+            "license": [
+                "GPL-3.0-only"
+            ],
+            "authors": [
+                {
+                    "name": "Nils Laumaillé"
+                }
+            ],
+            "description": "Perform the language translations.",
+            "keywords": [
+                "language"
+            ],
+            "transport-options": {
+                "relative": true
+            },
+            "install-path": "../teampassclasses/language"
+        },
+        {
             "name": "teampassclasses/nestedtree",
             "version": "dev-master",
             "version_normalized": "dev-master",

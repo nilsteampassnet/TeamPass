@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -406,7 +406,6 @@ return array(
     'before' => 'Before',
     'top' => 'Top',
     'bottom' => 'Bottom',
-    'field' => 'Field',
     'configuration' => 'Configuration',
     'definition' => 'Definition',
     'number_of_modified_attachments' => 'Number of modified attachments',

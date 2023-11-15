@@ -556,6 +556,15 @@
             'reference' => 'cd2102e1aa7232b6edf8f594ea727c13c6f909b6',
             'dev_requirement' => false,
         ),
+        'teampassclasses/language' => array(
+            'pretty_version' => 'dev-master',
+            'version' => 'dev-master',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../teampassclasses/language',
+            'aliases' => array(),
+            'reference' => '55cdb8efe5ff68793d345e23c31c615102fa9f60',
+            'dev_requirement' => false,
+        ),
         'teampassclasses/nestedtree' => array(
             'pretty_version' => 'dev-master',
             'version' => 'dev-master',
