@@ -5,6 +5,7 @@
 .idea
 *.sh
 *.sh.save
+*.sk
 nbproject
 nbproject/private
 node_modules
@@ -36,5 +37,4 @@ EncryptedFile_*
 /~/*
 gitdo.sh
 version-commit.php
-tp_minor_release.txt
-/vendor__to_be_added/*
+/sk/**
