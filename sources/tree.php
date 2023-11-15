@@ -495,8 +495,7 @@ function prepareNodeJson(
     array $SETTINGS
 ): array
 {
-    // Load superGlobals
-    $superGlobal = new SuperGlobal();
+    // Load user's language
     $lang = new Language(); 
 
     // prepare json return for current node
@@ -601,8 +600,7 @@ function prepareNodeData(
     NestedTree $tree
 ): array
 {
-    // Load superGlobals
-    $superGlobal = new SuperGlobal();
+    // Load user's language
     $lang = new Language(); 
 
     if (in_array($nodeId, $session_groupes_visibles) === true) {

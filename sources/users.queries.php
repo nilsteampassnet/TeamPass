@@ -63,7 +63,7 @@ $checkUserAccess = new PerformChecks(
 );
 // Handle the case
 echo $checkUserAccess->caseHandler();
-if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('users') === false) {
+if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('profile') === false) {
     // Not allowed page
     $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
     include $SETTINGS['cpassman_dir'] . '/error.php';
