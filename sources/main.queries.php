@@ -105,7 +105,7 @@ if (
     include __DIR__.'/../error.php';
     exit();
 } elseif ((isset($_SESSION['user_id']) === true
-        && isset($_SESSION['key'])) === true
+        && $superGlobal->get('key', 'SESSION') !== null)
     || (isset($post_type) === true
         && null !== filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES))
 ) {

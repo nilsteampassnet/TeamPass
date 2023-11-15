@@ -97,7 +97,7 @@ if (null !== $post_type) {
          */
         case 'add_new_user':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -363,7 +363,7 @@ if (null !== $post_type) {
          */
         case 'delete_user':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -516,7 +516,7 @@ if (null !== $post_type) {
          */
         case 'can_create_root_folder':
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($_SESSION['key'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($superGlobal->get('key', 'SESSION'), FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
                 echo prepareExchangedData(array('error' => 'not_allowed', 'error_text' => $lang->get('error_not_allowed_to')), 'encode');
                 break;
             }
@@ -555,7 +555,7 @@ if (null !== $post_type) {
         case 'admin':
             // Check KEY
             if (
-                filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($_SESSION['key'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)
+                filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($superGlobal->get('key', 'SESSION'), FILTER_SANITIZE_FULL_SPECIAL_CHARS)
                 || $_SESSION['is_admin'] !== '1'
             ) {
                 echo prepareExchangedData(array('error' => 'not_allowed', 'error_text' => $lang->get('error_not_allowed_to')), 'encode');
@@ -599,7 +599,7 @@ if (null !== $post_type) {
          */
         case 'gestionnaire':
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($_SESSION['key'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($superGlobal->get('key', 'SESSION'), FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
                 echo prepareExchangedData(array('error' => 'not_allowed', 'error_text' => $lang->get('error_not_allowed_to')), 'encode');
                 break;
             }
@@ -644,7 +644,7 @@ if (null !== $post_type) {
          */
         case 'read_only':
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($_SESSION['key'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($superGlobal->get('key', 'SESSION'), FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
                 echo prepareExchangedData(array('error' => 'not_allowed', 'error_text' => $lang->get('error_not_allowed_to')), 'encode');
                 break;
             }
@@ -686,7 +686,7 @@ if (null !== $post_type) {
          */
         case 'can_manage_all_users':
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($_SESSION['key'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($superGlobal->get('key', 'SESSION'), FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
                 echo prepareExchangedData(array('error' => 'not_allowed', 'error_text' => $lang->get('error_not_allowed_to')), 'encode');
                 break;
             }
@@ -729,7 +729,7 @@ if (null !== $post_type) {
          */
         case 'personal_folder':
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($_SESSION['key'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($superGlobal->get('key', 'SESSION'), FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
                 echo prepareExchangedData(array('error' => 'not_allowed', 'error_text' => $lang->get('error_not_allowed_to')), 'encode');
                 break;
             }
@@ -770,7 +770,7 @@ if (null !== $post_type) {
          */
         case 'unlock_account':
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($_SESSION['key'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($superGlobal->get('key', 'SESSION'), FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
@@ -1040,7 +1040,7 @@ if (null !== $post_type) {
          */
         case 'disconnect_user':
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($_SESSION['key'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($superGlobal->get('key', 'SESSION'), FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
@@ -1080,7 +1080,7 @@ if (null !== $post_type) {
          */
         case 'disconnect_all_users':
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($_SESSION['key'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($superGlobal->get('key', 'SESSION'), FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
@@ -1125,7 +1125,7 @@ if (null !== $post_type) {
          */
         case 'get_user_info':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -1383,7 +1383,7 @@ if (null !== $post_type) {
          */
         case 'store_user_changes':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -1654,7 +1654,7 @@ if (null !== $post_type) {
          */
         case 'user_edit_login':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -1714,7 +1714,7 @@ if (null !== $post_type) {
          */
         case 'is_login_available':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -1756,7 +1756,7 @@ if (null !== $post_type) {
          */
         case 'user_folders_rights':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -1907,7 +1907,7 @@ if (null !== $post_type) {
          */
         case 'get_list_of_users_for_sharing':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -2036,7 +2036,7 @@ if (null !== $post_type) {
          */
         case 'update_users_rights_sharing':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -2132,7 +2132,7 @@ if (null !== $post_type) {
          */
         case 'user_profile_update':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -2242,7 +2242,7 @@ if (null !== $post_type) {
             //CASE where refreshing table
         case 'save_user_change':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -2364,7 +2364,7 @@ if (null !== $post_type) {
         */
         case 'get_list_of_users_in_ldap':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -2529,7 +2529,7 @@ if (null !== $post_type) {
          */
         case 'add_user_from_ldap':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -2717,7 +2717,7 @@ if (null !== $post_type) {
         */
         case 'finishing_user_keys_creation':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -2781,7 +2781,7 @@ if (null !== $post_type) {
          */
         case 'change_user_auth_type':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -2858,7 +2858,7 @@ if (null !== $post_type) {
          */
         case 'change_user_privkey_with_otc':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -2988,7 +2988,7 @@ if (null !== $post_type) {
          */
         case 'manage_user_disable_status':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -3072,7 +3072,7 @@ if (null !== $post_type) {
 
         case "create_new_user_tasks":
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -3236,7 +3236,7 @@ if (null !== $post_type) {
          */
         case 'generate_new_otp__preparation':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -3315,7 +3315,7 @@ if (null !== $post_type) {
         */
         case 'get_generate_keys_progress':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -3395,7 +3395,7 @@ if (null !== $post_type) {
          */
         case "get-user-infos":
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,

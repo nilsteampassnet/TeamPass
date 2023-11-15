@@ -94,7 +94,7 @@ switch ($post_type) {
     //CASE for getting informations about the tool
     case 'ldap_test_configuration':
         // Check KEY and rights
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,

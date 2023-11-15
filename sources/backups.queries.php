@@ -100,7 +100,7 @@ if (null !== $post_type) {
             //CASE adding a new function
         case 'onthefly_backup':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -231,7 +231,7 @@ if (null !== $post_type) {
                         'error' => false,
                         'message' => '',
                         'download' => 'sources/downloadFile.php?name=' . urlencode($filename) .
-                            '&sub=files&file=' . $filename . '&type=sql&key=' . $_SESSION['key'] . '&key_tmp=' .
+                            '&sub=files&file=' . $filename . '&type=sql&key=' . $superGlobal->get('key', 'SESSION') . '&key_tmp=' .
                             $_SESSION['key_tmp'] . '&pathIsFiles=1',
                     ),
                     'encode'
@@ -251,7 +251,7 @@ if (null !== $post_type) {
 
         case 'onthefly_restore':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,

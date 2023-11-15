@@ -109,7 +109,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
     //Check if import CSV file format is what expected
     case 'import_file_format_csv':
         // Check KEY and rights
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -280,7 +280,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
     //Insert into DB the items the user has selected
     case 'import_items':
         // Check KEY and rights
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -438,7 +438,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
     //Check if import KEEPASS file format is what expected
     case 'import_file_format_keepass':
         // Check KEY and rights
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -601,7 +601,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
     // KEEPASS - CREATE FOLDERS
     case 'keepass_create_folders':
         // Check KEY and rights
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -673,7 +673,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
     // KEEPASS - CREATE ITEMS
     case 'keepass_create_items':
         // Check KEY and rights
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,

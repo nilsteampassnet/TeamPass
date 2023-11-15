@@ -242,7 +242,7 @@ if (empty($_SESSION['sessionDuration']) === false) {
 
 // get some init
 if (isset($_SESSION['user_id']) === false || (int) $_SESSION['user_id'] === 0) {
-    $_SESSION['key'] = GenerateCryptKey(50, false, true, true, false, true, ['cpassman_dir' => '.']);
+    $superGlobal->put('key', GenerateCryptKey(50, false, true, true, false, true, ['cpassman_dir' => '.']), 'SESSION');
     $_SESSION['user_id'] = 0;
     $_SESSION['id'] = 1;
 }
@@ -254,7 +254,7 @@ if (
     && (int) $_SESSION['user_id'] !== 0
     && (empty($_SESSION['sessionDuration']) === true
         || $_SESSION['sessionDuration'] < time()
-        || empty($_SESSION['key']) === true
+        || $superGlobal->get('key', 'SESSION') === null
         || empty($dataSession['key_tempo']) === true)
 ) {
     // Update table by deleting ID

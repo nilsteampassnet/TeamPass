@@ -94,7 +94,7 @@ if (null !== $post_type) {
         // LOADING THE TABLE
         case 'loadFieldsList':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -241,7 +241,7 @@ if (null !== $post_type) {
         // LOADING THE TABLE
         case 'add_new_category':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -323,7 +323,7 @@ if (null !== $post_type) {
         // LOADING THE TABLE
         case 'edit_category':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     [
                         'error' => true,
@@ -402,7 +402,7 @@ if (null !== $post_type) {
         // LOADING THE TABLE
         case 'delete':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -503,7 +503,7 @@ if (null !== $post_type) {
         // EDIT FIELD
         case 'edit_field':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -629,7 +629,7 @@ if (null !== $post_type) {
         // ADD NEW FIELD
         case 'add_new_field':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -804,7 +804,7 @@ if (null !== $post_type) {
 
         case "addNewField":
             // Check KEY and rights
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
                 break;
             }
@@ -857,7 +857,7 @@ if (null !== $post_type) {
 
         case "update_category_and_field":
             // Check KEY and rights
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
                 break;
             }

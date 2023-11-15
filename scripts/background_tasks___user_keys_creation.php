@@ -22,14 +22,8 @@
  * @see       https://www.teampass.net
  */
 
-use Symfony\Component\Process\Exception\ProcessFailedException;
-use Symfony\Component\Process\Process;
-use voku\helper\AntiXSS;
-use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\Language\Language;
-use EZimuel\PHPSecureSession;
-use TeampassClasses\PerformChecks\PerformChecks;
 
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
@@ -1023,6 +1017,8 @@ function cronContinueReEncryptingUserSharekeysStep10(
     array $extra_arguments
 ): array
 {
+    $lang = new Language();
+
     // IF USER IS NOT THE SAME
     if ((int) $post_user_id === (int) $extra_arguments['owner_id']) {
         return [

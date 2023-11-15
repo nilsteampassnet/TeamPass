@@ -168,7 +168,7 @@ switch ($post_type) {
         //CASE for creating a DB backup
     case 'admin_action_db_backup':
         // Check KEY
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -281,7 +281,7 @@ switch ($post_type) {
             //update LOG
             logEvents($SETTINGS, 'admin_action', 'dataBase backup', (string) $_SESSION['user_id'], $_SESSION['login']);
 
-            echo '[{"result":"db_backup" , "href":"sources/downloadFile.php?name=' . urlencode($filename) . '&sub=files&file=' . $filename . '&type=sql&key=' . $_SESSION['key'] . '&key_tmp=' . $_SESSION['key_tmp'] . '&pathIsFiles=1"}]';
+            echo '[{"result":"db_backup" , "href":"sources/downloadFile.php?name=' . urlencode($filename) . '&sub=files&file=' . $filename . '&type=sql&key=' . $superGlobal->get('key', 'SESSION') . '&key_tmp=' . $_SESSION['key_tmp'] . '&pathIsFiles=1"}]';
         }
         break;
 
@@ -289,7 +289,7 @@ switch ($post_type) {
         //CASE for restoring a DB backup
     case 'admin_action_db_restore':
         // Check KEY
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -380,7 +380,7 @@ switch ($post_type) {
         //CASE for optimizing the DB
     case 'admin_action_db_optimize':
         // Check KEY
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -475,7 +475,7 @@ switch ($post_type) {
     */
     case 'admin_action_reload_cache_table':
         // Check KEY
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -526,7 +526,7 @@ switch ($post_type) {
     */
     case 'admin_action_rebuild_config_file':
         // Check KEY
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 [
                     'error' => true,
@@ -589,7 +589,7 @@ switch ($post_type) {
     */
     case 'admin_action_backup_decrypt':
         // Check KEY
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -684,7 +684,7 @@ switch ($post_type) {
     */
     case 'admin_action_change_salt_key___start':
         // Check KEY
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -802,7 +802,7 @@ switch ($post_type) {
     */
     case 'admin_action_change_salt_key___encrypt':
         // Check KEY
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -1184,7 +1184,7 @@ switch ($post_type) {
     */
     case 'admin_action_change_salt_key___end':
         // Check KEY
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -1234,7 +1234,7 @@ switch ($post_type) {
     */
     case 'admin_action_change_salt_key___restore_backup':
         // Check KEY
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -1311,7 +1311,7 @@ switch ($post_type) {
     */
     case 'admin_action_change_salt_key___delete_backup':
         // Check KEY
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -1356,7 +1356,7 @@ switch ($post_type) {
     */
     case 'admin_email_test_configuration':
         // Check KEY
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -1401,7 +1401,7 @@ switch ($post_type) {
     */
     case 'admin_email_send_backlog':
         // Check KEY
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -1490,7 +1490,7 @@ switch ($post_type) {
     */
     case 'admin_email_send_backlog_old':
         // Check KEY
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -1549,7 +1549,7 @@ switch ($post_type) {
     */
     case 'admin_action_attachments_cryption':
         // Check KEY
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -1623,7 +1623,7 @@ switch ($post_type) {
      */
     case 'admin_action_attachments_cryption_continu':
         // Check KEY
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -1748,7 +1748,7 @@ switch ($post_type) {
      */
     case 'admin_action_api_save_key':
         // Check KEY
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -1843,7 +1843,7 @@ switch ($post_type) {
     */
     case 'admin_action_api_save_ip':
         // Check KEY
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -1960,7 +1960,7 @@ switch ($post_type) {
         //Libraries call
         require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
         // Check KEY
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -2044,7 +2044,7 @@ switch ($post_type) {
 
     case 'save_google_options':
         // Check KEY and rights
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -2128,7 +2128,7 @@ switch ($post_type) {
 
     case 'save_agses_options':
         // Check KEY and rights
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -2237,7 +2237,7 @@ switch ($post_type) {
 
     case 'save_option_change':
         // Check KEY and rights
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -2388,7 +2388,7 @@ switch ($post_type) {
 
     case 'get_values_for_statistics':
         // Check KEY and rights
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -2409,7 +2409,7 @@ switch ($post_type) {
 
     case 'save_sending_statistics':
         // Check KEY and rights
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -2490,7 +2490,7 @@ switch ($post_type) {
 
     case 'is_backup_table_existing':
         // Check KEY and rights
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -2515,7 +2515,7 @@ switch ($post_type) {
 
     case 'get_list_of_roles':
         // Check KEY and rights
-        if ($post_key !== $_SESSION['key']) {
+        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,

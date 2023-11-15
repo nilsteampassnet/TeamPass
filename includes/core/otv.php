@@ -27,8 +27,6 @@ declare(strict_types=1);
 
 use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\Language\Language;
-use EZimuel\PHPSecureSession;
-use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\NestedTree\NestedTree;
 
 

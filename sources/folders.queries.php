@@ -110,7 +110,7 @@ if (null !== $post_type) {
          */
         case 'build_matrix':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -240,7 +240,7 @@ if (null !== $post_type) {
         // CASE where selecting/deselecting sub-folders
         case 'select_sub_folders':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -284,7 +284,7 @@ if (null !== $post_type) {
             //CASE where UPDATING a new group
         case 'update_folder':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -495,7 +495,7 @@ if (null !== $post_type) {
         //CASE where ADDING a new group
         case 'add_folder':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -852,7 +852,7 @@ if (null !== $post_type) {
         // CASE where DELETING multiple groups
         case 'delete_folders':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -1019,7 +1019,7 @@ if (null !== $post_type) {
 
         case 'copy_folder':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -1490,7 +1490,7 @@ if (null !== $post_type) {
         // CASE where selecting/deselecting sub-folders
         case 'refresh_folders_list':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,

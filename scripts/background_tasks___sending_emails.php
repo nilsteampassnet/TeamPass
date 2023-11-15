@@ -22,12 +22,8 @@
  * @see       https://www.teampass.net
  */
 
-use voku\helper\AntiXSS;
-use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\Language\Language;
-use EZimuel\PHPSecureSession;
-use TeampassClasses\PerformChecks\PerformChecks;
 
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';

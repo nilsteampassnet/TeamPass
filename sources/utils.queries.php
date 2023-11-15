@@ -192,7 +192,7 @@ if (null !== $post_type) {
 
         //CASE start user personal pwd re-encryption
         case 'reencrypt_personal_pwd_start':
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== $_SESSION['key']) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -240,7 +240,7 @@ if (null !== $post_type) {
 
         //CASE auto update server password
         case 'server_auto_update_password':
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -352,7 +352,7 @@ if (null !== $post_type) {
             break;
 
         case 'server_auto_update_password_frequency':
-            if ($post_key !== $_SESSION['key']
+            if ($post_key !== $superGlobal->get('key', 'SESSION')
                 || null === filter_input(INPUT_POST, 'id', FILTER_SANITIZE_FULL_SPECIAL_CHARS)
                 || null === filter_input(INPUT_POST, 'freq', FILTER_SANITIZE_FULL_SPECIAL_CHARS)
             ) {

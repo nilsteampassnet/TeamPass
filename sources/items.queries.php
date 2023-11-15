@@ -182,7 +182,7 @@ switch ($inputData['type']) {
     */
     case 'new_item':
         // Check KEY and rights
-        if ($inputData['key'] !== $_SESSION['key']) {
+        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -829,7 +829,7 @@ switch ($inputData['type']) {
     */
     case 'update_item':
         // Check KEY and rights
-        if ($inputData['key'] !== $_SESSION['key']) {
+        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -1925,7 +1925,7 @@ switch ($inputData['type']) {
     */
     case 'copy_item':
         // Check KEY and rights
-        if ($inputData['key'] !== $_SESSION['key']) {
+        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -2313,7 +2313,7 @@ switch ($inputData['type']) {
     */
     case 'show_details_item':
         // Check KEY and rights
-        if ($inputData['key'] !== $_SESSION['key']) {
+        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -2949,7 +2949,7 @@ switch ($inputData['type']) {
         // Is this query expected (must be run after a step1 and not standalone)
         if ($_SESSION['user']['show_step2'] !== true) {
             // Check KEY and rights
-            if ($inputData['key'] !== $_SESSION['key']) {
+            if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
                 echo (string) prepareExchangedData(
                     array(
                         'error' => true,
@@ -3220,7 +3220,7 @@ switch ($inputData['type']) {
     */
     case 'delete_item':
         // Check KEY and rights
-        if ($inputData['key'] !== $_SESSION['key']) {
+        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -3333,7 +3333,7 @@ switch ($inputData['type']) {
     */
     case 'update_folder':
         // Check KEY and rights
-        if ($inputData['key'] !== $_SESSION['key']) {
+        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -3450,7 +3450,7 @@ switch ($inputData['type']) {
     */
     case 'move_folder':
         // Check KEY and rights
-        if ($inputData['key'] !== $_SESSION['key']) {
+        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -3561,7 +3561,7 @@ switch ($inputData['type']) {
     */
     case 'do_items_list_in_folder':
         // Check KEY and rights
-        if ($inputData['key'] !== $_SESSION['key']) {
+        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -4226,7 +4226,7 @@ switch ($inputData['type']) {
 
     case 'show_item_password':
         // Check KEY
-        if ($inputData['key'] !== $_SESSION['key']) {
+        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -4580,7 +4580,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
     */
     case 'delete_attached_file':
         // Check KEY
-        if ($inputData['key'] !== $_SESSION['key']) {
+        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -4671,7 +4671,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
     case 'action_on_quick_icon':
         // Check KEY and rights
         if (
-            $inputData['key'] !== $_SESSION['key']
+            $inputData['key'] !== $superGlobal->get('key', 'SESSION')
             || $_SESSION['user_read_only'] === true || !isset($SETTINGS['pwd_maximum_length'])
         ) {
             // error
@@ -4744,7 +4744,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
     */
     case 'move_item':
         // Check KEY and rights
-        if ($inputData['key'] !== $_SESSION['key']) {
+        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -5055,7 +5055,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
     */
     case 'mass_move_items':
         // Check KEY and rights
-        if ($inputData['key'] !== $_SESSION['key']) {
+        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -5379,7 +5379,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
     */
     case 'mass_delete_items':
         // Check KEY and rights
-        if ($inputData['key'] !== $_SESSION['key']) {
+        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -5485,7 +5485,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
     */
     case 'send_email':
         // Check KEY
-        if ($inputData['key'] !== $_SESSION['key']) {
+        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -5599,7 +5599,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
     */
     /*
     case 'notify_a_user':
-        if ($inputData['key'] !== $_SESSION['key']) {
+        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
             echo '[{"error" : "something_wrong"}]';
             break;
         }
@@ -5649,7 +5649,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
     * Item History Log - add new entry
     */
     case 'history_entry_add':
-        if ($inputData['key'] !== $_SESSION['key']) {
+        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
             $data = array('error' => 'key_is_wrong');
             echo (string) prepareExchangedData(
                 $data,
@@ -5735,7 +5735,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
     */
     case 'free_item_for_edition':
         // Check KEY
-        if ($inputData['key'] !== $_SESSION['key']) {
+        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
             echo '[ { "error" : "key_not_conform" } ]';
             break;
         }
@@ -5773,7 +5773,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
     */
     case 'generate_OTV_url':
         // Check KEY
-        if ($inputData['key'] !== $_SESSION['key']) {
+        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
             echo '[ { "error" : "key_not_conform" } ]';
             break;
         }
@@ -5878,7 +5878,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
     */
     case 'update_OTV_url':
         // Check KEY
-        if ($inputData['key'] !== $_SESSION['key']) {
+        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
             echo '[ { "error" : "key_not_conform" } ]';
             break;
         }
@@ -5937,7 +5937,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
     */
     case 'image_preview_preparation':
         // Check KEY
-        if ($inputData['key'] !== $_SESSION['key']) {
+        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -6007,7 +6007,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
     /*
     case 'delete_file':
         // Check KEY
-        if ($inputData['key'] !== $_SESSION['key']) {
+        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
             echo '[ { "error" : "key_not_conform" } ]';
             break;
         }
@@ -6029,7 +6029,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
     */
     case 'check_for_title_duplicate':
         // Check KEY
-        if ($inputData['key'] !== $_SESSION['key']) {
+        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
             echo '[ { "error" : "key_not_conform" } ]';
             break;
         }
@@ -6108,7 +6108,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
     */
     case 'refresh_visible_folders':
         // Check KEY
-        if ($inputData['key'] !== $_SESSION['key']) {
+        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -6289,7 +6289,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
     */
     case 'refresh_folders_other_info':
         // Check KEY
-        if ($inputData['key'] !== $_SESSION['key']) {
+        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -6336,7 +6336,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
     */
     case 'load_item_history':
         // Check KEY
-        if ($inputData['key'] !== $_SESSION['key']) {
+        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
             echo (string) prepareExchangedData(
                 array('error' => 'ERR_KEY_NOT_CORRECT'),
                 'encode'
@@ -6485,7 +6485,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
 
     case 'suggest_item_change':
         // Check KEY
-        if ($inputData['key'] !== $_SESSION['key']) {
+        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => 'key_not_conform',
@@ -6583,7 +6583,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
 
     case 'build_list_of_users':
         // Check KEY
-        if ($inputData['key'] !== $_SESSION['key']) {
+        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
             echo '[ { "error" : "key_not_conform" } ]';
             break;
         }
@@ -6615,7 +6615,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
 
     case 'send_request_access':
         // Check KEY
-        if ($inputData['key'] !== $_SESSION['key']) {
+        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => 'key_not_conform',
@@ -6713,7 +6713,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
     */
     case 'save_notification_status':
         // Check KEY
-        if ($inputData['key'] !== $_SESSION['key']) {
+        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => 'key_not_conform',
@@ -6784,7 +6784,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
     */
     case 'delete_uploaded_files_but_not_saved':
         // Check KEY
-        if ($inputData['key'] !== $_SESSION['key']) {
+        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => 'key_not_conform',
@@ -6863,7 +6863,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
     */
     case 'confirm_attachments':
         // Check KEY
-        if ($inputData['key'] !== $_SESSION['key']) {
+        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => 'key_not_conform',
@@ -6920,7 +6920,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
     */
     case 'check_current_access_rights':
         // Check KEY
-        if ($inputData['key'] !== $_SESSION['key']) {
+        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => 'key_not_conform',

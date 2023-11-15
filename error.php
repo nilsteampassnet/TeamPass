@@ -95,7 +95,7 @@ if (
                 <h3><i class="fas fa-warning text-danger"></i> Oops! <?php echo $errorCode; ?>.</h3>
 
                 <p>
-                    For security reason, you have been disconnected. Click to <a href="./includes/core/logout.php?token=<?php echo isset($_SESSION['key']) === true ? $_SESSION['key'] : ''; ?>">log in</a>.
+                    For security reason, you have been disconnected. Click to <a href="./includes/core/logout.php?token=<?php echo $superGlobal->get('key', 'SESSION'); ?>">log in</a>.
                 </p>
 
             </div>

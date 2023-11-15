@@ -90,7 +90,7 @@ $post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS
 
 // Check KEY and rights
 if (null === $post_key
-    || $post_key != $_SESSION['key']
+    || $post_key != $superGlobal->get('key', 'SESSION')
 ) {
     echo prepareExchangedData(
         array('error' => 'ERR_KEY_NOT_CORRECT'),
@@ -104,7 +104,7 @@ if (null !== $post_type) {
     switch ($post_type) {
         case 'log_action_on_item':
             // Check KEY and rights
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array('error' => 'ERR_KEY_NOT_CORRECT'),
                     'encode'

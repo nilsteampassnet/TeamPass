@@ -97,7 +97,7 @@ if (null !== $post_type) {
             //CASE list of recycled elements
         case 'recycled_bin_elements':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -192,7 +192,7 @@ if (null !== $post_type) {
         //CASE recycle selected recycled elements
         case 'restore_selected_objects':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -327,7 +327,7 @@ if (null !== $post_type) {
         //CASE delete selected recycled elements
         case 'delete_selected_objects':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -458,7 +458,7 @@ if (null !== $post_type) {
         */
         case 'purge_logs':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -640,7 +640,7 @@ if (null !== $post_type) {
         //CASE show process detail
         case 'show_process_detail':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -760,7 +760,7 @@ if (null !== $post_type) {
         //CASE delete a task
         case 'task_delete':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -828,7 +828,7 @@ if (null !== $post_type) {
         //CASE handle crontab job
         case 'handle_crontab_job':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,

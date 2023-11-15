@@ -640,6 +640,11 @@ try {
     // Do nothing
 }
 
+// Now removing all old libraries
+deleteAll([
+    "Illuminate","Encryption","Tightenco","portable-ascii-master","Pdf","ForceUTF8","portable-utf8-master","GO","Symfony","Elegant","Firebase","Database","anti-xss-master","LdapRecord","misc","PasswordGenerator","Authentication","Goodby","Plupload","PHPMailer","TiBeN","protect","Cron","PasswordLib","Fork","Carbon","Tree","Webmozart"
+]);
+
 //---<END 3.0.10
 
 //---------------------------------------------------------------------

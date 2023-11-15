@@ -3361,8 +3361,7 @@ function isValueSetEmpty($value, $boolean = true) : bool
  */
 function defineComplexity() : void
 {
-    // Load superGlobals
-    $superGlobal = new SuperGlobal();
+    // Load user's language
     $lang = new Language(); 
     
     if (defined('TP_PW_COMPLEXITY') === false) {

@@ -131,7 +131,7 @@ if ($post_type === 'identify_user') {
             $post_data,
             $SETTINGS
         );
-    } elseif (isset($_SESSION['next_possible_pwd_attempts']) && time() > $_SESSION['next_possible_pwd_attempts'] && $sessionPwdAttempts > 3) {
+    } elseif (time() > (int) $superGlobal->get('next_possible_pwd_attempts', 'SESSION') && $sessionPwdAttempts > 3) {
         $sessionPwdAttempts = 0;
         // identify the user through Teampass process
         identifyUser(
@@ -139,7 +139,7 @@ if ($post_type === 'identify_user') {
             $SETTINGS
         );
     } else {
-        $_SESSION['next_possible_pwd_attempts'] = time() + 10;
+        $superGlobal->put('next_possible_pwd_attempts', (time() + 10), 'SESSION');
         // Encrypt data to return
         echo prepareExchangedData(
             [
@@ -202,7 +202,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     $server['PHP_AUTH_PW'] = $superGlobal->get('PHP_AUTH_PW', 'SERVER');
     
     // decrypt and retreive data in JSON format
-    if (empty($superGlobal->get('key', 'SESSION')) === true) {
+    if ($superGlobal->get('key', 'SESSION') === null) {
         $dataReceived = $sentData;
     } else {
         $dataReceived = prepareExchangedData(
@@ -249,7 +249,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                 ],
                 'encode'
             ),
-            'key' => $_SESSION['key']
+            'key' => $superGlobal->get('key', 'SESSION')
         ]);
         return false;
     }
@@ -318,7 +318,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                 ],
                 'encode'
             ),
-            'key' => $_SESSION['key']
+            'key' => $superGlobal->get('key', 'SESSION')
         ]);
         return false;
     }

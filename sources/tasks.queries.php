@@ -88,7 +88,7 @@ $post_task = filter_input(INPUT_POST, 'task', FILTER_SANITIZE_FULL_SPECIAL_CHARS
 
 if (null !== $post_type) {
     // Do checks
-    if ($post_key !== $_SESSION['key']) {
+    if ($post_key !== $superGlobal->get('key', 'SESSION')) {
         echo prepareExchangedData(
             array(
                 'error' => true,

@@ -297,7 +297,7 @@ if (null !== $post_type) {
          */
         case 'clean_export_table':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -326,7 +326,7 @@ if (null !== $post_type) {
          */
         case 'export_prepare_data':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -500,7 +500,7 @@ if (null !== $post_type) {
 
         case 'finalize_export_pdf':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -671,7 +671,7 @@ if (null !== $post_type) {
             //CASE export in HTML format
         case 'export_to_html_format':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -815,7 +815,7 @@ if (null !== $post_type) {
         //CASE export in HTML format - Iteration loop
         case 'export_to_html_format_loop':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -952,7 +952,7 @@ if (null !== $post_type) {
         //CASE export in HTML format - Iteration loop
         case 'export_to_html_format_finalize':
             // Check KEY
-            if ($post_key !== $_SESSION['key']) {
+            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,

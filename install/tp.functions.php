@@ -455,3 +455,49 @@ function findPhpBinary(): array
         'error' => false,
     ];
 }
+
+/**
+ * delete all files and directories
+ *
+ * @param array $folders
+ * @return void
+ */
+function deleteAll(array $folders)
+{
+
+    foreach($folders as $folder) {
+        deleteAllFolder($folder);
+    }
+}
+
+/**
+ * Delete recursively a folder
+ *
+ * @param string $str
+ * @return void
+ */
+function deleteAllFolder(string $str)
+{
+    // Check for files 
+    if (is_file($str)) { 
+        // If it is file then remove by 
+        // using unlink function 
+        @unlink($str); 
+    } 
+    // If it is a directory. 
+    elseif (is_dir($str)) { 
+        // Get the list of the files in this 
+        // directory 
+        $scan = glob(rtrim($str, '/').'/*'); 
+
+        // Loop through the list of files 
+        foreach($scan as $index=>$path) { 
+
+            // Call recursive function 
+            deleteAllFolder($path); 
+        } 
+
+        // Remove the directory itself 
+        @rmdir($str); 
+    } 
+}
