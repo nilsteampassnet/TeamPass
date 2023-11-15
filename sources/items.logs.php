@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\NestedTree\NestedTree;
@@ -31,6 +32,7 @@ require_once 'main.functions.php';
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 session_name('teampass_session');
 session_start();
 
@@ -69,9 +71,6 @@ if (
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
-
-// Load language file
-require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$superGlobal->get('user_language', 'SESSION', 'user').'.php';
 
 // Define Timezone
 date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');

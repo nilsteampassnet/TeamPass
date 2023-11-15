@@ -39,8 +39,8 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
         if (upgradeRequired() === true) {
             ?>
             toastr.error(
-                '<?php echo langHdl('upgrade_requested_more'); ?>',
-                '<h2></i><?php echo langHdl('upgrade_requested'); ?></h2>',
+                '<?php echo $lang->get('upgrade_requested_more'); ?>',
+                '<h2></i><?php echo $lang->get('upgrade_requested'); ?></h2>',
                 {
                     positionClass: "toast-bottom-full-width",
                     preventDuplicates: true,
@@ -72,8 +72,8 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
             }
             
             toastr.success(
-                '<?php echo langHdl('loading_main_page'); ?><i class="fas fa-circle-notch fa-spin ml-3"></i>',
-                '<h5><?php echo langHdl('please_wait'); ?></h5>',
+                '<?php echo $lang->get('loading_main_page'); ?><i class="fas fa-circle-notch fa-spin ml-3"></i>',
+                '<h5><?php echo $lang->get('please_wait'); ?></h5>',
                 {
                     positionClass: "toast-top-center",
                     preventDuplicates: true
@@ -141,41 +141,41 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
         .simplePassMeter({
             "requirements": {},
             "container": "#new-user-password-strength",
-            "defaultText": "<?php echo langHdl('index_pw_level_txt'); ?>",
+            "defaultText": "<?php echo $lang->get('index_pw_level_txt'); ?>",
             "ratings": [{
                     "minScore": 0,
                     "className": "meterFail",
-                    "text": "<?php echo langHdl('complex_level0'); ?>"
+                    "text": "<?php echo $lang->get('complex_level0'); ?>"
                 },
                 {
                     "minScore": 25,
                     "className": "meterWarn",
-                    "text": "<?php echo langHdl('complex_level1'); ?>"
+                    "text": "<?php echo $lang->get('complex_level1'); ?>"
                 },
                 {
                     "minScore": 50,
                     "className": "meterWarn",
-                    "text": "<?php echo langHdl('complex_level2'); ?>"
+                    "text": "<?php echo $lang->get('complex_level2'); ?>"
                 },
                 {
                     "minScore": 60,
                     "className": "meterGood",
-                    "text": "<?php echo langHdl('complex_level3'); ?>"
+                    "text": "<?php echo $lang->get('complex_level3'); ?>"
                 },
                 {
                     "minScore": 70,
                     "className": "meterGood",
-                    "text": "<?php echo langHdl('complex_level4'); ?>"
+                    "text": "<?php echo $lang->get('complex_level4'); ?>"
                 },
                 {
                     "minScore": 80,
                     "className": "meterExcel",
-                    "text": "<?php echo langHdl('complex_level5'); ?>"
+                    "text": "<?php echo $lang->get('complex_level5'); ?>"
                 },
                 {
                     "minScore": 90,
                     "className": "meterExcel",
-                    "text": "<?php echo langHdl('complex_level6'); ?>"
+                    "text": "<?php echo $lang->get('complex_level6'); ?>"
                 }
             ]
         })
@@ -207,8 +207,8 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                 // Alert
                 toastr.remove();
                 toastr.error(
-                    '<?php echo langHdl('current_password_mandatory'); ?>',
-                    '<?php echo langHdl('caution'); ?>', {
+                    '<?php echo $lang->get('current_password_mandatory'); ?>',
+                    '<?php echo $lang->get('caution'); ?>', {
                         timeOut: 5000,
                         progressBar: true
                     }
@@ -242,7 +242,7 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                         toastr.remove();
                         toastr.error(
                             data.message,
-                            '<?php echo langHdl('caution'); ?>', {
+                            '<?php echo $lang->get('caution'); ?>', {
                                 timeOut: 5000,
                                 progressBar: true
                             }
@@ -251,7 +251,7 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                         // Inform user
                         toastr.remove();
                         toastr.success(
-                            '<?php echo langHdl('password_changed'); ?>',
+                            '<?php echo $lang->get('password_changed'); ?>',
                             '', {
                                 timeOut: 1000
                             }
@@ -272,8 +272,8 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
             // Alert
             toastr.remove();
             toastr.error(
-                '<?php echo langHdl('confirmation_seems_wrong'); ?>',
-                '<?php echo langHdl('caution'); ?>', {
+                '<?php echo $lang->get('confirmation_seems_wrong'); ?>',
+                '<?php echo $lang->get('caution'); ?>', {
                     timeOut: 5000,
                     progressBar: true
                 }
@@ -288,7 +288,7 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
         if ($('#user-old-defuse-psk').val() !== '') {
             toastr.remove();
             toastr.info(
-                '<?php echo langHdl('in_progress'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>'
+                '<?php echo $lang->get('in_progress'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>'
             );
 
             // Prepare data
@@ -312,7 +312,7 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                         toastr.remove();
                         toastr.error(
                             data.message,
-                            '<?php echo langHdl('caution'); ?>', {
+                            '<?php echo $lang->get('caution'); ?>', {
                                 timeOut: 5000,
                                 progressBar: true
                             }
@@ -324,7 +324,7 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                             // Finished
                             toastr.remove();
                             toastr.success(
-                                '<?php echo langHdl('alert_page_will_reload'); ?>',
+                                '<?php echo $lang->get('alert_page_will_reload'); ?>',
                                 '', {
                                     timeOut: 10000
                                 }
@@ -364,7 +364,7 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                                             toastr.remove();
                                             toastr.error(
                                                 data.message,
-                                                '<?php echo langHdl('caution'); ?>', {
+                                                '<?php echo $lang->get('caution'); ?>', {
                                                     timeOut: 5000,
                                                     progressBar: true
                                                 }
@@ -379,7 +379,7 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                                 // Finisehd
                                 toastr.remove();
                                 toastr.success(
-                                    '<?php echo langHdl('alert_page_will_reload'); ?>',
+                                    '<?php echo $lang->get('alert_page_will_reload'); ?>',
                                     '', {
                                         timeOut: 10000
                                     }
@@ -394,8 +394,8 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
             // Alert
             toastr.remove();
             toastr.error(
-                '<?php echo langHdl('empty_psk'); ?>',
-                '<?php echo langHdl('caution'); ?>', {
+                '<?php echo $lang->get('empty_psk'); ?>',
+                '<?php echo $lang->get('caution'); ?>', {
                     timeOut: 5000,
                     progressBar: true
                 }
@@ -407,10 +407,10 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
         // Is the user sure?
         showModalDialogBox(
             '#warningModal',
-            '<?php echo langHdl('your_attention_is_required'); ?>',
-            '<?php echo langHdl('i_cannot_remember_info'); ?>',
-            '<?php echo langHdl('confirm'); ?>',
-            '<?php echo langHdl('cancel'); ?>'
+            '<?php echo $lang->get('your_attention_is_required'); ?>',
+            '<?php echo $lang->get('i_cannot_remember_info'); ?>',
+            '<?php echo $lang->get('confirm'); ?>',
+            '<?php echo $lang->get('cancel'); ?>'
         );
 
         // Actions on modal buttons
@@ -432,7 +432,7 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                         toastr.remove();
                         toastr.error(
                             data.message,
-                            '<?php echo langHdl('caution'); ?>', {
+                            '<?php echo $lang->get('caution'); ?>', {
                                 timeOut: 5000,
                                 progressBar: true
                             }
@@ -441,7 +441,7 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                         // Inform user
                         toastr.remove();
                         toastr.success(
-                            '<?php echo langHdl('alert_page_will_reload'); ?>',
+                            '<?php echo $lang->get('alert_page_will_reload'); ?>',
                             '', {
                                 timeOut: 10000
                             }
@@ -455,8 +455,8 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
         $(document).on('click', '#warningModalButtonClose', function() {
             toastr.remove();
             toastr.error(
-                '<?php echo langHdl('cancel'); ?>',
-                '<?php echo langHdl('caution'); ?>', {
+                '<?php echo $lang->get('cancel'); ?>',
+                '<?php echo $lang->get('caution'); ?>', {
                     timeOut: 5000,
                     progressBar: true
                 }
@@ -504,7 +504,7 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
             // launch identification
             toastr.remove();
             toastr.info(
-                '<?php echo langHdl('in_progress'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>',
+                '<?php echo $lang->get('in_progress'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>',
                 '', {
                     positionClass: "toast-top-center"
                 }
@@ -540,8 +540,8 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                     // No session was found, warn user
                     toastr.remove();
                     toastr.error(
-                        '<?php echo langHdl('alert_session_not_consistent'); ?>',
-                        '<?php echo langHdl('caution'); ?>', {
+                        '<?php echo $lang->get('alert_session_not_consistent'); ?>',
+                        '<?php echo $lang->get('caution'); ?>', {
                             timeOut: 5000,
                             progressBar: true
                         }
@@ -566,8 +566,8 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                     // error
                     toastr.remove();
                     toastr.error(
-                        '<?php echo langHdl('server_answer_error'); ?>',
-                        '<?php echo langHdl('caution'); ?>', {
+                        '<?php echo $lang->get('server_answer_error'); ?>',
+                        '<?php echo $lang->get('caution'); ?>', {
                             timeOut: 5000,
                             progressBar: true,
                             positionClass: "toast-top-right"
@@ -611,8 +611,8 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                         $('#yubico_key').focus();
                         toastr.remove();
                         toastr.info(
-                            '<?php echo langHdl('press_your_yubico_key'); ?>',
-                            '<?php echo langHdl('caution'); ?>', {
+                            '<?php echo $lang->get('press_your_yubico_key'); ?>',
+                            '<?php echo $lang->get('caution'); ?>', {
                                 timeOut: 5000,
                                 progressBar: true,
                                 positionClass: "toast-top-center"
@@ -678,8 +678,8 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                     // error
                     toastr.remove();
                     toastr.error(
-                        '<?php echo langHdl('server_answer_error'); ?>',
-                        '<?php echo langHdl('caution'); ?>', {
+                        '<?php echo $lang->get('server_answer_error'); ?>',
+                        '<?php echo $lang->get('caution'); ?>', {
                             timeOut: 5000,
                             progressBar: true,
                             positionClass: "toast-top-right"
@@ -698,8 +698,8 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                 if (data.error === 'maintenance_mode_enabled') {
                     toastr.remove();
                     toastr.warning(
-                        '<?php echo langHdl('index_maintenance_mode_admin'); ?>',
-                        '<?php echo langHdl('caution'); ?>', {
+                        '<?php echo $lang->get('index_maintenance_mode_admin'); ?>',
+                        '<?php echo $lang->get('caution'); ?>', {
                             timeOut: 0,
                             positionClass: "toast-top-right"
                         }
@@ -711,8 +711,8 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                     if (typeof data.extra !== 'undefined' && data.extra === 'ad_user_created') {
                         toastr.remove();
                         toastr.info(
-                            '<?php echo langHdl('your_attention_please'); ?>',
-                            '<?php echo langHdl('ad_user_created_automatically'); ?>', {
+                            '<?php echo $lang->get('your_attention_please'); ?>',
+                            '<?php echo $lang->get('ad_user_created_automatically'); ?>', {
                                 timeOut: 0,
                                 positionClass: "toast-top-center"
                             }
@@ -722,7 +722,7 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                         toastr.remove();
                         toastr.error(
                             data.message,
-                            '<?php echo langHdl('caution'); ?>',
+                            '<?php echo $lang->get('caution'); ?>',
                             {
                                 timeOut: 10000,
                                 progressBar: true,
@@ -736,8 +736,8 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                     } else {
                         toastr.remove();
                         toastr.error(
-                            '<?php echo langHdl('error_bad_credentials'); ?>',
-                            '<?php echo langHdl('caution'); ?>', {
+                            '<?php echo $lang->get('error_bad_credentials'); ?>',
+                            '<?php echo $lang->get('caution'); ?>', {
                                 timeOut: 5000,
                                 progressBar: true,
                                 positionClass: "toast-top-right"
@@ -750,14 +750,14 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                         .html('<div class="col-12 alert alert-info">' +
                             '<p class="text-center">' + data.value + '</p>' +
                             '<p class="text-center"><i class="fas fa-mobile-alt fa-lg mr-1"></i>' +
-                            '<?php echo langHdl('mfa_flash'); ?></p></div>');
+                            '<?php echo $lang->get('mfa_flash'); ?></p></div>');
                     $('#ga_code')
                         .val('')
                         .focus();
 
                     toastr.remove();
                     toastr.success(
-                        '<?php echo langHdl('done'); ?>',
+                        '<?php echo $lang->get('done'); ?>',
                         '', {
                             timeOut: 1000
                         }
@@ -765,7 +765,7 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                 } else if(data.error === false && data.duo_url_ready === true) {
                     toastr.remove();
                     toastr.info(
-                        '<?php echo langHdl('duo_redirect_uri'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>',
+                        '<?php echo $lang->get('duo_redirect_uri'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>',
                         '', {
                             timeOut: 5000,
                             progressBar: true,
@@ -842,7 +842,7 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                         toastr.remove();
                         toastr.error(
                             data.message,
-                            '<?php echo langHdl('caution'); ?>', {
+                            '<?php echo $lang->get('caution'); ?>', {
                                 timeOut: 5000,
                                 progressBar: true
                             }
@@ -851,8 +851,8 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                         // Inform user
                         toastr.remove();
                         toastr.error(
-                            '<?php echo langHdl('share_sent_ok'); ?>',
-                            '<?php echo langHdl('caution'); ?>', {
+                            '<?php echo $lang->get('share_sent_ok'); ?>',
+                            '<?php echo $lang->get('caution'); ?>', {
                                 timeOut: 5000,
                                 progressBar: true
                             }
@@ -861,20 +861,20 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                 }
             );
         } else {
-            $("#connection_error").html("<?php echo langHdl('ga_enter_credentials'); ?>").show();
+            $("#connection_error").html("<?php echo $lang->get('ga_enter_credentials'); ?>").show();
         }
     }
 
     function send_user_new_temporary_ga_code() {
         // Check login and password
         if ($("#login").val() === "" || $("#pw").val() === "") {
-            $("#connection_error").html("<?php echo langHdl('ga_enter_credentials'); ?>").show();
+            $("#connection_error").html("<?php echo $lang->get('ga_enter_credentials'); ?>").show();
             return false;
         }
         
         toastr.remove();
         toastr.info(
-            '<?php echo langHdl('in_progress'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>'
+            '<?php echo $lang->get('in_progress'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>'
         );
 
         data = {
@@ -899,7 +899,7 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                     toastr.remove();
                     toastr.error(
                         data.message,
-                        '<?php echo langHdl('caution'); ?>', {
+                        '<?php echo $lang->get('caution'); ?>', {
                             timeOut: 5000,
                             progressBar: true
                         }
@@ -909,7 +909,7 @@ if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
                     toastr.remove();
                     toastr.success(
                         data.email_result,
-                        '<?php echo langHdl('success'); ?>', {
+                        '<?php echo $lang->get('success'); ?>', {
                             timeOut: 5000,
                             progressBar: true
                         }

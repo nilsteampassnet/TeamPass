@@ -24,6 +24,7 @@
  */
 
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
 
 class ItemController extends BaseController
 {
@@ -37,6 +38,7 @@ class ItemController extends BaseController
     public function inFoldersAction(array $userData): void
     {
         $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
         $strErrorDesc = $responseData = $strErrorHeader = '';
         $requestMethod = $superGlobal->get('REQUEST_METHOD', 'SERVER');
 
@@ -128,6 +130,7 @@ class ItemController extends BaseController
     public function addAction(array $userData)
     {
         $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
         $strErrorDesc = $strErrorHeader = '';
         $requestMethod = $superGlobal->get('REQUEST_METHOD', 'SERVER');
 
@@ -185,6 +188,7 @@ class ItemController extends BaseController
     public function getAction(array $userData): void
     {
         $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
         $strErrorDesc = '';
         $sqlExtra = '';
         $responseData = '';

@@ -24,6 +24,7 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\PerformChecks\PerformChecks;
 
@@ -33,6 +34,7 @@ require_once __DIR__.'/../sources/main.functions.php';
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 
 // Load config if $SETTINGS not defined
 try {
@@ -66,9 +68,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     exit;
 }
 
-// Load language file
-require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$superGlobal->get('user_language', 'SESSION', 'user').'.php';
-
 // Define Timezone
 date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
 
@@ -86,7 +85,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
     <div class="container-fluid">
         <div class="row mb-2">
             <div class="col-sm-12">
-                <h1 class="m-0 text-dark"><i class="fas fa-calendar mr-2"></i><?php echo langHdl('renewal'); ?></h1>
+                <h1 class="m-0 text-dark"><i class="fas fa-calendar mr-2"></i><?php echo $lang->get('renewal'); ?></h1>
             </div><!-- /.col -->
         </div><!-- /.row -->
     </div><!-- /.container-fluid -->
@@ -106,12 +105,12 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                 <i class="fas fa-lightbulb text-warning fa-lg"></i>
                             </div>
                             <div class="col-11">
-                                <?php echo langHdl('renewal_page_info'); ?>
+                                <?php echo $lang->get('renewal_page_info'); ?>
                             </div>
                         </div>
                         <div class="row">
                             <div class="d-inline p-2">
-                                <?php echo langHdl('select_date_showing_items_expiration'); ?>
+                                <?php echo $lang->get('select_date_showing_items_expiration'); ?>
                             </div>
                             <div class="d-inline p-2">
                                 <div class="input-group date inline">
@@ -124,9 +123,9 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                 <thead>
                                     <tr>
                                         <th style=""></th>
-                                        <th style=""><?php echo langHdl('label'); ?></th>
-                                        <th style=""><?php echo langHdl('expiration_date'); ?></th>
-                                        <th style=""><?php echo langHdl('folder'); ?></th>
+                                        <th style=""><?php echo $lang->get('label'); ?></th>
+                                        <th style=""><?php echo $lang->get('expiration_date'); ?></th>
+                                        <th style=""><?php echo $lang->get('folder'); ?></th>
                                     </tr>
                                 </thead>
                             </table>

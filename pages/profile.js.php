@@ -27,12 +27,14 @@ declare(strict_types=1);
 
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
 
 // init
 loadClasses();
 $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 
 if (
     isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
@@ -272,7 +274,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         // Inform user
                         toastr.remove();
                         toastr.info(
-                            '<?php echo langHdl('alert_page_will_reload') . ' ... ' . langHdl('please_wait'); ?>',
+                            '<?php echo $lang->get('alert_page_will_reload') . ' ... ' . $lang->get('please_wait'); ?>',
                             '', {
                                 timeOut: 3000,
                                 progressBar: true
@@ -283,7 +285,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         // just inform user
                         toastr.remove();
                         toastr.info(
-                            '<?php echo langHdl('done'); ?>',
+                            '<?php echo $lang->get('done'); ?>',
                             '', {
                                 timeOut: 2000,
                                 progressBar: true
@@ -354,7 +356,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                 $('#profile-tabs a[href="#tab_information"]').tab('show');
                                 toastr.remove();
                                 toastr.info(
-                                    '<?php echo langHdl('done'); ?>',
+                                    '<?php echo $lang->get('done'); ?>',
                                     '', {
                                         timeOut: 2000,
                                         progressBar: true
@@ -373,32 +375,32 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     $("#profile-password").simplePassMeter({
         "requirements": {},
         "container": "#profile-password-strength",
-        "defaultText": "<?php echo langHdl('index_pw_level_txt'); ?>",
+        "defaultText": "<?php echo $lang->get('index_pw_level_txt'); ?>",
         "ratings": [
             {
                 "minScore": <?php echo TP_PW_STRENGTH_1;?>,
                 "className": "meterWarn",
-                "text": "<?php echo langHdl('complex_level1'); ?>"
+                "text": "<?php echo $lang->get('complex_level1'); ?>"
             },
             {
                 "minScore": <?php echo TP_PW_STRENGTH_2;?>,
                 "className": "meterWarn",
-                "text": "<?php echo langHdl('complex_level2'); ?>"
+                "text": "<?php echo $lang->get('complex_level2'); ?>"
             },
             {
                 "minScore": <?php echo TP_PW_STRENGTH_3;?>,
                 "className": "meterGood",
-                "text": "<?php echo langHdl('complex_level3'); ?>"
+                "text": "<?php echo $lang->get('complex_level3'); ?>"
             },
             {
                 "minScore": <?php echo TP_PW_STRENGTH_4;?>,
                 "className": "meterGood",
-                "text": "<?php echo langHdl('complex_level4'); ?>"
+                "text": "<?php echo $lang->get('complex_level4'); ?>"
             },
             {
                 "minScore": <?php echo TP_PW_STRENGTH_5;?>,
                 "className": "meterExcel",
-                "text": "<?php echo langHdl('complex_level5'); ?>"
+                "text": "<?php echo $lang->get('complex_level5'); ?>"
             }
         ]
     });
@@ -420,7 +422,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         ) {
             toastr.remove();
             toastr.error(
-                '<?php echo langHdl('index_pw_error_identical'); ?>',
+                '<?php echo $lang->get('index_pw_error_identical'); ?>',
                 '', {
                     timeOut: 10000,
                     closeButton: true,
@@ -456,7 +458,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     $('#profile-password').focus();
                     toastr.remove();
                     toastr.warning(
-                        '<?php echo langHdl('your_attention_is_required'); ?>',
+                        '<?php echo $lang->get('your_attention_is_required'); ?>',
                         data.message, {
                             timeOut: 10000,
                             closeButton: true,
@@ -467,7 +469,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     $('#profile-password, #profile-password-confirm').val('');
                     toastr.remove();
                     toastr.success(
-                        '<?php echo langHdl('done'); ?>',
+                        '<?php echo $lang->get('done'); ?>',
                         data.message, {
                             timeOut: 2000,
                             progressBar: true
@@ -486,32 +488,32 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     $("#profile-saltkey").simplePassMeter({
         "requirements": {},
         "container": "#profile-saltkey-strength",
-        "defaultText": "<?php echo langHdl('index_pw_level_txt'); ?>",
+        "defaultText": "<?php echo $lang->get('index_pw_level_txt'); ?>",
         "ratings": [
             {
                 "minScore": <?php echo TP_PW_STRENGTH_1;?>,
                 "className": "meterWarn",
-                "text": "<?php echo langHdl('complex_level1'); ?>"
+                "text": "<?php echo $lang->get('complex_level1'); ?>"
             },
             {
                 "minScore": <?php echo TP_PW_STRENGTH_2;?>,
                 "className": "meterWarn",
-                "text": "<?php echo langHdl('complex_level2'); ?>"
+                "text": "<?php echo $lang->get('complex_level2'); ?>"
             },
             {
                 "minScore": <?php echo TP_PW_STRENGTH_3;?>,
                 "className": "meterGood",
-                "text": "<?php echo langHdl('complex_level3'); ?>"
+                "text": "<?php echo $lang->get('complex_level3'); ?>"
             },
             {
                 "minScore": <?php echo TP_PW_STRENGTH_4;?>,
                 "className": "meterGood",
-                "text": "<?php echo langHdl('complex_level4'); ?>"
+                "text": "<?php echo $lang->get('complex_level4'); ?>"
             },
             {
                 "minScore": <?php echo TP_PW_STRENGTH_5;?>,
                 "className": "meterExcel",
-                "text": "<?php echo langHdl('complex_level5'); ?>"
+                "text": "<?php echo $lang->get('complex_level5'); ?>"
             }
         ]
     });
@@ -525,7 +527,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         }
     });
 
-    $('#profile-keys_download-date').text('<?php echo $_SESSION['user']['keys_recovery_time'] === NULL ? langHdl('none') : date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $_SESSION['user']['keys_recovery_time']); ?>');
+    $('#profile-keys_download-date').text('<?php echo $_SESSION['user']['keys_recovery_time'] === NULL ? $lang->get('none') : date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $_SESSION['user']['keys_recovery_time']); ?>');
 
     $("#open-dialog-keys-download").on('click', function(event) {
         event.preventDefault();
@@ -534,10 +536,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         // Prepare modal
         showModalDialogBox(
             '#warningModal',
-            '<i class="fa-solid fa-user-shield fa-lg warning mr-2"></i><?php echo langHdl('caution'); ?>',
-            '<?php echo langHdl('download_recovery_keys_confirmation'); ?>',
-            '<?php echo langHdl('download'); ?>',
-            '<?php echo langHdl('close'); ?>',
+            '<i class="fa-solid fa-user-shield fa-lg warning mr-2"></i><?php echo $lang->get('caution'); ?>',
+            '<?php echo $lang->get('download_recovery_keys_confirmation'); ?>',
+            '<?php echo $lang->get('download'); ?>',
+            '<?php echo $lang->get('close'); ?>',
             false,
             false,
             false
@@ -569,7 +571,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
             // SHow user
             toastr.remove();
-            toastr.info('<?php echo langHdl('in_progress'); ?><i class="fa-solid fa-circle-notch fa-spin fa-2x ml-3"></i>');
+            toastr.info('<?php echo $lang->get('in_progress'); ?><i class="fa-solid fa-circle-notch fa-spin fa-2x ml-3"></i>');
 
             var data = {
                 'user_id': store.get('teampassUser').user_id,
@@ -590,14 +592,14 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         toastr.remove();
                         toastr.error(
                             data.message,
-                            '<?php echo langHdl('caution'); ?>', {
+                            '<?php echo $lang->get('caution'); ?>', {
                                 timeOut: 5000,
                                 progressBar: true
                             }
                         );
 
                         // Enable buttons
-                        $("#user-current-defuse-psk-progress").html('<?php echo langHdl('provide_current_psk_and_click_launch'); ?>');
+                        $("#user-current-defuse-psk-progress").html('<?php echo $lang->get('provide_current_psk_and_click_launch'); ?>');
                         $('#button_do_sharekeys_reencryption, #button_close_sharekeys_reencryption').removeAttr('disabled');
                         return false;
                     } else {

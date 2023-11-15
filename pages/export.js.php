@@ -27,12 +27,14 @@ declare(strict_types=1);
 
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
 
 // init
 loadClasses();
 $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 
 if (
     isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
@@ -102,10 +104,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             var self = this,
                 $rendered = decorated.call(this),
                 $selectAll = $(
-                    '<button class="btn btn-xs btn-primary" type="button" style="margin-left:6px;"><i class="far fa-check-square mr-1"></i><?php echo langHdl('select_all'); ?></button>'
+                    '<button class="btn btn-xs btn-primary" type="button" style="margin-left:6px;"><i class="far fa-check-square mr-1"></i><?php echo $lang->get('select_all'); ?></button>'
                 ),
                 $unselectAll = $(
-                    '<button class="btn btn-xs btn-primary" type="button" style="margin-left:6px;"><i class="far fa-square mr-1"></i><?php echo langHdl('unselect_all'); ?></button>'
+                    '<button class="btn btn-xs btn-primary" type="button" style="margin-left:6px;"><i class="far fa-square mr-1"></i><?php echo $lang->get('unselect_all'); ?></button>'
                 ),
                 $btnContainer = $('<div style="margin:3px 0px 3px 0px;">').append($selectAll).append($unselectAll);
             if (!this.$element.prop("multiple")) {
@@ -198,11 +200,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         i18n : {
             t: function (key) {
                 var phrases = {
-                    weak: '<?php echo langHdl('complex_level1'); ?>',
-                    normal: '<?php echo langHdl('complex_level2'); ?>',
-                    medium: '<?php echo langHdl('complex_level3'); ?>',
-                    strong: '<?php echo langHdl('complex_level4'); ?>',
-                    veryStrong: '<?php echo langHdl('complex_level5'); ?>'
+                    weak: '<?php echo $lang->get('complex_level1'); ?>',
+                    normal: '<?php echo $lang->get('complex_level2'); ?>',
+                    medium: '<?php echo $lang->get('complex_level3'); ?>',
+                    strong: '<?php echo $lang->get('complex_level4'); ?>',
+                    veryStrong: '<?php echo $lang->get('complex_level5'); ?>'
                 };
                 var result = phrases[key];
 
@@ -220,12 +222,12 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
     function exportItemsToFile() {
         toastr.remove();
-        toastr.info('<i class="fas fa-circle-notch fa-spin fa-2x mr-2"></i><?php echo langHdl('exporting_items'); ?> ...');
+        toastr.info('<i class="fas fa-circle-notch fa-spin fa-2x mr-2"></i><?php echo $lang->get('exporting_items'); ?> ...');
 
         $('#export-progress')
             .removeClass('hidden')
             .find('span')
-            .html('<?php echo langHdl('starting'); ?>');
+            .html('<?php echo $lang->get('starting'); ?>');
 
         //Get list of selected folders
         var ids = [];
@@ -235,11 +237,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         
         // No selection of folders done
         if (ids.length === 0) {
-            $('#export-progress').find('span').html('<i class="fas fa-exclamation-triangle text-danger mr-2 fa-lg"></i><?php echo langHdl('error_no_selected_folder'); ?>');
+            $('#export-progress').find('span').html('<i class="fas fa-exclamation-triangle text-danger mr-2 fa-lg"></i><?php echo $lang->get('error_no_selected_folder'); ?>');
 
             toastr.remove();
             toastr.success(
-                '<?php echo langHdl('done'); ?>',
+                '<?php echo $lang->get('done'); ?>',
                 '', {
                     timeOut: 1000
                 }
@@ -247,11 +249,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
             return;
         } else if (null === $('#export-format').val()) {
-            $('#export-progress').find('span').html('<i class="fas fa-exclamation-triangle text-danger mr-2 fa-lg"></i><?php echo langHdl('export_format_type'); ?>');
+            $('#export-progress').find('span').html('<i class="fas fa-exclamation-triangle text-danger mr-2 fa-lg"></i><?php echo $lang->get('export_format_type'); ?>');
 
             toastr.remove();
             toastr.success(
-                '<?php echo langHdl('done'); ?>',
+                '<?php echo $lang->get('done'); ?>',
                 '', {
                     timeOut: 1000
                 }
@@ -263,12 +265,12 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         // Get PDF encryption password and make sure it is set
         if (($('#export-password').val() == '') && ($('#export-format').val() === 'pdf' || $('#export-format').val() === 'html')) {
             $('#export-progress').find('span')
-                .html('<i class="fas fa-exclamation-triangle text-danger mr-2 fa-lg"></i><?php echo langHdl('pdf_password_warning'); ?>');
+                .html('<i class="fas fa-exclamation-triangle text-danger mr-2 fa-lg"></i><?php echo $lang->get('pdf_password_warning'); ?>');
 
 
             toastr.remove();
             toastr.success(
-                '<?php echo langHdl('done'); ?>',
+                '<?php echo $lang->get('done'); ?>',
                 '', {
                     timeOut: 1000
                 }
@@ -313,7 +315,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
                     toastr.remove();
                     toastr.success(
-                        '<?php echo langHdl('done'); ?>',
+                        '<?php echo $lang->get('done'); ?>',
                         '', {
                             timeOut: 1000
                         }
@@ -343,7 +345,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
         $("#export-progress")
             .find('span')
-            .html(' <i class="fas fa-spinner fa-pulse mr-2"></i><?php echo langHdl('operation_progress'); ?> <b>' +
+            .html(' <i class="fas fa-spinner fa-pulse mr-2"></i><?php echo $lang->get('operation_progress'); ?> <b>' +
                 Math.round((totalFolders - counterRemainingFolders) * 100 / totalFolders).toFixed() +
                 '%</b> ...');
 
@@ -365,7 +367,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     toastr.remove();
                     toastr.error(
                         data.message,
-                        '<?php echo langHdl('error'); ?>', {
+                        '<?php echo $lang->get('error'); ?>', {
                             timeOut: 5000,
                             progressBar: true
                         }
@@ -425,7 +427,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
                                     toastr.remove();
                                     toastr.success(
-                                        '<?php echo langHdl('done'); ?>',
+                                        '<?php echo $lang->get('done'); ?>',
                                         '', {
                                             timeOut: 1000
                                         }
@@ -478,7 +480,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         if (vars.password == "") {
             toastr.remove();
             toastr.error(
-                '<?php echo langHdl('password_cannot_be_empty'); ?>',
+                '<?php echo $lang->get('password_cannot_be_empty'); ?>',
                 '', {
                     timeOut: 2000
                 }
@@ -489,7 +491,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         if (parseInt($("#offline_pw_strength_value").val()) < parseInt($("#min_offline_pw_strength_value").val())) {
             toastr.remove();
             toastr.error(
-                '<?php echo langHdl('error_complex_not_enought'); ?>',
+                '<?php echo $lang->get('error_complex_not_enought'); ?>',
                 '', {
                     timeOut: 2000
                 }
@@ -538,7 +540,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 } else {
                     toastr.remove();
                     toastr.error(
-                        '<?php echo langHdl('error_unknown'); ?>',
+                        '<?php echo $lang->get('error_unknown'); ?>',
                         '',
                         {
                             timeOut: 3000
@@ -563,7 +565,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             idsArray = idsArray.slice(numberInLoop);
             cpt = parseInt(idsToTreat.length);
 
-            $('#export-progress').find('span').html('<i class="fas fa-cog fa-spin mr-2"></i><?php echo langhdl('please_wait'); ?> - ' + Math.round((parseInt(cpt)*100)/parseInt(number)) + "%");
+            $('#export-progress').find('span').html('<i class="fas fa-cog fa-spin mr-2"></i><?php echo $lang->get('please_wait'); ?> - ' + Math.round((parseInt(cpt)*100)/parseInt(number)) + "%");
 
             jqData = {
                 idsList : idsToTreat,
@@ -654,7 +656,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
                                 toastr.remove();
                                 toastr.success(
-                                    '<?php echo langHdl('done'); ?>',
+                                    '<?php echo $lang->get('done'); ?>',
                                     '',
                                     {
                                         timeOut: 1000

@@ -18,6 +18,7 @@
  */
 
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\PerformChecks\PerformChecks;
 
@@ -27,6 +28,7 @@ require_once __DIR__.'/../sources/main.functions.php';
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 
 // Load config if $SETTINGS not defined
 try {
@@ -60,9 +62,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     exit;
 }
 
-// Load language file
-require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$superGlobal->get('user_language', 'SESSION', 'user').'.php';
-
 // Define Timezone
 date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
 
@@ -83,7 +82,7 @@ $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
     <div class="container-fluid">
         <div class="row mb-2">
             <div class="col-sm-12">
-                <h1 class="m-0 text-dark"><i class="fas fa-file-upload mr-2"></i><?php echo langHdl('uploads'); ?></h1>
+                <h1 class="m-0 text-dark"><i class="fas fa-file-upload mr-2"></i><?php echo $lang->get('uploads'); ?></h1>
             </div><!-- /.col -->
         </div><!-- /.row -->
     </div><!-- /.container-fluid -->
@@ -98,7 +97,7 @@ $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
             <div class='col-md-12'>
                 <div class='card card-primary'>
                     <div class='card-header'>
-                        <h3 class='card-title'><?php echo langHdl('uploads_configuration'); ?></h3>
+                        <h3 class='card-title'><?php echo $lang->get('uploads_configuration'); ?></h3>
                     </div>
                     <!-- /.card-header -->
                     <!-- form start -->
@@ -106,9 +105,9 @@ $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
 
                         <div class="row mb-2">
                             <div class="col-8">
-                                <?php echo langHdl('settings_upload_maxfilesize'); ?>
+                                <?php echo $lang->get('settings_upload_maxfilesize'); ?>
                                 <small class="form-text text-muted">
-                                    <?php echo langHdl('settings_upload_maxfilesize_tip'); ?>
+                                    <?php echo $lang->get('settings_upload_maxfilesize_tip'); ?>
                                 </small>
                             </div>
                             <div class="col-4">
@@ -118,7 +117,7 @@ $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
 
                         <div class="row mb-2">
                             <div class="col-8">
-                                <?php echo langHdl('upload_empty_file'); ?>
+                                <?php echo $lang->get('upload_empty_file'); ?>
                             </div>
                             <div class="col-4">
                                 <div class="toggle toggle-modern" id="upload_zero_byte_file" data-toggle-on="<?php echo isset($SETTINGS['upload_zero_byte_file']) === true && $SETTINGS['upload_zero_byte_file'] === '1' ? 'true' : 'false'; ?>"></div><input type="hidden" id="upload_zero_byte_file_input" value="<?php echo isset($SETTINGS['upload_zero_byte_file']) && $SETTINGS['upload_zero_byte_file'] === '1' ? '1' : '0'; ?>">
@@ -127,9 +126,9 @@ $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
 
                         <div class="row mb-2">
                             <div class="col-8">
-                                <?php echo langHdl('upload_any_extension_file'); ?>
+                                <?php echo $lang->get('upload_any_extension_file'); ?>
                                 <small class="form-text text-muted">
-                                    <?php echo langHdl('upload_any_extension_file_tip'); ?>
+                                    <?php echo $lang->get('upload_any_extension_file_tip'); ?>
                                 </small>
                             </div>
                             <div class="col-4">
@@ -139,9 +138,9 @@ $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
 
                         <div class="row mb-2">
                             <div class="col-8">
-                                <?php echo langHdl('settings_upload_docext'); ?>
+                                <?php echo $lang->get('settings_upload_docext'); ?>
                                 <small class="form-text text-muted">
-                                    <?php echo langHdl('settings_upload_docext_tip'); ?>
+                                    <?php echo $lang->get('settings_upload_docext_tip'); ?>
                                 </small>
                             </div>
                             <div class="col-4">
@@ -151,9 +150,9 @@ $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
 
                         <div class="row mb-2">
                             <div class="col-8">
-                                <?php echo langHdl('settings_upload_imagesext'); ?>
+                                <?php echo $lang->get('settings_upload_imagesext'); ?>
                                 <small class="form-text text-muted">
-                                    <?php echo langHdl('settings_upload_imagesext_tip'); ?>
+                                    <?php echo $lang->get('settings_upload_imagesext_tip'); ?>
                                 </small>
                             </div>
                             <div class="col-4">
@@ -163,9 +162,9 @@ $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
 
                         <div class="row mb-2">
                             <div class="col-8">
-                                <?php echo langHdl('settings_upload_pkgext'); ?>
+                                <?php echo $lang->get('settings_upload_pkgext'); ?>
                                 <small class="form-text text-muted">
-                                    <?php echo langHdl('settings_upload_pkgext_tip'); ?>
+                                    <?php echo $lang->get('settings_upload_pkgext_tip'); ?>
                                 </small>
                             </div>
                             <div class="col-4">
@@ -175,9 +174,9 @@ $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
 
                         <div class="row mb-2">
                             <div class="col-8">
-                                <?php echo langHdl('settings_upload_otherext'); ?>
+                                <?php echo $lang->get('settings_upload_otherext'); ?>
                                 <small class="form-text text-muted">
-                                    <?php echo langHdl('settings_upload_otherext_tip'); ?>
+                                    <?php echo $lang->get('settings_upload_otherext_tip'); ?>
                                 </small>
                             </div>
                             <div class="col-4">
@@ -190,7 +189,7 @@ $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
 
                 <div class='card card-primary'>
                     <div class='card-header'>
-                        <h3 class='card-title'><?php echo langHdl('settings_upload_imageresize_options'); ?></h3>
+                        <h3 class='card-title'><?php echo $lang->get('settings_upload_imageresize_options'); ?></h3>
                     </div>
                     <!-- /.card-header -->
                     <!-- form start -->
@@ -198,9 +197,9 @@ $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
 
                         <div class="row mb-2">
                             <div class="col-8">
-                                <?php echo langHdl('settings_upload_imageresize_options'); ?>
+                                <?php echo $lang->get('settings_upload_imageresize_options'); ?>
                                 <small class="form-text text-muted">
-                                    <?php echo langHdl('settings_upload_imageresize_options_tip'); ?>
+                                    <?php echo $lang->get('settings_upload_imageresize_options_tip'); ?>
                                 </small>
                             </div>
                             <div class="col-4">
@@ -210,7 +209,7 @@ $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
 
                         <div class="row mb-2">
                             <div class="col-8">
-                                <?php echo langHdl('settings_upload_imageresize_options_w'); ?>
+                                <?php echo $lang->get('settings_upload_imageresize_options_w'); ?>
                             </div>
                             <div class="col-4">
                                 <input type="text" class="form-control form-control-sm" id="upload_imageresize_width" value="<?php echo isset($SETTINGS['upload_imageresize_width']) === true ? $SETTINGS['upload_imageresize_width'] : '800'; ?>">
@@ -219,7 +218,7 @@ $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
 
                         <div class="row mb-2">
                             <div class="col-8">
-                                <?php echo langHdl('settings_upload_imageresize_options_h'); ?>
+                                <?php echo $lang->get('settings_upload_imageresize_options_h'); ?>
                             </div>
                             <div class="col-4">
                                 <input type="text" class="form-control form-control-sm" id="upload_imageresize_height" value="<?php echo isset($SETTINGS['upload_imageresize_height']) === true ? $SETTINGS['upload_imageresize_height'] : '600'; ?>">
@@ -228,7 +227,7 @@ $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
 
                         <div class="row mb-2">
                             <div class="col-8">
-                                <?php echo langHdl('settings_upload_imageresize_options_q'); ?>
+                                <?php echo $lang->get('settings_upload_imageresize_options_q'); ?>
                             </div>
                             <div class="col-4">
                                 <input type="text" class="form-control form-control-sm" id="upload_imageresize_quality" value="<?php echo isset($SETTINGS['upload_imageresize_quality']) === true ? $SETTINGS['upload_imageresize_quality'] : '90'; ?>">

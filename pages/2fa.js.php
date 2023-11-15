@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
 
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
@@ -34,6 +35,7 @@ require_once __DIR__.'/../sources/main.functions.php';
 // init
 loadClasses();
 $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 
 if (
     isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
@@ -82,7 +84,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
     $(document).on('click', '#button-duo-config-check', function() {
         toastr
-            .info('<?php echo langHdl('loading_item'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+            .info('<?php echo $lang->get('loading_item'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
         // Prepare data
         var data = {
@@ -117,7 +119,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     // Inform user
                     toastr.remove();
                     toastr.success(
-                        '<?php echo langHdl('duo-config-check-success'); ?>',
+                        '<?php echo $lang->get('duo-config-check-success'); ?>',
                         '', {
                             timeOut: 5000
                         }

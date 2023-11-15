@@ -27,12 +27,14 @@ declare(strict_types=1);
 
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
 
 // init
 loadClasses();
 $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 
 if (
     isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
@@ -118,13 +120,13 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         },
         'preDrawCallback': function() {
             toastr.remove();
-            toastr.info('<?php echo langHdl('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+            toastr.info('<?php echo $lang->get('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
         },
         'drawCallback': function() {
             // Inform user
             toastr.remove();
             toastr.success(
-                '<?php echo langHdl('refreshed'); ?>',
+                '<?php echo $lang->get('refreshed'); ?>',
                 '', {
                     timeOut: 1000
                 }
@@ -191,13 +193,13 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             },
             'preDrawCallback': function() {
                 toastr.remove();
-                toastr.info('<?php echo langHdl('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+                toastr.info('<?php echo $lang->get('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
             },
             'drawCallback': function() {
                 // Inform user
                 toastr.remove();
                 toastr.success(
-                    '<?php echo langHdl('done'); ?>',
+                    '<?php echo $lang->get('done'); ?>',
                     '', {
                         timeOut: 1000
                     }
@@ -224,7 +226,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
     $(document).on('click', '.action', function() {
         toastr.remove();
-        toastr.info('<?php echo langHdl('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+        toastr.info('<?php echo $lang->get('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
         if ($(this).data('type') === "task-detail") {
             $.post(
@@ -240,7 +242,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     // Inform user
                     toastr.remove();
                     toastr.success(
-                        '<?php echo langHdl('done'); ?>',
+                        '<?php echo $lang->get('done'); ?>',
                         '', {
                             timeOut: 1000
                         }
@@ -282,12 +284,12 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     // display tasks
                     showModalDialogBox(
                         '#warningModal',
-                        '<i class="fas fa-tasks fa-lg mr-2"></i><?php echo langHdl('process_details'); ?>',
+                        '<i class="fas fa-tasks fa-lg mr-2"></i><?php echo $lang->get('process_details'); ?>',
                         '<div class="form-group">'+
                         html+
                         '</div>',
                         '',
-                        '<?php echo langHdl('close'); ?>'
+                        '<?php echo $lang->get('close'); ?>'
                     );
 
                 }
@@ -306,8 +308,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     // Inform user
                     toastr.remove();
                     toastr.success(
-                        '<?php echo langHdl('alert_page_will_reload'); ?>',
-                        '<?php echo langHdl('done'); ?>', {
+                        '<?php echo $lang->get('alert_page_will_reload'); ?>',
+                        '<?php echo $lang->get('done'); ?>', {
                             timeOut: 5000,
                             progressBar: true
                         }
@@ -348,7 +350,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         // Handle delete task
         $("#modal-btn-delete").on("click", function() {
             toastr.remove();
-            toastr.info('<?php echo langHdl('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+            toastr.info('<?php echo $lang->get('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
             
             $.post(
                 "sources/utilities.queries.php", {
@@ -368,7 +370,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     // Inform user
                     toastr.remove();
                     toastr.success(
-                        '<?php echo langHdl('done'); ?>',
+                        '<?php echo $lang->get('done'); ?>',
                         '', {
                             timeOut: 1000
                         }
@@ -423,7 +425,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         // error
                         toastr.remove();
                         toastr.error(
-                            '<?php echo langHdl('server_answer_error') . '<br />' . langHdl('server_returned_data') . ':<br />'; ?>' + data.error,
+                            '<?php echo $lang->get('server_answer_error') . '<br />' . $lang->get('server_returned_data') . ':<br />'; ?>' + data.error,
                             '', {
                                 closeButton: true,
                                 positionClass: 'toastr-top-right'
@@ -435,7 +437,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     if (data.error === false) {
                         toastr.remove();
                         toastr.success(
-                            '<?php echo langHdl('saved'); ?>',
+                            '<?php echo $lang->get('saved'); ?>',
                             '', {
                                 timeOut: 2000,
                                 progressBar: true
@@ -446,11 +448,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         $('#'+field+'_parameter_value').val(frequency === null ? '' : frequency + ';' +value,);
                         param = value.split(';');
                         if (param.length === 1) {
-                            txt = ' <?php echo langHdl('at');?> ' + param[0];
+                            txt = ' <?php echo $lang->get('at');?> ' + param[0];
                         } else {
-                            txt = ' <?php echo langHdl('day');?> ' + param[1] + ' <?php echo langHdl('at');?> ' + param[0];
+                            txt = ' <?php echo $lang->get('day');?> ' + param[1] + ' <?php echo $lang->get('at');?> ' + param[0];
                         }
-                        $('#'+field+'_parameter').val(frequency === null ? '<?php echo langHdl('not_defined');?>' : (data.message + txt));
+                        $('#'+field+'_parameter').val(frequency === null ? '<?php echo $lang->get('not_defined');?>' : (data.message + txt));
                         $("#task-define-modal").modal('hide');
                         $('#task-define-modal-type, #task-define-modal-parameter-hourly-value, #task-define-modal-parameter-daily-value, #task-define-modal-frequency').val('');
                     }
@@ -510,10 +512,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         // Prepare modal
         showModalDialogBox(
             '#warningModal',
-            '<i class="fa-regular fa-circle-check fa-lg text-warning mr-2"></i><?php echo langHdl('your_attention_please'); ?>',
-            '<?php echo langHdl('please_confirm_task_to_be_run'); ?>: <strong>' + $('#'+$(this).data('task')+'_text').text() + '</strong>',
-            '<?php echo langHdl('perform'); ?>',
-            '<?php echo langHdl('close'); ?>',
+            '<i class="fa-regular fa-circle-check fa-lg text-warning mr-2"></i><?php echo $lang->get('your_attention_please'); ?>',
+            '<?php echo $lang->get('please_confirm_task_to_be_run'); ?>: <strong>' + $('#'+$(this).data('task')+'_text').text() + '</strong>',
+            '<?php echo $lang->get('perform'); ?>',
+            '<?php echo $lang->get('close'); ?>',
             false,
             false,
             false
@@ -533,7 +535,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
             toastr.remove();
             toastr.success(
-                '<?php echo langHdl('started'); ?>',
+                '<?php echo $lang->get('started'); ?>',
                 '', {
                     timeOut: 2000,
                     progressBar: true
@@ -556,7 +558,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         // error
                         toastr.remove();
                         toastr.error(
-                            '<?php echo langHdl('server_answer_error') . '<br />' . langHdl('server_returned_data') . ':<br />'; ?>' + data.error,
+                            '<?php echo $lang->get('server_answer_error') . '<br />' . $lang->get('server_returned_data') . ':<br />'; ?>' + data.error,
                             '', {
                                 closeButton: true,
                                 positionClass: 'toastr-top-right'
@@ -569,7 +571,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     if (data.error === false) {
                         toastr.remove();
                         toastr.success(
-                            '<?php echo langHdl('done'); ?>',
+                            '<?php echo $lang->get('done'); ?>',
                             '', {
                                 timeOut: 2000,
                                 progressBar: true
@@ -607,7 +609,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     // error
                     toastr.remove();
                     toastr.error(
-                        '<?php echo langHdl('server_answer_error') . '<br />' . langHdl('server_returned_data') . ':<br />'; ?>' + data.error,
+                        '<?php echo $lang->get('server_answer_error') . '<br />' . $lang->get('server_returned_data') . ':<br />'; ?>' + data.error,
                         '', {
                             closeButton: true,
                             positionClass: 'toastr-top-right'

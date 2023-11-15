@@ -25,6 +25,7 @@ declare(strict_types=1);
  */
 
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\NestedTree\NestedTree;
@@ -35,6 +36,7 @@ require_once 'main.functions.php';
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 session_name('teampass_session');
 session_start();
 
@@ -73,9 +75,6 @@ if (
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
-
-// Load language file
-require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$superGlobal->get('user_language', 'SESSION', 'user').'.php';
 
 // Define Timezone
 date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
@@ -395,20 +394,20 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         $sOutput_item .= '"'.htmlspecialchars(stripslashes((string) $record['login']), ENT_QUOTES).'", ';
         //col3
         if ($record['label'] === 'at_user_added') {
-            $cell = langHdl('user_creation');
+            $cell = $lang->get('user_creation');
         } elseif ($record['label'] === 'at_user_deleted' || $record['label'] === 'user_deleted') {
-            $cell = langHdl('user_deletion');
+            $cell = $lang->get('user_deletion');
         } elseif ($record['label'] === 'at_user_updated') {
-            $cell = langHdl('user_updated');
+            $cell = $lang->get('user_updated');
         } elseif (strpos($record['label'], 'at_user_email_changed') !== false) {
             $change = explode(':', $record['label']);
-            $cell = langHdl('log_user_email_changed').' '.$change[1];
+            $cell = $lang->get('log_user_email_changed').' '.$change[1];
         } elseif ($record['label'] === 'at_user_new_keys') {
-            $cell = langHdl('new_keys_generated');
+            $cell = $lang->get('new_keys_generated');
         } elseif ($record['label'] === 'at_user_keys_download') {
-            $cell = langHdl('user_keys_downloaded');
+            $cell = $lang->get('user_keys_downloaded');
         } elseif ($record['label'] === 'at_2fa_google_code_send_by_email') {
-            $cell = langHdl('mfa_code_send_by_email');
+            $cell = $lang->get('mfa_code_send_by_email');
         } else {
             $cell = htmlspecialchars(stripslashes((string) $record['label']), ENT_QUOTES);
         }
@@ -516,9 +515,9 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         $sOutput_item .= '"'.htmlspecialchars(stripslashes(langHdl($record['action'])), ENT_QUOTES).'", ';
         //col5
         if ($record['perso'] === 1) {
-            $sOutput_item .= '"'.htmlspecialchars(stripslashes(langHdl('yes')), ENT_QUOTES).'"';
+            $sOutput_item .= '"'.htmlspecialchars(stripslashes($lang->get('yes')), ENT_QUOTES).'"';
         } else {
-            $sOutput_item .= '"'.htmlspecialchars(stripslashes(langHdl('no')), ENT_QUOTES).'"';
+            $sOutput_item .= '"'.htmlspecialchars(stripslashes($lang->get('no')), ENT_QUOTES).'"';
         }
 
         //Finish the line
@@ -829,11 +828,11 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         $sOutput .= '"'.htmlspecialchars(stripslashes((string) $record['name']), ENT_QUOTES).' '.htmlspecialchars(stripslashes((string) $record['lastname']), ENT_QUOTES).' ['.htmlspecialchars(stripslashes((string) $record['login']), ENT_QUOTES).']", ';
         //col3
         if ($record['admin'] === '1') {
-            $user_role = langHdl('god');
-        } elseif (langHdl('gestionnaire') === 1) {
-            $user_role = langHdl('gestionnaire');
+            $user_role = $lang->get('god');
+        } elseif ($lang->get('gestionnaire') === 1) {
+            $user_role = $lang->get('gestionnaire');
         } else {
-            $user_role = langHdl('user');
+            $user_role = $lang->get('user');
         }
         $sOutput .= '"'.$user_role.'", ';
         //col4
@@ -1010,11 +1009,11 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         $sOutput .= '"'.gmdate('H:i:s', (int) $record['finished_at'] - (is_null($record['started_at']) === false ? (int) $record['started_at'] : (int) $record['created_at'])).'",';
         //col5
         if ($record['process_type'] === 'create_user_keys') {
-            $processIcon = '<i class=\"fa-solid fa-user-gear infotip\" title=\"'.langHdl('user_creation').'\"></i>';
+            $processIcon = '<i class=\"fa-solid fa-user-gear infotip\" title=\"'.$lang->get('user_creation').'\"></i>';
         } else if ($record['process_type'] === 'send_email') {
-            $processIcon = '<i class=\"fa-solid fa-envelope-circle-check infotip\" title=\"'.langHdl('send_email_to_user').'\"></i>';
+            $processIcon = '<i class=\"fa-solid fa-envelope-circle-check infotip\" title=\"'.$lang->get('send_email_to_user').'\"></i>';
         } else if ($record['process_type'] === 'user_build_cache_tree') {
-            $processIcon = '<i class=\"fa-solid fa-folder-tree infotip\" title=\"'.langHdl('reload_user_cache_table').'\"></i>';
+            $processIcon = '<i class=\"fa-solid fa-folder-tree infotip\" title=\"'.$lang->get('reload_user_cache_table').'\"></i>';
         } else {
             $processIcon = '<i class=\"fa-solid fa-question\"></i> ('.$record['process_type'].')';
         }

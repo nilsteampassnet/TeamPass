@@ -24,6 +24,7 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\PerformChecks\PerformChecks;
 
@@ -33,6 +34,7 @@ require_once __DIR__.'/../sources/main.functions.php';
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 
 // Load config if $SETTINGS not defined
 try {
@@ -66,9 +68,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     exit;
 }
 
-// Load language file
-require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$superGlobal->get('user_language', 'SESSION', 'user').'.php';
-
 // Define Timezone
 date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
 
@@ -86,7 +85,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
     <div class="container-fluid">
         <div class="row mb-2">
             <div class="col-sm-6">
-                <h1 class="m-0 text-dark"><i class="fas fa-star mr-2"></i><?php echo langHdl('favorites'); ?></h1>
+                <h1 class="m-0 text-dark"><i class="fas fa-star mr-2"></i><?php echo $lang->get('favorites'); ?></h1>
             </div><!-- /.col -->
         </div><!-- /.row -->
     </div><!-- /.container-fluid -->
@@ -105,9 +104,9 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                     <table class="table table-condensed table-responsive">
                         <tr>
                             <th style="width: 100px"></th>
-                            <th style="min-width:15%;"><?php echo langHdl('label'); ?></th>
-                            <th style="min-width:50%;"><?php echo langHdl('description'); ?></th>
-                            <th style="min-width:20%;"><?php echo langHdl('group'); ?></th>
+                            <th style="min-width:15%;"><?php echo $lang->get('label'); ?></th>
+                            <th style="min-width:50%;"><?php echo $lang->get('description'); ?></th>
+                            <th style="min-width:20%;"><?php echo $lang->get('group'); ?></th>
                         </tr>
                         <?php
                         foreach ($_SESSION['favourites'] as $fav) {
@@ -139,7 +138,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 
                 <div class="card-body<?php echo empty($_SESSION['favourites']) === false ? ' hidden' : ''; ?>" id="no-favorite">
                     <div class="alert alert-info">
-                        <h5><i class="icon fa fa-info mr-2"></i><?php echo langHdl('currently_no_favorites'); ?></h5>
+                        <h5><i class="icon fa fa-info mr-2"></i><?php echo $lang->get('currently_no_favorites'); ?></h5>
                     </div>
                 </div>
             </div>

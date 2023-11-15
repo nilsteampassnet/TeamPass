@@ -18,6 +18,7 @@
 
 use EZimuel\PHPSecureSession;
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
 use PasswordLib\PasswordLib;
 use Defuse\Crypto\File;
 use Defuse\Crypto\Key;
@@ -29,6 +30,7 @@ require_once __DIR__.'/../sources/main.functions.php';
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 session_name('teampass_session');
 session_start();
 error_reporting(E_ERROR | E_PARSE);
@@ -50,6 +52,7 @@ $post_start = filter_input(INPUT_POST, 'start', FILTER_SANITIZE_NUMBER_INT);
 
 // Load libraries
 $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 
 // Some init
 $_SESSION['settings']['loaded'] = '';

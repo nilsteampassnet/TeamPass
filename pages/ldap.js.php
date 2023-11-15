@@ -27,12 +27,14 @@ declare(strict_types=1);
 
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
 
 // init
 loadClasses();
 $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 
 if (
     isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
@@ -86,7 +88,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         $('#ldap-test-config-results-text').html('');
         if ($(this).data('action') === 'ldap-test-config') {
             toastr.remove();
-            toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
             var data = {
                 'username': $('#ldap-test-config-username').val(),
@@ -108,7 +110,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         toastr.remove();
                         toastr.error(
                             data.message,
-                            '<?php echo langHdl('caution'); ?>', {
+                            '<?php echo $lang->get('caution'); ?>', {
                                 //timeOut: 5000,
                                 progressBar: true
                             }
@@ -120,7 +122,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         // Inform user
                         toastr.remove();
                         toastr.success(
-                            '<?php echo langHdl('done'); ?>',
+                            '<?php echo $lang->get('done'); ?>',
                             '', {
                                 timeOut: 1000
                             }
@@ -149,8 +151,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             function(data) {
                 data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
 
-                var html_admin_by = '<option value="">-- <?php echo langHdl('select'); ?> --</option>',
-                    html_roles = '<option value="">-- <?php echo langHdl('select'); ?> --</option>',
+                var html_admin_by = '<option value="">-- <?php echo $lang->get('select'); ?> --</option>',
+                    html_roles = '<option value="">-- <?php echo $lang->get('select'); ?> --</option>',
                     selected_admin_by = 0,
                     selected_role = 0;
 
@@ -161,7 +163,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     if (data[i].selected_role === 1) {
                         selected_role = data[i].id;
                     }
-                    html_admin_by += '<option value="' + data[i].id + '"><?php echo langHdl('managers_of') . ' '; ?>' + data[i].title + '</option>';
+                    html_admin_by += '<option value="' + data[i].id + '"><?php echo $lang->get('managers_of') . ' '; ?>' + data[i].title + '</option>';
                     html_roles += '<option value="' + data[i].id + '">' + data[i].title + '</option>';
                 }
                 $("#ldap_new_user_is_administrated_by").append(html_admin_by);

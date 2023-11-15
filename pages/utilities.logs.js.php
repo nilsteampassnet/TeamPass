@@ -27,12 +27,14 @@ declare(strict_types=1);
 
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
 
 // init
 loadClasses();
 $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 
 if (
     isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
@@ -193,13 +195,13 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         },
         'preDrawCallback': function() {
             toastr.remove();
-            toastr.info('<?php echo langHdl('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+            toastr.info('<?php echo $lang->get('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
         },
         'drawCallback': function() {
             // Inform user
             toastr.remove();
             toastr.success(
-                '<?php echo langHdl('done'); ?>',
+                '<?php echo $lang->get('done'); ?>',
                 '', {
                     timeOut: 1000
                 }
@@ -241,13 +243,13 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             },
             'preDrawCallback': function() {
                 toastr.remove();
-                toastr.info('<?php echo langHdl('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+                toastr.info('<?php echo $lang->get('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
             },
             'drawCallback': function() {
                 // Inform user
                 toastr.remove();
                 toastr.success(
-                    '<?php echo langHdl('done'); ?>',
+                    '<?php echo $lang->get('done'); ?>',
                     '', {
                         timeOut: 1000
                     }
@@ -290,13 +292,13 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             },
             'preDrawCallback': function() {
                 toastr.remove();
-                toastr.info('<?php echo langHdl('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+                toastr.info('<?php echo $lang->get('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
             },
             'drawCallback': function() {
                 // Inform user
                 toastr.remove();
                 toastr.success(
-                    '<?php echo langHdl('done'); ?>',
+                    '<?php echo $lang->get('done'); ?>',
                     '', {
                         timeOut: 1000
                     }
@@ -339,13 +341,13 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             },
             'preDrawCallback': function() {
                 toastr.remove();
-                toastr.info('<?php echo langHdl('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+                toastr.info('<?php echo $lang->get('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
             },
             'drawCallback': function() {
                 // Inform user
                 toastr.remove();
                 toastr.success(
-                    '<?php echo langHdl('done'); ?>',
+                    '<?php echo $lang->get('done'); ?>',
                     '', {
                         timeOut: 1000
                     }
@@ -388,13 +390,13 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             },
             'preDrawCallback': function() {
                 toastr.remove();
-                toastr.info('<?php echo langHdl('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+                toastr.info('<?php echo $lang->get('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
             },
             'drawCallback': function() {
                 // Inform user
                 toastr.remove();
                 toastr.success(
-                    '<?php echo langHdl('done'); ?>',
+                    '<?php echo $lang->get('done'); ?>',
                     '', {
                         timeOut: 1000
                     }
@@ -488,13 +490,13 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             },
             'preDrawCallback': function() {
                 toastr.remove();
-                toastr.info('<?php echo langHdl('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+                toastr.info('<?php echo $lang->get('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
             },
             'drawCallback': function() {
                 // Inform user
                 toastr.remove();
                 toastr.success(
-                    '<?php echo langHdl('done'); ?>',
+                    '<?php echo $lang->get('done'); ?>',
                     '', {
                         timeOut: 1000
                     }
@@ -519,8 +521,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         .daterangepicker({
             locale: {
                 format: '<?php echo str_replace(['Y', 'm', 'd'], ['YYYY', 'MM', 'DD'], $SETTINGS['date_format']); ?>',
-                applyLabel: '<?php echo langHdl('apply'); ?>',
-                cancelLabel: '<?php echo langHdl('cancel'); ?>',
+                applyLabel: '<?php echo $lang->get('apply'); ?>',
+                cancelLabel: '<?php echo $lang->get('cancel'); ?>',
             }
         })
         .bind('keypress', function(e) {
@@ -553,7 +555,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         if ($('#checkbox-purge-confirm').prop('checked') === true) {
             // inform user
             toastr.remove();
-            toastr.info('<?php echo langHdl('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+            toastr.info('<?php echo $lang->get('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
             // Prepare data
             var data = {
@@ -579,7 +581,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         // Show error
                         toastr.error(
                             data.message,
-                            '<?php echo langHdl('caution'); ?>', {
+                            '<?php echo $lang->get('caution'); ?>', {
                                 timeOut: 5000,
                                 progressBar: true
                             }
@@ -607,7 +609,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         } else {
             toastr.remove();
             toastr.warning(
-                '<?php echo langHdl('please_confirm_by_clicking_checkbox'); ?>',
+                '<?php echo $lang->get('please_confirm_by_clicking_checkbox'); ?>',
                 '', {
                     timeOut: 5000,
                     progressBar: true

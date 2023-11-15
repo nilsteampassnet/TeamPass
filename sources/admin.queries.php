@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\NestedTree\NestedTree;
@@ -37,6 +38,7 @@ require_once 'main.functions.php';
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 session_name('teampass_session');
 session_start();
 
@@ -72,9 +74,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
-
-// Load language file
-require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$superGlobal->get('user_language', 'SESSION', 'user').'.php';
 
 // Define Timezone
 date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
@@ -173,7 +172,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -184,7 +183,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -294,7 +293,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -305,7 +304,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -385,7 +384,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -396,7 +395,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -461,7 +460,7 @@ switch ($post_type) {
         echo prepareExchangedData(
             array(
                 'error' => false,
-                'message' => langHdl('last_execution') . ' ' .
+                'message' => $lang->get('last_execution') . ' ' .
                     date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) time()) .
                     '<i class="fas fa-check text-success ml-2"></i>',
             ),
@@ -480,7 +479,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -491,7 +490,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -514,7 +513,7 @@ switch ($post_type) {
         echo prepareExchangedData(
             [
                 'error' => false,
-                'message' => langHdl('last_execution') . ' ' .
+                'message' => $lang->get('last_execution') . ' ' .
                     date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) time()) .
                     '<i class="fas fa-check text-success mr-2"></i>',
             ],
@@ -531,7 +530,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 [
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ],
                 'encode'
             );
@@ -542,7 +541,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -577,7 +576,7 @@ switch ($post_type) {
         echo prepareExchangedData(
             array(
                 'error' => false,
-                'message' => langHdl('last_execution') . ' ' .
+                'message' => $lang->get('last_execution') . ' ' .
                     date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) time()) .
                     '<i class="fas fa-check text-success ml-2"></i>',
             ),
@@ -594,7 +593,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -605,7 +604,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -689,7 +688,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -700,7 +699,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -807,7 +806,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                     'nextAction' => '',
                     'nbOfItems' => '',
                 ),
@@ -820,7 +819,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -1189,7 +1188,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -1200,7 +1199,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -1239,7 +1238,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -1250,7 +1249,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -1316,7 +1315,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -1327,7 +1326,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -1361,7 +1360,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -1373,7 +1372,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('no_email_set'),
+                    'message' => $lang->get('no_email_set'),
                 ),
                 'encode'
             );
@@ -1382,8 +1381,8 @@ switch ($post_type) {
 
             //send email
             sendEmail(
-                langHdl('admin_email_test_subject'),
-                langHdl('admin_email_test_body'),
+                $lang->get('admin_email_test_subject'),
+                $lang->get('admin_email_test_body'),
                 $_SESSION['user_email'],
                 $SETTINGS
             );
@@ -1406,7 +1405,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -1495,7 +1494,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -1554,7 +1553,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -1565,7 +1564,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -1602,7 +1601,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -1628,7 +1627,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -1639,7 +1638,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -1727,7 +1726,7 @@ switch ($post_type) {
                 $post_option === 'attachments-decrypt' ? 'clear' : 'encrypted'
             );
 
-            $message = langHdl('last_execution') . ' ' .
+            $message = $lang->get('last_execution') . ' ' .
                 date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) time()) .
                 '<i class="fas fa-check text-success ml-2 mr-3"></i>';
         }
@@ -1753,7 +1752,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -1764,7 +1763,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -1848,7 +1847,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -1859,7 +1858,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -1965,7 +1964,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -1983,7 +1982,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('data_are_missing'),
+                    'message' => $lang->get('data_are_missing'),
                 ),
                 'encode'
             );
@@ -2002,7 +2001,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('duo_config_error') . "<br/>Duo: " . $e->getMessage(),
+                        'message' => $lang->get('duo_config_error') . "<br/>Duo: " . $e->getMessage(),
                     ),
                     'encode'
             );
@@ -2015,14 +2014,14 @@ switch ($post_type) {
         } catch (DuoException $e) {
             /*if ($SETTINGS['duo_failmode'] == "OPEN") {
                 # If we're failing open, errors in 2FA still allow for success
-                $duo_error = langHdl('duo_error_failopen');
+                $duo_error = $lang->get('duo_error_failopen');
                 $data["duo_check"] = "open";
             } else {
                 # Duo has failed and is unavailable, redirect user to the login page
-                $duo_error = langHdl('duo_error_secure');
+                $duo_error = $lang->get('duo_error_secure');
                 $data["duo_check"] = "failed";
             }*/
-            $duo_error = langHdl('duo_error_check_config') . "<br/>Duo: " . $e->getMessage();
+            $duo_error = $lang->get('duo_error_check_config') . "<br/>Duo: " . $e->getMessage();
             echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -2049,7 +2048,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -2133,7 +2132,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -2242,7 +2241,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -2393,7 +2392,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -2414,7 +2413,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -2495,7 +2494,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -2520,7 +2519,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -2532,7 +2531,7 @@ switch ($post_type) {
             $json,
             array(
                 'id' => 0,
-                'title' => langHdl('god'),
+                'title' => $lang->get('god'),
                 'selected_administrated_by' => isset($SETTINGS['ldap_new_user_is_administrated_by']) && $SETTINGS['ldap_new_user_is_administrated_by'] === '0' ? 1 : 0,
                 'selected_role' => isset($SETTINGS['ldap_new_user_role']) && $SETTINGS['ldap_new_user_role'] === '0' ? 1 : 0,
             )

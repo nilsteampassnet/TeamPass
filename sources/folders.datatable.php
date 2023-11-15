@@ -25,6 +25,7 @@ declare(strict_types=1);
  */
 
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\NestedTree\NestedTree;
@@ -35,6 +36,7 @@ require_once 'main.functions.php';
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 session_name('teampass_session');
 session_start();
 
@@ -74,9 +76,6 @@ if (
     exit;
 }
 
-// Load language file
-require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$superGlobal->get('user_language', 'SESSION', 'user').'.php';
-
 // Define Timezone
 date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
 
@@ -93,11 +92,11 @@ if (defined('TP_PW_COMPLEXITY') === false) {
     define(
         'TP_PW_COMPLEXITY',
         [
-            TP_PW_STRENGTH_1 => [TP_PW_STRENGTH_1, langHdl('complex_level1'), 'fas fa-thermometer-empty text-danger'],
-            TP_PW_STRENGTH_2 => [TP_PW_STRENGTH_2, langHdl('complex_level2'), 'fas fa-thermometer-quarter text-warning'],
-            TP_PW_STRENGTH_3 => [TP_PW_STRENGTH_3, langHdl('complex_level3'), 'fas fa-thermometer-half text-warning'],
-            TP_PW_STRENGTH_4 => [TP_PW_STRENGTH_4, langHdl('complex_level4'), 'fas fa-thermometer-three-quarters text-success'],
-            TP_PW_STRENGTH_5 => [TP_PW_STRENGTH_5, langHdl('complex_level5'), 'fas fa-thermometer-full text-success'],
+            TP_PW_STRENGTH_1 => [TP_PW_STRENGTH_1, $lang->get('complex_level1'), 'fas fa-thermometer-empty text-danger'],
+            TP_PW_STRENGTH_2 => [TP_PW_STRENGTH_2, $lang->get('complex_level2'), 'fas fa-thermometer-quarter text-warning'],
+            TP_PW_STRENGTH_3 => [TP_PW_STRENGTH_3, $lang->get('complex_level3'), 'fas fa-thermometer-half text-warning'],
+            TP_PW_STRENGTH_4 => [TP_PW_STRENGTH_4, $lang->get('complex_level4'), 'fas fa-thermometer-three-quarters text-success'],
+            TP_PW_STRENGTH_5 => [TP_PW_STRENGTH_5, $lang->get('complex_level5'), 'fas fa-thermometer-full text-success'],
         ]
     );
 }
@@ -147,7 +146,7 @@ foreach ($treeDesc as $t) {
         // get $t->parent_id
         $data = DB::queryFirstRow('SELECT title FROM '.prefixTable('nested_tree').' WHERE id = %i', $t->parent_id);
         if ($t->nlevel === 1) {
-            $data['title'] = langHdl('root');
+            $data['title'] = $lang->get('root');
         }
 
         // get rights on this folder
@@ -193,7 +192,7 @@ foreach ($treeDesc as $t) {
             ) {
                 $sOutput .= '"<input type=\"checkbox\" class=\"cb_selected_folder\" data-id=\"'.$t->id.'\" id=\"checkbox-'.$t->id.'\" data-row=\"'.$x.'\" />';
                 if ($tree->numDescendants($t->id) > 0) {
-                    $sOutput .= '<i class=\"fa fa-folder-minus fa-sm infotip ml-2 pointer icon-collapse\" data-id=\"'.$t->id.'\" title=\"'.langHdl('edit').'\"></i>';
+                    $sOutput .= '<i class=\"fa fa-folder-minus fa-sm infotip ml-2 pointer icon-collapse\" data-id=\"'.$t->id.'\" title=\"'.$lang->get('edit').'\"></i>';
                 }
 
                 $sOutput .= '"';
@@ -202,7 +201,7 @@ foreach ($treeDesc as $t) {
             }
             $sOutput .= ',';
             //col2
-            $sOutput .= '"<span id=\"folder-'.$t->id.'\" data-id=\"'.$t->id.'\" class=\"infotip edit-text field-title pointer\" data-html=\"true\" title=\"'.langHdl('id').': '.$t->id.'<br>'.langHdl('level').': '.$t->nlevel.'<br>'.langHdl('nb_items').': '.DB::count().'\">'.addslashes(str_replace("'", '&lsquo;', $t->title)).'</span>"';
+            $sOutput .= '"<span id=\"folder-'.$t->id.'\" data-id=\"'.$t->id.'\" class=\"infotip edit-text field-title pointer\" data-html=\"true\" title=\"'.$lang->get('id').': '.$t->id.'<br>'.$lang->get('level').': '.$t->nlevel.'<br>'.$lang->get('nb_items').': '.DB::count().'\">'.addslashes(str_replace("'", '&lsquo;', $t->title)).'</span>"';
             $sOutput .= ',';
             //col3 - PARENT
             $sOutput .= '"<small class=\"text-muted ml-1\">'.$path.'</small>"';

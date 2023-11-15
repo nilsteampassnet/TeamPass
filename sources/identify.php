@@ -27,6 +27,7 @@ declare(strict_types=1);
 use voku\helper\AntiXSS;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
 use TeampassClasses\PerformChecks\PerformChecks;
 use LdapRecord\Connection;
 use LdapRecord\Container;
@@ -43,6 +44,7 @@ require_once 'main.functions.php';
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 session_name('teampass_session');
 session_start();
 
@@ -100,6 +102,7 @@ error_reporting(E_ERROR);
 // --------------------------------- //
 
 $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 
 // Prepare POST variables
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
@@ -151,7 +154,7 @@ if ($post_type === 'identify_user') {
                 'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
                 'pwd_attempts' => (int) $sessionPwdAttempts,
                 'error' => true,
-                'message' => langHdl('error_bad_credentials_more_than_3_times'),
+                'message' => $lang->get('error_bad_credentials_more_than_3_times'),
             ],
             'encode'
         );
@@ -194,6 +197,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
 {
     $antiXss = new AntiXSS();
     $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 
     // Prepare GET variables
     $sessionAdmin = $superGlobal->get('user_admin', 'SESSION');
@@ -231,7 +235,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             echo prepareExchangedData(
                 [
                     'error' => true,
-                    'message' => langHdl('duo_error_decrypt'),
+                    'message' => $lang->get('duo_error_decrypt'),
                 ],
                 'encode'
             );
@@ -247,7 +251,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             'data' => prepareExchangedData(
                 [
                     'error' => true,
-                    'message' => langHdl('ga_enter_credentials'),
+                    'message' => $lang->get('ga_enter_credentials'),
                 ],
                 'encode'
             ),
@@ -334,7 +338,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                 'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
                 'pwd_attempts' => (int) $sessionPwdAttempts,
                 'error' => true,
-                'message' => langHdl('error_bad_credentials'),
+                'message' => $lang->get('error_bad_credentials'),
             ],
             'encode'
         );
@@ -746,7 +750,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             if (DB::count() > 0) {
                 // Add email to table
                 prepareSendingEmail(
-                    langHdl('email_subject_on_user_login'),
+                    $lang->get('email_subject_on_user_login'),
                     str_replace(
                         [
                             '#tp_user#',
@@ -758,10 +762,10 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                             date($SETTINGS['date_format'], (int) $superGlobal->get('last_connection', 'SESSION')),
                             date($SETTINGS['time_format'], (int) $superGlobal->get('last_connection', 'SESSION')),
                         ],
-                        langHdl('email_body_on_user_login')
+                        $lang->get('email_body_on_user_login')
                     ),
                     $val['email'],
-                    langHdl('administrator'),
+                    $lang->get('administrator'),
                     $SETTINGS
                 );
             }
@@ -807,7 +811,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                 'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
                 'pwd_attempts' => 0,
                 'error' => 'user_is_locked',
-                'message' => langHdl('account_is_locked'),
+                'message' => $lang->get('account_is_locked'),
                 'first_connection' => $superGlobal->get('validite_pw', 'SESSION') === false ? true : false,
                 'password_complexity' => TP_PW_COMPLEXITY[$superGlobal->get('user_pw_complexity', 'SESSION')][1],
                 'password_change_expected' => $userInfo['special'] === 'password_change_expected' ? true : false,
@@ -843,7 +847,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                 'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
                 'pwd_attempts' => 0,
                 'error' => 'user_is_locked',
-                'message' => langHdl('account_is_locked'),
+                'message' => $lang->get('account_is_locked'),
                 'first_connection' => $superGlobal->get('validite_pw', 'SESSION') === false ? true : false,
                 'password_complexity' => TP_PW_COMPLEXITY[$superGlobal->get('user_pw_complexity', 'SESSION')][1],
                 'password_change_expected' => $userInfo['special'] === 'password_change_expected' ? true : false,
@@ -867,7 +871,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
             'pwd_attempts' => (int) $sessionPwdAttempts,
             'error' => true,
-            'message' => langHdl('error_not_allowed_to_authenticate'),
+            'message' => $lang->get('error_not_allowed_to_authenticate'),
             'first_connection' => $superGlobal->get('validite_pw', 'SESSION') === false ? true : false,
             'password_complexity' => TP_PW_COMPLEXITY[$superGlobal->get('user_pw_complexity', 'SESSION')][1],
             'password_change_expected' => $userInfo['special'] === 'password_change_expected' ? true : false,
@@ -1256,7 +1260,7 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
         $error = $e->getDetailedError();
         return [
             'error' => true,
-            'message' => langHdl('error')." - ".(isset($error) === true ? $error->getErrorCode()." - ".$error->getErrorMessage(). "<br>".$error->getDiagnosticMessage() : $e),
+            'message' => $lang->get('error')." - ".(isset($error) === true ? $error->getErrorCode()." - ".$error->getErrorMessage(). "<br>".$error->getDiagnosticMessage() : $e),
 
         ];
     }
@@ -1270,7 +1274,7 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
     ) {
         return [
             'error' => true,
-            'message' => langHdl('error_ad_user_expired'),
+            'message' => $lang->get('error_ad_user_expired'),
         ];
     }
 
@@ -1295,7 +1299,7 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
             true,
             true,
             false,
-            langHdl('email_body_user_config_2'),
+            $lang->get('email_body_user_config_2'),
         );
 
         // Complete $userInfo
@@ -1467,6 +1471,7 @@ function yubicoMFACheck($dataReceived, string $userInfo, array $SETTINGS): array
 {
     // Load superGlobals
     $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
     $sessionAdmin = $superGlobal->get('user_admin', 'SESSION');
     $sessionUrl = $superGlobal->get('initial_url', 'SESSION');
     $sessionPwdAttempts = $superGlobal->get('pwd_attempts', 'SESSION');
@@ -1515,7 +1520,7 @@ function yubicoMFACheck($dataReceived, string $userInfo, array $SETTINGS): array
             'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : '',
             'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
             'pwd_attempts' => (int) $sessionPwdAttempts,
-            'message' => langHdl('yubico_bad_code'),
+            'message' => $lang->get('yubico_bad_code'),
             'proceedIdentification' => false,
         ];
     }
@@ -1625,12 +1630,13 @@ function ldapCreateUser(string $login, string $passwordClear, string $userEmail,
  */
 function googleMFACheck(string $username, array $userInfo, $dataReceived, array $SETTINGS): array
 {
+    // Load superGlobals
+    $superGlobal = new SuperGlobal();
+    $lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
     if (
         isset($dataReceived['GACode']) === true
         && empty($dataReceived['GACode']) === false
     ) {
-        // Load superGlobals
-        $superGlobal = new SuperGlobal();
         $sessionAdmin = $superGlobal->get('user_admin', 'SESSION');
         $sessionUrl = $superGlobal->get('initial_url', 'SESSION');
         $sessionPwdAttempts = $superGlobal->get('pwd_attempts', 'SESSION');
@@ -1643,7 +1649,7 @@ function googleMFACheck(string $username, array $userInfo, $dataReceived, array 
             if ($userInfo['ga_temporary_code'] !== $dataReceived['GACode']) {
                 return [
                     'error' => true,
-                    'message' => langHdl('ga_bad_code'),
+                    'message' => $lang->get('ga_bad_code'),
                     'proceedIdentification' => false,
                     'ga_bad_code' => true,
                     'firstTime' => $firstTime,
@@ -1653,7 +1659,7 @@ function googleMFACheck(string $username, array $userInfo, $dataReceived, array 
             // If first time with MFA code
             $proceedIdentification = false;
             $mfaStatus = 'ga_temporary_code_correct';
-            $mfaMessage = langHdl('ga_flash_qr_and_login');
+            $mfaMessage = $lang->get('ga_flash_qr_and_login');
             // generate new QR
             $new_2fa_qr = $tfa->getQRCodeImageAsDataUri(
                 'Teampass - ' . $username,
@@ -1683,7 +1689,7 @@ function googleMFACheck(string $username, array $userInfo, $dataReceived, array 
             } else {
                 return [
                     'error' => true,
-                    'message' => langHdl('ga_bad_code'),
+                    'message' => $lang->get('ga_bad_code'),
                     'proceedIdentification' => false,
                     'ga_bad_code' => true,
                     'firstTime' => $firstTime,
@@ -1693,7 +1699,7 @@ function googleMFACheck(string $username, array $userInfo, $dataReceived, array 
     } else {
         return [
             'error' => true,
-            'message' => langHdl('ga_bad_code'),
+            'message' => $lang->get('ga_bad_code'),
             'proceedIdentification' => false,
             'ga_bad_code' => true,
             'firstTime' => [],
@@ -1725,6 +1731,7 @@ function duoMFACheck(
 {
     // Load superGlobals
     $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 
     $sessionPwdAttempts = $superGlobal->get('pwd_attempts', 'SESSION');
     $saved_state = null !== $superGlobal->get('duo_state','SESSION') ? $superGlobal->get('duo_state','SESSION') : '';
@@ -1738,7 +1745,7 @@ function duoMFACheck(
     ) {
         return [
             'error' => true,
-            'message' => langHdl('duo_no_data'),
+            'message' => $lang->get('duo_no_data'),
             'pwd_attempts' => (int) $sessionPwdAttempts,
             'proceedIdentification' => false,
         ];
@@ -1752,7 +1759,7 @@ function duoMFACheck(
         // We did not received a proper Duo state
         return [
             'error' => true,
-            'message' => langHdl('duo_error_state'),
+            'message' => $lang->get('duo_error_state'),
             'pwd_attempts' => (int) $sessionPwdAttempts,
             'proceedIdentification' => false,
         ];
@@ -1790,6 +1797,7 @@ function duoMFAPerform(
 {
     // Load superGlobals
     $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 
     try {
         $duo_client = new Client(
@@ -1801,7 +1809,7 @@ function duoMFAPerform(
     } catch (DuoException $e) {
         return [
             'error' => true,
-            'message' => langHdl('duo_config_error'),
+            'message' => $lang->get('duo_config_error'),
             'debug_message' => $e->getMessage(),
             'pwd_attempts' => (int) $sessionPwdAttempts,
             'proceedIdentification' => false,
@@ -1809,23 +1817,23 @@ function duoMFAPerform(
     }
         
     try {
-        $duo_error = langHdl('duo_error_secure');
+        $duo_error = $lang->get('duo_error_secure');
         $duo_failmode = "none";
         $duo_client->healthCheck();
     } catch (DuoException $e) {
         //Not implemented Duo Failmode in case the Duo services are not available
         /*if ($SETTINGS['duo_failmode'] == "safe") {
             # If we're failing open, errors in 2FA still allow for success
-            $duo_error = langHdl('duo_error_failopen');
+            $duo_error = $lang->get('duo_error_failopen');
             $duo_failmode = "safe";
         } else {
             # Duo has failed and is unavailable, redirect user to the login page
-            $duo_error = langHdl('duo_error_secure');
+            $duo_error = $lang->get('duo_error_secure');
             $duo_failmode = "secure";
         }*/
         return [
             'error' => true,
-            'message' => $duo_error . langHdl('duo_error_check_config'),
+            'message' => $duo_error . $lang->get('duo_error_check_config'),
             'pwd_attempts' => (int) $sessionPwdAttempts,
             'debug_message' => $e->getMessage(),
             'proceedIdentification' => false,
@@ -1841,7 +1849,7 @@ function duoMFAPerform(
         } catch (DuoException $e) {
             return [
                 'error' => true,
-                'message' => $duo_error . langHdl('duo_error_url'),
+                'message' => $duo_error . $lang->get('duo_error_url'),
                 'pwd_attempts' => (int) $sessionPwdAttempts,
                 'debug_message' => $e->getMessage(),
                 'proceedIdentification' => false,
@@ -1877,7 +1885,7 @@ function duoMFAPerform(
         } else {
             return [
                 'error' => true,
-                'message' => $duo_error . langHdl('duo_error_url'),
+                'message' => $duo_error . $lang->get('duo_error_url'),
                 'pwd_attempts' => (int) $sessionPwdAttempts,
                 'proceedIdentification' => false,
             ];
@@ -1889,7 +1897,7 @@ function duoMFAPerform(
         } catch (DuoException $e) {
             return [
                 'error' => true,
-                'message' => langHdl('duo_error_decoding'),
+                'message' => $lang->get('duo_error_decoding'),
                 'pwd_attempts' => (int) $sessionPwdAttempts,
                 'debug_message' => $e->getMessage(),
                 'proceedIdentification' => false,
@@ -1918,7 +1926,7 @@ function duoMFAPerform(
 
             return [
                 'error' => true,
-                'message' => langHdl('duo_login_mismatch'),
+                'message' => $lang->get('duo_login_mismatch'),
                 'pwd_attempts' => (int) $sessionPwdAttempts,
                 'proceedIdentification' => false,
             ];
@@ -1931,7 +1939,7 @@ function duoMFAPerform(
     unset($superGlobal);
     return [
         'error' => true,
-        'message' => langHdl('duo_login_mismatch'),
+        'message' => $lang->get('duo_login_mismatch'),
         'pwd_attempts' => (int) $sessionPwdAttempts,
         'proceedIdentification' => false,
     ];
@@ -2180,13 +2188,14 @@ function identifyDoInitialChecks(
 {
     $checks = new initialChecks();
     $enable_ad_user_auto_creation = isset($SETTINGS['enable_ad_user_auto_creation']) === true && (int) $SETTINGS['enable_ad_user_auto_creation'] === 1 ? true : false;
+    // Load superGlobals
+    $superGlobal = new SuperGlobal();
+    $lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
     
     // Brute force management
     try {
         $checks->get_is_too_much_attempts($sessionPwdAttempts);
     } catch (Exception $e) {
-        // Load superGlobals
-        $superGlobal = new SuperGlobal();
         $superGlobal->put('next_possible_pwd_attempts', time() + 10, 'SESSION');
         $superGlobal->put('pwd_attempts', 0, 'SESSION');
 
@@ -2200,7 +2209,7 @@ function identifyDoInitialChecks(
                 'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
                 'pwd_attempts' => 0,
                 'error' => true,
-                'message' => langHdl('error_bad_credentials_more_than_3_times'),
+                'message' => $lang->get('error_bad_credentials_more_than_3_times'),
             ]
         ];
     }
@@ -2215,7 +2224,7 @@ function identifyDoInitialChecks(
             'array' => [
                 'value' => 'user_not_exists',
                 'error' => true,
-                'message' => langHdl('error_bad_credentials'),
+                'message' => $lang->get('error_bad_credentials'),
                 'pwd_attempts' => (int) $sessionPwdAttempts,
                 'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
                 'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
@@ -2270,7 +2279,7 @@ function identifyDoInitialChecks(
                 'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
                 'pwd_attempts' => (int) $sessionPwdAttempts,
                 'error' => '2fa_not_set',
-                'message' => langHdl('select_valid_2fa_credentials'),
+                'message' => $lang->get('select_valid_2fa_credentials'),
             ]
         ];
     }
@@ -2291,7 +2300,7 @@ function identifyDoInitialChecks(
                 'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
                 'pwd_attempts' => (int) $sessionPwdAttempts,
                 'error' => true,
-                'message' => langHdl('remove_install_folder'),
+                'message' => $lang->get('remove_install_folder'),
             ]
         ];
     }
@@ -2364,6 +2373,10 @@ function identifyDoMFAChecks(
     string $username
 ): array
 {    
+    // Load superGlobals
+    $superGlobal = new SuperGlobal();
+    $lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
+    
     switch ($userInitialData['user_mfa_mode']) {
         case 'google':
             $ret = googleMFACheck(
@@ -2429,8 +2442,6 @@ function identifyDoMFAChecks(
                 $checks['duo_status'],
                 $SETTINGS
             );
-            // Load superGlobals
-            $superGlobal = new SuperGlobal();
 
             if ($ret['error'] !== false) {
                 logEvents($SETTINGS, 'failed_auth', 'bad_duo_mfa', '', stripslashes($username), stripslashes($username));
@@ -2463,7 +2474,7 @@ function identifyDoMFAChecks(
             logEvents($SETTINGS, 'failed_auth', 'wrong_mfa_code', '', stripslashes($username), stripslashes($username));
             return [
                 'error' => true,
-                'mfaData' => ['message' => langHdl('wrong_mfa_code')],
+                'mfaData' => ['message' => $lang->get('wrong_mfa_code')],
                 'mfaQRCodeInfos' => false,
             ];
     }
@@ -2472,7 +2483,7 @@ function identifyDoMFAChecks(
     logEvents($SETTINGS, 'failed_auth', 'wrong_mfa_code', '', stripslashes($username), stripslashes($username));
     return [
         'error' => true,
-        'mfaData' => ['message' => langHdl('wrong_mfa_code')],
+        'mfaData' => ['message' => $lang->get('wrong_mfa_code')],
         'mfaQRCodeInfos' => false,
     ];
 }

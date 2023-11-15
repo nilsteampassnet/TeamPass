@@ -26,12 +26,14 @@ declare(strict_types=1);
 
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
 
 // init
 loadClasses();
 $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 
 if (
     isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
@@ -121,7 +123,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         var categoriesOptions = [];
         categoriesOptions.push({
             id: '',
-            text: '-- <?php echo langHdl('select'); ?> --'
+            text: '-- <?php echo $lang->get('select'); ?> --'
         });
         $('.category').each(function() {
             categoriesOptions.push({
@@ -153,7 +155,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         // Add top
         fields.push({
             id: 'top',
-            text: '<?php echo langHdl('top'); ?>'
+            text: '<?php echo $lang->get('top'); ?>'
         });
 
         // CLear existing list
@@ -165,13 +167,13 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             if (parseInt($(this).data('category')) === parseInt(selectedCategory)) {
                 fields.push({
                     id: $(this).data('order'),
-                    text: '<?php echo langHdl('before') . ' '; ?>' + $(this).find('td:eq(1)').text()
+                    text: '<?php echo $lang->get('before') . ' '; ?>' + $(this).find('td:eq(1)').text()
                 });
             }
         });
         fields.push({
             id: 'bottom',
-            text: '<?php echo langHdl('bottom'); ?>'
+            text: '<?php echo $lang->get('bottom'); ?>'
         });
 
         // Update select of Roles
@@ -242,7 +244,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             toastr.remove();
                             toastr.error(
                                 data.message,
-                                '<?php echo langHdl('error'); ?>', {
+                                '<?php echo $lang->get('error'); ?>', {
                                     timeOut: 5000,
                                     progressBar: true
                                 }
@@ -254,7 +256,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             // Inform user
                             toastr.remove();
                             toastr.success(
-                                '<?php echo langHdl('done'); ?>',
+                                '<?php echo $lang->get('done'); ?>',
                                 '', {
                                     timeOut: 1000
                                 }
@@ -272,7 +274,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 // ERROR
                 toastr.remove();
                 toastr.warning(
-                    '<?php echo langHdl('all_fields_are_required'); ?>',
+                    '<?php echo $lang->get('all_fields_are_required'); ?>',
                     '', {
                         timeOut: 5000,
                         progressBar: true
@@ -310,7 +312,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     if ($('#form-field-category').val() === '') {
                         toastr.remove();
                         toastr.warning(
-                            '<?php echo langHdl('all_fields_are_required'); ?>',
+                            '<?php echo $lang->get('all_fields_are_required'); ?>',
                             '', {
                                 timeOut: 5000,
                                 progressBar: true
@@ -339,7 +341,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             toastr.remove();
                             toastr.error(
                                 data.message,
-                                '<?php echo langHdl('error'); ?>', {
+                                '<?php echo $lang->get('error'); ?>', {
                                     timeOut: 5000,
                                     progressBar: true
                                 }
@@ -351,7 +353,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             // Inform user
                             toastr.remove();
                             toastr.success(
-                                '<?php echo langHdl('done'); ?>',
+                                '<?php echo $lang->get('done'); ?>',
                                 '', {
                                     timeOut: 1000
                                 }
@@ -369,7 +371,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 // ERROR
                 toastr.remove();
                 toastr.warning(
-                    '<?php echo langHdl('all_fields_are_required'); ?>',
+                    '<?php echo $lang->get('all_fields_are_required'); ?>',
                     '', {
                         timeOut: 5000,
                         progressBar: true
@@ -428,13 +430,13 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 '<tr class="table-danger row-delete" data-category="' + categoryId + '">' +
                 '<td colspan="4">' +
                 '<div class="alert alert-danger">' +
-                '<p><i class="fas fa-warning mr-2"></i><?php echo langHdl('caution_while_deleting_category'); ?></p>' +
+                '<p><i class="fas fa-warning mr-2"></i><?php echo $lang->get('caution_while_deleting_category'); ?></p>' +
                 '<p><input type="checkbox" class="form-check-input form-control flat-red" id="delete-confirm">' +
-                '<label class="form-check-label ml-3 pointer" for="delete-confirm"><?php echo langHdl('please_confirm_by_clicking_checkbox'); ?></label></p>' +
+                '<label class="form-check-label ml-3 pointer" for="delete-confirm"><?php echo $lang->get('please_confirm_by_clicking_checkbox'); ?></label></p>' +
                 '</div>' +
                 '<div>' +
-                '<button type="button" class="btn btn-warning" id="button-delete" data-type="category"><?php echo langHdl('submit'); ?></button>' +
-                '<button type="button" class="btn btn-default float-right" id="button-cancel"><?php echo langHdl('cancel'); ?></button>' +
+                '<button type="button" class="btn btn-warning" id="button-delete" data-type="category"><?php echo $lang->get('submit'); ?></button>' +
+                '<button type="button" class="btn btn-default float-right" id="button-cancel"><?php echo $lang->get('cancel'); ?></button>' +
                 '</div></td></tr>'
             );
 
@@ -453,7 +455,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         if ($('#delete-confirm').prop("checked") === true) {
             // Show cog
             toastr.remove();
-            toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
             var row = $(this).closest('tr'),
                 type = $(this).data('type'),
@@ -489,7 +491,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         toastr.remove();
                         toastr.error(
                             data.message,
-                            '<?php echo langHdl('error'); ?>', {
+                            '<?php echo $lang->get('error'); ?>', {
                                 timeOut: 5000,
                                 progressBar: true
                             }
@@ -516,7 +518,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         // Inform user
                         toastr.remove();
                         toastr.success(
-                            '<i class="fas fa-info-circle mr-2"></i><?php echo langHdl('done'); ?>',
+                            '<i class="fas fa-info-circle mr-2"></i><?php echo $lang->get('done'); ?>',
                             '', {
                                 timeOut: 1000
                             }
@@ -556,7 +558,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 roles = [],
                 fields = [{
                     id: 'top',
-                    text: '<?php echo langHdl('top'); ?>'
+                    text: '<?php echo $lang->get('top'); ?>'
                 }];
 
             // Category already selected
@@ -571,13 +573,13 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 if ($(this).data('category') === categoryId) {
                     fields.push({
                         id: $(this).data('order'),
-                        text: '<?php echo langHdl('before') . ' '; ?>' + $(this).find('td:eq(1)').text()
+                        text: '<?php echo $lang->get('before') . ' '; ?>' + $(this).find('td:eq(1)').text()
                     });
                 }
             });
             fields.push({
                 id: 'bottom',
-                text: '<?php echo langHdl('bottom'); ?>'
+                text: '<?php echo $lang->get('bottom'); ?>'
             });
 
             // Update select of Roles
@@ -647,13 +649,13 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 '<tr class="table-danger row-delete" data-category="' + categoryId + '" data-field="' + fieldId + '">' +
                 '<td colspan="4">' +
                 '<div class="alert alert-danger">' +
-                '<p><i class="fas fa-warning mr-2"></i><?php echo langHdl('caution_while_deleting_field'); ?></p>' +
+                '<p><i class="fas fa-warning mr-2"></i><?php echo $lang->get('caution_while_deleting_field'); ?></p>' +
                 '<p><input type="checkbox" class="form-check-input form-control flat-red" id="delete-confirm">' +
-                '<label class="form-check-label ml-3 pointer" for="delete-confirm"><?php echo langHdl('please_confirm_by_clicking_checkbox'); ?></label></p>' +
+                '<label class="form-check-label ml-3 pointer" for="delete-confirm"><?php echo $lang->get('please_confirm_by_clicking_checkbox'); ?></label></p>' +
                 '</div>' +
                 '<div>' +
-                '<button type="button" class="btn btn-warning" id="button-delete" data-type="field"><?php echo langHdl('submit'); ?></button>' +
-                '<button type="button" class="btn btn-default float-right" id="button-cancel"><?php echo langHdl('cancel'); ?></button>' +
+                '<button type="button" class="btn btn-warning" id="button-delete" data-type="field"><?php echo $lang->get('submit'); ?></button>' +
+                '<button type="button" class="btn btn-default float-right" id="button-cancel"><?php echo $lang->get('cancel'); ?></button>' +
                 '</div></td></tr>'
             );
 
@@ -677,7 +679,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     function loadFieldsList() {
         // Show cog
         toastr.remove();
-        toastr.info('<?php echo langHdl('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+        toastr.info('<?php echo $lang->get('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
         $('#table-loading').removeClass('hidden');
 
@@ -698,7 +700,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     toastr.remove();
                     toastr.error(
                         data.message,
-                        '<?php echo langHdl('error'); ?>', {
+                        '<?php echo $lang->get('error'); ?>', {
                             timeOut: 5000,
                             progressBar: true
                         }
@@ -710,7 +712,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             categoryId = '',
                             positionCategory = 0,
                             positionField = 0,
-                            categoriesList = '<option value="top"><?php echo langHdl('top'); ?></option>';
+                            categoriesList = '<option value="top"><?php echo $lang->get('top'); ?></option>';
 
                         // Parse array and build table
                         $(data.array).each(function(i, val) {
@@ -738,7 +740,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                     '</tr>';
 
                                 // Prepare list of categories for Form
-                                categoriesList += '<option value="' + categoryId + '"><?php echo langHdl('before') . ' '; ?>' + val.title + '</option>';
+                                categoriesList += '<option value="' + categoryId + '"><?php echo $lang->get('before') . ' '; ?>' + val.title + '</option>';
 
                                 positionCategory += 1;
                             } else {
@@ -748,19 +750,19 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                     masked = '',
                                     mandatory = '',
                                     regex = '',
-                                    type = '<i class="fas fa-paragraph ml-2 infotip text" title="<?php echo langHdl('text'); ?>"></i>',
+                                    type = '<i class="fas fa-paragraph ml-2 infotip text" title="<?php echo $lang->get('text'); ?>"></i>',
                                     roles = '';
 
                                 if (val.encrypted === 1) {
-                                    encrypted = '<i class="fas fa-shield-alt ml-2 infotip encrypted" title="<?php echo langHdl('encrypted_data'); ?>"></i>';
+                                    encrypted = '<i class="fas fa-shield-alt ml-2 infotip encrypted" title="<?php echo $lang->get('encrypted_data'); ?>"></i>';
                                 }
 
                                 if (val.masked === 1) {
-                                    masked = '<i class="fas fa-mask ml-2 infotip masked" title="<?php echo langHdl('data_is_masked'); ?>"></i>';
+                                    masked = '<i class="fas fa-mask ml-2 infotip masked" title="<?php echo $lang->get('data_is_masked'); ?>"></i>';
                                 }
 
                                 if (val.mandatory === 1) {
-                                    mandatory = '<i class="fas fa-fire text-danger ml-2 infotip mandatory" title="<?php echo langHdl('is_mandatory'); ?>"></i>';
+                                    mandatory = '<i class="fas fa-fire text-danger ml-2 infotip mandatory" title="<?php echo $lang->get('is_mandatory'); ?>"></i>';
                                 }
 
                                 if (val.regex !== '') {
@@ -768,7 +770,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                 }
 
                                 if (val.type === 'textarea') {
-                                    type = '<i class="fas fa-align-justify ml-2 infotip textarea" title="<?php echo langHdl('textarea'); ?>"></i>';
+                                    type = '<i class="fas fa-align-justify ml-2 infotip textarea" title="<?php echo $lang->get('textarea'); ?>"></i>';
                                 }
 
                                 if (val.roles.length > 0) {
@@ -815,18 +817,18 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             .find('option')
                             .remove()
                             .end()
-                            .append(categoriesList + '<option value="bottom"><?php echo langHdl('bottom'); ?></option>');
+                            .append(categoriesList + '<option value="bottom"><?php echo $lang->get('bottom'); ?></option>');
                     } else {
                         // No fields is defined
                         $("#fields-message")
-                            .html("<?php echo langHdl('no_category_defined'); ?>")
+                            .html("<?php echo $lang->get('no_category_defined'); ?>")
                             .removeClass("hidden");
                     }
 
                     // Inform user
                     toastr.remove();
                     toastr.success(
-                        '<i class="fas fa-info-circle mr-2"></i><?php echo langHdl('done'); ?>',
+                        '<i class="fas fa-info-circle mr-2"></i><?php echo $lang->get('done'); ?>',
                         '', {
                             timeOut: 1000
                         }

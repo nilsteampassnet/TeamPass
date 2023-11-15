@@ -26,12 +26,14 @@ declare(strict_types=1);
 
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
 
 // init
 loadClasses();
 $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 
 if (
     isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
@@ -115,7 +117,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             if ($('#onthefly-backup-key').val() !== '') {
                 // Show cog
                 toastr.remove();
-                toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+                toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
                 // Prepare data
                 var data = {
@@ -138,8 +140,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             // ERROR
                             toastr.remove();
                             toastr.error(
-                                '<?php echo langHdl('server_answer_error') . '<br />' . langHdl('server_returned_data') . ':<br />'; ?>' + data.error,
-                                '<?php echo langHdl('error'); ?>', {
+                                '<?php echo $lang->get('server_answer_error') . '<br />' . $lang->get('server_returned_data') . ':<br />'; ?>' + data.error,
+                                '<?php echo $lang->get('error'); ?>', {
                                     timeOut: 5000,
                                     progressBar: true
                                 }
@@ -165,8 +167,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                         // error
                                         toastr.remove();
                                         toastr.error(
-                                            '<?php echo langHdl('server_answer_error') . '<br />' . langHdl('server_returned_data') . ':<br />'; ?>' + data.error,
-                                            '<?php echo langHdl('error'); ?>', {
+                                            '<?php echo $lang->get('server_answer_error') . '<br />' . $lang->get('server_returned_data') . ':<br />'; ?>' + data.error,
+                                            '<?php echo $lang->get('error'); ?>', {
                                                 timeOut: 5000,
                                                 progressBar: true
                                             }
@@ -177,7 +179,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                     if (data.error === false) {
                                         toastr.remove();
                                         toastr.success(
-                                            '<?php echo langHdl('done'); ?>',
+                                            '<?php echo $lang->get('done'); ?>',
                                             '', {
                                                 timeOut: 1000
                                             }
@@ -190,14 +192,14 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                 .removeClass('hidden')
                                 .html('<div class="alert alert-success alert-dismissible ml-2">' +
                                     '<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>' +
-                                    '<h5><i class="icon fa fa-check mr-2"></i><?php echo langHdl('done'); ?></h5>' +
-                                    '<i class="fas fa-file-download mr-2"></i><a href="' + data.download + '"><?php echo langHdl('pdf_download'); ?></a>' +
+                                    '<h5><i class="icon fa fa-check mr-2"></i><?php echo $lang->get('done'); ?></h5>' +
+                                    '<i class="fas fa-file-download mr-2"></i><a href="' + data.download + '"><?php echo $lang->get('pdf_download'); ?></a>' +
                                     '</div>');
 
                             // Inform user
                             toastr.remove();
                             toastr.success(
-                                '<?php echo langHdl('done'); ?>',
+                                '<?php echo $lang->get('done'); ?>',
                                 '', {
                                     timeOut: 1000
                                 }
@@ -212,7 +214,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             if ($('#onthefly-restore-key').val() !== '') {
                 // Show cog
                 toastr.remove();
-                toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+                toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
                 // Prepare data
                 var data = {
@@ -236,8 +238,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             // ERROR
                             toastr.remove();
                             toastr.error(
-                                '<?php echo langHdl('server_answer_error') . '<br />' . langHdl('server_returned_data') . ':<br />'; ?>' + data.error,
-                                '<?php echo langHdl('error'); ?>', {
+                                '<?php echo $lang->get('server_answer_error') . '<br />' . $lang->get('server_returned_data') . ':<br />'; ?>' + data.error,
+                                '<?php echo $lang->get('error'); ?>', {
                                     timeOut: 5000,
                                     progressBar: true
                                 }
@@ -248,14 +250,14 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                 .removeClass('hidden')
                                 .html('<div class="alert alert-success alert-dismissible ml-2">' +
                                     '<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>' +
-                                    '<h5><i class="icon fa fa-check mr-2"></i><?php echo langHdl('done'); ?></h5>' +
-                                    '<?php echo langHdl('restore_done_now_logout'); ?>' +
+                                    '<h5><i class="icon fa fa-check mr-2"></i><?php echo $lang->get('done'); ?></h5>' +
+                                    '<?php echo $lang->get('restore_done_now_logout'); ?>' +
                                     '</div>');
 
                             // Inform user
                             toastr.remove();
                             toastr.success(
-                                '<?php echo langHdl('done'); ?>',
+                                '<?php echo $lang->get('done'); ?>',
                                 '', {
                                     timeOut: 1000
                                 }
@@ -327,7 +329,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 BeforeUpload: function(up, file) {
                     // Show cog
                     toastr.remove();
-                    toastr.info('<?php echo langHdl('loading_item'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+                    toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
                     console.log("Upload token: "+store.get('teampassUser').uploadToken);
 
                     up.settings.multipart_params = {
@@ -349,7 +351,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     // Inform user
                     toastr.remove();
                     toastr.success(
-                        '<?php echo langHdl('done'); ?>',
+                        '<?php echo $lang->get('done'); ?>',
                         '', {
                             timeOut: 1000
                         }
@@ -373,7 +375,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             .removeClass('hidden')
             .html('<div class="alert alert-danger alert-dismissible ml-2">' +
                 '<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>' +
-                '<h5><i class="icon fas fa-ban mr-2"></i><?php echo langHdl('done'); ?></h5>' +
+                '<h5><i class="icon fas fa-ban mr-2"></i><?php echo $lang->get('done'); ?></h5>' +
                 '' + err.message +
                 '</div>');
                 up.refresh(); // Reposition Flash/Silverlight

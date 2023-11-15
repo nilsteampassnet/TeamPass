@@ -24,6 +24,7 @@ use LdapRecord\Container;
 use voku\helper\AntiXSS;
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
 
@@ -33,6 +34,7 @@ require_once 'main.functions.php';
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 session_name('teampass_session');
 session_start();
 
@@ -72,9 +74,6 @@ if (
     exit;
 }
 
-// Load language file
-require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$superGlobal->get('user_language', 'SESSION', 'user').'.php';
-
 // Define Timezone
 date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
 
@@ -99,7 +98,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -121,7 +120,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => "Error : ".langHdl('error_empty_data'),
+                    'message' => "Error : ".$lang->get('error_empty_data'),
                 ),
                 'encode'
             );
@@ -181,7 +180,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error')." - ".(isset($error) === true ? $error->getErrorCode()." - ".$error->getErrorMessage(). "<br>".$error->getDiagnosticMessage() : $e),
+                    'message' => $lang->get('error')." - ".(isset($error) === true ? $error->getErrorCode()." - ".$error->getErrorMessage(). "<br>".$error->getDiagnosticMessage() : $e),
                 ),
                 'encode'
             );
@@ -201,7 +200,7 @@ switch ($post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error').' : '.(isset($error) === true ? $error->getErrorCode()." - ".$error->getErrorMessage(). "<br>".$error->getDiagnosticMessage() : $e),
+                    'message' => $lang->get('error').' : '.(isset($error) === true ? $error->getErrorCode()." - ".$error->getErrorMessage(). "<br>".$error->getDiagnosticMessage() : $e),
                 ),
                 'encode'
             );

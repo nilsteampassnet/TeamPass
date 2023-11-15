@@ -27,6 +27,7 @@ declare(strict_types=1);
 use voku\helper\AntiXSS;
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
 
@@ -36,6 +37,7 @@ require_once 'main.functions.php';
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 session_name('teampass_session');
 session_start();
 
@@ -74,9 +76,6 @@ if (
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
-
-// Load language file
-require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$superGlobal->get('user_language', 'SESSION', 'user').'.php';
 
 // Define Timezone
 date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
@@ -361,8 +360,8 @@ if (isset($_GET['type']) === false) {
         }
         
         //col1
-        $sOutputItem .= '"<i class=\"fa fa-external-link-alt infotip mr-2\" title=\"' . langHdl('open_url_link') . '\" onClick=\"window.location.href=&#039;index.php?page=items&amp;group=' . $record['id_tree'] . '&amp;id=' . $record['id'] . '&#039;\" style=\"cursor:pointer;\"></i>' .
-        '<i class=\"fa fa-eye infotip mr-2 item-detail\" title=\"' . stripslashes(langHdl('see_item_title')) . '\" data-id=\"' . $record['id'] . '\" data-perso=\"' . $record['perso'] . '\" data-tree-id=\"' . $record['id_tree'] . '\" data-expired=\"' . $expired . '\" data-restricted-to=\"' . $restrictedTo . '\" data-rights=\"' . $right . '\" style=\"cursor:pointer;\"></i>' . $checkbox . '",' ;
+        $sOutputItem .= '"<i class=\"fa fa-external-link-alt infotip mr-2\" title=\"' . $lang->get('open_url_link') . '\" onClick=\"window.location.href=&#039;index.php?page=items&amp;group=' . $record['id_tree'] . '&amp;id=' . $record['id'] . '&#039;\" style=\"cursor:pointer;\"></i>' .
+        '<i class=\"fa fa-eye infotip mr-2 item-detail\" title=\"' . stripslashes($lang->get('see_item_title')) . '\" data-id=\"' . $record['id'] . '\" data-perso=\"' . $record['perso'] . '\" data-tree-id=\"' . $record['id_tree'] . '\" data-expired=\"' . $expired . '\" data-restricted-to=\"' . $restrictedTo . '\" data-rights=\"' . $right . '\" style=\"cursor:pointer;\"></i>' . $checkbox . '",' ;
         //col2
         $sOutputItem .= '"'.base64_encode('<span id=\"item_label-' . $record['id'] . '\">' . (str_replace("\\", "&#92;", (string) $record['label'])) . '</span>').'", ';   // replace backslash #3015
         //col3
@@ -687,7 +686,7 @@ if (isset($_GET['type']) === false) {
 
     $returnValues = [
         'html_json' => filter_var_array($arr_data, FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-        'message' => (string) $iTotal.' '.langHdl('find_message'),
+        'message' => (string) $iTotal.' '.$lang->get('find_message'),
         'total' => (int) $iTotal,
         'start' => (int) (isset($_GET['start']) === true && (int) $_GET['length'] !== -1) ? (int) $_GET['start'] + (int) $_GET['length'] : -1,
     ];

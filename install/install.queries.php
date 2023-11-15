@@ -25,6 +25,7 @@ use EZimuel\PHPSecureSession;
 use Hackzilla\PasswordGenerator\Generator\ComputerPasswordGenerator;
 use Hackzilla\PasswordGenerator\RandomGenerator\Php7RandomGenerator;
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
 
 // Do initial test
 if (file_exists('../includes/config/settings.php') === false) {
@@ -42,6 +43,7 @@ require_once __DIR__.'/../sources/main.functions.php';
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 session_name('teampass_session');
 session_start();
 
@@ -65,6 +67,7 @@ $session_db_encoding = 'utf8';
 define('MIN_PHP_VERSION', 7.4);
 
 $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 
 /**
  * Generates a random key.

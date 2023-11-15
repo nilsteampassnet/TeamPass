@@ -80,6 +80,7 @@ require_once __DIR__.'/sources/main.functions.php';
 
 // init
 $superGlobal = new SuperGlobal();
+//$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 
 // Quick major version check -> upgrade needed?
 if (isset($SETTINGS['teampass_version']) === true && version_compare(TP_VERSION, $SETTINGS['teampass_version']) > 0) {
@@ -166,15 +167,6 @@ $lang = new Language($session_user_language, __DIR__. '/includes/language/');
 if (isset($SETTINGS['cpassman_dir']) === false || $SETTINGS['cpassman_dir'] === '') {
     $SETTINGS['cpassman_dir'] = __DIR__;
     $SETTINGS['cpassman_url'] = (string) $server['request_uri'];
-}
-
-// Load user languages files
-if (file_exists($SETTINGS['cpassman_dir'] . '/includes/language/' . $session_user_language . '.php') === true) {
-    $superGlobal->put('lang', include $SETTINGS['cpassman_dir'] . '/includes/language/' . $session_user_language . '.php', 'SESSION', 'teampass');
-} else {
-    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
-    //not allowed page
-    include $SETTINGS['cpassman_dir'] . '/error.php';
 }
 
 // Some template adjust
@@ -377,7 +369,7 @@ if (($session_validite_pw === null
                         <a href="#" data-name="items" class="nav-link', $get['page'] === 'items' ? ' active' : '', '">
                         <i class="nav-icon fa-solid fa-key"></i>
                         <p>
-                            ' . langHdl('pw') . '
+                            ' . $lang->get('pw') . '
                         </p>
                         </a>
                     </li>';
@@ -390,7 +382,7 @@ if (($session_validite_pw === null
                         <a href="#" data-name="import" class="nav-link', $get['page'] === 'import' ? ' active' : '', '">
                         <i class="nav-icon fa-solid fa-file-import"></i>
                         <p>
-                            ' . langHdl('import') . '
+                            ' . $lang->get('import') . '
                         </p>
                         </a>
                     </li>';
@@ -411,7 +403,7 @@ if (($session_validite_pw === null
                         <a href="#" data-name="export" class="nav-link', $get['page'] === 'export' ? ' active' : '', '">
                         <i class="nav-icon fa-solid fa-file-export"></i>
                         <p>
-                            ' . langHdl('export') . '
+                            ' . $lang->get('export') . '
                         </p>
                         </a>
                     </li>';
@@ -425,7 +417,7 @@ if (($session_validite_pw === null
                         <a href="#" data-name="offline" class="nav-link', $get['page'] === 'offline' ? ' active' : '' ,'">
                         <i class="nav-icon fa-solid fa-plug"></i>
                         <p>
-                            '.langHdl('offline').'
+                            '.$lang->get('offline').'
                         </p>
                         </a>
                     </li>';
@@ -438,7 +430,7 @@ if (($session_validite_pw === null
                         <a href="#" data-name="search" class="nav-link', $get['page'] === 'search' ? ' active' : '', '">
                         <i class="nav-icon fa-solid fa-search"></i>
                         <p>
-                            ' . langHdl('find') . '
+                            ' . $lang->get('find') . '
                         </p>
                         </a>
                     </li>';
@@ -454,7 +446,7 @@ if (($session_validite_pw === null
                         <a href="#" data-name="favourites" class="nav-link', $get['page'] === 'admin' ? ' favourites' : '', '">
                         <i class="nav-icon fa-solid fa-star"></i>
                         <p>
-                            ' . langHdl('favorites') . '
+                            ' . $lang->get('favorites') . '
                         </p>
                         </a>
                     </li>';
@@ -468,7 +460,7 @@ if (($session_validite_pw === null
                             <a href="#" data-name="kb" class="nav-link', $get['page'] === 'kb' ? ' active' : '' ,'">
                             <i class="nav-icon fa-solid fa-map-signs"></i>
                             <p>
-    '.langHdl('kb_menu').'
+    '.$lang->get('kb_menu').'
                             </p>
                             </a>
                         </li>';
@@ -484,7 +476,7 @@ if (($session_validite_pw === null
                         <a href="#" data-name="suggestion" class="nav-link', $get['page'] === 'suggestion' ? ' active' : '', '">
                         <i class="nav-icon fa-solid fa-lightbulb"></i>
                         <p>
-                            ' . langHdl('suggestion_menu') . '
+                            ' . $lang->get('suggestion_menu') . '
                         </p>
                         </a>
                     </li>';
@@ -497,7 +489,7 @@ if (($session_validite_pw === null
                         <a href="#" data-name="admin" class="nav-link', $get['page'] === 'admin' ? ' active' : '', '">
                         <i class="nav-icon fa-solid fa-info"></i>
                         <p>
-                            ' . langHdl('admin_main') . '
+                            ' . $lang->get('admin_main') . '
                         </p>
                         </a>
                     </li>
@@ -505,7 +497,7 @@ if (($session_validite_pw === null
                         <a href="#" class="nav-link">
                             <i class="nav-icon fa-solid fa-wrench"></i>
                             <p>
-                                ' . langHdl('admin_settings') . '
+                                ' . $lang->get('admin_settings') . '
                                 <i class="fa-solid fa-angle-left right"></i>
                             </p>
                         </a>
@@ -513,55 +505,55 @@ if (($session_validite_pw === null
                             <li class="nav-item">
                                 <a href="#" data-name="options" class="nav-link', $get['page'] === 'options' ? ' active' : '', '">
                                     <i class="fa-solid fa-check-double nav-icon"></i>
-                                    <p>' . langHdl('options') . '</p>
+                                    <p>' . $lang->get('options') . '</p>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a href="#" data-name="2fa" class="nav-link', $get['page'] === '2fa' ? ' active' : '', '">
                                     <i class="fa-solid fa-qrcode nav-icon"></i>
-                                    <p>' . langHdl('mfa_short') . '</p>
+                                    <p>' . $lang->get('mfa_short') . '</p>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a href="#" data-name="api" class="nav-link', $get['page'] === 'api' ? ' active' : '', '">
                                     <i class="fa-solid fa-cubes nav-icon"></i>
-                                    <p>' . langHdl('api') . '</p>
+                                    <p>' . $lang->get('api') . '</p>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a href="#" data-name="backups" class="nav-link', $get['page'] === 'backups' ? ' active' : '', '">
                                     <i class="fa-solid fa-database nav-icon"></i>
-                                    <p>' . langHdl('backups') . '</p>
+                                    <p>' . $lang->get('backups') . '</p>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a href="#" data-name="emails" class="nav-link', $get['page'] === 'emails' ? ' active' : '', '">
                                     <i class="fa-solid fa-envelope nav-icon"></i>
-                                    <p>' . langHdl('emails') . '</p>
+                                    <p>' . $lang->get('emails') . '</p>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a href="#" data-name="fields" class="nav-link', $get['page'] === 'fields' ? ' active' : '', '">
                                     <i class="fa-solid fa-keyboard nav-icon"></i>
-                                    <p>' . langHdl('fields') . '</p>
+                                    <p>' . $lang->get('fields') . '</p>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a href="#" data-name="ldap" class="nav-link', $get['page'] === 'ldap' ? ' active' : '', '">
                                     <i class="fa-solid fa-id-card nav-icon"></i>
-                                    <p>' . langHdl('ldap') . '</p>
+                                    <p>' . $lang->get('ldap') . '</p>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a href="#" data-name="uploads" class="nav-link', $get['page'] === 'uploads' ? ' active' : '', '">
                                     <i class="fa-solid fa-file-upload nav-icon"></i>
-                                    <p>' . langHdl('uploads') . '</p>
+                                    <p>' . $lang->get('uploads') . '</p>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a href="#" data-name="statistics" class="nav-link', $get['page'] === 'statistics' ? ' active' : '', '">
                                     <i class="fa-solid fa-chart-bar nav-icon"></i>
-                                    <p>' . langHdl('statistics') . '</p>
+                                    <p>' . $lang->get('statistics') . '</p>
                                 </a>
                             </li>
                         </ul>
@@ -572,7 +564,7 @@ if (($session_validite_pw === null
                     <li class="nav-item">
                         <a href="#" data-name="tasks" class="nav-link', $get['page'] === 'tasks' ? ' active' : '', '">
                         <i class="fa-solid fa-tasks nav-icon"></i>
-                        <p>' . langHdl('tasks') . '</p>
+                        <p>' . $lang->get('tasks') . '</p>
                         </a>
                     </li>';
                     }
@@ -588,7 +580,7 @@ if (($session_validite_pw === null
                         <a href="#" data-name="folders" class="nav-link', $get['page'] === 'folders' ? ' active' : '', '">
                         <i class="nav-icon fa-solid fa-folder-open"></i>
                         <p>
-                            ' . langHdl('folders') . '
+                            ' . $lang->get('folders') . '
                         </p>
                         </a>
                     </li>
@@ -596,7 +588,7 @@ if (($session_validite_pw === null
                         <a href="#" data-name="roles" class="nav-link', $get['page'] === 'roles' ? ' active' : '', '">
                         <i class="nav-icon fa-solid fa-graduation-cap"></i>
                         <p>
-                            ' . langHdl('roles') . '
+                            ' . $lang->get('roles') . '
                         </p>
                         </a>
                     </li>
@@ -604,38 +596,38 @@ if (($session_validite_pw === null
                         <a href="#" data-name="users" class="nav-link', $get['page'] === 'users' ? ' active' : '', '">
                         <i class="nav-icon fa-solid fa-users"></i>
                         <p>
-                            ' . langHdl('users') . '
+                            ' . $lang->get('users') . '
                         </p>
                         </a>
                     </li>
                     <li class="nav-item has-treeview', $menuUtilities === true ? ' menu-open' : '', '">
                         <a href="#" class="nav-link">
                         <i class="nav-icon fa-solid fa-cubes"></i>
-                        <p>' . langHdl('admin_views') . '<i class="fa-solid fa-angle-left right"></i></p>
+                        <p>' . $lang->get('admin_views') . '<i class="fa-solid fa-angle-left right"></i></p>
                         </a>
                         <ul class="nav nav-treeview">
                             <li class="nav-item">
                                 <a href="#" data-name="utilities.renewal" class="nav-link', $get['page'] === 'utilities.renewal' ? ' active' : '', '">
                                 <i class="far fa-calendar-alt nav-icon"></i>
-                                <p>' . langHdl('renewal') . '</p>
+                                <p>' . $lang->get('renewal') . '</p>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a href="#" data-name="utilities.deletion" class="nav-link', $get['page'] === 'utilities.deletion' ? ' active' : '', '">
                                 <i class="fa-solid fa-trash-alt nav-icon"></i>
-                                <p>' . langHdl('deletion') . '</p>
+                                <p>' . $lang->get('deletion') . '</p>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a href="#" data-name="utilities.logs" class="nav-link', $get['page'] === 'utilities.logs' ? ' active' : '', '">
                                 <i class="fa-solid fa-history nav-icon"></i>
-                                <p>' . langHdl('logs') . '</p>
+                                <p>' . $lang->get('logs') . '</p>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a href="#" data-name="utilities.database" class="nav-link', $get['page'] === 'utilities.database' ? ' active' : '', '">
                                 <i class="fa-solid fa-database nav-icon"></i>
-                                <p>' . langHdl('database') . '</p>
+                                <p>' . $lang->get('database') . '</p>
                                 </a>
                             </li>
                         </ul>
@@ -649,7 +641,7 @@ if (($session_validite_pw === null
                         <i class="fa-solid fa-clock-o mr-2 infotip text-info pointer" title="<?php echo $lang->get('server_time') . ' ' .
                             date($SETTINGS['date_format'], (int) $server['request_time']) . ' - ' .
                             date($SETTINGS['time_format'], (int) $server['request_time']); ?>"></i>
-                        <i class="fa-solid fa-users mr-2 infotip text-info pointer" title="<?php echo $session_nb_users_online . ' ' . langHdl('users_online'); ?>"></i>
+                        <i class="fa-solid fa-users mr-2 infotip text-info pointer" title="<?php echo $session_nb_users_online . ' ' . $lang->get('users_online'); ?>"></i>
                         <a href="<?php echo DOCUMENTATION_URL; ?>" target="_blank" class="text-info"><i class="fa-solid fa-book mr-2 infotip" title="<?php echo $lang->get('documentation_canal'); ?>"></i></a>
                         <a href="<?php echo HELP_URL; ?>" target="_blank" class="text-info"><i class="fa-solid fa-life-ring mr-2 infotip" title="<?php echo $lang->get('admin_help'); ?>"></i></a>
                         <i class="fa-solid fa-bug infotip pointer text-info" title="<?php echo $lang->get('bugs_page'); ?>" onclick="generateBugReport()"></i>

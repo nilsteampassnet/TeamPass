@@ -25,6 +25,7 @@ declare(strict_types=1);
  */
 
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\PerformChecks\PerformChecks;
 
@@ -34,6 +35,7 @@ require_once __DIR__.'/../sources/main.functions.php';
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 
 // Load config if $SETTINGS not defined
 try {
@@ -67,9 +69,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     exit;
 }
 
-// Load language file
-require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$superGlobal->get('user_language', 'SESSION', 'user').'.php';
-
 // Define Timezone
 date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
 
@@ -90,7 +89,7 @@ $tree->rebuild();
     <div class="container-fluid">
         <div class="row mb-2">
             <div class="col-sm-12">
-                <h1 class="m-0 text-dark"><i class="fas fa-keyboard mr-2"></i><?php echo langHdl('fields'); ?></h1>
+                <h1 class="m-0 text-dark"><i class="fas fa-keyboard mr-2"></i><?php echo $lang->get('fields'); ?></h1>
             </div><!-- /.col -->
         </div><!-- /.row -->
     </div><!-- /.container-fluid -->
@@ -105,16 +104,16 @@ $tree->rebuild();
             <div class='col-md-12'>
                 <div class='card card-primary'>
                     <div class='card-header'>
-                        <h3 class='card-title'><?php echo langHdl('configuration'); ?></h3>
+                        <h3 class='card-title'><?php echo $lang->get('configuration'); ?></h3>
                     </div>
 
                     <div class='card-body'>
 
                         <div class='row mb-2'>
                             <div class='col-10'>
-                                <?php echo langHdl('settings_item_extra_fields'); ?>
+                                <?php echo $lang->get('settings_item_extra_fields'); ?>
                                 <small class='form-text text-muted'>
-                                    <?php echo langHdl('settings_item_extra_fields_tip'); ?>
+                                    <?php echo $lang->get('settings_item_extra_fields_tip'); ?>
                                 </small>
                             </div>
                             <div class='col-2'>
@@ -124,9 +123,9 @@ $tree->rebuild();
 
                         <div class='row mb-2'>
                             <div class='col-10'>
-                                <?php echo langHdl('create_item_based_upon_template'); ?>
+                                <?php echo $lang->get('create_item_based_upon_template'); ?>
                                 <small class='form-text text-muted'>
-                                    <?php echo langHdl('create_item_based_upon_template_tip'); ?>
+                                    <?php echo $lang->get('create_item_based_upon_template_tip'); ?>
                                 </small>
                             </div>
                             <div class='col-2'>
@@ -143,12 +142,12 @@ $tree->rebuild();
             <div class='col-md-12'>
                 <div class='card card-primary'>
                     <div class='card-header'>
-                        <h3 class='card-title'><?php echo langHdl('definition'); ?>
+                        <h3 class='card-title'><?php echo $lang->get('definition'); ?>
                             <button class="btn btn-default mr-2" id="button-new-category">
-                                <i class="far fa-plus-square mr-1"></i><?php echo langHdl('category'); ?>
+                                <i class="far fa-plus-square mr-1"></i><?php echo $lang->get('category'); ?>
                             </button>
                             <button class="btn btn-default mr-2" id="button-new-field">
-                                <i class="far fa-plus-square mr-1"></i><?php echo langHdl('field'); ?>
+                                <i class="far fa-plus-square mr-1"></i><?php echo $lang->get('field'); ?>
                             </button>
                         </h3>
                     </div>
@@ -163,16 +162,16 @@ $tree->rebuild();
 
                         <div class="card card-secondary hidden" id="form-category">
                             <div class='card-header'>
-                                <h3 class='card-title'><?php echo langHdl('category'); ?>
+                                <h3 class='card-title'><?php echo $lang->get('category'); ?>
                             </div>
 
                             <div class="card-body">
                                 <div class="form-group">
-                                    <label><?php echo langHdl('label'); ?></label>
+                                    <label><?php echo $lang->get('label'); ?></label>
                                     <input type="text" class="form-control form-item-control" id="form-category-label" data-id="">
                                 </div>
                                 <div class="form-group">
-                                    <label><?php echo langHdl('folders'); ?></label>
+                                    <label><?php echo $lang->get('folders'); ?></label>
                                     <select class="form-control form-item-control select2" multiple="multiple" style="width:100%;" id="form-category-folders">
                                         <?php
                                         $folders = $tree->getDescendants();
@@ -197,14 +196,14 @@ foreach ($folders as $folder) {
                                     </select>
                                 </div>
                                 <div class="form-group">
-                                    <label><?php echo langHdl('position'); ?></label>
+                                    <label><?php echo $lang->get('position'); ?></label>
                                     <select class="form-control form-item-control select2" style="width:100%;" id="form-category-list"></select>
                                 </div>
                             </div>
 
                             <div class="card-footer">
-                                <button type="button" class="btn btn-info save" data-action="category" data-edit="false" id="button-save-category"><?php echo langHdl('save'); ?></button>
-                                <button type="button" class="btn btn-default float-right cancel" data-action="category"><?php echo langHdl('cancel'); ?></button>
+                                <button type="button" class="btn btn-info save" data-action="category" data-edit="false" id="button-save-category"><?php echo $lang->get('save'); ?></button>
+                                <button type="button" class="btn btn-default float-right cancel" data-action="category"><?php echo $lang->get('cancel'); ?></button>
                             </div>
                         </div>
 
@@ -212,18 +211,18 @@ foreach ($folders as $folder) {
 
                             <div class="card-body">
                                 <div class="form-group">
-                                    <label><?php echo langHdl('label'); ?></label>
+                                    <label><?php echo $lang->get('label'); ?></label>
                                     <input type="text" class="form-control form-item-control" id="form-field-label" data-id="">
                                 </div>
 
                                 <div class="form-group">
-                                    <label><?php echo langHdl('type'); ?></label>
+                                    <label><?php echo $lang->get('type'); ?></label>
                                     <select class="form-control form-item-control select2" style="width:100%;" id="form-field-type">
                                         <?php
                                         // Build list of Types
-                                        echo '<option value="">-- ' . langHdl('select') . ' --</option>
-                                            <option value="text">' . langHdl('text') . '</option>
-                                            <option value="textarea">' . langHdl('textarea') . '</option>';
+                                        echo '<option value="">-- ' . $lang->get('select') . ' --</option>
+                                            <option value="text">' . $lang->get('text') . '</option>
+                                            <option value="textarea">' . $lang->get('textarea') . '</option>';
                                         ?>
                                     </select>
                                 </div>
@@ -235,28 +234,28 @@ foreach ($folders as $folder) {
 
                                 <div class="form-group">
                                     <input type="checkbox" class="form-check-input form-control flat-blue" id="form-field-mandatory">
-                                    <label for="form-field-mandatory" class="pointer ml-2"><?php echo langHdl('is_mandatory'); ?></label>
+                                    <label for="form-field-mandatory" class="pointer ml-2"><?php echo $lang->get('is_mandatory'); ?></label>
                                 </div>
 
                                 <div class="form-group">
                                     <input type="checkbox" class="form-check-input form-control flat-blue" id="form-field-masked">
-                                    <label for="form-field-masked" class="pointer ml-2"><?php echo langHdl('masked_text'); ?></label>
+                                    <label for="form-field-masked" class="pointer ml-2"><?php echo $lang->get('masked_text'); ?></label>
                                 </div>
 
                                 <div class="form-group">
                                     <input type="checkbox" class="form-check-input form-control flat-blue" id="form-field-encrypted">
-                                    <label for="form-field-encrypted" class="pointer ml-2"><?php echo langHdl('encrypted_data'); ?></label>
+                                    <label for="form-field-encrypted" class="pointer ml-2"><?php echo $lang->get('encrypted_data'); ?></label>
                                     <small class="form-text text-muted">
-                                        <?php echo langHdl('caution_on_field_encryption_change'); ?>
+                                        <?php echo $lang->get('caution_on_field_encryption_change'); ?>
                                     </small>
                                 </div>
 
                                 <div class="form-group">
-                                    <label><?php echo langHdl('restrict_visibility_to'); ?></label>
+                                    <label><?php echo $lang->get('restrict_visibility_to'); ?></label>
                                     <select class="form-control form-item-control select2" multiple="multiple" style="width:100%;" id="form-field-roles">
                                         <?php
                                         // Build list of Roles
-                                        echo '<option value="all">' . langHdl('every_roles') . '</option>';
+                                        echo '<option value="all">' . $lang->get('every_roles') . '</option>';
 $rows = DB::query(
     'SELECT id, title
                                     FROM ' . prefixTable('roles_title') . '
@@ -270,19 +269,19 @@ foreach ($rows as $record) {
                                 </div>
 
                                 <div class="form-group hidden" id="form-field-category-div">
-                                    <label><?php echo langHdl('category'); ?></label>
+                                    <label><?php echo $lang->get('category'); ?></label>
                                     <select class="form-control form-item-control select2" style="width:100%;" id="form-field-category"></select>
                                 </div>
 
                                 <div class="form-group">
-                                    <label><?php echo langHdl('position'); ?></label>
+                                    <label><?php echo $lang->get('position'); ?></label>
                                     <select class="form-control form-item-control select2" style="width:100%;" id="form-field-order"></select>
                                 </div>
                             </div>
 
                             <div class="card-footer">
-                                <button type="button" class="btn btn-info save" data-action="field" data-edit="false" id="button-save-field"><?php echo langHdl('confirm'); ?></button>
-                                <button type="button" class="btn btn-default float-right cancel" data-action="field"><?php echo langHdl('cancel'); ?></button>
+                                <button type="button" class="btn btn-info save" data-action="field" data-edit="false" id="button-save-field"><?php echo $lang->get('confirm'); ?></button>
+                                <button type="button" class="btn btn-default float-right cancel" data-action="field"><?php echo $lang->get('cancel'); ?></button>
                             </div>
                         </div>
 

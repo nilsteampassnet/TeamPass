@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 use PasswordLib\PasswordLib;
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
 use Hackzilla\PasswordGenerator\Generator\ComputerPasswordGenerator;
 use Hackzilla\PasswordGenerator\RandomGenerator\Php7RandomGenerator;
 use RobThree\Auth\TwoFactorAuth;
@@ -32,6 +33,7 @@ require_once 'main.functions.php';
 
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 
 if (isset($_SESSION) === false) {
     session_name('teampass_session');
@@ -145,7 +147,7 @@ function mainQuery(array $SETTINGS)
         echo prepareExchangedData(
             array(
                 'error' => true,
-                'message' => langHdl('key_is_not_correct'),
+                'message' => $lang->get('key_is_not_correct'),
             ),
             'encode'
         );
@@ -837,7 +839,7 @@ function changePassword(
             return prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -881,8 +883,8 @@ function changePassword(
             return prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => '<div style="margin:10px 0 10px 15px;">' . langHdl('complexity_level_not_reached') . '.<br>' .
-                        langHdl('expected_complexity_level') . ': <b>' . TP_PW_COMPLEXITY[$data['complexity']][1] . '</b></div>',
+                    'message' => '<div style="margin:10px 0 10px 15px;">' . $lang->get('complexity_level_not_reached') . '.<br>' .
+                        $lang->get('expected_complexity_level') . ': <b>' . TP_PW_COMPLEXITY[$data['complexity']][1] . '</b></div>',
                 ),
                 'encode'
             );
@@ -893,7 +895,7 @@ function changePassword(
             return prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('password_already_used'),
+                    'message' => $lang->get('password_already_used'),
                 ),
                 'encode'
             );
@@ -939,7 +941,7 @@ function changePassword(
         return prepareExchangedData(
             array(
                 'error' => true,
-                'message' => langHdl('pw_hash_not_correct'),
+                'message' => $lang->get('pw_hash_not_correct'),
             ),
             'encode'
         );
@@ -947,7 +949,7 @@ function changePassword(
     return prepareExchangedData(
         array(
             'error' => true,
-            'message' => langHdl('error_not_allowed_to'),
+            'message' => $lang->get('error_not_allowed_to'),
         ),
         'encode'
     );
@@ -972,7 +974,7 @@ function generateQRCode(
         return prepareExchangedData(
             array(
                 'error' => true,
-                'message' => "113 ".langHdl('error_not_allowed_to')." - ".isKeyExistingAndEqual('ga_reset_by_user', 1, $SETTINGS),
+                'message' => "113 ".$lang->get('error_not_allowed_to')." - ".isKeyExistingAndEqual('ga_reset_by_user', 1, $SETTINGS),
             ),
             'encode'
         );
@@ -1006,7 +1008,7 @@ function generateQRCode(
         return prepareExchangedData(
             array(
                 'error' => true,
-                'message' => langHdl('no_user'),
+                'message' => $lang->get('no_user'),
                 'tst' => 1,
             ),
             'encode'
@@ -1025,7 +1027,7 @@ function generateQRCode(
         return prepareExchangedData(
             array(
                 'error' => true,
-                'message' => langHdl('no_user'),
+                'message' => $lang->get('no_user'),
                 'tst' => $post_demand_origin,
             ),
             'encode'
@@ -1036,7 +1038,7 @@ function generateQRCode(
         return prepareExchangedData(
             array(
                 'error' => true,
-                'message' => langHdl('no_email_set'),
+                'message' => $lang->get('no_email_set'),
             ),
             'encode'
         );
@@ -1063,11 +1065,11 @@ function generateQRCode(
     // send mail?
     if ((int) $post_send_mail === 1) {
         sendEmail(
-            langHdl('email_ga_subject'),
+            $lang->get('email_ga_subject'),
             str_replace(
                 '#2FACode#',
                 $gaTemporaryCode,
-                langHdl('email_ga_text')
+                $lang->get('email_ga_text')
             ),
             $data['email'],
             $SETTINGS
@@ -1082,7 +1084,7 @@ function generateQRCode(
                 'email_result' => str_replace(
                     '#email#',
                     '<b>' . obfuscateEmail($data['email']) . '</b>',
-                    addslashes(langHdl('admin_email_result_ok'))
+                    addslashes($lang->get('admin_email_result_ok'))
                 ),
             ),
             'encode'
@@ -1098,7 +1100,7 @@ function generateQRCode(
             'email_result' => str_replace(
                 '#email#',
                 '<b>' . obfuscateEmail($data['email']) . '</b>',
-                addslashes(langHdl('admin_email_result_ok'))
+                addslashes($lang->get('admin_email_result_ok'))
             ),
         ),
         'encode'
@@ -1443,7 +1445,7 @@ Tell us what happens instead
 
 **Web server:** ' . $_SERVER['SERVER_SOFTWARE'] . '
 
-**Database:** ' . ($link === false ? langHdl('undefined') : mysqli_get_server_info($link)) . '
+**Database:** ' . ($link === false ? $lang->get('undefined') : mysqli_get_server_info($link)) . '
 
 **PHP version:** ' . PHP_VERSION . '
 
@@ -1579,7 +1581,7 @@ function isUserPasswordCorrect(
     return prepareExchangedData(
         array(
             'error' => true,
-            'message' => langHdl('password_is_not_correct'),
+            'message' => $lang->get('password_is_not_correct'),
             //'debug' => isset($itemKey) === true ? base64_decode($itemKey) : '',
             //'debug2' => $_SESSION['user']['private_key'],
             //'debug3' => $post_user_password,
@@ -1604,7 +1606,7 @@ function changePrivateKeyEncryptionPassword(
             return prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_no_user_password_exists'),
+                    'message' => $lang->get('error_no_user_password_exists'),
                     'debug' => '',
                 ),
                 'encode'
@@ -1645,6 +1647,7 @@ function changePrivateKeyEncryptionPassword(
 
             // Load superGlobals
             $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
             $superGlobal->put('private_key', $privateKey, 'SESSION', 'user');
         }
 
@@ -1661,7 +1664,7 @@ function changePrivateKeyEncryptionPassword(
     return prepareExchangedData(
         array(
             'error' => true,
-            'message' => langHdl('error_no_user'),
+            'message' => $lang->get('error_no_user'),
             'debug' => '',
         ),
         'encode'
@@ -1739,7 +1742,7 @@ function initializeUserPassword(
             return prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('no_email_set'),
+                    'message' => $lang->get('no_email_set'),
                     'debug' => '',
                     'self_change' => $post_self_change,
                 ),
@@ -1751,7 +1754,7 @@ function initializeUserPassword(
         return prepareExchangedData(
             array(
                 'error' => true,
-                'message' => langHdl('no_email_set'),
+                'message' => $lang->get('no_email_set'),
                 'debug' => '',
             ),
             'encode'
@@ -1761,7 +1764,7 @@ function initializeUserPassword(
     return prepareExchangedData(
         array(
             'error' => true,
-            'message' => langHdl('error_no_user'),
+            'message' => $lang->get('error_no_user'),
             'debug' => '',
         ),
         'encode'
@@ -1850,7 +1853,7 @@ function generateOneTimeCode(
         return prepareExchangedData(
             array(
                 'error' => true,
-                'message' => langHdl('no_email_set'),
+                'message' => $lang->get('no_email_set'),
             ),
             'encode'
         );
@@ -1859,7 +1862,7 @@ function generateOneTimeCode(
     return prepareExchangedData(
         array(
             'error' => true,
-            'message' => langHdl('error_no_user'),
+            'message' => $lang->get('error_no_user'),
         ),
         'encode'
     );
@@ -1902,7 +1905,7 @@ function startReEncryptingUserSharekeys(
         return prepareExchangedData(
             array(
                 'error' => true,
-                'message' => langHdl('error_no_user'),
+                'message' => $lang->get('error_no_user'),
             ),
             'encode'
         );
@@ -1911,7 +1914,7 @@ function startReEncryptingUserSharekeys(
     return prepareExchangedData(
         array(
             'error' => true,
-            'message' => langHdl('error_no_user'),
+            'message' => $lang->get('error_no_user'),
         ),
         'encode'
     );
@@ -2068,7 +2071,7 @@ function continueReEncryptingUserSharekeys(
     return prepareExchangedData(
         array(
             'error' => true,
-            'message' => langHdl('error_no_user'),
+            'message' => $lang->get('error_no_user'),
             'extra' => $post_user_id,
         ),
         'encode'
@@ -2635,7 +2638,7 @@ function migrateTo3_DoUserPersonalItemsEncryption(
                     return prepareExchangedData(
                         array(
                             'error' => true,
-                            'message' => langHdl('bad_psk'),
+                            'message' => $lang->get('bad_psk'),
                         ),
                         'encode'
                     );
@@ -2772,7 +2775,7 @@ function migrateTo3_DoUserPersonalItemsEncryption(
         return prepareExchangedData(
             array(
                 'error' => true,
-                'message' => langHdl('error_no_user'),
+                'message' => $lang->get('error_no_user'),
             ),
             'encode'
         );
@@ -2782,7 +2785,7 @@ function migrateTo3_DoUserPersonalItemsEncryption(
     return prepareExchangedData(
         array(
             'error' => true,
-            'message' => langHdl('error_no_user'),
+            'message' => $lang->get('error_no_user'),
         ),
         'encode'
     );
@@ -2817,7 +2820,7 @@ function getUserInfo(
     return prepareExchangedData(
         array(
             'error' => true,
-            'message' => langHdl('error_no_user'),
+            'message' => $lang->get('error_no_user'),
         ),
         'encode'
     );
@@ -2857,7 +2860,7 @@ function changeUserAuthenticationPassword(
                 return prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('bad_password'),
+                        'message' => $lang->get('bad_password'),
                     ),
                     'encode'
                 );
@@ -2865,6 +2868,7 @@ function changeUserAuthenticationPassword(
 
             // Load superGlobals
             $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 
             if ($superGlobal->get('private_key', 'SESSION', 'user') === $privateKey) {
                 // Encrypt it with new password
@@ -2894,7 +2898,7 @@ function changeUserAuthenticationPassword(
                 return prepareExchangedData(
                     array(
                         'error' => false,
-                        'message' => langHdl('done'),'',
+                        'message' => $lang->get('done'),'',
                     ),
                     'encode'
                 );
@@ -2904,7 +2908,7 @@ function changeUserAuthenticationPassword(
             return prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('bad_password'),
+                    'message' => $lang->get('bad_password'),
                 ),
                 'encode'
             );
@@ -2914,7 +2918,7 @@ function changeUserAuthenticationPassword(
     return prepareExchangedData(
         array(
             'error' => true,
-            'message' => langHdl('error_no_user'),
+            'message' => $lang->get('error_no_user'),
         ),
         'encode'
     );
@@ -2963,12 +2967,13 @@ function changeUserLDAPAuthenticationPassword(
 
                 // Load superGlobals
                 $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
                 $superGlobal->put('private_key', $privateKey, 'SESSION', 'user');
 
                 return prepareExchangedData(
                     array(
                         'error' => false,
-                        'message' => langHdl('done'),'',
+                        'message' => $lang->get('done'),'',
                     ),
                     'encode'
                 );
@@ -2982,7 +2987,7 @@ function changeUserLDAPAuthenticationPassword(
                 return prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('password_is_not_correct'),
+                        'message' => $lang->get('password_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -3028,12 +3033,13 @@ function changeUserLDAPAuthenticationPassword(
                     
                     // Load superGlobals
                     $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
                     $superGlobal->put('private_key', $privateKey, 'SESSION', 'user');
 
                     return prepareExchangedData(
                         array(
                             'error' => false,
-                            'message' => langHdl('done'),
+                            'message' => $lang->get('done'),
                         ),
                         'encode'
                     );
@@ -3044,7 +3050,7 @@ function changeUserLDAPAuthenticationPassword(
             return prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('bad_password'),
+                    'message' => $lang->get('bad_password'),
                 ),
                 'encode'
             );
@@ -3055,7 +3061,7 @@ function changeUserLDAPAuthenticationPassword(
     return prepareExchangedData(
         array(
             'error' => true,
-            'message' => langHdl('error_no_user'),
+            'message' => $lang->get('error_no_user'),
         ),
         'encode'
     );

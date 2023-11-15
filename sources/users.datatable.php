@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\NestedTree\NestedTree;
@@ -36,6 +37,7 @@ require_once 'main.functions.php';
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 session_name('teampass_session');
 session_start();
 
@@ -74,9 +76,6 @@ if (
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
-
-// Load language file
-require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$superGlobal->get('user_language', 'SESSION', 'user').'.php';
 
 // Define Timezone
 date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
@@ -215,12 +214,12 @@ foreach ($rows as $record) {
                     if (is_null($record['fonction_id']) === false && in_array($fonction['id'], explode(';', $record['fonction_id']))) {
                         $listAlloFcts .= '<i class="fa-solid fa-angle-right mr-1"></i>'.addslashes(filter_var($fonction['title'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)).'<br />';
                     } else if (isset($SETTINGS['enable_ad_users_with_ad_groups']) === true && (int) $SETTINGS['enable_ad_users_with_ad_groups'] === 1 && is_null($record['roles_from_ad_groups']) === false && in_array($fonction['id'], explode(';', $record['roles_from_ad_groups']))) {
-                        $listAlloFcts .= '<i class="fa-solid fa-angle-right mr-1"></i><i>'.addslashes(filter_var($fonction['title'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)).'</i><i class="fa-solid fa-rectangle-ad ml-1 infotip" title="'.langHdl('ad_group').'"></i><br />';
+                        $listAlloFcts .= '<i class="fa-solid fa-angle-right mr-1"></i><i>'.addslashes(filter_var($fonction['title'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)).'</i><i class="fa-solid fa-rectangle-ad ml-1 infotip" title="'.$lang->get('ad_group').'"></i><br />';
                     }
                 }
             }
             if (empty($listAlloFcts)) {
-                $listAlloFcts = '<i class="fas fa-exclamation-triangle text-danger infotip" title="'.langHdl('user_alarm_no_function').'"></i>';
+                $listAlloFcts = '<i class="fas fa-exclamation-triangle text-danger infotip" title="'.$lang->get('user_alarm_no_function').'"></i>';
             }
         }
 
@@ -232,21 +231,21 @@ foreach ($rows as $record) {
 
         // Get some infos about user
         $userDisplayInfos = 
-            (isset($userDate['date']) ? '<i class=\"fas fa-calendar-day infotip text-info ml-2\" title=\"'.langHdl('creation_date').': '.date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $userDate['date']).'\"></i>' : '')
+            (isset($userDate['date']) ? '<i class=\"fas fa-calendar-day infotip text-info ml-2\" title=\"'.$lang->get('creation_date').': '.date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $userDate['date']).'\"></i>' : '')
             .
-            ((int) $record['last_connexion'] > 0 ? '<i class=\"far fa-clock infotip text-info ml-2\" title=\"'.langHdl('index_last_seen').": ".
+            ((int) $record['last_connexion'] > 0 ? '<i class=\"far fa-clock infotip text-info ml-2\" title=\"'.$lang->get('index_last_seen').": ".
             date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['last_connexion']).'\"></i>' : '')
             .
-            ((int) $record['user_ip'] > 0 ? '<i class=\"fas fa-street-view infotip text-info ml-1\" title=\"'.langHdl('ip').": ".($record['user_ip']).'\"></i>' : '')
+            ((int) $record['user_ip'] > 0 ? '<i class=\"fas fa-street-view infotip text-info ml-1\" title=\"'.$lang->get('ip').": ".($record['user_ip']).'\"></i>' : '')
             .
-            ($record['auth_type'] === 'ldap' ? '<i class=\"far fa-address-book infotip text-warning ml-1\" title=\"'.langHdl('managed_through_ad').'\"></i>' : '')
+            ($record['auth_type'] === 'ldap' ? '<i class=\"far fa-address-book infotip text-warning ml-1\" title=\"'.$lang->get('managed_through_ad').'\"></i>' : '')
             .
             ((in_array($record['id'], [OTV_USER_ID, TP_USER_ID, SSH_USER_ID, API_USER_ID]) === false && (int) $record['admin'] !== 1 && ((int) $SETTINGS['duo'] === 1 || (int) $SETTINGS['google_authentication'] === 1)) ?
-                ((int) $record['mfa_enabled'] === 1 ? '' : '<i class=\"fa-solid fa-fingerprint infotip ml-1\" style=\"color:Tomato\" title=\"'.langHdl('mfa_disabled_for_user').'\"></i>') :
+                ((int) $record['mfa_enabled'] === 1 ? '' : '<i class=\"fa-solid fa-fingerprint infotip ml-1\" style=\"color:Tomato\" title=\"'.$lang->get('mfa_disabled_for_user').'\"></i>') :
                 ''
             ).
             ((in_array($record['id'], [OTV_USER_ID, TP_USER_ID, SSH_USER_ID, API_USER_ID]) === false && (int) $record['admin'] !== 1 && is_null($record['keys_recovery_time']) === true) ? 
-                '<i class=\"fa-solid fa-download infotip ml-1\" style=\"color:Tomato\" title=\"'.langHdl('recovery_keys_not_downloaded').'\"></i>' :
+                '<i class=\"fa-solid fa-download infotip ml-1\" style=\"color:Tomato\" title=\"'.$lang->get('recovery_keys_not_downloaded').'\"></i>' :
                 ''
             );
         
@@ -256,11 +255,11 @@ foreach ($rows as $record) {
             '\" data-auth-type=\"'.$record['auth_type'].'\" data-special=\"'.$record['special'].'\" data-mfa-enabled=\"'.$record['mfa_enabled'].'\" data-otp-provided=\"'.(isset($record['otp_provided']) === true ? $record['otp_provided'] : '').'\"></span>", ';
         //col2
         $sOutput .= '"'.
-            ((int) $record['disabled'] === 1 ? '<i class=\"fas fa-user-slash infotip text-danger mr-2\" title=\"'.langHdl('account_is_locked').'\" id=\"user-disable-'.$record['id'].'\"></i>'
+            ((int) $record['disabled'] === 1 ? '<i class=\"fas fa-user-slash infotip text-danger mr-2\" title=\"'.$lang->get('account_is_locked').'\" id=\"user-disable-'.$record['id'].'\"></i>'
             : '').
             '<span data-id=\"'.$record['id'].'\" data-field=\"login\" data-html=\"true\" id=\"user-login-'.$record['id'].'\">'.addslashes(str_replace("'", '&lsquo;', $record['login'])).'</span>'.
             $userDisplayInfos.
-            (is_null($record['ongoing_process_id']) === false ? '<i class=\"fas fa-hourglass-half fa-beat-fade infotip text-warning ml-3\" title=\"'.langHdl('task_in_progress_user_not_active').'\"></i>' : '').
+            (is_null($record['ongoing_process_id']) === false ? '<i class=\"fas fa-hourglass-half fa-beat-fade infotip text-warning ml-3\" title=\"'.$lang->get('task_in_progress_user_not_active').'\"></i>' : '').
             '" , ';
         //col3
         $sOutput .= '"<span data-id=\"'.$record['id'].'\" data-field=\"name\" data-html=\"true\">'.addslashes($record['name'] === NULL ? '' : $record['name']).'</span>", ';
@@ -276,25 +275,25 @@ foreach ($rows as $record) {
         );
         if (DB::count() > 0) {
             foreach ($rows2 as $record2) {
-                $txt .= langHdl('managers_of').' '.addslashes(str_replace("'", '&lsquo;', $record2['title'])).'<br />';
+                $txt .= $lang->get('managers_of').' '.addslashes(str_replace("'", '&lsquo;', $record2['title'])).'<br />';
             }
         } else {
-            $txt .= langHdl('god');
+            $txt .= $lang->get('god');
         }
         $sOutput .= '"'.$txt.'</span>", ';
         //col6
         $sOutput .= '"<span data-id=\"'.$record['id'].'\" data-field=\"fonction_id\" data-html=\"true\">'.addslashes($listAlloFcts).'</span>", ';
         // Get the user maximum privilege
         if ((int) $record['admin'] === 1) {
-            $sOutput .= '"<i class=\"fa-solid fa-user-cog infotip\" title=\"'.langHdl('god').'\"></i>", ';
+            $sOutput .= '"<i class=\"fa-solid fa-user-cog infotip\" title=\"'.$lang->get('god').'\"></i>", ';
         } elseif ((int) $record['can_manage_all_users'] === 1) {
-            $sOutput .= '"<i class=\"fa-solid fa-user-graduate infotip\" title=\"'.langHdl('human_resources').'\"></i>", ';
+            $sOutput .= '"<i class=\"fa-solid fa-user-graduate infotip\" title=\"'.$lang->get('human_resources').'\"></i>", ';
         } elseif ((int) $record['gestionnaire'] === 1) {
-            $sOutput .= '"<i class=\"fa-solid fa-user-tie infotip\" title=\"'.langHdl('gestionnaire').'\"></i>", ';
+            $sOutput .= '"<i class=\"fa-solid fa-user-tie infotip\" title=\"'.$lang->get('gestionnaire').'\"></i>", ';
         } elseif ((int) $record['read_only'] === 1) {
-            $sOutput .= '"<i class=\"fa-solid fa-book-reader infotip\" title=\"'.langHdl('read_only_account').'\"></i>", ';
+            $sOutput .= '"<i class=\"fa-solid fa-book-reader infotip\" title=\"'.$lang->get('read_only_account').'\"></i>", ';
         } else {
-            $sOutput .= '"<i class=\"fa-solid fa-user infotip\" title=\"'.langHdl('user').'\"></i>", ';
+            $sOutput .= '"<i class=\"fa-solid fa-user infotip\" title=\"'.$lang->get('user').'\"></i>", ';
         }
         //col12
         if ((int) $record['can_create_root_folder'] === 1) {

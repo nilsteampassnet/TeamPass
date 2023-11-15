@@ -25,6 +25,7 @@ declare(strict_types=1);
  */
 
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\PerformChecks\PerformChecks;
 
@@ -34,6 +35,7 @@ require_once __DIR__.'/../sources/main.functions.php';
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 
 // Load config if $SETTINGS not defined
 try {
@@ -67,9 +69,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     exit;
 }
 
-// Load language file
-require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$superGlobal->get('user_language', 'SESSION', 'user').'.php';
-
 // Define Timezone
 date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
 
@@ -87,7 +86,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
         <div class="row mb-2">
             <div class="col-sm-6">
                 <h1 class="m-0 text-dark">
-                    <i class="fas fa-trash-alt mr-2"></i><?php echo langHdl('recycled_bin'); ?>
+                    <i class="fas fa-trash-alt mr-2"></i><?php echo $lang->get('recycled_bin'); ?>
                 </h1>
             </div><!-- /.col -->
         </div><!-- /.row -->
@@ -104,24 +103,24 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                     <div class="card-header p-2">
                         <input type="checkbox" id="toggle-all">
                         <button type="button" class="btn btn-primary btn-sm tp-action mr-2 ml-2" data-action="restore">
-                            <i class="fas fa-undo-alt mr-2"></i><?php echo langHdl('restore'); ?>
+                            <i class="fas fa-undo-alt mr-2"></i><?php echo $lang->get('restore'); ?>
                         </button>
                         <button type="button" class="btn btn-primary btn-sm tp-action mr-2" data-action="delete">
-                            <i class="far fa-trash-alt mr-2"></i><?php echo langHdl('delete'); ?>
+                            <i class="far fa-trash-alt mr-2"></i><?php echo $lang->get('delete'); ?>
                         </button>
                     </div><!-- /.card-header -->
 
                     <div class="card-header p-2 hidden" id="recycled-bin-confirm-restore">
                         <div class="card card-warning">
                             <div class="card-header">
-                                <h4><?php echo langHdl('restore'); ?></h4>
+                                <h4><?php echo $lang->get('restore'); ?></h4>
                             </div>
                             <div class="card-body">
 
                             </div>
                             <div class="card-footer">
-                                <button type="button" class="btn btn-warning tp-action" data-action="submit-restore"><?php echo langHdl('submit'); ?></button>
-                                <button type="button" class="btn btn-default float-right tp-action" data-action="cancel-restore"><?php echo langHdl('cancel'); ?></button>
+                                <button type="button" class="btn btn-warning tp-action" data-action="submit-restore"><?php echo $lang->get('submit'); ?></button>
+                                <button type="button" class="btn btn-default float-right tp-action" data-action="cancel-restore"><?php echo $lang->get('cancel'); ?></button>
                             </div>
                         </div>
                     </div>
@@ -129,23 +128,23 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                     <div class="card-header p-2 hidden" id="recycled-bin-confirm-delete">
                         <div class="card card-danger">
                             <div class="card-header">
-                                <h4><?php echo langHdl('delete'); ?></h4>
+                                <h4><?php echo $lang->get('delete'); ?></h4>
                             </div>
                             <div class="card-body">
 
                             </div>
                             <div class="card-footer">
-                                <button type="button" class="btn btn-danger tp-action" data-action="submit-delete"><?php echo langHdl('submit'); ?></button>
-                                <button type="button" class="btn btn-default float-right tp-action" data-action="cancel-delete"><?php echo langHdl('cancel'); ?></button>
+                                <button type="button" class="btn btn-danger tp-action" data-action="submit-delete"><?php echo $lang->get('submit'); ?></button>
+                                <button type="button" class="btn btn-default float-right tp-action" data-action="cancel-delete"><?php echo $lang->get('cancel'); ?></button>
                             </div>
                         </div>
                     </div>
 
                     <div class="card-body">
-                        <h5><?php echo langHdl('deleted_folders'); ?></h5>
+                        <h5><?php echo $lang->get('deleted_folders'); ?></h5>
                         <div class="table table-responsive" id="recycled-folders"></div>
 
-                        <h5><?php echo langHdl('deleted_items'); ?></h5>
+                        <h5><?php echo $lang->get('deleted_items'); ?></h5>
                         <div class="table table-responsive" id="recycled-items"></div>
                     </div>
                 </div>

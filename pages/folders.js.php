@@ -26,12 +26,14 @@ declare(strict_types=1);
 
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
 
 // init
 loadClasses();
 $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 
 if (
     isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
@@ -128,7 +130,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             }
             // Show spinner
             toastr.remove();
-            toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
             // Prepare data
             var data = {
@@ -159,7 +161,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         toastr.remove();
                         toastr.error(
                             data.message,
-                            '<?php echo langHdl('error'); ?>', {
+                            '<?php echo $lang->get('error'); ?>', {
                                 timeOut: 5000,
                                 progressBar: true
                             }
@@ -211,7 +213,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             if ($('#table-folders input[type=checkbox]:checked').length === 0) {
                 toastr.remove();
                 toastr.warning(
-                    '<?php echo langHdl('you_need_to_select_at_least_one_folder'); ?>',
+                    '<?php echo $lang->get('you_need_to_select_at_least_one_folder'); ?>',
                     '', {
                         timeOut: 5000,
                         progressBar: true
@@ -241,7 +243,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             //--- DELETE FOLDERS
             // Show spinner
             toastr.remove();
-            toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
             // Get list of selected folders
             var selectedFolders = [];
@@ -271,7 +273,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         toastr.remove();
                         toastr.error(
                             data.message,
-                            '<?php echo langHdl('error'); ?>', {
+                            '<?php echo $lang->get('error'); ?>', {
                                 timeOut: 5000,
                                 progressBar: true
                             }
@@ -287,7 +289,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         // OK
                         toastr.remove();
                         toastr.success(
-                            '<?php echo langHdl('done'); ?>',
+                            '<?php echo $lang->get('done'); ?>',
                             '', {
                                 timeOut: 1000
                             }
@@ -328,7 +330,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
         // Show spinner
         toastr.remove();
-        toastr.info('<?php echo langHdl('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+        toastr.info('<?php echo $lang->get('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
         // Build matrix
         $.post(
@@ -344,7 +346,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     toastr.remove();
                     toastr.error(
                         data.message,
-                        '<?php echo langHdl('error'); ?>', {
+                        '<?php echo $lang->get('error'); ?>', {
                             timeOut: 5000,
                             progressBar: true
                         }
@@ -359,7 +361,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         path = '',
                         parentsClass = '',
                         max_folder_depth = 0,
-                        foldersSelect = '<option value="0"><?php echo langHdl('root'); ?></option>';
+                        foldersSelect = '<option value="0"><?php echo $lang->get('root'); ?></option>';
 
                     $(data.matrix).each(function(i, value) {
                         // List of parents
@@ -379,14 +381,14 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             columns += '<input type="checkbox" class="checkbox-folder" id="cb-' + value.id + '" data-id="' + value.id + '">';
 
                             if (value.numOfChildren > 0) {
-                                columns += '<i class="fas fa-folder-minus infotip ml-2 pointer icon-collapse" data-id="' + value.id + '" title="<?php echo langHdl('collapse'); ?>"></i>';
+                                columns += '<i class="fas fa-folder-minus infotip ml-2 pointer icon-collapse" data-id="' + value.id + '" title="<?php echo $lang->get('collapse'); ?>"></i>';
                             }
                         }
                         columns += '</td>';
 
                         // Column 2
                         columns += '<td class="modify pointer" min-width="200px">' +
-                            '<span id="folder-' + value.id + '" data-id="' + value.id + '" class="infotip folder-name" data-html="true" title="<?php echo langHdl('id'); ?>: ' + value.id + '<br><?php echo langHdl('level'); ?>: ' + value.level + '<br><?php echo langHdl('nb_items'); ?>: ' + value.nbItems + '">' + value.title + '</span></td>';
+                            '<span id="folder-' + value.id + '" data-id="' + value.id + '" class="infotip folder-name" data-html="true" title="<?php echo $lang->get('id'); ?>: ' + value.id + '<br><?php echo $lang->get('level'); ?>: ' + value.level + '<br><?php echo $lang->get('nb_items'); ?>: ' + value.nbItems + '">' + value.title + '</span></td>';
 
 
                         // Column 3
@@ -407,7 +409,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         if (value.folderComplexity.value !== undefined) {
                             columns += '<i class="' + value.folderComplexity.class + ' infotip" data-value="' + value.folderComplexity.value + '" title="' + value.folderComplexity.text + '"></i>';
                         } else {
-                            columns += '<i class="fas fa-exclamation-triangle text-danger infotip" data-value="" title="<?php echo langHdl('no_value_defined_please_fix'); ?>"></i>';
+                            columns += '<i class="fas fa-exclamation-triangle text-danger infotip" data-value="" title="<?php echo $lang->get('no_value_defined_please_fix'); ?>"></i>';
                         }
                         columns += '</td>';
 
@@ -490,7 +492,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
                     // Adapt select
                     $('#folders-depth').empty();
-                    $('#folders-depth').append('<option value="all"><?php echo langHdl('all'); ?></option>');
+                    $('#folders-depth').append('<option value="all"><?php echo $lang->get('all'); ?></option>');
                     for (x = 1; x < max_folder_depth; x++) {
                         $('#folders-depth').append('<option value="' + x + '">' + x + '</option>');
                     }
@@ -499,7 +501,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     // Inform user
                     toastr.remove();
                     toastr.success(
-                        '<?php echo langHdl('done'); ?>',
+                        '<?php echo $lang->get('done'); ?>',
                         '', {
                             timeOut: 1000
                         }
@@ -569,7 +571,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
             // Show spinner
             toastr.remove();
-            toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
             // Show selection of folders
             var selected_cb = $(this),
@@ -595,7 +597,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
                     toastr.remove();
                     toastr.success(
-                        '<?php echo langHdl('done'); ?>',
+                        '<?php echo $lang->get('done'); ?>',
                         '', {
                             timeOut: 1000
                         }
@@ -611,7 +613,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
             // Show spinner
             toastr.remove();
-            toastr.info('<?php echo langHdl('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+            toastr.info('<?php echo $lang->get('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
             // Show selection of folders
             var selected_cb = $(this),
@@ -636,7 +638,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
                     toastr.remove();
                     toastr.success(
-                        '<?php echo langHdl('done'); ?>',
+                        '<?php echo $lang->get('done'); ?>',
                         '', {
                             timeOut: 1000
                         }
@@ -680,50 +682,50 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             '<div class="card card-warning card-outline form">' +
             '<div class="card-body">' +
             '<div class="form-group ml-2">' +
-            '<label for="folder-edit-title"><?php echo langHdl('label'); ?></label>' +
+            '<label for="folder-edit-title"><?php echo $lang->get('label'); ?></label>' +
             '<input type="text" class="form-control clear-me purify" id="folder-edit-title" data-field="title" value="' + folderTitle + '">' +
             '</div>' +
             '<div class="form-group ml-2">' +
-            '<label for="folder-edit-parent"><?php echo langHdl('parent'); ?></label><br>' +
+            '<label for="folder-edit-parent"><?php echo $lang->get('parent'); ?></label><br>' +
             '<select id="folder-edit-parent" class="form-control form-item-control select2 clear-me">' + store.get('teampassApplication').foldersSelect + '</select>' +
             '</div>' +
             '<div class="form-group ml-2">' +
-            '<label for="folder-edit-complexity"><?php echo langHdl('password_minimal_complexity_target'); ?></label><br>' +
+            '<label for="folder-edit-complexity"><?php echo $lang->get('password_minimal_complexity_target'); ?></label><br>' +
             '<select id="folder-edit-complexity" class="form-control form-item-control select2 clear-me">' + store.get('teampassApplication').complexityOptions + '</select>' +
             '</div>' +
             '<div class="form-group ml-2">' +
-            '<label for="folder-edit-renewal"><?php echo langHdl('renewal_delay'); ?></label>' +
+            '<label for="folder-edit-renewal"><?php echo $lang->get('renewal_delay'); ?></label>' +
             '<input type="text" class="form-control clear-me" id="folder-edit-renewal" value="' + folderRenewal + '">' +
             '</div>' +
             '<div class="form-group ml-2">' +
-            '<label><?php echo langHdl('icon'); ?></label>' +
+            '<label><?php echo $lang->get('icon'); ?></label>' +
             '<input type="text" class="form-control form-folder-control purify" id="folder-edit-icon" data-field="icon" value="'+folderIcon+'">' +
             '<small class="form-text text-muted">' +
-            '<?php echo langHdl('fontawesome_icon_tip'); ?><a href="<?php echo FONTAWESOME_URL;?>" target="_blank"><i class="fas fa-external-link-alt ml-1"></i></a>' +
+            '<?php echo $lang->get('fontawesome_icon_tip'); ?><a href="<?php echo FONTAWESOME_URL;?>" target="_blank"><i class="fas fa-external-link-alt ml-1"></i></a>' +
             '</small>' +
             '</div>' +
             '<div class="form-group ml-2">' +
-            '<label><?php echo langHdl('icon_on_selection'); ?></label>' +
+            '<label><?php echo $lang->get('icon_on_selection'); ?></label>' +
             '<input type="text" class="form-control form-folder-control purify" id="folder-edit-icon-selected" data-field="iconSelected" value="'+folderIconSelection+'">' +
             '<small class="form-text text-muted">' +
-            '<?php echo langHdl('fontawesome_icon_tip'); ?><a href="<?php echo FONTAWESOME_URL;?>" target="_blank"><i class="fas fa-external-link-alt ml-1"></i></a>' +
+            '<?php echo $lang->get('fontawesome_icon_tip'); ?><a href="<?php echo FONTAWESOME_URL;?>" target="_blank"><i class="fas fa-external-link-alt ml-1"></i></a>' +
             '</small>' +
             '</div>' +
             '<div class="form-group ml-2" id="folder-rights-tuned">' +
-            '<label><?php echo langHdl('special'); ?></label>' +
+            '<label><?php echo $lang->get('special'); ?></label>' +
             '<div class="form-check">' +
             '<input type="checkbox" class="form-check-input form-control" id="folder-edit-add-restriction">' +
-            '<label class="form-check-label pointer ml-2" for="folder-edit-add-restriction"><?php echo langHdl('create_without_password_minimal_complexity_target'); ?></label>' +
+            '<label class="form-check-label pointer ml-2" for="folder-edit-add-restriction"><?php echo $lang->get('create_without_password_minimal_complexity_target'); ?></label>' +
             '</div>' +
             '<div class="form-check">' +
             '<input type="checkbox" class="form-check-input form-control" id="folder-edit-edit-restriction">' +
-            '<label class="form-check-label pointer ml-2" for="folder-edit-edit-restriction"><?php echo langHdl('edit_without_password_minimal_complexity_target'); ?></label>' +
+            '<label class="form-check-label pointer ml-2" for="folder-edit-edit-restriction"><?php echo $lang->get('edit_without_password_minimal_complexity_target'); ?></label>' +
             '</div>' +
             '</div>' +
             '</div>' +
             '<div class="card-footer">' +
-            '<button type="button" class="btn btn-warning tp-action-edit" data-action="submit" data-id="' + currentFolderEdited + '"><?php echo langHdl('submit'); ?></button>' +
-            '<button type="button" class="btn btn-default float-right tp-action-edit" data-action="cancel"><?php echo langHdl('cancel'); ?></button>' +
+            '<button type="button" class="btn btn-warning tp-action-edit" data-action="submit" data-id="' + currentFolderEdited + '"><?php echo $lang->get('submit'); ?></button>' +
+            '<button type="button" class="btn btn-default float-right tp-action-edit" data-action="cancel"><?php echo $lang->get('cancel'); ?></button>' +
             '</div>' +
             '</div>' +
             '</td></tr>'
@@ -808,7 +810,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         toastr.remove();
                         toastr.error(
                             data.message,
-                            '<?php echo langHdl('error'); ?>', {
+                            '<?php echo $lang->get('error'); ?>', {
                                 timeOut: 5000,
                                 progressBar: true
                             }

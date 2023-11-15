@@ -25,6 +25,7 @@ declare(strict_types=1);
  */
 
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\PerformChecks\PerformChecks;
 
@@ -34,6 +35,7 @@ require_once __DIR__.'/../sources/main.functions.php';
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 
 // Load config if $SETTINGS not defined
 try {
@@ -67,9 +69,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     exit;
 }
 
-// Load language file
-//require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$superGlobal->get('user_language', 'SESSION', 'user').'.php';
-
 // Define Timezone
 date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
 
@@ -86,7 +85,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
     <div class="container-fluid">
         <div class="row mb-2">
             <div class="col-sm-6">
-                <h1 class="m-0 text-dark"><i class="fas fa-file-export mr-2"></i><?php echo $lang->get('export_items'); //langHdl('export_items'); ?></h1>
+                <h1 class="m-0 text-dark"><i class="fas fa-file-export mr-2"></i><?php echo $lang->get('export_items'); //$lang->get('export_items'); ?></h1>
             </div><!-- /.col -->
         </div><!-- /.row -->
     </div><!-- /.container-fluid -->
@@ -114,7 +113,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                             <option value="csv"><?php echo $lang->get('csv'); ?></option>
                             <?php
                             if (isset($SETTINGS['settings_offline_mode']) === true && (int) $SETTINGS['settings_offline_mode'] === 1) {
-                                echo '<option value="html">'.strtoupper(langHdl('html')).'</option>';
+                                echo '<option value="html">'.strtoupper($lang->get('html')).'</option>';
                             }
                             ?>
                             <option value="pdf"><?php echo $lang->get('pdf'); ?></option>

@@ -31,6 +31,7 @@ use voku\helper\AntiXSS;
 use Hackzilla\PasswordGenerator\Generator\ComputerPasswordGenerator;
 use Hackzilla\PasswordGenerator\RandomGenerator\Php7RandomGenerator;
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
 use TeampassClasses\NestedTree\NestedTree;
 use Defuse\Crypto\Key;
 use Defuse\Crypto\Crypto;
@@ -73,6 +74,7 @@ function langHdl(string $string): string
 
     // Load
     $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
     $antiXss = new AntiXSS();
     // Get language string
     $session_language = $superGlobal->get(trim($string), 'SESSION', 'lang');
@@ -335,6 +337,7 @@ function identifyUserRights(
     $SETTINGS
 ) {
     $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
     $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
     // Check if user is ADMINISTRATOR    
@@ -379,6 +382,7 @@ function identAdmin($idFonctions, $SETTINGS, $tree)
 {
     // Load superglobal
     $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
     // Init
     $groupesVisibles = [];
     $superGlobal->put('personal_folders', [], 'SESSION');
@@ -495,6 +499,7 @@ function identUser(
 ) {
     // Load superglobal
     $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
     // Init
     $superGlobal->put('groupes_visibles', [], 'SESSION');
     $superGlobal->put('personal_folders', [], 'SESSION');
@@ -896,6 +901,7 @@ function cacheTableUpdate(?int $ident = null): void
     // Load class DB
     loadClasses('DB');
     $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 
     //Load Tree
     $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
@@ -967,6 +973,7 @@ function cacheTableUpdate(?int $ident = null): void
 function cacheTableAdd(?int $ident = null): void
 {
     $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
     // Get superglobals
     $globalsUserId = $superGlobal->get('user_id', 'SESSION');
 
@@ -1198,12 +1205,16 @@ function sendEmail(
     $silent = true,
     $cron = false
 ) {
+    // Load superGlobals
+    $superGlobal = new SuperGlobal();
+    $lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
+
     // CAse where email not defined
     if ($email === 'none' || empty($email) === true) {
         return json_encode(
             [
                 'error' => true,
-                'message' => langHdl('forgot_my_pw_email_sent'),
+                'message' => $lang->get('forgot_my_pw_email_sent'),
             ]
         );
     }
@@ -1223,7 +1234,7 @@ function sendEmail(
         return json_encode(
             [
                 'error' => false,
-                'message' => langHdl('forgot_my_pw_email_sent'),
+                'message' => $lang->get('forgot_my_pw_email_sent'),
             ]
         );
     }
@@ -1239,7 +1250,7 @@ function sendEmail(
     return json_encode(
         [
             'error' => false,
-            'message' => langHdl('share_sent_ok'),
+            'message' => $lang->get('share_sent_ok'),
         ]
     );
 }
@@ -1257,6 +1268,7 @@ function buildEmail(
 {
     // Load superglobal
     $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
     // Get user language
     include_once $SETTINGS['cpassman_dir'] . '/includes/language/' . (null !== $superGlobal->get('user_language', 'SESSION', 'user') ? $superGlobal->get('user_language', 'SESSION', 'user') : 'english') . '.php';
     // load PHPMailer
@@ -1466,6 +1478,7 @@ function prepareExchangedData($data, string $type, ?string $key = null)
 {
     // Load superglobal
     $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 
     // Get superglobals
     if ($key !== null) {
@@ -1781,6 +1794,7 @@ function notifyOnChange(int $item_id, string $action, array $SETTINGS): void
         // Load superglobal
         include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
         $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
         // Get superglobals
         $globalsLastname = $superGlobal->get('lastname', 'SESSION');
         $globalsName = $superGlobal->get('name', 'SESSION');
@@ -1798,7 +1812,7 @@ function notifyOnChange(int $item_id, string $action, array $SETTINGS): void
             prefixTable('emails'),
             [
                 'timestamp' => time(),
-                'subject' => langHdl('email_on_open_notification_subject'),
+                'subject' => $lang->get('email_on_open_notification_subject'),
                 'body' => str_replace(
                     ['#tp_user#', '#tp_item#', '#tp_link#'],
                     [
@@ -1806,7 +1820,7 @@ function notifyOnChange(int $item_id, string $action, array $SETTINGS): void
                         addslashes($item_label),
                         $SETTINGS['cpassman_url'] . '/index.php?page=items&group=' . $dataItem['id_tree'] . '&id=' . $item_id,
                     ],
-                    langHdl('email_on_open_notification_mail')
+                    $lang->get('email_on_open_notification_mail')
                 ),
                 'receivers' => $globalsNotifiedEmails,
                 'status' => '',
@@ -1830,6 +1844,7 @@ function notifyChangesToSubscribers(int $item_id, string $label, array $changes,
 {
     // Load superglobal
     $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
     // Get superglobals
     $globalsUserId = $superGlobal->get('user_id', 'SESSION');
     $globalsLastname = $superGlobal->get('lastname', 'SESSION');
@@ -1858,11 +1873,11 @@ function notifyChangesToSubscribers(int $item_id, string $label, array $changes,
             prefixTable('emails'),
             [
                 'timestamp' => time(),
-                'subject' => langHdl('email_subject_item_updated'),
+                'subject' => $lang->get('email_subject_item_updated'),
                 'body' => str_replace(
                     ['#item_label#', '#folder_name#', '#item_id#', '#url#', '#name#', '#lastname#', '#changes#'],
                     [$label, $path, $item_id, $SETTINGS['cpassman_url'], $globalsName, $globalsLastname, $htmlChanges],
-                    langHdl('email_body_item_updated')
+                    $lang->get('email_body_item_updated')
                 ),
                 'receivers' => implode(',', $notification),
                 'status' => '',
@@ -2345,6 +2360,7 @@ function recursiveChmod(
 function accessToItemIsGranted(int $item_id, array $SETTINGS)
 {
     $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
     // Prepare superGlobal variables
     $session_groupes_visibles = $superGlobal->get('groupes_visibles', 'SESSION');
     $session_list_restricted_folders_for_items = $superGlobal->get('list_restricted_folders_for_items', 'SESSION');
@@ -2809,6 +2825,7 @@ function storeUsersShareKey(
     array $objectKeyArray = []
 ): void {
     $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 
     // Load class DB
     loadClasses('DB');
@@ -3362,15 +3379,19 @@ function isValueSetEmpty($value, $boolean = true) : bool
  */
 function defineComplexity() : void
 {
+    // Load superGlobals
+    $superGlobal = new SuperGlobal();
+    $lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
+    
     if (defined('TP_PW_COMPLEXITY') === false) {
         define(
             'TP_PW_COMPLEXITY',
             [
-                TP_PW_STRENGTH_1 => array(TP_PW_STRENGTH_1, langHdl('complex_level1'), 'fas fa-thermometer-empty text-danger'),
-                TP_PW_STRENGTH_2 => array(TP_PW_STRENGTH_2, langHdl('complex_level2'), 'fas fa-thermometer-quarter text-warning'),
-                TP_PW_STRENGTH_3 => array(TP_PW_STRENGTH_3, langHdl('complex_level3'), 'fas fa-thermometer-half text-warning'),
-                TP_PW_STRENGTH_4 => array(TP_PW_STRENGTH_4, langHdl('complex_level4'), 'fas fa-thermometer-three-quarters text-success'),
-                TP_PW_STRENGTH_5 => array(TP_PW_STRENGTH_5, langHdl('complex_level5'), 'fas fa-thermometer-full text-success'),
+                TP_PW_STRENGTH_1 => array(TP_PW_STRENGTH_1, $lang->get('complex_level1'), 'fas fa-thermometer-empty text-danger'),
+                TP_PW_STRENGTH_2 => array(TP_PW_STRENGTH_2, $lang->get('complex_level2'), 'fas fa-thermometer-quarter text-warning'),
+                TP_PW_STRENGTH_3 => array(TP_PW_STRENGTH_3, $lang->get('complex_level3'), 'fas fa-thermometer-half text-warning'),
+                TP_PW_STRENGTH_4 => array(TP_PW_STRENGTH_4, $lang->get('complex_level4'), 'fas fa-thermometer-three-quarters text-success'),
+                TP_PW_STRENGTH_5 => array(TP_PW_STRENGTH_5, $lang->get('complex_level5'), 'fas fa-thermometer-full text-success'),
             ]
         );
     }
@@ -3770,6 +3791,9 @@ function handleUserKeys(
     string $recovery_private_key = ''
 ): string
 {
+    // Load superGlobals
+    $superGlobal = new SuperGlobal();
+    $lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 
     // prepapre background tasks for item keys generation        
     $userTP = DB::queryFirstRow(
@@ -3792,7 +3816,7 @@ function handleUserKeys(
             return prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('pw_hash_not_correct'),
+                    'message' => $lang->get('pw_hash_not_correct'),
                 ),
                 'encode'
             );
@@ -4319,6 +4343,7 @@ function getCurrectPage($SETTINGS)
 {
     // Load libraries
     $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 
     // Parse the url
     parse_str(

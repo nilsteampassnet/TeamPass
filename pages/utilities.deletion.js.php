@@ -27,12 +27,14 @@ declare(strict_types=1);
 
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
 
 // init
 loadClasses();
 $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 
 if (
     isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
@@ -95,9 +97,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     $(function() {
         // Show spinner
         toastr.remove();
-        toastr.info('<?php echo langHdl('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+        toastr.info('<?php echo $lang->get('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
         // Do clean
-        $('#recycled-folders, #recycled-items').html('<div class="text-warning"><i class="fas fa-info mr-2"></i><?php echo langHdl('refreshing'); ?></div>');
+        $('#recycled-folders, #recycled-items').html('<div class="text-warning"><i class="fas fa-info mr-2"></i><?php echo $lang->get('refreshing'); ?></div>');
         $('#temp-message').remove();
 
         // Launch action
@@ -115,7 +117,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     toastr.remove();
                     toastr.error(
                         data.message,
-                        '<?php echo langHdl('error'); ?>', {
+                        '<?php echo $lang->get('error'); ?>', {
                             timeOut: 5000,
                             progressBar: true
                         }
@@ -125,7 +127,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     if (data.folders.length === 0) {
                         $('#recycled-folders, #recycled-items').html(
                             '<div class="alert alert-info" id="temp-message">' +
-                            '<?php echo langHdl('empty_list'); ?>' +
+                            '<?php echo $lang->get('empty_list'); ?>' +
                             '</div>'
                         )
 
@@ -148,7 +150,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     if (data.items.length === 0) {
                         $('#recycled-items').html(
                             '<div class="alert alert-info" id="temp-message">' +
-                            '<?php echo langHdl('empty_list'); ?>' +
+                            '<?php echo $lang->get('empty_list'); ?>' +
                             '</div>'
                         )
 
@@ -162,7 +164,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                 '<td class=""><i class="far fa-user mr-1"></i>' + value.name + ' [' + value.login + ']</td>' +
                                 '<td class="font-italic"><i class="far fa-folder mr-1"></i>' + value.folder_label + '</td>' +
                                 (value.folder_deleted === true ?
-                                    '<td class=""><?php echo langHdl('belong_of_deleted_folder'); ?></td>' :
+                                    '<td class=""><?php echo $lang->get('belong_of_deleted_folder'); ?></td>' :
                                     '') +
                                 '</tr>';
                         });
@@ -186,7 +188,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     // OK
                     toastr.remove();
                     toastr.success(
-                        '<?php echo langHdl('done'); ?>',
+                        '<?php echo $lang->get('done'); ?>',
                         '', {
                             timeOut: 1000
                         }
@@ -224,11 +226,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             // Show text to user
             $('#recycled-bin-confirm-restore div').find('.card-body')
                 .html('<div class="callout callout-info"><h5>' +
-                    '<?php echo langHdl('number_of_selected_objects'); ?>: <span id="objects_counter" class="text-bold">' +
+                    '<?php echo $lang->get('number_of_selected_objects'); ?>: <span id="objects_counter" class="text-bold">' +
                     $('input:checkbox:checked').length + '</span></h5>' +
-                    '<?php echo langHdl('highlight_selected'); ?>:<i class="far fa-check-circle fa-lg ml-2 pointer text-success" id="highlight"></i>' +
+                    '<?php echo $lang->get('highlight_selected'); ?>:<i class="far fa-check-circle fa-lg ml-2 pointer text-success" id="highlight"></i>' +
                     '<i class="far fa-times-circle fa-lg ml-2 pointer text-danger" id="highlight-cancel"></i></div>' +
-                    '<div class="alert alert-info"><i class="fas fa-warning mr-2"></i><?php echo langHdl('confirm_selection_restore'); ?></div>');
+                    '<div class="alert alert-info"><i class="fas fa-warning mr-2"></i><?php echo $lang->get('confirm_selection_restore'); ?></div>');
 
             // Hide other confirm box
             $('#recycled-bin-confirm-restore').addClass('hidden');
@@ -242,11 +244,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             // Show text to user
             $('#recycled-bin-confirm-delete div').find('.card-body')
                 .html('<div class="callout callout-warning"><h5>' +
-                    '<?php echo langHdl('number_of_selected_objects'); ?>: <span id="objects_counter" class="text-bold">' +
+                    '<?php echo $lang->get('number_of_selected_objects'); ?>: <span id="objects_counter" class="text-bold">' +
                     $('input:checkbox:checked').length + '</span></h5>' +
-                    '<?php echo langHdl('highlight_selected'); ?>:<i class="far fa-check-circle fa-lg ml-2 pointer text-success" id="highlight"></i>' +
+                    '<?php echo $lang->get('highlight_selected'); ?>:<i class="far fa-check-circle fa-lg ml-2 pointer text-success" id="highlight"></i>' +
                     '<i class="far fa-times-circle fa-lg ml-2 pointer text-danger" id="highlight-cancel"></i></div>' +
-                    '<div class="alert alert-warning"><i class="fas fa-warning mr-2"></i><?php echo langHdl('confirm_selection_delete'); ?></div>');
+                    '<div class="alert alert-warning"><i class="fas fa-warning mr-2"></i><?php echo $lang->get('confirm_selection_delete'); ?></div>');
 
             // Hide other confirm box
             $('#recycled-bin-confirm-restore').addClass('hidden');
@@ -303,7 +305,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     function restoreOrDelete(action, id) {
         // Show spinner
         toastr.remove();
-        toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+        toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
         // Prepare selected data
         var folders = [],
@@ -340,7 +342,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     toastr.remove();
                     toastr.error(
                         data.message,
-                        '<?php echo langHdl('error'); ?>', {
+                        '<?php echo $lang->get('error'); ?>', {
                             timeOut: 5000,
                             progressBar: true
                         }
@@ -362,7 +364,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     // Inform user
                     toastr.remove();
                     toastr.success(
-                        '<?php echo langHdl('done'); ?>',
+                        '<?php echo $lang->get('done'); ?>',
                         '', {
                             timeOut: 5000
                         }

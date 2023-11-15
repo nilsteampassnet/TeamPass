@@ -22,6 +22,7 @@ use EZimuel\PHPSecureSession;
 use Hackzilla\PasswordGenerator\Generator\ComputerPasswordGenerator;
 use Hackzilla\PasswordGenerator\RandomGenerator\Php7RandomGenerator;
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
 use PasswordLib\PasswordLib;
 
 // Load functions
@@ -30,6 +31,7 @@ require_once __DIR__.'/../sources/main.functions.php';
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 session_name('teampass_session');
 session_start();
 error_reporting(E_ERROR | E_PARSE);
@@ -263,6 +265,7 @@ try {
 
 // Load libraries
 $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 
 // Set Session
 $superGlobal->put('CPM', 1, 'SESSION');

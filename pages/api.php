@@ -25,6 +25,7 @@ declare(strict_types=1);
  */
 
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\PerformChecks\PerformChecks;
 
@@ -34,6 +35,7 @@ require_once __DIR__.'/../sources/main.functions.php';
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 
 // Load config if $SETTINGS not defined
 try {
@@ -67,9 +69,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     exit;
 }
 
-// Load language file
-require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$superGlobal->get('user_language', 'SESSION', 'user').'.php';
-
 // Define Timezone
 date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
 
@@ -88,7 +87,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
         <div class="row mb-2">
             <div class="col-sm-6">
                 <h1 class="m-0 text-dark">
-                    <i class="fas fa-cubes mr-2"></i><?php echo langHdl('api'); ?>
+                    <i class="fas fa-cubes mr-2"></i><?php echo $lang->get('api'); ?>
                 </h1>
             </div><!-- /.col -->
         </div><!-- /.row -->
@@ -102,7 +101,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
             <div class="col-12">
                 <div class='card card-primary'>
                     <div class='card-header'>
-                        <h3 class='card-title'><?php echo langHdl('api_configuration'); ?></h3>
+                        <h3 class='card-title'><?php echo $lang->get('api_configuration'); ?></h3>
                     </div>
                     <!-- /.card-header -->
                     <!-- form start -->
@@ -110,9 +109,9 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 
                         <div class='row mb-5'>
                             <div class='col-10'>
-                                <?php echo langHdl('settings_api'); ?>
+                                <?php echo $lang->get('settings_api'); ?>
                                 <small id='passwordHelpBlock' class='form-text text-muted'>
-                                    <?php echo langHdl('settings_api_tip'); ?>
+                                    <?php echo $lang->get('settings_api_tip'); ?>
                                 </small>
                             </div>
                             <div class='col-2'>
@@ -122,9 +121,9 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 
                         <div class='row mb-5'>
                             <div class='col-10'>
-                                <?php echo langHdl('settings_api_token_duration'); ?>
+                                <?php echo $lang->get('settings_api_token_duration'); ?>
                                 <small id='passwordHelpBlock' class='form-text text-muted'>
-                                    <?php echo langHdl('settings_api_token_duration_tip'); ?>
+                                    <?php echo $lang->get('settings_api_token_duration_tip'); ?>
                                 </small>
                             </div>
                             <div class='col-2'>
@@ -134,17 +133,17 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 
                         <ul class="nav nav-tabs">
                             <li class="nav-item">
-                                <a class="nav-link active" data-toggle="tab" href="#keys" role="tab" aria-controls="keys"><?php echo langHdl('settings_api_keys_list'); ?></a>
+                                <a class="nav-link active" data-toggle="tab" href="#keys" role="tab" aria-controls="keys"><?php echo $lang->get('settings_api_keys_list'); ?></a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" data-toggle="tab" href="#ips" role="tab" aria-controls="ips"><?php echo langHdl('api_whitelist_ips'); ?></a>
+                                <a class="nav-link" data-toggle="tab" href="#ips" role="tab" aria-controls="ips"><?php echo $lang->get('api_whitelist_ips'); ?></a>
                             </li>
                         </ul>
 
                         <div class="tab-content">
                             <div class="tab-pane fade show active" id="keys" role="tabpanel" aria-labelledby="keys-tab">
                                 <small id="passwordHelpBlock" class="form-text text-muted mt-4">
-                                    <?php echo langHdl('settings_api_keys_list_tip'); ?>
+                                    <?php echo $lang->get('settings_api_keys_list_tip'); ?>
                                 </small>
                                 <div class="mt-4">
                                     <?php
@@ -160,8 +159,8 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                         <thead>
                                             <tr>
                                                 <th width="50px"></th>
-                                                <th><?php echo langHdl('label'); ?></th>
-                                                <th><?php echo langHdl('settings_api_key'); ?></th>
+                                                <th><?php echo $lang->get('label'); ?></th>
+                                                <th><?php echo $lang->get('settings_api_key'); ?></th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -169,7 +168,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                             foreach ($rowsKeys as $key) {
                                                 echo '
                                                     <tr data-id="' . $key['increment_id'] . '">
-                                                    <td width="50px"><i class="fas fa-trash infotip pointer delete-api-key" title="' . langHdl('del_button') . '"></i></td>
+                                                    <td width="50px"><i class="fas fa-trash infotip pointer delete-api-key" title="' . $lang->get('del_button') . '"></i></td>
                                                     <td><span class="edit-api-key pointer">' . $key['label'] . '</span></td>
                                                     <td>' . $key['value']. '</td>                        
                                                 </tr>';
@@ -178,18 +177,18 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                     </table>
 
                                     <div class="mt-2<?php echo DB::count() > 0 ? ' hidden' : ''; ?>" id="api-no-keys">
-                                        <i class="fas fa-info mr-2 text-warning"></i><?php echo langHdl('no_data_defined'); ?>
+                                        <i class="fas fa-info mr-2 text-warning"></i><?php echo $lang->get('no_data_defined'); ?>
                                     </div>
 
                                 </div>
 
                                 <div class="form-group mt-4">
                                     <div class="callout callout-info">
-                                        <span class="text-bold"><?php echo langHdl('adding_new_api_key'); ?></span>
+                                        <span class="text-bold"><?php echo $lang->get('adding_new_api_key'); ?></span>
 
                                         <div class="row mt-1 ml-1">
-                                            <input type="text" placeholder="<?php echo langHdl('label'); ?>" class="col-4 form-control form-control-sm purify" id="new_api_key_label" data-field="label">
-                                            <span class="fa-stack ml-2 infotip pointer" title="<?php echo langHdl('adding_new_api_key'); ?>" id="button-new-api-key">
+                                            <input type="text" placeholder="<?php echo $lang->get('label'); ?>" class="col-4 form-control form-control-sm purify" id="new_api_key_label" data-field="label">
+                                            <span class="fa-stack ml-2 infotip pointer" title="<?php echo $lang->get('adding_new_api_key'); ?>" id="button-new-api-key">
                                                 <i class="fas fa-square fa-stack-2x"></i>
                                                 <i class="fas fa-plus fa-stack-1x fa-inverse"></i>
                                             </span>
@@ -201,7 +200,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 
                             <div class="tab-pane fade show mb-4" id="ips" role="tabpanel" aria-labelledby="ips-tab">
                                 <small id="passwordHelpBlock" class="form-text text-muted mt-4">
-                                    <?php echo langHdl('api_whitelist_ips_tip'); ?>
+                                    <?php echo $lang->get('api_whitelist_ips_tip'); ?>
                                 </small>
                                 <div class="col-12 mt-4" id="table-api-ip">
                                     <?php
@@ -216,8 +215,8 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                         <thead>
                                             <tr>
                                                 <th width="50px"></th>
-                                                <th><?php echo langHdl('label'); ?></th>
-                                                <th><?php echo langHdl('settings_api_ip'); ?></th>
+                                                <th><?php echo $lang->get('label'); ?></th>
+                                                <th><?php echo $lang->get('settings_api_ip'); ?></th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -225,7 +224,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                             foreach ($rowsIps as $ip) {
                                                 echo '
                                                 <tr data-id="' . $ip['increment_id'] . '">
-                                                    <td width="50px"><i class="fas fa-trash infotip pointer delete-api-ip" title="' . langHdl('del_button') . '"></i></td>
+                                                    <td width="50px"><i class="fas fa-trash infotip pointer delete-api-ip" title="' . $lang->get('del_button') . '"></i></td>
                                                     <td><span class="edit-api-ip pointer" data-field="label">' . $ip['label'] . '</span></td>
                                                     <td><span class="edit-api-ip pointer" data-field="value">' . $ip['value'] . '</span></td>                        
                                                 </tr>';
@@ -234,18 +233,18 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                     </table>
 
                                     <div class="mt-2<?php echo DB::count() > 0 ? ' hidden' : ''; ?>" id="api-no-ips">
-                                        <i class="fas fa-info mr-2 text-warning"></i><?php echo langHdl('no_data_defined'); ?>
+                                        <i class="fas fa-info mr-2 text-warning"></i><?php echo $lang->get('no_data_defined'); ?>
                                     </div>
                                 </div>
 
                                 <div class="form-group mt-4" id="new-api-ip">
                                     <div class="callout callout-info">
-                                        <span class="text-bold"><?php echo langHdl('adding_new_api_ip'); ?></span>
+                                        <span class="text-bold"><?php echo $lang->get('adding_new_api_ip'); ?></span>
 
                                         <div class="row mt-1 ml-1">
-                                            <input type="text" placeholder="<?php echo langHdl('ip'); ?>" class="col-4 form-control" id="new_api_ip_value" data-inputmask="'alias': 'ip'">
-                                            <input type="text" placeholder="<?php echo langHdl('label'); ?>" class="col-4 form-control ml-2 purify" id="new_api_ip_label" data-field="label">
-                                            <span class="fa-stack ml-2 infotip pointer" title="<?php echo langHdl('settings_api_add_ip'); ?>" id="button-new-api-ip">
+                                            <input type="text" placeholder="<?php echo $lang->get('ip'); ?>" class="col-4 form-control" id="new_api_ip_value" data-inputmask="'alias': 'ip'">
+                                            <input type="text" placeholder="<?php echo $lang->get('label'); ?>" class="col-4 form-control ml-2 purify" id="new_api_ip_label" data-field="label">
+                                            <span class="fa-stack ml-2 infotip pointer" title="<?php echo $lang->get('settings_api_add_ip'); ?>" id="button-new-api-ip">
                                                 <i class="fas fa-square fa-stack-2x"></i>
                                                 <i class="fas fa-plus fa-stack-1x fa-inverse"></i>
                                             </span>

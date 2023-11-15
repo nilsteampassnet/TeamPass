@@ -25,6 +25,7 @@ declare(strict_types=1);
  */
 
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\PerformChecks\PerformChecks;
 
@@ -34,6 +35,7 @@ require_once __DIR__.'/../sources/main.functions.php';
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 
 // Load config if $SETTINGS not defined
 try {
@@ -67,9 +69,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     exit;
 }
 
-// Load language file
-require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$superGlobal->get('user_language', 'SESSION', 'user').'.php';
-
 // Define Timezone
 date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
 
@@ -87,7 +86,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
     <div class="container-fluid">
         <div class="row mb-2">
             <div class="col-sm-6">
-                <h1 class="m-0 text-dark"><i class="fas fa-search mr-2"></i><?php echo langHdl('find'); ?></h1>
+                <h1 class="m-0 text-dark"><i class="fas fa-search mr-2"></i><?php echo $lang->get('find'); ?></h1>
             </div><!-- /.col -->
         </div><!-- /.row -->
     </div><!-- /.container-fluid -->
@@ -99,7 +98,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
     <div class="card-header">
         <h3 class="card-title">
             <i class="fas fa-bug mr-2"></i>
-            <?php echo langHdl('mass_operation'); ?>
+            <?php echo $lang->get('mass_operation'); ?>
         </h3>
     </div>
     <div class="card-body">
@@ -110,8 +109,8 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
         </div>
     </div>
     <div class="card-footer">
-        <button class="btn btn-primary mr-2" id="dialog-mass-operation-button"><?php echo langHdl('perform'); ?></button>
-        <button class="btn btn-default float-right close-element"><?php echo langHdl('cancel'); ?></button>
+        <button class="btn btn-primary mr-2" id="dialog-mass-operation-button"><?php echo $lang->get('perform'); ?></button>
+        <button class="btn btn-default float-right close-element"><?php echo $lang->get('cancel'); ?></button>
     </div>
 </div>
 <!-- /.MASS OPERATION -->
@@ -130,12 +129,12 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                         <thead>
                             <tr>
                                 <th></th>
-                                <th><?php echo langHdl('label'); ?></th>
-                                <th><?php echo langHdl('login'); ?></th>
-                                <th><?php echo langHdl('description'); ?></th>
-                                <th><?php echo langHdl('tags'); ?></th>
-                                <th><?php echo langHdl('url'); ?></th>
-                                <th><?php echo langHdl('group'); ?></th>
+                                <th><?php echo $lang->get('label'); ?></th>
+                                <th><?php echo $lang->get('login'); ?></th>
+                                <th><?php echo $lang->get('description'); ?></th>
+                                <th><?php echo $lang->get('tags'); ?></th>
+                                <th><?php echo $lang->get('url'); ?></th>
+                                <th><?php echo $lang->get('group'); ?></th>
                             </tr>
                         </thead>
                         <tbody>

@@ -27,12 +27,14 @@ declare(strict_types=1);
 
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
 
 // init
 loadClasses();
 $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 
 if (
     isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
@@ -166,7 +168,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 } else {
                     toastr.remove();
                     toastr.success(
-                        '<?php echo langHdl('done'); ?>',
+                        '<?php echo $lang->get('done'); ?>',
                         data.message, {
                             timeOut: 2000,
                             progressBar: true
@@ -284,7 +286,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     function ImportCSV() {
         // Show spinner
         toastr.remove();
-        toastr.info('<?php echo langHdl('reading_file'); ?><i class="fa-solid fa-ellipsis fa-2x fa-fade ml-2"></i>');
+        toastr.info('<?php echo $lang->get('reading_file'); ?><i class="fa-solid fa-ellipsis fa-2x fa-fade ml-2"></i>');
 
         // Perform query
         $.post(
@@ -309,7 +311,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 if (data.error == "bad_structure") {
                     toastr.remove();
                     toastr.error(
-                        '<i class="fas fa-ban fa-lg mr-2"></i><?php echo addslashes(langHdl('import_error_no_read_possible')); ?>',
+                        '<i class="fas fa-ban fa-lg mr-2"></i><?php echo addslashes($lang->get('import_error_no_read_possible')); ?>',
                         '', {
                             timeOut: 10000,
                             closeButton: true,
@@ -358,7 +360,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
                     toastr.remove();
                     toastr.success(
-                        '<?php echo langHdl('done'); ?>',
+                        '<?php echo $lang->get('done'); ?>',
                         data.message, {
                             timeOut: 2000,
                             progressBar: true
@@ -373,7 +375,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     function launchCSVItemsImport() {
         // Show spinner
         toastr.remove();
-        toastr.info('<i class="fas fa-cog fa-spin fa-2x"></i><?php echo langHdl('please_wait'); ?>');
+        toastr.info('<i class="fas fa-cog fa-spin fa-2x"></i><?php echo $lang->get('please_wait'); ?>');
 
         // Init
         var items = '',
@@ -402,7 +404,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         if (arrItems.length === 0) {
             toastr.remove();
             toastr.error(
-                '<i class="fas fa-ban fa-lg mr-2"></i><?php echo langHdl('no_data_selected'); ?>',
+                '<i class="fas fa-ban fa-lg mr-2"></i><?php echo $lang->get('no_data_selected'); ?>',
                 '', {
                     timeOut: 10000,
                     closeButton: true,
@@ -433,7 +435,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 if (data.error === true) {
                     toastr.remove();
                     toastr.error(
-                        '<i class="fas fa-ban fa-lg mr-2"></i><?php echo addslashes(langHdl('import_error_no_read_possible')); ?>',
+                        '<i class="fas fa-ban fa-lg mr-2"></i><?php echo addslashes($lang->get('import_error_no_read_possible')); ?>',
                         '', {
                             timeOut: 10000,
                             closeButton: true,
@@ -455,7 +457,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     // Show
                     toastr.remove();
                     toastr.success(
-                        '<?php echo langHdl('number_of_items_imported'); ?> : ' + counter_treated_items,
+                        '<?php echo $lang->get('number_of_items_imported'); ?> : ' + counter_treated_items,
                         data.message, {
                             timeOut: 5000,
                             progressBar: true
@@ -544,7 +546,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 } else {
                     toastr.remove();
                     toastr.success(
-                        '<?php echo langHdl('done'); ?>',
+                        '<?php echo $lang->get('done'); ?>',
                         data.message, {
                             timeOut: 2000,
                             progressBar: true
@@ -569,7 +571,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             Error: function(up, data) {
                 toastr.warning(
                     data.message + ' (' + up.settings.max_file_size + ')',
-                    '<?php echo langHdl('caution'); ?>',
+                    '<?php echo $lang->get('caution'); ?>',
                     {
                         timeOut: 4000,
                         progressBar: true
@@ -598,7 +600,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     function launchKeepassItemsImport() {
         // Show spinner
         $('#import-feedback-progress-text')
-            .html('<?php echo langHdl('reading_file'); ?>');
+            .html('<?php echo $lang->get('reading_file'); ?>');
             $('#import-feedback').removeClass('hidden');
         
         // block time counter
@@ -623,7 +625,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 if (data.error === true) {
                     toastr.remove();
                     toastr.error(
-                        '<i class="fas fa-ban fa-lg mr-2"></i><?php echo addslashes(langHdl('import_error_no_read_possible')); ?>',
+                        '<i class="fas fa-ban fa-lg mr-2"></i><?php echo addslashes($lang->get('import_error_no_read_possible')); ?>',
                         '', {
                             timeOut: 10000,
                             closeButton: true,
@@ -645,7 +647,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     }
                     // Show spinner
                     $('#import-feedback-progress-text')
-                        .html('<i class="fas fa-cog fa-spin ml-4 mr-2"></i><?php echo langHdl('folder'); ?> <?php echo langHdl('at_creation'); ?>');
+                        .html('<i class="fas fa-cog fa-spin ml-4 mr-2"></i><?php echo $lang->get('folder'); ?> <?php echo $lang->get('at_creation'); ?>');
 
                     console.info("Now creating folders")
                     //console.log(data);
@@ -662,7 +664,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             if (data.error === true) {
                                 toastr.remove();
                                 toastr.error(
-                                    '<i class="fas fa-ban fa-lg mr-2"></i><?php echo addslashes(langHdl('import_error_no_read_possible')); ?>',
+                                    '<i class="fas fa-ban fa-lg mr-2"></i><?php echo addslashes($lang->get('import_error_no_read_possible')); ?>',
                                     '', {
                                         timeOut: 10000,
                                         closeButton: true,
@@ -696,7 +698,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                     // Isolate first item
                                     if (itemsList.length > 0) {
                                         $('#import-feedback-progress-text')
-                                            .html('<i class="fas fa-cog fa-spin ml-4 mr-2"></i><?php echo langHdl('operation_progress');?> ('+((counter*100)/itemsNumber).toFixed(2)+'%) - <i>'+itemsList[0].Title + '</i>');
+                                            .html('<i class="fas fa-cog fa-spin ml-4 mr-2"></i><?php echo $lang->get('operation_progress');?> ('+((counter*100)/itemsNumber).toFixed(2)+'%) - <i>'+itemsList[0].Title + '</i>');
 
                                         data = {
                                             'edit-all': $('#import-keepass-edit-all-checkbox').prop('checked') === true ? 1 : 0,
@@ -722,7 +724,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                                     // ERROR
                                                     toastr.remove();
                                                     toastr.error(
-                                                        '<i class="fas fa-ban fa-lg mr-2"></i><?php echo addslashes(langHdl('import_error_no_read_possible')); ?>',
+                                                        '<i class="fas fa-ban fa-lg mr-2"></i><?php echo addslashes($lang->get('import_error_no_read_possible')); ?>',
                                                         '', {
                                                             timeOut: 10000,
                                                             closeButton: true,
@@ -768,7 +770,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                         // Show
                                         toastr.remove();
                                         toastr.success(
-                                            '<?php echo langHdl('done'); ?>',
+                                            '<?php echo $lang->get('done'); ?>',
                                             data.message, {
                                                 timeOut: 2000,
                                                 progressBar: true

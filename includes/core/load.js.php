@@ -25,6 +25,7 @@ declare(strict_types=1);
  */
 
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
 
 if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
     die('Hacking attempt...');
@@ -41,8 +42,8 @@ if (
     <script type="text/javascript">
         toastr.remove();
         toastr.info(
-            '<?php echo langHdl('index_maintenance_mode_admin'); ?>',
-            '<?php echo langHdl('information'); ?>', {
+            '<?php echo $lang->get('index_maintenance_mode_admin'); ?>',
+            '<?php echo $lang->get('information'); ?>', {
                 timeOut: 0
             }
         );
@@ -50,6 +51,7 @@ if (
 <?php
 }
 $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 ?>
 
 <script type="text/javascript">
@@ -158,7 +160,7 @@ $superGlobal = new SuperGlobal();
 
                             // Show passwords inputs and form
                             $('#dialog-user-change-password-info')
-                                .html('<i class="icon fa-solid fa-info mr-2"></i><?php echo langHdl('user_has_to_change_password_info');?>')
+                                .html('<i class="icon fa-solid fa-info mr-2"></i><?php echo $lang->get('user_has_to_change_password_info');?>')
                                 .removeClass('hidden');
                             $('#dialog-user-change-password').removeClass('hidden');
 
@@ -171,7 +173,7 @@ $superGlobal = new SuperGlobal();
 
                             // Show passwords inputs and form
                             $('#dialog-ldap-user-change-password-info')
-                                .html('<i class="icon fa-solid fa-info mr-2"></i><?php echo langHdl('ldap_user_has_changed_his_password');?>')
+                                .html('<i class="icon fa-solid fa-info mr-2"></i><?php echo $lang->get('ldap_user_has_changed_his_password');?>')
                                 .removeClass('hidden');
                             $('#dialog-ldap-user-change-password').removeClass('hidden');
                             
@@ -203,7 +205,7 @@ $superGlobal = new SuperGlobal();
                             // if profile page, then show warning
                             if (window.location.href.indexOf('page=profile') > -1) {
                                 $('#keys_not_recovered').removeClass('hidden');
-                                $('#profile-keys_download-date').text('<?php echo langHdl('none'); ?>');
+                                $('#profile-keys_download-date').text('<?php echo $lang->get('none'); ?>');
                             }
 
                             // handle button click redirection to profile page
@@ -298,7 +300,7 @@ $superGlobal = new SuperGlobal();
         /*console.log('User has to regenerate keys')
         // HIde
         $('.content-header, .content').addClass('hidden');
-        $('#dialog-user-temporary-code-info').html('<i class="icon fa-solid fa-info mr-2"></i><?php echo langHdl('renecyption_expected');?>');
+        $('#dialog-user-temporary-code-info').html('<i class="icon fa-solid fa-info mr-2"></i><?php echo $lang->get('renecyption_expected');?>');
 
         // Show passwords inputs and form
         $('#dialog-user-temporary-code').removeClass('hidden');
@@ -312,7 +314,7 @@ $superGlobal = new SuperGlobal();
         console.log('show password change')
         // HIde
         $('.content-header, .content, #button_do_sharekeys_reencryption').addClass('hidden');
-        $('#warning-text-reencryption').html('<i class="icon fa-solid fa-info mr-2"></i><?php echo langHdl('ldap_password_change_warning'); ?>');
+        $('#warning-text-reencryption').html('<i class="icon fa-solid fa-info mr-2"></i><?php echo $lang->get('ldap_password_change_warning'); ?>');
 
         // Show passwords inputs and form
         $('#dialog-encryption-keys, .ask-for-previous-password').removeClass('hidden');
@@ -329,10 +331,10 @@ $superGlobal = new SuperGlobal();
         // Prepare modal
         showModalDialogBox(
             '#warningModal',
-            '<i class="fa-solid fa-user-shield fa-lg warning mr-2"></i><?php echo langHdl('caution'); ?>',
-            '<?php echo langHdl('login_attempts_identified_since_last_connection'); ?>',
-            '<?php echo langHdl('see_detail'); ?>',
-            '<?php echo langHdl('close'); ?>',
+            '<i class="fa-solid fa-user-shield fa-lg warning mr-2"></i><?php echo $lang->get('caution'); ?>',
+            '<?php echo $lang->get('login_attempts_identified_since_last_connection'); ?>',
+            '<?php echo $lang->get('see_detail'); ?>',
+            '<?php echo $lang->get('close'); ?>',
             false,
             false,
             false
@@ -350,7 +352,7 @@ $superGlobal = new SuperGlobal();
         $(document).on('click', '#warningModalButtonAction', function() {
             // SHow user
             toastr.remove();
-            toastr.info('<?php echo langHdl('in_progress'); ?><i class="fa-solid fa-circle-notch fa-spin fa-2x ml-3"></i>');
+            toastr.info('<?php echo $lang->get('in_progress'); ?><i class="fa-solid fa-circle-notch fa-spin fa-2x ml-3"></i>');
 
             // Action
             store.update(
@@ -372,7 +374,7 @@ $superGlobal = new SuperGlobal();
         $(document).on('click', '#button_do_personal_items_reencryption', function() {
             // SHow user
             toastr.remove();
-            toastr.info('<?php echo langHdl('in_progress'); ?><i class="fa-solid fa-circle-notch fa-spin fa-2x ml-3"></i>');
+            toastr.info('<?php echo $lang->get('in_progress'); ?><i class="fa-solid fa-circle-notch fa-spin fa-2x ml-3"></i>');
 
             defusePskRemoval(store.get('teampassUser').user_id, 'psk', 0);
             
@@ -380,8 +382,8 @@ $superGlobal = new SuperGlobal();
             {
                 if (step === 'psk') {
                     // Inform user
-                    $("#user-current-defuse-psk-progress").html('<b><?php echo langHdl('encryption_keys'); ?> </b> [' + start + ' - ' + (parseInt(start) + <?php echo NUMBER_ITEMS_IN_BATCH;?>) + '] ' +
-                        '... <?php echo langHdl('please_wait'); ?><i class="fa-solid fa-spinner fa-pulse ml-3 text-primary"></i>');
+                    $("#user-current-defuse-psk-progress").html('<b><?php echo $lang->get('encryption_keys'); ?> </b> [' + start + ' - ' + (parseInt(start) + <?php echo NUMBER_ITEMS_IN_BATCH;?>) + '] ' +
+                        '... <?php echo $lang->get('please_wait'); ?><i class="fa-solid fa-spinner fa-pulse ml-3 text-primary"></i>');
 
                     var data = {
                         'userPsk' : $('#user-current-defuse-psk').val(),
@@ -405,14 +407,14 @@ $superGlobal = new SuperGlobal();
                                 toastr.remove();
                                 toastr.error(
                                     data.message,
-                                    '<?php echo langHdl('caution'); ?>', {
+                                    '<?php echo $lang->get('caution'); ?>', {
                                         timeOut: 5000,
                                         progressBar: true
                                     }
                                 );
 
                                 // Enable buttons
-                                $("#user-current-defuse-psk-progress").html('<?php echo langHdl('provide_current_psk_and_click_launch'); ?>');
+                                $("#user-current-defuse-psk-progress").html('<?php echo $lang->get('provide_current_psk_and_click_launch'); ?>');
                                 $('#button_do_sharekeys_reencryption, #button_close_sharekeys_reencryption').removeAttr('disabled');
                                 return false;
                             } else {
@@ -423,7 +425,7 @@ $superGlobal = new SuperGlobal();
                     );
                 } else {
                     // Finished
-                    $("#user-current-defuse-psk-progress").html('<i class="fa-solid fa-check text-success mr-3"></i><?php echo langHdl('done'); ?>');
+                    $("#user-current-defuse-psk-progress").html('<i class="fa-solid fa-check text-success mr-3"></i><?php echo $lang->get('done'); ?>');
 
                     toastr.remove();
                 }
@@ -463,7 +465,7 @@ $superGlobal = new SuperGlobal();
 
                 // Show passwords inputs and form
                 $('#dialog-ldap-user-change-password-info')
-                    .html('<i class="icon fa-solid fa-info mr-2"></i><?php echo langHdl('ldap_user_has_changed_his_password');?>')
+                    .html('<i class="icon fa-solid fa-info mr-2"></i><?php echo $lang->get('ldap_user_has_changed_his_password');?>')
                     .removeClass('hidden');
                 $('#dialog-ldap-user-change-password').removeClass('hidden');
 
@@ -474,10 +476,10 @@ $superGlobal = new SuperGlobal();
                 $('.content-header, .content, #button_do_user_change_password').addClass('hidden');
 
                 // Add DoCheck button
-                $('#button_do_user_change_password').after('<button class="btn btn-primary" id="button_do_pwds_checks"><?php echo langHdl('perform_checks'); ?></button>');
+                $('#button_do_user_change_password').after('<button class="btn btn-primary" id="button_do_pwds_checks"><?php echo $lang->get('perform_checks'); ?></button>');
 
                 // Show passwords inputs and form
-                $('#dialog-user-change-password-progress').html('<i class="icon fa-solid fa-info mr-2"></i><?php echo langHdl('change_your_password_info_message'); ?>');
+                $('#dialog-user-change-password-progress').html('<i class="icon fa-solid fa-info mr-2"></i><?php echo $lang->get('change_your_password_info_message'); ?>');
                 $('#dialog-user-change-password').removeClass('hidden');
 
                 // Actions
@@ -486,8 +488,8 @@ $superGlobal = new SuperGlobal();
                         $('#button_do_user_change_password').addClass('hidden');
                         toastr.remove();
                         toastr.error(
-                            '<?php echo langHdl('passwords_not_the_same'); ?>',
-                            '<?php echo langHdl('caution'); ?>', {
+                            '<?php echo $lang->get('passwords_not_the_same'); ?>',
+                            '<?php echo $lang->get('caution'); ?>', {
                                 timeOut: 3000,
                                 progressBar: true
                             }
@@ -497,8 +499,8 @@ $superGlobal = new SuperGlobal();
                         $('#button_do_pwds_checks').remove();
                         toastr.remove();
                         toastr.info(
-                            '<?php echo langHdl('hit_launch_to_start'); ?>',
-                            '<?php echo langHdl('ready_to_go'); ?>', {
+                            '<?php echo $lang->get('hit_launch_to_start'); ?>',
+                            '<?php echo $lang->get('ready_to_go'); ?>', {
                                 timeOut: 3000,
                                 progressBar: true
                             }
@@ -507,8 +509,8 @@ $superGlobal = new SuperGlobal();
                         $('#button_do_user_change_password').addClass('hidden');
                         toastr.remove();
                         toastr.error(
-                            '<?php echo langHdl('complexity_level_not_reached'); ?>',
-                            '<?php echo langHdl('caution'); ?>', {
+                            '<?php echo $lang->get('complexity_level_not_reached'); ?>',
+                            '<?php echo $lang->get('caution'); ?>', {
                                 timeOut: 5000,
                                 progressBar: true
                             }
@@ -536,33 +538,33 @@ $superGlobal = new SuperGlobal();
                 // SHow modal
                 showModalDialogBox(
                     '#warningModal',
-                    '<i class="fa-solid fa-person-digging fa-lg warning mr-2"></i><?php echo langHdl('generate_new_keys'); ?> <b>',
+                    '<i class="fa-solid fa-person-digging fa-lg warning mr-2"></i><?php echo $lang->get('generate_new_keys'); ?> <b>',
                     '<div class="form-group">'+
-                        '<?php echo langHdl('generate_new_keys_info'); ?>' +
+                        '<?php echo $lang->get('generate_new_keys_info'); ?>' +
                     '</div>' +
                     '<div class="hidden" id="new-encryption-div">' +
                         '<div class="row">' +
                             '<div class="input-group mb-2">' +
                                 '<div class="input-group-prepend">' +
-                                    '<span class="input-group-text"><?php echo langHdl('confirm_password'); ?></span>' +
+                                    '<span class="input-group-text"><?php echo $lang->get('confirm_password'); ?></span>' +
                                 '</div>' +
                                 '<input id="encryption-otp" type="password" class="form-control form-item-control" value="'+store.get('teampassUser').pwd+'">' +
                                 '<div class="input-group-append">' +
-                                    '<button class="btn btn-outline-secondary btn-no-click" id="show-encryption-otp" title="<?php echo langHdl('mask_pw'); ?>"><i class="fas fa-low-vision"></i></button>' +
+                                    '<button class="btn btn-outline-secondary btn-no-click" id="show-encryption-otp" title="<?php echo $lang->get('mask_pw'); ?>"><i class="fas fa-low-vision"></i></button>' +
                                 '</div>' +
                             '</div>' +
                         '</div>' +
                         '<div class="row mt-2<?php echo isset($SETTINGS['enable_pf_feature']) === true && (int) $SETTINGS['enable_pf_feature'] === 1  ? '' : ' hidden'; ?>">' +
-                            '<h6><?php echo langHdl('provide_recovery_keys'); ?></h6>' +
+                            '<h6><?php echo $lang->get('provide_recovery_keys'); ?></h6>' +
                             '<div class="input-group mb-2">' +
                                 '<div class="input-group-prepend">' +
-                                    '<span class="input-group-text"><?php echo langHdl('public_key'); ?></span>' +
+                                    '<span class="input-group-text"><?php echo $lang->get('public_key'); ?></span>' +
                                 '</div>' +
                                 '<textarea rows="1" id="recovery-public-key" class="form-control form-item-control"></textarea>' +
                             '</div>' +
                             '<div class="input-group mb-2">' +
                                 '<div class="input-group-prepend">' +
-                                    '<span class="input-group-text"><?php echo langHdl('private_key'); ?></span>' +
+                                    '<span class="input-group-text"><?php echo $lang->get('private_key'); ?></span>' +
                                 '</div>' +
                                 '<textarea rows="2" id="recovery-private-key" class="form-control form-item-control"></textarea>' +
                             '</div>' +
@@ -571,13 +573,13 @@ $superGlobal = new SuperGlobal();
                             '<div class="alert" id="confirm-no-recovery-keys-div">' +
                                 '<div class="form-check">' +
                                     '<input type="checkbox" class="form-check-input" id="confirm-no-recovery-keys">' +
-                                    '<label class="form-check-label ml-1" for="confirm-no-recovery-keys"><?php echo langHdl('no_recovery_keys'); ?></label>' +
+                                    '<label class="form-check-label ml-1" for="confirm-no-recovery-keys"><?php echo $lang->get('no_recovery_keys'); ?></label>' +
                                 '</div>' +
                             '</div>' +
                         '</div>' +
                     '</div>',
-                    '<?php echo langHdl('perform'); ?>',
-                    '<?php echo langHdl('close'); ?>'
+                    '<?php echo $lang->get('perform'); ?>',
+                    '<?php echo $lang->get('close'); ?>'
                 );
 
                 // Manage show/hide password
@@ -616,7 +618,7 @@ $superGlobal = new SuperGlobal();
                     if ($('#warningModalButtonAction').attr('data-button-confirm') === 'false') {
                         $("#new-encryption-div").removeClass('hidden');
                         $('#warningModalButtonAction')
-                            .html('<i class="fa-solid fa-triangle-exclamation warning mr-2"></i><?php echo langHdl('confirm'); ?>')
+                            .html('<i class="fa-solid fa-triangle-exclamation warning mr-2"></i><?php echo $lang->get('confirm'); ?>')
                             .attr('data-button-confirm', 'true');
 
                     } else if ($('#warningModalButtonAction').attr('data-button-confirm') === 'true') {
@@ -627,7 +629,7 @@ $superGlobal = new SuperGlobal();
                         ) {
                             // No user password provided
                             $('#warningModalButtonAction')
-                                .html('<?php echo langHdl('perform'); ?>')
+                                .html('<?php echo $lang->get('perform'); ?>')
                                 .attr('data-button-confirm', 'false');
                             
                         } else {
@@ -669,13 +671,13 @@ $superGlobal = new SuperGlobal();
                                         toastr.remove();
                                         toastr.error(
                                             data_next1.message,
-                                            '<?php echo langHdl('caution'); ?>', {
+                                            '<?php echo $lang->get('caution'); ?>', {
                                                 timeOut: 5000,
                                                 progressBar: true
                                             }
                                         );
                                     } else {
-                                        $("#new-encryption-div").after('<div><?php echo langHdl('generate_new_keys_end'); ?></div>');
+                                        $("#new-encryption-div").after('<div><?php echo $lang->get('generate_new_keys_end'); ?></div>');
                                         // Show warning
                                         $('#user_not_ready').removeClass('hidden');
                                         // update local storage
@@ -717,7 +719,7 @@ $superGlobal = new SuperGlobal();
     $('#button_save_user_psk').click(function() {
         toastr.remove();
         toastr.info(
-            '<?php echo langHdl('in_progress'); ?><i class="fa-solid fa-circle-notch fa-spin fa-2x ml-3"></i>'
+            '<?php echo $lang->get('in_progress'); ?><i class="fa-solid fa-circle-notch fa-spin fa-2x ml-3"></i>'
         );
 
         // Prepare data
@@ -740,8 +742,8 @@ $superGlobal = new SuperGlobal();
                 if (data.error === true) {
                     toastr.remove();
                     toastr.error(
-                        '<?php echo langHdl('warning'); ?>',
-                        '<?php echo langHdl('caution'); ?>', {
+                        '<?php echo $lang->get('warning'); ?>',
+                        '<?php echo $lang->get('caution'); ?>', {
                             timeOut: 5000,
                             progressBar: true
                         }
@@ -763,7 +765,7 @@ $superGlobal = new SuperGlobal();
 
                     toastr.remove();
                     toastr.success(
-                        '<?php echo langHdl('alert_page_will_reload'); ?>'
+                        '<?php echo $lang->get('alert_page_will_reload'); ?>'
                     );
 
                     location.reload();
@@ -777,41 +779,41 @@ $superGlobal = new SuperGlobal();
     $("#profile-password").simplePassMeter({
         "requirements": {},
         "container": "#profile-password-strength",
-        "defaultText": "<?php echo langHdl('index_pw_level_txt'); ?>",
+        "defaultText": "<?php echo $lang->get('index_pw_level_txt'); ?>",
         "ratings": [{
                 "minScore": 0,
                 "className": "meterFail",
-                "text": "<?php echo langHdl('complex_level0'); ?>"
+                "text": "<?php echo $lang->get('complex_level0'); ?>"
             },
             {
                 "minScore": 25,
                 "className": "meterWarn",
-                "text": "<?php echo langHdl('complex_level1'); ?>"
+                "text": "<?php echo $lang->get('complex_level1'); ?>"
             },
             {
                 "minScore": 50,
                 "className": "meterWarn",
-                "text": "<?php echo langHdl('complex_level2'); ?>"
+                "text": "<?php echo $lang->get('complex_level2'); ?>"
             },
             {
                 "minScore": 60,
                 "className": "meterGood",
-                "text": "<?php echo langHdl('complex_level3'); ?>"
+                "text": "<?php echo $lang->get('complex_level3'); ?>"
             },
             {
                 "minScore": 70,
                 "className": "meterGood",
-                "text": "<?php echo langHdl('complex_level4'); ?>"
+                "text": "<?php echo $lang->get('complex_level4'); ?>"
             },
             {
                 "minScore": 80,
                 "className": "meterExcel",
-                "text": "<?php echo langHdl('complex_level5'); ?>"
+                "text": "<?php echo $lang->get('complex_level5'); ?>"
             },
             {
                 "minScore": 90,
                 "className": "meterExcel",
-                "text": "<?php echo langHdl('complex_level6'); ?>"
+                "text": "<?php echo $lang->get('complex_level6'); ?>"
             }
         ]
     });
@@ -848,8 +850,8 @@ $superGlobal = new SuperGlobal();
     clipboardCopy.on('success', function(e) {
         toastr.remove();
         toastr.info(
-            '<?php echo langHdl('copy_to_clipboard'); ?>',
-            '<?php echo langHdl('information'); ?>', {
+            '<?php echo $lang->get('copy_to_clipboard'); ?>',
+            '<?php echo $lang->get('information'); ?>', {
                 timeOut: 2000
             }
         );
@@ -878,8 +880,8 @@ $superGlobal = new SuperGlobal();
             // Show error
             toastr.remove();
             toastr.error(
-                '<?php echo langHdl('index_pw_error_identical'); ?>',
-                '<?php echo langHdl('caution'); ?>', {
+                '<?php echo $lang->get('index_pw_error_identical'); ?>',
+                '<?php echo $lang->get('caution'); ?>', {
                     timeOut: 5000,
                     progressBar: true
                 }
@@ -891,10 +893,10 @@ $superGlobal = new SuperGlobal();
             console.log('Reencryption based upon user decision to change his auth password');
 
             // Show progress
-            $('#dialog-user-change-password-progress').html('<b><?php echo langHdl('please_wait'); ?></b><i class="fa-solid fa-spinner fa-pulse ml-3 text-primary"></i>');
+            $('#dialog-user-change-password-progress').html('<b><?php echo $lang->get('please_wait'); ?></b><i class="fa-solid fa-spinner fa-pulse ml-3 text-primary"></i>');
             toastr.remove();
             toastr.info(
-                '<?php echo langHdl('in_progress'); ?><i class="fa-solid fa-circle-notch fa-spin fa-2x ml-3"></i>'
+                '<?php echo $lang->get('in_progress'); ?><i class="fa-solid fa-circle-notch fa-spin fa-2x ml-3"></i>'
             );
             
             // Disable buttons
@@ -926,13 +928,13 @@ $superGlobal = new SuperGlobal();
                         toastr.remove();
                         toastr.error(
                             data.message,
-                            '<?php echo langHdl('caution'); ?>', {
+                            '<?php echo $lang->get('caution'); ?>', {
                                 timeOut: 5000,
                                 progressBar: true
                             }
                         );
 
-                        $("#dialog-user-change-password-progress").html('<?php echo langHdl('fill_in_fields_and_hit_launch'); ?>');
+                        $("#dialog-user-change-password-progress").html('<?php echo $lang->get('fill_in_fields_and_hit_launch'); ?>');
 
                         // Enable buttons
                         $('#dialog-user-change-password-do, #dialog-user-change-password-close').removeAttr('disabled');
@@ -942,7 +944,7 @@ $superGlobal = new SuperGlobal();
                         toastr.remove();
                         toastr.success(
                             data.message,
-                            '<?php echo langHdl('success'); ?>', {
+                            '<?php echo $lang->get('success'); ?>', {
                                 timeOut: 5000,
                                 progressBar: true
                             }
@@ -957,8 +959,8 @@ $superGlobal = new SuperGlobal();
             // Show error
             toastr.remove();
             toastr.error(
-                '<?php echo langHdl('password_cannot_be_empty'); ?>',
-                '<?php echo langHdl('caution'); ?>', {
+                '<?php echo $lang->get('password_cannot_be_empty'); ?>',
+                '<?php echo $lang->get('caution'); ?>', {
                     timeOut: 5000,
                     progressBar: true
                 }
@@ -982,10 +984,10 @@ $superGlobal = new SuperGlobal();
         console.log('Reencryption based upon admin decision to change user auth password');
 
         // Show progress
-        $('#dialog-admin-change-user-password-progress').html('<b><?php echo langHdl('please_wait'); ?></b><i class="fa-solid fa-spinner fa-pulse ml-3 text-primary"></i>');
+        $('#dialog-admin-change-user-password-progress').html('<b><?php echo $lang->get('please_wait'); ?></b><i class="fa-solid fa-spinner fa-pulse ml-3 text-primary"></i>');
         toastr.remove();
         toastr.info(
-            '<?php echo langHdl('in_progress'); ?><i class="fa-solid fa-circle-notch fa-spin fa-2x ml-3"></i>'
+            '<?php echo $lang->get('in_progress'); ?><i class="fa-solid fa-circle-notch fa-spin fa-2x ml-3"></i>'
         );
         
         // Disable buttons
@@ -1022,7 +1024,7 @@ $superGlobal = new SuperGlobal();
                         toastr.remove();
                         toastr.error(
                             data_next1.message,
-                            '<?php echo langHdl('caution'); ?>', {
+                            '<?php echo $lang->get('caution'); ?>', {
                                 timeOut: 5000,
                                 progressBar: true
                             }
@@ -1033,7 +1035,7 @@ $superGlobal = new SuperGlobal();
                             oTable.ajax.reload();
                         }
                         
-                        $("#dialog-admin-change-user-password-progress").html('<?php echo langHdl('generate_new_keys_end'); ?>');
+                        $("#dialog-admin-change-user-password-progress").html('<?php echo $lang->get('generate_new_keys_end'); ?>');
                         // Show warning
                         // Enable buttons
                         $('#dialog-admin-change-user-password-close').removeAttr('disabled');
@@ -1071,18 +1073,18 @@ $superGlobal = new SuperGlobal();
             // Prepare data
             var data = {
                 'receipt': $('#temp-user-email').val(),
-                'subject': '[Teampass] <?php echo langHdl('your_new_password');?>',
-                'body': '<?php echo langHdl('email_body_temporary_login_password');?>',
+                'subject': '[Teampass] <?php echo $lang->get('your_new_password');?>',
+                'body': '<?php echo $lang->get('email_body_temporary_login_password');?>',
                 'pre_replace' : {
                     '#enc_code#' : $('#temp-user-pwd').val(),
                 }
             }
             if (debugJavascript === true) console.log(data);
             // Prepare form
-            $('#dialog-admin-change-user-password-info').html('<?php echo langHdl('sending_email_message');?>');
+            $('#dialog-admin-change-user-password-info').html('<?php echo $lang->get('sending_email_message');?>');
             toastr.remove();
             toastr.info(
-                '<?php echo langHdl('in_progress'); ?><i class="fa-solid fa-circle-notch fa-spin fa-2x ml-3"></i>'
+                '<?php echo $lang->get('in_progress'); ?><i class="fa-solid fa-circle-notch fa-spin fa-2x ml-3"></i>'
             );
 
             // Launch action
@@ -1128,7 +1130,7 @@ $superGlobal = new SuperGlobal();
                         // Inform user
                         toastr.remove();
                         toastr.success(
-                            '<?php echo langHdl('done'); ?>',
+                            '<?php echo $lang->get('done'); ?>',
                             '', {
                                 timeOut: 1000
                             }
@@ -1148,10 +1150,10 @@ $superGlobal = new SuperGlobal();
         console.log('Reencryption based upon users temporary code');
 
         // Show progress
-        $('#dialog-user-temporary-code-progress').html('<b><?php echo langHdl('please_wait'); ?></b><i class="fa-solid fa-spinner fa-pulse ml-3 text-primary"></i>');
+        $('#dialog-user-temporary-code-progress').html('<b><?php echo $lang->get('please_wait'); ?></b><i class="fa-solid fa-spinner fa-pulse ml-3 text-primary"></i>');
         toastr.remove();
         toastr.info(
-            '<?php echo langHdl('in_progress'); ?><i class="fa-solid fa-circle-notch fa-spin fa-2x ml-3"></i>'
+            '<?php echo $lang->get('in_progress'); ?><i class="fa-solid fa-circle-notch fa-spin fa-2x ml-3"></i>'
         );
         
         // Disable buttons
@@ -1182,13 +1184,13 @@ $superGlobal = new SuperGlobal();
                     toastr.remove();
                     toastr.error(
                         data.message,
-                        '<?php echo langHdl('caution'); ?>', {
+                        '<?php echo $lang->get('caution'); ?>', {
                             timeOut: 5000,
                             progressBar: true
                         }
                     );
 
-                    $("#dialog-user-temporary-code-progress").html('<?php echo langHdl('fill_in_fields_and_hit_launch'); ?>');
+                    $("#dialog-user-temporary-code-progress").html('<?php echo $lang->get('fill_in_fields_and_hit_launch'); ?>');
 
                     // Enable buttons
                     $('#dialog-user-temporary-code-do, #dialog-user-temporary-code-close').removeAttr('disabled');
@@ -1218,7 +1220,7 @@ $superGlobal = new SuperGlobal();
                                 toastr.remove();
                                 toastr.error(
                                     data.message,
-                                    '<?php echo langHdl('caution'); ?>', {
+                                    '<?php echo $lang->get('caution'); ?>', {
                                         timeOut: 5000,
                                         progressBar: true
                                     }
@@ -1233,7 +1235,7 @@ $superGlobal = new SuperGlobal();
                                 $('#dialog-user-temporary-code-do').attr('disabled', 'disabled');
 
                                 // Finished
-                                $("#dialog-user-temporary-code-progress").html('<i class="fa-solid fa-check text-success mr-3"></i><?php echo langHdl('done'); ?>');
+                                $("#dialog-user-temporary-code-progress").html('<i class="fa-solid fa-check text-success mr-3"></i><?php echo $lang->get('done'); ?>');
                                 toastr.remove();
 
                                 store.update(
@@ -1270,10 +1272,10 @@ $superGlobal = new SuperGlobal();
         console.log('Building items keys database for new LDAP user');
 
         // Show progress
-        $('#dialog-ldap-user-build-keys-database-progress').html('<b><?php echo langHdl('please_wait'); ?></b><i class="fa-solid fa-spinner fa-pulse ml-3 text-primary"></i>');
+        $('#dialog-ldap-user-build-keys-database-progress').html('<b><?php echo $lang->get('please_wait'); ?></b><i class="fa-solid fa-spinner fa-pulse ml-3 text-primary"></i>');
         toastr.remove();
         toastr.info(
-            '<?php echo langHdl('in_progress'); ?><i class="fa-solid fa-circle-notch fa-spin fa-2x ml-3"></i>'
+            '<?php echo $lang->get('in_progress'); ?><i class="fa-solid fa-circle-notch fa-spin fa-2x ml-3"></i>'
         );
         
         // Disable buttons
@@ -1305,13 +1307,13 @@ $superGlobal = new SuperGlobal();
                     toastr.remove();
                     toastr.error(
                         data.message,
-                        '<?php echo langHdl('caution'); ?>', {
+                        '<?php echo $lang->get('caution'); ?>', {
                             timeOut: 5000,
                             progressBar: true
                         }
                     );
 
-                    $("#dialog-ldap-user-build-keys-database-progress").html('<?php echo langHdl('bad_code'); ?>');
+                    $("#dialog-ldap-user-build-keys-database-progress").html('<?php echo $lang->get('bad_code'); ?>');
 
                     // Enable buttons
                     $('#dialog-ldap-user-build-keys-database-do, #dialog-ldap-user-build-keys-database-close').removeAttr('disabled');
@@ -1341,14 +1343,14 @@ $superGlobal = new SuperGlobal();
                                 toastr.remove();
                                 toastr.error(
                                     data.message,
-                                    '<?php echo langHdl('caution'); ?>', {
+                                    '<?php echo $lang->get('caution'); ?>', {
                                         timeOut: 5000,
                                         progressBar: true
                                     }
                                 );
 
                                 
-                                $("#dialog-ldap-user-build-keys-database-progress").html('<i class="fa-solid fa-exclamation-circle text-danger mr-3"></i><?php echo langHdl('bad_code'); ?>');
+                                $("#dialog-ldap-user-build-keys-database-progress").html('<i class="fa-solid fa-exclamation-circle text-danger mr-3"></i><?php echo $lang->get('bad_code'); ?>');
 
                                 // Enable buttons
                                 $('#dialog-ldap-user-build-keys-database-do, #dialog-ldap-user-build-keys-database-close').removeAttr('disabled');
@@ -1359,7 +1361,7 @@ $superGlobal = new SuperGlobal();
                                 $('#dialog-ldap-user-build-keys-database-do').attr('disabled', 'disabled');
 
                                 // Finished
-                                $("#dialog-ldap-user-build-keys-database-progress").html('<i class="fa-solid fa-check text-success mr-3"></i><?php echo langHdl('done'); ?>');
+                                $("#dialog-ldap-user-build-keys-database-progress").html('<i class="fa-solid fa-check text-success mr-3"></i><?php echo $lang->get('done'); ?>');
                                 toastr.remove();
 
                                 store.update(
@@ -1398,10 +1400,10 @@ $superGlobal = new SuperGlobal();
             console.log('Reencryption based upon user auth password changed in LDAP');
 
             // Show progress
-            $('#dialog-ldap-user-change-password-progress').html('<b><?php echo langHdl('please_wait'); ?></b><i class="fa-solid fa-spinner fa-pulse ml-3 text-primary"></i>');
+            $('#dialog-ldap-user-change-password-progress').html('<b><?php echo $lang->get('please_wait'); ?></b><i class="fa-solid fa-spinner fa-pulse ml-3 text-primary"></i>');
             toastr.remove();
             toastr.info(
-                '<?php echo langHdl('in_progress'); ?><i class="fa-solid fa-circle-notch fa-spin fa-2x ml-3"></i>'
+                '<?php echo $lang->get('in_progress'); ?><i class="fa-solid fa-circle-notch fa-spin fa-2x ml-3"></i>'
             );
             
             // Disable buttons
@@ -1433,13 +1435,13 @@ $superGlobal = new SuperGlobal();
                         toastr.remove();
                         toastr.error(
                             data.message,
-                            '<?php echo langHdl('caution'); ?>', {
+                            '<?php echo $lang->get('caution'); ?>', {
                                 timeOut: 5000,
                                 progressBar: true
                             }
                         );
 
-                        $("#dialog-ldap-user-change-password-progress").html('<?php echo langHdl('fill_in_fields_and_hit_launch'); ?>');
+                        $("#dialog-ldap-user-change-password-progress").html('<?php echo $lang->get('fill_in_fields_and_hit_launch'); ?>');
 
                         // Enable buttons
                         $('#dialog-ldap-user-change-password-do, #dialog-ldap-user-change-password-close').removeAttr('disabled');
@@ -1449,7 +1451,7 @@ $superGlobal = new SuperGlobal();
                         toastr.remove();
                         toastr.success(
                             data.message,
-                            '<?php echo langHdl('success'); ?>', {
+                            '<?php echo $lang->get('success'); ?>', {
                                 timeOut: 5000,
                                 progressBar: true
                             }
@@ -1462,8 +1464,8 @@ $superGlobal = new SuperGlobal();
             // Show error
             toastr.remove();
             toastr.error(
-                '<?php echo langHdl('password_cannot_be_empty'); ?>',
-                '<?php echo langHdl('caution'); ?>', {
+                '<?php echo $lang->get('password_cannot_be_empty'); ?>',
+                '<?php echo $lang->get('caution'); ?>', {
                     timeOut: 5000,
                     progressBar: true
                 }
@@ -1498,8 +1500,8 @@ $superGlobal = new SuperGlobal();
                     // error
                     toastr.remove();
                     toastr.error(
-                        '<?php echo langHdl('server_answer_error'); ?>',
-                        '<?php echo langHdl('caution'); ?>', {
+                        '<?php echo $lang->get('server_answer_error'); ?>',
+                        '<?php echo $lang->get('caution'); ?>', {
                             timeOut: 5000,
                             progressBar: true,
                             positionClass: "toast-top-right"
@@ -1589,14 +1591,14 @@ $superGlobal = new SuperGlobal();
                     // Prepare modal
                     showModalDialogBox(
                         '#warningModal',
-                        '<i class="fa-solid fa-clock fa-lg warning mr-2"></i><?php echo langHdl('index_add_one_hour'); ?>',
+                        '<i class="fa-solid fa-clock fa-lg warning mr-2"></i><?php echo $lang->get('index_add_one_hour'); ?>',
                         '<div class="form-group">' +
-                        '<label for="warningModal-input" class="col-form-label"><?php echo langHdl('extend_session_duration_by') . ' (' . langHdl('minutes') . ')'; ?>:</label>' +
+                        '<label for="warningModal-input" class="col-form-label"><?php echo $lang->get('extend_session_duration_by') . ' (' . $lang->get('minutes') . ')'; ?>:</label>' +
                         '<input type="number" max="'+(60*60*24)+'" class="form-control" id="warningModal-input" value="60">' +
                         '</div>' +
-                        '<div class="form-text text-muted"><i class=\"fa-solid fa-info-circle mr-2\"></i><?php echo langHdl('maximum_session_expiration_time'); ?>: '+data.max_session_duration+'</div>',
-                        '<?php echo langHdl('confirm'); ?>',
-                        '<?php echo langHdl('cancel'); ?>'
+                        '<div class="form-text text-muted"><i class=\"fa-solid fa-info-circle mr-2\"></i><?php echo $lang->get('maximum_session_expiration_time'); ?>: '+data.max_session_duration+'</div>',
+                        '<?php echo $lang->get('confirm'); ?>',
+                        '<?php echo $lang->get('cancel'); ?>'
                     );
 
                     // Limit the user choice
@@ -1616,7 +1618,7 @@ $superGlobal = new SuperGlobal();
                         // SHow user
                         toastr.remove();
                         toastr.info(
-                            '<?php echo langHdl('in_progress'); ?><i class="fa-solid fa-circle-notch fa-spin fa-2x ml-3"></i>'
+                            '<?php echo $lang->get('in_progress'); ?><i class="fa-solid fa-circle-notch fa-spin fa-2x ml-3"></i>'
                         );
 
                         // Perform action
@@ -1627,7 +1629,7 @@ $superGlobal = new SuperGlobal();
                         ).then(function() {
                             toastr.remove();
                             toastr.success(
-                                '<?php echo langHdl('done'); ?>',
+                                '<?php echo $lang->get('done'); ?>',
                                 '', {
                                     timeOut: 1000
                                 }
@@ -1645,7 +1647,7 @@ $superGlobal = new SuperGlobal();
                 } else {
                     toastr.remove();
                     toastr.warning(
-                        '<?php echo langHdl('error_unknown'); ?>',
+                        '<?php echo $lang->get('error_unknown'); ?>',
                         '', {
                             timeOut: 1000
                         }
@@ -1696,7 +1698,7 @@ $superGlobal = new SuperGlobal();
                 //check if format error
                 if (data.error === '') {
                     if (data.html_json === null || data.html_json === '') {
-                        $('#index-last-pwds').html('<li><?php echo langHdl('none'); ?></li>');
+                        $('#index-last-pwds').html('<li><?php echo $lang->get('none'); ?></li>');
                     } else {
                         // Prepare HTML
                         var html_list = '';
@@ -1715,7 +1717,7 @@ $superGlobal = new SuperGlobal();
                     toastr.remove();
                     toastr.error(
                         data.error,
-                        '<?php echo langHdl('caution'); ?>', {
+                        '<?php echo $lang->get('caution'); ?>', {
                             timeOut: 5000,
                             progressBar: true
                         }
@@ -1734,7 +1736,7 @@ $superGlobal = new SuperGlobal();
         // Show circle-notch
         toastr.remove();
         toastr.info(
-            '<?php echo langHdl('in_progress'); ?><i class="fa-solid fa-circle-notch fa-spin fa-2x ml-3"></i>'
+            '<?php echo $lang->get('in_progress'); ?><i class="fa-solid fa-circle-notch fa-spin fa-2x ml-3"></i>'
         );
 
         if (window.location.href.indexOf('page=items') === -1) {
@@ -1902,7 +1904,7 @@ $superGlobal = new SuperGlobal();
                         $('#user_not_ready_progress').html('');
                         toastr.success(
                             data.message,
-                            '<?php echo langHdl('alert_page_will_reload'); ?>', {
+                            '<?php echo $lang->get('alert_page_will_reload'); ?>', {
                                 timeOut: 3000,
                                 progressBar: true
                             }

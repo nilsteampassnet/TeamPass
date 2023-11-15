@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
 
@@ -30,6 +31,7 @@ require_once 'main.functions.php';
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 session_name('teampass_session');
 session_start();
 
@@ -69,9 +71,6 @@ if (
     exit;
 }
 
-// Load language file
-require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$superGlobal->get('user_language', 'SESSION', 'user').'.php';
-
 // Define Timezone
 date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
 
@@ -95,11 +94,11 @@ if (defined('TP_PW_COMPLEXITY') === false) {
     define(
         'TP_PW_COMPLEXITY',
         array(
-            TP_PW_STRENGTH_1 => array(TP_PW_STRENGTH_1, langHdl('complex_level1'), 'fas fa-thermometer-empty text-danger'),
-            TP_PW_STRENGTH_2 => array(TP_PW_STRENGTH_2, langHdl('complex_level2'), 'fas fa-thermometer-quarter text-warning'),
-            TP_PW_STRENGTH_3 => array(TP_PW_STRENGTH_3, langHdl('complex_level3'), 'fas fa-thermometer-half text-warning'),
-            TP_PW_STRENGTH_4 => array(TP_PW_STRENGTH_4, langHdl('complex_level4'), 'fas fa-thermometer-three-quarters text-success'),
-            TP_PW_STRENGTH_5 => array(TP_PW_STRENGTH_5, langHdl('complex_level5'), 'fas fa-thermometer-full text-success'),
+            TP_PW_STRENGTH_1 => array(TP_PW_STRENGTH_1, $lang->get('complex_level1'), 'fas fa-thermometer-empty text-danger'),
+            TP_PW_STRENGTH_2 => array(TP_PW_STRENGTH_2, $lang->get('complex_level2'), 'fas fa-thermometer-quarter text-warning'),
+            TP_PW_STRENGTH_3 => array(TP_PW_STRENGTH_3, $lang->get('complex_level3'), 'fas fa-thermometer-half text-warning'),
+            TP_PW_STRENGTH_4 => array(TP_PW_STRENGTH_4, $lang->get('complex_level4'), 'fas fa-thermometer-three-quarters text-success'),
+            TP_PW_STRENGTH_5 => array(TP_PW_STRENGTH_5, $lang->get('complex_level5'), 'fas fa-thermometer-full text-success'),
         )
     );
 }
@@ -115,7 +114,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -124,7 +123,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_not_allowed_to'),
+                        'message' => $lang->get('error_not_allowed_to'),
                     ),
                     'encode'
                 );
@@ -145,7 +144,7 @@ if (null !== $post_type) {
                     // get $t->parent_id
                     $data = DB::queryFirstRow('SELECT title FROM ' . prefixTable('nested_tree') . ' WHERE id = %i', $t->parent_id);
                     if ($t->nlevel == 1) {
-                        $data['title'] = langHdl('root');
+                        $data['title'] = $lang->get('root');
                     }
 
                     // get rights on this folder
@@ -217,11 +216,11 @@ if (null !== $post_type) {
 
             // Send the complexity levels
             $complexity = array(
-                array('value' => TP_PW_STRENGTH_1, 'text' => langHdl('complex_level1')),
-                array('value' => TP_PW_STRENGTH_2, 'text' => langHdl('complex_level2')),
-                array('value' => TP_PW_STRENGTH_3, 'text' => langHdl('complex_level3')),
-                array('value' => TP_PW_STRENGTH_4, 'text' => langHdl('complex_level4')),
-                array('value' => TP_PW_STRENGTH_5, 'text' => langHdl('complex_level5')),
+                array('value' => TP_PW_STRENGTH_1, 'text' => $lang->get('complex_level1')),
+                array('value' => TP_PW_STRENGTH_2, 'text' => $lang->get('complex_level2')),
+                array('value' => TP_PW_STRENGTH_3, 'text' => $lang->get('complex_level3')),
+                array('value' => TP_PW_STRENGTH_4, 'text' => $lang->get('complex_level4')),
+                array('value' => TP_PW_STRENGTH_5, 'text' => $lang->get('complex_level5')),
             );
 
             echo prepareExchangedData(
@@ -245,7 +244,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -254,7 +253,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_not_allowed_to'),
+                        'message' => $lang->get('error_not_allowed_to'),
                     ),
                     'encode'
                 );
@@ -289,7 +288,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -298,7 +297,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_not_allowed_to'),
+                        'message' => $lang->get('error_not_allowed_to'),
                     ),
                     'encode'
                 );
@@ -331,7 +330,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_only_numbers_in_folder_name'),
+                        'message' => $lang->get('error_only_numbers_in_folder_name'),
                     ),
                     'encode'
                 );
@@ -359,7 +358,7 @@ if (null !== $post_type) {
                     echo prepareExchangedData(
                         array(
                             'error' => true,
-                            'message' => langHdl('error_group_exist'),
+                            'message' => $lang->get('error_group_exist'),
                         ),
                         'encode'
                     );
@@ -416,7 +415,7 @@ if (null !== $post_type) {
                         echo prepareExchangedData(
                             array(
                                 'error' => true,
-                                'message' => langHdl('error_folder_complexity_lower_than_top_folder')
+                                'message' => $lang->get('error_folder_complexity_lower_than_top_folder')
                                     . ' [<b>' . TP_PW_COMPLEXITY[$data['valeur']][1] . '</b>]',
                             ),
                             'encode'
@@ -500,7 +499,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -509,7 +508,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_not_allowed_to'),
+                        'message' => $lang->get('error_not_allowed_to'),
                     ),
                     'encode'
                 );
@@ -542,7 +541,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_only_numbers_in_folder_name'),
+                        'message' => $lang->get('error_only_numbers_in_folder_name'),
                     ),
                     'encode'
                 );
@@ -556,7 +555,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_not_allowed_to'),
+                        'message' => $lang->get('error_not_allowed_to'),
                     ),
                     'encode'
                 );
@@ -579,7 +578,7 @@ if (null !== $post_type) {
                     echo prepareExchangedData(
                         array(
                             'error' => true,
-                            'message' => langHdl('error_group_exist'),
+                            'message' => $lang->get('error_group_exist'),
                         ),
                         'encode'
                     );
@@ -628,7 +627,7 @@ if (null !== $post_type) {
                         echo prepareExchangedData(
                             array(
                                 'error' => true,
-                                'message' => langHdl('error_folder_complexity_lower_than_top_folder')
+                                'message' => $lang->get('error_folder_complexity_lower_than_top_folder')
                                     . ' [<b>' . TP_PW_COMPLEXITY[$data['valeur']][1] . '</b>]',
                             ),
                             'encode'
@@ -836,7 +835,7 @@ if (null !== $post_type) {
 
             } else {
                 $error = true;
-                $errorMessage = langHdl('error_not_allowed_to');
+                $errorMessage = $lang->get('error_not_allowed_to');
             }
 
             echo prepareExchangedData(
@@ -857,7 +856,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -866,7 +865,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_not_allowed_to'),
+                        'message' => $lang->get('error_not_allowed_to'),
                     ),
                     'encode'
                 );
@@ -1024,7 +1023,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -1033,7 +1032,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_not_allowed_to'),
+                        'message' => $lang->get('error_not_allowed_to'),
                     ),
                     'encode'
                 );
@@ -1057,7 +1056,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_not_allowed_to'),
+                        'message' => $lang->get('error_not_allowed_to'),
                     ),
                     'encode'
                 );
@@ -1257,7 +1256,7 @@ if (null !== $post_type) {
                             echo prepareExchangedData(
                                 array(
                                     'error' => true,
-                                    'message' => langHdl('error_not_allowed_to'),
+                                    'message' => $lang->get('error_not_allowed_to'),
                                 ),
                                 'encode'
                             );
@@ -1393,7 +1392,7 @@ if (null !== $post_type) {
                                     echo prepareExchangedData(
                                         array(
                                             'error' => true,
-                                            'message' => langHdl('error_cannot_open_file'),
+                                            'message' => $lang->get('error_cannot_open_file'),
                                         ),
                                         'encode'
                                     );
@@ -1495,7 +1494,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -1504,7 +1503,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_not_allowed_to'),
+                        'message' => $lang->get('error_not_allowed_to'),
                     ),
                     'encode'
                 );
@@ -1518,7 +1517,7 @@ if (null !== $post_type) {
                     $subfolders,
                     array(
                         'id' => 0,
-                        'label' => langHdl('root'),
+                        'label' => $lang->get('root'),
                         'level' => 0,
                         'path' => ''
                     )

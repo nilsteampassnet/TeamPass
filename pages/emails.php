@@ -25,6 +25,7 @@ declare(strict_types=1);
  */
 
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\PerformChecks\PerformChecks;
 
@@ -34,6 +35,7 @@ require_once __DIR__.'/../sources/main.functions.php';
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 
 // Load config if $SETTINGS not defined
 try {
@@ -67,9 +69,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     exit;
 }
 
-// Load language file
-require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$superGlobal->get('user_language', 'SESSION', 'user').'.php';
-
 // Define Timezone
 date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
 
@@ -87,7 +86,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
         <div class="row mb-2">
             <div class="col-sm-6">
                 <h1 class="m-0 text-dark">
-                    <i class="fas fa-envelope mr-2"></i><?php echo langHdl('emails'); ?>
+                    <i class="fas fa-envelope mr-2"></i><?php echo $lang->get('emails'); ?>
                 </h1>
             </div><!-- /.col -->
         </div><!-- /.row -->
@@ -101,14 +100,14 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
             <div class="col-12">
                 <div class="card card-primary">
                     <div class="card-header">
-                        <h3 class='card-title'><?php echo langHdl('email_configuration'); ?></h3>
+                        <h3 class='card-title'><?php echo $lang->get('email_configuration'); ?></h3>
                     </div>
 
                     <div class="card-body">
 
                         <div class="row mb-2">
                             <div class="col-5">
-                                <?php echo langHdl('admin_email_smtp_server'); ?>
+                                <?php echo $lang->get('admin_email_smtp_server'); ?>
                             </div>
                             <div class="col-7 mb-0">
                                 <input type='text' class='form-control form-control-sm' id='email_smtp_server' value='<?php echo isset($SETTINGS['email_smtp_server']) === true ? $SETTINGS['email_smtp_server'] : ''; ?>'>
@@ -117,7 +116,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 
                         <div class="row mb-2">
                             <div class="col-5">
-                                <?php echo langHdl('admin_email_auth'); ?>
+                                <?php echo $lang->get('admin_email_auth'); ?>
                             </div>
                             <div class="col-7 mb-0">
                                 <div class='toggle toggle-modern' id='email_smtp_auth' data-toggle-on='<?php echo isset($SETTINGS['email_smtp_auth']) === true && $SETTINGS['email_smtp_auth'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='email_smtp_auth_input' value='<?php echo isset($SETTINGS['email_smtp_auth']) && $SETTINGS['email_smtp_auth'] === '1' ? '1' : '0'; ?>' />
@@ -126,7 +125,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 
                         <div class="row mb-2">
                             <div class="col-5">
-                                <?php echo langHdl('admin_email_auth_username'); ?>
+                                <?php echo $lang->get('admin_email_auth_username'); ?>
                             </div>
                             <div class="col-7 mb-0">
                                 <input type='text' class='form-control form-control-sm' id='email_auth_username' value='<?php echo isset($SETTINGS['email_auth_username']) === true ? $SETTINGS['email_auth_username'] : ''; ?>'>
@@ -135,7 +134,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 
                         <div class="row mb-2">
                             <div class="col-5">
-                                <?php echo langHdl('admin_email_auth_pwd'); ?>
+                                <?php echo $lang->get('admin_email_auth_pwd'); ?>
                             </div>
                             <div class="col-7 mb-0">
                                 <input type='password' class='form-control form-control-sm' id='email_auth_pwd' value='<?php echo isset($SETTINGS['email_auth_pwd']) === true ? $SETTINGS['email_auth_pwd'] : ''; ?>'>
@@ -144,7 +143,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 
                         <div class="row mb-2">
                             <div class="col-5">
-                                <?php echo langHdl('admin_email_server_url'); ?>
+                                <?php echo $lang->get('admin_email_server_url'); ?>
                             </div>
                             <div class="col-7 mb-0">
                                 <input type='text' class='form-control form-control-sm' id='email_server_url' value='<?php echo isset($SETTINGS['email_server_url']) === true ? $SETTINGS['email_server_url'] : ''; ?>'>
@@ -153,7 +152,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 
                         <div class="row mb-2">
                             <div class="col-5">
-                                <?php echo langHdl('admin_email_port'); ?>
+                                <?php echo $lang->get('admin_email_port'); ?>
                             </div>
                             <div class="col-7 mb-0">
                                 <input type='text' class='form-control form-control-sm' id='email_port' value='<?php echo isset($SETTINGS['email_port']) === true ? $SETTINGS['email_port'] : ''; ?>'>
@@ -162,11 +161,11 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 
                         <div class="row mb-2">
                             <div class="col-5">
-                                <?php echo langHdl('admin_email_security'); ?>
+                                <?php echo $lang->get('admin_email_security'); ?>
                             </div>
                             <div class="col-7 mb-0">
                                 <select class='form-control form-control-sm' id='email_security'>
-                                    <option value="none" <?php echo isset($SETTINGS['email_security']) === false || $SETTINGS['email_security'] === 'none' ? ' selected' : ''; ?>><?php echo langHdl('none'); ?></option>
+                                    <option value="none" <?php echo isset($SETTINGS['email_security']) === false || $SETTINGS['email_security'] === 'none' ? ' selected' : ''; ?>><?php echo $lang->get('none'); ?></option>
                                     <option value="ssl" <?php echo isset($SETTINGS['email_security']) === true && $SETTINGS['email_security'] === 'ssl' ? ' selected' : ''; ?>>SSL</option>
                                     <option value="tls" <?php echo isset($SETTINGS['email_security']) === true && $SETTINGS['email_security'] === 'tls' ? ' selected' : ''; ?>>TLS</option>
                                 </select>
@@ -175,7 +174,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 
                         <div class="row mb-2">
                             <div class="col-5">
-                                <?php echo langHdl('admin_email_from'); ?>
+                                <?php echo $lang->get('admin_email_from'); ?>
                             </div>
                             <div class="col-7 mb-0">
                                 <input type='text' class='form-control form-control-sm' id='email_from' value='<?php echo isset($SETTINGS['email_from']) === true ? $SETTINGS['email_from'] : ''; ?>'>
@@ -184,7 +183,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 
                         <div class="row mb-2">
                             <div class="col-5">
-                                <?php echo langHdl('admin_email_from_name'); ?>
+                                <?php echo $lang->get('admin_email_from_name'); ?>
                             </div>
                             <div class="col-7 mb-0">
                                 <input type='text' class='form-control form-control-sm' id='email_from_name' value='<?php echo isset($SETTINGS['email_from_name']) === true ? $SETTINGS['email_from_name'] : ''; ?>'>
@@ -200,34 +199,34 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
             <div class="col-12">
                 <div class="card card-primary">
                     <div class="card-header">
-                        <h3 class='card-title'><?php echo langHdl('email_configuration_test'); ?></h3>
+                        <h3 class='card-title'><?php echo $lang->get('email_configuration_test'); ?></h3>
                     </div>
 
                     <div class="card-body">
 
                         <div class="row mb-2">
                             <div class="col-5">
-                                <?php echo langHdl('email_debug_level'); ?>
+                                <?php echo $lang->get('email_debug_level'); ?>
                             </div>
                             <div class="col-7 mb-0">
                                 <select class='form-control form-control-sm' id='email_debug_level'>
-                                    <option value='0'<?php echo isset($SETTINGS['email_debug_level']) === true && $SETTINGS['email_debug_level'] === '0' ? ' selected' : ''; ?>><?php echo langHdl('none'); ?></option>
-                                    <option value='1'<?php echo isset($SETTINGS['email_debug_level']) === true && $SETTINGS['email_debug_level'] === '1' ? ' selected' : ''; ?>><?php echo langHdl('email_debug_client'); ?></option>
-                                    <option value='2'<?php echo isset($SETTINGS['email_debug_level']) === true && $SETTINGS['email_debug_level'] === '2' ? ' selected' : ''; ?>><?php echo langHdl('email_debug_server'); ?></option>
-                                    <option value='3'<?php echo isset($SETTINGS['email_debug_level']) === true && $SETTINGS['email_debug_level'] === '3' ? ' selected' : ''; ?>><?php echo langHdl('email_debug_connection'); ?></option>
-                                    <option value='4'<?php echo isset($SETTINGS['email_debug_level']) === true && $SETTINGS['email_debug_level'] === '4' ? ' selected' : ''; ?>><?php echo langHdl('email_debug_low_level'); ?></option>
+                                    <option value='0'<?php echo isset($SETTINGS['email_debug_level']) === true && $SETTINGS['email_debug_level'] === '0' ? ' selected' : ''; ?>><?php echo $lang->get('none'); ?></option>
+                                    <option value='1'<?php echo isset($SETTINGS['email_debug_level']) === true && $SETTINGS['email_debug_level'] === '1' ? ' selected' : ''; ?>><?php echo $lang->get('email_debug_client'); ?></option>
+                                    <option value='2'<?php echo isset($SETTINGS['email_debug_level']) === true && $SETTINGS['email_debug_level'] === '2' ? ' selected' : ''; ?>><?php echo $lang->get('email_debug_server'); ?></option>
+                                    <option value='3'<?php echo isset($SETTINGS['email_debug_level']) === true && $SETTINGS['email_debug_level'] === '3' ? ' selected' : ''; ?>><?php echo $lang->get('email_debug_connection'); ?></option>
+                                    <option value='4'<?php echo isset($SETTINGS['email_debug_level']) === true && $SETTINGS['email_debug_level'] === '4' ? ' selected' : ''; ?>><?php echo $lang->get('email_debug_low_level'); ?></option>
                                 </select>
                                 <small class='form-text text-muted'>
-                                    <?php echo langHdl('email_debug_level_usage'); ?>
+                                    <?php echo $lang->get('email_debug_level_usage'); ?>
                                 </small>
                             </div>
                         </div>
 
                         <button class="btn btn-primary button" data-action="send-test-email">
-                            <?php echo langHdl('send_a_test_email'); ?>
+                            <?php echo $lang->get('send_a_test_email'); ?>
                         </button>
                         <small id='passwordHelpBlock' class='form-text text-muted'>
-                            <?php echo langHdl('admin_email_test_configuration_tip'); ?>
+                            <?php echo $lang->get('admin_email_test_configuration_tip'); ?>
                         </small>
 
                     </div>
@@ -239,22 +238,22 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
             <div class="col-12">
                 <div class="card card-primary">
                     <div class="card-header">
-                        <h3 class='card-title'><?php echo langHdl('manage_emails_not_sent'); ?></h3>
+                        <h3 class='card-title'><?php echo $lang->get('manage_emails_not_sent'); ?></h3>
                     </div>
 
                     <div class="card-body">
                         <div id="unsent-emails">
                             <?php
                             DB::query('SELECT * FROM ' . prefixTable('emails') . ' WHERE status = %s OR status = %s', 'not_sent', '');
-echo str_replace('#nb_emails#', (string) DB::count(), langHdl('email_send_backlog'));
+echo str_replace('#nb_emails#', (string) DB::count(), $lang->get('email_send_backlog'));
                             ?>
                         </div>
 
                         <button class="btn btn-primary button mt-3" data-action="send-waiting-emails">
-                            <?php echo langHdl('send_waiting_emails'); ?>
+                            <?php echo $lang->get('send_waiting_emails'); ?>
                         </button>
                         <small id='passwordHelpBlock' class="form-text text-muted mt-2">
-                            <?php echo langHdl('admin_email_send_backlog_tip'); ?>
+                            <?php echo $lang->get('admin_email_send_backlog_tip'); ?>
                         </small>
 
                     </div>

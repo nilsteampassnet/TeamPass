@@ -27,12 +27,14 @@ declare(strict_types=1);
 
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
 
 // init
 loadClasses();
 $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 
 if (
     isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
@@ -83,7 +85,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         var action = $(this).data('action');
 
         toastr.remove();
-        toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+        toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
         if (action === 'send-test-email') {
             $.post(
@@ -99,7 +101,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         // ERROR
                         toastr.remove();
                         toastr.warning(
-                            '<?php echo langHdl('none_selected_text'); ?>',
+                            '<?php echo $lang->get('none_selected_text'); ?>',
                             '', {
                                 timeOut: 5000,
                                 progressBar: true
@@ -109,7 +111,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         // Inform user
                         toastr.remove();
                         toastr.success(
-                            '<?php echo langHdl('done'); ?>',
+                            '<?php echo $lang->get('done'); ?>',
                             '', {
                                 timeOut: 1000
                             }
@@ -128,7 +130,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     function sendEmailsBacklog(counter = "") {
         $('#unsent-emails-progress')
             .html('<i class="fas fa-cog fa-spin ml-2"></i>' +
-                '<?php echo langHdl('remaining_emails_to_send'); ?> ' + counter);
+                '<?php echo $lang->get('remaining_emails_to_send'); ?> ' + counter);
         $.post(
             'sources/admin.queries.php', {
                 type: 'admin_email_send_backlog',
@@ -142,7 +144,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     // ERROR
                     toastr.remove();
                     toastr.warning(
-                        '<?php echo langHdl('none_selected_text'); ?>',
+                        '<?php echo $lang->get('none_selected_text'); ?>',
                         '', {
                             timeOut: 5000,
                             progressBar: true
@@ -154,11 +156,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     } else {
                         $('#unsent-emails-progress')
                             .html('<i class="fas fa-check ml-2 text-success mr-2"></i>' +
-                                '<?php echo langHdl('done'); ?>');
+                                '<?php echo $lang->get('done'); ?>');
                         // Inform user
                         toastr.remove();
                         toastr.success(
-                            '<?php echo langHdl('done'); ?>',
+                            '<?php echo $lang->get('done'); ?>',
                             '', {
                                 timeOut: 1000
                             }

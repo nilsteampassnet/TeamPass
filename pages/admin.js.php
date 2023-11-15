@@ -24,6 +24,7 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\PerformChecks\PerformChecks;
 
@@ -33,6 +34,7 @@ require_once __DIR__.'/../sources/main.functions.php';
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 
 // Load config if $SETTINGS not defined
 try {
@@ -66,9 +68,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     exit;
 }
 
-// Load language file
-require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$superGlobal->get('user_language', 'SESSION', 'user').'.php';
-
 // Define Timezone
 date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
 
@@ -91,8 +90,8 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
         drag: true,
         click: true,
         text: {
-            on: '<?php echo langHdl('yes'); ?>',
-            off: '<?php echo langHdl('no'); ?>'
+            on: '<?php echo $lang->get('yes'); ?>',
+            off: '<?php echo $lang->get('no'); ?>'
         },
         on: true,
         animate: 250,
@@ -146,7 +145,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                     // error
                     toastr.remove();
                     toastr.error(
-                        '<?php echo langHdl('server_answer_error') . '<br />' . langHdl('server_returned_data') . ':<br />'; ?>' + data.error,
+                        '<?php echo $lang->get('server_answer_error') . '<br />' . $lang->get('server_returned_data') . ':<br />'; ?>' + data.error,
                         '', {
                             closeButton: true,
                             positionClass: 'toastr-top-right'
@@ -158,7 +157,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                 if (data.error === false) {
                     toastr.remove();
                     toastr.success(
-                        '<?php echo langHdl('saved'); ?>',
+                        '<?php echo $lang->get('saved'); ?>',
                         '', {
                             timeOut: 2000,
                             progressBar: true
@@ -220,7 +219,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                     // error
                     toastr.remove();
                     toastr.error(
-                        '<?php echo langHdl('server_answer_error') . '<br />' . langHdl('server_returned_data') . ':<br />'; ?>' + data.error,
+                        '<?php echo $lang->get('server_answer_error') . '<br />' . $lang->get('server_returned_data') . ':<br />'; ?>' + data.error,
                         '', {
                             closeButton: true,
                             positionClass: 'toastr-top-right'
@@ -232,7 +231,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                 if (data.error === false) {
                     toastr.remove();
                     toastr.success(
-                        '<?php echo langHdl('saved'); ?>',
+                        '<?php echo $lang->get('saved'); ?>',
                         '', {
                             timeOut: 2000,
                             progressBar: true

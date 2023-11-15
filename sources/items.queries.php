@@ -23,6 +23,7 @@ declare(strict_types=1);
 use voku\helper\AntiXSS;
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
 
@@ -32,6 +33,7 @@ require_once 'main.functions.php';
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 session_name('teampass_session');
 session_start();
 
@@ -71,9 +73,6 @@ if (
     exit;
 }
 
-// Load language file
-require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$superGlobal->get('user_language', 'SESSION', 'user').'.php';
-
 // Define Timezone
 date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
 
@@ -111,11 +110,11 @@ if (defined('TP_PW_COMPLEXITY') === false) {
     define(
         'TP_PW_COMPLEXITY',
         array(
-            TP_PW_STRENGTH_1 => array(TP_PW_STRENGTH_1, langHdl('complex_level1'), 'fas fa-thermometer-empty text-danger'),
-            TP_PW_STRENGTH_2 => array(TP_PW_STRENGTH_2, langHdl('complex_level2'), 'fas fa-thermometer-quarter text-warning'),
-            TP_PW_STRENGTH_3 => array(TP_PW_STRENGTH_3, langHdl('complex_level3'), 'fas fa-thermometer-half text-warning'),
-            TP_PW_STRENGTH_4 => array(TP_PW_STRENGTH_4, langHdl('complex_level4'), 'fas fa-thermometer-three-quarters text-success'),
-            TP_PW_STRENGTH_5 => array(TP_PW_STRENGTH_5, langHdl('complex_level5'), 'fas fa-thermometer-full text-success'),
+            TP_PW_STRENGTH_1 => array(TP_PW_STRENGTH_1, $lang->get('complex_level1'), 'fas fa-thermometer-empty text-danger'),
+            TP_PW_STRENGTH_2 => array(TP_PW_STRENGTH_2, $lang->get('complex_level2'), 'fas fa-thermometer-quarter text-warning'),
+            TP_PW_STRENGTH_3 => array(TP_PW_STRENGTH_3, $lang->get('complex_level3'), 'fas fa-thermometer-half text-warning'),
+            TP_PW_STRENGTH_4 => array(TP_PW_STRENGTH_4, $lang->get('complex_level4'), 'fas fa-thermometer-three-quarters text-success'),
+            TP_PW_STRENGTH_5 => array(TP_PW_STRENGTH_5, $lang->get('complex_level5'), 'fas fa-thermometer-full text-success'),
         )
     );
 }
@@ -187,7 +186,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -197,7 +196,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -265,7 +264,7 @@ switch ($inputData['type']) {
                 echo (string) prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_not_allowed_to_access_this_folder'),
+                        'message' => $lang->get('error_not_allowed_to_access_this_folder'),
                     ),
                     'encode'
                 );
@@ -281,7 +280,7 @@ switch ($inputData['type']) {
                     echo (string) prepareExchangedData(
                         array(
                             'error' => true,
-                            'message' => langHdl('error_not_allowed_to_access_this_folder'),
+                            'message' => $lang->get('error_not_allowed_to_access_this_folder'),
                         ),
                         'encode'
                     );
@@ -292,7 +291,7 @@ switch ($inputData['type']) {
                     echo (string) prepareExchangedData(
                         array(
                             'error' => true,
-                            'message' => langHdl('error_not_allowed_to_access_this_folder'),
+                            'message' => $lang->get('error_not_allowed_to_access_this_folder'),
                         ),
                         'encode'
                     );
@@ -308,7 +307,7 @@ switch ($inputData['type']) {
                 echo (string) prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_not_allowed_to_access_this_folder'),
+                        'message' => $lang->get('error_not_allowed_to_access_this_folder'),
                     ),
                     'encode'
                 );
@@ -324,7 +323,7 @@ switch ($inputData['type']) {
                 echo (string) prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('password_cannot_be_empty'),
+                        'message' => $lang->get('password_cannot_be_empty'),
                     ),
                     'encode'
                 );
@@ -336,7 +335,7 @@ switch ($inputData['type']) {
                 echo (string) prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('password_too_long'),
+                        'message' => $lang->get('password_too_long'),
                     ),
                     'encode'
                 );
@@ -376,7 +375,7 @@ switch ($inputData['type']) {
                 echo (string) prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_security_level_not_reached'),
+                        'message' => $lang->get('error_security_level_not_reached'),
                     ),
                     'encode'
                 );
@@ -767,11 +766,11 @@ switch ($inputData['type']) {
                         foreach ($post_diffusion_list as $emailAddress) {
                             if (empty($emailAddress) === false) {
                                 prepareSendingEmail(
-                                    langHdl('email_subject_item_updated'),
+                                    $lang->get('email_subject_item_updated'),
                                     str_replace(
                                         array('#label', '#link'),
                                             array($path, $SETTINGS['email_server_url'] . '/index.php?page=items&group=' . $inputData['folderId'] . '&id=' . $newID . $txt['email_body3']),
-                                            langHdl('new_item_email_body')
+                                            $lang->get('new_item_email_body')
                                     ),
                                     $emailAddress,
                                     $post_diffusion_list_names[$cpt],
@@ -791,7 +790,7 @@ switch ($inputData['type']) {
                 echo (string) prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_item_exists'),
+                        'message' => $lang->get('error_item_exists'),
                     ),
                     'encode'
                 );
@@ -811,7 +810,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('json_error_format'),
+                    'message' => $lang->get('json_error_format'),
                 ),
                 'encode'
             );
@@ -834,7 +833,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -844,7 +843,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -917,7 +916,7 @@ switch ($inputData['type']) {
                 echo (string) prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_not_allowed_to_access_this_folder'),
+                        'message' => $lang->get('error_not_allowed_to_access_this_folder'),
                     ),
                     'encode'
                 );
@@ -929,7 +928,7 @@ switch ($inputData['type']) {
                 echo (string) prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_data_not_valid').' - '.langHdl('field').' '.strtoupper($dataCheck['field']).' '.langHdl('exceeds_maximum_length_of').' '.$dataCheck['maxLength'].' ('.$dataCheck['currentLength'].')',
+                        'message' => $lang->get('error_data_not_valid').' - '.$lang->get('field').' '.strtoupper($dataCheck['field']).' '.$lang->get('exceeds_maximum_length_of').' '.$dataCheck['maxLength'].' ('.$dataCheck['currentLength'].')',
                     ),
                     'encode'
                 );
@@ -945,7 +944,7 @@ switch ($inputData['type']) {
                 echo (string) prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_pw'),
+                        'message' => $lang->get('error_pw'),
                     ),
                     'encode'
                 );
@@ -983,7 +982,7 @@ switch ($inputData['type']) {
                 echo (string) prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_security_level_not_reached'),
+                        'message' => $lang->get('error_security_level_not_reached'),
                     ),
                     'encode'
                 );
@@ -995,7 +994,7 @@ switch ($inputData['type']) {
                 echo (string) prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_pw_too_long'),
+                        'message' => $lang->get('error_pw_too_long'),
                     ),
                     'encode'
                 );
@@ -1030,7 +1029,7 @@ switch ($inputData['type']) {
                 echo (string) prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_not_allowed_to'),
+                        'message' => $lang->get('error_not_allowed_to'),
                     ),
                     'encode'
                 );
@@ -1496,7 +1495,7 @@ switch ($inputData['type']) {
                             // Store updates performed
                             array_push(
                                 $arrayOfChanges,
-                                langHdl('automatic_deletion_engaged') . ': ' . langHdl('enabled')
+                                $lang->get('automatic_deletion_engaged') . ': ' . $lang->get('enabled')
                             );
 
                             // update LOG
@@ -1539,7 +1538,7 @@ switch ($inputData['type']) {
                             // Store updates performed
                             array_push(
                                 $arrayOfChanges,
-                                langHdl('automatic_deletion_engaged') . ': ' . langHdl('disabled')
+                                $lang->get('automatic_deletion_engaged') . ': ' . $lang->get('disabled')
                             );
 
                             // update LOG
@@ -1676,7 +1675,7 @@ switch ($inputData['type']) {
                     // Store updates performed
                     array_push(
                         $arrayOfChanges,
-                        langHdl('at_restriction')
+                        $lang->get('at_restriction')
                     );
 
                     // Log
@@ -1697,7 +1696,7 @@ switch ($inputData['type']) {
                     // Store updates performed
                     array_push(
                         $arrayOfChanges,
-                        langHdl('at_label')
+                        $lang->get('at_label')
                     );
 
                     // Log
@@ -1716,7 +1715,7 @@ switch ($inputData['type']) {
                     // Store updates performed
                     array_push(
                         $arrayOfChanges,
-                        langHdl('at_login')
+                        $lang->get('at_login')
                     );
 
                     // Log
@@ -1735,7 +1734,7 @@ switch ($inputData['type']) {
                     // Store updates performed
                     array_push(
                         $arrayOfChanges,
-                        langHdl('at_email')
+                        $lang->get('at_email')
                     );
 
                     // Log
@@ -1754,7 +1753,7 @@ switch ($inputData['type']) {
                     // Store updates performed
                     array_push(
                         $arrayOfChanges,
-                        langHdl('at_url')
+                        $lang->get('at_url')
                     );
 
                     // Log
@@ -1773,7 +1772,7 @@ switch ($inputData['type']) {
                     // Store updates performed
                     array_push(
                         $arrayOfChanges,
-                        langHdl('at_description')
+                        $lang->get('at_description')
                     );
 
                     // Log
@@ -1795,7 +1794,7 @@ switch ($inputData['type']) {
                     // Store updates performed
                     array_push(
                         $arrayOfChanges,
-                        langHdl('at_category')
+                        $lang->get('at_category')
                     );
 
                     // Log
@@ -1814,7 +1813,7 @@ switch ($inputData['type']) {
                     // Store updates performed
                     array_push(
                         $arrayOfChanges,
-                        langHdl('at_anyoneconmodify') . ': ' . ((int) $post_anyone_can_modify === 0 ? langHdl('disabled') : langHdl('enabled'))
+                        $lang->get('at_anyoneconmodify') . ': ' . ((int) $post_anyone_can_modify === 0 ? $lang->get('disabled') : $lang->get('enabled'))
                     );
 
                     // Log
@@ -1873,11 +1872,11 @@ switch ($inputData['type']) {
                     foreach ($post_diffusion_list as $emailAddress) {
                         if (empty($emailAddress) === false) {
                             prepareSendingEmail(
-                                langHdl('email_subject_item_updated'),
+                                $lang->get('email_subject_item_updated'),
                                 str_replace(
                                     array('#item_label#', '#item_category#', '#item_id#', '#url#', '#name#', '#lastname#', '#folder_name#'),
                                     array($inputData['label'], $inputData['folderId'], $inputData['itemId'], $SETTINGS['cpassman_url'], $_SESSION['name'], $_SESSION['lastname'], $dataFolderSettings['title']),
-                                    langHdl('email_body_item_updated')
+                                    $lang->get('email_body_item_updated')
                                 ),
                                 $emailAddress,
                                 $post_diffusion_list_names[$cpt],
@@ -1900,7 +1899,7 @@ switch ($inputData['type']) {
                 echo (string) prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_not_allowed_to_edit_item'),
+                        'message' => $lang->get('error_not_allowed_to_edit_item'),
                     ),
                     'encode'
                 );
@@ -1930,7 +1929,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -1940,7 +1939,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -1968,7 +1967,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -1996,7 +1995,7 @@ switch ($inputData['type']) {
                 echo (string) prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_not_allowed_to'),
+                        'message' => $lang->get('error_not_allowed_to'),
                     ),
                     'encode'
                 );
@@ -2023,7 +2022,7 @@ switch ($inputData['type']) {
                 echo (string) prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_not_allowed_to'),
+                        'message' => $lang->get('error_not_allowed_to'),
                     ),
                     'encode'
                 );
@@ -2175,7 +2174,7 @@ switch ($inputData['type']) {
                         echo prepareExchangedData(
                             array(
                                 'error' => true,
-                                'message' => langHdl('error_cannot_open_file'),
+                                'message' => $lang->get('error_cannot_open_file'),
                             ),
                             'encode'
                         );
@@ -2301,7 +2300,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_missing_id'),
+                    'message' => $lang->get('error_missing_id'),
                 ),
                 'encode'
             );
@@ -2318,7 +2317,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -2380,7 +2379,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('not_allowed_to_see_pw'),
+                    'message' => $lang->get('not_allowed_to_see_pw'),
                     'show_detail_option' => 2,
                 ),
                 'encode'
@@ -2506,7 +2505,7 @@ switch ($inputData['type']) {
                 echo (string) prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error'),
+                        'message' => $lang->get('error'),
                         'show_detail_option' => 2,
                         'error_type' => 'private_items_to_encrypt',
                     ),
@@ -2530,11 +2529,11 @@ switch ($inputData['type']) {
             } else {
                 $pw = '';
                 $arrData['pwd_encryption_error'] = 'inconsistent_password';
-                $arrData['pwd_encryption_error_message'] = langHdl('error_new_ldap_password_detected');
+                $arrData['pwd_encryption_error_message'] = $lang->get('error_new_ldap_password_detected');
                 /*echo (string) prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_new_ldap_password_detected').'<br><button type="button" class="btn btn-block btn-warning toastr-inside-button"><i class="fa-solid fa-key fa-fw mr-2"></i>'.langHdl('sync_new_ldap_password').'</button>',
+                        'message' => $lang->get('error_new_ldap_password_detected').'<br><button type="button" class="btn btn-block btn-warning toastr-inside-button"><i class="fa-solid fa-key fa-fw mr-2"></i>'.$lang->get('sync_new_ldap_password').'</button>',
                         'show_detail_option' => 2,
                         'error_type' => 'inconsistent_password',
                     ),
@@ -2901,7 +2900,7 @@ switch ($inputData['type']) {
                     $arrData['to_be_deleted'] = '';
                 }
             } else {
-                $arrData['to_be_deleted'] = langHdl('no');
+                $arrData['to_be_deleted'] = $lang->get('no');
             }
             // ---
             // ---
@@ -2954,7 +2953,7 @@ switch ($inputData['type']) {
                 echo (string) prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -2964,7 +2963,7 @@ switch ($inputData['type']) {
                 echo (string) prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('error_not_allowed_to'),
+                        'message' => $lang->get('error_not_allowed_to'),
                     ),
                     'encode'
                 );
@@ -3164,7 +3163,7 @@ switch ($inputData['type']) {
 
                 // prepare sending email
                 prepareSendingEmail(
-                    langHdl('email_on_open_notification_subject'),
+                    $lang->get('email_on_open_notification_subject'),
                     str_replace(
                         array('#tp_user#', '#tp_item#', '#tp_link#'),
                         array(
@@ -3172,7 +3171,7 @@ switch ($inputData['type']) {
                             $path,
                             $SETTINGS['cpassman_url'] . '/index.php?page=items&group=' . $dataItem['id_tree'] . '&id=' . $dataItem['id'],
                         ),
-                        langHdl('email_on_open_notification_mail')
+                        $lang->get('email_on_open_notification_mail')
                     ),
                     implode(",", $reveivers),
                     "",
@@ -3225,7 +3224,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -3235,7 +3234,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -3338,7 +3337,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -3348,7 +3347,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -3366,13 +3365,13 @@ switch ($inputData['type']) {
 
         // Check if user is allowed to access this folder
         if (!in_array($inputData['folderId'], $_SESSION['groupes_visibles'])) {
-            echo '[{"error" : "' . langHdl('error_not_allowed_to') . '"}]';
+            echo '[{"error" : "' . $lang->get('error_not_allowed_to') . '"}]';
             break;
         }
 
         // Check if title doesn't contains html codes
         if (preg_match_all('|<[^>]+>(.*)</[^>]+>|U', $title, $out)) {
-            echo '[ { "error" : "' . langHdl('error_html_codes') . '" } ]';
+            echo '[ { "error" : "' . $lang->get('error_html_codes') . '" } ]';
             break;
         }
         // check that title is not numeric
@@ -3385,7 +3384,7 @@ switch ($inputData['type']) {
         if (isset($SETTINGS['duplicate_folder']) && $SETTINGS['duplicate_folder'] === '0') {
             $data = DB::queryFirstRow('SELECT id, title FROM ' . prefixTable('nested_tree') . ' WHERE title = %s', $title);
             if (empty($data['id']) === false && $dataReceived['folder'] !== $data['id']) {
-                echo '[ { "error" : "' . langHdl('error_group_exist') . '" } ]';
+                echo '[ { "error" : "' . $lang->get('error_group_exist') . '" } ]';
                 break;
             }
         }
@@ -3409,7 +3408,7 @@ switch ($inputData['type']) {
                 'complex'
             );
             if (intval($dataReceived['complexity']) < intval($data['valeur'])) {
-                echo '[ { "error" : "' . langHdl('error_folder_complexity_lower_than_top_folder') . ' [<b>' . TP_PW_COMPLEXITY[$data['valeur']][1] . '</b>]"} ]';
+                echo '[ { "error" : "' . $lang->get('error_folder_complexity_lower_than_top_folder') . ' [<b>' . TP_PW_COMPLEXITY[$data['valeur']][1] . '</b>]"} ]';
                 break;
             }
         }
@@ -3455,7 +3454,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -3465,7 +3464,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -3484,7 +3483,7 @@ switch ($inputData['type']) {
                 in_array($post_target_folder_id, $_SESSION['groupes_visibles']) === false) && ($post_target_folder_id === '0' &&
                 isset($SETTINGS['can_create_root_folder']) === true && (int) $SETTINGS['can_create_root_folder'] === 1)
         ) {
-            $returnValues = '[{"error" : "' . langHdl('error_not_allowed_to') . '"}]';
+            $returnValues = '[{"error" : "' . $lang->get('error_not_allowed_to') . '"}]';
             echo $returnValues;
             break;
         }
@@ -3505,21 +3504,21 @@ switch ($inputData['type']) {
 
         // check if target is not a child of source
         if ($tree->isChildOf($post_target_folder_id, $post_source_folder_id) === true) {
-            $returnValues = '[{"error" : "' . langHdl('error_not_allowed_to') . '"}]';
+            $returnValues = '[{"error" : "' . $lang->get('error_not_allowed_to') . '"}]';
             echo $returnValues;
             break;
         }
 
         // check if source or target folder is PF. If Yes, then cancel operation
         if ((int) $tmp_source['personal_folder'] === 1 || (int) $tmp_target['personal_folder'] === 1) {
-            $returnValues = '[{"error" : "' . langHdl('error_not_allowed_to') . '"}]';
+            $returnValues = '[{"error" : "' . $lang->get('error_not_allowed_to') . '"}]';
             echo $returnValues;
             break;
         }
 
         // check if source or target folder is PF. If Yes, then cancel operation
         if ($tmp_source['title'] === $_SESSION['user_id'] || $tmp_target['title'] === $_SESSION['user_id']) {
-            $returnValues = '[{"error" : "' . langHdl('error_not_allowed_to') . '"}]';
+            $returnValues = '[{"error" : "' . $lang->get('error_not_allowed_to') . '"}]';
             echo $returnValues;
             break;
         }
@@ -3566,7 +3565,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -3577,7 +3576,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -3594,7 +3593,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_unknown'),
+                    'message' => $lang->get('error_unknown'),
                 ),
                 'encode'
             );
@@ -4231,7 +4230,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -4311,7 +4310,7 @@ switch ($inputData['type']) {
                             // else return not authorized
                             $returnValues = array(
                                 'error' => true,
-                                'message' => langHdl('error_not_allowed_to'),
+                                'message' => $lang->get('error_not_allowed_to'),
                             );
                             echo (string) prepareExchangedData(
 $SETTINGS['cpassman_dir'],$returnValues, 'encode');
@@ -4321,7 +4320,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                         // else return not authorized
                         $returnValues = array(
                             'error' => true,
-                            'message' => langHdl('error_not_allowed_to'),
+                            'message' => $lang->get('error_not_allowed_to'),
                         );
                         echo (string) prepareExchangedData(
 $SETTINGS['cpassman_dir'],$returnValues, 'encode');
@@ -4373,7 +4372,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
             } else {
                 $returnValues = array(
                     'error' => true,
-                    'message' => langHdl('error_no_edition_possible_locked'),
+                    'message' => $lang->get('error_no_edition_possible_locked'),
                 );
                 echo (string) prepareExchangedData(
                     $returnValues,
@@ -4411,7 +4410,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                 ) {
                     $returnValues = array(
                         'error' => true,
-                        'message' => langHdl('error_not_allowed_to'),
+                        'message' => $lang->get('error_not_allowed_to'),
                     );
                     echo (string) prepareExchangedData(
                         $returnValues,
@@ -4454,7 +4453,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                 }
             }
         } else {
-            $complexity = langHdl('not_defined');
+            $complexity = $lang->get('not_defined');
 
             // if not defined, then previous query failed and personal_folder is null
             // do new query to know if current folder is pf
@@ -4585,7 +4584,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -4749,7 +4748,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -4759,7 +4758,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -4800,7 +4799,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -5060,7 +5059,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -5070,7 +5069,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -5105,7 +5104,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                     echo (string) prepareExchangedData(
                         array(
                             'error' => true,
-                            'message' => langHdl('error_not_allowed_to'),
+                            'message' => $lang->get('error_not_allowed_to'),
                         ),
                         'encode'
                     );
@@ -5384,7 +5383,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -5394,7 +5393,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -5413,7 +5412,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -5438,7 +5437,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                     echo (string) prepareExchangedData(
                         array(
                             'error' => true,
-                            'message' => langHdl('error_not_allowed_to'),
+                            'message' => $lang->get('error_not_allowed_to'),
                         ),
                         'encode'
                     );
@@ -5490,7 +5489,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -5500,7 +5499,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -5537,11 +5536,11 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
 
             // Prepare email
             prepareSendingEmail(
-                langHdl('email_request_access_subject'),
+                $lang->get('email_request_access_subject'),
                 str_replace(
                     array('#tp_item_author#', '#tp_user#', '#tp_item#'),
                     array(' ' . addslashes($dataAuthor['login']), addslashes($_SESSION['login']), $path),
-                    langHdl('email_request_access_mail')
+                    $lang->get('email_request_access_mail')
                 ),
                 $dataAuthor['email'],
                 "",
@@ -5564,7 +5563,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
 
             // Prepare email
             prepareSendingEmail(
-                langHdl('email_share_item_subject'),
+                $lang->get('email_share_item_subject'),
                 str_replace(
                     array(
                         '#tp_link#',
@@ -5577,7 +5576,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                         addslashes($_SESSION['login']),
                         addslashes($path),
                     ),
-                    langHdl('email_share_item_mail')
+                    $lang->get('email_share_item_mail')
                 ),
                 $inputData['receipt'],
                 "",
@@ -5942,7 +5941,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -5966,7 +5965,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('no_sharekey_found'),
+                    'message' => $lang->get('no_sharekey_found'),
                 ),
                 'encode'
             );
@@ -6113,7 +6112,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -6294,7 +6293,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -6376,7 +6375,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
             
             // imported via API
             if (empty($record['login']) === true) {
-                $record['login'] = langHdl('imported_via_api') . ' [' . $record['raison'] . ']';
+                $record['login'] = $lang->get('imported_via_api') . ' [' . $record['raison'] . ']';
             }
             
             // Prepare avatar
@@ -6415,16 +6414,16 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                 $detail = $reason[0];
                 $action = langHdl($record['action']);
             } elseif ($reason[0] === 'at_description') {
-                $action = langHdl('description_has_changed');
+                $action = $lang->get('description_has_changed');
             } elseif (empty($record['raison']) === false && $reason[0] !== 'at_creation') {
                 $action = langHdl($reason[0]);
                 if ($reason[0] === 'at_moved') {
                     $tmp = explode(' -> ', $reason[1]);
-                    $detail = langHdl('from') . ' <span class="font-weight-light">' . $tmp[0] . '</span> ' . langHdl('to') . ' <span class="font-weight-light">' . $tmp[1] . ' </span>';
+                    $detail = $lang->get('from') . ' <span class="font-weight-light">' . $tmp[0] . '</span> ' . $lang->get('to') . ' <span class="font-weight-light">' . $tmp[1] . ' </span>';
                 } elseif ($reason[0] === 'at_field') {
                     $tmp = explode(' => ', $reason[1]);
                     if (count($tmp) > 1) {
-                        $detail = '<b>' . trim($tmp[0]) . '</b> | ' . langHdl('previous_value') .
+                        $detail = '<b>' . trim($tmp[0]) . '</b> | ' . $lang->get('previous_value') .
                             ': <span class="font-weight-light">' . trim($tmp[1]) . '</span>';
                     } else {
                         $detail = trim($reason[1]);
@@ -6432,7 +6431,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                 } elseif (in_array($reason[0], array('at_restriction', 'at_email', 'at_login', 'at_label', 'at_url', 'at_tag')) === true) {
                     $tmp = explode(' => ', $reason[1]);
                     $detail = empty(trim($tmp[0])) === true ?
-                        langHdl('no_previous_value') : langHdl('previous_value') . ': <span class="font-weight-light">' . $tmp[0] . ' </span>';
+                        $lang->get('no_previous_value') : $lang->get('previous_value') . ': <span class="font-weight-light">' . $tmp[0] . ' </span>';
                 } elseif ($reason[0] === 'at_automatic_del') {
                     $detail = langHdl($reason[1]);
                 } elseif ($reason[0] === 'at_anyoneconmodify') {
@@ -6446,7 +6445,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                     $detail = '';
                 } elseif (in_array($reason[0], array('csv', 'pdf')) === true) {
                     $detail = $reason[0];
-                    $action = langHdl('exported_to_file');
+                    $action = $lang->get('exported_to_file');
                 } else {
                     $detail = $reason[0];
                 }
@@ -6490,7 +6489,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
             echo (string) prepareExchangedData(
                 array(
                     'error' => 'key_not_conform',
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -6567,8 +6566,8 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
         );
         foreach ($rows as $record) {
             sendEmail(
-                langHdl('suggestion_notify_subject'),
-                str_replace(array('#tp_label#', '#tp_user#', '#tp_folder#'), array(addslashes($label), addslashes($resp_user['login']), addslashes($resp_folder['title'])), langHdl('suggestion_notify_body')),
+                $lang->get('suggestion_notify_subject'),
+                str_replace(array('#tp_label#', '#tp_user#', '#tp_folder#'), array(addslashes($label), addslashes($resp_user['login']), addslashes($resp_folder['title'])), $lang->get('suggestion_notify_body')),
                 $record['email'],
                 $SETTINGS
             );
@@ -6620,7 +6619,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
             echo (string) prepareExchangedData(
                 array(
                     'error' => 'key_not_conform',
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -6667,7 +6666,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
         */
 
         /*$ret = sendEmail(
-            langHdl('email_request_access_subject'),
+            $lang->get('email_request_access_subject'),
             str_replace(
                 array(
                     '#tp_item_author#',
@@ -6681,7 +6680,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                     $path,
                     nl2br(addslashes($post_email_body)),
                 ),
-                langHdl('email_request_access_mail')
+                $lang->get('email_request_access_mail')
             ),
             $dataAuthor['email'],
             $SETTINGS
@@ -6718,7 +6717,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
             echo (string) prepareExchangedData(
                 array(
                     'error' => 'key_not_conform',
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -6789,7 +6788,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
             echo (string) prepareExchangedData(
                 array(
                     'error' => 'key_not_conform',
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -6868,7 +6867,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
             echo (string) prepareExchangedData(
                 array(
                     'error' => 'key_not_conform',
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );
@@ -6925,7 +6924,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
             echo (string) prepareExchangedData(
                 array(
                     'error' => 'key_not_conform',
-                    'message' => langHdl('key_is_not_correct'),
+                    'message' => $lang->get('key_is_not_correct'),
                 ),
                 'encode'
             );

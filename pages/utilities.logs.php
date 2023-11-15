@@ -25,6 +25,7 @@ declare(strict_types=1);
  */
 
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\PerformChecks\PerformChecks;
 
@@ -34,6 +35,7 @@ require_once __DIR__.'/../sources/main.functions.php';
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 
 // Load config if $SETTINGS not defined
 try {
@@ -67,9 +69,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     exit;
 }
 
-// Load language file
-require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$superGlobal->get('user_language', 'SESSION', 'user').'.php';
-
 // Define Timezone
 date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
 
@@ -86,7 +85,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
     <div class="container-fluid">
         <div class="row mb-2">
             <div class="col-sm-12">
-                <h1 class="m-0 text-dark"><i class="fas fa-history mr-2"></i><?php echo langHdl('logs'); ?></h1>
+                <h1 class="m-0 text-dark"><i class="fas fa-history mr-2"></i><?php echo $lang->get('logs'); ?></h1>
             </div><!-- /.col -->
         </div><!-- /.row -->
     </div><!-- /.container-fluid -->
@@ -103,22 +102,22 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                     <div class="card-body">
                         <ul class="nav nav-tabs">
                             <li class="nav-item">
-                                <a class="nav-link active" data-toggle="tab" href="#connections" aria-controls="connections" aria-selected="true"><?php echo langHdl('connections'); ?></a>
+                                <a class="nav-link active" data-toggle="tab" href="#connections" aria-controls="connections" aria-selected="true"><?php echo $lang->get('connections'); ?></a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" data-toggle="tab" href="#failed" role="tab" aria-controls="failed" aria-selected="false"><?php echo langHdl('failed_logins'); ?></a>
+                                <a class="nav-link" data-toggle="tab" href="#failed" role="tab" aria-controls="failed" aria-selected="false"><?php echo $lang->get('failed_logins'); ?></a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" data-toggle="tab" href="#errors" role="tab" aria-controls="errors" aria-selected="false"><?php echo langHdl('errors'); ?></a>
+                                <a class="nav-link" data-toggle="tab" href="#errors" role="tab" aria-controls="errors" aria-selected="false"><?php echo $lang->get('errors'); ?></a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" data-toggle="tab" href="#copy" role="tab" aria-controls="copy" aria-selected="false"><?php echo langHdl('at_copy'); ?></a>
+                                <a class="nav-link" data-toggle="tab" href="#copy" role="tab" aria-controls="copy" aria-selected="false"><?php echo $lang->get('at_copy'); ?></a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" data-toggle="tab" href="#admin" role="tab" aria-controls="admin" aria-selected="false"><?php echo langHdl('admin'); ?></a>
+                                <a class="nav-link" data-toggle="tab" href="#admin" role="tab" aria-controls="admin" aria-selected="false"><?php echo $lang->get('admin'); ?></a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" data-toggle="tab" href="#items" role="tab" aria-controls="items" aria-selected="false"><?php echo langHdl('items'); ?></a>
+                                <a class="nav-link" data-toggle="tab" href="#items" role="tab" aria-controls="items" aria-selected="false"><?php echo $lang->get('items'); ?></a>
                             </li>
                         </ul>
 
@@ -128,9 +127,9 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                 <table class="table table-striped nowrap table-responsive-sm" id="table-connections" style="width:100%;">
                                     <thead>
                                         <tr>
-                                            <th style=""><?php echo langHdl('date'); ?></th>
-                                            <th style=""><?php echo langHdl('action'); ?></th>
-                                            <th style=""><?php echo langHdl('user'); ?></th>
+                                            <th style=""><?php echo $lang->get('date'); ?></th>
+                                            <th style=""><?php echo $lang->get('action'); ?></th>
+                                            <th style=""><?php echo $lang->get('user'); ?></th>
                                         </tr>
                                     </thead>
                                 </table>
@@ -139,9 +138,9 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                 <table class="table table-striped nowrap table-responsive-sm" id="table-errors" style="width:100%;">
                                     <thead>
                                         <tr>
-                                            <th style=""><?php echo langHdl('date'); ?></th>
-                                            <th style=""><?php echo langHdl('label'); ?></th>
-                                            <th style=""><?php echo langHdl('user'); ?></th>
+                                            <th style=""><?php echo $lang->get('date'); ?></th>
+                                            <th style=""><?php echo $lang->get('label'); ?></th>
+                                            <th style=""><?php echo $lang->get('user'); ?></th>
                                         </tr>
                                     </thead>
                                 </table>
@@ -150,9 +149,9 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                 <table class="table table-striped nowrap table-responsive-sm" id="table-copy" style="width:100%;">
                                     <thead>
                                         <tr>
-                                            <th style=""><?php echo langHdl('date'); ?></th>
-                                            <th style=""><?php echo langHdl('label'); ?></th>
-                                            <th style=""><?php echo langHdl('user'); ?></th>
+                                            <th style=""><?php echo $lang->get('date'); ?></th>
+                                            <th style=""><?php echo $lang->get('label'); ?></th>
+                                            <th style=""><?php echo $lang->get('user'); ?></th>
                                         </tr>
                                     </thead>
                                 </table>
@@ -161,10 +160,10 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                 <table class="table table-striped nowrap table-responsive-sm" id="table-admin" style="width:100%;">
                                     <thead>
                                         <tr>
-                                            <th style=""><?php echo langHdl('date'); ?></th>
-                                            <th style=""><?php echo langHdl('author'); ?></th>
-                                            <th style=""><?php echo langHdl('action'); ?></th>
-                                            <th style=""><?php echo langHdl('who'); ?></th>
+                                            <th style=""><?php echo $lang->get('date'); ?></th>
+                                            <th style=""><?php echo $lang->get('author'); ?></th>
+                                            <th style=""><?php echo $lang->get('action'); ?></th>
+                                            <th style=""><?php echo $lang->get('who'); ?></th>
                                         </tr>
                                     </thead>
                                 </table>
@@ -173,13 +172,13 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                 <table class="table table-striped nowrap table-responsive-sm" id="table-items" style="width:100%;">
                                     <thead>
                                         <tr>
-                                            <th style=""><?php echo langHdl('date'); ?></th>
-                                            <th style=""><?php echo langHdl('id'); ?></th>
-                                            <th style=""><?php echo langHdl('label'); ?></th>
-                                            <th style=""><?php echo langHdl('folder'); ?></th>
-                                            <th style=""><?php echo langHdl('user'); ?></th>
-                                            <th style=""><?php echo langHdl('action'); ?></th>
-                                            <th style=""><?php echo langHdl('at_personnel'); ?></th>
+                                            <th style=""><?php echo $lang->get('date'); ?></th>
+                                            <th style=""><?php echo $lang->get('id'); ?></th>
+                                            <th style=""><?php echo $lang->get('label'); ?></th>
+                                            <th style=""><?php echo $lang->get('folder'); ?></th>
+                                            <th style=""><?php echo $lang->get('user'); ?></th>
+                                            <th style=""><?php echo $lang->get('action'); ?></th>
+                                            <th style=""><?php echo $lang->get('at_personnel'); ?></th>
                                         </tr>
                                     </thead>
                                 </table>
@@ -188,10 +187,10 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                 <table class="table table-striped nowrap table-responsive-sm" id="table-failed">
                                     <thead>
                                         <tr>
-                                            <th style=""><?php echo langHdl('date'); ?></th>
-                                            <th style=""><?php echo langHdl('label'); ?></th>
-                                            <th style=""><?php echo langHdl('user'); ?></th>
-                                            <th style=""><?php echo langHdl('ip'); ?></th>
+                                            <th style=""><?php echo $lang->get('date'); ?></th>
+                                            <th style=""><?php echo $lang->get('label'); ?></th>
+                                            <th style=""><?php echo $lang->get('user'); ?></th>
+                                            <th style=""><?php echo $lang->get('ip'); ?></th>
                                         </tr>
                                     </thead>
                                 </table>
@@ -203,7 +202,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                             echo isset($_SESSION['user_admin']) && (int) $_SESSION['user_admin'] === 1 ? '' : ' hidden';
                                             ?>">
                         <div class="form-group">
-                            <h5><i class="fas fa-broom mr-2"></i><?php echo langHdl('purge') . ' ' . langHdl('date_range'); ?></h5>
+                            <h5><i class="fas fa-broom mr-2"></i><?php echo $lang->get('purge') . ' ' . $lang->get('date_range'); ?></h5>
                             <div class="input-group">
                                 <div class="input-group-prepend">
                                     <span class="input-group-text">
@@ -217,14 +216,14 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                             </div>
                         </div>
 
-                        <h5><i class="fas fa-filter mr-2"></i><?php echo langHdl('filters'); ?></h5>
+                        <h5><i class="fas fa-filter mr-2"></i><?php echo $lang->get('filters'); ?></h5>
                         <div class="row">
                             <div class="col-sm-6">
                                 <!-- select -->
                                 <div class="form-group">
-                                    <label><i class="fas fa-user mr-2"></i><?php echo langHdl('user'); ?>:</label>
+                                    <label><i class="fas fa-user mr-2"></i><?php echo $lang->get('user'); ?>:</label>
                                     <select class="form-control" id="purge-filter-user">
-                                        <option value="-1"><?php echo langHdl('all'); ?></option>
+                                        <option value="-1"><?php echo $lang->get('all'); ?></option>
                                     <?php
                                     $rows = DB::query('SELECT id, name, lastname FROM ' . prefixTable('users') . ' WHERE admin = 0');
 foreach ($rows as $record) {
@@ -237,15 +236,15 @@ foreach ($rows as $record) {
                             </div>
                             <div class="col-sm-6">
                                 <div class="form-group hidden" id="selector-purge-action">
-                                    <label><i class="fas fa-cog mr-2"></i><?php echo langHdl('action'); ?>:</label>
+                                    <label><i class="fas fa-cog mr-2"></i><?php echo $lang->get('action'); ?>:</label>
                                     <select class="form-control" id="purge-filter-action">
-                                        <option value="all"><?php echo langHdl('all'); ?></option>
-                                        <option value="at_shown"><?php echo langHdl('at_shown'); ?></option>
-                                        <option value="at_export"><?php echo langHdl('at_export'); ?></option>
-                                        <option value="at_restored"><?php echo langHdl('at_restored'); ?></option>
-                                        <option value="at_delete"><?php echo langHdl('at_delete'); ?></option>
-                                        <option value="at_copy"><?php echo langHdl('at_copy'); ?></option>
-                                        <option value="at_moved"><?php echo langHdl('at_moved'); ?></option>
+                                        <option value="all"><?php echo $lang->get('all'); ?></option>
+                                        <option value="at_shown"><?php echo $lang->get('at_shown'); ?></option>
+                                        <option value="at_export"><?php echo $lang->get('at_export'); ?></option>
+                                        <option value="at_restored"><?php echo $lang->get('at_restored'); ?></option>
+                                        <option value="at_delete"><?php echo $lang->get('at_delete'); ?></option>
+                                        <option value="at_copy"><?php echo $lang->get('at_copy'); ?></option>
+                                        <option value="at_moved"><?php echo $lang->get('at_moved'); ?></option>
                                     </select>
                                 </div>
                             </div>
@@ -254,11 +253,11 @@ foreach ($rows as $record) {
                         <div class="form-group mt-2 group-confirm-purge hidden">
                             <input type="checkbox" class="form-check-input form-item-control" id="checkbox-purge-confirm">
                             <label class="form-check-label ml-2" for="checkbox-purge-confirm">
-                                <?php echo langHdl('please_confirm_deletion'); ?>
+                                <?php echo $lang->get('please_confirm_deletion'); ?>
                             </label>
                         </div>
                         <div class="form-group mt-2 group-confirm-purge hidden">
-                            <button class="btn btn-danger" id="button-perform-purge"><?php echo langHdl('submit'); ?></button>
+                            <button class="btn btn-danger" id="button-perform-purge"><?php echo $lang->get('submit'); ?></button>
                         </div>
                     </div>
                 </div>

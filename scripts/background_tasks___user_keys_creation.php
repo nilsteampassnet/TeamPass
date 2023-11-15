@@ -27,6 +27,7 @@ use Symfony\Component\Process\Process;
 use voku\helper\AntiXSS;
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
 
@@ -36,6 +37,7 @@ require_once __DIR__.'/../sources/main.functions.php';
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 session_name('teampass_session');
 session_start();
 
@@ -1056,8 +1058,8 @@ function cronContinueReEncryptingUserSharekeysStep10(
     if (isset($extra_arguments['send_email']) === true && (int) $extra_arguments['send_email'] === 1) {
         sendMailToUser(
             filter_var($userInfo['email'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-            empty($extra_arguments['email_body']) === false ? $extra_arguments['email_body'] : langHdl('email_body_user_config_1'),
-            'TEAMPASS - ' . langHdl('login_credentials'),
+            empty($extra_arguments['email_body']) === false ? $extra_arguments['email_body'] : $lang->get('email_body_user_config_1'),
+            'TEAMPASS - ' . $lang->get('login_credentials'),
             (array) filter_var_array(
                 [
                     '#code#' => cryption($extra_arguments['new_user_code'], '','decrypt', $SETTINGS)['string'],

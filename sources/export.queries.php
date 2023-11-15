@@ -23,6 +23,7 @@ declare(strict_types=1);
 use voku\helper\AntiXSS;
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
 use GibberishAES\GibberishAES;
@@ -34,6 +35,7 @@ require_once 'main.functions.php';
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 session_name('teampass_session');
 session_start();
 
@@ -72,9 +74,6 @@ if (
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
-
-// Load language file
-require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$superGlobal->get('user_language', 'SESSION', 'user').'.php';
 
 // Define Timezone
 date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
@@ -302,7 +301,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -331,7 +330,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -505,7 +504,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -676,7 +675,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -744,7 +743,7 @@ if (null !== $post_type) {
                 echo (string) prepareExchangedData(
                     [
                         'error' => true,
-                        'message' => langHdl('error_while_creating_file'),
+                        'message' => $lang->get('error_while_creating_file'),
                         'detail' => $SETTINGS['path_to_files_folder'] . $inputData['filename'],
                     ],
                     'encode'
@@ -787,11 +786,11 @@ if (null !== $post_type) {
     <div>
     <table id="itemsTable">
         <thead><tr>
-            <th style="width:15%;">' . langHdl('label') . '</th>
-            <th style="width:10%;">' . langHdl('pw') . '</th>
-            <th style="width:30%;">' . langHdl('description') . '</th>
-            <th style="width:5%;">' . langHdl('user_login') . '</th>
-            <th style="width:20%;">' . langHdl('url') . '</th>
+            <th style="width:15%;">' . $lang->get('label') . '</th>
+            <th style="width:10%;">' . $lang->get('pw') . '</th>
+            <th style="width:30%;">' . $lang->get('description') . '</th>
+            <th style="width:5%;">' . $lang->get('user_login') . '</th>
+            <th style="width:20%;">' . $lang->get('url') . '</th>
         </tr></thead>
         <tbody id="itemsTable_tbody">'
             );
@@ -820,7 +819,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -864,7 +863,7 @@ if (null !== $post_type) {
                     echo (string) prepareExchangedData(
                         [
                             'error' => true,
-                            'message' => langHdl('error_while_creating_file'),
+                            'message' => $lang->get('error_while_creating_file'),
                             'detail' => $SETTINGS['path_to_files_folder'] . $inputData['filename'],
                         ],
                         'encode'
@@ -957,7 +956,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => langHdl('key_is_not_correct'),
+                        'message' => $lang->get('key_is_not_correct'),
                     ),
                     'encode'
                 );
@@ -983,7 +982,7 @@ if (null !== $post_type) {
                 echo (string) prepareExchangedData(
                     [
                         'error' => true,
-                        'message' => langHdl('error_while_creating_file'),
+                        'message' => $lang->get('error_while_creating_file'),
                         'detail' => $SETTINGS['path_to_files_folder'] . $inputData['filename'],
                     ],
                     'encode'
@@ -995,7 +994,7 @@ if (null !== $post_type) {
                 echo (string) prepareExchangedData(
                     [
                         'error' => true,
-                        'message' => langHdl('error_while_creating_file'),
+                        'message' => $lang->get('error_while_creating_file'),
                         'detail' => $SETTINGS['path_to_files_folder'] . $inputData['filename'],
                     ],
                     'encode'
@@ -1024,7 +1023,7 @@ if (null !== $post_type) {
                 echo (string) prepareExchangedData(
                     [
                         'error' => true,
-                        'message' => langHdl('error_while_creating_file'),
+                        'message' => $lang->get('error_while_creating_file'),
                         'detail' => $SETTINGS['path_to_files_folder'] . $inputData['filename'],
                     ],
                     'encode'

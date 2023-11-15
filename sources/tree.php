@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\NestedTree\NestedTree;
@@ -31,6 +32,7 @@ require_once 'main.functions.php';
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 session_name('teampass_session');
 session_start();
 
@@ -70,9 +72,6 @@ if (
     exit;
 }
 
-// Load language file
-require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$superGlobal->get('user_language', 'SESSION', 'user').'.php';
-
 // Define Timezone
 date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
 
@@ -86,6 +85,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
 $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 
 // Prepare sanitization
 $data = [
@@ -495,6 +495,10 @@ function prepareNodeJson(
     array $SETTINGS
 ): array
 {
+    // Load superGlobals
+    $superGlobal = new SuperGlobal();
+    $lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
+
     // prepare json return for current node
     $parent = $currentNode->parent_id === '0' ? '#' : 'li_' . $currentNode->parent_id;
 
@@ -544,7 +548,7 @@ function prepareNodeJson(
                 'text' => '<i class="'.$currentNode->fa_icon.' tree-folder mr-2" data-folder="'.$currentNode->fa_icon.'"  data-folder-selected="'.$currentNode->fa_icon_selected.'"></i>'.'<i class="fas fa-times fa-xs text-danger mr-1 ml-1"></i>'.$text.$currentNode->title.$nodeData['html'],
                 'li_attr' => array(
                     'class' => '',
-                    'title' => 'ID [' . $nodeId . '] ' . langHdl('no_access'),
+                    'title' => 'ID [' . $nodeId . '] ' . $lang->get('no_access'),
                 ),
             )
         );
@@ -597,13 +601,17 @@ function prepareNodeData(
     NestedTree $tree
 ): array
 {
+    // Load superGlobals
+    $superGlobal = new SuperGlobal();
+    $lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
+
     if (in_array($nodeId, $session_groupes_visibles) === true) {
         // special case for READ-ONLY folder
         if (in_array($nodeId, $session_read_only_folders) === true) {
             return [
                 'html' => '<i class="far fa-eye fa-xs mr-1 ml-1"></i>'.
                     ($tree_counters === 1 ? '<span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' . $nodeId . '">' . $nbItemsInFolder .'/'.$nbItemsInSubfolders .'/'.$nbSubfolders. '</span>'  : ''),
-                'title' => langHdl('read_only_account'),
+                'title' => $lang->get('read_only_account'),
                 'restricted' => 1,
                 'folderClass' => 'folder_not_droppable',
                 'show_but_block' => false,
@@ -618,7 +626,7 @@ function prepareNodeData(
             return [
                 'html' => '<i class="far fa-eye fa-xs mr-1"></i>'.
                     ($tree_counters === 1 ? '<span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' . $nodeId . '">' . $nbItemsInFolder .'/'.$nbItemsInSubfolders .'/'.$nbSubfolders. '</span>'  : ''),
-                'title' => langHdl('read_only_account'),
+                'title' => $lang->get('read_only_account'),
                 'restricted' => 0,
                 'folderClass' => 'folder',
                 'show_but_block' => false,

@@ -27,12 +27,14 @@ declare(strict_types=1);
 
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
 
 // init
 loadClasses();
 $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 
 if (
     isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
@@ -91,10 +93,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             // Prepare modal
             showModalDialogBox(
                 '#warningModal',
-                '<i class="fas fa-minus-square fa-lg warning mr-2"></i><?php echo langHdl('item_menu_del_from_fav'); ?>',
-                '<?php echo langHdl('confirm_del_from_fav'); ?>',
-                '<?php echo langHdl('confirm'); ?>',
-                '<?php echo langHdl('cancel'); ?>'
+                '<i class="fas fa-minus-square fa-lg warning mr-2"></i><?php echo $lang->get('item_menu_del_from_fav'); ?>',
+                '<?php echo $lang->get('confirm_del_from_fav'); ?>',
+                '<?php echo $lang->get('confirm'); ?>',
+                '<?php echo $lang->get('cancel'); ?>'
             );
 
             // Actions on modal buttons
@@ -104,7 +106,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             $(document).on('click', '#warningModalButtonAction', function() {
                 // SHow user
                 toastr.remove();
-                toastr.info('<?php echo langHdl('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+                toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
                 // Launch ajax query                    
                 $.post(
@@ -123,7 +125,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
                         toastr.remove();
                         toastr.info(
-                            '<?php echo langHdl('done'); ?>',
+                            '<?php echo $lang->get('done'); ?>',
                             '', {
                                 timeOut: 1000
                             }

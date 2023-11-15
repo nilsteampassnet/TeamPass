@@ -18,6 +18,7 @@
 
 use EZimuel\PHPSecureSession;
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
 use PasswordLib\PasswordLib;
 use TeampassClasses\NestedTree\NestedTree;
 
@@ -27,6 +28,7 @@ require_once __DIR__.'/../sources/main.functions.php';
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 session_name('teampass_session');
 session_start();
 error_reporting(E_ERROR | E_PARSE);
@@ -76,6 +78,7 @@ if (mysqli_connect(
 
 // Load libraries
 $superGlobal = new SuperGlobal();
+$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 
 
 //---------------------------------------------------------------------
