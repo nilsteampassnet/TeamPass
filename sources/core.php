@@ -32,7 +32,7 @@ use TeampassClasses\Language\Language;
 // Load functions
 require_once 'main.functions.php';
 $superGlobal = new SuperGlobal();
-$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
+$lang = new Language(); 
 
 // Load config if $SETTINGS not defined
 try {

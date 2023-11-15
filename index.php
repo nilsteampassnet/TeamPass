@@ -80,7 +80,7 @@ require_once __DIR__.'/sources/main.functions.php';
 
 // init
 $superGlobal = new SuperGlobal();
-//$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
+//$lang = new Language(); 
 
 // Quick major version check -> upgrade needed?
 if (isset($SETTINGS['teampass_version']) === true && version_compare(TP_VERSION, $SETTINGS['teampass_version']) > 0) {

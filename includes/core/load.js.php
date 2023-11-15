@@ -51,7 +51,7 @@ if (
 <?php
 }
 $superGlobal = new SuperGlobal();
-$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
+$lang = new Language(); 
 ?>
 
 <script type="text/javascript">

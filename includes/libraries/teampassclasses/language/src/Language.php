@@ -23,12 +23,23 @@ namespace TeampassClasses\Language;
  * @see       https://www.teampass.net
 */
 
+use TeampassClasses\SuperGlobal\SuperGlobal;
+
 class Language {
     private $language;
     private $path;
     private $translations;
 
-    public function __construct($language = 'english', $path = __DIR__."/../../../../language") {
+    public function __construct($language = null, $path = __DIR__."/../../../../language") {
+        $superGlobal = new SuperGlobal();
+        if (null === $language || empty($language) === true) {
+            $userLanguage = $superGlobal->get('user_language', 'SESSION', 'user');
+            if (null !== $userLanguage) {
+                $language = $userLanguage;
+            } else {
+                $language = 'english';
+            }
+        }
         $this->setLanguage($language, $path);
     }
 

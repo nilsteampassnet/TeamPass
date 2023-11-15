@@ -37,7 +37,7 @@ if (strpos($server['request_uri'], '?') > 0) {
 }
 
 $superGlobal = new SuperGlobal();
-$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
+$lang = new Language(); 
 $get = [];
 $get['post_type'] = $superGlobal->get('post_type', 'GET');
 if (isset($SETTINGS['duo']) === true && (int) $SETTINGS['duo'] === 1 && $get['post_type'] === 'duo' ) {

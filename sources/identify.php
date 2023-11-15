@@ -44,7 +44,7 @@ require_once 'main.functions.php';
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
-$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
+$lang = new Language(); 
 session_name('teampass_session');
 session_start();
 
@@ -88,9 +88,6 @@ if ($checkUserAccess->checkSession() === false) {
     exit;
 }
 
-// Load language file
-require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$SETTINGS['default_language'].'.php';
-
 // Define Timezone
 date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
 
@@ -100,9 +97,6 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 error_reporting(E_ERROR);
 
 // --------------------------------- //
-
-$superGlobal = new SuperGlobal();
-$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 
 // Prepare POST variables
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
@@ -197,7 +191,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
 {
     $antiXss = new AntiXSS();
     $superGlobal = new SuperGlobal();
-$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
+    $lang = new Language(); 
 
     // Prepare GET variables
     $sessionAdmin = $superGlobal->get('user_admin', 'SESSION');
@@ -1167,6 +1161,7 @@ function checkUserPasswordValidity($userInfo, $numDaysBeforePwExpiration, $lastP
  */
 function authenticateThroughAD(string $username, array $userInfo, string $passwordClear, array $SETTINGS): array
 {
+    $lang = new Language(); 
     // Build ldap configuration array
     $config = [
         // Mandatory Configuration Options
@@ -1471,7 +1466,7 @@ function yubicoMFACheck($dataReceived, string $userInfo, array $SETTINGS): array
 {
     // Load superGlobals
     $superGlobal = new SuperGlobal();
-$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
+$lang = new Language(); 
     $sessionAdmin = $superGlobal->get('user_admin', 'SESSION');
     $sessionUrl = $superGlobal->get('initial_url', 'SESSION');
     $sessionPwdAttempts = $superGlobal->get('pwd_attempts', 'SESSION');
@@ -1632,7 +1627,7 @@ function googleMFACheck(string $username, array $userInfo, $dataReceived, array 
 {
     // Load superGlobals
     $superGlobal = new SuperGlobal();
-    $lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
+    $lang = new Language(); 
     if (
         isset($dataReceived['GACode']) === true
         && empty($dataReceived['GACode']) === false
@@ -1731,7 +1726,7 @@ function duoMFACheck(
 {
     // Load superGlobals
     $superGlobal = new SuperGlobal();
-$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
+$lang = new Language(); 
 
     $sessionPwdAttempts = $superGlobal->get('pwd_attempts', 'SESSION');
     $saved_state = null !== $superGlobal->get('duo_state','SESSION') ? $superGlobal->get('duo_state','SESSION') : '';
@@ -1797,7 +1792,7 @@ function duoMFAPerform(
 {
     // Load superGlobals
     $superGlobal = new SuperGlobal();
-$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
+$lang = new Language(); 
 
     try {
         $duo_client = new Client(
@@ -2190,7 +2185,7 @@ function identifyDoInitialChecks(
     $enable_ad_user_auto_creation = isset($SETTINGS['enable_ad_user_auto_creation']) === true && (int) $SETTINGS['enable_ad_user_auto_creation'] === 1 ? true : false;
     // Load superGlobals
     $superGlobal = new SuperGlobal();
-    $lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
+    $lang = new Language(); 
     
     // Brute force management
     try {
@@ -2375,7 +2370,7 @@ function identifyDoMFAChecks(
 {    
     // Load superGlobals
     $superGlobal = new SuperGlobal();
-    $lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
+    $lang = new Language(); 
     
     switch ($userInitialData['user_mfa_mode']) {
         case 'google':

@@ -34,7 +34,7 @@ class AuthController extends BaseController
     public function authorizeAction()
     {
         $superGlobal = new SuperGlobal();
-$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
+$lang = new Language(); 
         $strErrorDesc = $responseData = $strErrorHeader = '';
         $requestMethod = $superGlobal->get('REQUEST_METHOD', 'SERVER');
         $arrQueryStringParams = $this->getQueryStringParams();

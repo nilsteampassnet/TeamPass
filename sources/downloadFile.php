@@ -37,7 +37,7 @@ require_once 'main.functions.php';
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
-$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
+$lang = new Language(); 
 session_name('teampass_session');
 session_start();
 
@@ -89,7 +89,7 @@ set_time_limit(0);
 // --------------------------------- //
 
 $superGlobal = new SuperGlobal();
-$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
+$lang = new Language(); 
 // Prepare GET variables
 $get_filename = $superGlobal->get('name', 'GET');
 $get_fileid = $superGlobal->get('fileid', 'GET');

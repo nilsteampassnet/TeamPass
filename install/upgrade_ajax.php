@@ -31,7 +31,7 @@ require_once __DIR__.'/../sources/main.functions.php';
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
-$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
+$lang = new Language(); 
 session_name('teampass_session');
 session_start();
 error_reporting(E_ERROR | E_PARSE);
@@ -265,7 +265,7 @@ try {
 
 // Load libraries
 $superGlobal = new SuperGlobal();
-$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
+$lang = new Language(); 
 
 // Set Session
 $superGlobal->put('CPM', 1, 'SESSION');

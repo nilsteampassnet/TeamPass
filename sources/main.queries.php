@@ -33,7 +33,7 @@ require_once 'main.functions.php';
 
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
-$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
+$lang = new Language(); 
 
 if (isset($_SESSION) === false) {
     session_name('teampass_session');
@@ -127,14 +127,13 @@ function mainQuery(array $SETTINGS)
     error_reporting(E_ERROR);
 
     // Includes
-    include_once __DIR__.'/../includes/language/' . $_SESSION['user']['user_language'] . '.php';
     include_once __DIR__.'/../sources/main.functions.php';
 
     // Load libraries
     loadClasses('DB');
 
     // User's language loading
-    //include_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user']['user_language'] . '.php';
+    $lang = new Language(); 
 
     // Prepare post variables
     $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
@@ -830,6 +829,9 @@ function changePassword(
     // Prepare variables
     $post_new_password_hashed = $pwdlib->createPasswordHash($post_new_password);
 
+    // Load user's language
+    $lang = new Language(); 
+
     // User has decided to change is PW
     if ($post_change_request === 'reset_user_password_expected'
         || $post_change_request === 'user_decides_to_change_password'
@@ -966,6 +968,9 @@ function generateQRCode(
     array $SETTINGS
 ): string
 {
+    // Load user's language
+    $lang = new Language(); 
+    
     // is this allowed by setting
     if (isKeyExistingAndEqual('ga_reset_by_user', 0, $SETTINGS) === true
         && (null === $post_demand_origin || $post_demand_origin !== 'users_management_list')
@@ -1357,8 +1362,9 @@ function generateBugReport(
         'duo_host'
     );
 
-    // Get data
-    //$post_data = json_decode($data, true);
+    // Load user's language
+    $lang = new Language(); 
+    
 
     // Read config file
     $list_of_options = '';
@@ -1505,6 +1511,9 @@ function isUserPasswordCorrect(
     array $SETTINGS
 ): string
 {
+    // Load user's language
+    $lang = new Language(); 
+    
     if (isUserIdValid($post_user_id) === true) {
         // Check if user exists
         $userInfo = DB::queryFirstRow(
@@ -1598,6 +1607,9 @@ function changePrivateKeyEncryptionPassword(
     array $SETTINGS
 ): string
 {
+    // Load user's language
+    $lang = new Language(); 
+    
     if (empty($post_new_code) === true) {
         if (empty($_SESSION['user_pwd']) === false) {
             $post_new_code = $_SESSION['user_pwd'];
@@ -1647,7 +1659,7 @@ function changePrivateKeyEncryptionPassword(
 
             // Load superGlobals
             $superGlobal = new SuperGlobal();
-$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
+$lang = new Language(); 
             $superGlobal->put('private_key', $privateKey, 'SESSION', 'user');
         }
 
@@ -1679,6 +1691,9 @@ function initializeUserPassword(
     array $SETTINGS
 ): string
 {
+    // Load user's language
+    $lang = new Language(); 
+    
     if (isUserIdValid($post_user_id) === true) {
         // Get user info
         $userData = DB::queryFirstRow(
@@ -1812,6 +1827,9 @@ function generateOneTimeCode(
     array $SETTINGS
 ): string
 {
+    // Load user's language
+    $lang = new Language(); 
+    
     if (isUserIdValid($post_user_id) === true) {
         // Get user info
         $userData = DB::queryFirstRow(
@@ -1874,6 +1892,9 @@ function startReEncryptingUserSharekeys(
     array $SETTINGS
 ): string
 {
+    // Load user's language
+    $lang = new Language(); 
+    
     if (isUserIdValid($post_user_id) === true) {
         // Check if user exists
         DB::queryFirstRow(
@@ -1940,6 +1961,9 @@ function continueReEncryptingUserSharekeys(
     array   $SETTINGS
 ): string
 {
+    // Load user's language
+    $lang = new Language(); 
+    
     if (isUserIdValid($post_user_id) === true) {
         // Check if user exists
         $userInfo = DB::queryFirstRow(
@@ -2616,7 +2640,11 @@ function migrateTo3_DoUserPersonalItemsEncryption(
     string $post_user_psk,
     array $SETTINGS
 ) {
-    $next_step = '';  
+    $next_step = '';
+    
+    // Load user's language
+    $lang = new Language(); 
+    
     
     if (isUserIdValid($post_user_id) === true) {
         // Check if user exists
@@ -2798,6 +2826,9 @@ function getUserInfo(
     array $SETTINGS
 )
 {
+    // Load user's language
+    $lang = new Language(); 
+    
     if (isUserIdValid($post_user_id) === true) {
         // Get user info
         $userData = DB::queryFirstRow(
@@ -2842,6 +2873,9 @@ function changeUserAuthenticationPassword(
     array $SETTINGS
 )
 {
+    // Load user's language
+    $lang = new Language(); 
+    
     if (isUserIdValid($post_user_id) === true) {
         // Get user info
         $userData = DB::queryFirstRow(
@@ -2868,7 +2902,7 @@ function changeUserAuthenticationPassword(
 
             // Load superGlobals
             $superGlobal = new SuperGlobal();
-$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
+$lang = new Language(); 
 
             if ($superGlobal->get('private_key', 'SESSION', 'user') === $privateKey) {
                 // Encrypt it with new password
@@ -2932,6 +2966,9 @@ function changeUserLDAPAuthenticationPassword(
     array $SETTINGS
 )
 {
+    // Load user's language
+    $lang = new Language(); 
+    
     if (isUserIdValid($post_user_id) === true) {
         // Get user info
         $userData = DB::queryFirstRow(
@@ -2967,7 +3004,6 @@ function changeUserLDAPAuthenticationPassword(
 
                 // Load superGlobals
                 $superGlobal = new SuperGlobal();
-$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
                 $superGlobal->put('private_key', $privateKey, 'SESSION', 'user');
 
                 return prepareExchangedData(
@@ -3033,7 +3069,7 @@ $lang = new Language($superGlobal->get('user_language', 'SESSION', 'user'));
                     
                     // Load superGlobals
                     $superGlobal = new SuperGlobal();
-$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
+$lang = new Language(); 
                     $superGlobal->put('private_key', $privateKey, 'SESSION', 'user');
 
                     return prepareExchangedData(

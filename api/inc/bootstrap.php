@@ -35,11 +35,11 @@ require API_ROOT_PATH . '/../sources/main.functions.php';
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
-$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
+$lang = new Language(); 
 
 // Load superglobal
 $superGlobal = new SuperGlobal();
-$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
+$lang = new Language(); 
 
 // include the base controller file
 require API_ROOT_PATH . "/Controller/Api/BaseController.php";

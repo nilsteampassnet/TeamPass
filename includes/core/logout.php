@@ -36,7 +36,7 @@ require_once __DIR__.'/../../sources/main.functions.php';
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
-$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
+$lang = new Language(); 
 session_name('teampass_session');
 session_start();
 
@@ -49,7 +49,7 @@ try {
 
 // Load superglobal library
 $superGlobal = new SuperGlobal();
-$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
+$lang = new Language(); 
 $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 $get = [];
 $get['user_id'] = $superGlobal->get('user_id', 'GET');

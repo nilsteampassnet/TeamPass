@@ -74,7 +74,6 @@ function langHdl(string $string): string
 
     // Load
     $superGlobal = new SuperGlobal();
-$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
     $antiXss = new AntiXSS();
     // Get language string
     $session_language = $superGlobal->get(trim($string), 'SESSION', 'lang');
@@ -337,7 +336,6 @@ function identifyUserRights(
     $SETTINGS
 ) {
     $superGlobal = new SuperGlobal();
-$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
     $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
     // Check if user is ADMINISTRATOR    
@@ -382,7 +380,6 @@ function identAdmin($idFonctions, $SETTINGS, $tree)
 {
     // Load superglobal
     $superGlobal = new SuperGlobal();
-$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
     // Init
     $groupesVisibles = [];
     $superGlobal->put('personal_folders', [], 'SESSION');
@@ -499,7 +496,6 @@ function identUser(
 ) {
     // Load superglobal
     $superGlobal = new SuperGlobal();
-$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
     // Init
     $superGlobal->put('groupes_visibles', [], 'SESSION');
     $superGlobal->put('personal_folders', [], 'SESSION');
@@ -901,7 +897,6 @@ function cacheTableUpdate(?int $ident = null): void
     // Load class DB
     loadClasses('DB');
     $superGlobal = new SuperGlobal();
-$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 
     //Load Tree
     $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
@@ -973,8 +968,6 @@ $lang = new Language($superGlobal->get('user_language', 'SESSION', 'user'));
 function cacheTableAdd(?int $ident = null): void
 {
     $superGlobal = new SuperGlobal();
-$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
-    // Get superglobals
     $globalsUserId = $superGlobal->get('user_id', 'SESSION');
 
     // Load class DB
@@ -1205,9 +1198,7 @@ function sendEmail(
     $silent = true,
     $cron = false
 ) {
-    // Load superGlobals
-    $superGlobal = new SuperGlobal();
-    $lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
+    $lang = new Language(); 
 
     // CAse where email not defined
     if ($email === 'none' || empty($email) === true) {
@@ -1266,11 +1257,6 @@ function buildEmail(
     $cron = false
 )
 {
-    // Load superglobal
-    $superGlobal = new SuperGlobal();
-$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
-    // Get user language
-    include_once $SETTINGS['cpassman_dir'] . '/includes/language/' . (null !== $superGlobal->get('user_language', 'SESSION', 'user') ? $superGlobal->get('user_language', 'SESSION', 'user') : 'english') . '.php';
     // load PHPMailer
     $mail = new PHPMailer(true);
 
@@ -1478,7 +1464,6 @@ function prepareExchangedData($data, string $type, ?string $key = null)
 {
     // Load superglobal
     $superGlobal = new SuperGlobal();
-$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 
     // Get superglobals
     if ($key !== null) {
@@ -1794,7 +1779,6 @@ function notifyOnChange(int $item_id, string $action, array $SETTINGS): void
         // Load superglobal
         include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
         $superGlobal = new SuperGlobal();
-$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
         // Get superglobals
         $globalsLastname = $superGlobal->get('lastname', 'SESSION');
         $globalsName = $superGlobal->get('name', 'SESSION');
@@ -1844,7 +1828,7 @@ function notifyChangesToSubscribers(int $item_id, string $label, array $changes,
 {
     // Load superglobal
     $superGlobal = new SuperGlobal();
-$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
+    $lang = new Language(); 
     // Get superglobals
     $globalsUserId = $superGlobal->get('user_id', 'SESSION');
     $globalsLastname = $superGlobal->get('lastname', 'SESSION');
@@ -2360,7 +2344,6 @@ function recursiveChmod(
 function accessToItemIsGranted(int $item_id, array $SETTINGS)
 {
     $superGlobal = new SuperGlobal();
-$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
     // Prepare superGlobal variables
     $session_groupes_visibles = $superGlobal->get('groupes_visibles', 'SESSION');
     $session_list_restricted_folders_for_items = $superGlobal->get('list_restricted_folders_for_items', 'SESSION');
@@ -2825,7 +2808,6 @@ function storeUsersShareKey(
     array $objectKeyArray = []
 ): void {
     $superGlobal = new SuperGlobal();
-$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 
     // Load class DB
     loadClasses('DB');
@@ -3381,7 +3363,7 @@ function defineComplexity() : void
 {
     // Load superGlobals
     $superGlobal = new SuperGlobal();
-    $lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
+    $lang = new Language(); 
     
     if (defined('TP_PW_COMPLEXITY') === false) {
         define(
@@ -3791,9 +3773,7 @@ function handleUserKeys(
     string $recovery_private_key = ''
 ): string
 {
-    // Load superGlobals
-    $superGlobal = new SuperGlobal();
-    $lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
+    $lang = new Language(); 
 
     // prepapre background tasks for item keys generation        
     $userTP = DB::queryFirstRow(
@@ -4343,7 +4323,6 @@ function getCurrectPage($SETTINGS)
 {
     // Load libraries
     $superGlobal = new SuperGlobal();
-$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
 
     // Parse the url
     parse_str(

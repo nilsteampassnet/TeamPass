@@ -32,7 +32,7 @@ require_once 'main.functions.php';
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
-$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
+$lang = new Language(); 
 session_name('teampass_session');
 session_start();
 
@@ -85,7 +85,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
 $superGlobal = new SuperGlobal();
-$lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
+$lang = new Language(); 
 
 // Prepare sanitization
 $data = [
@@ -497,7 +497,7 @@ function prepareNodeJson(
 {
     // Load superGlobals
     $superGlobal = new SuperGlobal();
-    $lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
+    $lang = new Language(); 
 
     // prepare json return for current node
     $parent = $currentNode->parent_id === '0' ? '#' : 'li_' . $currentNode->parent_id;
@@ -603,7 +603,7 @@ function prepareNodeData(
 {
     // Load superGlobals
     $superGlobal = new SuperGlobal();
-    $lang = new Language($superGlobal->get('user_language', 'SESSION', 'user')); 
+    $lang = new Language(); 
 
     if (in_array($nodeId, $session_groupes_visibles) === true) {
         // special case for READ-ONLY folder
