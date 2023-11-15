@@ -406,7 +406,7 @@ function installHandleFoldersCategories(
         $result = $mysqli2->query('SELECT t.title
             FROM ' . $pre . 'roles_values as v
             INNER JOIN ' . $pre . 'roles_title as t ON (v.role_id = t.id)
-            WHERE v.intitule = '.$folder.'
+            WHERE v.folder_id = '.$folder.'
             GROUP BY title'
         );
         $rowcount = $result->num_rows;
