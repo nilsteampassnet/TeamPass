@@ -69,15 +69,15 @@ class PerformChecks
     /**
      * Handle the case
      *
-     * @return void
+     * @return string
      */
-    public function caseHandler(): void
+    public function caseHandler(): string
     {
         switch ($this->postType) {
             case 'checkSessionExists':
-                $this->checkUserSessionExists();
-                break;
+                return $this->checkUserSessionExists();
         }
+        return false;
     }
 
     /**
@@ -92,10 +92,9 @@ class PerformChecks
         session_start();
 
         if (isset($_SESSION['CPM']) === true) {
-            echo json_encode([
+            return json_encode([
                 'status' => true,
             ]);
-            exit();
         }
 
         // In case that no session is available
@@ -104,7 +103,7 @@ class PerformChecks
         $csrfp_array = __DIR__ . '/../includes/libraries/csrfp/libs/csrfp.config.php';
 
         // Send back CSRFP info
-        echo $csrfp_array['CSRFP_TOKEN'] . ';' . filter_input(INPUT_POST, $csrfp_array['CSRFP_TOKEN'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        return $csrfp_array['CSRFP_TOKEN'] . ';' . filter_input(INPUT_POST, $csrfp_array['CSRFP_TOKEN'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
     }
 
     /**

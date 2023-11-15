@@ -61,7 +61,7 @@ $checkUserAccess = new PerformChecks(
     ]
 );
 // Handle the case
-$checkUserAccess->caseHandler();
+echo $checkUserAccess->caseHandler();
 if (
     $checkUserAccess->userAccessPage('roles') === false ||
     $checkUserAccess->checkSession() === false

@@ -31,7 +31,6 @@ class SuperGlobal
      */
     protected function dataSanitizerCall($key)
     {
-        //include_once __DIR__ . '/../../../../sources/main.functions.php';
         return  dataSanitizer(
             ['key' => $key],
             ['key' => 'trim|escape'],

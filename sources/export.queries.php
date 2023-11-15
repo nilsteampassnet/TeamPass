@@ -62,7 +62,7 @@ $checkUserAccess = new PerformChecks(
     ]
 );
 // Handle the case
-$checkUserAccess->caseHandler();
+echo $checkUserAccess->caseHandler();
 if (
     $checkUserAccess->userAccessPage('items') === false ||
     $checkUserAccess->checkSession() === false

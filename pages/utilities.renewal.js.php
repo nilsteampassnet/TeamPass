@@ -67,7 +67,7 @@ $checkUserAccess = new PerformChecks(
     ]
 );
 // Handle the case
-$checkUserAccess->caseHandler();
+echo $checkUserAccess->caseHandler();
 if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('utilities.logs') === false) {
     // Not allowed page
     $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');

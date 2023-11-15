@@ -63,7 +63,7 @@ $checkUserAccess = new PerformChecks(
     ]
 );
 // Handle the case
-$checkUserAccess->caseHandler();
+echo $checkUserAccess->caseHandler();
 if (
     $checkUserAccess->userAccessPage('utilities.logs') === false ||
     $checkUserAccess->checkSession() === false

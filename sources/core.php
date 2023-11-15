@@ -27,7 +27,6 @@ declare(strict_types=1);
 
 use voku\helper\AntiXSS;
 use TeampassClasses\SuperGlobal\SuperGlobal;
-use EZimuel\PHPSecureSession;
 
 // Load functions
 require_once 'main.functions.php';
@@ -46,7 +45,7 @@ try {
  *
  * @param string $url new url
  *
- * @return string refresh page to url
+ * @return void refresh page to url
  */
 function teampassRedirect($url)
 {

@@ -168,7 +168,7 @@ if (isset($SETTINGS['cpassman_dir']) === false || $SETTINGS['cpassman_dir'] === 
 
 // Load user languages files
 if (file_exists($SETTINGS['cpassman_dir'] . '/includes/language/' . $session_user_language . '.php') === true) {
-    $_SESSION['teampass']['lang'] = include $SETTINGS['cpassman_dir'] . '/includes/language/' . $session_user_language . '.php';
+    $superGlobal->put('lang', include $SETTINGS['cpassman_dir'] . '/includes/language/' . $session_user_language . '.php', 'SESSION', 'teampass');
 } else {
     $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
     //not allowed page
@@ -652,8 +652,7 @@ if (($session_validite_pw === null
                         <a href="<?php echo HELP_URL; ?>" target="_blank" class="text-info"><i class="fa-solid fa-life-ring mr-2 infotip" title="<?php echo langHdl('admin_help'); ?>"></i></a>
                         <i class="fa-solid fa-bug infotip pointer text-info" title="<?php echo langHdl('bugs_page'); ?>" onclick="generateBugReport()"></i>
                     </div>
-                    <?php 
-    //print_r($_SESSION);
+                    <?php
     ?>
                 </div>
                 </div>
@@ -982,15 +981,14 @@ if (($session_validite_pw === null
                     } elseif (empty($get['page']) === false) {
                         include $SETTINGS['cpassman_dir'] . '/pages/' . $get['page'] . '.php';
                     } else {
-                        $_SESSION['error']['code'] = ERR_NOT_EXIST;
+                        $superGlobal->put('code', ERR_NOT_EXIST, 'SESSION', 'error');
                         //page doesn't exist
                         include $SETTINGS['cpassman_dir'].'/error.php';
                     }
 
     // Case where login attempts have been identified
-    if (isset($_SESSION['unsuccessfull_login_attempts']) === true
-        && $_SESSION['unsuccessfull_login_attempts_nb'] !== 0
-        && $_SESSION['unsuccessfull_login_attempts_shown'] === false
+    if ((int) $superGlobal->get('unsuccessfull_login_attempts', 'SESSION') !== 0
+        && (bool) $superGlobal->get('unsuccessfull_login_attempts_shown', 'SESSION') === false
     ) {
         ?>
                     <input type="hidden" id="user-login-attempts" value="1">
@@ -1028,7 +1026,7 @@ if (($session_validite_pw === null
     <?php
         /* MAIN PAGE */
         echo '
-<input type="hidden" id="temps_restant" value="', $_SESSION['sessionDuration'] ?? '', '" />';
+<input type="hidden" id="temps_restant" value="', $superGlobal->get('sessionDuration', 'SESSION') ?? '', '" />';
 // display an item in the context of OTV link
 } elseif (($session_validite_pw === null
         || empty($session_validite_pw) === true
@@ -1040,7 +1038,7 @@ if (($session_validite_pw === null
     ) {
         include './includes/core/otv.php';
     } else {
-        $_SESSION['error']['code'] = ERR_VALID_SESSION;
+        $superGlobal->put('code', ERR_VALID_SESSION, 'SESSION', 'error');
         $superGlobal->put(
             'initial_url',
             filter_var(
@@ -1291,10 +1289,7 @@ $get = [];
 $get['page'] = $superGlobal->get('page', 'GET') === null ? '' : $superGlobal->get('page', 'GET');
 
 // Load links, css and javascripts
-if (
-    isset($_SESSION['CPM']) === true
-    && isset($SETTINGS['cpassman_dir']) === true
-) {
+if (isset($SETTINGS['cpassman_dir']) === true) {
     include_once $SETTINGS['cpassman_dir'] . '/includes/core/load.js.php';
     if ($menuAdmin === true) {
         include_once $SETTINGS['cpassman_dir'] . '/pages/admin.js.php';
