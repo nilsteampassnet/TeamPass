@@ -3849,7 +3849,7 @@ function handleUserKeys(
                     'creator_pwd' => $userTP['pw'],
                     'send_email' => $sendEmailToUser === true ? 1 : 0,
                     'otp_provided_new_value' => 1,
-                    'email_body' => empty($emailBody) === true ? '' : langHdl($emailBody),
+                    'email_body' => empty($emailBody) === true ? '' : $lang->get($emailBody),
                     'user_self_change' => $user_self_change === true ? 1 : 0,
                 ]),
                 'updated_at' => '',

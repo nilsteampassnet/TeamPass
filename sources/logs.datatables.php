@@ -512,7 +512,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         //col2
         $sOutput_item .= '"'.htmlspecialchars(stripslashes((string) $record['name']), ENT_QUOTES).' '.htmlspecialchars(stripslashes((string) $record['lastname']), ENT_QUOTES).' ['.htmlspecialchars(stripslashes((string) $record['login']), ENT_QUOTES).']", ';
         //col4
-        $sOutput_item .= '"'.htmlspecialchars(stripslashes(langHdl($record['action'])), ENT_QUOTES).'", ';
+        $sOutput_item .= '"'.htmlspecialchars(stripslashes($lang->get($record['action'])), ENT_QUOTES).'", ';
         //col5
         if ($record['perso'] === 1) {
             $sOutput_item .= '"'.htmlspecialchars(stripslashes($lang->get('yes')), ENT_QUOTES).'"';
@@ -595,9 +595,9 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         $sOutput .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['auth_date']).'", ';
         //col2 - 3
         if ($record['label'] === 'password_is_not_correct' || $record['label'] === 'user_not_exists') {
-            $sOutput .= '"'.langHdl($record['label']).'", "'.$record['field_1'].'", ';
+            $sOutput .= '"'.$lang->get($record['label']).'", "'.$record['field_1'].'", ';
         } else {
-            $sOutput .= '"'.langHdl($record['label']).'", "", ';
+            $sOutput .= '"'.$lang->get($record['label']).'", "", ';
         }
 
         //col3

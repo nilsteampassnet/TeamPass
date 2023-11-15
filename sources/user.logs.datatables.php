@@ -177,16 +177,16 @@ foreach ($rows as $record) {
     ) {
         if (strpos($record['label'], 'at_') === 0) {
             if (strpos($record['label'], '#') >= 0) {
-                $col2 = preg_replace('/#[\s\S]+?#/', '', langHdl($record['label']));
+                $col2 = preg_replace('/#[\s\S]+?#/', '', $lang->get($record['label']));
             } else {
-                $col2 = str_replace('"', '\"', langHdl($record['label']));
+                $col2 = str_replace('"', '\"', $lang->get($record['label']));
             }
         } else {
             $col2 = str_replace('"', '\"', $record['label']);
         }
         $col3 = '';
     } else {
-        $col2 = langHdl($record['action']).' '.$lang->get('id').' '.$record['id'];
+        $col2 = $lang->get($record['action']).' '.$lang->get('id').' '.$record['id'];
         $col3 = str_replace('"', '\"', $record['label']);
     }
 

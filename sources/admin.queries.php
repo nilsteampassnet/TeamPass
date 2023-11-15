@@ -2380,7 +2380,7 @@ switch ($post_type) {
             array(
                 'error' => false,
                 'misc' => $counter . ' ; ' . $SETTINGS[$post_field],
-                'message' => empty($post_translate) === false ? langHdl($post_translate) : '',
+                'message' => empty($post_translate) === false ? $lang->get($post_translate) : '',
             ),
             'encode'
         );

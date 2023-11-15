@@ -26,7 +26,6 @@ declare(strict_types=1);
 
 use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\Language\Language;
-use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\PerformChecks\PerformChecks;
 
 // Load functions
@@ -77,9 +76,7 @@ header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, no-store, must-revalidate');
 
 // --------------------------------- //
- 
-$superGlobal = new SuperGlobal();
-$lang = new Language(); 
+
 // Prepare GET variables
 $get = [];
 $get['tab'] = $superGlobal->get('tab', 'GET') === null ? '' : $superGlobal->get('tab', 'GET');
@@ -356,9 +353,9 @@ foreach ($_SESSION['user_roles'] as $role) {
                                         );
                                         foreach ($rows as $record) {
                                             if (substr($record['labelAction'], 0, 3) === 'at_') {
-                                                $text = langHdl(substr($record['labelAction'], 3));
+                                                $text = $lang->get(substr($record['labelAction'], 3));
                                             } else {
-                                                $text = langHdl($record['labelAction']);
+                                                $text = $lang->get($record['labelAction']);
                                             }
                                             if (empty($record['NULL']) === false) {
                                                 $text .= ' ' . $lang->get('for') . ' <span class="font-weight-light">' . addslashes($record['NULL']) . '</span>';

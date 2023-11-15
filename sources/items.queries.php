@@ -1852,9 +1852,9 @@ switch ($inputData['type']) {
                     $reason = explode(':', $record['raison']);
                     if (count($reason) > 0) {
                         $sentence = date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['date']) . ' - '
-                            . $record['login'] . ' - ' . langHdl($record['action']) . ' - '
-                            . (empty($record['raison']) === false ? (count($reason) > 1 ? langHdl(trim($reason[0])) . ' : ' . $reason[1]
-                                : langHdl(trim($reason[0]))) : '');
+                            . $record['login'] . ' - ' . $lang->get($record['action']) . ' - '
+                            . (empty($record['raison']) === false ? (count($reason) > 1 ? $lang->get(trim($reason[0])) . ' : ' . $reason[1]
+                                : $lang->get(trim($reason[0]))) : '');
                         if (empty($history)) {
                             $history = $sentence;
                         } else {
@@ -5709,7 +5709,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                 'SELECT * FROM ' . prefixTable('log_items') . ' WHERE id_item = %i ORDER BY date DESC',
                 $item_id
             );
-            $historic = date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $data['date']) . ' - ' . $_SESSION['login'] . ' - ' . langHdl($data['action']) . ' - ' . $data['raison'];
+            $historic = date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $data['date']) . ' - ' . $_SESSION['login'] . ' - ' . $lang->get($data['action']) . ' - ' . $data['raison'];
             // send back
             $data = array(
                 'error' => '',
@@ -6393,7 +6393,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
             $action = '';
             $detail = '';
             if ($reason[0] === 'at_pw') {
-                $action = langHdl($reason[0]);
+                $action = $lang->get($reason[0]);
                 
                 // get previous password
                 if (empty($record['old_value']) === false) {
@@ -6412,11 +6412,11 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                 }
             } elseif ($record['action'] === 'at_manual') {
                 $detail = $reason[0];
-                $action = langHdl($record['action']);
+                $action = $lang->get($record['action']);
             } elseif ($reason[0] === 'at_description') {
                 $action = $lang->get('description_has_changed');
             } elseif (empty($record['raison']) === false && $reason[0] !== 'at_creation') {
-                $action = langHdl($reason[0]);
+                $action = $lang->get($reason[0]);
                 if ($reason[0] === 'at_moved') {
                     $tmp = explode(' -> ', $reason[1]);
                     $detail = $lang->get('from') . ' <span class="font-weight-light">' . $tmp[0] . '</span> ' . $lang->get('to') . ' <span class="font-weight-light">' . $tmp[1] . ' </span>';
@@ -6433,9 +6433,9 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                     $detail = empty(trim($tmp[0])) === true ?
                         $lang->get('no_previous_value') : $lang->get('previous_value') . ': <span class="font-weight-light">' . $tmp[0] . ' </span>';
                 } elseif ($reason[0] === 'at_automatic_del') {
-                    $detail = langHdl($reason[1]);
+                    $detail = $lang->get($reason[1]);
                 } elseif ($reason[0] === 'at_anyoneconmodify') {
-                    $detail = langHdl($reason[1]);
+                    $detail = $lang->get($reason[1]);
                 } elseif ($reason[0] === 'at_add_file' || $reason[0] === 'at_del_file') {
                     $tmp = explode(':', $reason[1]);
                     $tmp = explode('.', $tmp[0]);
@@ -6450,7 +6450,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                     $detail = $reason[0];
                 }
             } else {
-                $detail = langHdl($record['action']);
+                $detail = $lang->get($record['action']);
                 $action = '';
             }
 
