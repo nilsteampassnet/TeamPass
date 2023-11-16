@@ -128,7 +128,6 @@ class ItemController extends BaseController
     public function addAction(array $userData)
     {
         $superGlobal = new SuperGlobal();
-$lang = new Language(); 
         $strErrorDesc = $strErrorHeader = '';
         $requestMethod = $superGlobal->get('REQUEST_METHOD', 'SERVER');
 
@@ -186,7 +185,6 @@ $lang = new Language();
     public function getAction(array $userData): void
     {
         $superGlobal = new SuperGlobal();
-$lang = new Language(); 
         $strErrorDesc = '';
         $sqlExtra = '';
         $responseData = '';

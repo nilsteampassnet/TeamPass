@@ -24,6 +24,8 @@
  */
 use PasswordLib\PasswordLib;
 use TeampassClasses\NestedTree\NestedTree;
+use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
 
 require_once API_ROOT_PATH . "/Model/Database.php";
 
@@ -130,7 +132,7 @@ class AuthModel extends Database
     private function createUserJWT(int $id, string $login, int $pf_enabled, string $pubkey, string $privkey, string $folders, string $items): array
     {
         include_once API_ROOT_PATH . '/../includes/config/tp.config.php';
-        $headers = ['alg'=>'HS256','typ'=>'JWT'];
+        //$headers = ['alg'=>'HS256','typ'=>'JWT'];
 		$payload = [
             'username' => $login,
             'id' => $id, 
@@ -142,8 +144,9 @@ class AuthModel extends Database
             'restricted_items_list' => $items,
         ];
 
-        include_once API_ROOT_PATH . '/inc/jwt_utils.php';
-		return ['token' => generate_jwt($headers, $payload)];
+        //include_once API_ROOT_PATH . '/inc/jwt_utils.php';
+		//return ['token' => generate_jwt($headers, $payload)];
+        return [JWT::encode($payload, $DB_PASSWD, 'HS256')];
     }
 
     //end createUserJWT
