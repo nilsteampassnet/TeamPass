@@ -1659,7 +1659,6 @@ function changePrivateKeyEncryptionPassword(
 
             // Load superGlobals
             $superGlobal = new SuperGlobal();
-$lang = new Language(); 
             $superGlobal->put('private_key', $privateKey, 'SESSION', 'user');
         }
 

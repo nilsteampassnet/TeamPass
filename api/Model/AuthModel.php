@@ -131,8 +131,8 @@ class AuthModel extends Database
      */
     private function createUserJWT(int $id, string $login, int $pf_enabled, string $pubkey, string $privkey, string $folders, string $items): array
     {
-        include_once API_ROOT_PATH . '/../includes/config/tp.config.php';
-        //$headers = ['alg'=>'HS256','typ'=>'JWT'];
+        include API_ROOT_PATH . '/../includes/config/tp.config.php';
+        
 		$payload = [
             'username' => $login,
             'id' => $id, 

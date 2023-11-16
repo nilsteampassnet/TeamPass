@@ -346,9 +346,9 @@ $zones = timezone_list();
                                 <select class='form-control form-control-sm' id='default_language'>
                                     <option value=''>-- <?php echo $lang->get('select'); ?> --</option>
                                     <?php
-                                    foreach ($languagesList as $lang) {
+                                    foreach ($languagesList as $teampassLang) {
                                         echo '
-                                <option value="' . $lang . '"', isset($SETTINGS['default_language']) === true && $SETTINGS['default_language'] === $lang ? ' selected' : '', '>' . $lang . '</option>';
+                                <option value="' . $teampassLang . '"', isset($SETTINGS['default_language']) === true && $SETTINGS['default_language'] === $teampassLang ? ' selected' : '', '>' . $teampassLang . '</option>';
                                     }
                                     ?>
                                 </select>

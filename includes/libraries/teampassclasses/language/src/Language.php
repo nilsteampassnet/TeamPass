@@ -32,13 +32,8 @@ class Language {
 
     public function __construct($language = null, $path = __DIR__."/../../../../language") {
         $superGlobal = new SuperGlobal();
-        if (null === $language || empty($language) === true) {
-            $userLanguage = $superGlobal->get('user_language', 'SESSION', 'user');
-            if (null !== $userLanguage) {
-                $language = $userLanguage;
-            } else {
-                $language = 'english';
-            }
+        if (null === $language || empty($language) === true ) {
+            $language = 'english';
         }
         $this->setLanguage($language, $path);
     }
