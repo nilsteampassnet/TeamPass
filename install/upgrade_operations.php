@@ -418,7 +418,7 @@ function installHandleFoldersCategories(
         $arr_data['visibilityRoles'] = $valTemp;
 
         // now save in DB
-        $mysqli2->query("UPDATE " . $pre . " nested_tree SET categories = '".json_encode($arr_data)."' WHERE id = ".$folder);
+        $mysqli2->query("UPDATE " . $pre . "nested_tree SET categories = '".json_encode($arr_data)."' WHERE id = ".$folder);
     }
     
     mysqli_close($mysqli2);
