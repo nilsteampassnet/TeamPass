@@ -24,44 +24,57 @@
  */
 
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
+use Firebase\JWT\SignatureInvalidException;
+use Firebase\JWT\BeforeValidException;
+use Firebase\JWT\ExpiredException;
 
-function generate_jwt($headers, $payload) {
-	$headers_encoded = base64url_encode(json_encode($headers));
-	
-	$payload_encoded = base64url_encode(json_encode($payload));
-	
-	$signature = hash_hmac('SHA256', "$headers_encoded.$payload_encoded", DB_PASSWD, true);
-	$signature_encoded = base64url_encode($signature);
-	
-	$jwt = "$headers_encoded.$payload_encoded.$signature_encoded";
-	
-	return $jwt;
-}
-
+/**
+ * Is the JWT valid
+ *
+ * @param string $jwt
+ * @return boolean
+ */
 function is_jwt_valid($jwt) {
-	// split the jwt
-	$tokenParts = explode('.', $jwt);
-	$header = base64_decode($tokenParts[0]);
-	$payload = base64_decode($tokenParts[1]);
-	$signature_provided = $tokenParts[2];
+	try {
+		$decoded = (array) JWT::decode($jwt, new Key(DB_PASSWD, 'HS256'));
 
-	// check the expiration time - note this will cause an error if there is no 'exp' claim in the jwt
-	$expiration = json_decode($payload)->exp;
-	$is_token_expired = ($expiration - time()) < 0;
+		// Check if expiration is reached
+		if ($decoded['exp'] - time() < 0) {
+			return false;
+		}
+/*
+		$decoded1 = JWT::decode($jwt, new Key(DB_PASSWD, 'HS256'), $headers = new stdClass());
+		print_r($headers);
+*/
 
-	// build a signature based on the header and payload using the secret
-	$base64_url_header = base64url_encode($header);
-	$base64_url_payload = base64url_encode($payload);
-	$signature = hash_hmac('SHA256', $base64_url_header . "." . $base64_url_payload, DB_PASSWD, true);
-	$base64_url_signature = base64url_encode($signature);
-
-	// verify it matches the signature provided in the jwt
-	$is_signature_valid = ($base64_url_signature === $signature_provided);
-	
-	if ($is_token_expired || !$is_signature_valid) {
-		return FALSE;
-	} else {
-		return TRUE;
+		return true;
+	} catch (InvalidArgumentException $e) {
+		// provided key/key-array is empty or malformed.
+		return false;
+	} catch (DomainException $e) {
+		// provided algorithm is unsupported OR
+		// provided key is invalid OR
+		// unknown error thrown in openSSL or libsodium OR
+		// libsodium is required but not available.
+		return false;
+	} catch (SignatureInvalidException $e) {
+		// provided JWT signature verification failed.
+		return false;
+	} catch (BeforeValidException $e) {
+		// provided JWT is trying to be used before "nbf" claim OR
+		// provided JWT is trying to be used before "iat" claim.
+		return false;
+	} catch (ExpiredException $e) {
+		// provided JWT is trying to be used after "exp" claim.
+		return false;
+	} catch (UnexpectedValueException $e) {
+		// provided JWT is malformed OR
+		// provided JWT is missing an algorithm / using an unsupported algorithm OR
+		// provided JWT algorithm does not match provided key OR
+		// provided key ID in key/key-array is empty or invalid.
+		return false;
 	}
 }
 

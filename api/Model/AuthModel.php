@@ -144,8 +144,6 @@ class AuthModel extends Database
             'restricted_items_list' => $items,
         ];
 
-        //include_once API_ROOT_PATH . '/inc/jwt_utils.php';
-		//return ['token' => generate_jwt($headers, $payload)];
         return ['token' => JWT::encode($payload, DB_PASSWD, 'HS256')];
     }
 

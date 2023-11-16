@@ -126,7 +126,7 @@ function verifyAuth(): string
         return json_encode(
             [
                 'error' => true,
-                'error_message' => 'Access denied1',
+                'error_message' => 'Access denied',
                 'error_header' => 'HTTP/1.1 404 Not Found',
             ]
         );
