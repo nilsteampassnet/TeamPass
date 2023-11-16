@@ -42,8 +42,7 @@ try {
 } catch (Exception $e) {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
-$superGlobal = new SuperGlobal();
-$lang = new Language(); 
+
 // Load tree
 $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 ?>

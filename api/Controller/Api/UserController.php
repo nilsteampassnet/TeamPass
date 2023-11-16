@@ -24,7 +24,6 @@
  */
 
 use TeampassClasses\SuperGlobal\SuperGlobal;
-use TeampassClasses\Language\Language;
 
 class UserController extends BaseController
 {
@@ -34,7 +33,6 @@ class UserController extends BaseController
     public function listAction()
     {
         $superGlobal = new SuperGlobal();
-$lang = new Language(); 
         $strErrorDesc = $responseData = $strErrorHeader = '';
         $requestMethod = $superGlobal->get('REQUEST_METHOD', 'SERVER');
         $arrQueryStringParams = $this->getQueryStringParams();

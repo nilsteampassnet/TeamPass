@@ -23,7 +23,7 @@
  * @see       https://www.teampass.net
  */
 require_once API_ROOT_PATH . "/Model/Database.php";
- 
+
 class FolderModel extends Database
 {
     public function getFoldersInfo(array $foldersId): array

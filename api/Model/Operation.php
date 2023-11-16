@@ -24,6 +24,7 @@
  */
 
 use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
 
 class Operation
 {
@@ -32,7 +33,7 @@ class Operation
         $JWT = new JWT();
 
         try {
-            $JWT->decode($jwt, DB_PASSWD, array('HS256'));
+            $JWT->decode($jwt, new Key(DB_PASSWD, 'HS256'));
     
             // Access is granted.    
             return array(

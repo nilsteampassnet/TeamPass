@@ -25,7 +25,6 @@
 
 
 use TeampassClasses\SuperGlobal\SuperGlobal;
-use TeampassClasses\Language\Language;
 
 class BaseController
 {
@@ -45,7 +44,6 @@ class BaseController
     public function getUriSegments()
     {
         $superGlobal = new SuperGlobal();
-$lang = new Language(); 
         $uri = parse_url($superGlobal->get('REQUEST_URI', 'SERVER'), PHP_URL_PATH);
         $uri = explode( '/', $uri );
         return $this->sanitizeUrl(array_slice($uri, ((int) array_search('index.php', $uri) + 1)));
@@ -59,7 +57,6 @@ $lang = new Language();
     public function getQueryStringParams()
     {
         $superGlobal = new SuperGlobal();
-$lang = new Language(); 
         parse_str(html_entity_decode($superGlobal->get('QUERY_STRING', 'SERVER')), $query);
         return $this->sanitizeUrl($query);
     }

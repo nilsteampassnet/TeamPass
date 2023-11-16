@@ -25,7 +25,6 @@
 
 
 use TeampassClasses\SuperGlobal\SuperGlobal;
-use TeampassClasses\Language\Language;
 
 define("API_ROOT_PATH", __DIR__ . "/..");
 
@@ -35,11 +34,6 @@ require API_ROOT_PATH . '/../sources/main.functions.php';
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
-$lang = new Language(); 
-
-// Load superglobal
-$superGlobal = new SuperGlobal();
-$lang = new Language(); 
 
 // include the base controller file
 require API_ROOT_PATH . "/Controller/Api/BaseController.php";

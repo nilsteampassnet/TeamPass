@@ -2745,20 +2745,23 @@ switch ($inputData['type']) {
                         );
                         //db::debugmode(false);
                         $fieldText = [];
-                        if (DB::count() === 0 && (int) $row['encrypted_data'] !== 1) {
-                            // Not encrypted
+                        if (DB::count() === 0 && (int) $row['encrypted_data'] === 1) {
+                            // Data should be encrypted but no key yet
+                            // System is currently creating the keys
                             $fieldText = [
                                 'string' => '',
                                 'encrypted' => false,
                                 'error' => 'error_no_sharekey_yet',
                             ];
-                        } else if (DB::count() === 0 && (int) $row['encrypted_data'] === 1) {
+                        } else if (DB::count() === 0 && (int) $row['encrypted_data'] === 0) {
+                            // Data is not encrypted in DB
                             $fieldText = [
                                 'string' => $row['data'],
-                                'encrypted' => true,
-                                'error' => true,
+                                'encrypted' => false,
+                                'error' => false,
                             ];
                         } else {
+                            // Data is encrypted in DB and we have a key
                             $fieldText = [
                                 'string' => doDataDecryption(
                                     $row['data'],

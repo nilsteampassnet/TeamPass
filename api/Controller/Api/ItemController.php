@@ -24,7 +24,6 @@
  */
 
 use TeampassClasses\SuperGlobal\SuperGlobal;
-use TeampassClasses\Language\Language;
 
 class ItemController extends BaseController
 {
@@ -38,7 +37,6 @@ class ItemController extends BaseController
     public function inFoldersAction(array $userData): void
     {
         $superGlobal = new SuperGlobal();
-$lang = new Language(); 
         $strErrorDesc = $responseData = $strErrorHeader = '';
         $requestMethod = $superGlobal->get('REQUEST_METHOD', 'SERVER');
 
