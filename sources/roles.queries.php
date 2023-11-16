@@ -20,11 +20,9 @@ declare(strict_types=1);
  */
 
 use LdapRecord\Connection;
-use LdapRecord\Container;
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\Language\Language;
-use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
 
 
@@ -707,7 +705,7 @@ if (null !== $post_type) {
             $config = [
                 // Mandatory Configuration Options
                 'hosts'            => explode(',', $SETTINGS['ldap_hosts']),
-                'base_dn'          => (isset($SETTINGS['ldap_dn_additional_user_dn']) === true && empty($SETTINGS['ldap_dn_additional_user_dn']) === false ? $SETTINGS['ldap_dn_additional_user_dn'].',' : '').$SETTINGS['ldap_bdn'],
+                'base_dn'          => $SETTINGS['ldap_bdn'],
                 'username'         => $SETTINGS['ldap_username'],
                 'password'         => $SETTINGS['ldap_password'],
             
