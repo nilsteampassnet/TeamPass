@@ -26,8 +26,6 @@ declare(strict_types=1);
 
 use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\Language\Language;
-use EZimuel\PHPSecureSession;
-use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\NestedTree\NestedTree;
 
 // Load functions
@@ -47,9 +45,6 @@ try {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
-// Load superglobal library
-$superGlobal = new SuperGlobal();
-$lang = new Language(); 
 $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 $get = [];
 $get['user_id'] = $superGlobal->get('user_id', 'GET');

@@ -35,11 +35,7 @@ loadClasses();
 $superGlobal = new SuperGlobal();
 $lang = new Language(); 
 
-if (
-    isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
-    || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === true
-    || $superGlobal->get('key', 'SESSION') === null
-) {
+if ($superGlobal->get('key', 'SESSION') === null) {
     die('Hacking attempt...');
 }
 
@@ -102,7 +98,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
     // Preapre select drop list
     $('#roles-list.select2').select2({
-        language: '<?php echo $_SESSION['user_language_code']; ?>',
+        language: '<?php echo $superGlobal->get('user_language_code', 'SESSION'); ?>',
         placeholder: '<?php echo $lang->get('select_a_role'); ?>',
         allowClear: true
     });
@@ -115,7 +111,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
 
     $('#form-complexity-list.select2').select2({
-        language: '<?php echo $_SESSION['user_language_code']; ?>'
+        language: '<?php echo $superGlobal->get('user_language_code', 'SESSION'); ?>'
     });
 
     //iCheck for checkbox and radio inputs
@@ -780,7 +776,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         var selectedOption = $('#roles-list option[value=' + $('#roles-list').find(':selected').val() + ']');
                         selectedOption.remove();
                         $("#roles-list").select2({
-                            language: '<?php echo $_SESSION['user_language_code']; ?>',
+                            language: '<?php echo $superGlobal->get('user_language_code', 'SESSION'); ?>',
                             placeholder: '<?php echo $lang->get('select_a_role'); ?>',
                             allowClear: true
                         });

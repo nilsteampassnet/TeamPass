@@ -24,10 +24,6 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
-    die('Hacking attempt...');
-}
-
 ?>
 <script type="text/javascript">
     var debugJavascript = true;

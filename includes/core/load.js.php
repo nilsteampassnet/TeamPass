@@ -27,10 +27,6 @@ declare(strict_types=1);
 use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\Language\Language;
 
-if (isset($_SESSION['CPM']) === false || (int) $_SESSION['CPM'] !== 1) {
-    die('Hacking attempt...');
-}
-
 // Is maintenance on-going?
 if (
     isset($SETTINGS['maintenance_mode']) === true

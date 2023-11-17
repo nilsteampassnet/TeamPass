@@ -2756,7 +2756,7 @@ switch ($inputData['type']) {
                         } else if (DB::count() === 0 && (int) $row['encrypted_data'] === 0) {
                             // Data is not encrypted in DB
                             $fieldText = [
-                                'string' => $row['data'],
+                                'string' => isBase64($row['data']) === true ? base64_decode($row['data']) : $row['data'],
                                 'encrypted' => false,
                                 'error' => false,
                             ];

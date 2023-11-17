@@ -178,11 +178,11 @@ if (isset($languagesList) === false) {
     $rows = DB::query('SELECT * FROM ' . prefixTable('languages') . ' GROUP BY name, label, code, flag, id ORDER BY name ASC');
     foreach ($rows as $record) {
         array_push($languagesList, $record['name']);
-        if (isset($_SESSION['user']['user_language']) && $record['name'] === $_SESSION['user']['user_language']) {
-            $_SESSION['user_language_flag'] = $record['flag'];
-            $_SESSION['user_language_code'] = $record['code'];
-            $_SESSION['user_language_label'] = $record['label'];
-            $_SESSION['user_language_id'] = $record['id'];
+        if ($superGlobal->get('user_language', 'SESSION', 'user') === $record['name'] ) {
+            $superGlobal->put('user_language_flag', $record['flag'], 'SESSION');
+            $superGlobal->put('user_language_code', $record['code'], 'SESSION');
+            $superGlobal->put('user_language_label', $record['label'], 'SESSION');
+            $superGlobal->put('user_language_id', $record['id'], 'SESSION');
         }
     }
 }

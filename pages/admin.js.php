@@ -171,7 +171,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 
     // <- PREPARE SELECT2
     $('.select2').select2({
-        language: '<?php echo isset($_SESSION['user_language_code']) === true ? $_SESSION['user_language_code'] : 'EN'; ?>'
+        language: '<?php echo $userLang = $superGlobal->get('user_language_code', 'SESSION'); echo isset($userLang) === null ? $userLang : 'EN'; ?>'
     });
 
     /**

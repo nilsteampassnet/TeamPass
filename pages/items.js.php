@@ -37,11 +37,7 @@ loadClasses();
 $superGlobal = new SuperGlobal();
 $lang = new Language(); 
 
-if (
-    isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
-    || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === true
-    || $superGlobal->get('key', 'SESSION') === null
-) {
+if ($superGlobal->get('key', 'SESSION') === null) {
     die('Hacking attempt...');
 }
 
@@ -737,7 +733,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     format: '<?php echo str_replace(['Y', 'M'], ['yyyy', 'mm'], $SETTINGS['date_format']); ?>',
                     todayHighlight: true,
                     todayBtn: true,
-                    language: '<?php echo isset($_SESSION['user_language_code']) === true ? $_SESSION['user_language_code'] : 'en'; ?>'
+                    language: '<?php $userLang = $superGlobal->get('user_language_code', 'SESSION'); echo isset($userLang) === null ? $userLang : 'en'; ?>'
                 });
                 
                 // Add track-change class
@@ -5261,7 +5257,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
                 // Prepare Select2 inputs
                 $('.select2').select2({
-                    language: '<?php echo isset($_SESSION['user_language_code']) === true ? $_SESSION['user_language_code'] : 'en'; ?>',
+                    language: '<?php echo $userLang = $superGlobal->get('user_language_code', 'SESSION'); echo isset($userLang) === null ? $userLang : 'en'; ?>',
                     theme: "bootstrap4",
                 });
 
@@ -5270,7 +5266,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     format: '<?php echo str_replace(['Y', 'M'], ['yyyy', 'mm'], $SETTINGS['date_format']); ?>',
                     todayHighlight: true,
                     todayBtn: true,
-                    language: '<?php echo isset($_SESSION['user_language_code']) === true ? $_SESSION['user_language_code'] : 'en'; ?>'
+                    language: '<?php echo $userLang = $superGlobal->get('user_language_code', 'SESSION'); echo isset($userLang) === null ? $userLang : 'en'; ?>'
                 });
 
                 // Prepare Date range picker with time picker
@@ -5463,7 +5459,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 format: '<?php echo str_replace(['Y', 'M'], ['yyyy', 'mm'], $SETTINGS['date_format']); ?>',
                 todayHighlight: true,
                 todayBtn: true,
-                language: '<?php echo isset($_SESSION['user_language_code']) === true ? $_SESSION['user_language_code'] : 'en'; ?>'
+                language: '<?php echo $userLang = $superGlobal->get('user_language_code', 'SESSION'); echo isset($userLang) === null ? $userLang : 'en'; ?>'
             });
 
             $('#warningModal #add-history-label').focus();
@@ -5890,7 +5886,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
                     // Prepare Select2
                     $('.select2').select2({
-                        language: '<?php echo $_SESSION['user_language_code']; ?>',
+                        language: '<?php echo $superGlobal->get('user_language_code', 'SESSION'); ?>',
                         theme: "bootstrap4",
                     });
 

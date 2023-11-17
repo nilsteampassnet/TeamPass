@@ -37,11 +37,7 @@ loadClasses();
 $superGlobal = new SuperGlobal();
 $lang = new Language(); 
 
-if (
-    isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
-    || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === true
-    || $superGlobal->get('key', 'SESSION') === null
-) {
+if ($superGlobal->get('key', 'SESSION') === null) {
     die('Hacking attempt...');
 }
 
@@ -154,7 +150,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             format: '<?php echo str_replace(['Y', 'M'], ['yyyy', 'mm'], $SETTINGS['date_format']); ?>',
             todayHighlight: true,
             todayBtn: true,
-            language: '<?php echo $_SESSION['user_language_code']; ?>'
+            language: '<?php echo $superGlobal->get('user_language_code', 'SESSION'); ?>'
         })
         .on('changeDate', function(e) {
             oTable.ajax.reload();
