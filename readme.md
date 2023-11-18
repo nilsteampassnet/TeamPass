@@ -14,7 +14,7 @@
 [![Build Status](https://scrutinizer-ci.com/g/nilsteampassnet/TeamPass/badges/build.png?b=master)](https://scrutinizer-ci.com/g/nilsteampassnet/TeamPass/build-status/master)
 [![Code Intelligence Status](https://scrutinizer-ci.com/g/nilsteampassnet/TeamPass/badges/code-intelligence.svg?b=master)](https://scrutinizer-ci.com/code-intelligence)
 
-Teampass is a Collaborative Passwords Manager
+Teampass is a Collaborative Passwords Manager solution installed On-Promise.
 
 > Copyright © 2009-2023, [Nils Laumaillé](Nils@Teampass.net)
 
@@ -22,6 +22,7 @@ Teampass is a Collaborative Passwords Manager
 
 - [Teampass 3](#teampass-3)
   - [Requirements](#requirements)
+    - [About PHP versions](#about-php-versions)
   - [Documentation](#documentation)
     - [With Docker](#with-docker)
     - [With Docker Compose](#with-docker-compose)
@@ -36,7 +37,7 @@ Teampass is a Collaborative Passwords Manager
 
 * MySQL 5.7 or higher,
 * Mariadb 10.7 or higher
-* PHP 7.4 or higher (recommended is 8.x),
+* PHP 7.4 (see note below),
 * PHP extensions:
   * mcrypt
   * openssl
@@ -50,9 +51,19 @@ Teampass is a Collaborative Passwords Manager
   * curl
   * gmp
 
+### About PHP versions
+
+Teampass should be installed using the most recent PHP version.
+Nevertheless, Teampass can be used with PHP 7.4 version.
+The Github Teampass project has a dedicated branch called `PHP_7.4` for this version.
+Notice that only bug fixing will be performed on this branch.
+
+The branch `master` is the living one that is improved and comes with new features.
+It requires minimum `PHP 8.1` installed on the server.
+
 ## Documentation
 
-* Read [V3 documentation](https://documentation.teampass.net)
+> ✍️ Complete [documentation](https://documentation.teampass.net) is available.
 
 ### With Docker
 The Docker image provided will create a Teampass installation in its `/var/www/html/` directory, which you should mount as a volume to keep persistent. **SSL is not provided** if you use this image without a proxy in front of it. See the included [Docker Compose file](docker-compose.yml) for an example setup.
