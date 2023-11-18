@@ -716,6 +716,7 @@ function utilsHandler(string $post_type, array|null|string $dataReceived, array 
             return generateAnOTP(
                 (string) filter_var($dataReceived['label'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 (bool) filter_var($dataReceived['with_qrcode'], FILTER_VALIDATE_BOOLEAN),
+                (string) filter_var($dataReceived['secret_key'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
             );
 
 
@@ -3157,11 +3158,13 @@ function increaseSessionDuration(
     return '[{"new_value":"expired"}]';
 }
 
-function generateAnOTP(string $label, bool $with_qrcode = false): string
+function generateAnOTP(string $label, bool $with_qrcode = false, string $secretKey = ''): string
 {
     // generate new secret
     $tfa = new TwoFactorAuth();
-    $secretKey = $tfa->createSecret();
+    if ($secretKey === '') {
+        $secretKey = $tfa->createSecret();
+    }
 
     // generate new QR
     if ($with_qrcode === true) {
@@ -3177,7 +3180,7 @@ function generateAnOTP(string $label, bool $with_qrcode = false): string
             'error' => false,
             'message' => '',
             'secret' => $secretKey,
-            'qrcode' => $qrcode,
+            'qrcode' => $qrcode ?? '',
         ),
         'encode'
     );

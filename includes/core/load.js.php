@@ -546,7 +546,7 @@ $lang = new Language();
                                 '</div>' +
                                 '<input id="encryption-otp" type="password" class="form-control form-item-control" value="'+store.get('teampassUser').pwd+'">' +
                                 '<div class="input-group-append">' +
-                                    '<button class="btn btn-outline-secondary btn-no-click" id="show-encryption-otp" title="<?php echo $lang->get('mask_pw'); ?>"><i class="fas fa-low-vision"></i></button>' +
+                                    '<button class="btn btn-outline-secondary btn-no-click" id="show-encryption-otp" title="<?php echo $lang->get('mask_pw'); ?>"><i class="fa-solid fa-low-vision"></i></button>' +
                                 '</div>' +
                             '</div>' +
                         '</div>' +
@@ -715,6 +715,9 @@ $lang = new Language();
                                     '<span class="input-group-text"><?php echo $lang->get('generated-otp'); ?></span>' +
                                 '</div>' +
                                 '<input id="new-otp" type="text" class="form-control form-item-control" value="">' +
+                                '<div class="input-group-append">' +
+                                    '<button class="btn btn-outline-secondary btn-no-click" id="generate-new-secret" title="<?php echo $lang->get('generate_new_otp'); ?>"><i class="fa-solid fa-rotate"></i></button>' +
+                                '</div>' +
                             '</div>' +
                         '</div>' +
                         '<div class="row">' +
@@ -723,31 +726,53 @@ $lang = new Language();
                                     '<span class="input-group-text"><?php echo $lang->get('qrcode_label'); ?></span>' +
                                 '</div>' +
                                 '<input type="text" rows="1" id="otp-label" class="form-control form-item-control" value="">' +
+                                '<div class="input-group-append">' +
+                                    '<button class="btn btn-outline-secondary btn-no-click" id="generate-new-qrcode" title="<?php echo $lang->get('generate_qrcode'); ?>"><i class="fa-solid fa-qrcode"></i></button>' +
+                                '</div>' +
                             '</div>' +
                         '</div>' +
-                        '<div class="row" style="height:200px;">' +
+                        '<div class="" style="height:200px;">' +
                             '<div class="text-center" id="new-otp-qrcode">' +
                             '</div>' +
                         '</div>' +
                     '</div>',
-                    '<?php echo $lang->get('generate_qrcode'); ?>',
+                    '',
                     '<?php echo $lang->get('close'); ?>'
                 );
 
                 launchOtpGeneration(false);
 
                 // Manage click on button PERFORM
-                $(document).on('click', '#warningModalButtonAction', function() {
+                $(document).on('click', '#generate-new-qrcode', function() {
                     event.preventDefault();
-                    launchOtpGeneration(true);
+                    if ($('#otp-label').val() === '') {
+                        toastr.remove();
+                        toastr.error(
+                            '<?php echo $lang->get('please_provide_label'); ?>',
+                            '<?php echo $lang->get('caution'); ?>', {
+                                timeOut: 5000,
+                                progressBar: true
+                            }
+                        );
+                    } else {
+                        launchOtpGeneration(true, true, 'generate-new-qrcode', $(this).html());
+                    }
                 });
 
-                function launchOtpGeneration(withQrCode)
+                $(document).on('click', '#generate-new-secret', function() {
+                    event.preventDefault();
+                    launchOtpGeneration(false, null, 'generate-new-secret', $(this).html());
+                });
+
+                function launchOtpGeneration(withQrCode, withSecret, zone, buttonHtml)
                 {
+                    $('#'+zone).html('<i class="fa-solid fa-spinner fa-spin text-warning"></i>');
+
                     // Load OTP
                     var parameters = {
                         'label': $('#otp-label').val(),
                         'with_qrcode': withQrCode,
+                        'secret_key': withSecret === true ? $('#new-otp').val() : '',
                     }
                     $.post(
                         "sources/main.queries.php", {
@@ -774,8 +799,11 @@ $lang = new Language();
                                 $('#new-otp').val(data.secret);
                                 if (withQrCode === true) {
                                     $('#new-otp-qrcode').html('<img class="text-center" src="' + data.qrcode + '" />');
+                                } else {
+                                    $('#new-otp-qrcode').html('');
                                 }
                             }
+                            $('#'+zone).html(buttonHtml);
                         }
                     );
                 }
@@ -1782,7 +1810,7 @@ $lang = new Language();
                         var html_list = '';
                         $.each(data.html_json, function(i, value) {
                             html_list += '<li onclick="showItemCard($(this).closest(\'li\'))" class="pointer" data-item-edition="0" data-item-id="' + value.id + '" data-item-sk="' + value.perso + '" data-item-expired="0" data-item-restricted="' + value.restricted + '" data-item-display="1" data-item-open-edit="0" data-item-reload="0" data-item-tree-id="' + value.tree_id + '" data-is-search-result="0">' +
-                                '<i class="fas fa-caret-right mr-2"></i>' + value.label + '</li>';
+                                '<i class="fa-solid fa-caret-right mr-2"></i>' + value.label + '</li>';
                         });
                         $('#index-last-pwds').html(html_list);
                     }
