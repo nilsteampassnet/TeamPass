@@ -7,7 +7,7 @@ use Elegant\Sanitizer\Contracts\Filter;
 class EscapeHTML implements Filter
 {
     /**
-     * Remove HTML tags and encode special characters from the given string.
+     * Removes HTML tags and encodes special characters of the given string.
      *
      * @param mixed $value
      * @param array $options
@@ -15,6 +15,6 @@ class EscapeHTML implements Filter
      */
     public function apply($value, array $options = [])
     {
-        return is_string($value) ? filter_var($value, FILTER_SANITIZE_STRING) : $value;
+        return is_string($value) ? htmlspecialchars(strip_tags($value)) : $value;
     }
 }

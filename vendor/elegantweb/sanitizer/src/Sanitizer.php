@@ -9,6 +9,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationRuleParser;
 use Illuminate\Validation\ClosureValidationRule;
 use Elegant\Sanitizer\Contracts\Filter;
+use Elegant\Sanitizer\Contracts\DataAwareFilter;
 
 class Sanitizer
 {
@@ -42,6 +43,7 @@ class Sanitizer
         'strip_tags' => \Elegant\Sanitizer\Filters\StripTags::class,
         'digit' => \Elegant\Sanitizer\Filters\Digit::class,
         'empty_string_to_null' => \Elegant\Sanitizer\Filters\EmptyStringToNull::class,
+        'enum' => \Elegant\Sanitizer\Filters\EnumFilter::class,
     ];
 
     /**
@@ -107,9 +109,9 @@ class Sanitizer
     }
 
     /**
-     * Parse a filter string formatted as filterName:option1, option2 into an array formatted as [name => filterName, options => [option1, option2]]
+     * Parse a filter string formatted as 'filterName:option1,option2' into an array formatted as [name => filterName, options => [option1, option2]].
      *
-     * @param string $filter Formatted as 'filterName:option1, option2' or just 'filterName'
+     * @param string $filter Formatted as 'filterName:option1,option2' or just 'filterName'
      * @throws InvalidArgumentException for empty filter string
      * @return array Formatted as [name => filterName, options => [option1, option2]]
      */
@@ -120,7 +122,7 @@ class Sanitizer
         }
 
         if (strpos($filter, ':') !== false) {
-            list($name, $options) = explode(':', $filter, 2);
+            [$name, $options] = explode(':', $filter, 2);
             $options = str_getcsv($options);
         } else {
             $name = $filter;
@@ -142,7 +144,7 @@ class Sanitizer
      */
     protected function applyFilter($filter, $value)
     {
-        // Our filters can be closure, so we first check it
+        // Our filters can be a closure, so we first check it
         if ($filter instanceof Closure) {
             return call_user_func($filter, $value);
         }
@@ -167,7 +169,9 @@ class Sanitizer
         if ($filter instanceof Closure) {
             return call_user_func_array($filter, [$value, $options]);
         } elseif (in_array(Filter::class, class_implements($filter))) {
-            return (new $filter)->apply($value, $options);
+            $instance = new $filter;
+            if ($instance instanceof DataAwareFilter) $instance->setData($this->data);
+            return $instance->apply($value, $options);
         } else {
             throw new UnexpectedValueException("Invalid filter [$name] must be a Closure or a class implementing the Elegant\Sanitizer\Contracts\Filter interface.");
         }

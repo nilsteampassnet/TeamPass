@@ -36,14 +36,14 @@ use Symfony\Component\Mime\Exception\LogicException;
  */
 final class MimeTypes implements MimeTypesInterface
 {
-    private $extensions = [];
-    private $mimeTypes = [];
+    private array $extensions = [];
+    private array $mimeTypes = [];
 
     /**
      * @var MimeTypeGuesserInterface[]
      */
-    private $guessers = [];
-    private static $default;
+    private array $guessers = [];
+    private static MimeTypes $default;
 
     public function __construct(array $map = [])
     {
@@ -58,14 +58,14 @@ final class MimeTypes implements MimeTypesInterface
         $this->registerGuesser(new FileinfoMimeTypeGuesser());
     }
 
-    public static function setDefault(self $default)
+    public static function setDefault(self $default): void
     {
         self::$default = $default;
     }
 
     public static function getDefault(): self
     {
-        return self::$default ?? self::$default = new self();
+        return self::$default ??= new self();
     }
 
     /**
@@ -73,14 +73,11 @@ final class MimeTypes implements MimeTypesInterface
      *
      * The last registered guesser has precedence over the other ones.
      */
-    public function registerGuesser(MimeTypeGuesserInterface $guesser)
+    public function registerGuesser(MimeTypeGuesserInterface $guesser): void
     {
         array_unshift($this->guessers, $guesser);
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getExtensions(string $mimeType): array
     {
         if ($this->extensions) {
@@ -90,9 +87,6 @@ final class MimeTypes implements MimeTypesInterface
         return $extensions ?? self::MAP[$mimeType] ?? self::MAP[$lcMimeType ?? strtolower($mimeType)] ?? [];
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getMimeTypes(string $ext): array
     {
         if ($this->mimeTypes) {
@@ -102,9 +96,6 @@ final class MimeTypes implements MimeTypesInterface
         return $mimeTypes ?? self::REVERSE_MAP[$ext] ?? self::REVERSE_MAP[$lcExt ?? strtolower($ext)] ?? [];
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function isGuesserSupported(): bool
     {
         foreach ($this->guessers as $guesser) {
@@ -117,8 +108,6 @@ final class MimeTypes implements MimeTypesInterface
     }
 
     /**
-     * {@inheritdoc}
-     *
      * The file is passed to each registered MIME type guesser in reverse order
      * of their registration (last registered is queried first). Once a guesser
      * returns a value that is not null, this method terminates and returns the

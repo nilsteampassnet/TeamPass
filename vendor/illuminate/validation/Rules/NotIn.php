@@ -2,10 +2,15 @@
 
 namespace Illuminate\Validation\Rules;
 
+use BackedEnum;
+use UnitEnum;
+
 class NotIn
 {
     /**
      * The name of the rule.
+     *
+     * @var string
      */
     protected $rule = 'not_in';
 
@@ -35,6 +40,12 @@ class NotIn
     public function __toString()
     {
         $values = array_map(function ($value) {
+            $value = match (true) {
+                $value instanceof BackedEnum => $value->value,
+                $value instanceof UnitEnum => $value->name,
+                default => $value,
+            };
+
             return '"'.str_replace('"', '""', $value).'"';
         }, $this->values);
 

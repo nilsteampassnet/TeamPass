@@ -37,20 +37,26 @@ class VarDumper
      */
     private static $handler;
 
-    public static function dump($var)
+    /**
+     * @param string|null $label
+     *
+     * @return mixed
+     */
+    public static function dump(mixed $var/* , string $label = null */)
     {
+        $label = 2 <= \func_num_args() ? func_get_arg(1) : null;
         if (null === self::$handler) {
             self::register();
         }
 
-        return (self::$handler)($var);
+        return (self::$handler)($var, $label);
     }
 
-    /**
-     * @return callable|null
-     */
-    public static function setHandler(callable $callable = null)
+    public static function setHandler(callable $callable = null): ?callable
     {
+        if (1 > \func_num_args()) {
+            trigger_deprecation('symfony/var-dumper', '6.2', 'Calling "%s()" without any arguments is deprecated, pass null explicitly instead.', __METHOD__);
+        }
         $prevHandler = self::$handler;
 
         // Prevent replacing the handler with expected format as soon as the env var was set:
@@ -90,8 +96,14 @@ class VarDumper
             $dumper = new ContextualizedDumper($dumper, [new SourceContextProvider()]);
         }
 
-        self::$handler = function ($var) use ($cloner, $dumper) {
-            $dumper->dump($cloner->cloneVar($var));
+        self::$handler = function ($var, string $label = null) use ($cloner, $dumper) {
+            $var = $cloner->cloneVar($var);
+
+            if (null !== $label) {
+                $var = $var->withContext(['label' => $label]);
+            }
+
+            $dumper->dump($var);
         };
     }
 

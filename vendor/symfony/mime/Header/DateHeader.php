@@ -18,7 +18,7 @@ namespace Symfony\Component\Mime\Header;
  */
 final class DateHeader extends AbstractHeader
 {
-    private $dateTime;
+    private \DateTimeImmutable $dateTime;
 
     public function __construct(string $name, \DateTimeInterface $date)
     {
@@ -30,7 +30,7 @@ final class DateHeader extends AbstractHeader
     /**
      * @param \DateTimeInterface $body
      */
-    public function setBody($body)
+    public function setBody(mixed $body): void
     {
         $this->setDateTime($body);
     }
@@ -50,7 +50,7 @@ final class DateHeader extends AbstractHeader
      *
      * If a DateTime instance is provided, it is converted to DateTimeImmutable.
      */
-    public function setDateTime(\DateTimeInterface $dateTime)
+    public function setDateTime(\DateTimeInterface $dateTime): void
     {
         if ($dateTime instanceof \DateTime) {
             $immutable = new \DateTimeImmutable('@'.$dateTime->getTimestamp());

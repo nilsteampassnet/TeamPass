@@ -9,7 +9,6 @@ namespace voku\helper;
  */
 class Bootup
 {
-
     /**
      * Normalizes to UTF-8 NFC, converting from WINDOWS-1252 when needed.
      *

@@ -7,7 +7,7 @@ use Elegant\Sanitizer\Contracts\Filter;
 class Capitalize implements Filter
 {
     /**
-     * Capitalize the given string.
+     * Capitalizes the given string.
      *
      * @param mixed $value
      * @param array $options

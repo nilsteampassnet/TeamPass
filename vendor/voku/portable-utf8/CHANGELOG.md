@@ -1,5 +1,58 @@
 # Changelog
 
+### 6.0.13 (2023-03-08)
+
+- added "UTF8::str_limit_in_byte()"
+
+### 6.0.12 (2023-01-11)
+
+- added "UTF8::remove_iright()" 
+- added "UTF8::remove_ileft()"
+
+### 6.0.11 (2022-12-16)
+
+- test with PHP 8.2
+- added "UTF8::getUrlParamFromArray()": Get data from an array via array like string.
+
+### 6.0.10 (2022-10-06)
+
+- optimize phpdocs (use positive-int)
+
+### 6.0.9 (2022-09-01)
+
+- optimize phpdocs (use int-range)
+
+### 6.0.8 (2022-09-01)
+
+- optimize phpdocs (use Conditional Return Types) v2
+
+### 6.0.7 (2022-09-01)
+
+- optimize phpdocs (use Conditional Return Types)
+
+### 6.0.6 (2022-08-31)
+
+- optimize phpdocs
+- optimize "from"-encoding in "UTF8::encode()"
+- fix error handling in "UTF8::str_split()" for PHP >= 8.0
+- fix error handling in "UTF8::str_capitalize_name_helper()" for PHP >= 8.0
+
+### 6.0.5 (2022-08-10)
+
+- PHP 8.2: Fix ${var} string interpolation deprecation | thanks @Ayesh
+
+### 6.0.4 (2022-03-08)
+
+- "To people of Russia": There is a war in Ukraine right now. The forces of the Russian Federation are attacking civilians.
+
+### 6.0.3 (2022-01-30)
+
+- optimize phpdocs
+
+### 6.0.2 (2022-01-24)
+
+- update vendor (ASCII) lib
+
 ### 6.0.1 (2022-01-24)
 
 - add "UTF8::levenshtein()" | thanks @NewEXE

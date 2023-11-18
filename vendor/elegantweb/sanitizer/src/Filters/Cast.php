@@ -8,7 +8,7 @@ use Elegant\Sanitizer\Contracts\Filter;
 class Cast implements Filter
 {
     /**
-     * Capitalize the given string.
+     * Casts the given value to into the given type.
      *
      * @param mixed $value
      * @param array $options
@@ -16,6 +16,10 @@ class Cast implements Filter
      */
     public function apply($value, array $options = [])
     {
+        if (is_null($value)) {
+            return $value;
+        }
+
         $type = isset($options[0]) ? $options[0] : null;
         switch ($type) {
             case 'int':
