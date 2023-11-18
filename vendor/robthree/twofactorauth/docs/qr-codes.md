@@ -20,17 +20,19 @@ You can also specify a size as a third argument which is 200 by default.
 
 ## Online Providers
 
-[QRServerProvider](qr-codes/qr-server.html) (default)
+[QRServerProvider](qr-codes/qr-server.md) (default)
 
-[ImageChartsQRCodeProvider](qr-codes/image-charts.html)
+**Warning:** Whilst it is the default, this provider is not suggested for applications where absolute security is needed, because it uses an external service for the QR code generation. You can make use of the included offline providers listed below which generate locally.
 
-[QRicketProvider](qr-codes/qrickit.html)
+[ImageChartsQRCodeProvider](qr-codes/image-charts.md)
+
+[QRicketProvider](qr-codes/qrickit.md)
 
 ## Offline Providers
 
-[EndroidQrCodeProvider](qr-codes/endroid.html) and EndroidQrCodeWithLogoProvider
+[EndroidQrCodeProvider](qr-codes/endroid.md) and EndroidQrCodeWithLogoProvider
 
-[BaconQRCodeProvider](qr-codes/bacon.html)
+[BaconQRCodeProvider](qr-codes/bacon.md)
 
 **Note:** offline providers may have additional PHP requirements in order to function, you should study what is required before trying to make use of them.
 
@@ -50,11 +52,8 @@ use RobThree\Auth\TwoFactorAuth;
 $qrCodeProvider = new YourChosenProvider();
 
 $tfa = new TwoFactorAuth(
-	null,
-	6,
-	30,
-	'sha1',
-	$qrCodeProvider
+	issuer: "Your Company Or App Name",
+ 	qrcodeprovider: $qrCodeProvider
 );
 ```
 

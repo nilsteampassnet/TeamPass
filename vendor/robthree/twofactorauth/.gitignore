@@ -190,3 +190,4 @@ composer.lock
 .vs/
 
 .phpunit.result.cache
+.php-cs-fixer.cache

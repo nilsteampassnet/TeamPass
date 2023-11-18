@@ -27,7 +27,7 @@ Argument                | Default value
 If you make use of `EndroidQrCodeWithLogoProvider` then you have access to the `setLogo` function on the provider so you may add a logo to the centre of your QR code.
 
 ```php
-use RobThree\Auth\TwoFactorAuth\Providers\Qr\EndroidQrCodeWithLogoProvider;
+use RobThree\Auth\Providers\Qr\EndroidQrCodeWithLogoProvider;
 
 $qrCodeProvider = new EndroidQrCodeWithLogoProvider();
 

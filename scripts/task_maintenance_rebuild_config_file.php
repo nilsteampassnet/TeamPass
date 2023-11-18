@@ -76,7 +76,7 @@ function rebuildConfigFile(): void
 {
     // Load expected files
     require_once __DIR__. '/../sources/main.functions.php';
-    require_once __DIR__. '/../includes/config/tp.config.php';
+    include __DIR__. '/../includes/config/tp.config.php';
 
     if (isset($SETTINGS) === true) {
         handleConfigFile('rebuild', $SETTINGS);

@@ -39,8 +39,6 @@ use Defuse\Crypto\KeyProtectedByPassword;
 use Defuse\Crypto\File as CryptoFile;
 use Defuse\Crypto\Exception as CryptoException;
 use PHPMailer\PHPMailer\PHPMailer;
-use phpseclib\Crypt\RSA;
-use phpseclib\Crypt\AES;
 use PasswordLib\PasswordLib;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Process;
@@ -49,6 +47,8 @@ use TeampassClasses\Encryption\Encryption;
 //use phpseclib3\Crypt\PublicKeyLoader;
 //use phpseclib3\Crypt\RSA;
 //use phpseclib3\Exception\NoKeyLoadedException;
+//use phpseclib\Crypt\RSA;
+//use phpseclib\Crypt\AES;
 
 // Load config if $SETTINGS not defined
 if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir']) === true) {
@@ -134,17 +134,9 @@ function bCrypt(
  */
 function isHex(string $str): bool
 {
-    if ((int) phpversion() >= 8) {
-        // Code for PHP 8
-        if (str_starts_with(strtolower($str), '0x')) {
-            $str = substr($str, 2);
-        }
-    } else {
-        if (substr($str, 0, 2 ) === "0x") {
-            $str = substr($str, 2);
-        }
+    if (str_starts_with(strtolower($str), '0x')) {
+        $str = substr($str, 2);
     }
-    
 
     return ctype_xdigit($str);
 }
@@ -3678,13 +3670,6 @@ function getUsersWithRoles(
     return $arrUsers;
 }
 
-// #3476 - check if function str_contains exists (using PHP 8.0.0 or h)
-// else define it
-if (!function_exists('str_contains')) {
-    function str_contains($haystack, $needle) {
-        return $needle !== '' && mb_strpos($haystack, $needle) !== false;
-    }
-}
 
 /**
  * Get all users informations

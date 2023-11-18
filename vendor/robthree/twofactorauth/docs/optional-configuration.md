@@ -7,15 +7,15 @@ title: Optional Configuration
 
 The instance (`new TwoFactorAuth()`) can only be configured by the constructor with the following optional arguments
 
-Argument          | Default value | Use
-------------------|---------------|-----
-`$issuer`         | `null`        | Will be displayed in the users app as the default issuer name when using QR code to import the secret
-`$digits`         | `6`           | The number of digits the resulting codes will be
-`$period`         | `30`          | The number of seconds a code will be valid
-`$algorithm`      | `'sha1'`      | The algorithm used (one of `sha1`, `sha256`, `sha512`, `md5`)
-`$qrcodeprovider` | `null`        | QR-code provider
-`$rngprovider`    | `null`        | Random Number Generator provider
-`$timeprovider`   | `null`        | Time provider
+Argument          | Default value     | Use
+------------------|-------------------|-----
+`$issuer`         | `null`            | Will be displayed in the users app as the default issuer name when using QR code to import the secret
+`$digits`         | `6`               | The number of digits the resulting codes will be
+`$period`         | `30`              | The number of seconds a code will be valid
+`$algorithm`      | `Algorithm::Sha1` | The algorithm used (one of `Algorithm::Sha1`, `Algorithm::Sha256`, `Algorithm::Sha512`, `Algorithm::Md5`)
+`$qrcodeprovider` | `null`            | QR-code provider
+`$rngprovider`    | `null`            | Random Number Generator provider
+`$timeprovider`   | `null`            | Time provider
 
 **Note:** the default values for `$digits`, `$period`, and `$algorithm` provide the widest variety of support amongst common authenticator apps such as Google Authenticator. If you choose to use different values for these arguments you will likely have to instruct your users to use a specific app which supports your chosen configuration.
 
@@ -24,9 +24,8 @@ Argument          | Default value | Use
 This library also comes with some [Random Number Generator (RNG)](https://en.wikipedia.org/wiki/Random_number_generation) providers. The RNG provider generates a number of random bytes and returns these bytes as a string. These values are then used to create the secret. By default (no RNG provider specified) TwoFactorAuth will try to determine the best available RNG provider to use in this order.
 
 1. [CSRNGProvider](https://github.com/RobThree/TwoFactorAuth/blob/master/lib/Providers/Rng/CSRNGProvider.php) for PHP7+
-2. [MCryptRNGProvider](https://github.com/RobThree/TwoFactorAuth/blob/master/lib/Providers/Rng/MCryptRNGProvider.php) where mcrypt is available
-3. [OpenSSLRNGProvider](https://github.com/RobThree/TwoFactorAuth/blob/master/lib/Providers/Rng/OpenSSLRNGProvider.php) where openssl is available
-4. [HashRNGProvider](https://github.com/RobThree/TwoFactorAuth/blob/master/lib/Providers/Rng/HashRNGProvider.php) **non-cryptographically secure** fallback
+2. [OpenSSLRNGProvider](https://github.com/RobThree/TwoFactorAuth/blob/master/lib/Providers/Rng/OpenSSLRNGProvider.php) where openssl is available
+3. [HashRNGProvider](https://github.com/RobThree/TwoFactorAuth/blob/master/lib/Providers/Rng/HashRNGProvider.php) **non-cryptographically secure** fallback
 
 Each of these RNG providers have some constructor arguments that allow you to tweak some of the settings to use when creating the random bytes.
 

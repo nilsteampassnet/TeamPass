@@ -1,60 +1,37 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RobThree\Auth\Providers\Qr;
 
-// https://image-charts.com
+/**
+ * Use https://image-charts.com to provide a QR code
+ */
 class ImageChartsQRCodeProvider extends BaseHTTPQRCodeProvider
 {
-    /** @var string */
-    public $errorcorrectionlevel;
-
-    /** @var int */
-    public $margin;
-
-    /**
-     * @param bool $verifyssl
-     * @param string $errorcorrectionlevel
-     * @param int $margin
-     */
-    public function __construct($verifyssl = false, $errorcorrectionlevel = 'L', $margin = 1)
+    public function __construct(protected bool $verifyssl = false, public string $errorcorrectionlevel = 'L', public int $margin = 1)
     {
-        if (!is_bool($verifyssl)) {
-            throw new QRException('VerifySSL must be bool');
-        }
-
-        $this->verifyssl = $verifyssl;
-
-        $this->errorcorrectionlevel = $errorcorrectionlevel;
-        $this->margin = $margin;
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function getMimeType()
+    public function getMimeType(): string
     {
         return 'image/png';
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function getQRCodeImage($qrtext, $size)
+    public function getQRCodeImage(string $qrText, int $size): string
     {
-        return $this->getContent($this->getUrl($qrtext, $size));
+        return $this->getContent($this->getUrl($qrText, $size));
     }
 
-    /**
-     * @param string $qrtext the value to encode in the QR code
-     * @param int $size the desired size of the QR code
-     *
-     * @return string file contents of the QR code
-     */
-    public function getUrl($qrtext, $size)
+    public function getUrl(string $qrText, int $size): string
     {
-        return 'https://image-charts.com/chart?cht=qr'
-            . '&chs=' . ceil($size / 2) . 'x' . ceil($size / 2)
-            . '&chld=' . $this->errorcorrectionlevel . '|' . $this->margin
-            . '&chl=' . rawurlencode($qrtext);
+        $queryParameters = array(
+            'cht' => 'qr',
+            'chs' => ceil($size / 2) . 'x' . ceil($size / 2),
+            'chld' => $this->errorcorrectionlevel . '|' . $this->margin,
+            'chl' => $qrText,
+        );
+
+        return 'https://image-charts.com/chart?' . http_build_query($queryParameters);
     }
 }

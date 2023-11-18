@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Providers\Rng;
 
 use PHPUnit\Framework\TestCase;
@@ -16,7 +18,7 @@ class HashRNGProviderTest extends TestCase
     {
         $rng = new HashRNGProvider();
         foreach ($this->rngTestLengths as $l) {
-            $this->assertEquals($l, strlen($rng->getRandomBytes($l)));
+            $this->assertSame($l, strlen($rng->getRandomBytes($l)));
         }
 
         $this->assertFalse($rng->isCryptographicallySecure());

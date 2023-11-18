@@ -698,6 +698,88 @@ $lang = new Language();
                         }
                     }
                 });
+
+                // ----
+            } else if ($(this).data('name') === 'generate-an-otp') {
+                // User wants to generate an OTP
+                $('#warningModalButtonAction').attr('data-button-confirm', 'false');
+
+                // SHow modal
+                showModalDialogBox(
+                    '#warningModal',
+                    '<i class="fa-solid fa-qrcode fa-lg warning mr-2"></i><?php echo $lang->get('generate_an_otp'); ?> <b>',
+                    '<div class="form-group">'+
+                        '<div class="row">' +
+                            '<div class="input-group mb-2">' +
+                                '<div class="input-group-prepend">' +
+                                    '<span class="input-group-text"><?php echo $lang->get('generated-otp'); ?></span>' +
+                                '</div>' +
+                                '<input id="new-otp" type="text" class="form-control form-item-control" value="">' +
+                            '</div>' +
+                        '</div>' +
+                        '<div class="row">' +
+                            '<div class="input-group mb-2">' +
+                                '<div class="input-group-prepend">' +
+                                    '<span class="input-group-text"><?php echo $lang->get('qrcode_label'); ?></span>' +
+                                '</div>' +
+                                '<input type="text" rows="1" id="otp-label" class="form-control form-item-control" value="">' +
+                            '</div>' +
+                        '</div>' +
+                        '<div class="row" style="height:200px;">' +
+                            '<div class="text-center" id="new-otp-qrcode">' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>',
+                    '<?php echo $lang->get('generate_qrcode'); ?>',
+                    '<?php echo $lang->get('close'); ?>'
+                );
+
+                launchOtpGeneration(false);
+
+                // Manage click on button PERFORM
+                $(document).on('click', '#warningModalButtonAction', function() {
+                    event.preventDefault();
+                    launchOtpGeneration(true);
+                });
+
+                function launchOtpGeneration(withQrCode)
+                {
+                    // Load OTP
+                    var parameters = {
+                        'label': $('#otp-label').val(),
+                        'with_qrcode': withQrCode,
+                    }
+                    $.post(
+                        "sources/main.queries.php", {
+                            type: "generate_an_otp",
+                            type_category: 'action_utils',
+                            data: prepareExchangedData(JSON.stringify(parameters), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                            key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
+                        },
+                        function(data) { 
+                            data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
+                            if (debugJavascript === true) console.log(data)
+
+                            if (data.error !== false) {
+                                // Show error
+                                toastr.remove();
+                                toastr.error(
+                                    data.message,
+                                    '<?php echo $lang->get('caution'); ?>', {
+                                        timeOut: 5000,
+                                        progressBar: true
+                                    }
+                                );
+                            } else {
+                                $('#new-otp').val(data.secret);
+                                if (withQrCode === true) {
+                                    $('#new-otp-qrcode').html('<img class="text-center" src="' + data.qrcode + '" />');
+                                }
+                            }
+                        }
+                    );
+                }
+
             }
         }
     });

@@ -650,8 +650,6 @@ declare(strict_types=1);
     function identifyUser(redirect, psk, data, randomstring) {
         var old_data = data;
         // Check if session is still existing
-        console.info('Session existance check:')
-        console.log(data);
         //send query
         $.post(
             "sources/identify.php", {

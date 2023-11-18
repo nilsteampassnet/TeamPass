@@ -89,7 +89,7 @@
         "firebase/php-jwt": "^6.9",
         "neitanod/forceutf8": "^2.0",
         "goodby/csv": "^1.3",
-        "robthree/twofactorauth": "~1",
+        "robthree/twofactorauth": "~2.1",
         "passwordlib/passwordlib": "^1.0.0-alpha2",
         "hackzilla/password-generator": "^1.6",
         "peppeocchi/php-cron-scheduler": "^4.0",

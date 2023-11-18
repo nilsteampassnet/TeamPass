@@ -1,23 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Providers\Qr;
 
 use RobThree\Auth\Providers\Qr\IQRCodeProvider;
 
 class TestQrProvider implements IQRCodeProvider
 {
-    /**
-     * {@inheritdoc}
-     */
-    public function getQRCodeImage($qrtext, $size)
+    public function getQRCodeImage(string $qrText, int $size): string
     {
-        return $qrtext . '@' . $size;
+        return $qrText . '@' . $size;
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function getMimeType()
+    public function getMimeType(): string
     {
         return 'test/test';
     }

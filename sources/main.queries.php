@@ -179,6 +179,10 @@ function mainQuery(array $SETTINGS)
         case 'action_system':
             echo systemHandler($post_type, $dataReceived, $SETTINGS);
             break;
+
+        case 'action_utils':
+            echo utilsHandler($post_type, $dataReceived, $SETTINGS);
+            break;
     }
     
     // Manage type of action asked
@@ -584,7 +588,7 @@ function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived,
  * @param array $SETTINGS
  * @return string
  */
-function systemHandler(string $post_type, /*php8 array|null|string */$dataReceived, array $SETTINGS): string
+function systemHandler(string $post_type, array|null|string $dataReceived, array $SETTINGS): string
 {
     switch ($post_type) {
         /*
@@ -701,6 +705,32 @@ function systemHandler(string $post_type, /*php8 array|null|string */$dataReceiv
     }
 }
 
+
+function utilsHandler(string $post_type, array|null|string $dataReceived, array $SETTINGS): string
+{
+    switch ($post_type) {
+        /*
+        * generate_an_otp
+        */
+        case 'generate_an_otp'://action_utils
+            return generateAnOTP(
+                (string) filter_var($dataReceived['label'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                (bool) filter_var($dataReceived['with_qrcode'], FILTER_VALIDATE_BOOLEAN),
+            );
+
+
+        /*
+        * Default case
+        */
+        default :
+            return prepareExchangedData(
+                array(
+                    'error' => true,
+                ),
+                'encode'
+            );
+    }
+}
 
 /**
  * Permits to set the user ready
@@ -3068,7 +3098,7 @@ function changeUserLDAPAuthenticationPassword(
                     
                     // Load superGlobals
                     $superGlobal = new SuperGlobal();
-$lang = new Language(); 
+                    $lang = new Language(); 
                     $superGlobal->put('private_key', $privateKey, 'SESSION', 'user');
 
                     return prepareExchangedData(
@@ -3125,4 +3155,30 @@ function increaseSessionDuration(
     }
     
     return '[{"new_value":"expired"}]';
+}
+
+function generateAnOTP(string $label, bool $with_qrcode = false): string
+{
+    // generate new secret
+    $tfa = new TwoFactorAuth();
+    $secretKey = $tfa->createSecret();
+
+    // generate new QR
+    if ($with_qrcode === true) {
+        $qrcode = $tfa->getQRCodeImageAsDataUri(
+            $label,
+            $secretKey
+        );
+    }
+
+    // ERROR
+    return prepareExchangedData(
+        array(
+            'error' => false,
+            'message' => '',
+            'secret' => $secretKey,
+            'qrcode' => $qrcode,
+        ),
+        'encode'
+    );
 }

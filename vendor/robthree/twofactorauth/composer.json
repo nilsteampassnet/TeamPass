@@ -1,7 +1,6 @@
 {
     "name": "robthree/twofactorauth",
     "description": "Two Factor Authentication",
-    "version": "1.8.2",
     "type": "library",
     "keywords": [ "Authentication", "Two Factor Authentication", "Multi Factor Authentication", "TFA", "MFA", "PHP", "Authenticator", "Authy" ],
     "homepage": "https://github.com/RobThree/TwoFactorAuth",
@@ -11,6 +10,16 @@
             "name": "Rob Janssen",
             "homepage": "http://robiii.me",
             "role": "Developer"
+        },
+        {
+            "name": "Nicolas CARPi",
+            "homepage": "https://github.com/NicolasCARPi",
+            "role": "Developer"
+        },
+        {
+            "name": "Will Power",
+            "homepage": "https://github.com/willpower232",
+            "role": "Developer"
         }
     ],
     "support": {
@@ -18,11 +27,12 @@
         "source": "https://github.com/RobThree/TwoFactorAuth"
     },
     "require": {
-        "php": ">=5.6.0"
+        "php": ">=8.1.0"
     },
     "require-dev": {
-        "phpunit/phpunit": "@stable",
-        "php-parallel-lint/php-parallel-lint": "^1.2"
+        "phpunit/phpunit": "^9",
+        "friendsofphp/php-cs-fixer": "^3.13",
+        "phpstan/phpstan": "^1.9"
     },
     "suggest": {
         "bacon/bacon-qr-code": "Needed for BaconQrCodeProvider provider",
@@ -39,11 +49,32 @@
         }
     },
     "scripts": {
+        "phpstan": [
+            "phpstan analyze --xdebug lib tests testsDependency"
+        ],
         "lint": [
-            "parallel-lint --exclude vendor ."
+            "php-cs-fixer fix -v"
+        ],
+        "lint-ci": [
+            "PHP_CS_FIXER_IGNORE_ENV=1 php-cs-fixer fix -v --dry-run --stop-on-violation"
         ],
         "test": [
             "XDEBUG_MODE=coverage phpunit"
+        ]
+    },
+    "archive": {
+        "exclude": [
+            "/.github/",
+            "/demo/",
+            "/docs/",
+            "/tests/",
+            "/testsDependency/",
+            "/.gitignore",
+            "/logo.png",
+            "/multifactorauthforeveryone.png",
+            "/phpunit.xml",
+            "/TwoFactorAuth.phpproj",
+            "/TwoFactorAuth.sln"
         ]
     }
 }

@@ -16,6 +16,10 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'generate_an_otp' => 'Generate an OTP',
+    'generated-otp' => 'Generated OTP',
+    'qrcode_label' => 'QRCode label',
+    'generate_qrcode' => 'Generate QRCode',
     'mfa_code_send_by_email' => 'MFA code sent by email',
     'user_keys_downloaded' => 'User keys downloaded',
     'regenerate_only_personal_items_keys' => 'Only regenerate my personal items keys (it requires your public and private keys). This will not impact shared items.',

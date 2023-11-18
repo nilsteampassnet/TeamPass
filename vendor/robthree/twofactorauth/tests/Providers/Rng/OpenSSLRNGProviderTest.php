@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Providers\Rng;
 
 use PHPUnit\Framework\TestCase;
@@ -16,7 +18,7 @@ class OpenSSLRNGProviderTest extends TestCase
     {
         $rng = new OpenSSLRNGProvider(true);
         foreach ($this->rngTestLengths as $l) {
-            $this->assertEquals($l, strlen($rng->getRandomBytes($l)));
+            $this->assertSame($l, strlen($rng->getRandomBytes($l)));
         }
 
         $this->assertTrue($rng->isCryptographicallySecure());
@@ -29,7 +31,7 @@ class OpenSSLRNGProviderTest extends TestCase
     {
         $rng = new OpenSSLRNGProvider(false);
         foreach ($this->rngTestLengths as $l) {
-            $this->assertEquals($l, strlen($rng->getRandomBytes($l)));
+            $this->assertSame($l, strlen($rng->getRandomBytes($l)));
         }
 
         $this->assertFalse($rng->isCryptographicallySecure());

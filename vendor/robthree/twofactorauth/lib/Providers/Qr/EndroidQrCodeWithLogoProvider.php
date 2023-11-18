@@ -1,12 +1,17 @@
 <?php
+
+declare(strict_types=1);
+
 namespace RobThree\Auth\Providers\Qr;
 
 use Endroid\QrCode\Logo\Logo;
+use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\PngWriter;
 
 class EndroidQrCodeWithLogoProvider extends EndroidQrCodeProvider
 {
     protected $logoPath;
+
     protected $logoSize;
 
     /**
@@ -20,10 +25,10 @@ class EndroidQrCodeWithLogoProvider extends EndroidQrCodeProvider
         $this->logoSize = (array)$size;
     }
 
-    public function getQRCodeImage($qrtext, $size)
+    public function getQRCodeImage(string $qrText, int $size): string
     {
         if (!$this->endroid4) {
-            return $this->qrCodeInstance($qrtext, $size)->writeString();
+            return $this->qrCodeInstance($qrText, $size)->writeString();
         }
 
         $logo = null;
@@ -37,16 +42,17 @@ class EndroidQrCodeWithLogoProvider extends EndroidQrCodeProvider
             }
         }
         $writer = new PngWriter();
-        return $writer->write($this->qrCodeInstance($qrtext, $size), $logo)->getString();
+        return $writer->write($this->qrCodeInstance($qrText, $size), $logo)->getString();
     }
 
-    protected function qrCodeInstance($qrtext, $size) {
-        $qrCode = parent::qrCodeInstance($qrtext, $size);
+    protected function qrCodeInstance(string $qrText, int $size): QrCode
+    {
+        $qrCode = parent::qrCodeInstance($qrText, $size);
 
         if (!$this->endroid4 && $this->logoPath) {
             $qrCode->setLogoPath($this->logoPath);
             if ($this->logoSize) {
-                $qrCode->setLogoSize($this->logoSize[0], isset($this->logoSize[1]) ? $this->logoSize[1] : null);
+                $qrCode->setLogoSize($this->logoSize[0], $this->logoSize[1] ?? null);
             }
         }
 

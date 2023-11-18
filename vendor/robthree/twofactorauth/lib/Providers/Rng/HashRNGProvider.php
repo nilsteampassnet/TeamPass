@@ -1,28 +1,25 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RobThree\Auth\Providers\Rng;
+
+use function in_array;
 
 class HashRNGProvider implements IRNGProvider
 {
-    /** @var string */
-    private $algorithm;
-
-    /**
-     * @param string $algorithm
-     */
-    public function __construct($algorithm = 'sha256')
+    public function __construct(private readonly string $algorithm = 'sha256')
     {
         $algos = array_values(hash_algos());
-        if (!in_array($algorithm, $algos, true)) {
+        if (!in_array($this->algorithm, $algos, true)) {
             throw new RNGException('Unsupported algorithm specified');
         }
-        $this->algorithm = $algorithm;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function getRandomBytes($bytecount)
+    public function getRandomBytes(int $bytecount): string
     {
         $result = '';
         $hash = mt_rand();
@@ -36,7 +33,7 @@ class HashRNGProvider implements IRNGProvider
     /**
      * {@inheritdoc}
      */
-    public function isCryptographicallySecure()
+    public function isCryptographicallySecure(): bool
     {
         return false;
     }
