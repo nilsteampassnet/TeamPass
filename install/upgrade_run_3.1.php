@@ -81,11 +81,20 @@ $lang = new Language();
 
 //---------------------------------------------------------------------
 
-//--->BEGIN 3.1.0
+//--->BEGIN 3.1.7
+
+// 
+// Add new setting 'enable_refresh_task_last_execution'
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'enable_refresh_task_last_execution'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'enable_refresh_task_last_execution', '1')"
+    );
+}
 
 
-
-//---<END 3.0.1
+//---<END 3.0.7
 
 //---------------------------------------------------------------------
 

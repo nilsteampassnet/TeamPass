@@ -614,10 +614,14 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     return false;
                 }
                 
-                let tasks = JSON.parse(data.task);
-                for (let i = 0; i < tasks.length; i++) {
-                    $('#'+tasks[i].task+'_badge').text(tasks[i].datetime);
+                if (data.enabled === true){
+                    let tasks = JSON.parse(data.task);
+                    for (let i = 0; i < tasks.length; i++) {
+                        $('#'+tasks[i].task+'_badge').text(tasks[i].datetime);
 
+                    }
+                } else {
+                    $('.badge').text('');
                 }
                 $('#go_refresh').addClass('hidden');
             }

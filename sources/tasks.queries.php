@@ -118,7 +118,10 @@ if (null !== $post_type) {
             break;
 
         case 'load_last_tasks_execution':
-            echo loadLastTasksExec($SETTINGS['date_format'].' '.$SETTINGS['time_format']);
+            echo loadLastTasksExec(
+                $SETTINGS['date_format'].' '.$SETTINGS['time_format'],
+                isset($SETTINGS['enable_refresh_task_last_execution']) === true && (int) $SETTINGS['enable_refresh_task_last_execution'] === 1 ? 1 : 0
+            );
 
             break;  
     }
@@ -128,10 +131,22 @@ if (null !== $post_type) {
  * Load the last tasks execution
  *
  * @param string $datetimeFormat
+ * @param int $showTaskExecution
  * @return string
  */
-function loadLastTasksExec(string $datetimeFormat): string
+function loadLastTasksExec(string $datetimeFormat, int $showTaskExecution): string
 {
+    if ($showTaskExecution === 0) {
+        return prepareExchangedData(
+            array(
+                'error' => false,
+                'task' => '',
+                'enabled' => false,
+            ),
+            'encode'
+        );
+    }
+
     $lastExec = [];
 
     // get exec from processes table
@@ -152,8 +167,9 @@ function loadLastTasksExec(string $datetimeFormat): string
 
     // get exec from processes_log table
     $rows = DB::query(
-        'SELECT max(finished_at), job as process_type
+        'SELECT MAX(finished_at) AS max_finished_at, job AS process_type 
         FROM ' . prefixTable('processes_logs') . '
+        WHERE finished_at >= UNIX_TIMESTAMP(DATE_SUB(NOW(), INTERVAL 31 DAY))
         GROUP BY process_type'
     );
     foreach ($rows as $row) {
@@ -161,7 +177,7 @@ function loadLastTasksExec(string $datetimeFormat): string
             $lastExec,
             [
                 'task' => loadLastTasksExec_getBadge($row['process_type']),
-                'datetime' => date($datetimeFormat, (int) $row['max(finished_at)'])
+                'datetime' => date($datetimeFormat, (int) $row['max_finished_at'])
             ]
         );
     }
@@ -170,6 +186,7 @@ function loadLastTasksExec(string $datetimeFormat): string
         array(
             'error' => false,
             'task' => json_encode($lastExec),
+            'enabled' => true,
         ),
         'encode'
     );

@@ -16,6 +16,7 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'enable_refresh_task_last_execution' => 'Show task last execution date and hour',
     'generate_an_otp' => 'Generate an OTP',
     'generated-otp' => 'Generated OTP',
     'qrcode_label' => 'QRCode label',

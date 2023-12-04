@@ -685,6 +685,7 @@ $SETTINGS = array (';
                             array('admin', 'reload_cache_table_task', ''),
                             array('admin', 'maximum_session_expiration_time', '60'),
                             array('admin', 'items_ops_job_frequency', '1'),
+                            array('admin', 'enable_refresh_task_last_execution', '1'),
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting

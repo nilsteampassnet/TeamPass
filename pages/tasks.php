@@ -326,6 +326,15 @@ catch (Exception $e) {
 
                                     <div class='row mb-3 option'>
                                         <div class='col-10'>
+                                        <h5><i class="fa-solid fa-clock mr-2"></i><?php echo $lang->get('enable_refresh_task_last_execution'); ?></h5>
+                                        </div>
+                                        <div class='col-2'>
+                                            <div class='toggle toggle-modern' id='enable_refresh_task_last_execution' data-toggle-on='<?php echo isset($SETTINGS['enable_refresh_task_last_execution']) === true && (int) $SETTINGS['enable_refresh_task_last_execution'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_refresh_task_last_execution_input' value='<?php echo isset($SETTINGS['enable_refresh_task_last_execution']) && (int) $SETTINGS['enable_refresh_task_last_execution'] === 1 ? 1 : 0; ?>' />
+                                        </div>
+                                    </div>
+
+                                    <div class='row mb-3 option'>
+                                        <div class='col-10'>
                                         <h5><i class="fa-solid fa-rss mr-2"></i><?php echo $lang->get('enable_tasks_log'); ?></h5>
                                             <small class='form-text text-muted'>
                                                 <?php echo $lang->get('enable_tasks_log_tip'); ?>

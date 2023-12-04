@@ -4328,7 +4328,7 @@ function getCurrectPage($SETTINGS)
  * @param string|int $retTrue
  * @return mixed
  */
-function returnIfSet($value, $retFalse = '', $retTrue = null)
+function returnIfSet($value, $retFalse = '', $retTrue = null): mixed
 {
 
     return isset($value) === true ? ($retTrue === null ? $value : $retTrue) : $retFalse;
