@@ -169,7 +169,7 @@ function loadLastTasksExec(string $datetimeFormat, int $showTaskExecution): stri
     $rows = DB::query(
         'SELECT MAX(finished_at) AS max_finished_at, job AS process_type 
         FROM ' . prefixTable('processes_logs') . '
-        WHERE finished_at >= UNIX_TIMESTAMP(DATE_SUB(NOW(), INTERVAL 31 DAY))
+        WHERE finished_at >= UNIX_TIMESTAMP(DATE_SUB(NOW(), INTERVAL 7 DAY))
         GROUP BY process_type'
     );
     foreach ($rows as $row) {
