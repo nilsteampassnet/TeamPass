@@ -862,11 +862,11 @@ switch ($inputData['type']) {
             // Prepare variables
             $itemInfos = array();
             $inputData['label'] = filter_var($dataReceived['label'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-            $post_url = filter_var(htmlspecialchars_decode($dataReceived['url']), FILTER_SANITIZE_URL);
+            $post_url = isset($dataReceived['url'])=== true ? filter_var(htmlspecialchars_decode($dataReceived['url']), FILTER_SANITIZE_URL) : '';
             $post_password = $original_pw = htmlspecialchars_decode($dataReceived['pw']);
             $post_login = filter_var(htmlspecialchars_decode($dataReceived['login']), FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-            $post_tags = htmlspecialchars_decode($dataReceived['tags']);
-            $post_email = filter_var(htmlspecialchars_decode($dataReceived['email']), FILTER_SANITIZE_EMAIL);
+            $post_tags = isset($dataReceived['tags'])=== true ? htmlspecialchars_decode($dataReceived['tags']) : '';
+            $post_email = isset($dataReceived['email'])=== true ? filter_var(htmlspecialchars_decode($dataReceived['email']), FILTER_SANITIZE_EMAIL) : '';
             $post_template_id = (int) filter_var($dataReceived['template_id'], FILTER_SANITIZE_NUMBER_INT);
             $inputData['itemId'] = (int) filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT);
             $post_anyone_can_modify = (int) filter_var($dataReceived['anyone_can_modify'], FILTER_SANITIZE_NUMBER_INT);
@@ -6954,11 +6954,68 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
             $arr = json_decode($data['visible_folders'], true);
             $ids = is_null($arr) === true ? [] : array_column($arr, 'id');
         }
-
+        // Check rights of this role on this folder
+        // Is there no edit or no delete defined
+        $data = DB::queryFirstColumn(
+            'SELECT type
+            FROM ' . prefixTable('roles_values') . '
+            WHERE role_id IN %ls AND folder_id = %i',
+            array_column($superGlobal->get('arr_roles', 'SESSION'), 'id'),
+            $inputData['treeId'],
+        );
+        $edit = $delete = true;
+/*
+        //if ((int) $folder_is_personal === 0) {
+            $accessLevel = 20;
+            $arrTmp = [];
+            
+            foreach ($data as $access) {
+                if ($access === 'R') {
+                    array_push($arrTmp, 10);
+                } elseif ($access === 'W') {
+                    array_push($arrTmp, 30);
+                } elseif (
+                    $access === 'ND'
+                    || ($forceItemEditPrivilege === true && $access === 'NDNE')
+                ) {
+                    array_push($arrTmp, 20);
+                } elseif ($access === 'NE') {
+                    array_push($arrTmp, 10);
+                } elseif ($access === 'NDNE') {
+                    array_push($arrTmp, 15);
+                } else {
+                    // Ensure to give access Right if allowed folder
+                    if (in_array($inputData['id'], $_SESSION['groupes_visibles']) === true) {
+                        array_push($arrTmp, 30);
+                    } else {
+                        array_push($arrTmp, 0);
+                    }
+                }
+            }
+            // 3.0.0.0 - changed  MIN to MAX
+            $accessLevel = count($arrTmp) > 0 ? max($arrTmp) : $accessLevel;
+        //} else {
+        //    $accessLevel = 30;
+        //}
+        $uniqueLoadData['accessLevel'] = $accessLevel;
+*/
+//print_r($data);
+        foreach ($data as $access) {
+            if ($access === 'ND') {
+                $delete = false;
+            } elseif ($access === 'NE') {
+                $edit = false;
+            } elseif ($access === 'NDNE') {
+                $edit = false;
+                $delete = false;
+            }
+        }
 
         $data = array(
             'error' => false,
             'access' => isset($inputData['treeId']) === true && in_array($inputData['treeId'], $ids) === true ? true : false,
+            'edit' => $edit,
+            'delete' => $delete,
         );
 
         // send data
