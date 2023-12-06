@@ -22,6 +22,9 @@
  * @see       https://www.teampass.net
  */
 
+use TeampassClasses\NestedTree\NestedTree;
+use TeampassClasses\SuperGlobal\SuperGlobal;
+
 // Load config
 require_once __DIR__.'/../includes/config/tp.config.php';
 require_once __DIR__.'/../includes/config/include.php';
@@ -88,4 +91,61 @@ function doLog(string $status, string $job, int $enable_tasks_log = 0, int $id =
 function provideLog(string $message, array $SETTINGS)
 {
     echo '\n' . (string) date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], time()) . ' - '.$message . '\n';
+}
+
+function performVisibleFoldersHtmlUpdate (int $user_id)
+{
+    $html = [];
+
+    // rebuild tree
+    $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+    $tree->rebuild();
+
+    // get current folders visible for user
+    $cache_tree = DB::queryFirstRow(
+        'SELECT increment_id, data FROM ' . prefixTable('cache_tree') . ' WHERE user_id = %i',
+        $user_id
+    );
+    $folders = json_decode($cache_tree['data'], true);//print_r($folders);
+    foreach ($folders as $folder) {
+        $idFolder = (int) explode("li_", $folder['id'])[1];
+
+        // Get path
+        $path = '';
+        $tree_path = $tree->getPath($idFolder, false);
+        foreach ($tree_path as $fld) {
+            $path .= empty($path) === true ? $fld->title : '/'.$fld->title;
+        }
+
+        // get folder info
+        $folder = DB::queryFirstRow(
+            'SELECT title, parent_id, personal_folder FROM ' . prefixTable('nested_tree') . ' WHERE id = %i',
+            $idFolder
+        );
+
+        // finalize
+        array_push(
+            $html,
+            [
+                "path" => $path,
+                "id" => $idFolder,
+                "level" => count($tree_path),
+                "title" => $folder['title'],
+                "disabled" => 0,
+                "parent_id" => $folder['parent_id'],
+                "perso" => $folder['personal_folder'],
+                "is_visible_active" => 1,
+            ]
+        );
+    }
+
+    DB::update(
+        prefixTable('cache_tree'),
+        array(
+            'visible_folders' => json_encode($html),
+            'timestamp' => time(),
+        ),
+        'increment_id = %i',
+        (int) $cache_tree['increment_id']
+    );
 }

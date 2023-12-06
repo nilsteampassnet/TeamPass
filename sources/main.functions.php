@@ -3417,6 +3417,7 @@ function cacheTreeUserHandler(int $user_id, string $data, array $SETTINGS, strin
     );
     
     if (is_null($userCacheId) === true || count($userCacheId) === 0) {
+        // insert in table
         DB::insert(
             prefixTable('cache_tree'),
             array(

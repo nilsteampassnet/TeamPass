@@ -612,9 +612,9 @@ if (null !== $post_type) {
                             <th>Label</th>
                             <th>Login</th>
                             <th>Password</th>
+                            <th>URL</th>
                             <th>Description</th>
                             <th>Email</th>
-                            <th>URL</th>
                         </tr>
                     </thead>
                     <tbody>';
@@ -635,9 +635,9 @@ if (null !== $post_type) {
                         <td>'.$record['label'].'</td>
                         <td>'.$record['login'].'</td>
                         <td>'.$record['pw'].'</td>
+                        <td>'.$record['url'].'</td>
                         <td>'.$record['description'].'</td>
                         <td>'.$record['email'].'</td>
-                        <td>'.$record['url'].'</td>
                     </tr>';
                 }
                 $html_table .= '

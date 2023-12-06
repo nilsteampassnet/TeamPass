@@ -3270,6 +3270,17 @@ switch ($inputData['type']) {
             $filters,
             $SETTINGS['cpassman_dir']
         );
+        
+        if (empty($inputData['itemId']) === true && (empty($inputData['itemKey']) === true || undefined($inputData['itemKey']) === true)) {
+            echo (string) prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('nothing_to_do'),
+                ),
+                'encode'
+            );
+            break;
+        }
 
         // Check that user can access this item
         $granted = accessToItemIsGranted($inputData['itemId'], $SETTINGS);
@@ -6938,7 +6949,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
             $inputData['data'],
             'decode'
         );
-
+        
         // prepare variables
         $inputData['userId'] = (int) filter_var($dataReceived['userId'], FILTER_SANITIZE_NUMBER_INT);
         $inputData['itemId'] = (int) filter_var($dataReceived['itemId'], FILTER_SANITIZE_NUMBER_INT);
@@ -6950,10 +6961,9 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
             $inputData['userId']
         );
         // Check if tree ID is in visible folders.
-        if (null !== $data['visible_folders']) {
-            $arr = json_decode($data['visible_folders'], true);
-            $ids = is_null($arr) === true ? [] : array_column($arr, 'id');
-        }
+        $arr = json_decode($data['visible_folders'], true);
+        $ids = is_null($arr) === true ? [] : array_column($arr, 'id');
+
         // Check rights of this role on this folder
         // Is there no edit or no delete defined
         $data = DB::queryFirstColumn(
@@ -6963,43 +6973,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
             array_column($superGlobal->get('arr_roles', 'SESSION'), 'id'),
             $inputData['treeId'],
         );
-        $edit = $delete = true;
-/*
-        //if ((int) $folder_is_personal === 0) {
-            $accessLevel = 20;
-            $arrTmp = [];
-            
-            foreach ($data as $access) {
-                if ($access === 'R') {
-                    array_push($arrTmp, 10);
-                } elseif ($access === 'W') {
-                    array_push($arrTmp, 30);
-                } elseif (
-                    $access === 'ND'
-                    || ($forceItemEditPrivilege === true && $access === 'NDNE')
-                ) {
-                    array_push($arrTmp, 20);
-                } elseif ($access === 'NE') {
-                    array_push($arrTmp, 10);
-                } elseif ($access === 'NDNE') {
-                    array_push($arrTmp, 15);
-                } else {
-                    // Ensure to give access Right if allowed folder
-                    if (in_array($inputData['id'], $_SESSION['groupes_visibles']) === true) {
-                        array_push($arrTmp, 30);
-                    } else {
-                        array_push($arrTmp, 0);
-                    }
-                }
-            }
-            // 3.0.0.0 - changed  MIN to MAX
-            $accessLevel = count($arrTmp) > 0 ? max($arrTmp) : $accessLevel;
-        //} else {
-        //    $accessLevel = 30;
-        //}
-        $uniqueLoadData['accessLevel'] = $accessLevel;
-*/
-//print_r($data);
+        $edit = $delete = true;        
         foreach ($data as $access) {
             if ($access === 'ND') {
                 $delete = false;

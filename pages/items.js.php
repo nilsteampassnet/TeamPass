@@ -98,7 +98,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         itemStorageInformation = '',
         applicationVars,
         initialPageLoad = true,
-        previousSelectedFolder=-1,
+        previousSelectedFolder = -1,
         debugJavascript = false;
 
     // Manage memory
@@ -2272,6 +2272,9 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
                     '<?php echo $lang->get('please_confirm_deletion'); ?>',
                     '<?php echo $lang->get('delete'); ?>',
                     '<?php echo $lang->get('close'); ?>',
+                    false,
+                    false,
+                    false
                 );
 
                 // Launch deletion
@@ -2285,6 +2288,9 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
                         false
                     );
                     $('#warningModal').modal('hide');
+                });
+                $(document).on('click', '#warningModalButtonClose', function() {
+                    requestRunning = false;
                 });
             });
         });
@@ -4418,6 +4424,7 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
                     }
                 );
                 // Finished
+                requestRunning = false;
                 return false;
             }
 
