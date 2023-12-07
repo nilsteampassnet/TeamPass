@@ -3271,7 +3271,7 @@ switch ($inputData['type']) {
             $SETTINGS['cpassman_dir']
         );
         
-        if (empty($inputData['itemId']) === true && (empty($inputData['itemKey']) === true || undefined($inputData['itemKey']) === true)) {
+        if (empty($inputData['itemId']) === true && (empty($inputData['itemKey']) === true || is_null($inputData['itemKey']) === true)) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
