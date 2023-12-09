@@ -4274,9 +4274,6 @@ function loadClasses(string $className = ''): void
 {
     require_once __DIR__. '/../includes/config/include.php';
     require_once __DIR__. '/../includes/config/settings.php';
-    if (phpversion() < 8) {
-        require_once __DIR__. '/../includes/libraries/string.polyfill.php';
-    }
     require_once __DIR__.'/../vendor/autoload.php';
 
     if (defined('DB_PASSWD_CLEAR') === false) {

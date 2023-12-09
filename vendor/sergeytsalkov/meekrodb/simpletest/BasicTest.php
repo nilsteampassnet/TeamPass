@@ -417,7 +417,7 @@ class BasicTest extends SimpleTest {
     $signature = DB::queryFirstField("SELECT signature FROM profile WHERE id=%i", 1);
     $this->assert($signature === $data);
 
-    DB::update('profile', array('signature'=> "%li "), ['id' => 1]);
+    DB::update('profile', array('signature'=> "%li "), array('id' => 1));
     $signature = DB::queryFirstField("SELECT signature FROM profile WHERE id=%i", 1);
     $this->assert($signature === "%li ");
   }
@@ -427,7 +427,7 @@ class BasicTest extends SimpleTest {
     $count = DB::queryFirstField("SELECT COUNT(*) FROM %b", 'fake%s_table');
     $this->assert($count === '1');
     DB::update('fake%s_table', array('name' => 'haren%s'), 'name=%s_name', array('name' => 'karen'));
-    $affected_rows = DB::delete('fake%s_table', ['name' => 'haren%s']);
+    $affected_rows = DB::delete('fake%s_table', array('name' => 'haren%s'));
     $count = DB::queryFirstField("SELECT COUNT(*) FROM %b", 'fake%s_table');
     $this->assert($affected_rows === 1);
     $this->assert($count === '0');

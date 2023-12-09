@@ -27,45 +27,48 @@ if (! extension_loaded('mysqli')) {
 /**
  * @link https://meekro.com/docs/retrieving-data.html Retrieving Data
  * 
- * @method static query(string $query, ...$parameters)
- * @method static queryFirstRow(string $query, ...$parameters)
- * @method static queryFirstField(string $query, ...$parameters)
- * @method static queryFirstList(string $query, ...$parameters)
- * @method static queryFirstColumn(string $query, ...$parameters)
- * @method static queryFullColumns(string $query, ...$parameters)
+ * @method static mixed query(string $query, ...$parameters)
+ * @method static mixed queryFirstRow(string $query, ...$parameters)
+ * @method static mixed queryFirstField(string $query, ...$parameters)
+ * @method static mixed queryFirstList(string $query, ...$parameters)
+ * @method static mixed queryFirstColumn(string $query, ...$parameters)
+ * @method static mixed queryFullColumns(string $query, ...$parameters)
+ * @method static mixed queryWalk(string $query, ...$parameters)
  * 
  * @link https://meekro.com/docs/altering-data.html Altering Data
  * 
- * @method static insert(string $table_name, array $data, ...$parameters)
- * @method static int insertId()
- * @method static insertIgnore(string $table_name, array $data, ...$parameters)
- * @method static insertUpdate(string $table_name, array $data, ...$parameters)
- * @method static replace(string $table_name, array $data, ...$parameters)
- * @method static update(string $table_name, array $data, ...$parameters)
- * @method static delete(string $table_name, ...$parameters)
+ * @method static int insert(string $table_name, array $data, ...$parameters)
+ * @method static mixed insertId()
+ * @method static int insertIgnore(string $table_name, array $data, ...$parameters)
+ * @method static int insertUpdate(string $table_name, array $data, ...$parameters)
+ * @method static int replace(string $table_name, array $data, ...$parameters)
+ * @method static int update(string $table_name, array $data, ...$parameters)
+ * @method static int delete(string $table_name, ...$parameters)
  * @method static int affectedRows()
  * 
  * @link https://meekro.com/docs/transactions.html Transactions
  * 
- * @method static startTransaction()
- * @method static commit()
- * @method static rollback()
+ * @method static int startTransaction()
+ * @method static int commit()
+ * @method static int rollback()
+ * @method static int transactionDepth()
  * 
  * @link https://meekro.com/docs/hooks.html
  * 
  * @method static int addHook(string $hook_type, callable $fn)
- * @method static removeHook(string $hook_type, int $hook_id)
- * @method static removeHooks(string $hook_type)
+ * @method static void removeHook(string $hook_type, int $hook_id)
+ * @method static void removeHooks(string $hook_type)
  * 
  * @link https://meekro.com/docs/misc-methods.html Misc Methods and Variables
  * 
- * @method static useDB(string $database_name)
+ * @method static void useDB(string $database_name)
  * @method static array tableList(?string $database_name = null)
  * @method static array columnList(string $table_name)
- * @method static disconnect()
+ * @method static void disconnect()
  * @method static mysqli get()
- * @method static mixed lastQuery()
+ * @method static string lastQuery()
  * @method static string parse(string $query, ...$parameters)
+ * @method static string serverVersion()
  */
 class DB {
   // initial connection
@@ -81,22 +84,15 @@ class DB {
   public static $param_char = '%';
   public static $named_param_seperator = '_';
   public static $nested_transactions = false;
+  public static $ssl = null;
   public static $connect_options = array(MYSQLI_OPT_CONNECT_TIMEOUT => 30);
   public static $connect_flags = 0;
   public static $reconnect_after = 14400;
   public static $logfile;
-  public static $success_handler = false;
-  public static $error_handler = true;
-  public static $throw_exception_on_error = false;
-  public static $nonsql_error_handler = null;
-  public static $pre_sql_handler = false;
-  public static $throw_exception_on_nonsql_error = false;
-  public static $usenull = true;
-  public static $ssl = array('key' => '', 'cert' => '', 'ca_cert' => '', 'ca_path' => '', 'cipher' => '');
   
   // internal
   protected static $mdb = null;
-  public static $variables_to_sync = array('param_char', 'named_param_seperator', 'success_handler', 'error_handler', 'throw_exception_on_error', 'nonsql_error_handler', 'pre_sql_handler', 'throw_exception_on_nonsql_error', 'nested_transactions', 'usenull', 'ssl', 'connect_options');
+  public static $variables_to_sync = array('param_char', 'named_param_seperator', 'nested_transactions', 'ssl', 'connect_options', 'connect_flags', 'reconnect_after', 'logfile');
   
   public static function getMDB() {
     $mdb = DB::$mdb;
@@ -142,19 +138,12 @@ class MeekroDB {
   public $param_char = '%';
   public $named_param_seperator = '_';
   public $nested_transactions = false;
+  public $ssl = null;
   public $connect_options = array(MYSQLI_OPT_CONNECT_TIMEOUT => 30);
   public $connect_flags = 0;
   public $reconnect_after = 14400;
   public $logfile;
-  public $success_handler = false;
-  public $error_handler = true;
-  public $throw_exception_on_error = false;
-  public $nonsql_error_handler = null;
-  public $pre_sql_handler = false;
-  public $throw_exception_on_nonsql_error = false;
-  public $usenull = true;
-  public $ssl = array('key' => '', 'cert' => '', 'ca_cert' => '', 'ca_path' => '', 'cipher' => '');
-    
+  
   // internal
   public $internal_mysql = null;
   public $server_info = null;
@@ -194,7 +183,10 @@ class MeekroDB {
     $this->sync_config();
   }
 
-  // suck in config settings from static class
+  /**
+   * @internal 
+   * suck in config settings from static class
+   */
   public function sync_config() {
     foreach (DB::$variables_to_sync as $variable) {
       if ($this->$variable !== DB::$$variable) {
@@ -228,7 +220,7 @@ class MeekroDB {
       foreach ($this->connect_options as $key => $value) {
         $mysql->options($key, $value);
       }
-      
+
       // suppress warnings, since we will check connect_error anyway
       @$mysql->real_connect($this->host, $this->user, $this->password, $this->dbName, $this->port, $this->socket, $connect_flags);
       
@@ -285,7 +277,7 @@ class MeekroDB {
     $this->hooks[$type] = array();
   }
 
-  function runHook($type, $args=array()) {
+  protected function runHook($type, $args=array()) {
     if (! array_key_exists($type, $this->hooks)) {
       throw new MeekroDBException("Hook type $type is not recognized");
     }
@@ -381,12 +373,21 @@ class MeekroDB {
     }
   }
   
+  /**
+   * @deprecated No longer recommended.
+   */
+  public function count() { return call_user_func_array(array($this, 'numRows'), func_get_args()); }
+
+  /**
+   * @deprecated No longer recommended.
+   */
+  public function numRows() { return $this->num_rows; }
+
   public function serverVersion() { $this->get(); return $this->server_info; }
   public function transactionDepth() { return $this->nested_transactions_count; }
   public function insertId() { return $this->insert_id; }
   public function affectedRows() { return $this->affected_rows; }
-  public function count() { return call_user_func_array(array($this, 'numRows'), func_get_args()); }
-  public function numRows() { return $this->num_rows; }
+  
   public function lastQuery() { return $this->last_query; }
   
   public function useDB() { return call_user_func_array(array($this, 'setDB'), func_get_args()); }
@@ -437,7 +438,7 @@ class MeekroDB {
     return $this->nested_transactions_count;
   }
   
-  function formatBackticks($name, $split_dots=true) {
+  protected function formatBackticks($name, $split_dots=true) {
     $name = trim($name, '`');
     
     if ($split_dots && strpos($name, '.')) {
@@ -447,11 +448,17 @@ class MeekroDB {
     return '`' . str_replace('`', '``', $name) . '`'; 
   }
 
-  function formatTableName($table) {
+  /**
+   * @internal has to be public for PHP 5.3 compatability
+   */
+  public function formatTableName($table) {
     return $this->formatBackticks($table, true);
   }
 
-  function formatColumnName($column) {
+  /**
+   * @internal has to be public for PHP 5.3 compatability
+   */
+  public function formatColumnName($column) {
     return $this->formatBackticks($column, false);
   }
   
@@ -501,7 +508,7 @@ class MeekroDB {
     return $this->query($query);
   }
   
-  public function insertOrReplace($which, $table, $datas, $options=array()) {
+  protected function insertOrReplace($which, $table, $datas, $options=array()) {
     $datas = unserialize(serialize($datas)); // break references within array
     $keys = $values = array();
     
@@ -800,8 +807,14 @@ class MeekroDB {
     return $query;
   }
   
+  /**
+   * @internal has to be public for PHP 5.3 compatability
+   */
   public function escape($str) { return "'" . $this->get()->real_escape_string(strval($str)) . "'"; }
   
+  /**
+   * @internal has to be public for PHP 5.3 compatability
+   */
   public function sanitize($value, $type='basic', $hashjoin=', ') {
     if ($type == 'basic') {
       if (is_object($value)) {
@@ -852,7 +865,10 @@ class MeekroDB {
     
   }
 
-  function escapeTS($ts) {
+  /**
+   * @internal has to be public for PHP 5.3 compatability
+   */
+  public function escapeTS($ts) {
     if (is_string($ts)) {
       $str = date('Y-m-d H:i:s', strtotime($ts));
     }
@@ -863,13 +879,20 @@ class MeekroDB {
     return $this->escape($str);
   }
   
-  function intval($var) {
+  /**
+   * @internal has to be public for PHP 5.3 compatability
+   */
+  public function intval($var) {
     if (PHP_INT_SIZE == 8) return intval($var);
     return floor(doubleval($var));
   }
-  
+
   public function query() { return $this->queryHelper(array('assoc' => true), func_get_args()); }
-  public function queryAllLists() { return $this->queryHelper(array(), func_get_args()); }
+
+  /**
+   * @deprecated
+   */
+  public function queryAllLists() { return $this->queryHelper(array(), func_get_args()); }  
   public function queryFullColumns() { return $this->queryHelper(array('fullcols' => true), func_get_args()); }
   public function queryWalk() { return $this->queryHelper(array('walk' => true), func_get_args()); }
   
@@ -1017,11 +1040,37 @@ class MeekroDB {
     else $this->logfile = null;
   }
 
-  public function queryRaw() { return $this->queryHelper(array('raw' => true), func_get_args()); }
-  public function queryRawUnbuf() { return $this->queryHelper(array('raw' => true, 'unbuf' => true), func_get_args()); }
-  public function queryOneList() { return call_user_func_array(array($this, 'queryFirstList'), func_get_args()); }
-  public function queryOneRow() { return call_user_func_array(array($this, 'queryFirstRow'), func_get_args()); }
+  /**
+   * @deprecated
+   */
+  public function queryRaw() { 
+    return $this->queryHelper(array('raw' => true), func_get_args());
+  }
 
+  /**
+   * @deprecated
+   */
+  public function queryRawUnbuf() { 
+    return $this->queryHelper(array('raw' => true, 'unbuf' => true), func_get_args());
+  }
+
+  /**
+   * @deprecated
+   */
+  public function queryOneList() { 
+    return call_user_func_array(array($this, 'queryFirstList'), func_get_args());
+  }
+
+  /**
+   * @deprecated
+   */
+  public function queryOneRow() { 
+    return call_user_func_array(array($this, 'queryFirstRow'), func_get_args());
+  }
+
+  /**
+   * @deprecated
+   */
   public function queryOneField() {
     $args = func_get_args();
     $column = array_shift($args);
@@ -1037,6 +1086,9 @@ class MeekroDB {
     return $row[$column];
   }
 
+  /**
+   * @deprecated
+   */
   public function queryOneColumn() {
     $args = func_get_args();
     $column = array_shift($args);

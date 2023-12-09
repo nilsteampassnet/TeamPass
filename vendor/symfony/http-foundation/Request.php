@@ -136,57 +136,57 @@ class Request
     protected $content;
 
     /**
-     * @var string[]
+     * @var string[]|null
      */
     protected $languages;
 
     /**
-     * @var string[]
+     * @var string[]|null
      */
     protected $charsets;
 
     /**
-     * @var string[]
+     * @var string[]|null
      */
     protected $encodings;
 
     /**
-     * @var string[]
+     * @var string[]|null
      */
     protected $acceptableContentTypes;
 
     /**
-     * @var string
+     * @var string|null
      */
     protected $pathInfo;
 
     /**
-     * @var string
+     * @var string|null
      */
     protected $requestUri;
 
     /**
-     * @var string
+     * @var string|null
      */
     protected $baseUrl;
 
     /**
-     * @var string
+     * @var string|null
      */
     protected $basePath;
 
     /**
-     * @var string
+     * @var string|null
      */
     protected $method;
 
     /**
-     * @var string
+     * @var string|null
      */
     protected $format;
 
     /**
-     * @var SessionInterface|callable(): SessionInterface
+     * @var SessionInterface|callable():SessionInterface|null
      */
     protected $session;
 
@@ -201,7 +201,7 @@ class Request
     protected $defaultLocale = 'en';
 
     /**
-     * @var array<string, string[]>
+     * @var array<string, string[]>|null
      */
     protected static $formats;
 
@@ -211,6 +211,8 @@ class Request
     private bool $isHostValid = true;
     private bool $isForwardedValid = true;
     private bool $isSafeContentPreferred;
+
+    private array $trustedValuesCache = [];
 
     private static int $trustedHeaderSet = -1;
 
@@ -769,7 +771,7 @@ class Request
      */
     public function setSessionFactory(callable $factory): void
     {
-        $this->session = $factory;
+        $this->session = $factory(...);
     }
 
     /**
@@ -1586,7 +1588,7 @@ class Request
      */
     public function getPreferredFormat(?string $default = 'html'): ?string
     {
-        if (null !== $this->preferredFormat || null !== $this->preferredFormat = $this->getRequestFormat(null)) {
+        if ($this->preferredFormat ??= $this->getRequestFormat(null)) {
             return $this->preferredFormat;
         }
 
@@ -1680,11 +1682,7 @@ class Request
      */
     public function getCharsets(): array
     {
-        if (null !== $this->charsets) {
-            return $this->charsets;
-        }
-
-        return $this->charsets = array_map('strval', array_keys(AcceptHeader::fromString($this->headers->get('Accept-Charset'))->all()));
+        return $this->charsets ??= array_map('strval', array_keys(AcceptHeader::fromString($this->headers->get('Accept-Charset'))->all()));
     }
 
     /**
@@ -1694,11 +1692,7 @@ class Request
      */
     public function getEncodings(): array
     {
-        if (null !== $this->encodings) {
-            return $this->encodings;
-        }
-
-        return $this->encodings = array_map('strval', array_keys(AcceptHeader::fromString($this->headers->get('Accept-Encoding'))->all()));
+        return $this->encodings ??= array_map('strval', array_keys(AcceptHeader::fromString($this->headers->get('Accept-Encoding'))->all()));
     }
 
     /**
@@ -1708,11 +1702,7 @@ class Request
      */
     public function getAcceptableContentTypes(): array
     {
-        if (null !== $this->acceptableContentTypes) {
-            return $this->acceptableContentTypes;
-        }
-
-        return $this->acceptableContentTypes = array_map('strval', array_keys(AcceptHeader::fromString($this->headers->get('Accept'))->all()));
+        return $this->acceptableContentTypes ??= array_map('strval', array_keys(AcceptHeader::fromString($this->headers->get('Accept'))->all()));
     }
 
     /**
@@ -2009,8 +1999,20 @@ class Request
         return self::$trustedProxies && IpUtils::checkIp($this->server->get('REMOTE_ADDR', ''), self::$trustedProxies);
     }
 
+    /**
+     * This method is rather heavy because it splits and merges headers, and it's called by many other methods such as
+     * getPort(), isSecure(), getHost(), getClientIps(), getBaseUrl() etc. Thus, we try to cache the results for
+     * best performance.
+     */
     private function getTrustedValues(int $type, string $ip = null): array
     {
+        $cacheKey = $type."\0".((self::$trustedHeaderSet & $type) ? $this->headers->get(self::TRUSTED_HEADERS[$type]) : '');
+        $cacheKey .= "\0".$ip."\0".$this->headers->get(self::TRUSTED_HEADERS[self::HEADER_FORWARDED]);
+
+        if (isset($this->trustedValuesCache[$cacheKey])) {
+            return $this->trustedValuesCache[$cacheKey];
+        }
+
         $clientValues = [];
         $forwardedValues = [];
 
@@ -2023,7 +2025,6 @@ class Request
         if ((self::$trustedHeaderSet & self::HEADER_FORWARDED) && (isset(self::FORWARDED_PARAMS[$type])) && $this->headers->has(self::TRUSTED_HEADERS[self::HEADER_FORWARDED])) {
             $forwarded = $this->headers->get(self::TRUSTED_HEADERS[self::HEADER_FORWARDED]);
             $parts = HeaderUtils::split($forwarded, ',;=');
-            $forwardedValues = [];
             $param = self::FORWARDED_PARAMS[$type];
             foreach ($parts as $subParts) {
                 if (null === $v = HeaderUtils::combine($subParts)[$param] ?? null) {
@@ -2045,15 +2046,15 @@ class Request
         }
 
         if ($forwardedValues === $clientValues || !$clientValues) {
-            return $forwardedValues;
+            return $this->trustedValuesCache[$cacheKey] = $forwardedValues;
         }
 
         if (!$forwardedValues) {
-            return $clientValues;
+            return $this->trustedValuesCache[$cacheKey] = $clientValues;
         }
 
         if (!$this->isForwardedValid) {
-            return null !== $ip ? ['0.0.0.0', $ip] : [];
+            return $this->trustedValuesCache[$cacheKey] = null !== $ip ? ['0.0.0.0', $ip] : [];
         }
         $this->isForwardedValid = false;
 

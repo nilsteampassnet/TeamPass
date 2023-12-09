@@ -1,0 +1,23 @@
+{
+    "name": "teampassclasses/nestedtree",
+    "description": "Handle a structure of folders like a tree.",
+    "type": "library",
+    "license": "GPL-3.0-only",
+    "keywords": [
+        "nested",
+        "tree"
+    ],
+    "authors": [
+        {
+            "name": "Nils Laumaillé"
+        }
+    ],
+    "require": {
+        "php": "^7.4 || ^8.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "TeampassClasses\\NestedTree\\": "src/"
+        }
+    }
+}

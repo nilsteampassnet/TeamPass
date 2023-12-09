@@ -35,27 +35,45 @@
         },
         {
             "type": "path",
-            "url": "includes/libraries/teampassclasses/nestedtree"
+            "url": "includes/libraries/teampassclasses/nestedtree",
+            "options": {
+                "symlink": false
+            }
         },
         {
             "type": "path",
-            "url": "includes/libraries/teampassclasses/superglobal"
+            "url": "includes/libraries/teampassclasses/superglobal",
+            "options": {
+                "symlink": false
+            }
         },
         {
             "type": "path",
-            "url": "includes/libraries/ezimuel/phpsecuresession"
+            "url": "includes/libraries/ezimuel/phpsecuresession",
+            "options": {
+                "symlink": false
+            }
         },
         {
             "type": "path",
-            "url": "includes/libraries/teampassclasses/performchecks"
+            "url": "includes/libraries/teampassclasses/performchecks",
+            "options": {
+                "symlink": false
+            }
         },
         {
             "type": "path",
-            "url": "includes/libraries/teampassclasses/encryption"
+            "url": "includes/libraries/teampassclasses/encryption",
+            "options": {
+                "symlink": false
+            }
         },
         {
             "type": "path",
-            "url": "includes/libraries/teampassclasses/language"
+            "url": "includes/libraries/teampassclasses/language",
+            "options": {
+                "symlink": false
+            }
         }
     ],
     "require": {
