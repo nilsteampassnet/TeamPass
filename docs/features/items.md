@@ -81,3 +81,28 @@ If an Administrator defines a subdomain, any link generated will contain this su
 If any valid OTV link exists for an item, a special Icon will be displayed with the number of links.
 
 ![1](../../_media/tp3_otv_1.png)
+
+## OTP code for Item
+
+> Teampass can display an OTP code for each item.
+
+### Show the OTP code
+
+When viewing an item, you have access to rotating OTP code.
+
+![1](../../_media/tp3_otp_1.png)
+
+### Setting up the OTP code for an item
+
+In some circumstancies, it can be usefull to have set up an OTP code for any critical entry.
+Teampass permits you to store the OTP setup instead of using a dedicated OTP tool.
+By doing so, you can share the OTP code among all users.
+
+Setting up an OTP code for one item is performed in the edition form.
+
+* Select `Details` tab
+* Fill in `Phone number` field; it is optional but could be usefull to recover an access
+* Fill in `Secret key` field; this one comes from the website for which you have decided to set up an OTP. In general, you need to scan a QR code but the secret is also provided
+* Finally, you can decide to enable or not showing the OTP code
+
+![1](../../_media/tp3_otp_2.png)

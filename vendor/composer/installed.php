@@ -277,6 +277,15 @@
             'reference' => '98b60b05b2fdc0f66fef68f51890dc437b72c3f5',
             'dev_requirement' => false,
         ),
+        'paragonie/constant_time_encoding' => array(
+            'pretty_version' => 'v2.6.3',
+            'version' => '2.6.3.0',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../paragonie/constant_time_encoding',
+            'aliases' => array(),
+            'reference' => '58c3f47f650c94ec05a151692652a868995d2938',
+            'dev_requirement' => false,
+        ),
         'paragonie/random_compat' => array(
             'pretty_version' => 'v9.99.100',
             'version' => '9.99.100.0',
@@ -404,6 +413,15 @@
             'install_path' => __DIR__ . '/../sergeytsalkov/meekrodb',
             'aliases' => array(),
             'reference' => '08b683a274365983aaf033cf9c589dcbe5190028',
+            'dev_requirement' => false,
+        ),
+        'spomky-labs/otphp' => array(
+            'pretty_version' => '11.2.0',
+            'version' => '11.2.0.0',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../spomky-labs/otphp',
+            'aliases' => array(),
+            'reference' => '9a1569038bb1c8e98040b14b8bcbba54f25e7795',
             'dev_requirement' => false,
         ),
         'symfony/cache-contracts' => array(

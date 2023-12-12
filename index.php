@@ -1189,6 +1189,8 @@ if (($session_validite_pw === null
             ?>
             <link rel="stylesheet" href="./plugins/jstree/themes/default/style.min.css" />
             <script src="./plugins/jstree/jstree.min.js" type="text/javascript"></script>
+            <!-- countdownTimer -->
+            <script src="./plugins/countdownTimer/countdownTimer.min.js"></script>
             <!-- SUMMERNOTE -->
             <link rel="stylesheet" href="./plugins/summernote/summernote-bs4.css">
             <script src="./plugins/summernote/summernote-bs4.min.js"></script>
@@ -1205,6 +1207,10 @@ if (($session_validite_pw === null
             <!-- PWSTRENGHT -->
             <script type="text/javascript" src="plugins/zxcvbn/zxcvbn.js"></script>
             <script type="text/javascript" src="plugins/jquery.pwstrength/pwstrength-bootstrap.min.js"></script>
+            <!-- TOGGLE -->
+            <link rel="stylesheet" href="./plugins/toggles/css/toggles.css" />
+            <link rel="stylesheet" href="./plugins/toggles/css/toggles-modern.css" />
+            <script src="./plugins/toggles/toggles.min.js" type="text/javascript"></script>
         <?php
         } elseif (in_array($get['page'], ['search', 'folders', 'users', 'roles', 'utilities.deletion', 'utilities.logs', 'utilities.database', 'utilities.renewal', 'tasks']) === true) {
             ?>

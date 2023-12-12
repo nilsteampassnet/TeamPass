@@ -84,6 +84,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         clipboardForLogin,
         clipboardForPassword,
         clipboardForLink,
+        clipboardOTPCode,
         query_in_progress = 0,
         screenHeight = $(window).height(),
         quick_icon_query_status = true,
@@ -99,6 +100,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         applicationVars,
         initialPageLoad = true,
         previousSelectedFolder = -1,
+        intervalId = false,
         debugJavascript = false;
 
     // Manage memory
@@ -747,6 +749,14 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
             //
         } else if ($(this).data('item-action') === 'edit') {
             if (debugJavascript === true) console.info('SHOW EDIT ITEM');
+            // Reset item
+            store.update(
+                'teampassItem',
+                function(teampassItem) {
+                    teampassItem.otp_code_generate = false;
+                }
+            );
+            
 
             // if item is ready
             if (store.get('teampassItem').readyToUse === false) {
@@ -2121,7 +2131,6 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
                         'show',
                         true
                     );
-
                     return false;
                 }
                 if (store.get('teampassUser').previousView === '#folders-tree-card' ||
@@ -2149,6 +2158,7 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
                 $('.to_be_deleted').remove();
                 $('#card-item-attachments, #card-item-history').html('');
                 $('#card-item-attachments-badge').html('<?php echo $lang->get('none'); ?>');
+                $('#form-item-otp').iCheck('uncheck');
 
                 // Move back fields
                 $('.fields-to-move')
@@ -2185,10 +2195,24 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
                         .prop('disabled', false);
                 }
             }
+
+            // Reset item
+            store.update(
+                'teampassItem',
+                function(teampassItem) {
+                    teampassItem.otp_code_generate = false;
+                }
+            );
+            if (clipboardOTPCode) {
+                clipboardOTPCode.destroy();
+            }
+
+            if (intervalId) {
+                clearInterval(intervalId);
+            }
+
             if (debugJavascript === true) console.log('Edit for closed');
         }
-
-
 
         // Scroll back to position
         scrollBackToPosition();
@@ -2202,6 +2226,8 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
         .on('click', '.but-navigate-item', function() {
             toastr.remove();
             toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+
+            clipboardOTPCode.destroy();
 
             // Load item info
             Details(
@@ -2992,6 +3018,9 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
                     'user_id': parseInt('<?php echo $_SESSION['user_id']; ?>'),
                     'uploaded_file_id': store.get('teampassApplication').uploadedFileId === undefined ? '' : store.get('teampassApplication').uploadedFileId,
                     'fa_icon': purifyRes.arrFields['icon'],
+                    'otp_is_enabled': $('#form-item-otp').is(':checked') ? 1 : 0,
+                    'otp_phone_number': purifyRes.arrFields['otpPhoneNumber'] !== '' ? purifyRes.arrFields['otpPhoneNumber'] : '',
+                    'otp_secret': purifyRes.arrFields['otpSecret'] !== '' ? purifyRes.arrFields['otpSecret'] : '',
                 };
                 if (debugJavascript === true) {
                     console.log('SAVING DATA');
@@ -3201,6 +3230,13 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
 
     function showItemEditForm(selectedFolderId) {
         if (debugJavascript === true) console.info('SHOW EDIT ITEM ' + selectedFolderId);
+        // Reset item
+        store.update(
+            'teampassItem',
+            function(teampassItem) {
+                teampassItem.otp_code_generate = false;
+            }
+        );
         
         //$.when(
         //    getPrivilegesOnItem(selectedFolderId, 0)
@@ -4628,7 +4664,7 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
                     $('#card-item-visibility').html(store.get('teampassItem').itemVisibility);
                     $('#card-item-minimum-complexity').html(store.get('teampassItem').itemMinimumComplexity);
 
-                    // Hide NEW button in case access_level < 30
+                    // Hide NEW button in case access_level <span 30
                     if (store.get('teampassItem').hasAccessLevel === 10) {
                         $('#item-form-new-button').addClass('hidden');
                     } else {
@@ -4650,13 +4686,13 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
                         'teampassItem',
                         function(teampassItem) {
                             teampassItem.id = parseInt(data.id),
-                                teampassItem.timestamp = data.timestamp,
-                                teampassItem.user_can_modify = data.user_can_modify,
-                                teampassItem.anyone_can_modify = data.anyone_can_modify,
-                                teampassItem.edit_item_salt_key = data.edit_item_salt_key,
-                                teampassItem.id_restricted_to = data.id_restricted_to,
-                                teampassItem.id_restricted_to_roles = data.id_restricted_to_roles,
-                                teampassItem.item_rights = itemRights
+                            teampassItem.timestamp = data.timestamp,
+                            teampassItem.user_can_modify = data.user_can_modify,
+                            teampassItem.anyone_can_modify = data.anyone_can_modify,
+                            teampassItem.edit_item_salt_key = data.edit_item_salt_key,
+                            teampassItem.id_restricted_to = data.id_restricted_to,
+                            teampassItem.id_restricted_to_roles = data.id_restricted_to_roles,
+                            teampassItem.item_rights = itemRights
                         }
                     );
 
@@ -5329,6 +5365,15 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
                         .append('<span class="icon-badge mr-4"><span class="fa-regular fa-handshake infotip" title="<?php echo $lang->get('existing_valid_otv_links'); ?>"></span><span class="badge badge-info icon-badge-text icon-badge-far">' + data.otv_links + '</span></span>');
                 }
 
+                // Manage if OTP is enabled for item
+                if (data.otp_for_item_enabled === 1) {
+                    $('#form-item-otp').iCheck('check');
+                } else {
+                    $('#form-item-otp').iCheck('uncheck');
+                }
+                $('#form-item-otpPhoneNumber').val(data.otp_phone_number);
+                $('#form-item-otpSecret').val(data.otp_secret);
+
                 // Delete inputs related files uploaded but not confirmed
                 var data = {
                     'item_id': store.get('teampassItem').id,
@@ -5350,9 +5395,85 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
                         requestRunning = false;
                     }
                 );
+
+                // Load OTP stuff
+                store.update(
+                    'teampassItem',
+                    function(teampassItem) {
+                        teampassItem.otp_code_generate = true
+                    }
+                );
+
+                // Display OTP Code
+                showOTPCode(id);
             }
         );
     };
+
+    function showOTPCode(id) {
+        if (store.get('teampassItem').otp_code_generate === false) {
+            clearInterval(intervalId);
+            return false;
+        }
+        return new Promise((resolve, reject) => {
+            $.post(
+                'sources/items.queries.php', {
+                    type: 'show_opt_code',
+                    id: id,
+                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                },
+                function(data) {
+                    //decrypt data
+                    data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'items.queries.php', 'showDetailsStep3');
+
+                    if (data.otp_code !== '' && data.otp_expires_in !== '' && parseInt(data.otp_enabled) === 1) {
+                        $('#card-item-opt_code').html(data.otp_code+'<span class="ml-3 badge rounded-pill badge-info text-dark" style="width:30px;" id="otp_countdown"></span><i class="fa-regular fa-copy ml-2 text-secondary pointer" id="clipboard_otpcode"></i>');   
+                        
+                        // show countdown
+                        $('#otp_countdown').countdownTimer({
+                            seconds: data.otp_expires_in,
+                            loop: false,
+                            callback: function(){
+                                $('#otp_countdown').html('<i class="fa-solid fa-circle-notch fa-spin"></i>')
+                            }
+                        });
+
+                        // Prepare Clipboard
+                        clipboardOTPCode = new ClipboardJS("#clipboard_otpcode", {
+                            text: function() {
+                                return data.otp_code;
+                            }
+                        });
+                        clipboardOTPCode.on('success', function(e) {
+                            toastr.remove();
+                            toastr.info(
+                                '<?php echo $lang->get('copy_to_clipboard'); ?>',
+                                '', {
+                                    timeOut: 2000,
+                                    positionClass: 'toast-top-right',
+                                    progressBar: true
+                                }
+                            );
+                            e.clearSelection();
+                        });
+
+                        // Prepare recursive call to get new OTP code
+                        var replayDelayInMilliseconds = data.otp_expires_in*1000;
+                        intervalId = setTimeout(function() {
+                            showOTPCode(id);
+                        }, replayDelayInMilliseconds);
+
+                        resolve(replayDelayInMilliseconds);
+                    } else {
+                        $('#card-item-opt_code').html('<?php echo $lang->get('none'); ?>');
+                    }
+
+                    resolve(false);
+                }
+            );
+        });
+    }
+
 
     // Clear history form
     $(document)
@@ -6206,4 +6327,7 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
         alertify.dismissAll();
     }
     */
+    $(document).ready(function() {
+        //
+    });
 </script>

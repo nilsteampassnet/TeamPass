@@ -26,6 +26,7 @@ use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
+use OTPHP\TOTP;
 
 // Load functions
 require_once 'main.functions.php';
@@ -905,6 +906,9 @@ switch ($inputData['type']) {
             ));
             $post_description = $antiXss->xss_clean($dataReceived['description']);
             $post_fa_icon = isset($dataReceived['fa_icon']) === true ? filter_var(($dataReceived['fa_icon']), FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '';
+            $post_otp_is_enabled = (int) filter_var($dataReceived['otp_is_enabled'], FILTER_SANITIZE_NUMBER_INT);
+            $post_otp_phone_number = (int) filter_var($dataReceived['otp_phone_number'], FILTER_SANITIZE_NUMBER_INT);
+            $post_otp_secret = isset($dataReceived['otp_secret']) === true ? filter_var(($dataReceived['otp_secret']), FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '';
 
             //-> DO A SET OF CHECKS
             // Perform a check in case of Read-Only user creating an item in his PF
@@ -1667,6 +1671,68 @@ switch ($inputData['type']) {
                 }
                 // Update CACHE table
                 updateCacheTable('update_value', (int) $inputData['itemId']);
+
+
+                // Manage OTP status
+                // Get current status
+                $otpStatus = DB::queryFirstRow(
+                    'SELECT enabled as otp_is_enabled
+                    FROM ' . prefixTable('items_otp') . '
+                    WHERE item_id = %i',
+                    $inputData['itemId']
+                );
+
+                // Check if status has changed
+                if (DB::count() > 0 && (int) $otpStatus['otp_is_enabled'] !== (int) $post_otp_is_enabled) {
+                    // Update status
+                    DB::update(
+                        prefixTable('items_otp'),
+                        array(
+                            'enabled' => (int) $post_otp_is_enabled,
+                        ),
+                        'item_id = %i',
+                        $inputData['itemId']
+                    );
+
+                    // Store updates performed
+                    array_push(
+                        $arrayOfChanges,
+                        $lang->get('otp_status')
+                    );
+
+                    // update LOG
+                    logItems(
+                        $SETTINGS,
+                        (int) $inputData['itemId'],
+                        $inputData['label'],
+                        $_SESSION['user_id'],
+                        'at_modification',
+                        $_SESSION['login'],
+                        'at_otp_status:' . ((int) $post_otp_is_enabled === 0 ? 'disabled' : 'enabled')
+                    );
+                } elseif (DB::count() === 0 && empty($post_otp_secret) === false) {
+                    // Create the entry in items_otp table
+                    // OTP doesn't exist then create it
+
+                    // Encrypt secret
+                    $encryptedSecret = cryption(
+                        $post_otp_secret,
+                        '',
+                        'encrypt'
+                    );
+                    
+                    // insert in table
+                    DB::insert(
+                        prefixTable('items_otp'),
+                        array(
+                            'item_id' => $inputData['itemId'],
+                            'secret' => $encryptedSecret['string'],
+                            'phone_number' => $post_otp_phone_number,
+                            'timestamp' => time(),
+                            'enabled' => 1,
+                        )
+                    );
+                }
 
                 //---- Log all modifications done ----
 
@@ -2977,9 +3043,10 @@ switch ($inputData['type']) {
 
         // Load item data
         $dataItem = DB::queryFirstRow(
-            'SELECT i.*, n.title AS folder_title
+            'SELECT i.*, n.title AS folder_title, o.enabled AS otp_for_item_enabled, o.phone_number AS otp_phone_number, o.secret AS otp_secret
             FROM ' . prefixTable('items') . ' AS i
             INNER JOIN ' . prefixTable('nested_tree') . ' AS n ON (i.id_tree = n.id)
+            INNER JOIN ' . prefixTable('items_otp') . ' AS o ON (o.item_id = i.id)
             WHERE i.id = %i',
             $inputData['id']
         );
@@ -3069,6 +3136,20 @@ switch ($inputData['type']) {
 
             // disable add bookmark if alread bookmarked
             $returnArray['favourite'] = in_array($inputData['id'], $_SESSION['favourites']) === true ? 1 : 0;
+            
+            // get OTP enabled for item
+            $returnArray['otp_for_item_enabled'] = (int) $dataItem['otp_for_item_enabled'];
+            $returnArray['otp_phone_number'] = (string) $dataItem['otp_phone_number'];
+            if (empty($dataItem['otp_secret']) === false) {
+                $secret = cryption(
+                    $dataItem['otp_secret'],
+                    '',
+                    'decrypt'
+                )['string'];
+            } else {
+                $secret = '';
+            }
+            $returnArray['otp_secret'] = (string) $secret;
 
             // Add this item to the latests list
             if (isset($_SESSION['latest_items']) && isset($SETTINGS['max_latest_items']) && !in_array($dataItem['id'], $_SESSION['latest_items'])) {
@@ -3336,6 +3417,73 @@ switch ($inputData['type']) {
             array(
                 'error' => false,
                 'message' => '',
+            ),
+            'encode'
+        );
+        break;
+
+        
+    /*
+    * CASE
+    * Display OTP of the selected Item
+    */
+    case 'show_opt_code':
+        // Check KEY and rights
+        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
+            echo (string) prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        if ($_SESSION['user_read_only'] === true) {
+            echo (string) prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        // Load item data
+        $dataItem = DB::queryFirstRow(
+            'SELECT secret, enabled
+            FROM ' . prefixTable('items_otp') . '
+            WHERE item_id = %i',
+            $inputData['id']
+        );
+
+        if (DB::count() > 0) {
+            // OTP exists then display it
+            $secret = cryption(
+                $dataItem['secret'],
+                '',
+                'decrypt'
+            )['string'];
+        }
+
+        // Generate OTP code
+        if (empty($secret) === false) {
+            $otp = TOTP::createFromSecret($secret);
+            $otpCode = $otp->now();
+            $otpExpiresIn = $otp->expiresIn();
+        } else {
+            $otpCode = '';
+            $otpExpiresIn = '';
+        }
+        
+        echo (string) prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => '',
+                'otp_code' => $otpCode,
+                'otp_expires_in' => $otpExpiresIn,
+                'otp_enabled' => $dataItem['enabled'],
             ),
             'encode'
         );
@@ -6448,7 +6596,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                         $lang->get('no_previous_value') : $lang->get('previous_value') . ': <span class="font-weight-light">' . $tmp[0] . ' </span>';
                 } elseif ($reason[0] === 'at_automatic_del') {
                     $detail = $lang->get($reason[1]);
-                } elseif ($reason[0] === 'at_anyoneconmodify') {
+                } elseif ($reason[0] === 'at_anyoneconmodify' || $reason[0] === 'at_otp_status') {
                     $detail = $lang->get($reason[1]);
                 } elseif ($reason[0] === 'at_add_file' || $reason[0] === 'at_del_file') {
                     $tmp = explode(':', $reason[1]);

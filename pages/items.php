@@ -328,6 +328,42 @@ foreach ($rows as $reccord) {
                                 <?php
                                 }
                                 ?>
+
+                                <!-- OTP FOR ITEM -->
+                                <div class="callout callout-primary mb-3">
+                                    <div class="card-header">
+                                        <h3 class="card-title">
+                                            <i class="fa-solid fa-qrcode"></i>
+                                            <?php echo $lang->get('otp'); ?>
+                                        </h3>
+                                    </div>
+                                    <!-- /.card-header -->
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="d-inline p-2 col-4">
+                                                <?php echo $lang->get('phone_number'); ?>
+                                            </div>
+                                            <div class="d-inline p-2 col-4">
+                                                <input type="phone" class="form-control form-item-control purify" data-field-name="otpPhoneNumber" id="form-item-otpPhoneNumber" data-change-ongoing="">
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="d-inline p-2 col-4">
+                                                <?php echo $lang->get('otp_secret'); ?>
+                                            </div>
+                                            <div class="d-inline p-2 col-8">
+                                                <input type="text" class="form-control form-item-control purify" data-field-name="otpSecret" id="form-item-otpSecret" data-change-ongoing="">
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="form-check mb-3 icheck-blue">
+                                                <input type="checkbox" class="form-check-input form-item-control flat-blue ml-0" id="form-item-otp" data-change-ongoing="">
+                                                <label class="form-check-label ml-3" for="form-item-otp"><?php echo $lang->get('enabled_otp_for_item'); ?></label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <!-- DELETE AFTER CONSULTATION -->
                                 <?php
                                 if (
@@ -345,18 +381,18 @@ foreach ($rows as $reccord) {
                                         <!-- /.card-header -->
                                         <div class="card-body">
                                             <div class="row">
-                                                <div class="d-inline p-2">
+                                                <div class="d-inline p-2 col-4">
                                                     <?php echo $lang->get('item_deleted_after_being_viewed_x_times'); ?>
                                                 </div>
-                                                <div class="d-inline p-2">
+                                                <div class="d-inline p-2 col-8">
                                                     <input type="number" class="form-control form-item-control purify" data-field-name="deleteAfterShown" id="form-item-deleteAfterShown" data-change-ongoing="">
                                                 </div>
                                             </div>
                                             <div class="row">
-                                                <div class="d-inline p-2">
+                                                <div class="d-inline p-2 col-4">
                                                     <?php echo $lang->get('item_deleted_after_date'); ?>
                                                 </div>
-                                                <div class="d-inline p-2">
+                                                <div class="d-inline p-2 col-8">
                                                     <div class="input-group date inline">
                                                         <div class="input-group-prepend">
                                                             <span class="input-group-text">
@@ -497,6 +533,7 @@ foreach ($rows as $reccord) {
                                     <?php echo $lang->get('no_fields'); ?>
                                 </div>
                             </div>
+
                         </div>
                     </form>
                 </div>
@@ -642,8 +679,8 @@ foreach ($rows as $reccord) {
                             <a id="card-item-tags" class="float-right ml-1"></a>
                         </li>
                         <li class="list-group-item">
-                            <b><?php echo $lang->get('kbs'); ?></b>
-                            <a id="card-item-kbs" class="float-right ml-1"></a>
+                            <b><?php echo $lang->get('otp_code'); ?></b>
+                            <a id="card-item-opt_code" class="float-right ml-1"></a>
                         </li>
                         <li class="list-group-item" id="card-item-misc">
                         </li>
