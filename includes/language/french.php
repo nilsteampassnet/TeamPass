@@ -1144,5 +1144,11 @@ return array(
     'please_confirm_task_to_be_run' => 'Merci de confirmer l&apos;exécution de la tache',
     'user_keys_downloaded' => 'Clés utilisateur téléchargées',
     'mfa_code_send_by_email' => 'Code MFA envoyé par email',
+    'otp' => '',
+    'otp_code' => 'Code OTP',
+    'enabled_otp_for_item' => 'Activer le code OTP',
+    'at_otp_status' => 'Status de l&apos;OTP',
+    'phone_number' => 'Numéro de téléphone associé (optionel)',
+    'otp_secret' => 'Clé secrète de l&apos;OTP',
 
 );

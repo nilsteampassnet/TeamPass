@@ -241,6 +241,21 @@ if ($goTreeRefresh['state'] === true || empty($inputData['nodeId']) === false ||
         $SETTINGS
     );
 
+    // Add new process
+    DB::insert(
+        prefixTable('processes'),
+        array(
+            'created_at' => time(),
+            'process_type' => 'user_build_cache_tree',
+            'arguments' => json_encode([
+                'user_id' => (int) $inputData['userId'],
+            ], JSON_HEX_QUOT | JSON_HEX_TAG),
+            'updated_at' => '',
+            'finished_at' => '',
+            'output' => '',
+        )
+    );
+
     // Send back
     echo $ret_json;
 } else {

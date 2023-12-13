@@ -16,9 +16,14 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'otp' => 'OTP',  
+    'otp_code' => 'OTP code',
+    'enabled_otp_for_item' => 'Enable OTP code',
+    'at_otp_status' => 'OTP status',
+    'phone_number' => 'Related phone number (optional)',
+    'otp_secret' => 'OTP secret key',  
     'enable_refresh_task_last_execution' => 'Show task last execution date and hour',
     'generate_an_otp' => 'Generate an OTP',
-    'generated-otp' => 'Generated OTP',
     'qrcode_label' => 'QRCode label',
     'generate_qrcode' => 'Generate QRCode',
     'please_provide_label' => 'Please provide a label',

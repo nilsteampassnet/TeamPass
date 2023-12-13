@@ -818,7 +818,8 @@ declare(strict_types=1);
             data = {
                 'login': $("#login").val(),
                 'pw': $("#pw").val(),
-                'send_mail': 1
+                'send_mail': 1,
+                'token': CreateRandomString(100)
             }
             $.post(
                 'sources/main.queries.php', {
@@ -874,9 +875,9 @@ declare(strict_types=1);
         data = {
             'login': $("#login").val(),
             'pwd': $("#pw").val(),
-            'send_email': 1
+            'send_email': 1,
+            'token': CreateRandomString(100)
         }
-        //console.log(data);
         $.post(
             'sources/main.queries.php', {
                 type: 'ga_generate_qr',

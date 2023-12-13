@@ -1,6 +1,16 @@
 CHANGELOG
 =========
 
+6.4
+---
+
+ * Make `HeaderBag::getDate()`, `Response::getDate()`, `getExpires()` and `getLastModified()` return a `DateTimeImmutable`
+ * Support root-level `Generator` in `StreamedJsonResponse`
+ * Add `UriSigner` from the HttpKernel component
+ * Add `partitioned` flag to `Cookie` (CHIPS Cookie)
+ * Add argument `bool $flush = true` to `Response::send()`
+* Make `MongoDbSessionHandler` instantiable with the mongodb extension directly
+
 6.3
 ---
 

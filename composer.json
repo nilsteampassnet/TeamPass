@@ -35,27 +35,45 @@
         },
         {
             "type": "path",
-            "url": "includes/libraries/teampassclasses/nestedtree"
+            "url": "includes/libraries/teampassclasses/nestedtree",
+            "options": {
+                "symlink": false
+            }
         },
         {
             "type": "path",
-            "url": "includes/libraries/teampassclasses/superglobal"
+            "url": "includes/libraries/teampassclasses/superglobal",
+            "options": {
+                "symlink": false
+            }
         },
         {
             "type": "path",
-            "url": "includes/libraries/ezimuel/phpsecuresession"
+            "url": "includes/libraries/ezimuel/phpsecuresession",
+            "options": {
+                "symlink": false
+            }
         },
         {
             "type": "path",
-            "url": "includes/libraries/teampassclasses/performchecks"
+            "url": "includes/libraries/teampassclasses/performchecks",
+            "options": {
+                "symlink": false
+            }
         },
         {
             "type": "path",
-            "url": "includes/libraries/teampassclasses/encryption"
+            "url": "includes/libraries/teampassclasses/encryption",
+            "options": {
+                "symlink": false
+            }
         },
         {
             "type": "path",
-            "url": "includes/libraries/teampassclasses/language"
+            "url": "includes/libraries/teampassclasses/language",
+            "options": {
+                "symlink": false
+            }
         }
     ],
     "require": {
@@ -99,6 +117,7 @@
         "teampassclasses/performchecks": "dev-master",
         "teampassclasses/encryption": "dev-master",
         "teampassclasses/language": "dev-master",
-        "duosecurity/duo_universal_php": "^1.0"
+        "duosecurity/duo_universal_php": "^1.0",
+        "spomky-labs/otphp": "^11.2"
     }
 }

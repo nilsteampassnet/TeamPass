@@ -79,8 +79,8 @@ require_once __DIR__. '/includes/config/include.php';
 require_once __DIR__.'/sources/main.functions.php';
 
 // init
+loadClasses();
 $superGlobal = new SuperGlobal();
-//$lang = new Language(); 
 
 // Quick major version check -> upgrade needed?
 if (isset($SETTINGS['teampass_version']) === true && version_compare(TP_VERSION, $SETTINGS['teampass_version']) > 0) {
@@ -1189,6 +1189,9 @@ if (($session_validite_pw === null
             ?>
             <link rel="stylesheet" href="./plugins/jstree/themes/default/style.min.css" />
             <script src="./plugins/jstree/jstree.min.js" type="text/javascript"></script>
+            <!-- countdownTimer -->
+            <script src="./plugins/countdownTimer/countdownTimer.min.js"></script>
+            <script src="./plugins/jquery.countdown360/jquery.countdown360.js"></script>
             <!-- SUMMERNOTE -->
             <link rel="stylesheet" href="./plugins/summernote/summernote-bs4.css">
             <script src="./plugins/summernote/summernote-bs4.min.js"></script>
@@ -1205,6 +1208,10 @@ if (($session_validite_pw === null
             <!-- PWSTRENGHT -->
             <script type="text/javascript" src="plugins/zxcvbn/zxcvbn.js"></script>
             <script type="text/javascript" src="plugins/jquery.pwstrength/pwstrength-bootstrap.min.js"></script>
+            <!-- TOGGLE -->
+            <link rel="stylesheet" href="./plugins/toggles/css/toggles.css" />
+            <link rel="stylesheet" href="./plugins/toggles/css/toggles-modern.css" />
+            <script src="./plugins/toggles/toggles.min.js" type="text/javascript"></script>
         <?php
         } elseif (in_array($get['page'], ['search', 'folders', 'users', 'roles', 'utilities.deletion', 'utilities.logs', 'utilities.database', 'utilities.renewal', 'tasks']) === true) {
             ?>

@@ -1,0 +1,21 @@
+{
+    "name": "ezimuel/php-secure-session",
+    "description": "Encrypt and authenticate PHP session data using AES-256 and HMAC-SHA256",
+    "license": "BSD-3-Clause",
+    "keywords": [
+        "session",
+        "encrypt",
+        "authentication"
+    ],
+    "homepage": "https://github.com/ezimuel/PHP-Secure-Session",
+    "require": {
+        "php": "^5.6 || ^7.0 || ^8.0",
+        "ext-openssl": "*",
+        "ext-mbstring": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "EZimuel\\PHPSecureSession\\": "src/"
+        }
+    }
+}

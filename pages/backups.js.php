@@ -292,7 +292,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             filters: [{
                 title: "SQL files",
                 extensions: "sql"
-                //mime_types : "application/zip"
             }],
             init: {
                 FilesAdded: function(up, files) {
@@ -328,21 +327,22 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
                     console.log("Upload token: "+store.get('teampassUser').uploadToken);
 
-                    up.settings.multipart_params = {
-                        "PHPSESSID": "<?php echo $_SESSION['user_id']; ?>",
-                        "File": file.name,
-                        "type_upload": "restore_db",
-                        "user_token": store.get('teampassUser').uploadToken
-                    };
+                    up.setOption('multipart_params', {
+                        PHPSESSID: '<?php echo $_SESSION['user_id']; ?>',
+                        type_upload: 'restore_db',
+                        File: file.name,
+                        user_token: store.get('teampassUser').uploadToken
+                    });
                 },
-                UploadComplete: function(up, files) {console.log(files)
+                UploadComplete: function(up, files) {
                     store.update(
                         'teampassUser',
                         function(teampassUser) {
                             teampassUser.uploadFileObject = restoreOperationId;
                         }
                     );
-                    $('#onthefly-restore-file-text').text(files[0].name);
+                    
+                    $('#onthefly-restore-file-text').text(up.files[0].name);
 
                     // Inform user
                     toastr.remove();
@@ -354,6 +354,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     );
                 },
                 Error: function(up, args) {
+                    console.log("ERROR arguments:");
                     console.log(args);
                 }
             }

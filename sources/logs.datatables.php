@@ -1019,7 +1019,8 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         }
         $sOutput .= '"'.$processIcon.'", ';
         // col6
-        $newUserId = json_decode($record['arguments'], true)['new_user_id'];
+        $arguments = json_decode($record['arguments'], true);
+        $newUserId = array_key_exists('new_user_id', $arguments) ? $arguments['new_user_id'] : null;
         if ($record['process_type'] === 'create_user_keys' && is_null($newUserId) === false && empty($newUserId) === false) {
             $data_user = DB::queryfirstrow(
                 'SELECT name, lastname, login FROM ' . prefixTable('users') . '

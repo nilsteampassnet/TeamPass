@@ -84,6 +84,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         clipboardForLogin,
         clipboardForPassword,
         clipboardForLink,
+        clipboardOTPCode,
         query_in_progress = 0,
         screenHeight = $(window).height(),
         quick_icon_query_status = true,
@@ -98,7 +99,8 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         itemStorageInformation = '',
         applicationVars,
         initialPageLoad = true,
-        previousSelectedFolder=-1,
+        previousSelectedFolder = -1,
+        intervalId = false,
         debugJavascript = false;
 
     // Manage memory
@@ -216,7 +218,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 teampassItem.folderId = selectedFolderId
             }
         );
-
+console.log('startedItemsListQuery: '+startedItemsListQuery)
         // Prepare list of items
         if (startedItemsListQuery === false) {
             startedItemsListQuery = true;
@@ -293,7 +295,6 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         $('#jstree').jstree(true).hide_icons()
 
         // Get list of items in this folder
-        startedItemsListQuery = true;
         ListerItems(store.get('teampassApplication').selectedFolder, '', 0);
 
         // Show details
@@ -318,9 +319,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         store.get('teampassApplication').selectedFolder !== ''
     ) {
         startedItemsListQuery = true;
-
         ListerItems(store.get('teampassApplication').selectedFolder, '', 0);
-
     }
 
 
@@ -750,6 +749,14 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             //
         } else if ($(this).data('item-action') === 'edit') {
             if (debugJavascript === true) console.info('SHOW EDIT ITEM');
+            // Reset item
+            store.update(
+                'teampassItem',
+                function(teampassItem) {
+                    teampassItem.otp_code_generate = false;
+                }
+            );
+            
 
             // if item is ready
             if (store.get('teampassItem').readyToUse === false) {
@@ -1359,7 +1366,10 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             'folder_id': folderId,
             'access_level': hasAccessLevel,
         }
-        console.log(data)
+        if (debugJavascript === true) {
+            console.log(data);
+        }
+
         // Launch action
         $.post(
             'sources/items.queries.php', {
@@ -2121,7 +2131,6 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                         'show',
                         true
                     );
-
                     return false;
                 }
                 if (store.get('teampassUser').previousView === '#folders-tree-card' ||
@@ -2149,6 +2158,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 $('.to_be_deleted').remove();
                 $('#card-item-attachments, #card-item-history').html('');
                 $('#card-item-attachments-badge').html('<?php echo $lang->get('none'); ?>');
+                $('#form-item-otp').iCheck('uncheck');
 
                 // Move back fields
                 $('.fields-to-move')
@@ -2185,10 +2195,24 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                         .prop('disabled', false);
                 }
             }
+
+            // Reset item
+            store.update(
+                'teampassItem',
+                function(teampassItem) {
+                    teampassItem.otp_code_generate = false;
+                }
+            );
+            if (clipboardOTPCode) {
+                clipboardOTPCode.destroy();
+            }
+
+            if (intervalId) {
+                clearInterval(intervalId);
+            }
+
             if (debugJavascript === true) console.log('Edit for closed');
         }
-
-
 
         // Scroll back to position
         scrollBackToPosition();
@@ -2202,6 +2226,8 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         .on('click', '.but-navigate-item', function() {
             toastr.remove();
             toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+
+            clipboardOTPCode.destroy();
 
             // Load item info
             Details(
@@ -2239,30 +2265,59 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         .on('click', '.list-item-clicktodelete', function(event) {
             event.preventDefault();
             // Delete item
-            if (debugJavascript === true) console.info('SHOW DELETE ITEM '+$(this).data('item-key'));
+            if (debugJavascript === true) {
+                console.info('SHOW DELETE ITEM '+$(this).data('item-key'));
+            }
+            startedItemsListQuery = false;
 
-            let $itemKey = $(this).data('item-key');
+            // check if user still has access
+            $.when(
+                checkAccess($(this).data('item-key'), selectedFolderId, <?php echo $_SESSION['user_id']; ?>)
+            ).then(function(retData) {
+                // Is the user allowed?
+                if (retData.access === false || retData.delete === false) {
+                    toastr.remove();
+                    toastr.error(
+                        '<?php echo $lang->get('error_not_allowed_to'); ?>',
+                        '', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
 
-            // SHow dialog
-            showModalDialogBox(
-                '#warningModal',
-                '<i class="fa-solid fa-triangle-exclamation mr-2 text-warning"></i><?php echo $lang->get('caution'); ?>',
-                '<?php echo $lang->get('please_confirm_deletion'); ?>',
-                '<?php echo $lang->get('delete'); ?>',
-                '<?php echo $lang->get('close'); ?>',
-            );
+                    requestRunning = false;
 
-            // Launch deletion
-            $(document).on('click', '#warningModalButtonAction', {itemKey:$(this).data('item-key')}, function(event2) {
-                event2.preventDefault();
-                goDeleteItem(
-                    '',
-                    event2.data.itemKey,
-                    selectedFolderId,
-                    '',
+                    // Finished
+                    return false;
+                }
+
+                // SHow dialog
+                showModalDialogBox(
+                    '#warningModal',
+                    '<i class="fa-solid fa-triangle-exclamation mr-2 text-warning"></i><?php echo $lang->get('caution'); ?>',
+                    '<?php echo $lang->get('please_confirm_deletion'); ?>',
+                    '<?php echo $lang->get('delete'); ?>',
+                    '<?php echo $lang->get('close'); ?>',
+                    false,
+                    false,
                     false
                 );
-                $('#warningModal').modal('hide');
+
+                // Launch deletion
+                $(document).on('click', '#warningModalButtonAction', {itemKey:$(this).data('item-key')}, function(event2) {
+                    event2.preventDefault();
+                    goDeleteItem(
+                        '',
+                        event2.data.itemKey,
+                        selectedFolderId,
+                        '',
+                        false
+                    );
+                    $('#warningModal').modal('hide');
+                });
+                $(document).on('click', '#warningModalButtonClose', function() {
+                    requestRunning = false;
+                });
             });
         });
 
@@ -2963,6 +3018,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     'user_id': parseInt('<?php echo $_SESSION['user_id']; ?>'),
                     'uploaded_file_id': store.get('teampassApplication').uploadedFileId === undefined ? '' : store.get('teampassApplication').uploadedFileId,
                     'fa_icon': purifyRes.arrFields['icon'],
+                    'otp_is_enabled': $('#form-item-otp').is(':checked') ? 1 : 0,
+                    'otp_phone_number': purifyRes.arrFields['otpPhoneNumber'] !== '' ? purifyRes.arrFields['otpPhoneNumber'] : '',
+                    'otp_secret': purifyRes.arrFields['otpSecret'] !== '' ? purifyRes.arrFields['otpSecret'] : '',
                 };
                 if (debugJavascript === true) {
                     console.log('SAVING DATA');
@@ -3172,6 +3230,13 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
     function showItemEditForm(selectedFolderId) {
         if (debugJavascript === true) console.info('SHOW EDIT ITEM ' + selectedFolderId);
+        // Reset item
+        store.update(
+            'teampassItem',
+            function(teampassItem) {
+                teampassItem.otp_code_generate = false;
+            }
+        );
         
         //$.when(
         //    getPrivilegesOnItem(selectedFolderId, 0)
@@ -3471,6 +3536,8 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     console.log(data);
                 }
 
+                startedItemsListQuery = false;
+
                 //check if format error
                 if (typeof data !== 'undefined' && data.error !== true) {
                     // Store in session
@@ -3566,7 +3633,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
     function ListerItems(groupe_id, restricted, start, stop_listing_current_folder) {
         var me = $(this);
         stop_listing_current_folder = stop_listing_current_folder || '0';
-        if (debugJavascript === true) console.log('LIST OF ITEMS FOR FOLDER ' + groupe_id)
+        if (debugJavascript === true) console.log('LIST OF ITEMS FOR FOLDER ' + groupe_id);
         // Exit if no folder is selected
         if (groupe_id === undefined) return false;
 
@@ -3614,6 +3681,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
         // prevent launch of similar query in case of doubleclick
         if (requestRunning === true) {
+            if (debugJavascript === true) console.log('Request ABORTED as already running!');
             return false;
         }
         requestRunning = true;
@@ -4305,47 +4373,51 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
     }
 
 
-    function checkAccess(itemId, treeId, userId)
-    {
+    function checkAccess(itemId, treeId, userId) {
         var data = {
             'itemId': parseInt(itemId),
             'treeId': parseInt(treeId),
             'userId': parseInt(userId),
         };
+        if (debugJavascript === true) {
+            console.log(data);
+        }
 
-        //Send query
-        $.post(
-            'sources/items.queries.php', {
-                type: 'check_current_access_rights',
-                data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'),
-                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
-            },
-            function(data) {
-                //decrypt data
-                data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'items.queries.php', 'show_details_item');
-                requestRunning = true;
-                if (debugJavascript === true) {
-                    console.log("DEBUG: checkAccess");
-                    console.log(data);
+        // Create a new Promise
+        return new Promise(function(resolve, reject) {
+            $.post(
+                'sources/items.queries.php', {
+                    type: 'check_current_access_rights',
+                    data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'),
+                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                },
+                function(data) {
+                    data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'items.queries.php', 'show_details_item');
+                    requestRunning = true;
+                    if (debugJavascript === true) {
+                        console.log("DEBUG: checkAccess");
+                        console.log(data);
+                    }
+
+                    resolve(data);
                 }
-
-
-                return false;
-            }
-        );
+            );
+        });
     }
 
 
     /**
      *
      */
-    function Details(itemDefinition, actionType, hotlink = false) {
+    function Details(itemDefinition, actionType, hotlink = false)
+    {
         if (debugJavascript === true) {
             console.info('EXPECTED ACTION on ' + itemDefinition + ' is ' + actionType + ' -- ');
             console.log(itemDefinition);
         }
 
         // Init
+        var hasItemAccess = false;
         if (hotlink === false) {
             var itemId = parseInt($(itemDefinition).data('item-id')) || '';
             var itemKey = parseInt($(itemDefinition).data('item-key')) || '';
@@ -4371,162 +4443,150 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         }
 
         // check if user still has access
-        if (checkAccess(itemId, itemTreeId, <?php echo $_SESSION['user_id']; ?>) === false) {
-            toastr.remove();
-            toastr.warning(
-                '<?php echo $lang->get('no_item_to_display'); ?>',
-                '', {
-                    timeOut: 5000,
-                    progressBar: true
-                }
-            );
+        $.when(
+            checkAccess(itemId, itemTreeId, <?php echo $_SESSION['user_id']; ?>)
+        ).then(function(retData) {
+            // Is the user allowed?
+            if (retData.access === false
+                || (actionType === 'edit' && retData.edit === false)
+                || (actionType === 'delete' && retData.delete === false)
+            ) {
+                toastr.remove();
+                toastr.error(
+                    '<?php echo $lang->get('error_not_allowed_to'); ?>',
+                    '', {
+                        timeOut: 5000,
+                        progressBar: true
+                    }
+                );
+                // Finished
+                requestRunning = false;
+                return false;
+            }
 
-            // Finished
-            return false;
-        }
+            // Store current view
+            savePreviousView();
+            
+            if (debugJavascript === true) console.log("Request is running: " + requestRunning)
 
-        // Store current view
-        savePreviousView();
-        
-        if (debugJavascript === true) console.log("Request is running: " + requestRunning)
+            // Store status query running
+            requestRunning = true;
+            userDidAChange = false;
 
-        // Store status query running
-        requestRunning = true;
-        userDidAChange = false;
+            // Select tab#1
+            $('#form-item-nav-pills li:first-child a').tab('show');
 
-        // Select tab#1
-        $('#form-item-nav-pills li:first-child a').tab('show');
-
-        // Don't show details
-        if (itemDisplay === 'no_display') {
-            // Inform user
-            toastr.remove();
-            toastr.warning(
-                '<?php echo $lang->get('no_item_to_display'); ?>',
-                '', {
-                    timeOut: 5000,
-                    progressBar: true
-                }
-            );
-
-            // Clear ongoing request status
-            requestRunning = false;
-
-            // Finished
-            return false;
-        }
-
-        // If opening new item, reinit hidden fields
-        if (store.get('teampassApplication').lastItemSeen !== itemId) {
-            store.update(
-                'teampassApplication',
-                function(teampassApplication) {
-                    teampassApplication.lastItemSeen = parseInt(itemId);
-                }
-            );
-            if (debugJavascript === true) console.log("Last seen item " + store.get('teampassApplication').lastItemSeen)
-        }
-
-        // do
-        $('#card-item-password-history-button').addClass('hidden');
-
-        // Prepare data to be sent
-        var data = {
-            'id': parseInt(itemId),
-            'folder_id': parseInt(itemTreeId),
-            'salt_key_required': itemSk,
-            'expired_item': itemExpired,
-            'restricted': itemRestricted,
-            'folder_access_level': store.get('teampassItem').hasAccessLevel,
-            'page': 'items',
-            'rights': itemRights,
-        };
-
-        if (debugJavascript === true) {
-            console.log("SEND");
-            console.log(data);
-        }
-
-        //Send query
-        $.post(
-            'sources/items.queries.php', {
-                type: 'show_details_item',
-                data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'),
-                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
-            },
-            function(data) {
-                //decrypt data
-                data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'items.queries.php', 'show_details_item');
-                requestRunning = true;
-                if (debugJavascript === true) {
-                    console.log("RECEIVED object details");
-                    console.log(data);
-                }
-
-                // Store not a new item
-                store.update(
-                    'teampassItem',
-                    function(teampassItem) {
-                        teampassItem.isNewItem = 0
+            // Don't show details
+            if (itemDisplay === 'no_display') {
+                // Inform user
+                toastr.remove();
+                toastr.warning(
+                    '<?php echo $lang->get('no_item_to_display'); ?>',
+                    '', {
+                        timeOut: 5000,
+                        progressBar: true
                     }
                 );
 
-                $('.delete-after-usage').remove();
+                // Clear ongoing request status
+                requestRunning = false;
 
-                // remove any track-change class on item form
-                //$('.form-item-control').removeClass('track-change');
+                // Finished
+                return false;
+            }
 
-                if (data.error === true) {
-                    toastr.remove();
-                    requestRunning = false;
+            // If opening new item, reinit hidden fields
+            if (store.get('teampassApplication').lastItemSeen !== itemId) {
+                store.update(
+                    'teampassApplication',
+                    function(teampassApplication) {
+                        teampassApplication.lastItemSeen = parseInt(itemId);
+                    }
+                );
+                if (debugJavascript === true) console.log("Last seen item " + store.get('teampassApplication').lastItemSeen)
+            }
 
-                    // Manage personal items key error
-                    if (data.error_type !== 'undefined' && data.error_type === 'private_items_to_encrypt') {
-                        toastr.error(
-                            data.message,
-                            '', {
-                                timeOut: 5000,
-                                progressBar: true
-                            }
-                        );
+            // do
+            $('#card-item-password-history-button').addClass('hidden');
 
-                        store.update(
-                            'teampassUser', {},
-                            function(teampassUser) {
-                                teampassUser.special = 'private_items_to_encrypt';
-                            }
-                        );
-                        document.location.href = "index.php?page=items";
-                    } else if (data.error_type !== 'undefined' && data.error_type === 'user_should_reencrypt_private_key' && store.get('teampassUser').temporary_code === '') {
-                        // we have to ask the user to re-encrypt his privatekey
-                        toastr.error(
-                            data.message,
-                            '', {
-                                timeOut: 10000,
-                                progressBar: true
-                            }
-                        );
-                        
-                        if (debugJavascript === true) console.log('LDAP user password has to encrypt his private key with hos new LDAP password')
-                        // HIde
-                        $('.content-header, .content').addClass('hidden');
+            // Prepare data to be sent
+            var data = {
+                'id': parseInt(itemId),
+                'folder_id': parseInt(itemTreeId),
+                'salt_key_required': itemSk,
+                'expired_item': itemExpired,
+                'restricted': itemRestricted,
+                'folder_access_level': store.get('teampassItem').hasAccessLevel,
+                'page': 'items',
+                'rights': itemRights,
+            };
 
-                        // Show passwords inputs and form
-                        $('#dialog-ldap-user-change-password-info')
-                            .html('<i class="icon fa-solid fa-info mr-2"></i><?php echo $lang->get('ldap_user_has_changed_his_password');?>')
-                            .removeClass('hidden');
-                        $('#dialog-ldap-user-change-password').removeClass('hidden');
-                    } else if (data.error_type !== 'undefined') {
-                        toastr.warning(
-                            data.message,
-                            '', {
-                                // no parameter
-                            }
-                        );
+            if (debugJavascript === true) {
+                console.log("SEND");
+                console.log(data);
+            }
 
-                        // On toastr button click
-                        $(document).on('click', '.toastr-inside-button', function() {
-                            if (debugJavascript === true) console.log('LDAP user password has to change his auth password')
+            //Send query
+            $.post(
+                'sources/items.queries.php', {
+                    type: 'show_details_item',
+                    data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'),
+                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                },
+                function(data) {
+                    //decrypt data
+                    data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'items.queries.php', 'show_details_item');
+                    requestRunning = true;
+                    if (debugJavascript === true) {
+                        console.log("RECEIVED object details");
+                        console.log(data);
+                    }
+
+                    // Store not a new item
+                    store.update(
+                        'teampassItem',
+                        function(teampassItem) {
+                            teampassItem.isNewItem = 0
+                        }
+                    );
+
+                    $('.delete-after-usage').remove();
+
+                    // remove any track-change class on item form
+                    //$('.form-item-control').removeClass('track-change');
+
+                    if (data.error === true) {
+                        toastr.remove();
+                        requestRunning = false;
+
+                        // Manage personal items key error
+                        if (data.error_type !== 'undefined' && data.error_type === 'private_items_to_encrypt') {
+                            toastr.error(
+                                data.message,
+                                '', {
+                                    timeOut: 5000,
+                                    progressBar: true
+                                }
+                            );
+
+                            store.update(
+                                'teampassUser', {},
+                                function(teampassUser) {
+                                    teampassUser.special = 'private_items_to_encrypt';
+                                }
+                            );
+                            document.location.href = "index.php?page=items";
+                        } else if (data.error_type !== 'undefined' && data.error_type === 'user_should_reencrypt_private_key' && store.get('teampassUser').temporary_code === '') {
+                            // we have to ask the user to re-encrypt his privatekey
+                            toastr.error(
+                                data.message,
+                                '', {
+                                    timeOut: 10000,
+                                    progressBar: true
+                                }
+                            );
+                            
+                            if (debugJavascript === true) console.log('LDAP user password has to encrypt his private key with hos new LDAP password')
                             // HIde
                             $('.content-header, .content').addClass('hidden');
 
@@ -4535,78 +4595,97 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                                 .html('<i class="icon fa-solid fa-info mr-2"></i><?php echo $lang->get('ldap_user_has_changed_his_password');?>')
                                 .removeClass('hidden');
                             $('#dialog-ldap-user-change-password').removeClass('hidden');
-                        });
-                        
+                        } else if (data.error_type !== 'undefined') {
+                            toastr.warning(
+                                data.message,
+                                '', {
+                                    // no parameter
+                                }
+                            );
+
+                            // On toastr button click
+                            $(document).on('click', '.toastr-inside-button', function() {
+                                if (debugJavascript === true) console.log('LDAP user password has to change his auth password')
+                                // HIde
+                                $('.content-header, .content').addClass('hidden');
+
+                                // Show passwords inputs and form
+                                $('#dialog-ldap-user-change-password-info')
+                                    .html('<i class="icon fa-solid fa-info mr-2"></i><?php echo $lang->get('ldap_user_has_changed_his_password');?>')
+                                    .removeClass('hidden');
+                                $('#dialog-ldap-user-change-password').removeClass('hidden');
+                            });
+                            
+                        }
+
+
+                        return false;
+                    } else if ((data.user_can_modify === 0 && actionType === 'edit') ||
+                        parseInt(data.show_details) === 0
+                    ) {
+                        toastr.remove();
+                        toastr.error(
+                            '<?php echo $lang->get('error_not_allowed_to'); ?>',
+                            '', {
+                                timeOut: 5000,
+                                progressBar: true
+                            }
+                        );
+                        requestRunning = false;
+                        return false;
                     }
 
 
-                    return false;
-                } else if ((data.user_can_modify === 0 && actionType === 'edit') ||
-                    parseInt(data.show_details) === 0
-                ) {
-                    toastr.remove();
-                    toastr.error(
-                        '<?php echo $lang->get('error_not_allowed_to'); ?>',
-                        '', {
-                            timeOut: 5000,
-                            progressBar: true
-                        }
-                    );
-                    requestRunning = false;
-                    return false;
-                }
+                    // Store scroll position
+                    userScrollPosition = $(window).scrollTop();
 
+                    // Scroll to top
+                    $(window).scrollTop(0);
 
-                // Store scroll position
-                userScrollPosition = $(window).scrollTop();
+                    // SHould we show?
+                    if (parseInt(data.show_detail_option) === 1 || itemExpired === 1) {
+                        // SHow expiration alert
+                        $('#card-item-expired').removeClass('hidden');
+                    } else if (parseInt(data.show_detail_option) === 2) {
+                        // Don't show anything
+                        toastr.remove();
+                        toastr.error(
+                            '<?php echo $lang->get('not_allowed_to_see_pw'); ?>',
+                            '<?php echo $lang->get('warning'); ?>', {
+                                timeOut: 5000,
+                                progressBar: true
+                            }
+                        );
 
-                // Scroll to top
-                $(window).scrollTop(0);
+                        return false;
+                    }
 
-                // SHould we show?
-                if (parseInt(data.show_detail_option) === 1 || itemExpired === 1) {
-                    // SHow expiration alert
-                    $('#card-item-expired').removeClass('hidden');
-                } else if (parseInt(data.show_detail_option) === 2) {
-                    // Don't show anything
-                    toastr.remove();
-                    toastr.error(
-                        '<?php echo $lang->get('not_allowed_to_see_pw'); ?>',
-                        '<?php echo $lang->get('warning'); ?>', {
-                            timeOut: 5000,
-                            progressBar: true
-                        }
-                    );
+                    // Show header info
+                    $('#card-item-visibility').html(store.get('teampassItem').itemVisibility);
+                    $('#card-item-minimum-complexity').html(store.get('teampassItem').itemMinimumComplexity);
 
-                    return false;
-                }
+                    // Hide NEW button in case access_level <span 30
+                    if (store.get('teampassItem').hasAccessLevel === 10) {
+                        $('#item-form-new-button').addClass('hidden');
+                    } else {
+                        $('#item-form-new-button').removeClass('hidden');
+                    }
 
-                // Show header info
-                $('#card-item-visibility').html(store.get('teampassItem').itemVisibility);
-                $('#card-item-minimum-complexity').html(store.get('teampassItem').itemMinimumComplexity);
+                    // we have an error in the password : pwd_encryption_error
+                    if (data.pwd_encryption_error === 'inconsistent_password') {
+                        $('#card-item-pwd').after('<i class="fa-solid fa-bell text-orange fa-shake ml-3 delete-after-usage infotip" title="'+data.pwd_encryption_error_message+'"></i>');
+                    }
 
-                // Hide NEW button in case access_level < 30
-                if (store.get('teampassItem').hasAccessLevel === 10) {
-                    $('#item-form-new-button').addClass('hidden');
-                } else {
-                    $('#item-form-new-button').removeClass('hidden');
-                }
+                    // Uncrypt the pwd
+                    if (data.pw !== undefined) {
+                        data.pw = atob(data.pw).utf8Decode();
+                    }
 
-                // we have an error in the password : pwd_encryption_error
-                if (data.pwd_encryption_error === 'inconsistent_password') {
-                    $('#card-item-pwd').after('<i class="fa-solid fa-bell text-orange fa-shake ml-3 delete-after-usage infotip" title="'+data.pwd_encryption_error_message+'"></i>');
-                }
-
-                // Uncrypt the pwd
-                if (data.pw !== undefined) {
-                    data.pw = atob(data.pw).utf8Decode();
-                }
-
-                // Update hidden variables
-                store.update(
-                    'teampassItem',
-                    function(teampassItem) {
-                        teampassItem.id = parseInt(data.id),
+                    // Update hidden variables
+                    store.update(
+                        'teampassItem',
+                        function(teampassItem) {
+                            teampassItem.id = parseInt(data.id),
                             teampassItem.timestamp = data.timestamp,
                             teampassItem.user_can_modify = data.user_can_modify,
                             teampassItem.anyone_can_modify = data.anyone_can_modify,
@@ -4614,286 +4693,306 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                             teampassItem.id_restricted_to = data.id_restricted_to,
                             teampassItem.id_restricted_to_roles = data.id_restricted_to_roles,
                             teampassItem.item_rights = itemRights
-                    }
-                );
-
-                // Prepare forms
-                $('#folders-tree-card, .columns-position').addClass('hidden');
-                if (actionType === 'show') {
-                    // Prepare Views
-                    $('.item-details-card, #item-details-card-categories').removeClass('hidden');
-                    $('.form-item').addClass('hidden');
-
-                    $('#form-item-suggestion-password').focus();
-                    // If Description empty then remove it
-                    if (data.description === '<p>&nbsp;</p>') {
-                        $('#card-item-description')
-                            .parents('.item-details-card')
-                            .addClass('hidden');
-                    } else {
-                        $('#card-item-description')
-                            .parents('.item-details-card')
-                            .removeClass('hidden');
-                    }
-                } else {
-                    $('.form-item').removeClass('hidden');
-                    $('.item-details-card, #item-details-card-categories').addClass('hidden');
-                }
-                $('#pwd-definition-size').val(data.pw.length);
-
-                // Prepare card
-                const itemIcon = (data.fa_icon !== "") ? '<i class="'+data.fa_icon+' mr-1"></i>' : '';
-                $('#card-item-label, #form-item-title').html(itemIcon + data.label);
-                $('#form-item-label, #form-item-suggestion-label').val($('<div>').html(data.label).text());
-                $('#card-item-description, #form-item-suggestion-description').html(data.description);
-                if (data.description === '') {
-                    $('#card-item-description').addClass('hidden');
-                } else {
-                    $('#card-item-description').removeClass('hidden');
-                }
-                $('#card-item-pwd').html('<?php echo $var['hidden_asterisk']; ?>');
-                $('#hidden-item-pwd, #form-item-suggestion-password').val(data.pw);
-                $('#form-item-password, #form-item-password-confirmation, #form-item-server-old-password').val(data.pw);
-                $('#card-item-login').html(data.login);
-                $('#form-item-login, #form-item-suggestion-login, #form-item-server-login').val(data.login);
-
-                $('#card-item-email').text(data.email);
-                $('#form-item-email, #form-item-suggestion-email').val(data.email);
-                $('#card-item-url').html(data.url);
-                $('#form-item-url, #form-item-suggestion-url').val($(data.url).text());
-                $('#form-item-restrictedToUsers').val(JSON.stringify(data.id_restricted_to));
-                $('#form-item-restrictedToRoles').val(JSON.stringify(data.id_restricted_to_roles));
-                $('#form-item-folder').val(data.folder);
-                $('#form-item-tags').val(data.tags.join(' '));
-                $('#form-item-icon').val(data.fa_icon);
-                $('#form-item-icon-show').html(itemIcon);
-
-                $('#form-item-password').pwstrength("forceUpdate");
-                $('#form-item-label').focus();
-
-                // Editor for description field
-                if (debugJavascript === true) {
-                    console.log('>>>> create summernote');
-                }
-                $('#form-item-description')
-                    .html(data.description)
-                    .summernote({
-                        toolbar: [
-                            ['style', ['style']],
-                            ['font', ['bold', 'italic', 'underline', 'strikethrough', 'clear']],
-                            ['fontsize', ['fontsize']],
-                            ['color', ['color']],
-                            ['para', ['ul', 'ol', 'paragraph']],
-                            ['insert', ['link', 'picture']],
-                            //['height', ['height']],
-                            ['view', ['codeview']]
-                        ],
-                        codeviewFilter: true,
-                        codeviewIframeFilter: true,
-                        callbacks: {
-                            onChange: function(contents, $editable) {
-                                if (debugJavascript === true) console.log('Editor onChange:' + userDidAChange + " - " + requestRunning);
-                                if (userDidAChange === false && requestRunning === false) {
-                                    if (debugJavascript === true) console.log('onChange:', contents, $editable);
-                                    userDidAChange = true;
-                                    if (debugJavascript === true) console.log('User did a change on #form-item-description > ' + userDidAChange);
-                                    //$('#form-item-description').attr('data-change-ongoing', true);;
-                                }
-                            }
                         }
-                    })
-                //.summernote('editor.insertText', data.description);
+                    );
 
-                $('#form-item-suggestion-description')
-                    .html(data.description)
-                    .summernote({
-                        toolbar: [
-                            ['style', ['style']],
-                            ['font', ['bold', 'italic', 'underline', 'strikethrough', 'clear']],
-                            ['fontsize', ['fontsize']],
-                            ['color', ['color']],
-                            ['para', ['ul', 'ol', 'paragraph']],
-                            ['insert', ['link', 'picture']],
-                            //['height', ['height']],
-                            ['view', ['codeview']]
-                        ],
-                        codeviewFilter: true,
-                        codeviewIframeFilter: true,
-                        callbacks: {
-                            onChange: function(contents, $editable) {
-                                if (userDidAChange === false && requestRunning === false) {
-                                    if (debugJavascript === true) console.log('onChange:', contents, $editable);
-                                    userDidAChange = true;
-                                    if (debugJavascript === true) console.log('User did a change on #form-item-suggestion-description > ' + userDidAChange);
-                                    //$('#form-item-suggestion-description').attr('data-change-ongoing', true);;
-                                }
-                            }
-                        }
-                    });
+                    // Prepare forms
+                    $('#folders-tree-card, .columns-position').addClass('hidden');
+                    if (actionType === 'show') {
+                        // Prepare Views
+                        $('.item-details-card, #item-details-card-categories').removeClass('hidden');
+                        $('.form-item').addClass('hidden');
 
-
-                //prepare nice list of users / groups
-                var html_users = '',
-                    html_groups = '',
-                    html_tags = '',
-                    html_kbs = '';
-
-                $(data.tags).each(function(index, value) {
-                    html_tags += '<span class="badge badge-success pointer tip mr-2" title="<?php echo $lang->get('list_items_with_tag'); ?>" onclick="searchItemsWithTags(\'' + value + '\')"><i class="fa-solid fa-tag fa-sm"></i>&nbsp;<span class="item_tag">' + value + '</span></span>';
-                });
-                if (html_tags === '') {
-                    $('#card-item-tags').html('<?php echo $lang->get('none'); ?>');
-                } else {
-                    $('#card-item-tags').html(html_tags);
-                }
-
-                $(data.links_to_kbs).each(function(index, value) {
-                    html_kbs += '<a class="badge badge-primary pointer tip mr-2" href="<?php echo $SETTINGS['cpassman_url']; ?>/index.php?page=kb&id=' + value['id'] + '"><i class="fa-solid fa-map-pin fa-sm"></i>&nbsp;' + value['label'] + '</a>';
-
-                });
-                if (html_kbs === '') {
-                    $('#card-item-kbs').html('<?php echo $lang->get('none'); ?>');
-                } else {
-                    $('#card-item-kbs').html(html_kbs);
-                }
-
-
-                // Manage CATEGORIES / CUSTOM FIELDS
-                if (data.categories.length === 0) {
-                    $('.card-item-category, .card-item-field, .form-item-category, #item-details-card-categories')
-                        .addClass('hidden');
-                    $('.no-item-fields').removeClass('hidden');
-                    $('#card-item-fields').closest().addClass('collapsed');
-                } else {
-                    // 
-                    if (data.template_id === '') {
-                        $('#list-group-item-main')
-                            .children('.list-group')
-                            .removeClass('hidden');
-                        $('#card-item-category').removeClass('hidden');
-                    }
-
-                    if (data.fields.length === 0) {
-                        if (actionType === 'show') {
-                            $('#item-details-card-categories').addClass('hidden');
-                            // Refresh last item seen
-                            refreshListLastSeenItems();
+                        $('#form-item-suggestion-password').focus();
+                        // If Description empty then remove it
+                        if (data.description === '<p>&nbsp;</p>') {
+                            $('#card-item-description')
+                                .parents('.item-details-card')
+                                .addClass('hidden');
                         } else {
-                            // Show the inputs for EDITION
+                            $('#card-item-description')
+                                .parents('.item-details-card')
+                                .removeClass('hidden');
+                        }
+                    } else {
+                        $('.form-item').removeClass('hidden');
+                        $('.item-details-card, #item-details-card-categories').addClass('hidden');
+                    }
+                    $('#pwd-definition-size').val(data.pw.length);
+
+                    // Prepare card
+                    const itemIcon = (data.fa_icon !== "") ? '<i class="'+data.fa_icon+' mr-1"></i>' : '';
+                    $('#card-item-label, #form-item-title').html(itemIcon + data.label);
+                    $('#form-item-label, #form-item-suggestion-label').val($('<div>').html(data.label).text());
+                    $('#card-item-description, #form-item-suggestion-description').html(data.description);
+                    if (data.description === '') {
+                        $('#card-item-description').addClass('hidden');
+                    } else {
+                        $('#card-item-description').removeClass('hidden');
+                    }
+                    $('#card-item-pwd').html('<?php echo $var['hidden_asterisk']; ?>');
+                    $('#hidden-item-pwd, #form-item-suggestion-password').val(data.pw);
+                    $('#form-item-password, #form-item-password-confirmation, #form-item-server-old-password').val(data.pw);
+                    $('#card-item-login').html(data.login);
+                    $('#form-item-login, #form-item-suggestion-login, #form-item-server-login').val(data.login);
+
+                    $('#card-item-email').text(data.email);
+                    $('#form-item-email, #form-item-suggestion-email').val(data.email);
+                    $('#card-item-url').html(data.url);
+                    $('#form-item-url, #form-item-suggestion-url').val($(data.url).text());
+                    $('#form-item-restrictedToUsers').val(JSON.stringify(data.id_restricted_to));
+                    $('#form-item-restrictedToRoles').val(JSON.stringify(data.id_restricted_to_roles));
+                    $('#form-item-folder').val(data.folder);
+                    $('#form-item-tags').val(data.tags.join(' '));
+                    $('#form-item-icon').val(data.fa_icon);
+                    $('#form-item-icon-show').html(itemIcon);
+
+                    $('#form-item-password').pwstrength("forceUpdate");
+                    $('#form-item-label').focus();
+
+                    // Editor for description field
+                    if (debugJavascript === true) {
+                        console.log('>>>> create summernote');
+                    }
+                    $('#form-item-description')
+                        .html(data.description)
+                        .summernote({
+                            toolbar: [
+                                ['style', ['style']],
+                                ['font', ['bold', 'italic', 'underline', 'strikethrough', 'clear']],
+                                ['fontsize', ['fontsize']],
+                                ['color', ['color']],
+                                ['para', ['ul', 'ol', 'paragraph']],
+                                ['insert', ['link', 'picture']],
+                                //['height', ['height']],
+                                ['view', ['codeview']]
+                            ],
+                            codeviewFilter: true,
+                            codeviewIframeFilter: true,
+                            callbacks: {
+                                onChange: function(contents, $editable) {
+                                    if (debugJavascript === true) console.log('Editor onChange:' + userDidAChange + " - " + requestRunning);
+                                    if (userDidAChange === false && requestRunning === false) {
+                                        if (debugJavascript === true) console.log('onChange:', contents, $editable);
+                                        userDidAChange = true;
+                                        if (debugJavascript === true) console.log('User did a change on #form-item-description > ' + userDidAChange);
+                                        //$('#form-item-description').attr('data-change-ongoing', true);;
+                                    }
+                                }
+                            }
+                        })
+                    //.summernote('editor.insertText', data.description);
+
+                    $('#form-item-suggestion-description')
+                        .html(data.description)
+                        .summernote({
+                            toolbar: [
+                                ['style', ['style']],
+                                ['font', ['bold', 'italic', 'underline', 'strikethrough', 'clear']],
+                                ['fontsize', ['fontsize']],
+                                ['color', ['color']],
+                                ['para', ['ul', 'ol', 'paragraph']],
+                                ['insert', ['link', 'picture']],
+                                //['height', ['height']],
+                                ['view', ['codeview']]
+                            ],
+                            codeviewFilter: true,
+                            codeviewIframeFilter: true,
+                            callbacks: {
+                                onChange: function(contents, $editable) {
+                                    if (userDidAChange === false && requestRunning === false) {
+                                        if (debugJavascript === true) console.log('onChange:', contents, $editable);
+                                        userDidAChange = true;
+                                        if (debugJavascript === true) console.log('User did a change on #form-item-suggestion-description > ' + userDidAChange);
+                                        //$('#form-item-suggestion-description').attr('data-change-ongoing', true);;
+                                    }
+                                }
+                            }
+                        });
+
+
+                    //prepare nice list of users / groups
+                    var html_users = '',
+                        html_groups = '',
+                        html_tags = '',
+                        html_kbs = '';
+
+                    $(data.tags).each(function(index, value) {
+                        html_tags += '<span class="badge badge-success pointer tip mr-2" title="<?php echo $lang->get('list_items_with_tag'); ?>" onclick="searchItemsWithTags(\'' + value + '\')"><i class="fa-solid fa-tag fa-sm"></i>&nbsp;<span class="item_tag">' + value + '</span></span>';
+                    });
+                    if (html_tags === '') {
+                        $('#card-item-tags').html('<?php echo $lang->get('none'); ?>');
+                    } else {
+                        $('#card-item-tags').html(html_tags);
+                    }
+
+                    $(data.links_to_kbs).each(function(index, value) {
+                        html_kbs += '<a class="badge badge-primary pointer tip mr-2" href="<?php echo $SETTINGS['cpassman_url']; ?>/index.php?page=kb&id=' + value['id'] + '"><i class="fa-solid fa-map-pin fa-sm"></i>&nbsp;' + value['label'] + '</a>';
+
+                    });
+                    if (html_kbs === '') {
+                        $('#card-item-kbs').html('<?php echo $lang->get('none'); ?>');
+                    } else {
+                        $('#card-item-kbs').html(html_kbs);
+                    }
+
+
+                    // Manage CATEGORIES / CUSTOM FIELDS
+                    if (data.categories.length === 0) {
+                        $('.card-item-category, .card-item-field, .form-item-category, #item-details-card-categories')
+                            .addClass('hidden');
+                        $('.no-item-fields').removeClass('hidden');
+                        $('#card-item-fields').closest().addClass('collapsed');
+                    } else {
+                        // 
+                        if (data.template_id === '') {
+                            $('#list-group-item-main')
+                                .children('.list-group')
+                                .removeClass('hidden');
+                            $('#card-item-category').removeClass('hidden');
+                        }
+
+                        if (data.fields.length === 0) {
+                            if (actionType === 'show') {
+                                $('#item-details-card-categories').addClass('hidden');
+                                // Refresh last item seen
+                                refreshListLastSeenItems();
+                            } else {
+                                // Show the inputs for EDITION
+                                $(data.categories).each(function(index, category) {
+                                    $('#form-item-field, #form-item-category-' + category).removeClass('hidden');
+                                });
+                            }
+                        } else {
+                            // Show expected categories
+                            $('.no-item-fields, .form-item-category').addClass('hidden');
+
+                            // In edition mode, show all fields in expected Categories
                             $(data.categories).each(function(index, category) {
                                 $('#form-item-field, #form-item-category-' + category).removeClass('hidden');
                             });
-                        }
-                    } else {
-                        // Show expected categories
-                        $('.no-item-fields, .form-item-category').addClass('hidden');
 
-                        // In edition mode, show all fields in expected Categories
-                        $(data.categories).each(function(index, category) {
-                            $('#form-item-field, #form-item-category-' + category).removeClass('hidden');
-                        });
+                            // Now show expected fields and values
+                            $(data.fields).each(function(index, field) {
+                                // Show cateogry
+                                $('#card-item-category-' + field.parent_id).removeClass('hidden');
 
-                        // Now show expected fields and values
-                        $(data.fields).each(function(index, field) {
-                            // Show cateogry
-                            $('#card-item-category-' + field.parent_id).removeClass('hidden');
-
-                            // Is data encrypted
-                            // Then base64 decode is required
-                            if (field.encrypted === 1) {
-                                if (data.item_ready === true) {
-                                    field.value = atob(field.value);
-                                } else {
-                                    field.value = '';
-                                    $('#card-item-field-title-' + field.id).after('<i class="fa-solid fa-ban text-danger ml-3 delete-after-usage"></i>');
+                                // Is data encrypted
+                                // Then base64 decode is required
+                                if (field.encrypted === 1) {
+                                    if (data.item_ready === true) {
+                                        field.value = atob(field.value);
+                                    } else {
+                                        field.value = '';
+                                        $('#card-item-field-title-' + field.id).after('<i class="fa-solid fa-ban text-danger ml-3 delete-after-usage"></i>');
+                                    }
                                 }
-                            }
 
-                            // Show field
-                            if (field.masked === 1) {
-                                // Item card
-                                $('#card-item-field-' + field.id)
-                                    .removeClass('hidden')
-                                    .children(".card-item-field-value")
-                                    .html(
-                                        '<span data-field-id="' + field.id + '" class="pointer replace-asterisk"><?php echo $var['hidden_asterisk']; ?></span>' +
-                                        '<input type="text" style="width:0px; height:0px; border:0px;" id="hidden-card-item-field-value-' + field.id + '" value="' + (field.value) + '">'
-                                    )
-                                $('#card-item-field-' + field.id)
-                                    .children(".btn-copy-clipboard-clear")
-                                    .attr('data-clipboard-target', '#hidden-card-item-field-value-' + field.id);
-                            } else {
-                                // Show Field
-                                $('#card-item-field-' + field.id)
-                                    .removeClass('hidden')
-                                    .children(".card-item-field-value")
-                                    .html(field.value);
-                            }
-                            // Item edit form
-                            $('#form-item-field-' + field.id)
-                                .children(".form-item-field-custom")
-                                .val(field.value);
-                        });
-
-                        // Manage template to show
-                        if (data.template_id !== '' && $.inArray(data.template_id, data.categories) > -1) {
-                            // Tick the box in edit mode
-                            $('#template_' + data.template_id).iCheck('check');
-
-                            // Hide existing data as replaced by Category template                                
-                            $('#list-group-item-main, #item-details-card-categories')
-                                .children('.list-group')
-                                .addClass('hidden');
-
-                            // Move the template in place of item main  
-                            $('#card-item-category-' + data.template_id)
-                                .addClass('fields-to-move')
-                                .detach()
-                                .appendTo('#list-group-item-main');
-
-                            // If only one category of Custom Fields
-                            // Then hide the CustomFields div
-                            if (actionType === 'show') {
-                                if (data.categories.length === 1) {
-                                    $('#item-details-card-categories').addClass('hidden');
+                                // Show field
+                                if (field.masked === 1) {
+                                    // Item card
+                                    $('#card-item-field-' + field.id)
+                                        .removeClass('hidden')
+                                        .children(".card-item-field-value")
+                                        .html(
+                                            '<span data-field-id="' + field.id + '" class="pointer replace-asterisk"><?php echo $var['hidden_asterisk']; ?></span>' +
+                                            '<input type="text" style="width:0px; height:0px; border:0px;" id="hidden-card-item-field-value-' + field.id + '" value="' + (field.value) + '">'
+                                        )
+                                    $('#card-item-field-' + field.id)
+                                        .children(".btn-copy-clipboard-clear")
+                                        .attr('data-clipboard-target', '#hidden-card-item-field-value-' + field.id);
                                 } else {
-                                    $('#item-details-card-categories').removeClass('hidden');
+                                    // Show Field
+                                    $('#card-item-field-' + field.id)
+                                        .removeClass('hidden')
+                                        .children(".card-item-field-value")
+                                        .html(field.value);
+                                }
+                                // Item edit form
+                                $('#form-item-field-' + field.id)
+                                    .children(".form-item-field-custom")
+                                    .val(field.value);
+                            });
+
+                            // Manage template to show
+                            if (data.template_id !== '' && $.inArray(data.template_id, data.categories) > -1) {
+                                // Tick the box in edit mode
+                                $('#template_' + data.template_id).iCheck('check');
+
+                                // Hide existing data as replaced by Category template                                
+                                $('#list-group-item-main, #item-details-card-categories')
+                                    .children('.list-group')
+                                    .addClass('hidden');
+
+                                // Move the template in place of item main  
+                                $('#card-item-category-' + data.template_id)
+                                    .addClass('fields-to-move')
+                                    .detach()
+                                    .appendTo('#list-group-item-main');
+
+                                // If only one category of Custom Fields
+                                // Then hide the CustomFields div
+                                if (actionType === 'show') {
+                                    if (data.categories.length === 1) {
+                                        $('#item-details-card-categories').addClass('hidden');
+                                    } else {
+                                        $('#item-details-card-categories').removeClass('hidden');
+                                    }
                                 }
                             }
                         }
                     }
-                }
 
 
-                // Handle the fact that KEYS may not yet be ready for this user
-                if (data.item_ready === false) {
-                    $('#card-item-label').after('<i class="fa-solid fa-bell fa-shake fa-lg infotip ml-4 text-warning delete-after-usage" title="<?php echo $lang->get('sharekey_not_ready'); ?>"></i>');
-                    store.update(
-                        'teampassItem',
-                        function(teampassItem) {
-                            teampassItem.readyToUse = false
-                        }
-                    );
-                } else {
-                    store.update(
-                        'teampassItem',
-                        function(teampassItem) {
-                            teampassItem.readyToUse = true
-                        }
-                    );
-                }
+                    // Handle the fact that KEYS may not yet be ready for this user
+                    if (data.item_ready === false) {
+                        $('#card-item-label').after('<i class="fa-solid fa-bell fa-shake fa-lg infotip ml-4 text-warning delete-after-usage" title="<?php echo $lang->get('sharekey_not_ready'); ?>"></i>');
+                        store.update(
+                            'teampassItem',
+                            function(teampassItem) {
+                                teampassItem.readyToUse = false
+                            }
+                        );
+                    } else {
+                        store.update(
+                            'teampassItem',
+                            function(teampassItem) {
+                                teampassItem.readyToUse = true
+                            }
+                        );
+                    }
 
 
-                // Waiting
-                $('#card-item-attachments').html("<?php echo $lang->get('please_wait'); ?>");
+                    // Waiting
+                    $('#card-item-attachments').html("<?php echo $lang->get('please_wait'); ?>");
 
-                // Manage clipboard for link
-                if (clipboardForLink) clipboardForLink.destroy();
-                clipboardForLink = new ClipboardJS(
-                    '#get_item_link',
-                    {
+                    // Manage clipboard for link
+                    if (clipboardForLink) clipboardForLink.destroy();
+                    clipboardForLink = new ClipboardJS(
+                        '#get_item_link',
+                        {
+                            text: function(e) {
+                                return ("<?php echo $SETTINGS['cpassman_url'];?>/index.php?page=items&group="+store.get('teampassItem').folderId+"&id="+store.get('teampassItem').id);
+                            }
+                        })
+                        .on('success', function(e) {
+                            toastr.remove();
+                            toastr.info(
+                                '<?php echo $lang->get('copy_to_clipboard'); ?>',
+                                '', {
+                                    timeOut: 2000,
+                                    progressBar: true,
+                                    positionClass: 'toast-top-right'
+                                }
+                            );
+                            e.clearSelection();
+                        });
+
+                    // Manage clipboard button
+                    if (itemClipboard) itemClipboard.destroy();
+                    itemClipboard = new ClipboardJS('.btn-copy-clipboard-clear', {
                         text: function(e) {
-                            return ("<?php echo $SETTINGS['cpassman_url'];?>/index.php?page=items&group="+store.get('teampassItem').folderId+"&id="+store.get('teampassItem').id);
+                            return ($($(e).data('clipboard-target')).val());
                         }
                     })
                     .on('success', function(e) {
@@ -4909,203 +5008,184 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                         e.clearSelection();
                     });
 
-                // Manage clipboard button
-                if (itemClipboard) itemClipboard.destroy();
-                itemClipboard = new ClipboardJS('.btn-copy-clipboard-clear', {
-                    text: function(e) {
-                        return ($($(e).data('clipboard-target')).val());
+                    // Prepare clipboard - COPY LOGIN
+                    if (data.login !== '') {
+                        $('#card-item-login-btn').removeClass('hidden');
+                    } else {
+                        $('#card-item-login-btn').addClass('hidden');
                     }
-                })
-                .on('success', function(e) {
+
+                    // Prepare clipboard - COPY PASSWORD
+                    if (data.pw !== '' && store.get('teampassItem').readyToUse === true) {
+                        new ClipboardJS('#card-item-pwd-button', {
+                                text: function() {
+                                    return (data.pw);
+                                }
+                            })
+                            .on('success', function(e) {
+                                itemLog(
+                                    'at_password_copied',
+                                    e.trigger.dataset.clipboardId,
+                                    $('#card-item-label').text()
+                                );
+
+                                // Warn user about clipboard clear
+                                if (store.get('teampassSettings').clipboard_life_duration === undefined || parseInt(store.get('teampassSettings').clipboard_life_duration) === 0) {
+                                    toastr.remove();
+                                    toastr.info(
+                                        '<?php echo $lang->get('copy_to_clipboard'); ?>',
+                                        '', {
+                                            timeOut: 2000,
+                                            positionClass: 'toast-top-right',
+                                            progressBar: true
+                                        }
+                                    );
+                                } else {
+                                    toastr.warning(
+                                        '<?php echo $lang->get('clipboard_will_be_cleared'); ?>',
+                                        '', {
+                                            timeOut: store.get('teampassSettings').clipboard_life_duration * 1000,
+                                            progressBar: true
+                                        }
+                                    );
+
+                                    // Set clipboard eraser
+                                    clearClipboardTimeout(
+                                        store.get('teampassSettings').clipboard_life_duration
+                                    );
+                                }
+
+                                e.clearSelection();
+                            });
+                        $('#card-item-pwd-button').removeClass('hidden');
+                    } else {
+                        $('#card-item-pwd-button').addClass('hidden');
+                        $('#card-item-pwd').after('<i class="fa-solid fa-ban text-teal ml-3 delete-after-usage"></i>');
+                    }
+
+                    // Prepare clipboard - COPY EMAIL
+                    if (data.email !== '') {
+                        $('#card-item-email-btn').removeClass('hidden');
+                    } else {
+                        $('#card-item-email-btn').addClass('hidden');
+                    }
+
+                    // Prepare auto_update info
+                    $('#card-item-misc').html('');
+                    if (parseInt(data.auto_update_pwd_frequency) !== '0') {
+                        $('#card-item-misc')
+                            .append('<span class="fa-solid fa-shield infotip mr-4" title="<?php echo $lang->get('auto_update_enabled'); ?>&nbsp;' + data.auto_update_pwd_frequency + '"></span>');
+                    }
+
+                    // Show Notification engaged
+                    if (data.notification_status === true) {
+                        $('#card-item-misc')
+                            .append('<span class="mr-4 icon-badge" id="card-item-misc-notification"><span class="fa-regular fa-bell infotip text-success" title="<?php echo $lang->get('notification_engaged'); ?>"></span></span>');
+                    } else {
+                        $('#card-item-misc')
+                            .append('<span class="mr-4 icon-badge" id="card-item-misc-notification"><span class="fa-regular fa-bell-slash infotip text-warning" title="<?php echo $lang->get('notification_not_engaged'); ?>"></span></span>');
+                    }
+
+                    // Prepare counter
+                    $('#card-item-misc')
+                        .append('<span class="icon-badge mr-4"><span class="fa-regular fa-eye infotip" title="<?php echo $lang->get('viewed_number'); ?>"></span><span class="badge badge-info icon-badge-text icon-badge-far">' + data.viewed_no + '</span></span>');
+
+                    // Delete after X views
+                    if (data.to_be_deleted !== '') {
+                        if (parseInt(data.to_be_deleted_type) === 1) {
+                            $('#form-item-deleteAfterShown').val(data.to_be_deleted);
+                            $('#form-item-deleteAfterDate').val('');
+                        } else {
+                            $('#form-item-deleteAfterShown').val('');
+                            $('#form-item-deleteAfterDate').val(data.to_be_deleted);
+                        }
+                        // Show icon
+                        $('#card-item-misc')
+                            .append('<span class="icon-badge mr-5"><span class="fa-regular fa-trash-alt infotip" title="<?php echo $lang->get('automatic_deletion_engaged'); ?>"></span><span class="badge badge-danger icon-badge-text-bottom-right">' + data.to_be_deleted + '</span></span>');
+                    }
+
+                    // reset password shown info
+                    $('#card-item-pwd').removeClass('pwd-shown');
+
+                    //Anyone can modify button
+                    if (parseInt(data.anyone_can_modify) === 1) {
+                        $('#form-item-anyoneCanModify').iCheck('check');
+                    } else {
+                        $('#form-item-anyoneCanModify').iCheck('uncheck');
+                    }
+
+                    if (parseInt(data.show_details) === 1 && parseInt(data.show_detail_option) !== 2) {
+                        // continue loading data
+                        showDetailsStep2(itemId, actionType);
+                    } else if (parseInt(data.show_details) === 1 && parseInt(data.show_detail_option) === 2) {
+                        $('#item_details_nok').addClass('hidden');
+                        $('#item_details_ok').addClass('hidden');
+                        $('#item_details_expired_full').show();
+                        $('#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item, #menu_button_add_fav, #menu_button_del_fav, #menu_button_show_pw, #menu_button_copy_pw, #menu_button_copy_login, #menu_button_copy_link').attr('disabled', 'disabled');
+                        $('#div_loading').addClass('hidden');
+                    } else {
+                        //Dont show details
+                        $('#item_details_nok').removeClass('hidden');
+                        $('#item_details_nok_restriction_list').html('<div style="margin:10px 0 0 20px;"><b><?php echo $lang->get('author'); ?>: </b>' + data.author + '<br /><b><?php echo $lang->get('restricted_to'); ?>: </b>' + data.restricted_to + '<br /><br /><u><a href="#" onclick="openReasonToAccess()"><?php echo $lang->get('request_access_ot_item'); ?></a></u></div>');
+
+                        $('#reason_to_access').remove();
+                        $('#item_details_nok')
+                            .append('<input type="hidden" id="reason_to_access" value="' + data.id + ',' + data.id_user + '">');
+
+                        // Protect
+                        $('#item_details_ok').addClass('hidden');
+                        $('#item_details_expired').addClass('hidden');
+                        $('#item_details_expired_full').addClass('hidden');
+                        $('#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item, #menu_button_add_fav, #menu_button_del_fav, #menu_button_show_pw, #menu_button_copy_pw, #menu_button_copy_login, #menu_button_copy_link').attr('disabled', 'disabled');
+                        $('#div_loading').addClass('hidden');
+                    }
+
+                    // Prepare bottom buttons
+                    if ($('#list-item-row_'+data.id).prev('.list-item-row').attr('data-item-id') !== undefined) {
+                        $('.but-prev-item')
+                            .html('<i class="fa-solid fa-arrow-left mr-2"></i>' + unescape($('#list-item-row_'+data.id).prev('.list-item-row').attr('data-label')))
+                            .attr('data-prev-item-id', $('#list-item-row_'+data.id).prev('.list-item-row').attr('data-item-id'))
+                            .removeClass('hidden');
+                    }
+                    if ($('#list-item-row_'+data.id).next('.list-item-row').attr('data-item-id') !== undefined) {
+                        $('.but-next-item')
+                            .html('<i class="fa-solid fa-arrow-right mr-2"></i>' + unescape($('#list-item-row_'+data.id).next('.list-item-row').attr('data-label')))
+                            .attr('data-next-item-id', $('#list-item-row_'+data.id).next('.list-item-row').attr('data-item-id'))
+                            .removeClass('hidden');
+                    }
+
+                    /*
+                    dataItemKey = $('[data-item-key="'+data.item_key+'"]');
+                    if (dataItemKey.prev('.list-item-row').attr('data-item-key') !== undefined) {
+                        $('.but-prev-item')
+                            .html('<i class="fa-solid fa-arrow-left mr-2"></i>' + unescape(dataItemKey.prev('.list-item-row').attr('data-label')))
+                            .attr('data-prev-item-key', dataItemKey.attr('data-item-key'))
+                            .removeClass('hidden');
+                    }
+                    if (dataItemKey.next('.list-item-row').attr('data-item-key') !== undefined) {
+                        $('.but-next-item')
+                            .html('<i class="fa-solid fa-arrow-right mr-2"></i>' + unescape(dataItemKey.next('.list-item-row').attr('data-label')))
+                            .attr('data-next-item-id', dataItemKey.next('.list-item-row').attr('data-item-id'))
+                            .removeClass('hidden');
+                    }
+                    */
+                    if (debugJavascript === true) {
+                        //console.log("PREV: " + dataItemKey.attr('data-item-key') + " - NEXT: " + $('#list-item-row_'+data.id).next('.list-item-row').attr('data-item-id'));
+                    }
+
+                    // Inform user
                     toastr.remove();
                     toastr.info(
-                        '<?php echo $lang->get('copy_to_clipboard'); ?>',
+                        '<?php echo $lang->get('done'); ?>',
                         '', {
-                            timeOut: 2000,
-                            progressBar: true,
-                            positionClass: 'toast-top-right'
+                            timeOut: 1000
                         }
                     );
-                    e.clearSelection();
-                });
 
-                // Prepare clipboard - COPY LOGIN
-                if (data.login !== '') {
-                    $('#card-item-login-btn').removeClass('hidden');
-                } else {
-                    $('#card-item-login-btn').addClass('hidden');
+                    return true;
                 }
-
-                // Prepare clipboard - COPY PASSWORD
-                if (data.pw !== '' && store.get('teampassItem').readyToUse === true) {
-                    new ClipboardJS('#card-item-pwd-button', {
-                            text: function() {
-                                return (data.pw);
-                            }
-                        })
-                        .on('success', function(e) {
-                            itemLog(
-                                'at_password_copied',
-                                e.trigger.dataset.clipboardId,
-                                $('#card-item-label').text()
-                            );
-
-                            // Warn user about clipboard clear
-                            if (store.get('teampassSettings').clipboard_life_duration === undefined || parseInt(store.get('teampassSettings').clipboard_life_duration) === 0) {
-                                toastr.remove();
-                                toastr.info(
-                                    '<?php echo $lang->get('copy_to_clipboard'); ?>',
-                                    '', {
-                                        timeOut: 2000,
-                                        positionClass: 'toast-top-right',
-                                        progressBar: true
-                                    }
-                                );
-                            } else {
-                                toastr.warning(
-                                    '<?php echo $lang->get('clipboard_will_be_cleared'); ?>',
-                                    '', {
-                                        timeOut: store.get('teampassSettings').clipboard_life_duration * 1000,
-                                        progressBar: true
-                                    }
-                                );
-
-                                // Set clipboard eraser
-                                clearClipboardTimeout(
-                                    store.get('teampassSettings').clipboard_life_duration
-                                );
-                            }
-
-                            e.clearSelection();
-                        });
-                    $('#card-item-pwd-button').removeClass('hidden');
-                } else {
-                    $('#card-item-pwd-button').addClass('hidden');
-                    $('#card-item-pwd').after('<i class="fa-solid fa-ban text-teal ml-3 delete-after-usage"></i>');
-                }
-
-                // Prepare clipboard - COPY EMAIL
-                if (data.email !== '') {
-                    $('#card-item-email-btn').removeClass('hidden');
-                } else {
-                    $('#card-item-email-btn').addClass('hidden');
-                }
-
-                // Prepare auto_update info
-                $('#card-item-misc').html('');
-                if (parseInt(data.auto_update_pwd_frequency) !== '0') {
-                    $('#card-item-misc')
-                        .append('<span class="fa-solid fa-shield infotip mr-4" title="<?php echo $lang->get('auto_update_enabled'); ?>&nbsp;' + data.auto_update_pwd_frequency + '"></span>');
-                }
-
-                // Show Notification engaged
-                if (data.notification_status === true) {
-                    $('#card-item-misc')
-                        .append('<span class="mr-4 icon-badge" id="card-item-misc-notification"><span class="fa-regular fa-bell infotip text-success" title="<?php echo $lang->get('notification_engaged'); ?>"></span></span>');
-                } else {
-                    $('#card-item-misc')
-                        .append('<span class="mr-4 icon-badge" id="card-item-misc-notification"><span class="fa-regular fa-bell-slash infotip text-warning" title="<?php echo $lang->get('notification_not_engaged'); ?>"></span></span>');
-                }
-
-                // Prepare counter
-                $('#card-item-misc')
-                    .append('<span class="icon-badge mr-4"><span class="fa-regular fa-eye infotip" title="<?php echo $lang->get('viewed_number'); ?>"></span><span class="badge badge-info icon-badge-text icon-badge-far">' + data.viewed_no + '</span></span>');
-
-                // Delete after X views
-                if (data.to_be_deleted !== '') {
-                    if (parseInt(data.to_be_deleted_type) === 1) {
-                        $('#form-item-deleteAfterShown').val(data.to_be_deleted);
-                        $('#form-item-deleteAfterDate').val('');
-                    } else {
-                        $('#form-item-deleteAfterShown').val('');
-                        $('#form-item-deleteAfterDate').val(data.to_be_deleted);
-                    }
-                    // Show icon
-                    $('#card-item-misc')
-                        .append('<span class="icon-badge mr-5"><span class="fa-regular fa-trash-alt infotip" title="<?php echo $lang->get('automatic_deletion_engaged'); ?>"></span><span class="badge badge-danger icon-badge-text-bottom-right">' + data.to_be_deleted + '</span></span>');
-                }
-
-                // reset password shown info
-                $('#card-item-pwd').removeClass('pwd-shown');
-
-                //Anyone can modify button
-                if (parseInt(data.anyone_can_modify) === 1) {
-                    $('#form-item-anyoneCanModify').iCheck('check');
-                } else {
-                    $('#form-item-anyoneCanModify').iCheck('uncheck');
-                }
-
-                if (parseInt(data.show_details) === 1 && parseInt(data.show_detail_option) !== 2) {
-                    // continue loading data
-                    showDetailsStep2(itemId, actionType);
-                } else if (parseInt(data.show_details) === 1 && parseInt(data.show_detail_option) === 2) {
-                    $('#item_details_nok').addClass('hidden');
-                    $('#item_details_ok').addClass('hidden');
-                    $('#item_details_expired_full').show();
-                    $('#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item, #menu_button_add_fav, #menu_button_del_fav, #menu_button_show_pw, #menu_button_copy_pw, #menu_button_copy_login, #menu_button_copy_link').attr('disabled', 'disabled');
-                    $('#div_loading').addClass('hidden');
-                } else {
-                    //Dont show details
-                    $('#item_details_nok').removeClass('hidden');
-                    $('#item_details_nok_restriction_list').html('<div style="margin:10px 0 0 20px;"><b><?php echo $lang->get('author'); ?>: </b>' + data.author + '<br /><b><?php echo $lang->get('restricted_to'); ?>: </b>' + data.restricted_to + '<br /><br /><u><a href="#" onclick="openReasonToAccess()"><?php echo $lang->get('request_access_ot_item'); ?></a></u></div>');
-
-                    $('#reason_to_access').remove();
-                    $('#item_details_nok')
-                        .append('<input type="hidden" id="reason_to_access" value="' + data.id + ',' + data.id_user + '">');
-
-                    // Protect
-                    $('#item_details_ok').addClass('hidden');
-                    $('#item_details_expired').addClass('hidden');
-                    $('#item_details_expired_full').addClass('hidden');
-                    $('#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item, #menu_button_add_fav, #menu_button_del_fav, #menu_button_show_pw, #menu_button_copy_pw, #menu_button_copy_login, #menu_button_copy_link').attr('disabled', 'disabled');
-                    $('#div_loading').addClass('hidden');
-                }
-
-                // Prepare bottom buttons
-                if ($('#list-item-row_'+data.id).prev('.list-item-row').attr('data-item-id') !== undefined) {
-                    $('.but-prev-item')
-                        .html('<i class="fa-solid fa-arrow-left mr-2"></i>' + unescape($('#list-item-row_'+data.id).prev('.list-item-row').attr('data-label')))
-                        .attr('data-prev-item-id', $('#list-item-row_'+data.id).prev('.list-item-row').attr('data-item-id'))
-                        .removeClass('hidden');
-                }
-                if ($('#list-item-row_'+data.id).next('.list-item-row').attr('data-item-id') !== undefined) {
-                    $('.but-next-item')
-                        .html('<i class="fa-solid fa-arrow-right mr-2"></i>' + unescape($('#list-item-row_'+data.id).next('.list-item-row').attr('data-label')))
-                        .attr('data-next-item-id', $('#list-item-row_'+data.id).next('.list-item-row').attr('data-item-id'))
-                        .removeClass('hidden');
-                }
-
-                /*
-                dataItemKey = $('[data-item-key="'+data.item_key+'"]');
-                if (dataItemKey.prev('.list-item-row').attr('data-item-key') !== undefined) {
-                    $('.but-prev-item')
-                        .html('<i class="fa-solid fa-arrow-left mr-2"></i>' + unescape(dataItemKey.prev('.list-item-row').attr('data-label')))
-                        .attr('data-prev-item-key', dataItemKey.attr('data-item-key'))
-                        .removeClass('hidden');
-                }
-                if (dataItemKey.next('.list-item-row').attr('data-item-key') !== undefined) {
-                    $('.but-next-item')
-                        .html('<i class="fa-solid fa-arrow-right mr-2"></i>' + unescape(dataItemKey.next('.list-item-row').attr('data-label')))
-                        .attr('data-next-item-id', dataItemKey.next('.list-item-row').attr('data-item-id'))
-                        .removeClass('hidden');
-                }
-                */
-                if (debugJavascript === true) {
-                    //console.log("PREV: " + dataItemKey.attr('data-item-key') + " - NEXT: " + $('#list-item-row_'+data.id).next('.list-item-row').attr('data-item-id'));
-                }
-
-                // Inform user
-                toastr.remove();
-                toastr.info(
-                    '<?php echo $lang->get('done'); ?>',
-                    '', {
-                        timeOut: 1000
-                    }
-                );
-
-                return true;
-            }
-        );
+            );
+        });
     }
 
 
@@ -5285,6 +5365,15 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                         .append('<span class="icon-badge mr-4"><span class="fa-regular fa-handshake infotip" title="<?php echo $lang->get('existing_valid_otv_links'); ?>"></span><span class="badge badge-info icon-badge-text icon-badge-far">' + data.otv_links + '</span></span>');
                 }
 
+                // Manage if OTP is enabled for item
+                if (data.otp_for_item_enabled === 1) {
+                    $('#form-item-otp').iCheck('check');
+                } else {
+                    $('#form-item-otp').iCheck('uncheck');
+                }
+                $('#form-item-otpPhoneNumber').val(data.otp_phone_number);
+                $('#form-item-otpSecret').val(data.otp_secret);
+
                 // Delete inputs related files uploaded but not confirmed
                 var data = {
                     'item_id': store.get('teampassItem').id,
@@ -5306,9 +5395,103 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                         requestRunning = false;
                     }
                 );
+
+                // Load OTP stuff
+                store.update(
+                    'teampassItem',
+                    function(teampassItem) {
+                        teampassItem.otp_code_generate = true
+                    }
+                );
+
+                // Display OTP Code
+                showOTPCode(id);
             }
         );
     };
+
+    function showOTPCode(id) {
+        if (store.get('teampassItem').otp_code_generate === false) {
+            clearInterval(intervalId);
+            return false;
+        }
+        return new Promise((resolve, reject) => {
+            $.post(
+                'sources/items.queries.php', {
+                    type: 'show_opt_code',
+                    id: id,
+                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                },
+                function(data) {
+                    //decrypt data
+                    data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'items.queries.php', 'showDetailsStep3');
+
+                    if (data.otp_code !== '' && data.otp_expires_in !== '' && parseInt(data.otp_enabled) === 1) {
+                        $('#card-item-opt_code').html(data.otp_code+'<span class="ml-3 badge rounded-pill badge-info text-dark" style="width:30px;" id="otp_countdown"></span><i class="fa-regular fa-copy ml-2 text-secondary pointer" id="clipboard_otpcode"></i>');   
+                        
+                        // show countdown
+                        //<span class="ml-3 badge rounded-pill badge-info text-dark" style="width:30px;" id="otp_countdown"></span>
+                        $('#otp_countdown').countdownTimer({
+                            seconds: data.otp_expires_in,
+                            loop: false,
+                            callback: function(){
+                                $('#otp_countdown').html('<i class="fa-solid fa-circle-notch fa-spin"></i>')
+                            }
+                        });
+                        /*
+                        //<span id="countdown_otp" class="ml-2"></span>
+                        $("#countdown_otp").countdown360({
+                            radius      : 11,
+                            seconds     : data.otp_expires_in,
+                            //strokeWidth : 15,
+                            fillStyle   : '#56bbd9',
+                            strokeStyle : '#007bff',
+                            fontSize    : 12,
+                            fontColor   : '#FFFFFF',
+                            label: false,
+                            autostart: false,
+                            onComplete  : function () { 
+                                $('#countdown_otp').html('<i class="fa-solid fa-circle-notch fa-spin"></i>');
+                             }
+                        }).start();
+                        */
+
+                        // Prepare Clipboard
+                        clipboardOTPCode = new ClipboardJS("#clipboard_otpcode", {
+                            text: function() {
+                                return data.otp_code;
+                            }
+                        });
+                        clipboardOTPCode.on('success', function(e) {
+                            toastr.remove();
+                            toastr.info(
+                                '<?php echo $lang->get('copy_to_clipboard'); ?>',
+                                '', {
+                                    timeOut: 2000,
+                                    positionClass: 'toast-top-right',
+                                    progressBar: true
+                                }
+                            );
+                            e.clearSelection();
+                        });
+
+                        // Prepare recursive call to get new OTP code
+                        var replayDelayInMilliseconds = data.otp_expires_in*1000;
+                        intervalId = setTimeout(function() {
+                            showOTPCode(id);
+                        }, replayDelayInMilliseconds);
+
+                        resolve(replayDelayInMilliseconds);
+                    } else {
+                        $('#card-item-opt_code').html('<?php echo $lang->get('none'); ?>');
+                    }
+
+                    resolve(false);
+                }
+            );
+        });
+    }
+
 
     // Clear history form
     $(document)
@@ -6162,4 +6345,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         alertify.dismissAll();
     }
     */
+    $(document).ready(function() {
+        //
+    });
 </script>

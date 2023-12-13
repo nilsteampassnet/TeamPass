@@ -263,10 +263,6 @@ try {
     exit;
 }
 
-// Load libraries
-$superGlobal = new SuperGlobal();
-$lang = new Language(); 
-
 // Set Session
 $superGlobal->put('CPM', 1, 'SESSION');
 $superGlobal->put('db_encoding', 'utf8', 'SESSION');

@@ -81,7 +81,7 @@ $lang = new Language();
 
 //---------------------------------------------------------------------
 
-//--->BEGIN 3.1.7
+//--->BEGIN 3.1.0
 
 // 
 // Add new setting 'enable_refresh_task_last_execution'
@@ -93,8 +93,32 @@ if (intval($tmp) === 0) {
     );
 }
 
+//---<END 3.1.0
 
-//---<END 3.0.7
+//--->BEGIN 3.1.1
+
+// Add new table ITEMS_OTP
+mysqli_query(
+    $db_link,
+    'CREATE TABLE IF NOT EXISTS `' . $pre . 'items_otp` (
+    `increment_id` int(12) NOT NULL,
+    `item_id` int(12) NOT NULL,
+    `secret` text NOT NULL,
+    `timestamp` varchar(100) NOT NULL,
+    `enabled` tinyint(1) NOT NULL DEFAULT 0,
+    `phone_number` varchar(25) NOT NULL,
+    PRIMARY KEY (`increment_id`),
+    KEY `ITEM` (`item_id`)
+    ) CHARSET=utf8;'
+);
+
+// Alter table TOKENS
+mysqli_query(
+    $db_link,
+    'ALTER TABLE `' . $pre . 'tokens` CHANGE `end_timestamp` `end_timestamp` VARCHAR(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL;'
+);
+
+//---<END 3.1.1
 
 //---------------------------------------------------------------------
 

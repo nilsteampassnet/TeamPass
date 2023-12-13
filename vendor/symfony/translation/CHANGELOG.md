@@ -1,6 +1,15 @@
 CHANGELOG
 =========
 
+6.4
+---
+
+ * Give current locale to `LocaleSwitcher::runWithLocale()`'s callback
+ * Add `--as-tree` option to `translation:pull` command to write YAML messages as a tree-like structure
+ * [BC BREAK] Add argument `$buildDir` to `DataCollectorTranslator::warmUp()`
+ * Add `DataCollectorTranslatorPass` and `LoggingTranslatorPass`  (moved from `FrameworkBundle`)
+ * Add `PhraseTranslationProvider`
+
 6.2.7
 -----
 

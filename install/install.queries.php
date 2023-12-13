@@ -1196,7 +1196,7 @@ $SETTINGS = array (';
                             `token` varchar(255) NOT NULL,
                             `reason` varchar(255) NOT NULL,
                             `creation_timestamp` varchar(50) NOT NULL,
-                            `end_timestamp` varchar(50) NOT NULL,
+                            `end_timestamp` varchar(50) DEFAULT NULL,
                             PRIMARY KEY (`id`)
                             ) CHARSET=utf8;'
                         );
@@ -1305,6 +1305,20 @@ $SETTINGS = array (';
                             `ldap_group_label` VARCHAR(255) NOT NULL,
                             PRIMARY KEY (`increment_id`),
                             KEY `ROLE` (`role_id`)
+                            ) CHARSET=utf8;"
+                        );
+                    } else if ($task === 'items_otp') {
+                        $mysqli_result = mysqli_query(
+                            $dbTmp,
+                            "CREATE TABLE IF NOT EXISTS `" . $var['tbl_prefix'] . "items_otp` (
+                            `increment_id` int(12) NOT NULL,
+                            `item_id` int(12) NOT NULL,
+                            `secret` text NOT NULL,
+                            `timestamp` varchar(100) NOT NULL,
+                            `enabled` tinyint(1) NOT NULL DEFAULT 0,
+                            `phone_number` varchar(25) NOT NULL,
+                            PRIMARY KEY (`increment_id`),
+                            KEY `ITEM` (`item_id`)
                             ) CHARSET=utf8;"
                         );
                     }
