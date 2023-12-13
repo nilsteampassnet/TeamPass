@@ -366,6 +366,7 @@ function userHandler(string $post_type, /*php8 array|null|string*/ $dataReceived
                 (string) filter_var($dataReceived['send_email'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 (string) filter_var($dataReceived['login'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 (string) filter_var($dataReceived['pwd'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                (string) filter_var($dataReceived['token'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 $SETTINGS
             );
 
@@ -996,12 +997,13 @@ function generateQRCode(
     $post_send_mail,
     $post_login,
     $post_pwd,
+    $post_token,
     array $SETTINGS
 ): string
 {
     // Load user's language
-    $lang = new Language(); 
-    
+    $lang = new Language();
+
     // is this allowed by setting
     if (isKeyExistingAndEqual('ga_reset_by_user', 0, $SETTINGS) === true
         && (null === $post_demand_origin || $post_demand_origin !== 'users_management_list')
@@ -1019,20 +1021,20 @@ function generateQRCode(
     // Check if user exists
     if (isValueSetNullEmpty($post_id) === true) {
         // Get data about user
-        $data = DB::queryfirstrow(
+        $dataUser = DB::queryfirstrow(
             'SELECT id, email, pw
             FROM ' . prefixTable('users') . '
             WHERE login = %s',
             $post_login
         );
     } else {
-        $data = DB::queryfirstrow(
+        $dataUser = DB::queryfirstrow(
             'SELECT id, login, email, pw
             FROM ' . prefixTable('users') . '
             WHERE id = %i',
             $post_id
         );
-        $post_login = $data['login'];
+        $post_login = $dataUser['login'];
     }
     // Get number of returned users
     $counter = DB::count();
@@ -1054,8 +1056,8 @@ function generateQRCode(
     // load passwordLib library
     $pwdlib = new PasswordLib();
     if (
-        isSetArrayOfValues([$post_pwd, $data['pw']]) === true
-        && $pwdlib->verifyPasswordHash($post_pwd, $data['pw']) === false
+        isSetArrayOfValues([$post_pwd, $dataUser['pw']]) === true
+        && $pwdlib->verifyPasswordHash($post_pwd, $dataUser['pw']) === false
         && $post_demand_origin !== 'users_management_list'
     ) {
         // checked the given password
@@ -1070,7 +1072,7 @@ function generateQRCode(
         );
     }
     
-    if (empty($data['email']) === true) {
+    if (empty($dataUser['email']) === true) {
         return prepareExchangedData(
             array(
                 'error' => true,
@@ -1078,6 +1080,38 @@ function generateQRCode(
             ),
             'encode'
         );
+    }
+
+    // Check if token already used
+    $dataToken = DB::queryfirstrow(
+        'SELECT end_timestamp, reason
+        FROM ' . prefixTable('tokens') . '
+        WHERE token = %s AND user_id = %i',
+        $post_token,
+        $dataUser['id']
+    );
+    $tokenId = '';
+    if (DB::count() > 0 && is_null($dataToken['end_timestamp']) === false && $dataToken['reason'] === 'auth_qr_code') {
+        // This token has already been used
+        return prepareExchangedData(
+            array(
+                'error' => true,
+                'message' => 'TOKEN already used',//$lang->get('no_email_set'),
+            ),
+            'encode'
+        );
+    } elseif(DB::count() === 0) {
+        // Store token for this action
+        DB::insert(
+            prefixTable('tokens'),
+            array(
+                'user_id' => (int) $dataUser['id'],
+                'token' => $post_token,
+                'reason' => 'auth_qr_code',
+                'creation_timestamp' => time(),
+            )
+        );
+        $tokenId = DB::insertId();
     }
     
     // generate new GA user code
@@ -1092,11 +1126,21 @@ function generateQRCode(
             'ga_temporary_code' => $gaTemporaryCode,
         ],
         'id = %i',
-        $data['id']
+        $dataUser['id']
     );
 
     // Log event
-    logEvents($SETTINGS, 'user_connection', 'at_2fa_google_code_send_by_email', (string) $data['id'], stripslashes($post_login), stripslashes($post_login));
+    logEvents($SETTINGS, 'user_connection', 'at_2fa_google_code_send_by_email', (string) $dataUser['id'], stripslashes($post_login), stripslashes($post_login));
+
+    // Update token status
+    DB::update(
+        prefixTable('tokens'),
+        [
+            'end_timestamp' => time(),
+        ],
+        'id = %i',
+        $tokenId
+    );
 
     // send mail?
     if ((int) $post_send_mail === 1) {
@@ -1107,7 +1151,7 @@ function generateQRCode(
                 $gaTemporaryCode,
                 $lang->get('email_ga_text')
             ),
-            $data['email'],
+            $dataUser['email'],
             $SETTINGS
         );
 
@@ -1116,10 +1160,10 @@ function generateQRCode(
             array(
                 'error' => false,
                 'message' => $post_send_mail,
-                'email' => $data['email'],
+                'email' => $dataUser['email'],
                 'email_result' => str_replace(
                     '#email#',
-                    '<b>' . obfuscateEmail($data['email']) . '</b>',
+                    '<b>' . obfuscateEmail($dataUser['email']) . '</b>',
                     addslashes($lang->get('admin_email_result_ok'))
                 ),
             ),
@@ -1132,10 +1176,10 @@ function generateQRCode(
         array(
             'error' => false,
             'message' => '',
-            'email' => $data['email'],
+            'email' => $dataUser['email'],
             'email_result' => str_replace(
                 '#email#',
-                '<b>' . obfuscateEmail($data['email']) . '</b>',
+                '<b>' . obfuscateEmail($dataUser['email']) . '</b>',
                 addslashes($lang->get('admin_email_result_ok'))
             ),
         ),

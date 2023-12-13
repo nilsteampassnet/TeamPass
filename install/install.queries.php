@@ -1196,7 +1196,7 @@ $SETTINGS = array (';
                             `token` varchar(255) NOT NULL,
                             `reason` varchar(255) NOT NULL,
                             `creation_timestamp` varchar(50) NOT NULL,
-                            `end_timestamp` varchar(50) NOT NULL,
+                            `end_timestamp` varchar(50) DEFAULT NULL,
                             PRIMARY KEY (`id`)
                             ) CHARSET=utf8;'
                         );

@@ -112,6 +112,12 @@ mysqli_query(
     ) CHARSET=utf8;'
 );
 
+// Alter table TOKENS
+mysqli_query(
+    $db_link,
+    'ALTER TABLE `' . $pre . 'tokens` CHANGE `end_timestamp` `end_timestamp` VARCHAR(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL;'
+);
+
 //---<END 3.1.1
 
 //---------------------------------------------------------------------
