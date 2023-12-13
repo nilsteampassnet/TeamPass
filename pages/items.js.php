@@ -5430,6 +5430,7 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
                         $('#card-item-opt_code').html(data.otp_code+'<span class="ml-3 badge rounded-pill badge-info text-dark" style="width:30px;" id="otp_countdown"></span><i class="fa-regular fa-copy ml-2 text-secondary pointer" id="clipboard_otpcode"></i>');   
                         
                         // show countdown
+                        //<span class="ml-3 badge rounded-pill badge-info text-dark" style="width:30px;" id="otp_countdown"></span>
                         $('#otp_countdown').countdownTimer({
                             seconds: data.otp_expires_in,
                             loop: false,
@@ -5437,6 +5438,23 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
                                 $('#otp_countdown').html('<i class="fa-solid fa-circle-notch fa-spin"></i>')
                             }
                         });
+                        /*
+                        //<span id="countdown_otp" class="ml-2"></span>
+                        $("#countdown_otp").countdown360({
+                            radius      : 11,
+                            seconds     : data.otp_expires_in,
+                            //strokeWidth : 15,
+                            fillStyle   : '#56bbd9',
+                            strokeStyle : '#007bff',
+                            fontSize    : 12,
+                            fontColor   : '#FFFFFF',
+                            label: false,
+                            autostart: false,
+                            onComplete  : function () { 
+                                $('#countdown_otp').html('<i class="fa-solid fa-circle-notch fa-spin"></i>');
+                             }
+                        }).start();
+                        */
 
                         // Prepare Clipboard
                         clipboardOTPCode = new ClipboardJS("#clipboard_otpcode", {

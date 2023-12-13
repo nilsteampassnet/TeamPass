@@ -1191,6 +1191,7 @@ if (($session_validite_pw === null
             <script src="./plugins/jstree/jstree.min.js" type="text/javascript"></script>
             <!-- countdownTimer -->
             <script src="./plugins/countdownTimer/countdownTimer.min.js"></script>
+            <script src="./plugins/jquery.countdown360/jquery.countdown360.js"></script>
             <!-- SUMMERNOTE -->
             <link rel="stylesheet" href="./plugins/summernote/summernote-bs4.css">
             <script src="./plugins/summernote/summernote-bs4.min.js"></script>
