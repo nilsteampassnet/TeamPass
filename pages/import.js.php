@@ -519,11 +519,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 toastr.remove();
                 toastr.info('<i class="fas fa-cog fa-spin fa-2x"></i>');
 
-                up.settings.multipart_params = {
-                    "PHPSESSID": "<?php echo session_id(); ?>",
-                    "type_upload": "import_items_from_keepass",
-                    "user_token": store.get('teampassApplication').uploadedFileId
-                };
+                    up.settings.multipart_params.PHPSESSID = "<?php echo session_id(); ?>";
+                    up.settings.multipart_params.type_upload = "import_items_from_keepass";
+                    up.settings.multipart_params.user_token = store.get('teampassApplication').uploadedFileId;			
             },
             FileUploaded: function(upldr, file, object) {
                 var data = prepareExchangedData(object.response, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
@@ -539,6 +537,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             progressBar: true
                         }
                     );
+					console.log("data error");
                 } else {
                     toastr.remove();
                     toastr.success(
@@ -605,6 +604,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         data = {
             'file': store.get('teampassApplication').uploadedFileId,
             'folder-id': parseInt($('#import-keepass-target-folder').val()),
+			'user_token' : store.get('teampassApplication').uploadedFileId
         }
         console.log(data);
         // Lauchn ajax query that will insert items into DB
