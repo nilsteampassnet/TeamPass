@@ -537,7 +537,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             progressBar: true
                         }
                     );
-					console.log("data error");
                 } else {
                     toastr.remove();
                     toastr.success(
@@ -604,7 +603,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         data = {
             'file': store.get('teampassApplication').uploadedFileId,
             'folder-id': parseInt($('#import-keepass-target-folder').val()),
-			'user_token' : store.get('teampassApplication').uploadedFileId
         }
         console.log(data);
         // Lauchn ajax query that will insert items into DB
