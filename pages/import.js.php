@@ -590,6 +590,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
     uploader_keepass.init();
 
+
     function launchKeepassItemsImport() {
         // Show spinner
         $('#import-feedback-progress-text')
