@@ -764,7 +764,7 @@ if (null !== $post_type) {
             }
             
             $retGroups = $connection->query()->where($searchCriteria)->get();
-
+            //error_log("Contenu de l'array : " . print_r($retGroups, true));
             // check if synched with roles in Teampass
             $retAD = [];
             foreach($retGroups as $key => $group) {
@@ -773,7 +773,7 @@ if (null !== $post_type) {
                     'SELECT a.increment_id, a.role_id, r.title
                     FROM '.prefixTable('ldap_groups_roles').' AS a
                     INNER JOIN '.prefixTable('roles_title').' AS r ON r.id = a.role_id
-                    WHERE ldap_group_id = %i',
+                    WHERE ldap_group_id = %s',
                     $group[(isset($SETTINGS['ldap_guid_attibute']) === true && empty($SETTINGS['ldap_guid_attibute']) === false ? $SETTINGS['ldap_guid_attibute']: 'gidnumber')][0]
                 );
                 $counter = DB::count();
@@ -843,18 +843,42 @@ if (null !== $post_type) {
 
             // Prepare variables
             $post_role_id = filter_var($dataReceived['roleId'], FILTER_SANITIZE_NUMBER_INT);
-            $post_adgroup_id = filter_var($dataReceived['adGroupId'], FILTER_SANITIZE_NUMBER_INT);
+            $post_adgroup_id = filter_var($dataReceived['adGroupId'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $post_adgroup_label = filter_var($dataReceived['adGroupLabel'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
             $data = DB::queryfirstrow(
                 'SELECT *
                 FROM '.prefixTable('ldap_groups_roles').'
-                WHERE ldap_group_id = %i',
+                WHERE ldap_group_id = %s',
                 $post_adgroup_id
             );
-            $counter = DB::count();
-
-            if ($counter === 0) {
+            
+            if ($data) {
+                // exists in Teampass
+                // update or delete
+                if ((int) $post_role_id === -1) {
+                    // delete
+                    DB::delete(
+                        prefixTable('ldap_groups_roles'),
+                        'increment_id = %i',
+                        $data['increment_id']
+                    );
+                    $new_id = -1;
+                } else {
+                    if (isset($data['increment_id']) === true) {
+                        // update
+                        DB::update(
+                            prefixTable('ldap_groups_roles'),
+                            array(
+                                'role_id' => $post_role_id,
+                            ),
+                            'increment_id = %i',
+                            $data['increment_id']
+                        );
+                        $new_id = '';
+                    }
+                }
+            } else {
                 // Adding new folder is possible as it doesn't exist
                 DB::insert(
                     prefixTable('ldap_groups_roles'),
@@ -865,27 +889,6 @@ if (null !== $post_type) {
                     )
                 );
                 $new_id = DB::insertId();
-            } else {
-                if ((int) $post_role_id === -1) {
-                    // delete
-                    DB::delete(
-                        prefixTable('ldap_groups_roles'),
-                        'increment_id = %i',
-                        $data['increment_id']
-                    );
-                    $new_id = -1;
-                } else {
-                    // update
-                    DB::update(
-                        prefixTable('ldap_groups_roles'),
-                        array(
-                            'role_id' => $post_role_id,
-                        ),
-                        'increment_id = %i',
-                        $data['increment_id']
-                    );
-                    $new_id = '';
-                }
             }
 
             echo (string) prepareExchangedData(

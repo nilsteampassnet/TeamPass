@@ -118,6 +118,13 @@ mysqli_query(
     'ALTER TABLE `' . $pre . 'tokens` CHANGE `end_timestamp` `end_timestamp` VARCHAR(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL;'
 );
 
+
+// Alter table ldap_groups_roles
+mysqli_query(
+    $db_link,
+    'ALTER TABLE `' . $pre . 'ldap_groups_roles` CHANGE `ldap_group_id` `ldap_group_id` VARCHAR(500) NOT NULL;'
+);
+
 //---<END 3.1.1
 
 //---------------------------------------------------------------------

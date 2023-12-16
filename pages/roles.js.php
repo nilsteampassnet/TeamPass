@@ -800,7 +800,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             //---
 
         } else if ($(this).data('action') === 'do-adgroup-role-mapping') {
-            var groupId = parseInt($(this).data('id')),
+            var groupId = $(this).data('id'),
                 roleId = parseInt($('.select-role').val()),
                 groupTitle = $('.select-role option:selected').text();
 

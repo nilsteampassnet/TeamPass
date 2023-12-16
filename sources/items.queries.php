@@ -862,10 +862,10 @@ switch ($inputData['type']) {
         if (is_array($dataReceived) === true && count($dataReceived) > 0) {
             // Prepare variables
             $itemInfos = array();
-            $inputData['label'] = filter_var($dataReceived['label'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $inputData['label'] = isset($dataReceived['label']) && is_string($dataReceived['label']) ? filter_var($dataReceived['label'], FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '';
             $post_url = isset($dataReceived['url'])=== true ? filter_var(htmlspecialchars_decode($dataReceived['url']), FILTER_SANITIZE_URL) : '';
-            $post_password = $original_pw = htmlspecialchars_decode($dataReceived['pw']);
-            $post_login = filter_var(htmlspecialchars_decode($dataReceived['login']), FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_password = $original_pw = isset($dataReceived['pw']) && is_string($dataReceived['pw']) ? htmlspecialchars_decode($dataReceived['pw']) : '';
+            $post_login = isset($dataReceived['login']) && is_string($dataReceived['login']) ? filter_var(htmlspecialchars_decode($dataReceived['login']), FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '';
             $post_tags = isset($dataReceived['tags'])=== true ? htmlspecialchars_decode($dataReceived['tags']) : '';
             $post_email = isset($dataReceived['email'])=== true ? filter_var(htmlspecialchars_decode($dataReceived['email']), FILTER_SANITIZE_EMAIL) : '';
             $post_template_id = (int) filter_var($dataReceived['template_id'], FILTER_SANITIZE_NUMBER_INT);
@@ -3039,7 +3039,21 @@ switch ($inputData['type']) {
                 break;
             }
         }
-        $returnArray = array();
+
+        // prepare return array
+        $returnArray = [
+            'show_details' => 0,
+            'attachments' => [],
+            'favourite' => 0,
+            'otp_for_item_enabled' => 0,
+            'otp_phone_number' => '',
+            'otp_secret' => '',
+            'users_list' => [],
+            'roles_list' => [],
+            'has_change_proposal' => 0,
+            'setting_restricted_to_roles' => 0,
+            'otv_links' => 0,
+        ];
 
         // Load item data
         $dataItem = DB::queryFirstRow(
@@ -3109,7 +3123,7 @@ switch ($inputData['type']) {
             $_SESSION['key_tmp'] = bin2hex(GenerateCryptKey(16, false, true, true, false, true, $SETTINGS));
 
             // Prepare files listing
-            $attachments = array();
+            $attachments = [];
             
             // launch query
             $rows = DB::query(

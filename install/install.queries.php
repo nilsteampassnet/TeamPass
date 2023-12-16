@@ -1301,7 +1301,7 @@ $SETTINGS = array (';
                             "CREATE TABLE IF NOT EXISTS `" . $var['tbl_prefix'] . "ldap_groups_roles` (
                             `increment_id` INT(12) NOT NULL AUTO_INCREMENT,
                             `role_id` INT(12) NOT NULL,
-                            `ldap_group_id` INT(12) NOT NULL,
+                            `ldap_group_id` VARCHAR(500) NOT NULL,
                             `ldap_group_label` VARCHAR(255) NOT NULL,
                             PRIMARY KEY (`increment_id`),
                             KEY `ROLE` (`role_id`)

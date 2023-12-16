@@ -1232,7 +1232,7 @@ mysqli_query(
         MODIFY COLUMN `pw_len` INT(5) NOT NULL DEFAULT 0,
         MODIFY COLUMN `restricted_to` VARCHAR(200) DEFAULT NULL,
         MODIFY COLUMN `viewed_no` INT(12) NOT NULL DEFAULT 0,
-        MODIFY COLUMN `complexity_level` VARCHAR(3) NOT NULL DEFAULT '-1',
+        MODIFY COLUMN `complexity_level` VARCHAR(10) NOT NULL DEFAULT '-1',
         MODIFY COLUMN `auto_update_pwd_frequency` tinyint(2) NOT NULL DEFAULT 0,
         MODIFY COLUMN `auto_update_pwd_next_date` VARCHAR(100) NOT NULL DEFAULT '0',
         MODIFY COLUMN `encryption_type` VARCHAR(20) NOT NULL DEFAULT 'not_set';"
@@ -1496,6 +1496,15 @@ if (mysqli_fetch_row($mysqli_result)){
 }
 
 // Alter table templates
+mysqli_query(
+    $db_link,
+    'CREATE TABLE IF NOT EXISTS `' . $pre . 'templates` (
+    `increment_id` int(12) NOT NULL AUTO_INCREMENT,
+    `item_id` int(12) NOT NULL,
+    `category_id` int(12) NOT NULL,
+    PRIMARY KEY (`increment_id`)
+    ) CHARSET=utf8;'
+);
 mysqli_query(
     $db_link,
     "ALTER TABLE `" . $pre . "templates`
