@@ -5427,34 +5427,20 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
                     data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'items.queries.php', 'showDetailsStep3');
 
                     if (data.otp_code !== '' && data.otp_expires_in !== '' && parseInt(data.otp_enabled) === 1) {
-                        $('#card-item-opt_code').html(data.otp_code+'<span class="ml-3 badge rounded-pill badge-info text-dark" style="width:30px;" id="otp_countdown"></span><i class="fa-regular fa-copy ml-2 text-secondary pointer" id="clipboard_otpcode"></i>');   
+                        $('#card-item-opt_code').html(data.otp_code+'</span><i class="fa-regular fa-copy ml-2 text-secondary pointer" id="clipboard_otpcode"></i><span class="ml-2">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span id="countdown_otp" style="position: absolute;right:0px;"></span><span>');   
                         
                         // show countdown
-                        //<span class="ml-3 badge rounded-pill badge-info text-dark" style="width:30px;" id="otp_countdown"></span>
-                        $('#otp_countdown').countdownTimer({
-                            seconds: data.otp_expires_in,
-                            loop: false,
-                            callback: function(){
-                                $('#otp_countdown').html('<i class="fa-solid fa-circle-notch fa-spin"></i>')
-                            }
-                        });
-                        /*
-                        //<span id="countdown_otp" class="ml-2"></span>
                         $("#countdown_otp").countdown360({
-                            radius      : 11,
+                            radius      : 10,
                             seconds     : data.otp_expires_in,
-                            //strokeWidth : 15,
                             fillStyle   : '#56bbd9',
                             strokeStyle : '#007bff',
-                            fontSize    : 12,
+                            fontSize    : 11,
                             fontColor   : '#FFFFFF',
                             label: false,
                             autostart: false,
-                            onComplete  : function () { 
-                                $('#countdown_otp').html('<i class="fa-solid fa-circle-notch fa-spin"></i>');
-                             }
                         }).start();
-                        */
+                        
 
                         // Prepare Clipboard
                         clipboardOTPCode = new ClipboardJS("#clipboard_otpcode", {

@@ -11,7 +11,9 @@ function handleSecurefileConstant()
 {
     if (defined('SECUREFILE') === false || SECUREFILE === 'teampass-seckey.txt' || file_exists(SECUREPATH.'/teampass-seckey.txt') === true) {
         // Anonymize the file if needed
-        define('SECUREFILE', generateRandomKey());
+        if (defined('SECUREFILE') === false) {
+            define('SECUREFILE', generateRandomKey());
+        }
     
         // manage the file itself by renaming it
         if (rename(SECUREPATH.'/teampass-seckey.txt', SECUREPATH.'/'.SECUREFILE) === false) {
