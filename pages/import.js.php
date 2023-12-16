@@ -75,6 +75,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
 
 <script type='text/javascript'>
+    var debugJavascript = false;
+
     // Checkbox
     $('input[type="checkbox"].flat-blue, input[type="radio"].flat-blue').iCheck({
         checkboxClass: 'icheckbox_flat-blue',
@@ -519,15 +521,15 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 toastr.remove();
                 toastr.info('<i class="fas fa-cog fa-spin fa-2x"></i>');
 
-                up.settings.multipart_params = {
-                    "PHPSESSID": "<?php echo session_id(); ?>",
-                    "type_upload": "import_items_from_keepass",
-                    "user_token": store.get('teampassApplication').uploadedFileId
-                };
+                up.settings.multipart_params.PHPSESSID = "<?php echo session_id(); ?>";
+                up.settings.multipart_params.type_upload = "import_items_from_keepass";
+                up.settings.multipart_params.user_token = store.get('teampassApplication').uploadedFileId;			
             },
             FileUploaded: function(upldr, file, object) {
                 var data = prepareExchangedData(object.response, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
-                console.log(data)
+                if (debugJavascript === true) {
+                    console.log(data);
+                }
 
                 if (data.error === true) {
                     toastr.remove();
@@ -592,7 +594,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
     uploader_keepass.init();
 
-
     function launchKeepassItemsImport() {
         // Show spinner
         $('#import-feedback-progress-text')
@@ -606,7 +607,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             'file': store.get('teampassApplication').uploadedFileId,
             'folder-id': parseInt($('#import-keepass-target-folder').val()),
         }
-        console.log(data);
+        if (debugJavascript === true) {
+            console.log(data);
+        }
         // Lauchn ajax query that will insert items into DB
         $.post(
             "sources/import.queries.php", {
@@ -616,7 +619,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             },
             function(data) {
                 data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
-                console.log(data);
+                if (debugJavascript === true) {
+                    console.log(data);
+                }
 
                 if (data.error === true) {
                     toastr.remove();
@@ -644,9 +649,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     // Show spinner
                     $('#import-feedback-progress-text')
                         .html('<i class="fas fa-cog fa-spin ml-4 mr-2"></i><?php echo $lang->get('folder'); ?> <?php echo $lang->get('at_creation'); ?>');
-
-                    console.info("Now creating folders")
-                    //console.log(data);
+                    if (debugJavascript === true) {
+                        console.info("Now creating folders")
+                    }
                     $.post(
                         "sources/import.queries.php", {
                             type: "keepass_create_folders",
@@ -655,7 +660,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         },
                         function(data) {
                             data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
-                            //console.log(data)
+                            if (debugJavascript === true) {
+                                console.log(data);
+                            }
 
                             if (data.error === true) {
                                 toastr.remove();
@@ -681,7 +688,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                 itemsNumber = itemsToAdd.length;
                                 counter = 1;
                                 console.info("Now creating items")
-                                //console.log(data);
+                                if (debugJavascript === true) {
+                                    console.log(data);
+                                }
 
                                 // Recursive loop on each item to add
                                 callRecurive(itemsToAdd, data.folders, counter, itemsNumber); 
@@ -689,7 +698,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                 // recursive action
                                 function callRecurive(itemsList, foldersList, counter, itemsNumber) {
                                     var dfd = $.Deferred();
-                                    //console.log(counter)
 
                                     // Isolate first item
                                     if (itemsList.length > 0) {
@@ -702,7 +710,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                             'items': itemsToAdd[0],
                                             'folders': foldersList,
                                         }
-                                        //console.log(data);
+                                        if (debugJavascript === true) {
+                                            console.log(data);
+                                        }
 
                                         // Do query
                                         $.post(
@@ -713,8 +723,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                             },
                                             function(data) {
                                                 data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
-                                                //console.info("Done")
-                                                //console.log(data)
+                                                if (debugJavascript === true) {
+                                                    console.log(data);
+                                                }
 
                                                 if (data.error === true) {
                                                     // ERROR
@@ -754,8 +765,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                     } else {
                                         // THis is the end.
                                         // Table of items to import is empty
-
-                                        console.log('Importing is now finished');
 
                                         // Show results
                                         $('#import-feedback-progress').addClass('hidden');
