@@ -124,7 +124,6 @@ $server['request_time'] = (int) $superGlobal->get('REQUEST_TIME', 'SERVER');
 
 $get = [];
 $get['page'] = $superGlobal->get('page', 'GET') === null ? '' : $superGlobal->get('page', 'GET');
-$get['language'] = $superGlobal->get('language', 'GET') === null ? '' : $superGlobal->get('language', 'GET');
 $get['otv'] = $superGlobal->get('otv', 'GET') === null ? '' : $superGlobal->get('otv', 'GET');
 
 /* DEFINE WHAT LANGUAGE TO USE */
@@ -164,10 +163,6 @@ if ($session_user_id === null && $post_language === null && $session_user_langua
         $session_user_language = $SETTINGS['default_language'];
     }
 }
-/*if (count($sessionVariables) > 0 ) {
-    syncSessions($sessionVariables);
-}*/
-
 $lang = new Language($session_user_language, __DIR__. '/includes/language/'); 
 
 if (isset($SETTINGS['cpassman_dir']) === false || $SETTINGS['cpassman_dir'] === '') {

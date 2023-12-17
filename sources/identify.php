@@ -463,10 +463,13 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             'user'
         );
         $superGlobal->put('user_agsescardid', $userInfo['agses-usercardid'], 'SESSION', 'user');
-        $session->set('user-language', $userInfo['user-language']);
+        $session->set('user-language', $userInfo['user_language']);
         $superGlobal->put('user_timezone', $userInfo['usertimezone'], 'SESSION', 'user');
+        $session->set('user-language', $userInfo['user-language']);
         $superGlobal->put('session_duration', (int) $dataReceived['duree_session'] * 60, 'SESSION', 'user');
+        $session->set('user-language', $userInfo['user-language']);
         $superGlobal->put('keys_recovery_time', $userInfo['keys_recovery_time'], 'SESSION', 'user');
+        $session->set('user-keys_recovery_time', $userInfo['keys_recovery_time']);
 
         // User signature keys
         $returnKeys = prepareUserEncryptionKeys($userInfo, $passwordClear);        

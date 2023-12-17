@@ -63,6 +63,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     exit;
 }
 
+$lang = new Language($session->get('user-language'), __DIR__. '/../includes/language/'); 
 
 // Define Timezone
 date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');

@@ -213,7 +213,7 @@ if (null !== $post_type) {
                         'gestionnaire' => empty($is_manager) === true ? 0 : $is_manager,
                         'read_only' => empty($is_read_only) === true ? 0 : $is_read_only,
                         'personal_folder' => empty($has_personal_folder) === true ? 0 : $has_personal_folder,
-                        'user-language' => $SETTINGS['default_language'],
+                        'user_language' => $SETTINGS['default_language'],
                         'fonction_id' => is_null($groups) === true ? '' : implode(';', $groups),
                         'groupes_interdits' => is_null($forbidden_flds) === true ? '' : implode(';', $forbidden_flds),
                         'groupes_visibles' => is_null($allowed_flds) === true ? '' : implode(';', $allowed_flds),
@@ -2198,7 +2198,7 @@ if (null !== $post_type) {
                     array(
                         'email' => $inputData['email'],
                         'usertimezone' => $inputData['timezone'],
-                        'user-language' => $inputData['language'],
+                        'user_language' => $inputData['language'],
                         'treeloadstrategy' => $inputData['treeloadstrategy'],
                         'agses-usercardid' => $inputData['agsescardid'],
                         'name' => $inputData['name'],
@@ -2638,7 +2638,7 @@ if (null !== $post_type) {
                     'groupes_interdits' => '',
                     'groupes_visibles' => '',
                     'last_pw_change' => time(),
-                    'user-language' => $SETTINGS['default_language'],
+                    'user_language' => $SETTINGS['default_language'],
                     'encrypted_psk' => '',
                     'isAdministratedByRole' => (isset($SETTINGS['ldap_new_user_is_administrated_by']) === true && empty($SETTINGS['ldap_new_user_is_administrated_by']) === false) ? $SETTINGS['ldap_new_user_is_administrated_by'] : 0,
                     'public_key' => $userKeys['public_key'],
@@ -3461,13 +3461,13 @@ if (null !== $post_type) {
         || ($_SESSION['user_id'] === $value[1])
     ) {
         if ($value[0] === 'userlanguage') {
-            $value[0] = 'user-language';
+            $value[0] = 'user_language';
             $post_newValue = strtolower($post_newValue);
         }
         // Check that operation is allowed
         if (in_array(
             $value[0],
-            array('login', 'pw', 'email', 'treeloadstrategy', 'usertimezone', 'yubico_user_key', 'yubico_user_id', 'agses-usercardid', 'user-language', 'psk')
+            array('login', 'pw', 'email', 'treeloadstrategy', 'usertimezone', 'yubico_user_key', 'yubico_user_id', 'agses-usercardid', 'user_language', 'psk')
         )) {
             DB::update(
                 prefixTable('users'),

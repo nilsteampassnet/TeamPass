@@ -38,7 +38,7 @@ require_once __DIR__.'/../sources/main.functions.php';
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
-$lang = new Language(); 
+$lang = new Language($session->get('user-language'), __DIR__. '/../includes/language/'); 
 //session_name('teampass_session');
 //session_start();
 
