@@ -526,7 +526,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         }
     });
 
-    $('#profile-keys_download-date').text('<?php echo $_SESSION['user']['keys_recovery_time'] === NULL ? $lang->get('none') : date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $_SESSION['user']['keys_recovery_time']); ?>');
+    $('#profile-keys_download-date').text('<?php echo null === $session->get('user-keys_recovery_time') ? $lang->get('none') : date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $session->get('user-keys_recovery_time')); ?>');
 
     $("#open-dialog-keys-download").on('click', function(event) {
         event.preventDefault();

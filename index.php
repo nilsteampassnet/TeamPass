@@ -989,7 +989,7 @@ if (($session_validite_pw === null
 
     // Case where login attempts have been identified
     if ((int) $superGlobal->get('unsuccessfull_login_attempts', 'SESSION') !== 0
-        && (bool) $superGlobal->get('unsuccessfull_login_attempts_shown', 'SESSION') === false
+        && (bool) $session->get('user-unsuccessfull_login_attempts_shown') === false
     ) {
         ?>
                     <input type="hidden" id="user-login-attempts" value="1">

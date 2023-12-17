@@ -187,9 +187,9 @@ if (isset($languagesList) === false) {
     }
 }
 
-if (isset($_SESSION['user_timezone']) === true && $_SESSION['user_timezone'] !== 'not_defined') {
+if (null !== $session->get('user-timezone') && $session->get('user-timezone') !== 'not_defined') {
     // use user timezone
-    date_default_timezone_set($_SESSION['user_timezone']);
+    date_default_timezone_set($session->get('user-timezone'));
 } elseif (isset($SETTINGS['timezone']) === false || $SETTINGS['timezone'] === null) {
     // use server timezone
     date_default_timezone_set('UTC');

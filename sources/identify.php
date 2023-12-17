@@ -48,6 +48,7 @@ $superGlobal = new SuperGlobal();
 $lang = new Language(); 
 session_name('teampass_session');
 session_start();
+$session = new Session();
 
 // Load config if $SETTINGS not defined
 try {
@@ -113,8 +114,82 @@ if ($post_type === 'identify_user') {
     // Ensure Complexity levels are translated
     defineComplexity();
 
+    /**
+     * Permits to handle login attempts
+     *
+     * @param Symfony\Component\HttpFoundation\Session\Session $session
+     * @param string $post_data
+     * @param array $SETTINGS
+     * @param TeampassClasses\Language\Language $lang
+     * @return bool|string
+     */
+    function handleAuthAttempts($session, $post_data, $SETTINGS, $lang): bool|string
+    {
+        $sessionPwdAttempts = $session->get('pwd_attempts');
+        $nextPossibleAttempts = (int) $session->get('next_possible_pwd_attempts');
+
+        // Check if the user is currently within the waiting period
+        if ($nextPossibleAttempts > 0 && time() < $nextPossibleAttempts) {
+            // Brute force wait
+            $remainingSeconds = $nextPossibleAttempts - time();
+            $errorResponse = prepareExchangedData([
+                'value' => 'bruteforce_wait',
+                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
+                'initial_url' => isset($sessionUrl) ? $sessionUrl : '',
+                'pwd_attempts' => 0,
+                'error' => true,
+                'message' => $lang->get('error_bad_credentials_more_than_3_times'),
+                'remaining_seconds' => $remainingSeconds,
+            ], 'encode');
+
+            echo $errorResponse;
+            return false;
+        }
+
+        // Increment the counter of login attempts
+        $sessionPwdAttempts = ($sessionPwdAttempts === '') ? 1 : ++$sessionPwdAttempts;
+        $session->set('pwd_attempts', $sessionPwdAttempts);
+
+        // Check for brute force attempts
+        if ($sessionPwdAttempts <= 3) {
+            // Identify the user through Teampass process
+            identifyUser($post_data, $SETTINGS);
+        } else {
+            // Reset attempts and set waiting period on the fourth consecutive attempt
+            $session->set('pwd_attempts', 0);
+
+            if ($sessionPwdAttempts === 4) {
+                // On the fourth consecutive attempt, trigger the waiting period
+                $nextPossibleAttempts = time() + 10;
+                $session->set('next_possible_pwd_attempts', $nextPossibleAttempts);
+
+                // Send an error response indicating the waiting period
+                $errorResponse = prepareExchangedData([
+                    'value' => 'bruteforce_wait',
+                    'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
+                    'initial_url' => isset($sessionUrl) ? $sessionUrl : '',
+                    'pwd_attempts' => 0,
+                    'error' => true,
+                    'message' => $lang->get('error_bad_credentials_more_than_3_times'),
+                    'remaining_seconds' => 10,
+                ], 'encode');
+
+                echo $errorResponse;
+                return false;
+            }
+
+            // Identify the user through Teampass process
+            identifyUser($post_data, $SETTINGS);
+        }
+
+        return true;
+    }
+
+    handleAuthAttempts($session, $post_data, $SETTINGS, $lang);
+
+/*
     // Prepare GET variables
-    $sessionPwdAttempts = $superGlobal->get('pwd_attempts', 'SESSION');
+    $sessionPwdAttempts = $session->get('pwd_attempts');
     // increment counter of login attempts
     if ($sessionPwdAttempts === '') {
         $sessionPwdAttempts = 1;
@@ -122,39 +197,41 @@ if ($post_type === 'identify_user') {
         ++$sessionPwdAttempts;
     }
 
-    $superGlobal->put('pwd_attempts', $sessionPwdAttempts, 'SESSION');
+    $session->set('pwd_attempts', $sessionPwdAttempts);
     // manage brute force
     if ($sessionPwdAttempts <= 3) {
+        $session->set('next_possible_pwd_attempts', 0);
+        // identify the user through Teampass process
+        identifyUser(
+            $post_data,
+            $SETTINGS
+        );
+    } elseif ((int) $session->get('next_possible_pwd_attempts') > 0 && time() > (int) $session->get('next_possible_pwd_attempts') && $sessionPwdAttempts > 3) {
         $sessionPwdAttempts = 0;
+        $session->set('next_possible_pwd_attempts', 0);
 
         // identify the user through Teampass process
         identifyUser(
             $post_data,
             $SETTINGS
         );
-    } elseif (time() > (int) $superGlobal->get('next_possible_pwd_attempts', 'SESSION') && $sessionPwdAttempts > 3) {
-        $sessionPwdAttempts = 0;
-        // identify the user through Teampass process
-        identifyUser(
-            $post_data,
-            $SETTINGS
-        );
     } else {
-        $superGlobal->put('next_possible_pwd_attempts', (time() + 10), 'SESSION');
+        $session->set('next_possible_pwd_attempts', (time() + 10));
+        $session->set('pwd_attempts', 0);
         // Encrypt data to return
         echo prepareExchangedData(
             [
                 'value' => 'bruteforce_wait',
                 'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
                 'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
-                'pwd_attempts' => (int) $sessionPwdAttempts,
+                'pwd_attempts' => 0,
                 'error' => true,
                 'message' => $lang->get('error_bad_credentials_more_than_3_times'),
             ],
             'encode'
         );
         return false;
-    }
+    }*/
     // ---
     // ---
     // ---
@@ -197,7 +274,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
 
     // Prepare GET variables
     $sessionAdmin = $superGlobal->get('user_admin', 'SESSION');
-    $sessionPwdAttempts = $superGlobal->get('pwd_attempts', 'SESSION');
+    $sessionPwdAttempts = $session->get('pwd_attempts');
     $sessionUrl = $superGlobal->get('initial_url', 'SESSION');
     $server = [];
     $server['PHP_AUTH_USER'] = $superGlobal->get('PHP_AUTH_USER', 'SERVER');
@@ -420,7 +497,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         ) === true
     ) {
         $superGlobal->put('autoriser', true, 'SESSION');
-        $superGlobal->put('pwd_attempts', 0, 'SESSION');
+        $session->set('pwd_attempts', 0);
 
         // Check if any unsuccessfull login tries exist
         $attemptsInfos = handleLoginAttempts(
@@ -433,9 +510,9 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         $sessionVariables = [];
             
         // Save account in SESSION
-        $superGlobal->put('unsuccessfull_login_attempts_list', $attemptsInfos['attemptsList'], 'SESSION', 'user');
-        $superGlobal->put('unsuccessfull_login_attempts_shown', $attemptsInfos['attemptsCount'] === 0 ? true : false, 'SESSION', 'user');
-        $superGlobal->put('unsuccessfull_login_attempts_nb', DB::count(), 'SESSION', 'user');
+        $session->set('user-unsuccessfull_login_attempts_list', $attemptsInfos['attemptsList'] === 0 ? true : false);
+        $session->set('user-unsuccessfull_login_attempts_shown', $attemptsInfos['attemptsCount'] === 0 ? true : false);
+        $session->set('user-unsuccessfull_login_attempts_nb', DB::count());
         $superGlobal->put('login', stripslashes($username), 'SESSION');
         $superGlobal->put('name', empty($userInfo['name']) === false ? stripslashes($userInfo['name']) : '', 'SESSION');
         $superGlobal->put('lastname', empty($userInfo['lastname']) === false ? stripslashes($userInfo['lastname']) : '', 'SESSION');
@@ -464,11 +541,8 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         );
         $superGlobal->put('user_agsescardid', $userInfo['agses-usercardid'], 'SESSION', 'user');
         $session->set('user-language', $userInfo['user_language']);
-        $superGlobal->put('user_timezone', $userInfo['usertimezone'], 'SESSION', 'user');
-        $session->set('user-language', $userInfo['user-language']);
-        $superGlobal->put('session_duration', (int) $dataReceived['duree_session'] * 60, 'SESSION', 'user');
-        $session->set('user-language', $userInfo['user-language']);
-        $superGlobal->put('keys_recovery_time', $userInfo['keys_recovery_time'], 'SESSION', 'user');
+        $session->set('user-timezone', $userInfo['usertimezone']);
+        $session->set('user-session_duration', $userInfo['duree_session']);
         $session->set('user-keys_recovery_time', $userInfo['keys_recovery_time']);
 
         // User signature keys
@@ -791,8 +865,8 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                     && $superGlobal->get('private_key', 'SESSION', 'user') !== 'none' ? true : false,
                 'session_key' => $superGlobal->get('key', 'SESSION'),
                 'can_create_root_folder' => $superGlobal->get('can_create_root_folder', 'SESSION') !== null ? (int) $superGlobal->get('can_create_root_folder', 'SESSION') : '',
-                'shown_warning_unsuccessful_login' => $superGlobal->get('unsuccessfull_login_attempts_shown', 'SESSION', 'user'),
-                'nb_unsuccessful_logins' => $superGlobal->get('unsuccessfull_login_attempts_nb', 'SESSION', 'user'),
+                'shown_warning_unsuccessful_login' => $session->get('user-unsuccessfull_login_attempts_shown'),
+                'nb_unsuccessful_logins' => $session->get('user-unsuccessfull_login_attempts_nb'),
                 'upgrade_needed' => isset($userInfo['upgrade_needed']) === true ? (int) $userInfo['upgrade_needed'] : 0,
                 'special' => isset($userInfo['special']) === true ? (int) $userInfo['special'] : 0,
             ],
@@ -820,8 +894,8 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                     && $superGlobal->get('private_key', 'SESSION', 'user') !== 'none' ? true : false,
                 'session_key' => $superGlobal->get('key', 'SESSION'),
                 'can_create_root_folder' => $superGlobal->get('can_create_root_folder', 'SESSION') !== null ? (int) $superGlobal->get('can_create_root_folder', 'SESSION') : '',
-                'shown_warning_unsuccessful_login' => $superGlobal->get('unsuccessfull_login_attempts_shown', 'SESSION', 'user'),
-                'nb_unsuccessful_logins' => $superGlobal->get('unsuccessfull_login_attempts_nb', 'SESSION', 'user'),
+                'shown_warning_unsuccessful_login' => $session->get('user-unsuccessfull_login_attempts_shown'),
+                'nb_unsuccessful_logins' => $session->get('user-unsuccessfull_login_attempts_nb'),
             ],
             'encode'
         );
@@ -856,8 +930,8 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                     && $superGlobal->get('private_key', 'SESSION', 'user') !== 'none' ? true : false,
                 'session_key' => $superGlobal->get('key', 'SESSION'),
                 'can_create_root_folder' => $superGlobal->get('can_create_root_folder', 'SESSION') !== null ? (int) $superGlobal->get('can_create_root_folder', 'SESSION') : '',
-                'shown_warning_unsuccessful_login' => $superGlobal->get('unsuccessfull_login_attempts_shown', 'SESSION', 'user'),
-                'nb_unsuccessful_logins' => $superGlobal->get('unsuccessfull_login_attempts_nb', 'SESSION', 'user'),
+                'shown_warning_unsuccessful_login' => $session->get('user-unsuccessfull_login_attempts_shown'),
+                'nb_unsuccessful_logins' => $session->get('user-unsuccessfull_login_attempts_nb'),
             ],
             'encode'
         );
@@ -880,8 +954,8 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                     && $superGlobal->get('private_key', 'SESSION', 'user') !== 'none' ? true : false,
             'session_key' => $superGlobal->get('key', 'SESSION'),
             'can_create_root_folder' => $superGlobal->get('can_create_root_folder', 'SESSION') !== null ? (int) $superGlobal->get('can_create_root_folder', 'SESSION') : '',
-            'shown_warning_unsuccessful_login' => $superGlobal->get('unsuccessfull_login_attempts_shown', 'SESSION', 'user'),
-            'nb_unsuccessful_logins' => $superGlobal->get('unsuccessfull_login_attempts_nb', 'SESSION', 'user'),
+            'shown_warning_unsuccessful_login' => $session->get('user-unsuccessfull_login_attempts_shown'),
+            'nb_unsuccessful_logins' => $session->get('user-unsuccessfull_login_attempts_nb'),
         ],
         'encode'
     );
@@ -1475,7 +1549,7 @@ function yubicoMFACheck($dataReceived, string $userInfo, array $SETTINGS): array
 $lang = new Language(); 
     $sessionAdmin = $superGlobal->get('user_admin', 'SESSION');
     $sessionUrl = $superGlobal->get('initial_url', 'SESSION');
-    $sessionPwdAttempts = $superGlobal->get('pwd_attempts', 'SESSION');
+    $sessionPwdAttempts = $session->get('pwd_attempts');
     // Init
     $yubico_key = htmlspecialchars_decode($dataReceived['yubico_key']);
     $yubico_user_key = htmlspecialchars_decode($dataReceived['yubico_user_key']);
@@ -1640,7 +1714,7 @@ function googleMFACheck(string $username, array $userInfo, $dataReceived, array 
     ) {
         $sessionAdmin = $superGlobal->get('user_admin', 'SESSION');
         $sessionUrl = $superGlobal->get('initial_url', 'SESSION');
-        $sessionPwdAttempts = $superGlobal->get('pwd_attempts', 'SESSION');
+        $sessionPwdAttempts = $session->get('pwd_attempts');
         // create new instance
         $tfa = new TwoFactorAuth($SETTINGS['ga_website_name']);
         // Init
@@ -1734,7 +1808,7 @@ function duoMFACheck(
     $superGlobal = new SuperGlobal();
 $lang = new Language(); 
 
-    $sessionPwdAttempts = $superGlobal->get('pwd_attempts', 'SESSION');
+    $sessionPwdAttempts = $session->get('pwd_attempts');
     $saved_state = null !== $superGlobal->get('duo_state','SESSION') ? $superGlobal->get('duo_state','SESSION') : '';
     $duo_status = null !== $superGlobal->get('duo_status','SESSION') ? $superGlobal->get('duo_status','SESSION') : '';
 
@@ -1873,7 +1947,7 @@ $lang = new Language();
             $superGlobal->put('login', $username, 'SESSION');
             
             // If we got here we can reset the password attempts
-            $superGlobal->put('pwd_attempts', 0, 'SESSION');
+            $session->set('pwd_attempts', 0);
             unset($superGlobal);
             return [
                 'error' => false,
@@ -2197,8 +2271,8 @@ function identifyDoInitialChecks(
     try {
         $checks->get_is_too_much_attempts($sessionPwdAttempts);
     } catch (Exception $e) {
-        $superGlobal->put('next_possible_pwd_attempts', time() + 10, 'SESSION');
-        $superGlobal->put('pwd_attempts', 0, 'SESSION');
+        $session->set('next_possible_pwd_attempts', (time() + 10));
+        $session->set('pwd_attempts', 0);
 
         logEvents($SETTINGS, 'failed_auth', 'user_not_exists', '', stripslashes($username), stripslashes($username));
 

@@ -318,22 +318,22 @@ foreach ($_SESSION['user_roles'] as $role) {
                             <div class="tab-pane<?php echo $get['tab'] === 'timeline' ? ' active' : ''; ?>" id="tab_timeline">
                                 <?php
                                 if (
-                                    isset($_SESSION['user']['unsuccessfull_login_attempts_list']) === true
-                                    && $_SESSION['user']['unsuccessfull_login_attempts_nb'] !== 0
-                                    && $_SESSION['user']['unsuccessfull_login_attempts_shown'] === false
+                                    null !== $session->get('user-unsuccessfull_login_attempts_list')
+                                    && $session->get('user-unsuccessfull_login_attempts_nb') !== 0
+                                    && $session->get('user-unsuccessfull_login_attempts_shown') === false
                                 ) {
                                     ?>
                                     <div class="alert alert-warning mt-4">
                                         <span class="text-bold"><?php echo $lang->get('last_login_attempts'); ?></span>
                                         <ul class="">
                                             <?php
-                                                foreach ($_SESSION['user']['unsuccessfull_login_attempts_list'] as $entry) {
+                                                foreach ($session->get('user-unsuccessfull_login_attempts_list') as $entry) {
                                                     echo '<li class="">' . $entry . '</li>';
                                                 } ?>
                                         </ul>
                                     </div>
                                 <?php
-                                    $_SESSION['user']['unsuccessfull_login_attempts_shown'] = true;
+                                    $session->set('user-unsuccessfull_login_attempts_shown', true);
                                 }
                                 ?>
                                 <div class="mt-4">
@@ -401,7 +401,7 @@ foreach ($_SESSION['user_roles'] as $role) {
                                                 foreach ($zones as $key => $zone) {
                                                     echo '
                                                 <option value="' . $key . '"',
-                                                    isset($_SESSION['user_timezone']) === true && $_SESSION['user_timezone'] === $key ?
+                                                    null !== $session->get('user-timezone') && $session->get('user-timezone') === $key ?
                                                     ' selected' :
                                                     (isset($SETTINGS['timezone']) === true && $SETTINGS['timezone'] === $key ? ' selected' : ''),
                                                 '>' . $zone . '</option>';

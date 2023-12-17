@@ -2209,7 +2209,7 @@ if (null !== $post_type) {
                 );
 
                 // Update SETTINGS
-                $_SESSION['user_timezone'] = $inputData['timezone'];
+                $session->set('user-timezone', $inputData['timezone']);
                 $_SESSION['name'] = $inputData['name'];
                 $_SESSION['lastname'] = $inputData['lastname'];
                 $_SESSION['user_email'] = $inputData['email'];
@@ -3491,7 +3491,7 @@ if (null !== $post_type) {
                 $_SESSION['user']['user_treeloadstrategy'] = $post_newValue;
             } elseif ($value[0] === 'usertimezone') {
                 // special case for usertimezone where session needs to be updated
-                $_SESSION['user_timezone'] = $post_newValue;
+                $session->set('user-timezone', $post_newValue);
             } elseif ($value[0] === 'userlanguage') {
                 // special case for user_language where session needs to be updated
                 $session->set('user-language', $post_newValue);

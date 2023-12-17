@@ -4239,7 +4239,7 @@ function handleUserRecoveryKeysDownload(int $userId, array $SETTINGS):string
             'id=%i',
             $userId
         );
-        $_SESSION['user']['keys_recovery_time'] = $now;
+        $session->set('user-keys_recovery_time', $now);
 
         //Log into DB the user's disconnection
         logEvents($SETTINGS, 'user_mngt', 'at_user_keys_download', (string) $userId, $userInfo['login']);
