@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\Language\Language;
+use Symfony\Component\HttpFoundation\Session\Session;
 
 header('X-XSS-Protection: 1; mode=block');
 header('X-Frame-Options: SameOrigin');
@@ -80,7 +81,9 @@ require_once __DIR__.'/sources/main.functions.php';
 
 // init
 loadClasses();
+$session = new Session();
 $superGlobal = new SuperGlobal();
+$sessionVariables = [];
 
 // Quick major version check -> upgrade needed?
 if (isset($SETTINGS['teampass_version']) === true && version_compare(TP_VERSION, $SETTINGS['teampass_version']) > 0) {
@@ -94,7 +97,6 @@ if (isset($SETTINGS['teampass_version']) === true && version_compare(TP_VERSION,
     exit;
 }
 
-
 if (isset($SETTINGS['cpassman_url']) === false || $SETTINGS['cpassman_url'] === '') {
     $SETTINGS['cpassman_url'] = $superGlobal->get('REQUEST_URI', 'SERVER');
 }
@@ -104,7 +106,8 @@ require_once $SETTINGS['cpassman_dir'] . '/sources/core.php';
 // Prepare POST variables
 $post_language = filter_input(INPUT_POST, 'language', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 // Prepare superGlobal variables
-$session_user_language = $superGlobal->get('user_language', 'SESSION', 'user');
+//$session_user_language = $superGlobal->get('user_language', 'SESSION', 'user');
+$session_user_language = $session->get('user_language');
 $session_user_id = $superGlobal->get('user_id', 'SESSION');
 $session_user_admin = (int) $superGlobal->get('user_admin', 'SESSION');
 $session_user_human_resources = (int) $superGlobal->get('user_can_manage_all_users', 'SESSION');
@@ -139,29 +142,45 @@ if ($session_user_id === null && $post_language === null && $session_user_langua
         ]
     );
     if (empty($dataLanguage['valeur'])) {
-        $superGlobal->put('user_language', 'english', 'SESSION', 'user');
+        //$superGlobal->put('user_language', 'english', 'SESSION', 'user');
+        //$sessionVariables['user_language'] = 'english';
+        $session->set('user_language', 'english');
         $superGlobal->put('user_language_flag', 'us.png', 'SESSION');
         $session_user_language = 'english';
     } else {
-        $superGlobal->put('user_language', $dataLanguage['valeur'], 'SESSION', 'user');
+        //$superGlobal->put('user_language', $dataLanguage['valeur'], 'SESSION', 'user');
+        //$sessionVariables['user_language'] = $dataLanguage['valeur'];
+        $session->set('user_language', $dataLanguage['valeur']);
         $superGlobal->put('user_language_flag', $dataLanguage['flag'], 'SESSION');
         $session_user_language = $dataLanguage['valeur'];
     }
 } elseif (isset($SETTINGS['default_language']) === true && $session_user_language === null) {
-    $superGlobal->put('user_language', $SETTINGS['default_language'], 'SESSION', 'user');
+    //$superGlobal->put('user_language', $SETTINGS['default_language'], 'SESSION', 'user');
+    //$sessionVariables['user_language'] = $SETTINGS['default_language'];
+    $session->set('user_language', $SETTINGS['default_language']);
     $session_user_language = $SETTINGS['default_language'];
 } elseif ($post_language !== null) {
-    $superGlobal->put('user_language', $post_language, 'SESSION', 'user');
+    //$superGlobal->put('user_language', $post_language, 'SESSION', 'user');
+    //$sessionVariables['user_language'] = $post_language;
+    $session->set('user_language', $post_language);
     $session_user_language = $post_language;
 } elseif ($session_user_language === null || empty($session_user_language) === true) {
     if ($post_language !== null) {
-        $superGlobal->put('user_language', $post_language, 'SESSION', 'user');
+        //$superGlobal->put('user_language', $post_language, 'SESSION', 'user');
+        //$sessionVariables['user_language'] = $post_language;
+        $session->set('user_language', $post_language);
         $session_user_language = $post_language;
     } elseif ($session_user_language !== null) {
-        $superGlobal->put('user_language', $SETTINGS['default_language'], 'SESSION', 'user');
+        //$superGlobal->put('user_language', $SETTINGS['default_language'], 'SESSION', 'user');
+        //$sessionVariables['user_language'] = $SETTINGS['default_language'];
+        $session->set('user_language', $SETTINGS['default_language']);
         $session_user_language = $SETTINGS['default_language'];
     }
 }
+/*if (count($sessionVariables) > 0 ) {
+    syncSessions($sessionVariables);
+}*/
+
 $lang = new Language($session_user_language, __DIR__. '/includes/language/'); 
 
 if (isset($SETTINGS['cpassman_dir']) === false || $SETTINGS['cpassman_dir'] === '') {

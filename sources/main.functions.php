@@ -49,6 +49,7 @@ use TeampassClasses\Encryption\Encryption;
 //use phpseclib3\Exception\NoKeyLoadedException;
 //use phpseclib\Crypt\RSA;
 //use phpseclib\Crypt\AES;
+use Symfony\Component\HttpFoundation\Session\Session;
 
 // Load config if $SETTINGS not defined
 if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir']) === true) {
@@ -73,6 +74,7 @@ function langHdl(string $string): string
     }
 
     // Load
+    $session = new Session();
     $superGlobal = new SuperGlobal();
     $antiXss = new AntiXSS();
     // Get language string
@@ -4330,4 +4332,31 @@ function returnIfSet($value, $retFalse = '', $retTrue = null): mixed
 {
 
     return isset($value) === true ? ($retTrue === null ? $value : $retTrue) : $retFalse;
+}
+
+/**
+ * Permits to sync between PHP and Symfony sessions
+ *
+ * @param array $variables
+ * @return void
+ */
+function syncSessions(array $variables)
+{
+    // Create a Symfony session
+    $session = new Session();
+
+    // Retrieve the Symfony session data
+    $symfonyData = $session->all();
+
+    foreach ($variables as $variableName => $variableValue) {
+        // Handle variable removal
+        if ($variableValue === null) {
+            unset($_SESSION[$variableName]);
+            $session->remove($variableName);
+        } else {
+            // Update or create variable
+            $_SESSION[$variableName] = $variableValue;
+            $session->set($variableName, $variableValue);
+        }
+    }
 }

@@ -10,7 +10,7 @@
             "php": "8.1"
         }
     },
-    "version": "3.1.0",
+    "version": "3.1.1",
     "keywords": ["passwords", "manager", "collaborative", "vault", "security"],
     "homepage": "https://www.teampass.net",
     "license": "GPL-3.0-only",
@@ -118,6 +118,7 @@
         "teampassclasses/encryption": "dev-master",
         "teampassclasses/language": "dev-master",
         "duosecurity/duo_universal_php": "^1.0",
-        "spomky-labs/otphp": "^11.2"
+        "spomky-labs/otphp": "^11.2",
+        "symfony/http-foundation": "^6.4"
     }
 }

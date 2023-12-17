@@ -82,7 +82,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         constVisibleOTP = false,
         userClipboard,
         ProcessInProgress = false,
-        debugJavascript = false;
+        debugJavascript = true;
 
     browserSession(
         'init',

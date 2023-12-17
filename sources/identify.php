@@ -428,6 +428,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             $username,
             $SETTINGS,
         );
+        $sessionVariables = [];
             
         // Save account in SESSION
         $superGlobal->put('unsuccessfull_login_attempts_list', $attemptsInfos['attemptsList'], 'SESSION', 'user');
@@ -460,7 +461,9 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             'user'
         );
         $superGlobal->put('user_agsescardid', $userInfo['agses-usercardid'], 'SESSION', 'user');
-        $superGlobal->put('user_language', $userInfo['user_language'], 'SESSION', 'user');
+        //$superGlobal->put('user_language', $userInfo['user_language'], 'SESSION', 'user');
+        //$sessionVariables['user_language'] = $userInfo['user_language'];
+        $session->set('user_language', $userInfo['user_language']);
         $superGlobal->put('user_timezone', $userInfo['usertimezone'], 'SESSION', 'user');
         $superGlobal->put('session_duration', (int) $dataReceived['duree_session'] * 60, 'SESSION', 'user');
         $superGlobal->put('keys_recovery_time', $userInfo['keys_recovery_time'], 'SESSION', 'user');
