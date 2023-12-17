@@ -93,7 +93,7 @@ $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 $antiXss = new AntiXSS();
 
 // User's language loading
-require_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user']['user_language'] . '.php';
+require_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $session->get('user-language') . '.php';
 
 // Prepare POST variables
 $id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);

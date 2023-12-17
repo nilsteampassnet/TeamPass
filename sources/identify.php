@@ -37,6 +37,7 @@ use PasswordLib\PasswordLib;
 use Duo\DuoUniversal\Client;
 use Duo\DuoUniversal\DuoException;
 use RobThree\Auth\TwoFactorAuth;
+use Symfony\Component\HttpFoundation\Session\Session;
 
 // Load functions
 require_once 'main.functions.php';
@@ -192,6 +193,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     $antiXss = new AntiXSS();
     $superGlobal = new SuperGlobal();
     $lang = new Language(); 
+    $session = new Session();
 
     // Prepare GET variables
     $sessionAdmin = $superGlobal->get('user_admin', 'SESSION');
@@ -461,9 +463,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             'user'
         );
         $superGlobal->put('user_agsescardid', $userInfo['agses-usercardid'], 'SESSION', 'user');
-        //$superGlobal->put('user_language', $userInfo['user_language'], 'SESSION', 'user');
-        //$sessionVariables['user_language'] = $userInfo['user_language'];
-        $session->set('user_language', $userInfo['user_language']);
+        $session->set('user-language', $userInfo['user-language']);
         $superGlobal->put('user_timezone', $userInfo['usertimezone'], 'SESSION', 'user');
         $superGlobal->put('session_duration', (int) $dataReceived['duree_session'] * 60, 'SESSION', 'user');
         $superGlobal->put('keys_recovery_time', $userInfo['keys_recovery_time'], 'SESSION', 'user');
@@ -1565,7 +1565,7 @@ function ldapCreateUser(string $login, string $passwordClear, string $userEmail,
             'groupes_interdits' => '',
             'groupes_visibles' => '',
             'last_pw_change' => (int) time(),
-            'user_language' => (string) $SETTINGS['default_language'],
+            'user-language' => (string) $SETTINGS['default_language'],
             'encrypted_psk' => '',
             'isAdministratedByRole' => isset($SETTINGS['ldap_new_user_is_administrated_by']) === true && empty($SETTINGS['ldap_new_user_is_administrated_by']) === false ? $SETTINGS['ldap_new_user_is_administrated_by'] : 0,
             'public_key' => $userKeys['public_key'],

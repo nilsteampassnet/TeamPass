@@ -27,6 +27,7 @@ declare(strict_types=1);
 use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\Language\Language;
 use TeampassClasses\PerformChecks\PerformChecks;
+use Symfony\Component\HttpFoundation\Session\Session;
 
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
@@ -35,6 +36,7 @@ require_once __DIR__.'/../sources/main.functions.php';
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
 $lang = new Language(); 
+$session = new Session();
 
 // Load config if $SETTINGS not defined
 try {
@@ -415,7 +417,7 @@ foreach ($_SESSION['user_roles'] as $role) {
                                                 <?php
                                                     foreach ($languages as $language) {
                                                         echo '<option value="' . $language['name'] . '"',
-                                                        strtolower($_SESSION['user']['user_language']) === strtolower($language['name']) ?
+                                                        strtolower($session->get('user-language')) === strtolower($language['name']) ?
                                                         ' selected="selected"' : '',
                                                     '>' . $language['label'] . '</option>';
                                                     }

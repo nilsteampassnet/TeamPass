@@ -28,6 +28,8 @@ declare(strict_types=1);
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\Language\Language;
+use Symfony\Component\HttpFoundation\Session\Session;
+
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
 
@@ -35,6 +37,7 @@ require_once __DIR__.'/../sources/main.functions.php';
 loadClasses();
 $superGlobal = new SuperGlobal();
 $lang = new Language(); 
+$session = new Session();
 
 if ($superGlobal->get('key', 'SESSION') === null) {
     die('Hacking attempt...');
@@ -92,7 +95,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     })
 
     // Select user properties
-    $('#profile-user-language option[value=<?php echo $_SESSION['user']['user_language'];?>').attr('selected','selected');
+    $('#profile-user-language option[value=<?php echo $session->get('user-language');?>').attr('selected','selected');
 
 
     // AVATAR IMPORT
@@ -259,7 +262,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     $('#profile-user-email').val(data.email)
 
                     // reload page in case of language change
-                    if ($('#profile-user-language').val().toLowerCase() !== '<?php echo $_SESSION['user']['user_language'];?>') {
+                    if ($('#profile-user-language').val().toLowerCase() !== '<?php echo $session->get('user-language');?>') {
                         // prepare reload
                         $(this).delay(3000).queue(function() {
                             document.location.href = "index.php?page=profile";

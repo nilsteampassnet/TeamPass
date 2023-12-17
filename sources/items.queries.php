@@ -27,6 +27,7 @@ use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
 use OTPHP\TOTP;
+use Symfony\Component\HttpFoundation\Session\Session;
 
 // Load functions
 require_once 'main.functions.php';
@@ -37,6 +38,7 @@ $superGlobal = new SuperGlobal();
 $lang = new Language(); 
 session_name('teampass_session');
 session_start();
+$session = new Session();
 
 // Load config if $SETTINGS not defined
 try {
@@ -95,7 +97,7 @@ if (isset($SETTINGS['timezone']) === true) {
     date_default_timezone_set('UTC');
 }
 
-require_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user']['user_language'] . '.php';
+require_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $session->get('user-language') . '.php';
 header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, must-revalidate');
 

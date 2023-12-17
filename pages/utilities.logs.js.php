@@ -28,6 +28,8 @@ declare(strict_types=1);
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\Language\Language;
+use Symfony\Component\HttpFoundation\Session\Session;
+
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
 
@@ -35,6 +37,7 @@ require_once __DIR__.'/../sources/main.functions.php';
 loadClasses();
 $superGlobal = new SuperGlobal();
 $lang = new Language(); 
+$session = new Session();
 
 if ($superGlobal->get('key', 'SESSION') === null) {
     die('Hacking attempt...');
@@ -187,7 +190,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             }
         },
         'language': {
-            'url': '<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user']['user_language']; ?>.txt'
+            'url': '<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $session->get('user-language'); ?>.txt'
         },
         'preDrawCallback': function() {
             toastr.remove();
@@ -235,7 +238,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 }*/
             },
             'language': {
-                'url': '<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user']['user_language']; ?>.txt'
+                'url': '<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $session->get('user-language'); ?>.txt'
             },
             'preDrawCallback': function() {
                 toastr.remove();
@@ -284,7 +287,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 }*/
             },
             'language': {
-                'url': '<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user']['user_language']; ?>.txt'
+                'url': '<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $session->get('user-language'); ?>.txt'
             },
             'preDrawCallback': function() {
                 toastr.remove();
@@ -333,7 +336,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 }*/
             },
             'language': {
-                'url': '<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user']['user_language']; ?>.txt'
+                'url': '<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $session->get('user-language'); ?>.txt'
             },
             'preDrawCallback': function() {
                 toastr.remove();
@@ -382,7 +385,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 }*/
             },
             'language': {
-                'url': '<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user']['user_language']; ?>.txt'
+                'url': '<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $session->get('user-language'); ?>.txt'
             },
             'preDrawCallback': function() {
                 toastr.remove();
@@ -482,7 +485,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 }
             },
             'language': {
-                'url': '<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user']['user_language']; ?>.txt'
+                'url': '<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $session->get('user-language'); ?>.txt'
             },
             'preDrawCallback': function() {
                 toastr.remove();

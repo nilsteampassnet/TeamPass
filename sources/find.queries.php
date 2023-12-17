@@ -422,7 +422,7 @@ if (isset($_GET['type']) === false) {
     echo ($sOutput);
 } elseif (isset($_GET['type']) && ($_GET['type'] === 'search_for_items' || $_GET['type'] === 'search_for_items_with_tags')) {
     include_once 'main.functions.php';
-    include_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user']['user_language'] . '.php';
+    include_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $session->get('user-language') . '.php';
 
     $arr_data = [];
     foreach ($rows as $record) {

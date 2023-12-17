@@ -28,11 +28,13 @@ declare(strict_types=1);
 use voku\helper\AntiXSS;
 use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\Language\Language;
+use Symfony\Component\HttpFoundation\Session\Session;
 
 // Load functions
 require_once 'main.functions.php';
 $superGlobal = new SuperGlobal();
 $lang = new Language(); 
+$session = new Session();
 
 // Load config if $SETTINGS not defined
 try {
@@ -94,18 +96,16 @@ if (isset($server['https']) === true
 // Load pwComplexity
 if (defined('TP_PW_COMPLEXITY') === false) {
     // Pw complexity levels
-    if (isset($_SESSION['user']['user_language']) === true && $_SESSION['user']['user_language'] !== '0') {
-        define(
-            'TP_PW_COMPLEXITY',
-            [
-                TP_PW_STRENGTH_1 => [TP_PW_STRENGTH_1, $lang->get('complex_level1'), 'fas fa-thermometer-empty text-danger'],
-                TP_PW_STRENGTH_2 => [TP_PW_STRENGTH_2, $lang->get('complex_level2'), 'fas fa-thermometer-quarter text-warning'],
-                TP_PW_STRENGTH_3 => [TP_PW_STRENGTH_3, $lang->get('complex_level3'), 'fas fa-thermometer-half text-warning'],
-                TP_PW_STRENGTH_4 => [TP_PW_STRENGTH_4, $lang->get('complex_level4'), 'fas fa-thermometer-three-quarters text-success'],
-                TP_PW_STRENGTH_5 => [TP_PW_STRENGTH_5, $lang->get('complex_level5'), 'fas fa-thermometer-full text-success'],
-            ]
-        );
-    }
+    define(
+        'TP_PW_COMPLEXITY',
+        [
+            TP_PW_STRENGTH_1 => [TP_PW_STRENGTH_1, $lang->get('complex_level1'), 'fas fa-thermometer-empty text-danger'],
+            TP_PW_STRENGTH_2 => [TP_PW_STRENGTH_2, $lang->get('complex_level2'), 'fas fa-thermometer-quarter text-warning'],
+            TP_PW_STRENGTH_3 => [TP_PW_STRENGTH_3, $lang->get('complex_level3'), 'fas fa-thermometer-half text-warning'],
+            TP_PW_STRENGTH_4 => [TP_PW_STRENGTH_4, $lang->get('complex_level4'), 'fas fa-thermometer-three-quarters text-success'],
+            TP_PW_STRENGTH_5 => [TP_PW_STRENGTH_5, $lang->get('complex_level5'), 'fas fa-thermometer-full text-success'],
+        ]
+    );
 }
 
 // LOAD CPASSMAN SETTINGS
@@ -178,7 +178,7 @@ if (isset($languagesList) === false) {
     $rows = DB::query('SELECT * FROM ' . prefixTable('languages') . ' GROUP BY name, label, code, flag, id ORDER BY name ASC');
     foreach ($rows as $record) {
         array_push($languagesList, $record['name']);
-        if ($superGlobal->get('user_language', 'SESSION', 'user') === $record['name'] ) {
+        if ($superGlobal->get('user-language', 'SESSION', 'user') === $record['name'] ) {
             $superGlobal->put('user_language_flag', $record['flag'], 'SESSION');
             $superGlobal->put('user_language_code', $record['code'], 'SESSION');
             $superGlobal->put('user_language_label', $record['label'], 'SESSION');
