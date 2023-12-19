@@ -76,7 +76,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
 
 <script type='text/javascript'>
-    var debugJavascript = false;
+    var debugJavascript = true;
 
     // Checkbox
     $('input[type="checkbox"].flat-blue, input[type="radio"].flat-blue').iCheck({
