@@ -743,6 +743,17 @@ if (null !== $post_type) {
                 break;
             }
 
+            /*
+            // DEBUG #3956
+            if ($SETTINGS['ldap_type'] === 'ActiveDirectory') {
+                require_once 'ldap.activedirectory.php';
+            } else {
+                require_once 'ldap.openldap.php';
+            }
+            $ret = getADGroups($connection, $SETTINGS);
+            error_log("Contenu de l'array : " . print_r($ret, true));
+            */
+
             // prepare groups criteria
             $pattern = '/\((.*?)\)/'; // matches anything inside parentheses
             // finds all matches and saves them to $matches array

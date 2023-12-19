@@ -27,6 +27,7 @@ declare(strict_types=1);
 use LdapRecord\Connection;
 use LdapRecord\Container;
 use LdapRecord\Models\OpenLDAP\User;
+use LdapRecord\Models\OpenLDAP\Group;
 
 require_once __DIR__.'/../vendor/autoload.php';
 
@@ -71,5 +72,43 @@ function getUserADGroups(string $userDN, Connection $connection, array $SETTINGS
         'error' => false,
         'message' => '',
         'userGroups' => $groupsArr,
+    ];
+}
+
+
+function getADGroups(Connection $connection, array $SETTINGS): array
+{
+    // init
+    $groupsArr = [];
+    
+    try {
+        Container::addConnection($connection, $connectionName = 'default');
+        
+        // get id attribute
+        if (isset($SETTINGS['ldap_guid_attibute']) ===true && empty($SETTINGS['ldap_guid_attibute']) === false) {
+            $idAttribute = $SETTINGS['ldap_guid_attibute'];
+        } else {
+            $idAttribute = 'objectguid';
+        }
+
+        // Get user groups from AD
+        $groups = \LdapRecord\Models\OpenLDAP\Group::get();
+        $groups = Group::on($connectionName)->get();
+        print_r($groups);
+        foreach ($groups as $group) {
+            array_push(
+                $groupsArr,
+                $group[$idAttribute][0]
+            );
+        }
+        
+    } catch (\LdapRecord\Auth\BindException $e) {
+        // Do nothing
+    }
+
+    return [
+        'error' => false,
+        'message' => '',
+        'userGroups' => $groups,
     ];
 }

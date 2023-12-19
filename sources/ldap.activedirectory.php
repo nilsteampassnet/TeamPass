@@ -27,6 +27,7 @@ declare(strict_types=1);
 use LdapRecord\Connection;
 use LdapRecord\Container;
 use LdapRecord\Models\ActiveDirectory\User;
+use LdapRecord\Models\ActiveDirectory\Group;
 
 require_once __DIR__.'/../vendor/autoload.php';
 
@@ -91,4 +92,23 @@ function userIsEnabled(string $userDN, Connection $connection): bool
         // Do nothing
     }
     return $isEnabled;
+}
+
+/**
+ * Get all AD groups
+ *
+ * @param LdapRecord\Connection $connection
+ * @return array
+ */
+function getADGroups(LdapRecord\Connection $connection) {
+    // Rechercher tous les groupes
+    $groups = Group::on($connection)->get();
+
+    // Convertir les groupes en tableau
+    $groupsArray = [];
+    foreach ($groups as $group) {
+        $groupsArray[] = $group->getAttributes();
+    }
+
+    return $groupsArray;
 }
