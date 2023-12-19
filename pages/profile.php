@@ -122,7 +122,7 @@ if (empty($userInfo['avatar']) === true) {
 
 // Get Groups name
 $userParOfGroups = [];
-foreach ($_SESSION['user_roles'] as $role) {
+foreach ($session->get('user-roles_array') as $role) {
     $tmp = DB::queryFirstRow(
         'SELECT title 
         FROM ' . prefixTable('roles_title') . ' 

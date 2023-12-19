@@ -72,7 +72,7 @@ function langHdl(string $string): string
     }
 
     // Load
-    require_once 'sessionManager.php';
+    
     $session = SessionManager::getSession();
     $superGlobal = new SuperGlobal();
     $antiXss = new AntiXSS();
@@ -328,7 +328,7 @@ function identifyUserRights(
     $idFonctions,
     $SETTINGS
 ) {
-    require_once 'sessionManager.php';
+    
     $session = SessionManager::getSession();
     $superGlobal = new SuperGlobal();
     $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
@@ -373,32 +373,31 @@ function identifyUserRights(
  */
 function identAdmin($idFonctions, $SETTINGS, $tree)
 {
-    require_once 'sessionManager.php';
+    
     $session = SessionManager::getSession();
     // Load superglobal
     $superGlobal = new SuperGlobal();
     // Init
     $groupesVisibles = [];
-    $superGlobal->put('personal_folders', [], 'SESSION');
-    $superGlobal->put('groupes_visibles', [], 'SESSION');
-    $superGlobal->put('no_access_folders', [], 'SESSION');
-    $superGlobal->put('personal_visible_groups', [], 'SESSION');
-    $superGlobal->put('read_only_folders', [], 'SESSION');
-    $superGlobal->put('list_restricted_folders_for_items', [], 'SESSION');
-    $superGlobal->put('list_folders_editable_by_role', [], 'SESSION');
-    $superGlobal->put('list_folders_limited', [], 'SESSION');
-    $superGlobal->put('no_access_folders', [], 'SESSION');
+    $session->set('user-personal_folders', []);
+    $session->set('user-accessible_folders', []);
+    $session->set('user-no_access_folders', []);
+    $session->set('user-personal_visible_folders', []);
+    $session->set('user-read_only_folders', []);
+    $session->set('system-list_restricted_folders_for_items', []);
+    $session->set('system-list_folders_editable_by_role', []);
+    $session->set('user-list_folders_limited', []);
     $superGlobal->put('forbiden_pfs', [], 'SESSION');
     // Get superglobals
     $globalsUserId = $session->get('user-id');
-    $globalsVisibleFolders = $superGlobal->get('groupes_visibles', 'SESSION');
-    $globalsPersonalVisibleFolders = $superGlobal->get('personal_visible_groups', 'SESSION');
+    $globalsVisibleFolders = $session->get('user-accessible_folders');
+    $globalsPersonalVisibleFolders = $session->get('user-personal_visible_folders');
     // Get list of Folders
     $rows = DB::query('SELECT id FROM ' . prefixTable('nested_tree') . ' WHERE personal_folder = %i', 0);
     foreach ($rows as $record) {
         array_push($groupesVisibles, $record['id']);
     }
-    $superGlobal->put('groupes_visibles', $groupesVisibles, 'SESSION');
+    $session->set('user-accessible_folders', $groupesVisibles);
     $superGlobal->put('all_non_personal_folders', $groupesVisibles, 'SESSION');
     // Exclude all PF
     $where = new WhereClause('and');
@@ -441,13 +440,13 @@ function identAdmin($idFonctions, $SETTINGS, $tree)
             array_push($tmp, $record['id']);
         }
     }
-    $superGlobal->put('fonction_id', implode(';', $tmp), 'SESSION');
-    $session->set('user-admin', 1, );
+    $session->set('user-roles', implode(';', $tmp));
+    $session->set('user-admin', 1);
     // Check if admin has created Folders and Roles
     DB::query('SELECT * FROM ' . prefixTable('nested_tree') . '');
-    $superGlobal->put('nb_folders', DB::count(), 'SESSION');
+    $session->set('user-nb_folders', DB::count());
     DB::query('SELECT * FROM ' . prefixTable('roles_title'));
-    $superGlobal->put('nb_roles', DB::count(), 'SESSION');
+    $session->set('user-nb_roles', DB::count());
 
     return true;
 }
@@ -491,17 +490,17 @@ function identUser(
     array $SETTINGS,
     object $tree
 ) {
-    require_once 'sessionManager.php';
+    
     $session = SessionManager::getSession();
     // Load superglobal
     $superGlobal = new SuperGlobal();
     // Init
-    $superGlobal->put('groupes_visibles', [], 'SESSION');
-    $superGlobal->put('personal_folders', [], 'SESSION');
-    $superGlobal->put('no_access_folders', [], 'SESSION');
-    $superGlobal->put('personal_visible_groups', [], 'SESSION');
-    $superGlobal->put('read_only_folders', [], 'SESSION');
-    $superGlobal->put('fonction_id', $userRoles, 'SESSION');
+    $session->set('user-accessible_folders', []);
+    $session->set('user-personal_folders', []);
+    $session->set('user-no_access_folders', []);
+    $session->set('user-personal_visible_folders', []);
+    $session->set('user-read_only_folders', []);
+    $session->set('user-user-roles', $userRoles);
     $session->set('user-admin', 0);
     // init
     $personalFolders = [];
@@ -585,14 +584,14 @@ function identUser(
     $noAccessPersonalFolders = $arrays['noAccessPersonalFolders'];
 
     // Return data
-    $superGlobal->put('all_non_personal_folders', $allowedFolders, 'SESSION');
-    $superGlobal->put('groupes_visibles', array_unique(array_merge($allowedFolders, $personalFolders), SORT_NUMERIC), 'SESSION');
-    $superGlobal->put('read_only_folders', $readOnlyFolders, 'SESSION');
-    $superGlobal->put('no_access_folders', $noAccessFolders, 'SESSION');
-    $superGlobal->put('personal_folders', $personalFolders, 'SESSION');
+    $session->set('user-all_non_personal_folders', $allowedFolders);
+    $session->set('user-accessible_folders', array_unique(array_merge($allowedFolders, $personalFolders), SORT_NUMERIC));
+    $session->set('user-read_only_folders', $readOnlyFolders);
+    $session->set('user-no_access_folders', $noAccessFolders);
+    $session->set('user-personal_folders', $personalFolders);
     $superGlobal->put('list_folders_limited', $foldersLimited, 'SESSION');
     $superGlobal->put('list_folders_editable_by_role', $allowedFoldersByRoles, 'SESSION');
-    $superGlobal->put('list_restricted_folders_for_items', $restrictedFoldersForItems, 'SESSION');
+    $session->set('system-list_restricted_folders_for_items', $restrictedFoldersForItems);
     $superGlobal->put('forbiden_pfs', $noAccessPersonalFolders, 'SESSION');
     $superGlobal->put(
         'all_folders_including_no_access',
@@ -893,7 +892,7 @@ function cacheTableRefresh(): void
  */
 function cacheTableUpdate(?int $ident = null): void
 {
-    require_once 'sessionManager.php';
+    
     $session = SessionManager::getSession();
     // Load class DB
     loadClasses('DB');
@@ -968,7 +967,6 @@ function cacheTableUpdate(?int $ident = null): void
  */
 function cacheTableAdd(?int $ident = null): void
 {
-    require_once 'sessionManager.php';
     $session = SessionManager::getSession();
 
     $superGlobal = new SuperGlobal();
@@ -1448,7 +1446,7 @@ function utf8Converter(array $array): array
         $array,
         static function (&$item): void {
             if (mb_detect_encoding((string) $item, 'utf-8', true) === false) {
-                $item = utf8_encode($item);
+                $item = mb_convert_encoding($item, 'ISO-8859-1', 'UTF-8');
             }
         }
     );
@@ -1466,7 +1464,6 @@ function utf8Converter(array $array): array
  */
 function prepareExchangedData($data, string $type, ?string $key = null)
 {
-    require_once 'sessionManager.php';
     $session = SessionManager::getSession();
     
     // get session
@@ -1830,7 +1827,6 @@ function notifyOnChange(int $item_id, string $action, array $SETTINGS): void
  */
 function notifyChangesToSubscribers(int $item_id, string $label, array $changes, array $SETTINGS): void
 {
-    require_once 'sessionManager.php';
     $session = SessionManager::getSession();
     // Load superglobal
     $superGlobal = new SuperGlobal();
@@ -2349,11 +2345,11 @@ function recursiveChmod(
  */
 function accessToItemIsGranted(int $item_id, array $SETTINGS)
 {
-    require_once 'sessionManager.php';
+    
     $session = SessionManager::getSession();
     $superGlobal = new SuperGlobal();
     // Prepare superGlobal variables
-    $session_groupes_visibles = $superGlobal->get('groupes_visibles', 'SESSION');
+    $session_groupes_visibles = $session->get('user-accessible_folders');
     $session_list_restricted_folders_for_items = $superGlobal->get('list_restricted_folders_for_items', 'SESSION');
     // Load item data
     $data = DB::queryFirstRow(
@@ -2815,7 +2811,7 @@ function storeUsersShareKey(
     bool $deleteAll = true,
     array $objectKeyArray = []
 ): void {
-    require_once 'sessionManager.php';
+    
     $session = SessionManager::getSession();
     $superGlobal = new SuperGlobal();
 
@@ -3505,7 +3501,7 @@ function loadFoldersListByCache(
         ];
     }
 
-    require_once 'sessionManager.php';
+    
     $session = SessionManager::getSession();
 
     // Get last folder update
@@ -3671,6 +3667,7 @@ function getUsersWithRoles(
     array $roles
 ): array
 {
+    $session = SessionManager::getSession();
     $arrUsers = array();
 
     foreach ($roles as $role) {
@@ -3779,6 +3776,7 @@ function handleUserKeys(
     string $recovery_private_key = ''
 ): string
 {
+    $session = SessionManager::getSession();
     $lang = new Language(); 
 
     // prepapre background tasks for item keys generation        
@@ -4231,6 +4229,7 @@ function purgeUnnecessaryKeysForUser(int $user_id=0)
  */
 function handleUserRecoveryKeysDownload(int $userId, array $SETTINGS):string
 {
+    $session = SessionManager::getSession();
     // Check if user exists
     $userInfo = DB::queryFirstRow(
         'SELECT pw, public_key, private_key, login, name
@@ -4325,7 +4324,7 @@ function loadClasses(string $className = ''): void
  */
 function getCurrectPage($SETTINGS)
 {
-    require_once 'sessionManager.php';
+    
     $session = SessionManager::getSession();
     // Load libraries
     $superGlobal = new SuperGlobal();

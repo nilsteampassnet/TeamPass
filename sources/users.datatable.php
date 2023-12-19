@@ -155,7 +155,7 @@ if ((int) $session->get('user-admin') === 0
     && (int) $session->get('user-can_manage_all_users') === 0
 ) {
     $sWhere .= ' AND ';
-    $arrUserRoles = array_filter($_SESSION['user_roles']);
+    $arrUserRoles = array_filter($session->get('user-roles_array'));
     if (count($arrUserRoles) > 0) {
         $sWhere .= 'isAdministratedByRole IN ('.implode(',', $arrUserRoles).')';
     }
@@ -189,7 +189,7 @@ if (DB::count() > 0) {
 foreach ($rows as $record) {
     //Show user only if can be administrated by the adapted Roles manager
     if ((int) $session->get('user-admin') === 1
-        || in_array($record['isAdministratedByRole'], $_SESSION['user_roles'])
+        || in_array($record['isAdministratedByRole'], $session->get('user-roles_array'))
         || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $record['admin'] === 0 && (int) $record['id'] !== (int) $session->get('user-id'))
     ) {
         $showUserFolders = true;

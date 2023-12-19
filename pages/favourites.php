@@ -103,7 +103,10 @@ $lang = new Language($session->get('user-language'), __DIR__. '/../includes/lang
                     <h3 class="card-title">&nbsp;</h3>
                 </div>-->
                 <!-- /.card-header -->
-                <div class="card-body p-0<?php echo count($session->get('user-favorites')) === 0 ? '' : ' hidden'; ?>" id="favorites">
+                <?php
+                if (count($session->get('user-favorites')) > 0) {
+                    ?>
+                <div class="card-body p-0" id="favorites">
                     <table class="table table-condensed table-responsive">
                         <tr>
                             <th style="width: 100px"></th>
@@ -138,12 +141,16 @@ $lang = new Language($session->get('user-language'), __DIR__. '/../includes/lang
                         } ?>
                     </table>
                 </div>
+                <?php
+                } else {?>
 
-                <div class="card-body<?php echo count($session->get('user-favorites')) === 0 ? ' hidden' : ''; ?>" id="no-favorite">
+                <div class="card-body" id="no-favorite">
                     <div class="alert alert-info">
                         <h5><i class="icon fa fa-info mr-2"></i><?php echo $lang->get('currently_no_favorites'); ?></h5>
                     </div>
                 </div>
+                <?php
+                } ?>
             </div>
         </div>
     </div>

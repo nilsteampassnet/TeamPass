@@ -402,7 +402,7 @@ if (null !== $post_type) {
             // Is this user allowed to do this?
             if (
                 (int) $session->get('user-admin') === 1
-                || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
+                || (in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array')))
                 || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $data_user['admin'] !== 1)
             ) {
                 // delete user in database
@@ -533,7 +533,7 @@ if (null !== $post_type) {
             // Is this user allowed to do this?
             if (
                 (int) $session->get('user-admin') === 1
-                || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
+                || (in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array')))
                 || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $data_user['admin'] !== 1)
             ) {
                 DB::update(
@@ -575,7 +575,7 @@ if (null !== $post_type) {
             // Is this user allowed to do this?
             if (
                 (int) $session->get('user-admin') === 1
-                || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
+                || (in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array')))
                 || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $data_user['admin'] !== 1)
             ) {
                 DB::update(
@@ -618,7 +618,7 @@ if (null !== $post_type) {
             // Is this user allowed to do this?
             if (
                 (int) $session->get('user-admin') === 1
-                || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
+                || (in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array')))
                 || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $data_user['admin'] !== 1)
             ) {
                 DB::update(
@@ -662,7 +662,7 @@ if (null !== $post_type) {
             // Is this user allowed to do this?
             if (
                 (int) $session->get('user-admin') === 1
-                || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
+                || (in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array')))
                 || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $data_user['admin'] !== 1)
             ) {
                 DB::update(
@@ -705,7 +705,7 @@ if (null !== $post_type) {
             // Is this user allowed to do this?
             if (
                 (int) $session->get('user-admin') === 1
-                || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
+                || (in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array')))
                 || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $data_user['admin'] !== 1)
             ) {
                 DB::update(
@@ -748,7 +748,7 @@ if (null !== $post_type) {
             // Is this user allowed to do this?
             if (
                 (int) $session->get('user-admin') === 1
-                || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
+                || (in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array')))
                 || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $data_user['admin'] !== 1)
             ) {
                 DB::update(
@@ -788,7 +788,7 @@ if (null !== $post_type) {
             // Is this user allowed to do this?
             if (
                 (int) $session->get('user-admin') === 1
-                || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
+                || (in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array')))
                 || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $data_user['admin'] !== 1)
             ) {
                 DB::update(
@@ -1058,7 +1058,7 @@ if (null !== $post_type) {
             // Is this user allowed to do this?
             if (
                 (int) $session->get('user-admin') === 1
-                || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
+                || (in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array')))
                 || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $data_user['admin'] !== 1)
             ) {
                 // Do
@@ -1104,7 +1104,7 @@ if (null !== $post_type) {
                 // Is this user allowed to do this?
                 if (
                     (int) $session->get('user-admin') === 1
-                    || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
+                    || (in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array')))
                     || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $data_user['admin'] !== 1)
                 ) {
                     DB::update(
@@ -1165,7 +1165,7 @@ if (null !== $post_type) {
             // Is this user allowed to do this?
             if (
                 (int) $session->get('user-admin') === 1
-                || (in_array($rowUser['isAdministratedByRole'], $_SESSION['user_roles']) === true)
+                || (in_array($rowUser['isAdministratedByRole'], $session->get('user-roles_array')) === true)
                 || ((int) $session->get('user-can_manage_all_users') === 1 && $rowUser['admin'] !== '1')
             ) {
                 $arrData = array();
@@ -1234,7 +1234,7 @@ if (null !== $post_type) {
                     )
                 );
                 foreach ($rolesList as $fonction) {
-                    if ($session->get('user-admin') === 1 || in_array($fonction['id'], $_SESSION['user_roles'])) {
+                    if ($session->get('user-admin') === 1 || in_array($fonction['id'], $session->get('user-roles_array'))) {
                         if ($rowUser['isAdministratedByRole'] == $fonction['id']) {
                             $selected = 'selected';
 
@@ -1275,7 +1275,7 @@ if (null !== $post_type) {
                 $userForbidFolders = explode(';', is_null($rowUser['groupes_interdits']) === true ? '' : $rowUser['groupes_interdits']);
                 $tree_desc = $tree->getDescendants();
                 foreach ($tree_desc as $t) {
-                    if (in_array($t->id, $_SESSION['groupes_visibles']) && !in_array($t->id, $_SESSION['personal_visible_groups'])) {
+                    if (in_array($t->id, $session->get('user-accessible_folders')) && in_array($t->id, $session->get('user-personal_visible_folders')) === false) {
                         $selected = '';
                         if (in_array($t->id, $userForbidFolders)) {
                             $selected = 'selected';
@@ -1305,8 +1305,8 @@ if (null !== $post_type) {
                 $tree_desc = $tree->getDescendants();
                 foreach ($tree_desc as $t) {
                     if (
-                        in_array($t->id, $_SESSION['groupes_visibles']) === true
-                        && in_array($t->id, $_SESSION['personal_visible_groups']) === false
+                        in_array($t->id, $session->get('user-accessible_folders')) === true
+                        && in_array($t->id, $session->get('user-personal_visible_folders')) === false
                     ) {
                         $selected = '';
                         if (in_array($t->id, $userAllowFolders)) {
@@ -1543,7 +1543,7 @@ if (null !== $post_type) {
             // Is this user allowed to do this?
             if (
                 (int) $session->get('user-admin') === 1
-                || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
+                || (in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array')))
                 || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $data_user['admin'] !== 1)
             ) {
                 // delete account
@@ -1693,7 +1693,7 @@ if (null !== $post_type) {
             // Is this user allowed to do this?
             if (
                 (int) $session->get('user-admin') === 1
-                || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
+                || (in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array')))
                 || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $data_user['admin'] !== 1)
             ) {
                 DB::update(
@@ -1935,7 +1935,7 @@ if (null !== $post_type) {
                     FROM ' . prefixTable('users') . '
                     WHERE admin = %i AND isAdministratedByRole IN %ls',
                     '0',
-                    array_filter($_SESSION['user_roles'])
+                    array_filter($session->get('user-roles_array'))
                 );
             } else {
                 $rows = DB::query(
@@ -2094,14 +2094,14 @@ if (null !== $post_type) {
             // Is this user allowed to do this?
             if (
                 (int) $session->get('user-admin') === 1
-                || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
+                || (in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array')))
                 || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $data_user['admin'] !== 1)
             ) {
                 foreach ($post_destination_ids as $dest_user_id) {
                     // Is this user allowed to do this?
                     if (
                         (int) $session->get('user-admin') === 1
-                        || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
+                        || (in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array')))
                         || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $data_user['admin'] !== 1)
                     ) {
                         // update user
@@ -2941,12 +2941,12 @@ if (null !== $post_type) {
             // Check if this user has some private items.
             // If yes then upgrade needed for them
             // If no then upgrade is now finished
-            if (count($_SESSION['personal_folders']) > 0) {
+            if (count($session->get('user-personal_folders')) > 0) {
                 DB::query(
                     'SELECT id
                     FROM ' . prefixTable('items') . '
                     WHERE id_tree IN %ls',
-                    $_SESSION['personal_folders']
+                    $session->get('user-personal_folders')
                 );
 
                 if (DB::count() === 0) {
@@ -3455,7 +3455,7 @@ if (null !== $post_type) {
     // Is this user allowed to do this?
     if (
         (int) $session->get('user-admin') === 1
-        || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
+        || (in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array')))
         || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $data_user['admin'] !== 1)
         || ($session->get('user-id') === $value[1])
     ) {
@@ -3519,7 +3519,7 @@ if (null !== $post_type) {
     // Is this user allowed to do this?
     if (
         (int) $session->get('user-admin') === 1
-        || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
+        || (in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array')))
         || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $data_user['admin'] !== 1)
         || ($session->get('user-id') === $value[1])
     ) {

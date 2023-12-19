@@ -30,7 +30,6 @@ use TeampassClasses\PerformChecks\PerformChecks;
 
 // Load functions
 require_once 'main.functions.php';
-require_once 'sessionManager.php';
 $session = SessionManager::getSession();
 // init
 loadClasses('DB');

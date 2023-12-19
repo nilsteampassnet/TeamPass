@@ -292,7 +292,7 @@ if (isset($_GET['type']) === false) {
             // check role access on this folder (get the most restrictive) (2.1.23)
             $accessLevel = 2;
             $arrTmp = [];
-            foreach (explode(';', $_SESSION['fonction_id']) as $role) {
+            foreach (explode(';', $session->get('user-roles')) as $role) {
                 //db::debugmode(true);
                 $access = DB::queryFirstRow(
                     'SELECT type FROM ' . prefixTable('roles_values') . ' WHERE role_id = %i AND folder_id = %i',
@@ -351,7 +351,7 @@ if (isset($_GET['type']) === false) {
             $restrictedTo = '';
         }
 
-        if (isset($_SESSION['list_folders_editable_by_role']) && in_array($record['id_tree'], $_SESSION['list_folders_editable_by_role'])) {
+        if (null !== $session->get('system-list_folders_editable_by_role') && in_array($record['id_tree'], $session->get('system-list_folders_editable_by_role'))) {
             if (empty($restrictedTo)) {
                 $restrictedTo = $session->get('user-id');
             } else {
@@ -375,7 +375,7 @@ if (isset($_GET['type']) === false) {
         );
         // We considere here that if user has at least one group similar to the object ones
         // then user can see item
-        if (count(array_intersect($rTmp, $_SESSION['user_roles'])) === 0 && count($rTmp) > 0) {
+        if (count(array_intersect($rTmp, $session->get('user-roles_array'))) === 0 && count($rTmp) > 0) {
             $restrictedToRole = true;
         }
 
@@ -481,7 +481,7 @@ if (isset($_GET['type']) === false) {
         if (count($roles) > 0) {
             $item_is_restricted_to_role = 1;
             foreach ($roles as $val) {
-                if (in_array($val['role_id'], $_SESSION['user_roles'])) {
+                if (in_array($val['role_id'], $session->get('user-roles_array'))) {
                     $user_is_included_in_role = 1;
                     break;
                 }
@@ -494,7 +494,7 @@ if (isset($_GET['type']) === false) {
             $restrictedTo = '';
         }
 
-        if (isset($_SESSION['list_folders_editable_by_role']) && in_array($record['id_tree'], $_SESSION['list_folders_editable_by_role'])) {
+        if (null !== $session->get('system-list_folders_editable_by_role') && in_array($record['id_tree'], $session->get('system-list_folders_editable_by_role'))) {
             if (empty($restrictedTo)) {
                 $restrictedTo = $session->get('user-id');
             } else {
@@ -594,7 +594,7 @@ if (isset($_GET['type']) === false) {
             // check role access on this folder (get the most restrictive) (2.1.23)
             $accessLevel = 2;
             $arrTmp = [];
-            foreach (explode(';', $_SESSION['fonction_id']) as $role) {
+            foreach (explode(';', $session->get('user-roles')) as $role) {
                 $access = DB::queryFirstRow(
                     'SELECT type FROM ' . prefixTable('roles_values') . ' WHERE role_id = %i AND folder_id = %i',
                     $role,

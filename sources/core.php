@@ -277,9 +277,7 @@ if (
     }
 
     // erase session table
-    session_unset();
-    session_destroy();
-    $_SESSION = [];
+    $session->invalidate();
     //Redirection
     echo '
     <script language="javascript" type="text/javascript">
@@ -414,13 +412,13 @@ if (null !== $session->get('user-id') && empty($session->get('user-id')) === fal
         $session->set('user-manager', $data['gestionnaire']);
         $session->set('user-can_manage_all_users', $data['can_manage_all_users']);
 
-        $_SESSION['groupes_visibles'] = [];
-        $_SESSION['no_access_folders'] = [];
+        $session->set('user-accessible_folders', []);
+        $session->set('user-no_access_folders', []);
         if (empty($data['groupes_visibles']) === false) {
-            $_SESSION['groupes_visibles'] = array_filter(explode(';', $data['groupes_visibles']));
+            $session->set('user-accessible_folders', array_filter(explode(';', $data['groupes_visibles'])));
         }
         if (empty($data['groupes_interdits']) === false) {
-            $_SESSION['no_access_folders'] = array_filter(explode(';', $data['groupes_interdits']));
+            $session->set('user-no_access_folders', array_filter(explode(';', $data['groupes_interdits'])));
         }
 
         if (null === $session->get('user-session_duration')) {
@@ -469,7 +467,7 @@ if (
     && (int) $SETTINGS['item_extra_fields'] === 1
     && isset($get['page']) === true
     && $get['page'] === 'items'
-    && isset($_SESSION['fonction_id']) === true
+    && null !== $session->get('user-roles')
 ) {
     $_SESSION['item_fields'] = [];
     $rows = DB::query(
@@ -495,7 +493,7 @@ if (
                     $field['role_visibility'] === 'all'
                     || count(
                         array_intersect(
-                            explode(';', $_SESSION['fonction_id']),
+                            explode(';', $session->get('user-roles')),
                             explode(',', $field['role_visibility'])
                         )
                     ) > 0
@@ -558,11 +556,11 @@ if (isset($SETTINGS['ldap_mode']) === true && (int) $SETTINGS['ldap_mode'] === 1
 $_SESSION['temporary']['user_can_printout'] = false;
 if (
     isset($SETTINGS['roles_allowed_to_print']) === true
-    && isset($_SESSION['user_roles']) === true
+    && null !== $session->get('user-roles_array')
     && (! isset($_SESSION['temporary']['user_can_printout']) || empty($_SESSION['temporary']['user_can_printout']))
 ) {
     foreach (explode(';', $SETTINGS['roles_allowed_to_print']) as $role) {
-        if (in_array($role, $_SESSION['user_roles']) === true) {
+        if (in_array($role, $session->get('user-roles_array')) === true) {
             $_SESSION['temporary']['user_can_printout'] = true;
         }
     }

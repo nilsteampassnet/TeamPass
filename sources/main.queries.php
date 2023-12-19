@@ -31,7 +31,6 @@ use TeampassClasses\PerformChecks\PerformChecks;
 
 // Load functions
 require_once 'main.functions.php';
-require_once 'sessionManager.php';
 
 // Resume the session
 if (isset($_POST['sessionId'])) {
@@ -46,7 +45,6 @@ if (isset($_POST['sessionId'])) {
     }
 }
 
-require_once 'sessionManager.php';
 $session = SessionManager::getSession();
 
 loadClasses('DB');
@@ -321,7 +319,6 @@ function passwordHandler(string $post_type, /*php8 array|null|string*/ $dataRece
  */
 function userHandler(string $post_type, /*php8 array|null|string*/ $dataReceived, array $SETTINGS): string
 {
-    require_once 'sessionManager.php';
     $session = SessionManager::getSession();
 
     switch ($post_type) {
@@ -1317,7 +1314,6 @@ function refreshUserItemsSeenList(
     array $SETTINGS
 ): string
 {
-    require_once 'sessionManager.php';
     $session = SessionManager::getSession();
 
     // get list of last items seen
@@ -2667,13 +2663,13 @@ function continueReEncryptingUserSharekeysStep60(
     }
     
     // Loop on persoanl items
-    if (count($_SESSION['personal_folders']) > 0) {
+    if (count($session->get('user-personal_folders')) > 0) {
         $rows = DB::query(
             'SELECT id, pw
             FROM ' . prefixTable('items') . '
             WHERE perso = 1 AND id_tree IN %ls
             LIMIT ' . $post_start . ', ' . $post_length,
-            $_SESSION['personal_folders']
+            $session->get('user-personal_folders')
         );
         foreach ($rows as $record) {
             // Get itemKey from current user
@@ -2784,7 +2780,7 @@ function migrateTo3_DoUserPersonalItemsEncryption(
                     FROM ' . prefixTable('items') . '
                     WHERE perso = 1 AND id_tree IN %ls
                     LIMIT ' . $post_start . ', ' . $post_length,
-                    $_SESSION['personal_folders']
+                    $session->get('user-personal_folders')
                 );
                 $countUserPersonalItems = DB::count();
                 foreach ($rows as $record) {

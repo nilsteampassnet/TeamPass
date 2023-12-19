@@ -125,7 +125,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                             <select id="roles-list" class="form-control form-item-control select2" style="width:100%;">
                                 <option></option>
                                 <?php
-                                $arrUserRoles = array_filter($_SESSION['user_roles']);
+                                $arrUserRoles = array_filter($session->get('user-roles_array'));
                                 $where = '';
                                 if (count($arrUserRoles) > 0 && (int) $session->get('user-admin') !== 1) {
                                     $where = ' WHERE id IN (' . implode(',', $arrUserRoles) . ')';

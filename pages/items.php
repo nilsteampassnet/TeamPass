@@ -32,7 +32,6 @@ use TeampassClasses\PerformChecks\PerformChecks;
 
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
-require_once __DIR__.'/../sources/sessionManager.php';
 $session = SessionManager::getSession();
 // init
 loadClasses('DB');
@@ -85,7 +84,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 $session_user_admin = $session->get('user-admin');
 
 if ((int) $session_user_admin === 1) {
-    $superGlobal->put('groupes_visibles', $superGlobal->get('personal_visible_groups', 'SESSION', 'user'), 'SESSION');
+    $session->set('user-accessible_folders', $session->get('user-personal_visible_folders'));
 }
 
 // Get list of users
@@ -226,7 +225,7 @@ foreach ($rows as $reccord) {
                                 <div class="container-fluid mb-0">
                                     <div class="row">
                                         <div class="col-md-12 justify-content-center">
-                                            <div id="form-item-password-strength" class="justify-content-center" style=""></div>
+                                            <div id="form-item-password-strength" class="justify-content-center"></div>
                                         </div>
                                     </div>
                                 </div>
@@ -1415,7 +1414,7 @@ foreach ($rows as $reccord) {
                         </div>
                     </div>
                 </div>
-                <div class="card-body p-0" style="">
+                <div class="card-body p-0">
                     <!-- FOLDERS PLACE -->
                     <div id="jstree" style="overflow:auto;"></div>
                 </div>

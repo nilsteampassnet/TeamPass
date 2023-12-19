@@ -109,8 +109,6 @@ if (
 }
 
 // erase session table
-$_SESSION = [];
-// Kill session
-session_destroy();
+$session->invalidate();
 die;
 ?>

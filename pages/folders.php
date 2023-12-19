@@ -113,8 +113,8 @@ if ((int) $session->get('user-admin') === 1 || (int) $session->get('user-manager
 }
 foreach ($tst as $t) {
     if (
-        in_array($t->id, $_SESSION['groupes_visibles']) === true
-        && in_array($t->id, $_SESSION['personal_visible_groups']) === false
+        in_array($t->id, $session->get('user-accessible_folders')) === true
+        && in_array($t->id, $session->get('user-personal_visible_folders')) === false
     ) {
         $droplist .= '<option value="' . $t->id . '">' . addslashes($t->title);
         $text = '';

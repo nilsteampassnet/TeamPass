@@ -109,7 +109,7 @@ if (null !== $post_type) {
             );
 
             foreach (explode(';', $post_ids) as $id) {
-                if (!in_array($id, $_SESSION['forbiden_pfs']) && in_array($id, $_SESSION['groupes_visibles'])) {
+                if (!in_array($id, $_SESSION['forbiden_pfs']) && in_array($id, $session->get('user-accessible_folders'))) {
                     $rows = DB::query(
                         'SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso,
                         i.label as label, i.description as description, i.pw as pw, i.login as login, i.pw_iv as pw_iv
@@ -135,7 +135,7 @@ if (null !== $post_type) {
                         $restricted_users_array = explode(';', $record['restricted_to']);
                         //exclude all results except the first one returned by query
                         if (empty($id_managed) || $id_managed != $record['id']) {
-                            if ((in_array($id, $_SESSION['personal_visible_groups'])
+                            if ((in_array($id, $session->get('user-personal_visible_folders'))
                                 && !($record['perso'] === '1'
                                     && $session->get('user-id') === $record['restricted_to'])
                                 && !empty($record['restricted_to']))
@@ -289,6 +289,7 @@ if (null !== $post_type) {
                 );
                 break;
             } else {
+                /** @ignore */
                 $ssh = new phpseclib\Net\SSH2($parse['host'], $parse['port']);
                 if (!$ssh->login($dataReceived['ssh_root'], $dataReceived['ssh_pwd'])) {
                     echo prepareExchangedData(

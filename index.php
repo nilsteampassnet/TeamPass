@@ -391,7 +391,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                                     && isset($SETTINGS['roles_allowed_to_print_select']) === true
                                     && empty($SETTINGS['roles_allowed_to_print_select']) === false
                                     && count(array_intersect(
-                                        explode(';', $superGlobal->get('fonction_id', 'SESSION')),
+                                        explode(';', $session->get('user-roles')),
                                         explode(',', str_replace(['"', '[', ']'], '', $SETTINGS['roles_allowed_to_print_select']))
                                     )) > 0
                                     && (int) $session_user_admin === 0

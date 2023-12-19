@@ -41,7 +41,6 @@ use RobThree\Auth\TwoFactorAuth;
 
 // Load functions
 require_once 'main.functions.php';
-require_once 'sessionManager.php';
 
 // Resume the session
 if (isset($_POST['sessionId'])) {
@@ -130,14 +129,14 @@ if ($post_type === 'identify_user') {
     /**
      * Permits to handle login attempts
      *
-     * @param Symfony\Component\HttpFoundation\Session\Session $session
      * @param string $post_data
      * @param array $SETTINGS
-     * @param TeampassClasses\Language\Language $lang
      * @return bool|string
      */
-    function handleAuthAttempts($session, $post_data, $SETTINGS, $lang): bool|string
+    function handleAuthAttempts($post_data, $SETTINGS): bool|string
     {
+        $session = SessionManager::getSession();
+        $lang = new Language();
         $sessionPwdAttempts = $session->get('pwd_attempts');
         $nextPossibleAttempts = (int) $session->get('next_possible_pwd_attempts');
 
@@ -198,7 +197,7 @@ if ($post_type === 'identify_user') {
         return true;
     }
 
-    handleAuthAttempts($session, $post_data, $SETTINGS, $lang);
+    handleAuthAttempts($post_data, $SETTINGS);
 
     // ---
     // ---
@@ -235,7 +234,6 @@ if ($post_type === 'identify_user') {
  */
 function identifyUser(string $sentData, array $SETTINGS): bool
 {
-    require_once 'sessionManager.php';
     $antiXss = new AntiXSS();
     $superGlobal = new SuperGlobal();
     $lang = new Language();
@@ -489,13 +487,13 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         $session->set('user-password', $passwordClear);
         $session->set('user-admin', (int) $userInfo['admin']);
         $session->set('user-manager', (int) $userInfo['gestionnaire']);
-        $session->set('user-can_manage_all_users', $data['can_manage_all_users']);
-        $session->set('user-read_only', $data['read_only']);
-        $session->set('user-last_pw_change', $data['last_pw_change']);
-        $session->set('user-last_pw', $data['last_pw']);
-        $session->set('user-force_relog', $data['force-relog']);
+        $session->set('user-can_manage_all_users', $userInfo['can_manage_all_users']);
+        $session->set('user-read_only', $userInfo['read_only']);
+        $session->set('user-last_pw_change', $userInfo['last_pw_change']);
+        $session->set('user-last_pw', $userInfo['last_pw']);
+        $session->set('user-force_relog', $userInfo['force-relog']);
         $session->set('user-can_create_root_folder', $userInfo['can_create_root_folder']);
-        $session->set('user-email', $data['email']);
+        $session->set('user-email', $userInfo['email']);
         //$session->set('user-ga', $userInfo['ga']);
         $session->set('user-avatar', $userInfo['avatar']);
         $session->set('user-avatar_thumb', $userInfo['avatar_thumb']);
@@ -540,30 +538,10 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         $session->set('user-force_relog', $return['user_force_relog']);
         
         $session->set('user-last_connection', empty($userInfo['last_connexion']) === false ? (int) $userInfo['last_connexion'] : (int) time());
-        
-        $superGlobal->put(
-            'latest_items',
-            empty($userInfo['latest_items']) === false ? explode(';', $userInfo['latest_items']) : [],
-            'SESSION'
-        );
-        
-        $superGlobal->put(
-            'favourites',
-            empty($userInfo['favourites']) === false ? explode(';', $userInfo['favourites']) : [],
-            'SESSION'
-        );
-        
-        $superGlobal->put(
-            'groupes_visibles',
-            empty($userInfo['groupes_visibles']) === false ? explode(';', $userInfo['groupes_visibles']) : [],
-            'SESSION'
-        );
-        
-        $superGlobal->put(
-            'no_access_folders',
-            empty($userInfo['groupes_interdits']) === false ? explode(';', $userInfo['groupes_interdits']) : [],
-            'SESSION'
-        );
+        $session->set('user-latest_items', empty($userInfo['latest_items']) === false ? explode(';', $userInfo['latest_items']) : []);
+        $session->set('user-favorites', empty($userInfo['favourites']) === false ? explode(';', $userInfo['favourites']) : []);
+        $session->set('user-accessible_folders', empty($userInfo['groupes_visibles']) === false ? explode(';', $userInfo['groupes_visibles']) : []);
+        $session->set('user-no_access_folders', empty($userInfo['groupes_interdits']) === false ? explode(';', $userInfo['groupes_interdits']) : []);
         
         // User's roles
         if (strpos($userInfo['fonction_id'] !== NULL ? (string) $userInfo['fonction_id'] : '', ',') !== -1) {
@@ -583,17 +561,17 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             $userInfo['fonction_id'] = empty($userInfo['fonction_id'])  === true ? $userInfo['roles_from_ad_groups'] : $userInfo['fonction_id']. ';' . $userInfo['roles_from_ad_groups'];
         }
         // store
-        $superGlobal->put('fonction_id', $userInfo['fonction_id'], 'SESSION');
-        $superGlobal->put('user_roles', array_filter(explode(';', $userInfo['fonction_id'])), 'SESSION');
+        $session->set('user-roles', $userInfo['fonction_id']);
+        $session->set('user-roles_array', array_filter(explode(';', $userInfo['fonction_id'])));
         // build array of roles
-        $superGlobal->put('user_pw_complexity', 0, 'SESSION');
-        $superGlobal->put('arr_roles', [], 'SESSION');
-        if (count($superGlobal->get('user_roles', 'SESSION')) > 0) {
+        $session->set('user-pw_complexity', 0);
+        $session->set('system-array_roles', []);
+        if (count($session->get('user-roles_array')) > 0) {
             $rolesList = DB::query(
                 'SELECT id, title, complexity
                 FROM ' . prefixTable('roles_title') . '
                 WHERE id IN %li',
-                $superGlobal->get('user_roles', 'SESSION')
+                $session->get('user-roles_array')
             );
             $excludeUser = isset($SETTINGS['exclude_user']) ? str_contains($session->get('user-login'), $SETTINGS['exclude_user']) : false;
             $adjustPermissions = ($session->get('user-id') >= 1000000 && !$excludeUser && (isset($SETTINGS['admin_needle']) || isset($SETTINGS['manager_needle']) || isset($SETTINGS['tp_manager_needle']) || isset($SETTINGS['read_only_needle'])));
@@ -601,14 +579,13 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                 $userInfo['admin'] = $userInfo['gestionnaire'] = $userInfo['can_manage_all_users'] = $userInfo['read_only'] = 0;
             }
             foreach ($rolesList as $role) {
-                $superGlobal->put(
-                    $role['id'],
+                SessionManager::addRemoveFromSessionArray(
+                    'system-array_roles',
                     [
                         'id' => $role['id'],
                         'title' => $role['title'],
                     ],
-                    'SESSION',
-                    'arr_roles'
+                    'add'
                 );
                 
                 if ($adjustPermissions) {
@@ -631,8 +608,8 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                 }
 
                 // get highest complexity
-                if (intval($superGlobal->get('user_pw_complexity', 'SESSION')) < intval($role['complexity'])) {
-                    $superGlobal->put('user_pw_complexity', $role['complexity'], 'SESSION');
+                if ($session->get('user-pw_complexity') < (int) $role['complexity']) {
+                    $session->set('user-pw_complexity', (int) $role['complexity']);
                 }
             }
             if ($adjustPermissions) {
@@ -655,6 +632,8 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         }
 
         // build complete array of roles
+        /*
+        // COMMENTED OUT AS NOT USED ANYMORE
         $superGlobal->put('arr_roles_full', [], 'SESSION');
         $rows = DB::query('SELECT id, title FROM ' . prefixTable('roles_title') . ' ORDER BY title ASC');
         foreach ($rows as $record) {
@@ -667,7 +646,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                 'SESSION',
                 'arr_roles_full'
             );
-        }
+        }*/
         // Set some settings
         $SETTINGS['update_needed'] = '';
 
@@ -694,24 +673,24 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         if ($userLdap['user_initial_creation_through_ldap'] !== false) {
             // is new LDAP user. Show only his personal folder
             if ($SETTINGS['enable_pf_feature'] === '1') {
-                $superGlobal->put('personal_visible_groups', [$userInfo['id']], 'SESSION');
-                $superGlobal->put('personal_folders', [$userInfo['id']], 'SESSION');
+                $session->set('user-personal_visible_folders', [$userInfo['id']]);
+                $session->set('user-personal_folders', [$userInfo['id']]);
             } else {
-                $superGlobal->put('personal_visible_groups', [], 'SESSION');
-                $superGlobal->put('personal_folders', [], 'SESSION');
+                $session->set('user-personal_visible_folders', []);
+                $session->set('user-personal_folders', []);
             }
-            $superGlobal->put('all_non_personal_folders', [], 'SESSION');
-            $superGlobal->put('groupes_visibles', [], 'SESSION');
-            $superGlobal->put('read_only_folders', [], 'SESSION');
-            $superGlobal->put('list_folders_limited', '', 'SESSION');
-            $superGlobal->put('list_folders_editable_by_role', [], 'SESSION');
-            $superGlobal->put('list_restricted_folders_for_items', [], 'SESSION');
+            $session->set('user-all_non_personal_folders', []);
+            $session->set('user-roles_array', []);
+            $session->set('user-read_only_folders', []);
+            $session->set('user-list_folders_limited', []);
+            $session->set('system-list_folders_editable_by_role', []);
+            $session->set('system-list_restricted_folders_for_items', []);
             $superGlobal->put('nb_folders', 1, 'SESSION');
             $superGlobal->put('nb_roles', 0, 'SESSION');
         } else {
             identifyUserRights(
                 $userInfo['groupes_visibles'],
-                $superGlobal->get('no_access_folders', 'SESSION'),
+                $session->get('user-no_access_folders'),
                 $userInfo['admin'],
                 $userInfo['fonction_id'],
                 $SETTINGS
@@ -723,7 +702,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         // Get last seen items
         $superGlobal->put('latest_items_tab', [], 'SESSION');
         $superGlobal->put('nb_roles', 0, 'SESSION');
-        foreach ($superGlobal->get('latest_items', 'SESSION') as $item) {
+        foreach ($session->get('user-latest_items') as $item) {
             if (! empty($item)) {
                 $dataLastItems = DB::queryFirstRow(
                     'SELECT id,label,id_tree
@@ -817,7 +796,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                 'error' => false,
                 'message' => null !== $session->get('user-upgrade_needed') && (int) $session->get('user-upgrade_needed') === 1 ? 'ask_for_otc' : '',
                 'first_connection' => $session->get('user-validite_pw') === 0 ? true : false,
-                'password_complexity' => TP_PW_COMPLEXITY[$superGlobal->get('user_pw_complexity', 'SESSION')][1],
+                'password_complexity' => TP_PW_COMPLEXITY[$session->get('user-pw_complexity')][1],
                 'password_change_expected' => $userInfo['special'] === 'password_change_expected' ? true : false,
                 'private_key_conform' => $session->get('user-id') !== null
                     && empty($session->get('user-private_key')) === false
@@ -846,7 +825,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                 'error' => 'user_is_locked',
                 'message' => $lang->get('account_is_locked'),
                 'first_connection' => $session->get('user-validite_pw') === 0 ? true : false,
-                'password_complexity' => TP_PW_COMPLEXITY[$superGlobal->get('user_pw_complexity', 'SESSION')][1],
+                'password_complexity' => TP_PW_COMPLEXITY[$session->get('user-pw_complexity')][1],
                 'password_change_expected' => $userInfo['special'] === 'password_change_expected' ? true : false,
                 'private_key_conform' => null !== $session->get('user-private_key')
                     && empty($session->get('user-private_key')) === false
@@ -881,7 +860,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                 'error' => 'user_is_locked',
                 'message' => $lang->get('account_is_locked'),
                 'first_connection' => $session->get('user-validite_pw') === 0 ? true : false,
-                'password_complexity' => TP_PW_COMPLEXITY[$superGlobal->get('user_pw_complexity', 'SESSION')][1],
+                'password_complexity' => TP_PW_COMPLEXITY[$session->get('user-pw_complexity')][1],
                 'password_change_expected' => $userInfo['special'] === 'password_change_expected' ? true : false,
                 'private_key_conform' => $session->get('user-id') !== null
                     && empty($session->get('user-private_key')) === false
@@ -905,7 +884,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             'error' => true,
             'message' => $lang->get('error_not_allowed_to_authenticate'),
             'first_connection' => $session->get('user-validite_pw') === 0 ? true : false,
-            'password_complexity' => TP_PW_COMPLEXITY[$superGlobal->get('user_pw_complexity', 'SESSION')][1],
+            'password_complexity' => TP_PW_COMPLEXITY[$session->get('user-pw_complexity')][1],
             'password_change_expected' => $userInfo['special'] === 'password_change_expected' ? true : false,
             'private_key_conform' => $session->get('user-id') !== null
                     && empty($session->get('user-private_key')) === false

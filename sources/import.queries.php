@@ -318,7 +318,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
         );
 
         //Get some info about personal folder
-        if (in_array($post_folder, $_SESSION['personal_folders']) === true) {
+        if (in_array($post_folder, $session->get('user-personal_folders')) === true) {
             $personalFolder = 1;
         } else {
             $personalFolder = 0;
@@ -379,7 +379,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
 
             //if asked, anyone in role can modify
             if ((int) $post_edit_role === 1) {
-                foreach ($_SESSION['arr_roles'] as $role) {
+                foreach ($session->get('system-array_roles') as $role) {
                     DB::insert(
                         prefixTable('restriction_to_roles'),
                         array(
@@ -627,7 +627,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
         );
 
         // get destination folder informations
-        $destinationFolderInfos = getFolderComplexity($post_folder_id, $_SESSION['personal_folders']);
+        $destinationFolderInfos = getFolderComplexity($post_folder_id, $session->get('user-personal_folders'));
         $arrFolders[$post_folder_id] = [
             'id' => (int) $post_folder_id,
             'level' => 1,
@@ -756,7 +756,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
 
             //if asked, anyone in role can modify
             if ($post_edit_role === 1) {
-                foreach ($_SESSION['arr_roles'] as $role) {
+                foreach ($session->get('system-array_roles') as $role) {
                     DB::insert(
                         prefixTable('restriction_to_roles'),
                         array(
@@ -830,6 +830,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
  */
 function createFolder($folderTitle, $parentId, $folderLevel, $startPathLevel, $levelPwComplexity)
 {
+    $session = SessionManager::getSession();
     //create folder - if not exists at the same level
     DB::query(
         'SELECT * FROM '.prefixTable('nested_tree').'
@@ -872,7 +873,7 @@ function createFolder($folderTitle, $parentId, $folderLevel, $startPathLevel, $l
         );
 
         //For each role to which the user depends on, add the folder just created.
-        foreach ($_SESSION['arr_roles'] as $role) {
+        foreach ($session->get('system-array_roles') as $role) {
             DB::insert(
                 prefixTable('roles_values'),
                 array(
@@ -884,7 +885,7 @@ function createFolder($folderTitle, $parentId, $folderLevel, $startPathLevel, $l
         }
 
         //Add this new folder to the list of visible folders for the user.
-        array_push($_SESSION['groupes_visibles'], $id);
+        $session->set('user-accessible_folders', $id);
 
         return $id;
     }

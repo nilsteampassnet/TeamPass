@@ -123,8 +123,8 @@ if (null !== $post_type) {
             //Display each folder with associated rights by role
             $descendants = $tree->getDescendants();
             foreach ($descendants as $node) {
-                if (in_array($node->id, $_SESSION['groupes_visibles']) === true
-                    && in_array($node->id, $_SESSION['personal_visible_groups']) === false
+                if (in_array($node->id, $session->get('user-accessible_folders')) === true
+                    && in_array($node->id, $session->get('user-personal_visible_folders')) === false
                 ) {
                     $arrNode = array();
                     $arrNode['ident'] = (int) $node->nlevel;
@@ -449,22 +449,19 @@ if (null !== $post_type) {
                         );
 
                         // add new role to user
-                        $tmp = str_replace(';;', ';', $data_tmp['fonction_id']);
-                        if (substr($tmp, -1) == ';') {
-                            $_SESSION['fonction_id'] = str_replace(';;', ';', $data_tmp['fonction_id'].$role_id);
-                        } else {
-                            $_SESSION['fonction_id'] = str_replace(';;', ';', $data_tmp['fonction_id'].';'.$role_id);
-                        }
+                        $tmp = $data_tmp['fonction_id'] . (substr($data_tmp['fonction_id'], -1) == ';' ? $role_id : ';' . $role_id);
+                        $session->set('user-roles', str_replace(';;', ';', $tmp));
+
                         // store in DB
                         DB::update(
                             prefixTable('users'),
                             [
-                                'fonction_id' => $_SESSION['fonction_id'],
+                                'fonction_id' => $session->get('user-roles'),
                             ],
                             'id = %i',
                             $session->get('user-id')
                         );
-                        $_SESSION['user_roles'] = explode(';', $_SESSION['fonction_id']);
+                        $session->set('user-roles_array', explode(';', $session->get('user-roles')));
 
                         $return['new_role_id'] = $role_id;
                     }
@@ -627,8 +624,8 @@ if (null !== $post_type) {
             //Display each folder with associated rights by role
             $descendants = $tree->getDescendants();
             foreach ($descendants as $node) {
-                if (in_array($node->id, $_SESSION['groupes_visibles']) === true
-                    && in_array($node->id, $_SESSION['personal_visible_groups']) === false
+                if (in_array($node->id, $session->get('user-accessible_folders')) === true
+                    && in_array($node->id, $session->get('user-personal_visible_folders')) === false
                 ) {
                     $arrNode = array();
                     $arrNode['ident'] = (int) $node->nlevel;

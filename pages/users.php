@@ -85,7 +85,7 @@ $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 // PREPARE LIST OF OPTIONS
 $optionsManagedBy = '';
 $optionsRoles = '';
-$userRoles = explode(';', $_SESSION['fonction_id']);
+$userRoles = explode(';', $session->get('user-roles'));
 // If administrator then all roles are shown
 // else only the Roles the users is associated to.
 if ((int) $session->get('user-admin') === 1) {
@@ -98,7 +98,7 @@ $rows = DB::query(
     ORDER BY title ASC'
 );
 foreach ($rows as $record) {
-    if ((int) $session->get('user-admin') === 1 || in_array($record['id'], $_SESSION['user_roles']) === true) {
+    if ((int) $session->get('user-admin') === 1 || in_array($record['id'], $session->get('user-roles_array')) === true) {
         $optionsManagedBy .= '<option value="' . $record['id'] . '">' . $lang->get('managers_of') . ' ' . addslashes($record['title']) . '</option>';
     }
     if (
@@ -114,8 +114,8 @@ $treeDesc = $tree->getDescendants();
 $foldersList = '';
 foreach ($treeDesc as $t) {
     if (
-        in_array($t->id, $_SESSION['groupes_visibles']) === true
-        && in_array($t->id, $_SESSION['personal_visible_groups']) === false
+        in_array($t->id, $session->get('user-accessible_folders')) === true
+        && in_array($t->id, $session->get('user-personal_visible_folders')) === false
     ) {
         $ident = '';
         for ($y = 1; $y < $t->nlevel; ++$y) {

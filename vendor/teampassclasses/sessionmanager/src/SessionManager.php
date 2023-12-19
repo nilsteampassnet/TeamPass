@@ -36,7 +36,7 @@ class SessionManager
         return self::$session;
     }
 
-    public static function manageSessionArray($key, $values = [], $action = 'add') {
+    public static function addRemoveFromSessionArray($key, $values = [], $action = 'add') {
         // Récupérer le tableau de la session
         $sessionArray = self::getSession()->get($key, []);
 
@@ -53,6 +53,28 @@ class SessionManager
                     unset($sessionArray[$index]);
                 }
             }
+        }
+
+        // Réaffecter le tableau à la session
+        self::getSession()->set($key, $sessionArray);
+    }
+
+    public static function specificOpsOnSessionArray($key, $action = 'pop', $value = null) {
+        // Récupérer le tableau de la session
+        $sessionArray = self::getSession()->get($key, []);
+
+        if ($action === 'pop') {
+            // Supprimer la dernière valeur du tableau
+            array_pop($sessionArray);
+        } elseif ($action === 'shift') {
+            // Supprimer la première valeur du tableau
+            array_shift($sessionArray);
+        } elseif ($action === 'reset') {
+            // Réinitialiser le tableau
+            $sessionArray = [];
+        } elseif ($action === 'unshift' && is_null($value) === false) {
+            // Ajouter une valeur au début du tableau
+            array_unshift($sessionArray, $value);
         }
 
         // Réaffecter le tableau à la session

@@ -81,11 +81,8 @@ if (empty($user_id) === false && isset($_SESSION['CPM']) === true) {
 }
 
 // erase session table
-session_destroy();
-$_SESSION = [];
-session_name('teampass_session');
-session_start();
-$_SESSION['CPM'] = 1;
+$session->invalidate();
+
 echo '
     <script type="text/javascript" src="../../plugins/store.js/dist/store.everything.min.js"></script>
     <script language="javascript" type="text/javascript">

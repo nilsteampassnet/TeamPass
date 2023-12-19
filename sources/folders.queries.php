@@ -137,8 +137,8 @@ if (null !== $post_type) {
 
             foreach ($treeDesc as $t) {
                 if (
-                    in_array($t->id, $_SESSION['groupes_visibles']) === true
-                    && in_array($t->id, $_SESSION['personal_visible_groups']) === false
+                    in_array($t->id, $session->get('user-accessible_folders')) === true
+                    && in_array($t->id, $session->get('user-personal_visible_folders')) === false
                     && $t->personal_folder == 0
                 ) {
                     // get $t->parent_id
@@ -549,7 +549,7 @@ if (null !== $post_type) {
             }
             // Check if parent folder is allowed for this user
             if (
-                in_array($post_parent_id, $_SESSION['groupes_visibles']) === false
+                in_array($post_parent_id, $session->get('user-accessible_folders')) === false
                 && (int) $session->get('user-admin') !== 1
             ) {
                 echo prepareExchangedData(
@@ -689,9 +689,9 @@ if (null !== $post_type) {
                 );
 
                 // add new folder id in SESSION
-                array_push($_SESSION['groupes_visibles'], $newId);
+                $session->set('user-accessible_folders', $newId);
                 if ((int) $isPersonal === 1) {
-                    array_push($_SESSION['personal_folders'], $newId);
+                    SessionManager::addRemoveFromSessionArray('user-personal_folders', [$newId], 'add');
                 }
 
                 // rebuild tree
@@ -793,7 +793,7 @@ if (null !== $post_type) {
                 } elseif ((int) $session->get('user-admin') !== 1) {
                     // If not admin and no option enabled
                     // then provide expected rights based upon user's roles
-                    foreach (explode(';', $_SESSION['fonction_id']) as $role) {
+                    foreach (explode(';', $session->get('user-roles')) as $role) {
                         if (empty($role) === false) {
                             DB::insert(
                                 prefixTable('roles_values'),
@@ -821,8 +821,8 @@ if (null !== $post_type) {
                 }
 
                 // clear cache cache for each user that have at least one similar role as the current user
-                $usersWithSimilarRoles = empty($_SESSION['fonction_id']) === false  ? getUsersWithRoles(
-                    explode(";", $_SESSION['fonction_id'])
+                $usersWithSimilarRoles = empty($session->get('user-roles')) === false  ? getUsersWithRoles(
+                    explode(";", $session->get('user-roles'))
                 ) : [];
                 foreach ($usersWithSimilarRoles as $user) {
                     // delete cache tree
@@ -933,8 +933,8 @@ if (null !== $post_type) {
                                 );
 
                                 // delete folder from SESSION
-                                if (array_search($item['id'], $_SESSION['groupes_visibles']) !== false) {
-                                    unset($_SESSION['groupes_visibles'][$item['id']]);
+                                if (array_search($item['id'], $session->get('user-accessible_folders')) !== false) {
+                                    SessionManager::addRemoveFromSessionArray('user-accessible_folders', [$item['id']], 'remove');
                                 }
 
                                 //Update CACHE table
@@ -1065,9 +1065,9 @@ if (null !== $post_type) {
 
             // Get all allowed folders
             $array_all_visible_folders = array_merge(
-                $_SESSION['groupes_visibles'],
+                $session->get('user-accessible_folders'),
                 $_SESSION['read_only_folders'],
-                $_SESSION['personal_visible_groups']
+                $session->get('user-personal_visible_folders')
             );
 
             // get list of all folders
@@ -1130,12 +1130,12 @@ if (null !== $post_type) {
                 );
 
                 // add new folder id in SESSION
-                array_push($_SESSION['groupes_visibles'], $newFolderId);
+                $session->set('user-accessible_folders', $newFolderId);
                 if ((int) $nodeInfo->personal_folder === 1) {
-                    array_push($_SESSION['personal_folders'], $newFolderId);
-                    array_push($_SESSION['personal_visible_groups'], $newFolderId);
+                    SessionManager::addRemoveFromSessionArray('user-personal_folders', [$newFolderId], 'add');
+                    SessionManager::addRemoveFromSessionArray('user-personal_visible_folders', [$newFolderId], 'add');
                 } else {
-                    array_push($_SESSION['all_non_personal_folders'], $newFolderId);
+                    SessionManager::addRemoveFromSessionArray('user-all_non_personal_folders', [$newFolderId], 'add');
                 }
 
                 // If new folder should not heritate of parent rights
@@ -1147,7 +1147,7 @@ if (null !== $post_type) {
                     && (int) $session->get('user-admin') === 0
                 ) {
                     //add access to this new folder
-                    foreach (explode(';', $_SESSION['fonction_id']) as $role) {
+                    foreach (explode(';', $session->get('user-roles')) as $role) {
                         if (empty($role) === false) {
                             DB::insert(
                                 prefixTable('roles_values'),
@@ -1530,8 +1530,8 @@ if (null !== $post_type) {
             $folders = $tree->getDescendants(0, false);
             foreach ($folders as $folder) {
                 if (
-                    in_array($folder->id, $_SESSION['groupes_visibles']) === true
-                    && in_array($folder->id, $_SESSION['personal_visible_groups']) === false
+                    in_array($folder->id, $session->get('user-accessible_folders')) === true
+                    && in_array($folder->id, $session->get('user-personal_visible_folders')) === false
                 ) {
                     // Get path
                     $text = '';

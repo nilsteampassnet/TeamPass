@@ -259,7 +259,7 @@ switch ($inputData['type']) {
             //-> DO A SET OF CHECKS
             // Perform a check in case of Read-Only user creating an item in his PF
             if ($session->get('user-read_only') === 1
-                && (in_array($inputData['folderId'], $_SESSION['personal_folders']) === false
+                && (in_array($inputData['folderId'], $session->get('user-personal_folders')) === false
                 || $post_folder_is_personal !== 1)
             ) {
                 echo (string) prepareExchangedData(
@@ -273,10 +273,10 @@ switch ($inputData['type']) {
             }
 
             // Is author authorized to create in this folder
-            if (count($_SESSION['list_folders_limited']) > 0) {
-                if (in_array($inputData['folderId'], array_keys($_SESSION['list_folders_limited'])) === false
-                    && in_array($inputData['folderId'], $_SESSION['groupes_visibles']) === false
-                    && in_array($inputData['folderId'], $_SESSION['personal_folders']) === false
+            if (count($session->get('user-list_folders_limited')) > 0) {
+                if (in_array($inputData['folderId'], array_keys($session->get('user-list_folders_limited'))) === false
+                    && in_array($inputData['folderId'], $session->get('user-accessible_folders')) === false
+                    && in_array($inputData['folderId'], $session->get('user-personal_folders')) === false
                 ) {
                     echo (string) prepareExchangedData(
                         array(
@@ -288,7 +288,7 @@ switch ($inputData['type']) {
                     break;
                 }
             } else {
-                if (in_array($inputData['folderId'], $_SESSION['groupes_visibles']) === false) {
+                if (in_array($inputData['folderId'], $session->get('user-accessible_folders')) === false) {
                     echo (string) prepareExchangedData(
                         array(
                             'error' => true,
@@ -303,7 +303,7 @@ switch ($inputData['type']) {
             // perform a check in case of Read-Only user creating an item in his PF
             if (
                 $session->get('user-read_only') === 1
-                && in_array($inputData['folderId'], $_SESSION['personal_folders']) === false
+                && in_array($inputData['folderId'], $session->get('user-personal_folders')) === false
             ) {
                 echo (string) prepareExchangedData(
                     array(
@@ -914,7 +914,7 @@ switch ($inputData['type']) {
             // Perform a check in case of Read-Only user creating an item in his PF
             if (
                 $session->get('user-read_only') === 1
-                && (in_array($inputData['folderId'], $_SESSION['personal_folders']) === false
+                && (in_array($inputData['folderId'], $session->get('user-personal_folders')) === false
                     || $post_folder_is_personal !== 1)
             ) {
                 echo (string) prepareExchangedData(
@@ -1050,7 +1050,8 @@ switch ($inputData['type']) {
                 $restrictionActive = false;
             }
 
-            if ((in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) === true
+            $session__list_restricted_folders_for_items = $session->get('system-list_restricted_folders_for_items') ?? [];
+            if ((in_array($dataItem['id_tree'], $session->get('user-accessible_folders')) === true
                     && ((int) $dataItem['perso'] === 0
                         || ((int) $dataItem['perso'] === 1
                             //&& (int) $session->get('user-id') === (int) $dataItem['id_user']))
@@ -1059,12 +1060,12 @@ switch ($inputData['type']) {
                 || (isset($SETTINGS['anyone_can_modify']) === true
                     && (int) $SETTINGS['anyone_can_modify'] === 1
                     && (int) $dataItem['anyone_can_modify'] === 1
-                    && (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) === true
+                    && (in_array($dataItem['id_tree'], $session->get('user-accessible_folders')) === true
                         || (int) $session->get('user-admin') === 1)
                     && $restrictionActive === false)
                 || (null !== $inputData['folderId']
-                    && isset($_SESSION['list_restricted_folders_for_items'][$inputData['folderId']]) === true
-                    && in_array($inputData['id'], $_SESSION['list_restricted_folders_for_items'][$inputData['folderId']]) === true
+                    && count($session__list_restricted_folders_for_items) > 0
+                    && in_array($inputData['id'], $session__list_restricted_folders_for_items[$inputData['folderId']]) === true
                     && $restrictionActive === false)
             ) {
                 // Get existing values
@@ -1215,7 +1216,7 @@ switch ($inputData['type']) {
                         'anyone_can_modify' => (int) $post_anyone_can_modify,
                         'complexity_level' => (int) $post_complexity_level,
                         'encryption_type' => TP_ENCRYPTION_NAME,
-                        'perso' => in_array($inputData['folderId'], $_SESSION['personal_folders']) === true ? 1 : 0,
+                        'perso' => in_array($inputData['folderId'], $session->get('user-personal_folders')) === true ? 1 : 0,
                         'fa_icon' => $post_fa_icon,
                         'updated_at' => time(),
                     ),
@@ -2027,8 +2028,8 @@ switch ($inputData['type']) {
         // perform a check in case of Read-Only user creating an item in his PF
         if (
             (int) $session->get('user-read_only') === 1
-            && (in_array($post_source_id, $_SESSION['personal_folders']) === false
-                || in_array($post_dest_id, $_SESSION['personal_folders']) === false)
+            && (in_array($post_source_id, $session->get('user-personal_folders')) === false
+                || in_array($post_dest_id, $session->get('user-personal_folders')) === false)
         ) {
             echo (string) prepareExchangedData(
                 array(
@@ -2057,7 +2058,7 @@ switch ($inputData['type']) {
             );
 
             // Check if the folder where this item is accessible to the user
-            if (in_array($originalRecord['id_tree'], $_SESSION['groupes_visibles']) === false) {
+            if (in_array($originalRecord['id_tree'], $session->get('user-accessible_folders')) === false) {
                 echo (string) prepareExchangedData(
                     array(
                         'error' => true,
@@ -2549,7 +2550,7 @@ switch ($inputData['type']) {
             $inputData['id']
         );
         foreach ($rows_tmp as $rec_tmp) {
-            if (in_array($rec_tmp['role_id'], explode(';', $_SESSION['fonction_id']))) {
+            if (in_array($rec_tmp['role_id'], explode(';', $session->get('user-roles')))) {
                 $restrictionActive = false;
             }
         }
@@ -2597,22 +2598,11 @@ switch ($inputData['type']) {
                 $pw = '';
                 $arrData['pwd_encryption_error'] = 'inconsistent_password';
                 $arrData['pwd_encryption_error_message'] = $lang->get('error_new_ldap_password_detected');
-                /*echo (string) prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => $lang->get('error_new_ldap_password_detected').'<br><button type="button" class="btn btn-block btn-warning toastr-inside-button"><i class="fa-solid fa-key fa-fw mr-2"></i>'.$lang->get('sync_new_ldap_password').'</button>',
-                        'show_detail_option' => 2,
-                        'error_type' => 'inconsistent_password',
-                    ),
-                    'encode'
-                );*/
             }
         }
 
-        // echo $dataItem['id_tree']." ;; ";
-        //print_r($_SESSION['groupes_visibles']);
-        //echo in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']).' ;; '.$restrictionActive." ;; ";
         // check user is admin
+        $session__list_restricted_folders_for_items = $session->get('system-list_restricted_folders_for_items') ?? [];
         if (
             (int) $session->get('user-admin') === 1
             && (int) $dataItem['perso'] !== 1
@@ -2621,16 +2611,16 @@ switch ($inputData['type']) {
             // ---
             // ---
         } elseif ((
-                (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) === true || (int) $session->get('user-admin') === 1)
-                && ((int) $dataItem['perso'] === 0 || ((int) $dataItem['perso'] === 1 && in_array($dataItem['id_tree'], $_SESSION['personal_folders']) === true))
+                (in_array($dataItem['id_tree'], $session->get('user-accessible_folders')) === true || (int) $session->get('user-admin') === 1)
+                && ((int) $dataItem['perso'] === 0 || ((int) $dataItem['perso'] === 1 && in_array($dataItem['id_tree'], $session->get('user-personal_folders')) === true))
                 && $restrictionActive === false)
             || (isset($SETTINGS['anyone_can_modify']) && (int) $SETTINGS['anyone_can_modify'] === 1
                 && (int) $dataItem['anyone_can_modify'] === 1
-                && (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || (int) $session->get('user-admin') === 1)
+                && (in_array($dataItem['id_tree'], $session->get('user-accessible_folders')) || (int) $session->get('user-admin') === 1)
                 && $restrictionActive === false)
             || (null !== $inputData['folderId']
-                && isset($_SESSION['list_restricted_folders_for_items'][$inputData['folderId']])
-                && in_array($inputData['id'], $_SESSION['list_restricted_folders_for_items'][$inputData['folderId']])
+                && isset($session__list_restricted_folders_for_items[$inputData['folderId']])
+                && in_array($inputData['id'], $session__list_restricted_folders_for_items[$inputData['folderId']])
                 && (int) $post_restricted === 1
                 && $user_in_restricted_list_of_item === true)
             || (isset($SETTINGS['restricted_to_roles']) && (int) $SETTINGS['restricted_to_roles'] === 1
@@ -2646,7 +2636,7 @@ switch ($inputData['type']) {
                 FROM '.prefixTable('roles_values').' AS r
                 WHERE r.folder_id = %i AND r.role_id IN %ls',
                 $dataItem['id_tree'],
-                $_SESSION['groupes_visibles']
+                $session->get('user-accessible_folders')
             );
             foreach ($rows as $record) {
                 // TODO
@@ -2658,7 +2648,7 @@ switch ($inputData['type']) {
                 || (int) $session->get('user-admin') === 1
                 || ((int) $session->get('user-manager') === 1 && (int) $SETTINGS['manager_edit'] === 1)
                 || (int) $dataItem['anyone_can_modify'] === 1
-                || in_array($dataItem['id_tree'], $_SESSION['list_folders_editable_by_role']) === true
+                || in_array($dataItem['id_tree'], $session->get('system-list_folders_editable_by_role')) === true
                 || in_array($session->get('user-id'), $restrictedTo) === true
                 //|| count($restrictedTo) === 0
                 || (int) $post_folder_access_level === 30
@@ -3088,12 +3078,13 @@ switch ($inputData['type']) {
             $inputData['id']
         );
         foreach ($rows_tmp as $rec_tmp) {
-            if (in_array($rec_tmp['role_id'], explode(';', $_SESSION['fonction_id']))) {
+            if (in_array($rec_tmp['role_id'], explode(';', $session->get('user-roles')))) {
                 $restrictionActive = false;
             }
         }
 
         // check user is admin
+        $session__list_restricted_folders_for_items = $session->get('system-list_restricted_folders_for_items') ?? [];
         if (
             (int) $session->get('user-admin') === 1
             && (int) $dataItem['perso'] === 0
@@ -3105,16 +3096,16 @@ switch ($inputData['type']) {
             );
         // Check if actual USER can see this ITEM
         } elseif ((
-                (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) === true || (int) $session->get('user-admin') === 1)
-                && ((int) $dataItem['perso'] === 0 || ((int) $dataItem['perso'] === 1 && in_array($dataItem['id_tree'], $_SESSION['personal_folders']) === true))
+                (in_array($dataItem['id_tree'], $session->get('user-accessible_folders')) === true || (int) $session->get('user-admin') === 1)
+                && ((int) $dataItem['perso'] === 0 || ((int) $dataItem['perso'] === 1 && in_array($dataItem['id_tree'], $session->get('user-personal_folders')) === true))
                 && $restrictionActive === false) === true
             || (isset($SETTINGS['anyone_can_modify']) === true && (int) $SETTINGS['anyone_can_modify'] === 1
                 && (int) (int) $dataItem['anyone_can_modify'] === 1
-                && (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || (int) $session->get('user-admin') === 1)
+                && (in_array($dataItem['id_tree'], $session->get('user-accessible_folders')) || (int) $session->get('user-admin') === 1)
                 && $restrictionActive === false) === true
             || (null !== $inputData['folderId']
-                && isset($_SESSION['list_restricted_folders_for_items'][$inputData['folderId']]) === true
-                && in_array($inputData['id'], $_SESSION['list_restricted_folders_for_items'][$inputData['folderId']]) === true
+                && isset($session__list_restricted_folders_for_items[$inputData['folderId']]) === true
+                && in_array($inputData['id'], $session__list_restricted_folders_for_items[$inputData['folderId']]) === true
                 && (int) $post_restricted === 1
                 && $user_in_restricted_list_of_item === true) === true
             || (isset($SETTINGS['restricted_to_roles']) === true && (int) $SETTINGS['restricted_to_roles'] === 1
@@ -3171,9 +3162,10 @@ switch ($inputData['type']) {
                 in_array($dataItem['id'], $session->get('user-latest_items')) === false
             ) {
                 if (count($session->get('user-latest_items')) >= $SETTINGS['max_latest_items']) {
-                    array_pop($session->get('user-latest_items')); //delete last items
+                    // delete last items
+                    SessionManager::specificOpsOnSessionArray('user-latest_items', 'pop');
                 }
-                array_unshift($session->get('user-latest_items'), $dataItem['id']);
+                SessionManager::specificOpsOnSessionArray('user-latest_items', 'unshift', $dataItem['id']);
                 // update DB
                 DB::update(
                     prefixTable('users'),
@@ -3543,7 +3535,7 @@ switch ($inputData['type']) {
         $inputData['folderId'] = filter_var(htmlspecialchars_decode($dataReceived['folder']), FILTER_SANITIZE_NUMBER_INT);
 
         // Check if user is allowed to access this folder
-        if (!in_array($inputData['folderId'], $_SESSION['groupes_visibles'])) {
+        if (!in_array($inputData['folderId'], $session->get('user-accessible_folders'))) {
             echo '[{"error" : "' . $lang->get('error_not_allowed_to') . '"}]';
             break;
         }
@@ -3658,8 +3650,8 @@ switch ($inputData['type']) {
         $post_target_folder_id = filter_var(htmlspecialchars_decode($dataReceived['target_folder_id']), FILTER_SANITIZE_NUMBER_INT);
 
         // Check that user can access this folder
-        if ((in_array($post_source_folder_id, $_SESSION['groupes_visibles']) === false ||
-                in_array($post_target_folder_id, $_SESSION['groupes_visibles']) === false) && ($post_target_folder_id === '0' &&
+        if ((in_array($post_source_folder_id, $session->get('user-accessible_folders')) === false ||
+                in_array($post_target_folder_id, $session->get('user-accessible_folders')) === false) && ($post_target_folder_id === '0' &&
                 isset($SETTINGS['can_create_root_folder']) === true && (int) $SETTINGS['can_create_root_folder'] === 1)
         ) {
             $returnValues = '[{"error" : "' . $lang->get('error_not_allowed_to') . '"}]';
@@ -3751,7 +3743,7 @@ switch ($inputData['type']) {
             break;
         }
 
-        if (count($_SESSION['user_roles']) === 0) {
+        if (count($session->get('user-roles_array')) === 0) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -3786,7 +3778,7 @@ switch ($inputData['type']) {
         $post_nb_items_to_display_once = filter_var($dataReceived['nb_items_to_display_once'], FILTER_SANITIZE_NUMBER_INT);
 
         $arr_arbo = [];
-        $folderIsPf = in_array($inputData['id'], $_SESSION['personal_folders']) === true ? true : false;
+        $folderIsPf = in_array($inputData['id'], $session->get('user-personal_folders')) === true ? true : false;
         $showError = 0;
         $itemsIDList = $rights = $returnedData = $uniqueLoadData = $html_json = array();
         // Build query limits
@@ -3810,7 +3802,7 @@ switch ($inputData['type']) {
                     array(
                         'id' => $elem->id,
                         'title' => htmlspecialchars(stripslashes(htmlspecialchars_decode($elem->title, ENT_QUOTES)), ENT_QUOTES),
-                        'visible' => in_array($elem->id, $_SESSION['groupes_visibles']) ? 1 : 0,
+                        'visible' => in_array($elem->id, $session->get('user-accessible_folders')) ? 1 : 0,
                     )
                 );
             }
@@ -3832,7 +3824,7 @@ switch ($inputData['type']) {
 
             // CHeck if roles have 'allow_pw_change' set to true
             $forceItemEditPrivilege = false;
-            foreach ($_SESSION['user_roles'] as $role) {
+            foreach ($session->get('user-roles_array') as $role) {
                 $roleQ = DB::queryfirstrow(
                     'SELECT allow_pw_change
                     FROM ' . prefixTable('roles_title') . '
@@ -3846,10 +3838,16 @@ switch ($inputData['type']) {
             }
 
             // is this folder a personal one
-            $folder_is_personal = in_array($inputData['id'], $_SESSION['personal_folders']);
+            $folder_is_personal = in_array($inputData['id'], $session->get('user-personal_folders'));
             $uniqueLoadData['folder_is_personal'] = $folder_is_personal;
 
-            $folder_is_in_personal = in_array($inputData['id'], array_merge($_SESSION['personal_visible_groups'], $_SESSION['personal_folders']));
+            $folder_is_in_personal = in_array(
+                $inputData['id'],
+                array_merge(
+                    $session->get('user-personal_visible_folders'),
+                    $session->get('user-personal_folders')
+                )
+            );
             $uniqueLoadData['folder_is_in_personal'] = $folder_is_in_personal;
 
 
@@ -3858,7 +3856,7 @@ switch ($inputData['type']) {
                 $accessLevel = 20;
                 $arrTmp = [];
                 
-                foreach ($_SESSION['user_roles'] as $role) {
+                foreach ($session->get('user-roles_array') as $role) {
                     $access = DB::queryFirstRow(
                         'SELECT type FROM ' . prefixTable('roles_values') . ' WHERE role_id = %i AND folder_id = %i',
                         $role,
@@ -3880,7 +3878,7 @@ switch ($inputData['type']) {
                             array_push($arrTmp, 15);
                         } else {
                             // Ensure to give access Right if allowed folder
-                            if (in_array($inputData['id'], $_SESSION['groupes_visibles']) === true) {
+                            if (in_array($inputData['id'], $session->get('user-accessible_folders')) === true) {
                                 array_push($arrTmp, 30);
                             } else {
                                 array_push($arrTmp, 0);
@@ -3905,16 +3903,17 @@ switch ($inputData['type']) {
 
             // check if items exist
             $where = new WhereClause('and');
-            if (null !== $post_restricted && (int) $post_restricted === 1 && empty($_SESSION['list_folders_limited'][$inputData['id']]) === false) {
-                $counter = count($_SESSION['list_folders_limited'][$inputData['id']]);
+            $session__user_list_folders_limited = $session->get('user-list_folders_limited');
+            if (null !== $post_restricted && (int) $post_restricted === 1 && empty($session__user_list_folders_limited[$inputData['id']]) === false) {
+                $counter = count($session__user_list_folders_limited[$inputData['id']]);
                 $uniqueLoadData['counter'] = $counter;
                 // check if this folder is visible
             } elseif (!in_array(
                 $inputData['id'],
                 array_merge(
-                    $_SESSION['groupes_visibles'],
-                    is_array($_SESSION['list_restricted_folders_for_items']) === true ? array_keys($_SESSION['list_restricted_folders_for_items']) : array(),
-                    is_array($_SESSION['list_folders_limited']) === true ? array_keys($_SESSION['list_folders_limited']) : array()
+                    $session->get('user-accessible_folders'),
+                    array_keys($session->get('system-list_restricted_folders_for_items')),
+                    array_keys($session->get('user-list_folders_limited'))
                 )
             )) {
                 echo (string) prepareExchangedData(
@@ -3989,7 +3988,7 @@ switch ($inputData['type']) {
                             if ($field['role_visibility'] === 'all'
                                 || count(
                                     array_intersect(
-                                        explode(';', $_SESSION['fonction_id']),
+                                        explode(';', $session->get('user-roles')),
                                         explode(',', $field['role_visibility'])
                                     )
                                 ) > 0
@@ -4023,8 +4022,8 @@ switch ($inputData['type']) {
             $uniqueLoadData['categoriesStructure'] = $categoriesStructure;
             */
 
-            if (isset($_SESSION['list_folders_editable_by_role'])) {
-                $list_folders_editable_by_role = in_array($inputData['id'], $_SESSION['list_folders_editable_by_role']);
+            if (null !== $session->get('system-list_folders_editable_by_role')) {
+                $list_folders_editable_by_role = in_array($inputData['id'], $session->get('system-list_folders_editable_by_role'));
             } else {
                 $list_folders_editable_by_role = '';
             }
@@ -4049,8 +4048,9 @@ switch ($inputData['type']) {
         
         // prepare query WHere conditions
         $where = new WhereClause('and');
-        if (null !== $post_restricted && (int) $post_restricted === 1 && empty($_SESSION['list_folders_limited'][$inputData['id']]) === false) {
-            $where->add('i.id IN %ls', $_SESSION['list_folders_limited'][$inputData['id']]);
+        $session__user_list_folders_limited = $session->get('user-list_folders_limited');
+        if (null !== $post_restricted && (int) $post_restricted === 1 && empty($session__user_list_folders_limited[$inputData['id']]) === false) {
+            $where->add('i.id IN %ls', $session__user_list_folders_limited[$inputData['id']]);
         } else {
             $where->add('i.id_tree=%i', $inputData['id']);
         }
@@ -4150,7 +4150,7 @@ switch ($inputData['type']) {
                         FROM ' . prefixTable('restriction_to_roles') . '
                         WHERE item_id = %i AND role_id IN %ls',
                         $record['id'],
-                        $_SESSION['user_roles']
+                        $session->get('user-roles_array')
                     );
                     if (DB::count() > 0) {
                         $user_is_included_in_role = true;
@@ -4481,7 +4481,7 @@ switch ($inputData['type']) {
             if (null !== $inputData['folderId'] && empty($inputData['folderId']) === false) {
                 if (
                     in_array($inputData['folderId'], $_SESSION['read_only_folders']) === true
-                    || in_array($inputData['folderId'], $_SESSION['groupes_visibles']) === false
+                    || in_array($inputData['folderId'], $session->get('user-accessible_folders')) === false
                 ) {
                     // check if this item can be modified by anyone
                     if (isset($SETTINGS['anyone_can_modify']) && (int) $SETTINGS['anyone_can_modify'] === 1) {
@@ -4697,7 +4697,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
         $accessLevel = 20;
         if ($folder_is_personal === 0) {
             $arrTmp = [];
-            foreach ($_SESSION['user_roles'] as $role) {
+            foreach ($session->get('user-roles_array') as $role) {
                 //db::debugmode(true);
                 $access = DB::queryFirstRow(
                     'SELECT type
@@ -4720,7 +4720,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                         array_push($arrTmp, 15);
                     } else {
                         // Ensure to give access Right if allowed folder
-                        if (in_array($inputData['id'], $_SESSION['groupes_visibles']) === true) {
+                        if (in_array($inputData['id'], $session->get('user-accessible_folders')) === true) {
                             array_push($arrTmp, 30);
                         } else {
                             array_push($arrTmp, 0);
@@ -4794,7 +4794,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
         );
 
         // Check that user can access this folder
-        if (in_array($data_item['id_tree'], $_SESSION['groupes_visibles']) === false) {
+        if (in_array($data_item['id_tree'], $session->get('user-accessible_folders')) === false) {
             echo (string) prepareExchangedData(
                 array('error' => 'ERR_FOLDER_NOT_ALLOWED'),
                 'encode'
@@ -4867,7 +4867,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
 
         if ((int) $inputData['action'] === 0) {
             // Add new favourite
-            array_push($session->get('user-favorites'), $inputData['itemId']);
+            SessionManager::addRemoveFromSessionArray('user-favorites', [$inputData['itemId']], 'add');
             DB::update(
                 prefixTable('users'),
                 array(
@@ -4889,13 +4889,8 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
             );
         } elseif ((int) $inputData['action'] === 1) {
             // delete from session
-            $favorites = $session->get('user-favorites');
-            foreach ($session->get('user-favorites') as $key => $value) {
-                if ($session->get('user-favorites')[$key] === $inputData['itemId']) {
-                    unset($session->get('user-favorites')[$key]);
-                    break;
-                }
-            }
+            SessionManager::addRemoveFromSessionArray('user-favorites', [$inputData['itemId']], 'remove');
+
             // delete from DB
             DB::update(
                 prefixTable('users'),
@@ -4971,8 +4966,8 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
 
         // Check that user can access this folder
         if (
-            in_array($dataSource['id_tree'], $_SESSION['groupes_visibles']) === false
-            || in_array($inputData['folderId'], $_SESSION['groupes_visibles']) === false
+            in_array($dataSource['id_tree'], $session->get('user-accessible_folders')) === false
+            || in_array($inputData['folderId'], $session->get('user-accessible_folders')) === false
             //|| (int) $dataSource['personal_folder'] === (int) $dataDestination['personal_folder']
         ) {
             echo (string) prepareExchangedData(
@@ -5277,8 +5272,8 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
 
                 // Check that user can access this folder
                 if (
-                    in_array($dataSource['id_tree'], $_SESSION['groupes_visibles']) === false
-                    || in_array($inputData['folderId'], $_SESSION['groupes_visibles']) === false
+                    in_array($dataSource['id_tree'], $session->get('user-accessible_folders')) === false
+                    || in_array($inputData['folderId'], $session->get('user-accessible_folders')) === false
                 ) {
                     echo (string) prepareExchangedData(
                         array(
@@ -5611,7 +5606,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
 
                 // Check that user can access this folder
                 if (
-                    in_array($dataSource['id_tree'], $_SESSION['groupes_visibles']) === false
+                    in_array($dataSource['id_tree'], $session->get('user-accessible_folders')) === false
                 ) {
                     echo (string) prepareExchangedData(
                         array(
@@ -5847,6 +5842,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
         $label = filter_var($dataReceived['label'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         $date = filter_var($dataReceived['date'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         $time = filter_var($dataReceived['time'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        $session__user_list_folders_limited = $session->get('user-list_folders_limited');
 
         // Get all informations for this item
         $dataItem = DB::queryfirstrow(
@@ -5867,9 +5863,9 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
             $restrictionActive = false;
         }
 
-        if (((in_array($dataItem['id_tree'], $_SESSION['groupes_visibles'])) && ((int) $dataItem['perso'] === 0 || ((int) $dataItem['perso'] === 1 && $dataItem['id_user'] === $session->get('user-id'))) && $restrictionActive === false)
-            || (isset($SETTINGS['anyone_can_modify']) && (int) $SETTINGS['anyone_can_modify'] === 1 && (int) $dataItem['anyone_can_modify'] === 1 && (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || (int) $session->get('user-admin') === 1) && $restrictionActive === false)
-            || (is_array($_SESSION['list_folders_limited'][$inputData['folderId']]) === true && in_array($inputData['id'], $_SESSION['list_folders_limited'][$inputData['folderId']]) === true)
+        if (((in_array($dataItem['id_tree'], $session->get('user-accessible_folders'))) && ((int) $dataItem['perso'] === 0 || ((int) $dataItem['perso'] === 1 && $dataItem['id_user'] === $session->get('user-id'))) && $restrictionActive === false)
+            || (isset($SETTINGS['anyone_can_modify']) && (int) $SETTINGS['anyone_can_modify'] === 1 && (int) $dataItem['anyone_can_modify'] === 1 && (in_array($dataItem['id_tree'], $session->get('user-accessible_folders')) || (int) $session->get('user-admin') === 1) && $restrictionActive === false)
+            || (is_array($session__user_list_folders_limited[$inputData['folderId']]) === true && in_array($inputData['id'], $session__user_list_folders_limited[$inputData['folderId']]) === true)
         ) {
             // Query
             logItems(
@@ -6335,20 +6331,20 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
         if (
             (int) $session->get('user-admin') === 1
         ) {
-            $_SESSION['groupes_visibles'] = $_SESSION['personal_visible_groups'];
+            $session->set('user-accessible_folders', $session->get('user-personal_visible_folders'));
         }
 
-        if (isset($_SESSION['list_folders_limited']) && count($_SESSION['list_folders_limited']) > 0) {
-            $listFoldersLimitedKeys = is_array($_SESSION['list_folders_limited']) === true ? array_keys($_SESSION['list_folders_limited']) : [];
+        if (null !== $session->get('user-list_folders_limited') && count($session->get('user-list_folders_limited')) > 0) {
+            $listFoldersLimitedKeys = array_keys($session->get('user-list_folders_limited'));
         } else {
             $listFoldersLimitedKeys = array();
         }
         // list of items accessible but not in an allowed folder
         if (
-            isset($_SESSION['list_restricted_folders_for_items'])
-            && count($_SESSION['list_restricted_folders_for_items']) > 0
+            null !== $session->get('system-list_restricted_folders_for_items') &&
+            count($session->get('system-list_restricted_folders_for_items')) > 0
         ) {
-            $listRestrictedFoldersForItemsKeys = is_array($_SESSION['list_restricted_folders_for_items']) === true ? array_keys($_SESSION['list_restricted_folders_for_items']) : [];
+            $listRestrictedFoldersForItemsKeys = array_keys($session->get('system-list_restricted_folders_for_items'));
         } else {
             $listRestrictedFoldersForItemsKeys = array();
         }
@@ -6362,7 +6358,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
             // Be sure that user can only see folders he/she is allowed to
             if (
                 in_array($folder->id, $_SESSION['forbiden_pfs']) === false
-                || in_array($folder->id, $_SESSION['groupes_visibles']) === true
+                || in_array($folder->id, $session->get('user-accessible_folders')) === true
                 || in_array($folder->id, $listFoldersLimitedKeys) === true
                 || in_array($folder->id, $listRestrictedFoldersForItemsKeys) === true
             ) {
@@ -6374,7 +6370,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                 foreach ($nodeDescendants as $node) {
                     // manage tree counters
                     if (
-                        in_array($node, array_merge($_SESSION['groupes_visibles'], $_SESSION['list_restricted_folders_for_items'])) === true
+                        in_array($node, array_merge($session->get('user-accessible_folders'), $session->get('system-list_restricted_folders_for_items'))) === true
                         || (is_array($listFoldersLimitedKeys) === true && in_array($node, $listFoldersLimitedKeys) === true)
                         || (is_array($listRestrictedFoldersForItemsKeys) === true && in_array($node, $listRestrictedFoldersForItemsKeys) === true)
                     ) {
@@ -6388,9 +6384,9 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                     // Is this folder disabled?
                     $disabled = 0;
                     if (
-                        in_array($folder->id, $_SESSION['groupes_visibles']) === false
+                        in_array($folder->id, $session->get('user-accessible_folders')) === false
                         || in_array($folder->id, $_SESSION['read_only_folders']) === true
-                        //|| ((int) $session->get('user-read_only') === 1 && in_array($folder->id, $_SESSION['personal_visible_groups']) === false)
+                        //|| ((int) $session->get('user-read_only') === 1 && in_array($folder->id, $session->get('user-personal_visible_folders')) === false)
                     ) {
                         $disabled = 1;
                     }
@@ -7133,7 +7129,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
             'SELECT type
             FROM ' . prefixTable('roles_values') . '
             WHERE role_id IN %ls AND folder_id = %i',
-            array_column($superGlobal->get('arr_roles', 'SESSION'), 'id'),
+            array_column($session->get('system-array_roles'), 'id'),
             $inputData['treeId'],
         );
         $edit = $delete = true;        

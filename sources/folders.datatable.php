@@ -139,8 +139,8 @@ if (count($treeDesc) > 0) {
 $x = 0;
 $arr_ids = [];
 foreach ($treeDesc as $t) {
-    if (in_array($t->id, $_SESSION['groupes_visibles']) === true
-        && in_array($t->id, $_SESSION['personal_visible_groups']) === false
+    if (in_array($t->id, $session->get('user-accessible_folders')) === true
+        && in_array($t->id, $session->get('user-personal_visible_folders')) === false
         && $t->personal_folder === 0
     ) {
         // get $t->parent_id
