@@ -104,7 +104,14 @@ declare(strict_types=1);
         );
         $.when(
             // Load teampass settings
-            loadSettings()
+            (function() {
+                if (store.get('teampassUser') !== undefined) {
+                    return loadSettings();
+                } else {
+                    // Retourner une promesse résolue si la condition n'est pas satisfaite
+                    return $.Deferred().resolve().promise();
+                }
+            })()
         ).then(function() {
             showMFAMethod();
         });
@@ -350,7 +357,7 @@ declare(strict_types=1);
                                     "sources/main.queries.php", {
                                         type: "convert_items_with_personal_saltkey_progress",
                                         data: prepareExchangedData(JSON.stringify(data), "encode", store.get('teampassUser').sessionKey),
-                                        key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                                        key: '<?php echo $session->get('key'); ?>'
                                     },
                                     function(data) {
                                         data = prepareExchangedData(data, store.get('teampassUser').sessionKey);
@@ -522,17 +529,19 @@ declare(strict_types=1);
 
         // get some info
         var client_info = '';
-        
+        console.log('KEY : <?php echo $session->get('key'); ?>')
         // Get 2fa
+        //TODO : je pense que cela pourrait etre modifié pour ne pas faire de requete ajax ; on dispose des infos via `get_teampass_settings`
         $.post(
             'sources/identify.php', {
                 type: 'get2FAMethods',
                 login: $('#login').val(),
+                sessionId: '<?php echo session_id(); ?>'
             },
             function(data) {
                 data = JSON.parse(data);
-
-                if (data.key !== '<?php echo $superGlobal->get('key', 'SESSION'); ?>') {
+                console.log(data)
+                if (data.key !== '<?php echo $session->get('key'); ?>') {
                     // No session was found, warn user
                     toastr.remove();
                     toastr.error(
@@ -545,7 +554,7 @@ declare(strict_types=1);
 
                     // Delay page submit
                     $(this).delay(5000).queue(function() {
-                        document.location.reload(true);
+                        //document.location.reload(true);
                         $(this).dequeue();
                     });
 
@@ -556,7 +565,7 @@ declare(strict_types=1);
                     data = prepareExchangedData(
                         data.ret,
                         "decode",
-                        "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
+                        "<?php echo $session->get('key'); ?>"
                     );
                 } catch (e) {
                     // error
@@ -594,7 +603,7 @@ declare(strict_types=1);
 
                 // Google 2FA
                 if (mfaMethod === 'google' && data.google === true) {
-                        mfaData['GACode'] = $('#ga_code').val();
+                    mfaData['GACode'] = $('#ga_code').val();
                 }
 
                 // Yubico
@@ -658,15 +667,16 @@ declare(strict_types=1);
                 data: prepareExchangedData(
                     JSON.stringify(data),
                     'encode',
-                    '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
-                )
+                    '<?php echo $session->get('key'); ?>'
+                ),
+                sessionId: '<?php echo session_id(); ?>'
             },
             function(receivedData) {
                 try {
                     var data = prepareExchangedData(
                         receivedData,
                         "decode",
-                        "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
+                        "<?php echo $session->get('key'); ?>"
                     );
                 } catch (e) {
                     // error
@@ -684,7 +694,7 @@ declare(strict_types=1);
                 
                 if (debugJavascript === true) {
                     console.info('Identification answer:')
-                    console.log('SESSION KEY is: <?php echo $superGlobal->get('key', 'SESSION'); ?>');
+                    console.log('SESSION KEY is: <?php echo $session->get('key'); ?>');
                     console.log(data);
                 }
                 
@@ -825,11 +835,11 @@ declare(strict_types=1);
                 'sources/main.queries.php', {
                     type: 'ga_generate_qr',
                     type_category: 'action_user',
-                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
-                    key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
+                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                    key: "<?php echo $session->get('key'); ?>"
                 },
                 function(data) {
-                    data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
+                    data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
                     if (debugJavascript === true) console.log(data);
 
                     if (data.error !== false) {
@@ -882,11 +892,11 @@ declare(strict_types=1);
             'sources/main.queries.php', {
                 type: 'ga_generate_qr',
                 type_category: 'action_user',
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
-                key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                key: "<?php echo $session->get('key'); ?>"
             },
             function(data) {
-                data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
+                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
                 if (debugJavascript === true) console.log(data);
 
                 if (data.error !== false) {

@@ -24,6 +24,7 @@ use LdapRecord\Container;
 use voku\helper\AntiXSS;
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
@@ -34,9 +35,8 @@ require_once 'main.functions.php';
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
+$session = SessionManager::getSession();
 $lang = new Language(); 
-session_name('teampass_session');
-session_start();
 
 // Load config if $SETTINGS not defined
 try {
@@ -57,8 +57,8 @@ $checkUserAccess = new PerformChecks(
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
         'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
     ]
 );
@@ -94,7 +94,7 @@ switch ($post_type) {
     //CASE for getting informations about the tool
     case 'ldap_test_configuration':
         // Check KEY and rights
-        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+        if ($post_key !== $session->get('key')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,

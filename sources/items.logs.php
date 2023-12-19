@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
@@ -32,9 +33,8 @@ require_once 'main.functions.php';
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
+$session = SessionManager::getSession();
 $lang = new Language(); 
-session_name('teampass_session');
-session_start();
 
 // Load config if $SETTINGS not defined
 try {
@@ -55,8 +55,8 @@ $checkUserAccess = new PerformChecks(
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
         'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
     ]
 );
@@ -90,7 +90,7 @@ $post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS
 
 // Check KEY and rights
 if (null === $post_key
-    || $post_key != $superGlobal->get('key', 'SESSION')
+    || $post_key != $session->get('key')
 ) {
     echo prepareExchangedData(
         array('error' => 'ERR_KEY_NOT_CORRECT'),
@@ -104,7 +104,7 @@ if (null !== $post_type) {
     switch ($post_type) {
         case 'log_action_on_item':
             // Check KEY and rights
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array('error' => 'ERR_KEY_NOT_CORRECT'),
                     'encode'

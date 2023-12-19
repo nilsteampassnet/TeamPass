@@ -31,6 +31,7 @@ use voku\helper\AntiXSS;
 use Hackzilla\PasswordGenerator\Generator\ComputerPasswordGenerator;
 use Hackzilla\PasswordGenerator\RandomGenerator\Php7RandomGenerator;
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use TeampassClasses\NestedTree\NestedTree;
 use Defuse\Crypto\Key;
@@ -44,12 +45,7 @@ use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Process;
 use Symfony\Component\Process\PhpExecutableFinder;
 use TeampassClasses\Encryption\Encryption;
-//use phpseclib3\Crypt\PublicKeyLoader;
-//use phpseclib3\Crypt\RSA;
-//use phpseclib3\Exception\NoKeyLoadedException;
-//use phpseclib\Crypt\RSA;
-//use phpseclib\Crypt\AES;
-use Symfony\Component\HttpFoundation\Session\Session;
+
 
 // Load config if $SETTINGS not defined
 if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir']) === true) {
@@ -58,6 +54,8 @@ if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir'
 
 header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, must-revalidate');
+
+
 
 loadClasses('DB');
 
@@ -74,7 +72,8 @@ function langHdl(string $string): string
     }
 
     // Load
-    $session = new Session();
+    require_once 'sessionManager.php';
+    $session = SessionManager::getSession();
     $superGlobal = new SuperGlobal();
     $antiXss = new AntiXSS();
     // Get language string
@@ -329,6 +328,8 @@ function identifyUserRights(
     $idFonctions,
     $SETTINGS
 ) {
+    require_once 'sessionManager.php';
+    $session = SessionManager::getSession();
     $superGlobal = new SuperGlobal();
     $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
@@ -355,7 +356,7 @@ function identifyUserRights(
             'timestamp' => time(),
         ],
         'id=%i',
-        $superGlobal->get('user_id', 'SESSION')
+        $session->get('user-id')
     );
 
     return true;
@@ -372,6 +373,8 @@ function identifyUserRights(
  */
 function identAdmin($idFonctions, $SETTINGS, $tree)
 {
+    require_once 'sessionManager.php';
+    $session = SessionManager::getSession();
     // Load superglobal
     $superGlobal = new SuperGlobal();
     // Init
@@ -387,7 +390,7 @@ function identAdmin($idFonctions, $SETTINGS, $tree)
     $superGlobal->put('no_access_folders', [], 'SESSION');
     $superGlobal->put('forbiden_pfs', [], 'SESSION');
     // Get superglobals
-    $globalsUserId = $superGlobal->get('user_id', 'SESSION');
+    $globalsUserId = $session->get('user-id');
     $globalsVisibleFolders = $superGlobal->get('groupes_visibles', 'SESSION');
     $globalsPersonalVisibleFolders = $superGlobal->get('personal_visible_groups', 'SESSION');
     // Get list of Folders
@@ -439,7 +442,7 @@ function identAdmin($idFonctions, $SETTINGS, $tree)
         }
     }
     $superGlobal->put('fonction_id', implode(';', $tmp), 'SESSION');
-    $superGlobal->put('is_admin', 1, 'SESSION');
+    $session->set('user-admin', 1, );
     // Check if admin has created Folders and Roles
     DB::query('SELECT * FROM ' . prefixTable('nested_tree') . '');
     $superGlobal->put('nb_folders', DB::count(), 'SESSION');
@@ -488,6 +491,8 @@ function identUser(
     array $SETTINGS,
     object $tree
 ) {
+    require_once 'sessionManager.php';
+    $session = SessionManager::getSession();
     // Load superglobal
     $superGlobal = new SuperGlobal();
     // Init
@@ -497,7 +502,7 @@ function identUser(
     $superGlobal->put('personal_visible_groups', [], 'SESSION');
     $superGlobal->put('read_only_folders', [], 'SESSION');
     $superGlobal->put('fonction_id', $userRoles, 'SESSION');
-    $superGlobal->put('is_admin', 0, 'SESSION');
+    $session->set('user-admin', 0);
     // init
     $personalFolders = [];
     $readOnlyFolders = [];
@@ -507,8 +512,8 @@ function identUser(
     $foldersLimitedFull = [];
     $allowedFoldersByRoles = [];
     // Get superglobals
-    $globalsUserId = $superGlobal->get('user_id', 'SESSION');
-    $globalsPersonalFolders = $superGlobal->get('personal_folder', 'SESSION');
+    $globalsUserId = $session->get('user-id');
+    $globalsPersonalFolders = $session->get('user-personal_folder_enabled');
     // Ensure consistency in array format
     $noAccessFolders = convertToArray($noAccessFolders);
     $userRoles = convertToArray($userRoles);
@@ -888,6 +893,8 @@ function cacheTableRefresh(): void
  */
 function cacheTableUpdate(?int $ident = null): void
 {
+    require_once 'sessionManager.php';
+    $session = SessionManager::getSession();
     // Load class DB
     loadClasses('DB');
     $superGlobal = new SuperGlobal();
@@ -945,7 +952,7 @@ function cacheTableUpdate(?int $ident = null): void
             'restricted_to' => isset($data['restricted_to']) && ! empty($data['restricted_to']) ? $data['restricted_to'] : '0',
             'login' => $data['login'] ?? '',
             'folder' => implode(' » ', $folder),
-            'author' => $superGlobal->get('user_id', 'SESSION'),
+            'author' => $session->get('user-id'),
         ],
         'id = %i',
         $ident
@@ -961,8 +968,11 @@ function cacheTableUpdate(?int $ident = null): void
  */
 function cacheTableAdd(?int $ident = null): void
 {
+    require_once 'sessionManager.php';
+    $session = SessionManager::getSession();
+
     $superGlobal = new SuperGlobal();
-    $globalsUserId = $superGlobal->get('user_id', 'SESSION');
+    $globalsUserId = $session->get('user-id');
 
     // Load class DB
     loadClasses('DB');
@@ -1456,15 +1466,15 @@ function utf8Converter(array $array): array
  */
 function prepareExchangedData($data, string $type, ?string $key = null)
 {
-    // Load superglobal
-    $superGlobal = new SuperGlobal();
-
-    // Get superglobals
+    require_once 'sessionManager.php';
+    $session = SessionManager::getSession();
+    
+    // get session
     if ($key !== null) {
-        $superGlobal->put('key', $key, 'SESSION');
+        $session->set('key', $key);
         $globalsKey = $key;
     } else {
-        $globalsKey = $superGlobal->get('key', 'SESSION');
+        $globalsKey = $session->get('key');
     }
     
     // Perform
@@ -1820,13 +1830,15 @@ function notifyOnChange(int $item_id, string $action, array $SETTINGS): void
  */
 function notifyChangesToSubscribers(int $item_id, string $label, array $changes, array $SETTINGS): void
 {
+    require_once 'sessionManager.php';
+    $session = SessionManager::getSession();
     // Load superglobal
     $superGlobal = new SuperGlobal();
     $lang = new Language(); 
     // Get superglobals
-    $globalsUserId = $superGlobal->get('user_id', 'SESSION');
-    $globalsLastname = $superGlobal->get('lastname', 'SESSION');
-    $globalsName = $superGlobal->get('name', 'SESSION');
+    $globalsUserId = $session->get('user-id');
+    $globalsLastname = $session->get('user-lastname');
+    $globalsName = $session->get('user-name');
     // send email to user that what to be notified
     $notification = DB::queryOneColumn(
         'email',
@@ -2337,6 +2349,8 @@ function recursiveChmod(
  */
 function accessToItemIsGranted(int $item_id, array $SETTINGS)
 {
+    require_once 'sessionManager.php';
+    $session = SessionManager::getSession();
     $superGlobal = new SuperGlobal();
     // Prepare superGlobal variables
     $session_groupes_visibles = $superGlobal->get('groupes_visibles', 'SESSION');
@@ -2801,6 +2815,8 @@ function storeUsersShareKey(
     bool $deleteAll = true,
     array $objectKeyArray = []
 ): void {
+    require_once 'sessionManager.php';
+    $session = SessionManager::getSession();
     $superGlobal = new SuperGlobal();
 
     // Load class DB
@@ -2823,7 +2839,7 @@ function storeUsersShareKey(
         $user = DB::queryFirstRow(
             'SELECT public_key
             FROM ' . prefixTable('users') . '
-            WHERE id = ' . (int) $superGlobal->get('user_id', 'SESSION') . '
+            WHERE id = ' . (int) $session->get('user-id') . '
             AND public_key != ""'
         );
 
@@ -2832,7 +2848,7 @@ function storeUsersShareKey(
                 $object_name,
                 [
                     'object_id' => (int) $post_object_id,
-                    'user_id' => (int) $superGlobal->get('user_id', 'SESSION'),
+                    'user_id' => (int) $session->get('user-id'),
                     'share_key' => encryptUserObjectKey(
                         $objectKey,
                         $user['public_key']
@@ -2845,7 +2861,7 @@ function storeUsersShareKey(
                     $object_name,
                     [
                         'object_id' => (int) $object['objectId'],
-                        'user_id' => (int) $superGlobal->get('user_id', 'SESSION'),
+                        'user_id' => (int) $session->get('user-id'),
                         'share_key' => encryptUserObjectKey(
                             $object['objectKey'],
                             $user['public_key']
@@ -2861,7 +2877,7 @@ function storeUsersShareKey(
             'SELECT id, public_key
             FROM ' . prefixTable('users') . '
             WHERE ' . ($onlyForUser === true ? 
-                'id IN ("' . TP_USER_ID . '","' . $superGlobal->get('user_id', 'SESSION') . '") ' : 
+                'id IN ("' . TP_USER_ID . '","' . $session->get('user-id') . '") ' : 
                 'id NOT IN ("' . OTV_USER_ID . '","' . SSH_USER_ID . '","' . API_USER_ID . '") ') . '
             AND public_key != ""'
         );
@@ -3489,6 +3505,9 @@ function loadFoldersListByCache(
         ];
     }
 
+    require_once 'sessionManager.php';
+    $session = SessionManager::getSession();
+
     // Get last folder update
     $lastFolderChange = DB::queryfirstrow(
         'SELECT valeur FROM ' . prefixTable('misc') . '
@@ -3523,7 +3542,7 @@ function loadFoldersListByCache(
         'SELECT '.$fieldName.'
         FROM ' . prefixTable('cache_tree') . '
         WHERE user_id = %i',
-        $_SESSION['user_id']
+        $session->get('user-id')
     );
     if (empty($userCacheTree[$fieldName]) === false && $userCacheTree[$fieldName] !== '[]') {
         return [
@@ -3660,7 +3679,7 @@ function getUsersWithRoles(
             'SELECT id, fonction_id
             FROM ' . prefixTable('users') . '
             WHERE id != %i AND admin = 0 AND fonction_id IS NOT NULL AND fonction_id != ""',
-            $_SESSION['user_id']
+            $session->get('user-id')
         );
         foreach ($rows as $user) {
             $userRoles = is_null($user['fonction_id']) === false && empty($user['fonction_id']) === false ? explode(';', $user['fonction_id']) : [];
@@ -3813,9 +3832,9 @@ function handleUserKeys(
         );
 
         // update session too
-        if ($userId === $_SESSION['user_id']) {
-            $_SESSION['user']['private_key'] = $userKeys['private_key_clear'];
-            $_SESSION['user']['public_key'] = $userKeys['public_key'];
+        if ($userId === $session->get('user-id')) {
+            $session->set('user-private_key', $userKeys['private_key_clear']);
+            $session->set('user-public_key', $userKeys['public_key']);
         }
 
         // Manage empty encryption key
@@ -4228,7 +4247,7 @@ function handleUserRecoveryKeysDownload(int $userId, array $SETTINGS):string
             "Generation date: ".date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], $now)."\n\n".
             "RECOVERY KEYS - Not to be shared - To be store safely\n\n".
             "Public Key:\n".$userInfo['public_key']."\n\n".
-            "Private Key:\n".decryptPrivateKey($_SESSION['user_pwd'], $userInfo['private_key'])."\n\n";
+            "Private Key:\n".decryptPrivateKey($session->get('user-password'), $userInfo['private_key'])."\n\n";
 
         // Update user's keys_recovery_time
         DB::update(
@@ -4296,6 +4315,7 @@ function loadClasses(string $className = ''): void
             DB::$connect_options = DB_CONNECT_OPTIONS;
         }
     }
+
 }
 
 /**
@@ -4305,6 +4325,8 @@ function loadClasses(string $className = ''): void
  */
 function getCurrectPage($SETTINGS)
 {
+    require_once 'sessionManager.php';
+    $session = SessionManager::getSession();
     // Load libraries
     $superGlobal = new SuperGlobal();
 
@@ -4332,31 +4354,4 @@ function returnIfSet($value, $retFalse = '', $retTrue = null): mixed
 {
 
     return isset($value) === true ? ($retTrue === null ? $value : $retTrue) : $retFalse;
-}
-
-/**
- * Permits to sync between PHP and Symfony sessions
- *
- * @param array $variables
- * @return void
- */
-function syncSessions(array $variables)
-{
-    // Create a Symfony session
-    $session = new Session();
-
-    // Retrieve the Symfony session data
-    $symfonyData = $session->all();
-
-    foreach ($variables as $variableName => $variableValue) {
-        // Handle variable removal
-        if ($variableValue === null) {
-            unset($_SESSION[$variableName]);
-            $session->remove($variableName);
-        } else {
-            // Update or create variable
-            $_SESSION[$variableName] = $variableValue;
-            $session->set($variableName, $variableValue);
-        }
-    }
 }

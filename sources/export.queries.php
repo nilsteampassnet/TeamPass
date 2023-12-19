@@ -23,6 +23,7 @@ declare(strict_types=1);
 use voku\helper\AntiXSS;
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
@@ -31,13 +32,12 @@ use GibberishAES\GibberishAES;
 
 // Load functions
 require_once 'main.functions.php';
-
+$session = SessionManager::getSession();
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
 $lang = new Language(); 
-session_name('teampass_session');
-session_start();
+
 
 // Load config if $SETTINGS not defined
 try {
@@ -58,8 +58,8 @@ $checkUserAccess = new PerformChecks(
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
         'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
     ]
 );
@@ -164,7 +164,7 @@ if (null !== $post_type) {
                             if ((in_array($record['id_tree'], $_SESSION['personal_visible_groups']) === true)
                                 || (in_array($record['id_tree'], $_SESSION['groupes_visibles']) === true
                                     && (empty($record['restricted_to']) === true
-                                        || (in_array($_SESSION['user_id'], explode(';', $record['restricted_to'])) === true)))
+                                        || (in_array($session->get('user-id'), explode(';', $record['restricted_to'])) === true)))
                             ) {
                                 // Run query
                                 $dataItem = DB::queryfirstrow(
@@ -172,7 +172,7 @@ if (null !== $post_type) {
                                     FROM ' . prefixTable('items') . ' AS i
                                     INNER JOIN ' . prefixTable('sharekeys_items') . ' AS s ON (s.object_id = i.id)
                                     WHERE user_id = %i AND i.id = %i',
-                                    $_SESSION['user_id'],
+                                    $session->get('user-id'),
                                     $record['id']
                                 );
 
@@ -185,7 +185,7 @@ if (null !== $post_type) {
                                         $dataItem['pw'],
                                         decryptUserObjectKey(
                                             $dataItem['share_key'],
-                                            $_SESSION['user']['private_key']
+                                            $session->get('user-private_key')
                                         )
                                     ));
                                 }
@@ -264,9 +264,9 @@ if (null !== $post_type) {
                                     $SETTINGS,
                                     (int) $record['id'],
                                     $record['label'],
-                                    $_SESSION['user_id'],
+                                    $session->get('user-id'),
                                     'at_export',
-                                    $_SESSION['login'],
+                                    $session->get('user-login'),
                                     'csv'
                                 );
                             }
@@ -297,7 +297,7 @@ if (null !== $post_type) {
          */
         case 'clean_export_table':
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -326,7 +326,7 @@ if (null !== $post_type) {
          */
         case 'export_prepare_data':
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -387,8 +387,8 @@ if (null !== $post_type) {
                     $restricted_users_array = empty($record['restricted_to']) === false ? explode(';', $record['restricted_to']) : [];
                     //exclude all results except the first one returned by query
                     if (empty($id_managed) || $id_managed != $record['id']) {
-                        if ((in_array($post_id, $_SESSION['personal_visible_groups']) && !($record['perso'] == 1 && $_SESSION['user_id'] == $record['restricted_to']) && !empty($record['restricted_to']))
-                            || (!empty($record['restricted_to']) && !in_array($_SESSION['user_id'], $restricted_users_array))
+                        if ((in_array($post_id, $_SESSION['personal_visible_groups']) && !($record['perso'] == 1 && $session->get('user-id') == $record['restricted_to']) && !empty($record['restricted_to']))
+                            || (!empty($record['restricted_to']) && !in_array($session->get('user-id'), $restricted_users_array))
                         ) {
                             //exclude this case
                         } else {
@@ -398,7 +398,7 @@ if (null !== $post_type) {
                                 FROM ' . prefixTable('items') . ' AS i
                                 INNER JOIN ' . prefixTable('sharekeys_items') . ' AS s ON (s.object_id = i.id)
                                 WHERE user_id = %i AND i.id = %i',
-                                $_SESSION['user_id'],
+                                $session->get('user-id'),
                                 $record['id']
                             );
 
@@ -411,7 +411,7 @@ if (null !== $post_type) {
                                     $dataItem['pw'],
                                     decryptUserObjectKey(
                                         $dataItem['share_key'],
-                                        $_SESSION['user']['private_key']
+                                        $session->get('user-private_key')
                                     )
                                 ));
                             }
@@ -475,9 +475,9 @@ if (null !== $post_type) {
                                 $SETTINGS,
                                 (int) $record['id'],
                                 $record['label'],
-                                $_SESSION['user_id'],
+                                $session->get('user-id'),
                                 'at_export',
-                                $_SESSION['login'],
+                                $session->get('user-login'),
                                 'pdf'
                             );
                         }
@@ -500,7 +500,7 @@ if (null !== $post_type) {
 
         case 'finalize_export_pdf':
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -542,7 +542,7 @@ if (null !== $post_type) {
 
                 // set document information
                 $pdf->SetCreator(PDF_CREATOR);
-                $pdf->SetAuthor($_SESSION['lastname']." ".$_SESSION['name']);
+                $pdf->SetAuthor($session->get('user-lastname')." ".$session->get('user-name'));
                 $pdf->SetTitle('Teampass export');
 
                 // set default header data
@@ -550,7 +550,7 @@ if (null !== $post_type) {
                     $SETTINGS['cpassman_dir'] . '/includes/images/teampass-logo2-home.png',
                     PDF_HEADER_LOGO_WIDTH,
                     'Teampass export',
-                    $_SESSION['lastname']." ".$_SESSION['name'].' @ '.date($SETTINGS['date_format']." ".$SETTINGS['time_format'], (int) time())
+                    $session->get('user-lastname')." ".$session->get('user-name').' @ '.date($SETTINGS['date_format']." ".$SETTINGS['time_format'], (int) time())
                 );
 
                 // set header and footer fonts
@@ -654,7 +654,7 @@ if (null !== $post_type) {
                 $pdf->writeHTML($html_table, true, false, false, false, '');
 
                 //log
-                logEvents($SETTINGS, 'pdf_export', '', (string) $_SESSION['user_id'], $_SESSION['login']);
+                logEvents($SETTINGS, 'pdf_export', '', (string) $session->get('user-id'), $session->get('user-login'));
 
                 //clean table
                 DB::query('TRUNCATE TABLE ' . prefixTable('export'));
@@ -671,7 +671,7 @@ if (null !== $post_type) {
             //CASE export in HTML format
         case 'export_to_html_format':
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -719,11 +719,11 @@ if (null !== $post_type) {
                         if ((
                                 (
                                     in_array($record['folder_id'], $_SESSION['personal_visible_groups']) === true
-                                    && !((int) $record['perso'] === 1 && $_SESSION['user_id'] === $record['restricted_to'])
+                                    && !((int) $record['perso'] === 1 && $session->get('user-id') === $record['restricted_to'])
                                     && empty($record['restricted_to']) === false
                                 ) ||
                                 (
-                                    empty($record['restricted_to']) === false && in_array($_SESSION['user_id'], $restricted_users_array) === false
+                                    empty($record['restricted_to']) === false && in_array($session->get('user-id'), $restricted_users_array) === false
                                 ) || 
                                 (
                                     in_array($record['folder_id'], $_SESSION['groupes_visibles'])
@@ -775,7 +775,7 @@ if (null !== $post_type) {
     ' . TP_TOOL_NAME . ' - Off Line mode
     </div>
     <div style="margin:10px; font-size:9px;">
-    <i>This page was generated by <b>' . $_SESSION['name'] . ' ' . $_SESSION['lastname'] . '</b>, the ' . date('Y/m/d H:i:s') . '.</i>
+    <i>This page was generated by <b>' . $session->get('user-name') . ' ' . $session->get('user-lastname') . '</b>, the ' . date('Y/m/d H:i:s') . '.</i>
     <span id="info_page" style="margin-left:20px; font-weight:bold; font-size: 14px; color:red;"></span>
     </div>
     <div id="information"></div>
@@ -815,7 +815,7 @@ if (null !== $post_type) {
         //CASE export in HTML format - Iteration loop
         case 'export_to_html_format_loop':
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -952,7 +952,7 @@ if (null !== $post_type) {
         //CASE export in HTML format - Iteration loop
         case 'export_to_html_format_finalize':
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,

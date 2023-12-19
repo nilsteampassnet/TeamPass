@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
@@ -35,7 +36,7 @@ loadClasses();
 $superGlobal = new SuperGlobal();
 $lang = new Language(); 
 
-if ($superGlobal->get('key', 'SESSION') === null) {
+if ($session->get('key') === null) {
     die('Hacking attempt...');
 }
 
@@ -57,8 +58,8 @@ $checkUserAccess = new PerformChecks(
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
         'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
     ]
 );
@@ -87,10 +88,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 capitalize: "true",
                 symbols: "false",
                 secure: "true",
-                key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
+                key: "<?php echo $session->get('key'); ?>"
             },
             function(data) {
-                data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
+                data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
 
                 if (data.key !== "") {
                     $('#onthefly-backup-key').val(data.key);
@@ -124,12 +125,12 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 $.post(
                     "sources/backups.queries.php", {
                         type: "onthefly_backup",
-                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
-                        key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
+                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                        key: "<?php echo $session->get('key'); ?>"
                     },
                     function(data) {
                         //decrypt data
-                        data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
+                        data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>');
                         console.log(data);
 
                         if (data.error === true) {
@@ -152,13 +153,13 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             $.post(
                                 "sources/admin.queries.php", {
                                     type: "save_option_change",
-                                    data: prepareExchangedData(JSON.stringify(newData), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
-                                    key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
+                                    data: prepareExchangedData(JSON.stringify(newData), "encode", "<?php echo $session->get('key'); ?>"),
+                                    key: "<?php echo $session->get('key'); ?>"
                                 },
                                 function(data) {
                                     // Handle server answer
                                     try {
-                                        data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
+                                        data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
                                     } catch (e) {
                                         // error
                                         toastr.remove();
@@ -222,12 +223,12 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 $.post(
                     "sources/backups.queries.php", {
                         type: "onthefly_restore",
-                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
-                        key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
+                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                        key: "<?php echo $session->get('key'); ?>"
                     },
                     function(data) {
                         //decrypt data
-                        data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
+                        data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>');
                         console.log(data);
 
                         if (data.error === true) {
@@ -306,7 +307,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             ambiguous: true,
                             reason: "restore_db",
                             duration: 10,
-                            key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                            key: '<?php echo $session->get('key'); ?>'
                         },
                         function(data) {
                             console.log(data);
@@ -328,7 +329,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     console.log("Upload token: "+store.get('teampassUser').uploadToken);
 
                     up.setOption('multipart_params', {
-                        PHPSESSID: '<?php echo $_SESSION['user_id']; ?>',
+                        PHPSESSID: '<?php echo $session->get('user-id'); ?>',
                         type_upload: 'restore_db',
                         File: file.name,
                         user_token: store.get('teampassUser').uploadToken
@@ -362,12 +363,12 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
     // Uploader options
     uploader_restoreDB.bind('FileUploaded', function(upldr, file, object) {
-        var myData = prepareExchangedData(object.response, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
+        var myData = prepareExchangedData(object.response, "decode", "<?php echo $session->get('key'); ?>");
         $('#onthefly-restore-file').data('operation-id', myData.operation_id);
     });
 
     uploader_restoreDB.bind("Error", function(up, err) {
-        //var myData = prepareExchangedData(err, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
+        //var myData = prepareExchangedData(err, "decode", "<?php echo $session->get('key'); ?>");
         $("#onthefly-restore-progress")
             .removeClass('hidden')
             .html('<div class="alert alert-danger alert-dismissible ml-2">' +

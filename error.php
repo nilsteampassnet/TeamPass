@@ -26,6 +26,7 @@ declare(strict_types=1);
  */
 
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
@@ -60,20 +61,20 @@ if (
     && filter_input(INPUT_POST, 'session', FILTER_SANITIZE_FULL_SPECIAL_CHARS) === 'expired'
 ) {
     // Update table by deleting ID
-    if (isset($_SESSION['user_id'])) {
+    if (null !== $session->get('user-id')) {
         DB::update(
             DB_PREFIX . 'users',
             [
                 'key_tempo' => '',
             ],
             'id=%i',
-            $_SESSION['user_id']
+            $session->get('user-id')
         );
     }
 
     //Log into DB the user's disconnection
     if (isset($SETTINGS['log_connections']) && (int) $SETTINGS['log_connections'] === 1) {
-        logEvents($SETTINGS, 'user_connection', 'disconnect', (string) $_SESSION['user_id'], $_SESSION['login']);
+        logEvents($SETTINGS, 'user_connection', 'disconnect', (string) $session->get('user-id'), $session->get('user-login'));
     }
 } else {
     $errorCode = '';
@@ -95,7 +96,7 @@ if (
                 <h3><i class="fas fa-warning text-danger"></i> Oops! <?php echo $errorCode; ?>.</h3>
 
                 <p>
-                    For security reason, you have been disconnected. Click to <a href="./includes/core/logout.php?token=<?php echo $superGlobal->get('key', 'SESSION'); ?>">log in</a>.
+                    For security reason, you have been disconnected. Click to <a href="./includes/core/logout.php?token=<?php echo $session->get('key'); ?>">log in</a>.
                 </p>
 
             </div>

@@ -22,6 +22,7 @@ use TiBeN\CrontabManager\CrontabJob;
 use TiBeN\CrontabManager\CrontabAdapter;
 use TiBeN\CrontabManager\CrontabRepository;
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
@@ -33,9 +34,8 @@ require_once 'main.functions.php';
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
+$session = SessionManager::getSession();
 $lang = new Language(); 
-session_name('teampass_session');
-session_start();
 
 
 // Load config if $SETTINGS not defined
@@ -57,8 +57,8 @@ $checkUserAccess = new PerformChecks(
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
         'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
     ]
 );
@@ -97,7 +97,7 @@ if (null !== $post_type) {
             //CASE list of recycled elements
         case 'recycled_bin_elements':
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -106,7 +106,7 @@ if (null !== $post_type) {
                     'encode'
                 );
                 break;
-            } elseif ($_SESSION['user_read_only'] === true) {
+            } elseif ($session->get('user-read_only') === 1) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -192,7 +192,7 @@ if (null !== $post_type) {
         //CASE recycle selected recycled elements
         case 'restore_selected_objects':
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -201,7 +201,7 @@ if (null !== $post_type) {
                     'encode'
                 );
                 break;
-            } elseif ($_SESSION['user_read_only'] === true) {
+            } elseif ($session->get('user-read_only') === 1) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -283,9 +283,9 @@ if (null !== $post_type) {
                             $SETTINGS,
                             (int) $item['id'],
                             '',
-                            $_SESSION['user_id'],
+                            $session->get('user-id'),
                             'at_restored',
-                            $_SESSION['login']
+                            $session->get('user-login')
                         );
                     }
                 }
@@ -306,9 +306,9 @@ if (null !== $post_type) {
                     $SETTINGS,
                     (int) $itemId,
                     '',
-                    $_SESSION['user_id'],
+                    $session->get('user-id'),
                     'at_restored',
-                    $_SESSION['login']
+                    $session->get('user-login')
                 );
             }
 
@@ -327,7 +327,7 @@ if (null !== $post_type) {
         //CASE delete selected recycled elements
         case 'delete_selected_objects':
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -336,7 +336,7 @@ if (null !== $post_type) {
                     'encode'
                 );
                 break;
-            } elseif ($_SESSION['user_read_only'] === true) {
+            } elseif ($session->get('user-read_only') === 1) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -458,7 +458,7 @@ if (null !== $post_type) {
         */
         case 'purge_logs':
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -467,7 +467,7 @@ if (null !== $post_type) {
                     'encode'
                 );
                 break;
-            } elseif ($_SESSION['user_read_only'] === true) {
+            } elseif ($session->get('user-read_only') === 1) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -496,7 +496,7 @@ if (null !== $post_type) {
                 empty($post_date_from) === false
                 && empty($post_date_to) === false
                 && empty($post_log_type) === false
-                && (isset($_SESSION['user_admin']) && (int) $_SESSION['user_admin'] === 1)
+                && (null !== $session->get('user-admin') && (int) $session->get('user-admin') === 1)
             ) {
                 if ($post_log_type === 'items') {
                     DB::query(
@@ -640,7 +640,7 @@ if (null !== $post_type) {
         //CASE show process detail
         case 'show_process_detail':
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -649,7 +649,7 @@ if (null !== $post_type) {
                     'encode'
                 );
                 break;
-            } elseif ($_SESSION['user_read_only'] === true) {
+            } elseif ($session->get('user-read_only') === 1) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -760,7 +760,7 @@ if (null !== $post_type) {
         //CASE delete a task
         case 'task_delete':
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -769,7 +769,7 @@ if (null !== $post_type) {
                     'encode'
                 );
                 break;
-            } elseif ($_SESSION['user_read_only'] === true) {
+            } elseif ($session->get('user-read_only') === 1) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -828,7 +828,7 @@ if (null !== $post_type) {
         //CASE handle crontab job
         case 'handle_crontab_job':
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -837,7 +837,7 @@ if (null !== $post_type) {
                     'encode'
                 );
                 break;
-            } elseif ($_SESSION['user_read_only'] === true) {
+            } elseif ($session->get('user-read_only') === 1) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,

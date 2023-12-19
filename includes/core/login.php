@@ -25,6 +25,7 @@ declare(strict_types=1);
  */
 
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 
 // Automatic redirection
@@ -92,7 +93,7 @@ if (
             <input type="text" id="login" class="form-control" placeholder="', filter_var($username, FILTER_SANITIZE_FULL_SPECIAL_CHARS), '" readonly>';
 } else {
     echo '
-            <input type="text" id="login" class="form-control" placeholder="' . $lang->get('index_login') . '" value="'.(null !== $superGlobal->get('login', 'SESSION') && empty($superGlobal->get('login', 'SESSION')) === false ? filter_var($superGlobal->get('login', 'SESSION'), FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '').'">';
+            <input type="text" id="login" class="form-control" placeholder="' . $lang->get('index_login') . '" value="'.(null !== $session->get('user-login') && empty($session->get('user-login')) === false ? filter_var($session->get('user-login'), FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '').'">';
 }
 
 echo '

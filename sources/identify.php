@@ -27,6 +27,7 @@ declare(strict_types=1);
 use voku\helper\AntiXSS;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use TeampassClasses\PerformChecks\PerformChecks;
 use LdapRecord\Connection;
@@ -37,18 +38,31 @@ use PasswordLib\PasswordLib;
 use Duo\DuoUniversal\Client;
 use Duo\DuoUniversal\DuoException;
 use RobThree\Auth\TwoFactorAuth;
-use Symfony\Component\HttpFoundation\Session\Session;
 
 // Load functions
 require_once 'main.functions.php';
+require_once 'sessionManager.php';
+
+// Resume the session
+if (isset($_POST['sessionId'])) {
+    $sessionId = $_POST['sessionId'];
+    // Validate the session ID format to prevent injection attacks
+    if (preg_match('/^[a-z0-9]{26,40}$/', $sessionId)) {
+        session_id($sessionId);
+    } else {
+        // Invalid session ID, handle the error
+        echo "Invalid session ID";
+        exit;
+    }
+}
 
 // init
+$session = SessionManager::getSession();
+
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
 $lang = new Language(); 
-session_name('teampass_session');
-session_start();
-$session = new Session();
+
 
 // Load config if $SETTINGS not defined
 try {
@@ -74,9 +88,8 @@ $checkUserAccess = new PerformChecks(
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
-        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
         'login' => isset($_POST['login']) === false ? null : $_POST['login'],
     ]
 );
@@ -187,51 +200,6 @@ if ($post_type === 'identify_user') {
 
     handleAuthAttempts($session, $post_data, $SETTINGS, $lang);
 
-/*
-    // Prepare GET variables
-    $sessionPwdAttempts = $session->get('pwd_attempts');
-    // increment counter of login attempts
-    if ($sessionPwdAttempts === '') {
-        $sessionPwdAttempts = 1;
-    } else {
-        ++$sessionPwdAttempts;
-    }
-
-    $session->set('pwd_attempts', $sessionPwdAttempts);
-    // manage brute force
-    if ($sessionPwdAttempts <= 3) {
-        $session->set('next_possible_pwd_attempts', 0);
-        // identify the user through Teampass process
-        identifyUser(
-            $post_data,
-            $SETTINGS
-        );
-    } elseif ((int) $session->get('next_possible_pwd_attempts') > 0 && time() > (int) $session->get('next_possible_pwd_attempts') && $sessionPwdAttempts > 3) {
-        $sessionPwdAttempts = 0;
-        $session->set('next_possible_pwd_attempts', 0);
-
-        // identify the user through Teampass process
-        identifyUser(
-            $post_data,
-            $SETTINGS
-        );
-    } else {
-        $session->set('next_possible_pwd_attempts', (time() + 10));
-        $session->set('pwd_attempts', 0);
-        // Encrypt data to return
-        echo prepareExchangedData(
-            [
-                'value' => 'bruteforce_wait',
-                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
-                'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
-                'pwd_attempts' => 0,
-                'error' => true,
-                'message' => $lang->get('error_bad_credentials_more_than_3_times'),
-            ],
-            'encode'
-        );
-        return false;
-    }*/
     // ---
     // ---
     // ---
@@ -252,7 +220,7 @@ if ($post_type === 'identify_user') {
             ],
             'encode'
         ),
-        'key' => $superGlobal->get('key', 'SESSION'),
+        'key' => $session->get('key'),
     ]);
     return false;
 }
@@ -267,13 +235,14 @@ if ($post_type === 'identify_user') {
  */
 function identifyUser(string $sentData, array $SETTINGS): bool
 {
+    require_once 'sessionManager.php';
     $antiXss = new AntiXSS();
     $superGlobal = new SuperGlobal();
-    $lang = new Language(); 
-    $session = new Session();
+    $lang = new Language();
+    $session = SessionManager::getSession();
 
     // Prepare GET variables
-    $sessionAdmin = $superGlobal->get('user_admin', 'SESSION');
+    $sessionAdmin = $session->get('user-admin');
     $sessionPwdAttempts = $session->get('pwd_attempts');
     $sessionUrl = $superGlobal->get('initial_url', 'SESSION');
     $server = [];
@@ -281,15 +250,15 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     $server['PHP_AUTH_PW'] = $superGlobal->get('PHP_AUTH_PW', 'SERVER');
     
     // decrypt and retreive data in JSON format
-    if ($superGlobal->get('key', 'SESSION') === null) {
+    if ($session->get('key') === null) {
         $dataReceived = $sentData;
     } else {
         $dataReceived = prepareExchangedData(
             $sentData,
             'decode',
-            $superGlobal->get('key', 'SESSION')
+            $session->get('key')
         );
-        $superGlobal->put('key', $superGlobal->get('key', 'SESSION'), 'SESSION');
+        $superGlobal->put('key', $session->get('key'), 'SESSION');
     }
 
     // Check if Duo auth is in progress and pass the pw and login back to the standard login process
@@ -328,7 +297,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                 ],
                 'encode'
             ),
-            'key' => $superGlobal->get('key', 'SESSION')
+            'key' => $session->get('key')
         ]);
         return false;
     }
@@ -397,7 +366,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                 ],
                 'encode'
             ),
-            'key' => $superGlobal->get('key', 'SESSION')
+            'key' => $session->get('key')
         ]);
         return false;
     }
@@ -513,74 +482,64 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         $session->set('user-unsuccessfull_login_attempts_list', $attemptsInfos['attemptsList'] === 0 ? true : false);
         $session->set('user-unsuccessfull_login_attempts_shown', $attemptsInfos['attemptsCount'] === 0 ? true : false);
         $session->set('user-unsuccessfull_login_attempts_nb', DB::count());
-        $superGlobal->put('login', stripslashes($username), 'SESSION');
-        $superGlobal->put('name', empty($userInfo['name']) === false ? stripslashes($userInfo['name']) : '', 'SESSION');
-        $superGlobal->put('lastname', empty($userInfo['lastname']) === false ? stripslashes($userInfo['lastname']) : '', 'SESSION');
-        $superGlobal->put('user_id', (int) $userInfo['id'], 'SESSION');
-        $superGlobal->put('user_pwd', $passwordClear, 'SESSION');
-        $superGlobal->put('admin', $userInfo['admin'], 'SESSION');
-        $superGlobal->put('user_manager', $userInfo['gestionnaire'], 'SESSION');
-        $superGlobal->put('user_can_manage_all_users', $userInfo['can_manage_all_users'], 'SESSION');
-        $superGlobal->put('user_read_only', (int) $userInfo['read_only'], 'SESSION');
-        $superGlobal->put('last_pw_change', (int) $userInfo['last_pw_change'], 'SESSION');
-        $superGlobal->put('last_pw', $userInfo['last_pw'], 'SESSION');
-        $superGlobal->put('can_create_root_folder', $userInfo['can_create_root_folder'], 'SESSION');
-        $superGlobal->put('personal_folder', $userInfo['personal_folder'], 'SESSION');
-        $superGlobal->put('user_email', $userInfo['email'], 'SESSION');
-        $superGlobal->put('user_ga', $userInfo['ga'], 'SESSION');
-        $superGlobal->put('user_avatar', $userInfo['avatar'], 'SESSION');
-        $superGlobal->put('user_avatar_thumb', $userInfo['avatar_thumb'], 'SESSION');
-        $superGlobal->put('user_upgrade_needed', $userInfo['upgrade_needed'], 'SESSION');
-        $superGlobal->put('user_force_relog', $userInfo['force-relog'], 'SESSION');
-        $superGlobal->put('is_ready_for_usage', $userInfo['is_ready_for_usage'], 'SESSION');
-        $superGlobal->put(
-            'user_treeloadstrategy',
-            (isset($userInfo['treeloadstrategy']) === false || empty($userInfo['treeloadstrategy']) === true) ? 'full' : $userInfo['treeloadstrategy'],
-            'SESSION',
-            'user'
+        $session->set('user-login', stripslashes($username));
+        $session->set('user-name', empty($userInfo['name']) === false ? stripslashes($userInfo['name']) : '');
+        $session->set('user-lastname', empty($userInfo['lastname']) === false ? stripslashes($userInfo['lastname']) : '');
+        $session->set('user-id', (int) $userInfo['id']);
+        $session->set('user-password', $passwordClear);
+        $session->set('user-admin', (int) $userInfo['admin']);
+        $session->set('user-manager', (int) $userInfo['gestionnaire']);
+        $session->set('user-can_manage_all_users', $data['can_manage_all_users']);
+        $session->set('user-read_only', $data['read_only']);
+        $session->set('user-last_pw_change', $data['last_pw_change']);
+        $session->set('user-last_pw', $data['last_pw']);
+        $session->set('user-force_relog', $data['force-relog']);
+        $session->set('user-can_create_root_folder', $userInfo['can_create_root_folder']);
+        $session->set('user-email', $data['email']);
+        //$session->set('user-ga', $userInfo['ga']);
+        $session->set('user-avatar', $userInfo['avatar']);
+        $session->set('user-avatar_thumb', $userInfo['avatar_thumb']);
+        $session->set('user-upgrade_needed', $userInfo['upgrade_needed']);
+        $session->set('user-is_ready_for_usage', $userInfo['is_ready_for_usage']);
+        $session->set('user-personal_folder_enabled', $userInfo['personal_folder']);
+        $session->set(
+            'user-tree_load_strategy',
+            (isset($userInfo['treeloadstrategy']) === false || empty($userInfo['treeloadstrategy']) === true) ? 'full' : $userInfo['treeloadstrategy']
         );
-        $superGlobal->put('user_agsescardid', $userInfo['agses-usercardid'], 'SESSION', 'user');
+        //$superGlobal->put('user_agsescardid', $userInfo['agses-usercardid'], 'SESSION', 'user');
         $session->set('user-language', $userInfo['user_language']);
         $session->set('user-timezone', $userInfo['usertimezone']);
-        $session->set('user-session_duration', $userInfo['duree_session']);
         $session->set('user-keys_recovery_time', $userInfo['keys_recovery_time']);
 
         // User signature keys
-        $returnKeys = prepareUserEncryptionKeys($userInfo, $passwordClear);        
-        $superGlobal->put('public_key', $returnKeys['public_key'], 'SESSION', 'user');
-        $superGlobal->put('private_key', $returnKeys['private_key_clear'], 'SESSION', 'user');
+        $returnKeys = prepareUserEncryptionKeys($userInfo, $passwordClear);  
+        $session->set('user-private_key', $returnKeys['private_key_clear']);
+        $session->set('user-public_key', $returnKeys['public_key']);      
 
         // API key
-        $superGlobal->put(
-            'api-key',
+        $session->set(
+            'user-api_key',
             empty($userInfo['api_key']) === false ? base64_decode(decryptUserObjectKey($userInfo['api_key'], $returnKeys['private_key_clear'])) : '',
-            'SESSION',
-            'user'
         );
         
-        $superGlobal->put('special', $userInfo['special'], 'SESSION', 'user');
-        $superGlobal->put('auth_type', $userInfo['auth_type'], 'SESSION', 'user');
+        $session->set('user-special', $userInfo['special']);
+        $session->set('user-auth_type', $userInfo['auth_type']);
         // manage session expiration
-        $superGlobal->put('sessionDuration', (int) (time() + ($dataReceived['duree_session'] * 60)), 'SESSION');
+        $session->set('user-session_duration', (int) (time() + ($dataReceived['duree_session'] * 60)));
 
         // check feedback regarding user password validity
         $return = checkUserPasswordValidity(
             $userInfo,
-            $superGlobal->get('numDaysBeforePwExpiration', 'SESSION'),
-            $superGlobal->get('last_pw_change', 'SESSION'),
+            $session->get('user-num_days_before_exp'),
+            $session->get('user-last_pw_change'),
             $SETTINGS
         );
-        $superGlobal->put('validite_pw', $return['validite_pw'], 'SESSION');
-        $superGlobal->put('last_pw_change', $return['last_pw_change'], 'SESSION');
-        $superGlobal->put('numDaysBeforePwExpiration', $return['numDaysBeforePwExpiration'], 'SESSION');
-        $superGlobal->put('user_force_relog', $return['user_force_relog'], 'SESSION');
-
-
-        $superGlobal->put(
-            'last_connection',
-            empty($userInfo['last_connexion']) === false ? (int) $userInfo['last_connexion'] : (int) time(),
-            'SESSION'
-        );
+        $session->set('user-validite_pw', $return['validite_pw']);
+        $session->set('user-last_pw_change', $return['last_pw_change']);
+        $session->set('user-num_days_before_exp', $return['numDaysBeforePwExpiration']);
+        $session->set('user-force_relog', $return['user_force_relog']);
+        
+        $session->set('user-last_connection', empty($userInfo['last_connexion']) === false ? (int) $userInfo['last_connexion'] : (int) time());
         
         $superGlobal->put(
             'latest_items',
@@ -616,7 +575,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                     'fonction_id' => $userInfo['fonction_id'],
                 ],
                 'id = %i',
-                $superGlobal->get('user_id', 'SESSION')
+                $session->get('user-id')
             );
         }
         // Append with roles from AD groups
@@ -636,8 +595,8 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                 WHERE id IN %li',
                 $superGlobal->get('user_roles', 'SESSION')
             );
-            $excludeUser = isset($SETTINGS['exclude_user']) ? str_contains($superGlobal->get('login', 'SESSION'), $SETTINGS['exclude_user']) : false;
-            $adjustPermissions = ($superGlobal->get('user_id', 'SESSION') >= 1000000 && !$excludeUser && (isset($SETTINGS['admin_needle']) || isset($SETTINGS['manager_needle']) || isset($SETTINGS['tp_manager_needle']) || isset($SETTINGS['read_only_needle'])));
+            $excludeUser = isset($SETTINGS['exclude_user']) ? str_contains($session->get('user-login'), $SETTINGS['exclude_user']) : false;
+            $adjustPermissions = ($session->get('user-id') >= 1000000 && !$excludeUser && (isset($SETTINGS['admin_needle']) || isset($SETTINGS['manager_needle']) || isset($SETTINGS['tp_manager_needle']) || isset($SETTINGS['read_only_needle'])));
             if ($adjustPermissions) {
                 $userInfo['admin'] = $userInfo['gestionnaire'] = $userInfo['can_manage_all_users'] = $userInfo['read_only'] = 0;
             }
@@ -677,10 +636,10 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                 }
             }
             if ($adjustPermissions) {
-                $superGlobal->put('admin', $userInfo['admin'], 'SESSION');
-                $superGlobal->put('user_manager', $userInfo['gestionnaire'], 'SESSION');
-                $superGlobal->put('user_can_manage_all_users', $userInfo['can_manage_all_users'], 'SESSION');
-                $superGlobal->put('user_read_only', (bool) $userInfo['read_only'], 'SESSION');
+                $session->set('user-admin', (int) $userInfo['admin']);
+                $session->set('user-manager', (int) $userInfo['gestionnaire']);
+                $session->set('user-can_manage_all_users',(int)  $userInfo['can_manage_all_users']);
+                $session->set('user-read_only', (int) $userInfo['read_only']);
                 DB::update(
                     prefixTable('users'),
                     [
@@ -690,7 +649,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                         'read_only' => $userInfo['read_only'],
                     ],
                     'id = %i',
-                    $superGlobal->get('user_id', 'SESSION')
+                    $session->get('user-id')
                 );
             }
         }
@@ -717,12 +676,12 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             prefixTable('users'),
             array_merge(
                 [
-                    'key_tempo' => $superGlobal->get('key', 'SESSION'),
+                    'key_tempo' => $session->get('key'),
                     'last_connexion' => time(),
                     'timestamp' => time(),
                     'disabled' => 0,
                     'no_bad_attempts' => 0,
-                    'session_end' => $superGlobal->get('sessionDuration', 'SESSION'),
+                    'session_end' => $session->get('user-session_duration'),
                     'user_ip' => $dataReceived['client'],
                 ],
                 $returnKeys['update_keys_in_db']
@@ -790,7 +749,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             'SELECT visible_folders
             FROM ' . prefixTable('cache_tree') . '
             WHERE user_id=%i',
-            (int) $superGlobal->get('user_id', 'SESSION')
+            (int) $session->get('user-id')
         );
         if (DB::count() > 0 && empty($cacheTreeData['visible_folders']) === true) {
             $superGlobal->put('cache_tree', '', 'SESSION');
@@ -801,7 +760,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                     'created_at' => time(),
                     'process_type' => 'user_build_cache_tree',
                     'arguments' => json_encode([
-                        'user_id' => (int) $superGlobal->get('user_id', 'SESSION'),
+                        'user_id' => (int) $session->get('user-id'),
                     ], JSON_HEX_QUOT | JSON_HEX_TAG),
                     'updated_at' => '',
                     'finished_at' => '',
@@ -832,9 +791,9 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                             '#tp_time#',
                         ],
                         [
-                            ' ' . $superGlobal->get('login', 'SESSION') . ' (IP: ' . getClientIpServer() . ')',
-                            date($SETTINGS['date_format'], (int) $superGlobal->get('last_connection', 'SESSION')),
-                            date($SETTINGS['time_format'], (int) $superGlobal->get('last_connection', 'SESSION')),
+                            ' ' . $session->get('user-login') . ' (IP: ' . getClientIpServer() . ')',
+                            date($SETTINGS['date_format'], (int) $session->get('user-last_connection')),
+                            date($SETTINGS['time_format'], (int) $session->get('user-last_connection')),
                         ],
                         $lang->get('email_body_on_user_login')
                     ),
@@ -851,20 +810,20 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         echo prepareExchangedData(
             [
                 'value' => $return,
-                'user_id' => $superGlobal->get('user_id', 'SESSION') !== null ? (int) $superGlobal->get('user_id', 'SESSION') : '',
-                'user_admin' => $superGlobal->get('admin', 'SESSION') !== null ? (int) $superGlobal->get('admin', 'SESSION') : 0,
+                'user_id' => $session->get('user-id') !== null ? $session->get('user-id') : '',
+                'user_admin' => null !== $session->get('user-admin') ? $session->get('user-admin') : 0,
                 'initial_url' => $antiXss->xss_clean($sessionUrl),
                 'pwd_attempts' => 0,
                 'error' => false,
-                'message' => $superGlobal->get('user_upgrade_needed', 'SESSION') !== null && (int) $superGlobal->get('user_upgrade_needed', 'SESSION') === 1 ? 'ask_for_otc' : '',
-                'first_connection' => $superGlobal->get('validite_pw', 'SESSION') === false ? true : false,
+                'message' => null !== $session->get('user-upgrade_needed') && (int) $session->get('user-upgrade_needed') === 1 ? 'ask_for_otc' : '',
+                'first_connection' => $session->get('user-validite_pw') === 0 ? true : false,
                 'password_complexity' => TP_PW_COMPLEXITY[$superGlobal->get('user_pw_complexity', 'SESSION')][1],
                 'password_change_expected' => $userInfo['special'] === 'password_change_expected' ? true : false,
-                'private_key_conform' => $superGlobal->get('user_id', 'SESSION') !== null
-                    && empty($superGlobal->get('private_key', 'SESSION', 'user')) === false
-                    && $superGlobal->get('private_key', 'SESSION', 'user') !== 'none' ? true : false,
-                'session_key' => $superGlobal->get('key', 'SESSION'),
-                'can_create_root_folder' => $superGlobal->get('can_create_root_folder', 'SESSION') !== null ? (int) $superGlobal->get('can_create_root_folder', 'SESSION') : '',
+                'private_key_conform' => $session->get('user-id') !== null
+                    && empty($session->get('user-private_key')) === false
+                    && $session->get('user-private_key') !== 'none' ? true : false,
+                'session_key' => $session->get('key'),
+                'can_create_root_folder' => null !== $session->get('user-can_create_root_folder') ? (int) $session->get('user-can_create_root_folder') : '',
                 'shown_warning_unsuccessful_login' => $session->get('user-unsuccessfull_login_attempts_shown'),
                 'nb_unsuccessful_logins' => $session->get('user-unsuccessfull_login_attempts_nb'),
                 'upgrade_needed' => isset($userInfo['upgrade_needed']) === true ? (int) $userInfo['upgrade_needed'] : 0,
@@ -880,20 +839,20 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         echo prepareExchangedData(
             [
                 'value' => $return,
-                'user_id' => $superGlobal->get('user_id', 'SESSION') !== null ? (int) $superGlobal->get('user_id', 'SESSION') : '',
-                'user_admin' => $superGlobal->get('admin', 'SESSION') !== null ? (int) $superGlobal->get('admin', 'SESSION') : 0,
+                'user_id' => $session->get('user-id') !== null ? (int) $session->get('user-id') : '',
+                'user_admin' => null !== $session->get('user-admin') ? $session->get('user-admin') : 0,
                 'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
                 'pwd_attempts' => 0,
                 'error' => 'user_is_locked',
                 'message' => $lang->get('account_is_locked'),
-                'first_connection' => $superGlobal->get('validite_pw', 'SESSION') === false ? true : false,
+                'first_connection' => $session->get('user-validite_pw') === 0 ? true : false,
                 'password_complexity' => TP_PW_COMPLEXITY[$superGlobal->get('user_pw_complexity', 'SESSION')][1],
                 'password_change_expected' => $userInfo['special'] === 'password_change_expected' ? true : false,
-                'private_key_conform' => $superGlobal->get('private_key', 'SESSION', 'user') !== null
-                    && empty($superGlobal->get('private_key', 'SESSION', 'user')) === false
-                    && $superGlobal->get('private_key', 'SESSION', 'user') !== 'none' ? true : false,
-                'session_key' => $superGlobal->get('key', 'SESSION'),
-                'can_create_root_folder' => $superGlobal->get('can_create_root_folder', 'SESSION') !== null ? (int) $superGlobal->get('can_create_root_folder', 'SESSION') : '',
+                'private_key_conform' => null !== $session->get('user-private_key')
+                    && empty($session->get('user-private_key')) === false
+                    && $session->get('user-private_key') !== 'none' ? true : false,
+                'session_key' => $session->get('key'),
+                'can_create_root_folder' => null !== $session->get('user-can_create_root_folder') ? (int) $session->get('user-can_create_root_folder') : '',
                 'shown_warning_unsuccessful_login' => $session->get('user-unsuccessfull_login_attempts_shown'),
                 'nb_unsuccessful_logins' => $session->get('user-unsuccessfull_login_attempts_nb'),
             ],
@@ -909,27 +868,26 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             (int) $userInfo['no_bad_attempts'],
             $userInfo['id'],
             $username,
-            $superGlobal->get('key', 'SESSION'),
             $SETTINGS
         ) === true
     ) {
         echo prepareExchangedData(
             [
                 'value' => $return,
-                'user_id' => $superGlobal->get('user_id', 'SESSION') !== null ? (int) $superGlobal->get('user_id', 'SESSION') : '',
-                'user_admin' => $superGlobal->get('admin', 'SESSION') !== null ? (int) $superGlobal->get('admin', 'SESSION') : 0,
+                'user_id' => $session->get('user-id') !== null ? (int) $session->get('user-id') : '',
+                'user_admin' => null !== $session->get('user-admin') ? $session->get('user-admin') : 0,
                 'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
                 'pwd_attempts' => 0,
                 'error' => 'user_is_locked',
                 'message' => $lang->get('account_is_locked'),
-                'first_connection' => $superGlobal->get('validite_pw', 'SESSION') === false ? true : false,
+                'first_connection' => $session->get('user-validite_pw') === 0 ? true : false,
                 'password_complexity' => TP_PW_COMPLEXITY[$superGlobal->get('user_pw_complexity', 'SESSION')][1],
                 'password_change_expected' => $userInfo['special'] === 'password_change_expected' ? true : false,
-                'private_key_conform' => $superGlobal->get('user_id', 'SESSION') !== null
-                    && empty($superGlobal->get('private_key', 'SESSION', 'user')) === false
-                    && $superGlobal->get('private_key', 'SESSION', 'user') !== 'none' ? true : false,
-                'session_key' => $superGlobal->get('key', 'SESSION'),
-                'can_create_root_folder' => $superGlobal->get('can_create_root_folder', 'SESSION') !== null ? (int) $superGlobal->get('can_create_root_folder', 'SESSION') : '',
+                'private_key_conform' => $session->get('user-id') !== null
+                    && empty($session->get('user-private_key')) === false
+                    && $session->get('user-private_key') !== 'none' ? true : false,
+                'session_key' => $session->get('key'),
+                'can_create_root_folder' => null !== $session->get('user-can_create_root_folder') ? (int) $session->get('user-can_create_root_folder') : '',
                 'shown_warning_unsuccessful_login' => $session->get('user-unsuccessfull_login_attempts_shown'),
                 'nb_unsuccessful_logins' => $session->get('user-unsuccessfull_login_attempts_nb'),
             ],
@@ -940,20 +898,20 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     echo prepareExchangedData(
         [
             'value' => $return,
-            'user_id' => $superGlobal->get('user_id', 'SESSION') !== null ? (int) $superGlobal->get('user_id', 'SESSION') : '',
-            'user_admin' => $superGlobal->get('admin', 'SESSION') !== null ? (int) $superGlobal->get('admin', 'SESSION') : 0,
+            'user_id' => $session->get('user-id') !== null ? (int) $session->get('user-id') : '',
+            'user_admin' => null !== $session->get('user-admin') ? $session->get('user-admin') : 0,
             'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
             'pwd_attempts' => (int) $sessionPwdAttempts,
             'error' => true,
             'message' => $lang->get('error_not_allowed_to_authenticate'),
-            'first_connection' => $superGlobal->get('validite_pw', 'SESSION') === false ? true : false,
+            'first_connection' => $session->get('user-validite_pw') === 0 ? true : false,
             'password_complexity' => TP_PW_COMPLEXITY[$superGlobal->get('user_pw_complexity', 'SESSION')][1],
             'password_change_expected' => $userInfo['special'] === 'password_change_expected' ? true : false,
-            'private_key_conform' => $superGlobal->get('user_id', 'SESSION') !== null
-                    && empty($superGlobal->get('private_key', 'SESSION', 'user')) === false
-                    && $superGlobal->get('private_key', 'SESSION', 'user') !== 'none' ? true : false,
-            'session_key' => $superGlobal->get('key', 'SESSION'),
-            'can_create_root_folder' => $superGlobal->get('can_create_root_folder', 'SESSION') !== null ? (int) $superGlobal->get('can_create_root_folder', 'SESSION') : '',
+            'private_key_conform' => $session->get('user-id') !== null
+                    && empty($session->get('user-private_key')) === false
+                    && $session->get('user-private_key') !== 'none' ? true : false,
+            'session_key' => $session->get('key'),
+            'can_create_root_folder' => null !== $session->get('user-can_create_root_folder') ? (int) $session->get('user-can_create_root_folder') : '',
             'shown_warning_unsuccessful_login' => $session->get('user-unsuccessfull_login_attempts_shown'),
             'nb_unsuccessful_logins' => $session->get('user-unsuccessfull_login_attempts_nb'),
         ],
@@ -1093,7 +1051,6 @@ function isUserLocked(
     $nbAttempts,
     $userId,
     $username,
-    $key,
     $SETTINGS
 ) : bool 
 {
@@ -1115,7 +1072,6 @@ function isUserLocked(
     DB::update(
         prefixTable('users'),
         [
-            'key_tempo' => $key,
             'disabled' => $userIsLocked,
             'no_bad_attempts' => $nbAttempts,
         ],
@@ -1544,11 +1500,13 @@ function finalizeAuthentication(
  */
 function yubicoMFACheck($dataReceived, string $userInfo, array $SETTINGS): array
 {
+    $session = SessionManager::getSession();
+    
     // Load superGlobals
     $superGlobal = new SuperGlobal();
-$lang = new Language(); 
-    $sessionAdmin = $superGlobal->get('user_admin', 'SESSION');
-    $sessionUrl = $superGlobal->get('initial_url', 'SESSION');
+    $lang = new Language(); 
+    $sessionAdmin = $session->get('user-admin');
+    $sessionUrl = $session->get('user-initial_url');
     $sessionPwdAttempts = $session->get('pwd_attempts');
     // Init
     $yubico_key = htmlspecialchars_decode($dataReceived['yubico_key']);
@@ -1705,6 +1663,8 @@ function ldapCreateUser(string $login, string $passwordClear, string $userEmail,
  */
 function googleMFACheck(string $username, array $userInfo, $dataReceived, array $SETTINGS): array
 {
+    $session = SessionManager::getSession();
+    
     // Load superGlobals
     $superGlobal = new SuperGlobal();
     $lang = new Language(); 
@@ -1712,7 +1672,7 @@ function googleMFACheck(string $username, array $userInfo, $dataReceived, array 
         isset($dataReceived['GACode']) === true
         && empty($dataReceived['GACode']) === false
     ) {
-        $sessionAdmin = $superGlobal->get('user_admin', 'SESSION');
+        $sessionAdmin = $session->get('user-admin');
         $sessionUrl = $superGlobal->get('initial_url', 'SESSION');
         $sessionPwdAttempts = $session->get('pwd_attempts');
         // create new instance
@@ -1804,9 +1764,11 @@ function duoMFACheck(
     array $SETTINGS
 ): array
 {
+    $session = SessionManager::getSession();
+    
     // Load superGlobals
     $superGlobal = new SuperGlobal();
-$lang = new Language(); 
+    $lang = new Language(); 
 
     $sessionPwdAttempts = $session->get('pwd_attempts');
     $saved_state = null !== $superGlobal->get('duo_state','SESSION') ? $superGlobal->get('duo_state','SESSION') : '';
@@ -1870,9 +1832,11 @@ function duoMFAPerform(
     array $SETTINGS
 ): array
 {
+    $session = SessionManager::getSession();
+    
     // Load superGlobals
     $superGlobal = new SuperGlobal();
-$lang = new Language(); 
+    $lang = new Language(); 
 
     try {
         $duo_client = new Client(
@@ -1944,7 +1908,7 @@ $lang = new Language();
             $superGlobal->put('duo_state', $duo_state, 'SESSION');
             $superGlobal->put('duo_data', base64_encode($duo_data_enc), 'SESSION');
             $superGlobal->put('duo_status', 'IN_PROGRESS', 'SESSION');
-            $superGlobal->put('login', $username, 'SESSION');
+            $session->set('user-login', $username);
             
             // If we got here we can reset the password attempts
             $session->set('pwd_attempts', 0);
@@ -1983,8 +1947,7 @@ $lang = new Language();
             $superGlobal->put('duo_status', 'COMPLET', 'SESSION');
             $superGlobal->forget('duo_state','SESSION');
             $superGlobal->forget('duo_data','SESSION');
-            $superGlobal->put('login', $username, 'SESSION');
-            //unset($superGlobal);
+            $session->set('user-login', $username);
 
             return [
                 'error' => false,
@@ -2261,6 +2224,8 @@ function identifyDoInitialChecks(
     string $user_2fa_selection
 ): array
 {
+    $session = SessionManager::getSession();
+    
     $checks = new initialChecks();
     $enable_ad_user_auto_creation = isset($SETTINGS['enable_ad_user_auto_creation']) === true && (int) $SETTINGS['enable_ad_user_auto_creation'] === 1 ? true : false;
     // Load superGlobals
@@ -2448,6 +2413,8 @@ function identifyDoMFAChecks(
     string $username
 ): array
 {    
+    $session = SessionManager::getSession();
+    
     // Load superGlobals
     $superGlobal = new SuperGlobal();
     $lang = new Language(); 

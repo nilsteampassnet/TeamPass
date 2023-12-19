@@ -25,6 +25,7 @@ declare(strict_types=1);
  */
 
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\PerformChecks\PerformChecks;
@@ -55,8 +56,8 @@ $checkUserAccess = new PerformChecks(
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
         'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
     ]
 );
@@ -199,7 +200,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                     </div>
 
                     <div class="card-footer<?php
-                                            echo isset($_SESSION['user_admin']) && (int) $_SESSION['user_admin'] === 1 ? '' : ' hidden';
+                                            echo null !== $session->get('user-admin') && (int) $session->get('user-admin') === 1 ? '' : ' hidden';
                                             ?>">
                         <div class="form-group">
                             <h5><i class="fas fa-broom mr-2"></i><?php echo $lang->get('purge') . ' ' . $lang->get('date_range'); ?></h5>

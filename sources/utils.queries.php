@@ -20,6 +20,7 @@ declare(strict_types=1);
  */
 
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
@@ -31,9 +32,8 @@ require_once 'main.functions.php';
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
+$session = SessionManager::getSession();
 $lang = new Language(); 
-session_name('teampass_session');
-session_start();
 
 // Load config if $SETTINGS not defined
 try {
@@ -54,8 +54,8 @@ $checkUserAccess = new PerformChecks(
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
         'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
     ]
 );
@@ -137,11 +137,11 @@ if (null !== $post_type) {
                         if (empty($id_managed) || $id_managed != $record['id']) {
                             if ((in_array($id, $_SESSION['personal_visible_groups'])
                                 && !($record['perso'] === '1'
-                                    && $_SESSION['user_id'] === $record['restricted_to'])
+                                    && $session->get('user-id') === $record['restricted_to'])
                                 && !empty($record['restricted_to']))
                                 ||
                                 (!empty($record['restricted_to'])
-                                    && !in_array($_SESSION['user_id'], $restricted_users_array)
+                                    && !in_array($session->get('user-id'), $restricted_users_array)
                                 )
                             ) {
                                 //exclude this case
@@ -192,7 +192,7 @@ if (null !== $post_type) {
 
         //CASE start user personal pwd re-encryption
         case 'reencrypt_personal_pwd_start':
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== $superGlobal->get('key', 'SESSION')) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -240,7 +240,7 @@ if (null !== $post_type) {
 
         //CASE auto update server password
         case 'server_auto_update_password':
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -329,9 +329,9 @@ if (null !== $post_type) {
                     $SETTINGS,
                     (int) $dataReceived['currentId'],
                     $dataItem['label'],
-                    $_SESSION['user_id'],
+                    $session->get('user-id'),
                     'at_modification',
-                    $_SESSION['login'],
+                    $session->get('user-login'),
                     'at_pw :'.$dataItem['pw'],
                     'defuse'
                 );
@@ -352,7 +352,7 @@ if (null !== $post_type) {
             break;
 
         case 'server_auto_update_password_frequency':
-            if ($post_key !== $superGlobal->get('key', 'SESSION')
+            if ($post_key !== $session->get('key')
                 || null === filter_input(INPUT_POST, 'id', FILTER_SANITIZE_FULL_SPECIAL_CHARS)
                 || null === filter_input(INPUT_POST, 'freq', FILTER_SANITIZE_FULL_SPECIAL_CHARS)
             ) {

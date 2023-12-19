@@ -25,13 +25,15 @@ declare(strict_types=1);
  */
 
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\PerformChecks\PerformChecks;
 
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
-
+require_once __DIR__.'/../sources/sessionManager.php';
+$session = SessionManager::getSession();
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
@@ -43,7 +45,7 @@ try {
 } catch (Exception $e) {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
-
+error_log('DEBUG items.php');
 // Do checks
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
@@ -55,20 +57,21 @@ $checkUserAccess = new PerformChecks(
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
         'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
     ]
 );
 // Handle the case
 echo $checkUserAccess->caseHandler();
 if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('items') === false) {
+    error_log('DEBUG: En ERREUR /!\\');
     // Not allowed page
     $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
-
+error_log('DEBUG: on continu');
 // Define Timezone
 date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
 
@@ -79,7 +82,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 // --------------------------------- //
 
 // Prepare SESSION variables
-$session_user_admin = $superGlobal->get('user_admin', 'SESSION');
+$session_user_admin = $session->get('user-admin');
 
 if ((int) $session_user_admin === 1) {
     $superGlobal->put('groupes_visibles', $superGlobal->get('personal_visible_groups', 'SESSION', 'user'), 'SESSION');

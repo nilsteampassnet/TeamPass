@@ -27,6 +27,7 @@ declare(strict_types=1);
 use voku\helper\AntiXSS;
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
@@ -37,9 +38,8 @@ require_once 'main.functions.php';
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
+$session = SessionManager::getSession();
 $lang = new Language(); 
-session_name('teampass_session');
-session_start();
 
 // Load config if $SETTINGS not defined
 try {
@@ -60,8 +60,8 @@ $checkUserAccess = new PerformChecks(
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
         'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
     ]
 );
@@ -88,8 +88,6 @@ set_time_limit(0);
 
 // --------------------------------- //
 
-$superGlobal = new SuperGlobal();
-$lang = new Language(); 
 // Prepare GET variables
 $get_filename = $superGlobal->get('name', 'GET');
 $get_fileid = $superGlobal->get('fileid', 'GET');
@@ -110,14 +108,14 @@ if (isset($_GET['pathIsFiles']) && (int) $get_pathIsFiles === 1) {
         FROM ' . prefixTable('files') . ' AS f
         INNER JOIN ' . prefixTable('sharekeys_files') . ' AS s ON (f.id = s.object_id)
         WHERE s.user_id = %i AND s.object_id = %i',
-        $_SESSION['user_id'],
+        $session->get('user-id'),
         $get_fileid
     );
     // Decrypt the file
     $fileContent = decryptFile(
         $file_info['file'],
         $SETTINGS['path_to_upload_folder'],
-        decryptUserObjectKey($file_info['share_key'], $_SESSION['user']['private_key'])
+        decryptUserObjectKey($file_info['share_key'], $session->get('user-private_key'))
     );
     // Set the filename of the download
     $filename = base64_decode(basename($file_info['name'], '.'.$file_info['extension']));

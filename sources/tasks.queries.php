@@ -24,16 +24,18 @@ use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Process;
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 // Load functions
 require_once 'main.functions.php';
+// Case permit to check if SESSION is still valid        
+$session = SessionManager::getSession();
 
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
 $lang = new Language(); 
-session_name('teampass_session');
-session_start();
+
 
 // Load config if $SETTINGS not defined
 try {
@@ -54,8 +56,8 @@ $checkUserAccess = new PerformChecks(
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
         'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
     ]
 );
@@ -88,7 +90,7 @@ $post_task = filter_input(INPUT_POST, 'task', FILTER_SANITIZE_FULL_SPECIAL_CHARS
 
 if (null !== $post_type) {
     // Do checks
-    if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+    if ($post_key !== $session->get('key')) {
         echo prepareExchangedData(
             array(
                 'error' => true,
@@ -97,7 +99,7 @@ if (null !== $post_type) {
             'encode'
         );
         return false;
-    } elseif ($_SESSION['user_read_only'] === true) {
+    } elseif ($session->get('user-read_only') === 1) {
         echo prepareExchangedData(
             array(
                 'error' => true,

@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use Symfony\Component\HttpFoundation\Session\Session;
 
@@ -40,7 +41,7 @@ $superGlobal = new SuperGlobal();
 $lang = new Language(); 
 $session = new Session();
 
-if ($superGlobal->get('key', 'SESSION') === null) {
+if ($session->get('key') === null) {
     die('Hacking attempt...');
 }
 
@@ -62,8 +63,8 @@ $checkUserAccess = new PerformChecks(
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
         'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
     ]
 );

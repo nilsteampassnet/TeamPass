@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
@@ -31,9 +32,8 @@ require_once 'main.functions.php';
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
+$session = SessionManager::getSession();
 $lang = new Language(); 
-session_name('teampass_session');
-session_start();
 
 // Load config if $SETTINGS not defined
 try {
@@ -54,8 +54,8 @@ $checkUserAccess = new PerformChecks(
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
         'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
     ]
 );
@@ -110,7 +110,7 @@ if (null !== $post_type) {
          */
         case 'build_matrix':
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -119,7 +119,7 @@ if (null !== $post_type) {
                     'encode'
                 );
                 break;
-            } elseif ($_SESSION['user_read_only'] === true) {
+            } elseif ($session->get('user-read_only') === 1) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -228,8 +228,8 @@ if (null !== $post_type) {
                     'error' => false,
                     'message' => '',
                     'matrix' => $arrData,
-                    'userIsAdmin' => (int) $_SESSION['is_admin'],
-                    'userCanCreateRootFolder' => (int) $_SESSION['can_create_root_folder'],
+                    'userIsAdmin' => $session->get('user-admin'),
+                    'userCanCreateRootFolder' => (int) $session->get('user-can_create_root_folder'),
                     'fullComplexity' => $complexity,
                 ),
                 'encode'
@@ -240,7 +240,7 @@ if (null !== $post_type) {
         // CASE where selecting/deselecting sub-folders
         case 'select_sub_folders':
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -249,7 +249,7 @@ if (null !== $post_type) {
                     'encode'
                 );
                 break;
-            } elseif ($_SESSION['user_read_only'] === true) {
+            } elseif ($session->get('user-read_only') === 1) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -284,7 +284,7 @@ if (null !== $post_type) {
             //CASE where UPDATING a new group
         case 'update_folder':
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -293,7 +293,7 @@ if (null !== $post_type) {
                     'encode'
                 );
                 break;
-            } elseif ($_SESSION['user_read_only'] === true) {
+            } elseif ($session->get('user-read_only') === 1) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -398,9 +398,9 @@ if (null !== $post_type) {
                 // check if complexity level is good
                 // if manager or admin don't care
                 if (
-                    (int) $_SESSION['is_admin'] !== 1
-                    && ((int) $_SESSION['user_manager'] !== 1
-                        || (int) $_SESSION['user_can_manage_all_users'] !== 1)
+                    (int) $session->get('user-admin') !== 1
+                    && ((int) $session->get('user-manager') !== 1
+                        || (int) $session->get('user-can_manage_all_users') !== 1)
                 ) {
                     // get complexity level for this folder
                     $data = DB::queryfirstrow(
@@ -495,7 +495,7 @@ if (null !== $post_type) {
         //CASE where ADDING a new group
         case 'add_folder':
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -504,7 +504,7 @@ if (null !== $post_type) {
                     'encode'
                 );
                 break;
-            } elseif ($_SESSION['user_read_only'] === true) {
+            } elseif ($session->get('user-read_only') === 1) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -550,7 +550,7 @@ if (null !== $post_type) {
             // Check if parent folder is allowed for this user
             if (
                 in_array($post_parent_id, $_SESSION['groupes_visibles']) === false
-                && (int) $_SESSION['is_admin'] !== 1
+                && (int) $session->get('user-admin') !== 1
             ) {
                 echo prepareExchangedData(
                     array(
@@ -611,9 +611,9 @@ if (null !== $post_type) {
                 // check if complexity level is good
                 // if manager or admin don't care
                 if (
-                    $_SESSION['is_admin'] != 1
-                    && ((int) $_SESSION['user_manager'] !== 1
-                        || (int) $_SESSION['user_can_manage_all_users'] !== 1)
+                    $session->get('user-admin') === 0
+                    && ((int) $session->get('user-manager') !== 1
+                        || (int) $session->get('user-can_manage_all_users') !== 1)
                 ) {
                     // get complexity level for this folder
                     $data = DB::queryfirstrow(
@@ -639,11 +639,11 @@ if (null !== $post_type) {
 
             if (
                 (int) $isPersonal === 1
-                || (int) $_SESSION['is_admin'] === 1
-                || ((int) $_SESSION['user_manager'] === 1 || (int) $_SESSION['user_can_manage_all_users'] === 1)
+                || (int) $session->get('user-admin') === 1
+                || ((int) $session->get('user-manager') === 1 || (int) $session->get('user-can_manage_all_users') === 1)
                 || (isset($SETTINGS['enable_user_can_create_folders']) === true
                     && (int) $SETTINGS['enable_user_can_create_folders'] == 1)
-                || (isset($_SESSION['can_create_root_folder']) === true && (int) $_SESSION['can_create_root_folder'] === 1)
+                || (null !== $session->get('user-can_create_root_folder') && (int) $session->get('user-can_create_root_folder') === 1)
             ) {
                 //create folder
                 DB::insert(
@@ -699,7 +699,7 @@ if (null !== $post_type) {
 
 
                 // --> build json tree if not Admin
-                if ($_SESSION['is_admin'] === 0) {
+                if ($session->get('user-admin') === 0) {
                     // Get path
                     $path = '';
                     $tree_path = $tree->getPath(0, false);
@@ -721,13 +721,13 @@ if (null !== $post_type) {
                     $cache_tree = DB::queryfirstrow(
                         'SELECT increment_id, folders, visible_folders
                         FROM ' . prefixTable('cache_tree').' WHERE user_id = %i',
-                        (int) $_SESSION['user_id']
+                        (int) $session->get('user-id')
                     );
                     if (empty($cache_tree) === true) {
                         DB::insert(
                             prefixTable('cache_tree'),
                             array(
-                                'user_id' => $_SESSION['user_id'],
+                                'user_id' => $session->get('user-id'),
                                 'folders' => json_encode($newId),
                                 'visible_folders' => json_encode($new_json),
                                 'timestamp' => time(),
@@ -790,7 +790,7 @@ if (null !== $post_type) {
                             )
                         );
                     }
-                } elseif ((int) $_SESSION['is_admin'] !== 1) {
+                } elseif ((int) $session->get('user-admin') !== 1) {
                     // If not admin and no option enabled
                     // then provide expected rights based upon user's roles
                     foreach (explode(';', $_SESSION['fonction_id']) as $role) {
@@ -852,7 +852,7 @@ if (null !== $post_type) {
         // CASE where DELETING multiple groups
         case 'delete_folders':
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -861,7 +861,7 @@ if (null !== $post_type) {
                     'encode'
                 );
                 break;
-            } elseif ($_SESSION['user_read_only'] === true) {
+            } elseif ($session->get('user-read_only') === 1) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -894,7 +894,7 @@ if (null !== $post_type) {
                     $subFolders = $tree->getDescendants($folderId, true);
                     foreach ($subFolders as $thisSubFolders) {
                         if (($thisSubFolders->parent_id > 0 || $thisSubFolders->parent_id == 0)
-                            && $thisSubFolders->title != $_SESSION['user_id']
+                            && $thisSubFolders->title !== $session->get('user-id')
                         ) {
                             //Store the deleted folder (recycled bin)
                             DB::insert(
@@ -927,9 +927,9 @@ if (null !== $post_type) {
                                     $SETTINGS,
                                     (int) $item['id'],
                                     '',
-                                    $_SESSION['user_id'],
+                                    $session->get('user-id'),
                                     'at_delete',
-                                    $_SESSION['login']
+                                    $session->get('user-login')
                                 );
 
                                 // delete folder from SESSION
@@ -945,7 +945,7 @@ if (null !== $post_type) {
                                 $cache_tree = DB::queryfirstrow(
                                     'SELECT increment_id, folders, visible_folders
                                     FROM ' . prefixTable('cache_tree').' WHERE user_id = %i',
-                                    (int) $_SESSION['user_id']
+                                    (int) $session->get('user-id')
                                 );
                                 if (DB::count()>0) {
                                     // remove id from folders
@@ -1019,7 +1019,7 @@ if (null !== $post_type) {
 
         case 'copy_folder':
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -1028,7 +1028,7 @@ if (null !== $post_type) {
                     'encode'
                 );
                 break;
-            } elseif ($_SESSION['user_read_only'] === true) {
+            } elseif ($session->get('user-read_only') === 1) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -1144,7 +1144,7 @@ if (null !== $post_type) {
                     (int) $nodeInfo->personal_folder !== 1
                     && isset($SETTINGS['subfolder_rights_as_parent']) === true
                     && (int) $SETTINGS['subfolder_rights_as_parent'] === 1
-                    && (int) $_SESSION['is_admin'] !== 0
+                    && (int) $session->get('user-admin') === 0
                 ) {
                     //add access to this new folder
                     foreach (explode(';', $_SESSION['fonction_id']) as $role) {
@@ -1248,7 +1248,7 @@ if (null !== $post_type) {
                             'SELECT share_key
                             FROM ' . prefixTable('sharekeys_items') . '
                             WHERE user_id = %i AND object_id = %i',
-                            $_SESSION['user_id'],
+                            $session->get('user-id'),
                             $record['id']
                         );
                         if (DB::count() === 0) {
@@ -1270,7 +1270,7 @@ if (null !== $post_type) {
                                     $record['pw'],
                                     decryptUserObjectKey(
                                         $userKey['share_key'],
-                                        $_SESSION['user']['private_key']
+                                        $session->get('user-private_key')
                                     )
                                 )
                             )
@@ -1371,7 +1371,7 @@ if (null !== $post_type) {
                             FROM ' . prefixTable('files') . ' AS f
                             INNER JOIN ' . prefixTable('sharekeys_files') . ' AS s ON (f.id = s.object_id)
                             WHERE s.user_id = %i AND f.id_item = %i',
-                            $_SESSION['user_id'],
+                            $session->get('user-id'),
                             $record['id']
                         );
                         foreach ($files as $file) {
@@ -1381,7 +1381,7 @@ if (null !== $post_type) {
                                 $fileContent = decryptFile(
                                     $file['file'],
                                     $SETTINGS['path_to_upload_folder'],
-                                    decryptUserObjectKey($file['share_key'], $_SESSION['user']['private_key'])
+                                    decryptUserObjectKey($file['share_key'], $session->get('user-private_key'))
                                 );
 
                                 // Step2 - create file
@@ -1440,18 +1440,18 @@ if (null !== $post_type) {
                             $SETTINGS,
                             (int) $newItemId,
                             $record['label'],
-                            $_SESSION['user_id'],
+                            $session->get('user-id'),
                             'at_creation',
-                            $_SESSION['login']
+                            $session->get('user-login')
                         );
                         // Add the fact that item has been copied in logs
                         logItems(
                             $SETTINGS,
                             (int) $newItemId,
                             $record['label'],
-                            $_SESSION['user_id'],
+                            $session->get('user-id'),
                             'at_copy',
-                            $_SESSION['login']
+                            $session->get('user-login')
                         );
                     }
                 }
@@ -1490,7 +1490,7 @@ if (null !== $post_type) {
         // CASE where selecting/deselecting sub-folders
         case 'refresh_folders_list':
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -1499,7 +1499,7 @@ if (null !== $post_type) {
                     'encode'
                 );
                 break;
-            } elseif ($_SESSION['user_read_only'] === true) {
+            } elseif ($session->get('user-read_only') === 1) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -1512,7 +1512,7 @@ if (null !== $post_type) {
 
             $subfolders = array();
 
-            if ((int) $_SESSION['is_admin'] === 1 || (int) $_SESSION['user_manager'] === 1 || (int) $_SESSION['can_create_root_folder'] === 1) {
+            if ((int) $session->get('user-admin') === 1 || (int) $session->get('user-manager') === 1 || (int) $session->get('user-can_create_root_folder') === 1) {
                 array_push(
                     $subfolders,
                     array(

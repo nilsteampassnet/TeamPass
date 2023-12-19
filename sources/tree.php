@@ -21,10 +21,12 @@ declare(strict_types=1);
 
 
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\NestedTree\NestedTree;
+use Symfony\Component\HttpFoundation\Session\Session;
 
 // Load functions
 require_once 'main.functions.php';
@@ -32,9 +34,9 @@ require_once 'main.functions.php';
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
+$session = SessionManager::getSession();
 $lang = new Language(); 
-session_name('teampass_session');
-session_start();
+$session = new Session();
 
 // Load config if $SETTINGS not defined
 try {
@@ -55,8 +57,8 @@ $checkUserAccess = new PerformChecks(
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
         'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
     ]
 );
@@ -84,16 +86,13 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 // Load tree
 $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
-$superGlobal = new SuperGlobal();
-$lang = new Language(); 
-
 // Prepare sanitization
 $data = [
     'forbidenPfs' => isset($_SESSION['forbiden_pfs']) === true ? json_encode($_SESSION['forbiden_pfs']) : '{}',
     'visibleFolders' => isset($_SESSION['groupes_visibles']) === true ? json_encode($_SESSION['groupes_visibles']) : '{}',
-    'userId' => isset($_SESSION['user_id']) === true ? $_SESSION['user_id'] : '',
-    'userLogin' => isset($_SESSION['login']) === true ? $_SESSION['login'] : '',
-    'userReadOnly' => isset($_SESSION['user_read_only']) === true ? $_SESSION['user_read_only'] : '',
+    'userId' => null !== $session->get('user-id') ? $session->get('user-id') : '',
+    'userLogin' => null !== $session->get('user-login') ? $session->get('user-login') : '',
+    'userReadOnly' => null !== $session->get('user-read_only') ? $session->get('user-read_only') : '',
     'limitedFolders' => isset($_SESSION['list_folders_limited']) === true ? json_encode($_SESSION['list_folders_limited']) : '{}',
     'readOnlyFolders' => isset($_SESSION['read_only_folders']) === true ? json_encode($_SESSION['read_only_folders']) : '{}',
     'personalVisibleFolders' => isset($_SESSION['personal_visible_groups']) === true ? json_encode($_SESSION['personal_visible_groups']) : '{}',
@@ -103,8 +102,8 @@ $data = [
     'restrictedFoldersForItems' => isset($_GET['list_restricted_folders_for_items']) === true ? json_encode($_GET['list_restricted_folders_for_items']) : '{}',
     'noAccessFolders' => isset($_SESSION['no_access_folders']) === true ? json_encode($_SESSION['no_access_folders']) : '{}',
     'personalFolders' => isset($_SESSION['personal_folders']) === true ? json_encode($_SESSION['personal_folders']) : '{}',
-    'userCanCreateRootFolder' => isset($_SESSION['can_create_root_folder']) === true ? json_encode($_SESSION['can_create_root_folder']) : '{}',
-    'userTreeLoadStrategy' => isset($_SESSION['user']['user_treeloadstrategy']) === true ? $_SESSION['user']['user_treeloadstrategy'] : '',
+    'userCanCreateRootFolder' => null !== $session->get('user-can_create_root_folder') ? json_encode($session->get('user-can_create_root_folder')) : '{}',
+    'userTreeLoadStrategy' => null !== $session->get('user-tree_load_strategy') ? $session->get('user-tree_load_strategy') : '',
 ];
 
 $filters = [

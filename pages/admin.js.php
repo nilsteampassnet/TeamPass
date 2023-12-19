@@ -24,6 +24,7 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\PerformChecks\PerformChecks;
@@ -54,8 +55,8 @@ $checkUserAccess = new PerformChecks(
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
         'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
     ]
 );
@@ -134,13 +135,13 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
         $.post(
             "sources/admin.queries.php", {
                 type: "save_option_change",
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
-                key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                key: "<?php echo $session->get('key'); ?>"
             },
             function(data) {
                 // Handle server answer
                 try {
-                    data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
+                    data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
                 } catch (e) {
                     // error
                     toastr.remove();
@@ -208,13 +209,13 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
         $.post(
             "sources/admin.queries.php", {
                 type: "save_option_change",
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
-                key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                key: "<?php echo $session->get('key'); ?>"
             },
             function(data) {
                 // Handle server answer
                 try {
-                    data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
+                    data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
                 } catch (e) {
                     // error
                     toastr.remove();

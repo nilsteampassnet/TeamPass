@@ -25,6 +25,7 @@ declare(strict_types=1);
  */
 
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use TeampassClasses\NestedTree\NestedTree;
 
@@ -35,8 +36,7 @@ require_once __DIR__.'/../../sources/main.functions.php';
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
 $lang = new Language(); 
-session_name('teampass_session');
-session_start();
+$session = SessionManager::getSession();
 
 // Load config if $SETTINGS not defined
 try {
@@ -50,8 +50,8 @@ $get = [];
 $get['user_id'] = $superGlobal->get('user_id', 'GET');
 
 // Update table by deleting ID
-if (isset($_SESSION['user_id']) === true && empty($_SESSION['user_id']) === false) {
-    $user_id = $_SESSION['user_id'];
+if (null !== $session->get('user-id') && empty($session->get('user-id')) === false) {
+    $user_id = $session->get('user-id');
 } elseif (isset($get['token']) === true && empty($get['token']) === false) {
     $user_token = $get['token'];
 } else {
@@ -76,7 +76,7 @@ if (empty($user_id) === false && isset($_SESSION['CPM']) === true) {
     if (isset($SETTINGS['log_connections']) === true
         && (int) $SETTINGS['log_connections'] === 1
     ) {
-        logEvents($SETTINGS, 'user_connection', 'disconnect', (string) $user_id, isset($_SESSION['login']) === true ? $_SESSION['login'] : '');
+        logEvents($SETTINGS, 'user_connection', 'disconnect', (string) $user_id, null !== $session->get('user-login') ? $session->get('user-login') : '');
     }
 }
 

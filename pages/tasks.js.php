@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use Symfony\Component\HttpFoundation\Session\Session;
 
@@ -39,7 +40,7 @@ $superGlobal = new SuperGlobal();
 $lang = new Language(); 
 $session = new Session();
 
-if ($superGlobal->get('key', 'SESSION') === null) {
+if ($session->get('key') === null) {
     die('Hacking attempt...');
 }
 
@@ -61,8 +62,8 @@ $checkUserAccess = new PerformChecks(
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
         'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
     ]
 );
@@ -232,10 +233,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 "sources/utilities.queries.php", {
                     type: "show_process_detail",
                     id: $(this).data('id'),
-                    key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
+                    key: "<?php echo $session->get('key'); ?>"
                 },
                 function(data) {
-                    data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
+                    data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
                     console.log(data)
 
                     // Inform user
@@ -298,10 +299,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             $.post(
                 "sources/utilities.queries.php", {
                     type: "handle_crontab_job",
-                    key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
+                    key: "<?php echo $session->get('key'); ?>"
                 },
                 function(data) {
-                    data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
+                    data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
                     console.log(data)
 
                     // Inform user
@@ -355,10 +356,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 "sources/utilities.queries.php", {
                     type: "task_delete",
                     id: $(this).data('id'),
-                    key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
+                    key: "<?php echo $session->get('key'); ?>"
                 },
                 function(data) {
-                    data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
+                    data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
                     console.log(data)
 
                     $("#task-delete-user-confirm").modal('hide');
@@ -413,13 +414,13 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             $.post(
                 "sources/admin.queries.php", {
                     type: "save_option_change",
-                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
-                    key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
+                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                    key: "<?php echo $session->get('key'); ?>"
                 },
                 function(data) {
                     // Handle server answer
                     try {
-                        data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
+                        data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
                     } catch (e) {
                         // error
                         toastr.remove();
@@ -547,12 +548,12 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 {
                     type: "perform_task",
                     task: launchedTask,
-                    key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
+                    key: "<?php echo $session->get('key'); ?>"
                 },
                 function(data) {
                     // Handle server answer
                     try {
-                        data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
+                        data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
                     } catch (e) {
                         // error
                         toastr.remove();
@@ -598,12 +599,12 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             "sources/tasks.queries.php",
             {
                 type: "load_last_tasks_execution",
-                key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
+                key: "<?php echo $session->get('key'); ?>"
             },
             function(data) {
                 // Handle server answer
                 try {
-                    data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
+                    data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
                 } catch (e) {
                     // error
                     toastr.remove();

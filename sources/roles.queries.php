@@ -22,6 +22,7 @@ declare(strict_types=1);
 use LdapRecord\Connection;
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use TeampassClasses\PerformChecks\PerformChecks;
 
@@ -32,9 +33,8 @@ require_once 'main.functions.php';
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
+$session = SessionManager::getSession();
 $lang = new Language(); 
-session_name('teampass_session');
-session_start();
 
 // Load config if $SETTINGS not defined
 try {
@@ -55,8 +55,8 @@ $checkUserAccess = new PerformChecks(
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
         'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
     ]
 );
@@ -96,7 +96,7 @@ if (null !== $post_type) {
          */
         case 'build_matrix':
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -105,7 +105,7 @@ if (null !== $post_type) {
                     'encode'
                 );
                 break;
-            } elseif ($_SESSION['user_read_only'] === true) {
+            } elseif ($session->get('user-read_only') === 1) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -170,7 +170,7 @@ if (null !== $post_type) {
 
         case 'change_access_right_on_folder':
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -179,7 +179,7 @@ if (null !== $post_type) {
                     'encode'
                 );
                 break;
-            } elseif ($_SESSION['user_read_only'] === true) {
+            } elseif ($session->get('user-read_only') === 1) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -295,7 +295,7 @@ if (null !== $post_type) {
 
         case 'change_role_definition':
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -304,7 +304,7 @@ if (null !== $post_type) {
                     'encode'
                 );
                 break;
-            } elseif ($_SESSION['user_read_only'] === true) {
+            } elseif ($session->get('user-read_only') === 1) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -378,7 +378,7 @@ if (null !== $post_type) {
                             'title' => $post_label,
                             'complexity' => $post_complexity,
                             'allow_pw_change' => $post_allowEdit,
-                            'creator_id' => $_SESSION['user_id'],
+                            'creator_id' => $session->get('user-id'),
                         )
                     );
                     $return['new_role_id'] = DB::insertId();
@@ -433,7 +433,7 @@ if (null !== $post_type) {
                             'title' => $post_label,
                             'complexity' => $post_complexity,
                             'allow_pw_change' => $post_allowEdit,
-                            'creator_id' => $_SESSION['user_id'],
+                            'creator_id' => $session->get('user-id'),
                         )
                     );
                     $role_id = DB::insertId();
@@ -445,7 +445,7 @@ if (null !== $post_type) {
                         // get some data
                         $data_tmp = DB::queryfirstrow(
                             'SELECT fonction_id FROM '.prefixTable('users').' WHERE id = %s',
-                            $_SESSION['user_id']
+                            $session->get('user-id')
                         );
 
                         // add new role to user
@@ -462,7 +462,7 @@ if (null !== $post_type) {
                                 'fonction_id' => $_SESSION['fonction_id'],
                             ],
                             'id = %i',
-                            $_SESSION['user_id']
+                            $session->get('user-id')
                         );
                         $_SESSION['user_roles'] = explode(';', $_SESSION['fonction_id']);
 
@@ -515,7 +515,7 @@ if (null !== $post_type) {
 
         case 'delete_role':
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -524,7 +524,7 @@ if (null !== $post_type) {
                     'encode'
                 );
                 break;
-            } elseif ($_SESSION['user_read_only'] === true) {
+            } elseif ($session->get('user-read_only') === 1) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -600,7 +600,7 @@ if (null !== $post_type) {
 
         case 'load_rights_for_compare':
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -609,7 +609,7 @@ if (null !== $post_type) {
                     'encode'
                 );
                 break;
-            } elseif ($_SESSION['user_read_only'] === true) {
+            } elseif ($session->get('user-read_only') === 1) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -676,7 +676,7 @@ if (null !== $post_type) {
         */
         case 'get_list_of_groups_in_ldap':
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -824,7 +824,7 @@ if (null !== $post_type) {
         //
         case "map_role_with_adgroup":
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,

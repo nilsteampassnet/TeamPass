@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use Symfony\Component\HttpFoundation\Session\Session;
 
@@ -39,7 +40,7 @@ $superGlobal = new SuperGlobal();
 $lang = new Language(); 
 $session = new Session();
 
-if ($superGlobal->get('key', 'SESSION') === null) {
+if ($session->get('key') === null) {
     die('Hacking attempt...');
 }
 
@@ -61,8 +62,8 @@ $checkUserAccess = new PerformChecks(
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
         'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
     ]
 );
@@ -137,7 +138,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         lowercase: true,
                         reason: 'avatar_profile_upload',
                         duration: 10,
-                        key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                        key: '<?php echo $session->get('key'); ?>'
                     },
                     function(data) {
                         $('#profile-user-token').val(data[0].token);
@@ -150,14 +151,14 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 var tmp = Math.random().toString(36).substring(7);
 
                 up.settings.multipart_params = {
-                    'PHPSESSID': '<?php echo $_SESSION['user_id']; ?>',
+                    'PHPSESSID': '<?php echo $session->get('user-id'); ?>',
                     'type_upload': 'upload_profile_photo',
                     'user_token': $('#profile-user-token').val()
                 };
             },
             FileUploaded: function(upldr, file, object) {
                 // Decode returned data
-                var myData = prepareExchangedData(object.response, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
+                var myData = prepareExchangedData(object.response, 'decode', '<?php echo $session->get('key'); ?>');
                 // update form
                 $('#profile-user-avatar').attr('src', 'includes/avatars/' + myData.filename);
                 $('#profile-avatar-file-list').html('').addClass('hidden');
@@ -227,14 +228,14 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         $.post(
             "sources/users.queries.php", {
                 type: 'user_profile_update',
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
                 isprofileupdate: true,
-                key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
+                key: "<?php echo $session->get('key'); ?>"
             },
             function(data) {
                 //decrypt data
                 try {
-                    data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
+                    data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
                 } catch (e) {
                     // error
                     toastr.remove();
@@ -324,10 +325,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 capitalize: "true",
                 symbols: "false",
                 secure: "false",
-                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                key: '<?php echo $session->get('key'); ?>'
             },
             function(data) {
-                data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
+                data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
 
                 if (data.key !== "") {
                     newApiKey = data.key;
@@ -336,7 +337,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     var data = {
                         'field' : 'user_api_key',
                         'value' : newApiKey[0],
-                        'user_id' : <?php echo $_SESSION['user_id']; ?>,
+                        'user_id' : <?php echo $session->get('user-id'); ?>,
                         'context' : '',
                     };
                     console.log(data)
@@ -344,12 +345,12 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     $.post(
                         "sources/users.queries.php", {
                             type: "save_user_change",
-                            data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
+                            data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
                             isprofileupdate: true,
-                            key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
+                            key: "<?php echo $session->get('key'); ?>"
                         },
                         function(data) {
-                            data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
+                            data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
                             $("#" + target).text(newApiKey);
                             if (silent === false) {
                                 $('#profile-tabs a[href="#tab_information"]').tab('show');
@@ -446,11 +447,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             "sources/main.queries.php", {
                 type: "change_pw",
                 type_category: 'action_password',
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
-                key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                key: "<?php echo $session->get('key'); ?>"
             },
             function(data) {
-                data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
+                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
                 console.log(data);
 
                 if (data.error === true) {
@@ -580,11 +581,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 "sources/main.queries.php", {
                     'type': "user_recovery_keys_download",
                     'type_category': 'action_key',
-                    'data': prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
-                    'key': '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                    'data': prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                    'key': '<?php echo $session->get('key'); ?>'
                 },
                 function(data) {
-                    data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
+                    data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
                     if (debugJavascript === true) console.log(data)
                     if (data.error === true) {
                         // error

@@ -25,6 +25,7 @@ declare(strict_types=1);
  */
 
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
@@ -36,9 +37,8 @@ require_once 'main.functions.php';
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
+$session = SessionManager::getSession();
 $lang = new Language(); 
-session_name('teampass_session');
-session_start();
 
 // Load config if $SETTINGS not defined
 try {
@@ -59,8 +59,8 @@ $checkUserAccess = new PerformChecks(
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
         'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
     ]
 );
@@ -187,7 +187,7 @@ foreach ($treeDesc as $t) {
             
             //col1
             if (($t->parent_id === 0
-                && ($_SESSION['is_admin'] === 1 || $_SESSION['can_create_root_folder'] === 1))
+                && ($session->get('user-admin') === 1 || $session->get('user-can_create_root_folder') === 1))
                 || $t->parent_id !== 0
             ) {
                 $sOutput .= '"<input type=\"checkbox\" class=\"cb_selected_folder\" data-id=\"'.$t->id.'\" id=\"checkbox-'.$t->id.'\" data-row=\"'.$x.'\" />';

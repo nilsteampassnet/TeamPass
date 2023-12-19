@@ -24,6 +24,7 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\PerformChecks\PerformChecks;
@@ -55,8 +56,8 @@ $checkUserAccess = new PerformChecks(
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
         'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
     ]
 );
@@ -102,7 +103,7 @@ $lang = new Language($session->get('user-language'), __DIR__. '/../includes/lang
                     <h3 class="card-title">&nbsp;</h3>
                 </div>-->
                 <!-- /.card-header -->
-                <div class="card-body p-0<?php echo empty($_SESSION['favourites']) === false ? '' : ' hidden'; ?>" id="favorites">
+                <div class="card-body p-0<?php echo count($session->get('user-favorites')) === 0 ? '' : ' hidden'; ?>" id="favorites">
                     <table class="table table-condensed table-responsive">
                         <tr>
                             <th style="width: 100px"></th>
@@ -111,7 +112,7 @@ $lang = new Language($session->get('user-language'), __DIR__. '/../includes/lang
                             <th style="min-width:20%;"><?php echo $lang->get('group'); ?></th>
                         </tr>
                         <?php
-                        foreach ($_SESSION['favourites'] as $fav) {
+                        foreach ($session->get('user-favorites') as $fav) {
                             if (empty($fav) === false) {
                                 $data = DB::queryFirstRow(
                                     'SELECT i.label, i.description, i.id, i.id_tree, t.title
@@ -129,7 +130,7 @@ $lang = new Language($session->get('user-language'), __DIR__. '/../includes/lang
                                         </td>
                                         <td><?php echo $data['label']; ?></td>
                                         <td><?php echo $data['description']; ?></td>
-                                        <td><?php echo $data['title'] === $_SESSION['user_id'] ? $_SESSION['login'] : $data['title']; ?></td>
+                                        <td><?php echo $data['title'] === $session->get('user-id') ? $session->get('user-login') : $data['title']; ?></td>
                                     </tr>
                         <?php
                                 }
@@ -138,7 +139,7 @@ $lang = new Language($session->get('user-language'), __DIR__. '/../includes/lang
                     </table>
                 </div>
 
-                <div class="card-body<?php echo empty($_SESSION['favourites']) === false ? ' hidden' : ''; ?>" id="no-favorite">
+                <div class="card-body<?php echo count($session->get('user-favorites')) === 0 ? ' hidden' : ''; ?>" id="no-favorite">
                     <div class="alert alert-info">
                         <h5><i class="icon fa fa-info mr-2"></i><?php echo $lang->get('currently_no_favorites'); ?></h5>
                     </div>

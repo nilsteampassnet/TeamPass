@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\PerformChecks\PerformChecks;
@@ -56,8 +57,8 @@ $checkUserAccess = new PerformChecks(
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
         'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
     ]
 );
@@ -112,7 +113,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                             <i class="fa-solid fa-trash mr-2"></i><?php echo $lang->get('delete'); ?>
                         </button>
                         <?php
-                            echo isset($SETTINGS['enable_ad_users_with_ad_groups']) === true && (int) $SETTINGS['enable_ad_users_with_ad_groups'] === 1 && (int) $_SESSION['is_admin'] === 1 ?
+                            echo isset($SETTINGS['enable_ad_users_with_ad_groups']) === true && (int) $SETTINGS['enable_ad_users_with_ad_groups'] === 1 && (int) $session->get('user-admin') === 1 ?
                         '<button type="button" class="btn btn-primary btn-sm tp-action mr-2" data-action="ldap" id="button-ldap">
                             <i class="fa-solid fa-address-card mr-2"></i>'.$lang->get('ldap_synchronization').'
                         </button>' : '';
@@ -126,7 +127,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                 <?php
                                 $arrUserRoles = array_filter($_SESSION['user_roles']);
                                 $where = '';
-                                if (count($arrUserRoles) > 0 && (int) $_SESSION['is_admin'] !== 1) {
+                                if (count($arrUserRoles) > 0 && (int) $session->get('user-admin') !== 1) {
                                     $where = ' WHERE id IN (' . implode(',', $arrUserRoles) . ')';
                                 }
                                 $rows = DB::query('SELECT * FROM ' . prefixTable('roles_title') . $where);
@@ -199,7 +200,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 
                         <!-- LDAP SYNC FORM -->
                         <?php
-                        if (isset($SETTINGS['enable_ad_users_with_ad_groups']) === true && (int) $SETTINGS['enable_ad_users_with_ad_groups'] === 1 && (int) $_SESSION['is_admin'] === 1) {
+                        if (isset($SETTINGS['enable_ad_users_with_ad_groups']) === true && (int) $SETTINGS['enable_ad_users_with_ad_groups'] === 1 && (int) $session->get('user-admin') === 1) {
                             ?>
                         <div class="card hidden card-info" id="card-roles-ldap-sync">
                             <div class="card-header">

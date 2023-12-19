@@ -23,19 +23,20 @@ declare(strict_types=1);
 use voku\helper\AntiXSS;
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
 
 // Load functions
 require_once 'main.functions.php';
-
+require_once 'sessionManager.php';
+$session = SessionManager::getSession();
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
 $lang = new Language(); 
-session_name('teampass_session');
-session_start();
+
 
 // Load config if $SETTINGS not defined
 try {
@@ -56,8 +57,8 @@ $checkUserAccess = new PerformChecks(
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
         'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
     ]
 );
@@ -110,21 +111,21 @@ if (null === $post_user_token) {
                 'end_timestamp' => time() + 10,
             ),
             'user_id = %i AND token = %s',
-            $_SESSION['user_id'],
+            $session->get('user-id'),
             $post_user_token
         );
     } else {
         // check if token is expired
         $data = DB::queryFirstRow(
             'SELECT end_timestamp FROM ' . prefixTable('tokens') . ' WHERE user_id = %i AND token = %s',
-            $_SESSION['user_id'],
+            $session->get('user-id'),
             $post_user_token
         );
         // clear user token
         DB::delete(
             prefixTable('tokens'),
             'user_id = %i AND token = %s',
-            $_SESSION['user_id'],
+            $session->get('user-id'),
             $post_user_token
         );
 
@@ -453,7 +454,7 @@ if (
     }
 
     // get current avatar and delete it
-    $data = DB::queryFirstRow('SELECT avatar, avatar_thumb FROM ' . prefixTable('users') . ' WHERE id=%i', $_SESSION['user_id']);
+    $data = DB::queryFirstRow('SELECT avatar, avatar_thumb FROM ' . prefixTable('users') . ' WHERE id=%i', $session->get('user-id'));
     fileDelete($targetDir . DIRECTORY_SEPARATOR . $data['avatar'], $SETTINGS);
     fileDelete($targetDir . DIRECTORY_SEPARATOR . $data['avatar_thumb'], $SETTINGS);
 
@@ -462,18 +463,18 @@ if (
         'UPDATE ' . prefixTable('users') . "
         SET avatar='" . $newFileName . '.' . $ext . "', avatar_thumb='" . $newFileName . '_thumb' . '.' . $ext . "'
         WHERE id=%i",
-        $_SESSION['user_id']
+        $session->get('user-id')
     );
 
     // store in session
-    $_SESSION['user_avatar'] = $newFileName . '.' . $ext;
-    $_SESSION['user_avatar_thumb'] = $newFileName . '_thumb' . '.' . $ext;
+    $session->set('user-avatar', $newFileName . '.' . $ext);
+    $session->set('user-avatar_thumb', $newFileName . '_thumb' . '.' . $ext);
 
     // return info
     echo prepareExchangedData(
         array(
             'error' => false,
-            'filename' => htmlentities($_SESSION['user_avatar'], ENT_QUOTES),
+            'filename' => htmlentities($session->get('user-avatar'), ENT_QUOTES),
             'filename_thumb' => htmlentities($_SESSION['user_avatar_thumb'], ENT_QUOTES),
         ),
         'encode'

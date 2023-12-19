@@ -27,6 +27,7 @@ declare(strict_types=1);
 use voku\helper\AntiXSS;
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
@@ -37,9 +38,8 @@ require_once 'main.functions.php';
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
+$session = SessionManager::getSession();
 $lang = new Language(); 
-session_name('teampass_session');
-session_start();
 
 // Load config if $SETTINGS not defined
 try {
@@ -60,8 +60,8 @@ $checkUserAccess = new PerformChecks(
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
         'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
     ]
 );
@@ -89,8 +89,8 @@ set_time_limit(0);
 // --------------------------------- //
 
 // if no folders are visible then return no results
-if (isset($_SESSION['groupes_visibles']) === false
-    || empty($_SESSION['groupes_visibles']) === true
+if (null === $session->get('user-accessible_folders')
+    || empty($session->get('user-accessible_folders')) === true
 ) {
     echo '{"sEcho": ' . intval($_GET['sEcho']) . ' ,"iTotalRecords": "0", "iTotalDisplayRecords": "0", "aaData": [] }';
     exit;
@@ -107,7 +107,7 @@ $sWhere = 'c.id_tree IN %ls_idtree';
 if (isset($_GET['limited']) === false
     || (isset($_GET['limited']) === true && $_GET['limited'] === 'false')
 ) {
-    $folders = $_SESSION['groupes_visibles'];
+    $folders = $session->get('user-accessible_folders');
 } else {
     // Build tree
     $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
@@ -118,7 +118,7 @@ if (isset($_GET['limited']) === false
 //Get current user "personal folder" ID
 $row = DB::query(
     'SELECT id FROM ' . prefixTable('nested_tree') . ' WHERE title = %i',
-    intval($_SESSION['user_id'])
+    intval($session->get('user-id'))
 );
 //get list of personal folders
 $arrayPf = [];
@@ -129,7 +129,7 @@ if (empty($row['id']) === false) {
         'SELECT id FROM ' . prefixTable('nested_tree') . '
         WHERE personal_folder = 1 AND NOT parent_id = %i AND NOT title = %i',
         filter_var($row['id'], FILTER_SANITIZE_NUMBER_INT),
-        filter_var($_SESSION['user_id'], FILTER_SANITIZE_NUMBER_INT)
+        filter_var($session->get('user-id'), FILTER_SANITIZE_NUMBER_INT)
     );
     foreach ($rows as $record) {
         if (! in_array($record['id'], $arrayPf)) {
@@ -245,8 +245,8 @@ DB::query(
     "SELECT c.id
     FROM " . prefixTable('cache') . " AS c
     LEFT JOIN " . prefixTable('categories_items') . " AS ci ON (ci.item_id = c.id)
-    ${sWhere}
-    ${sOrder}",
+    {$sWhere}
+    {$sOrder}",
     $crit
 );
 $iTotal = DB::count();
@@ -255,9 +255,9 @@ $rows = DB::query(
     FROM " . prefixTable('cache') . " AS c
     LEFT JOIN " . prefixTable('categories_items') . " AS ci ON (ci.item_id = c.id)
     INNER JOIN " . prefixTable('items') . " AS i ON (i.id = c.id)
-    ${sWhere}
-    ${sOrder}
-    ${sLimit}",
+    {$sWhere}
+    {$sOrder}
+    {$sLimit}",
     $crit
 );
 
@@ -353,9 +353,9 @@ if (isset($_GET['type']) === false) {
 
         if (isset($_SESSION['list_folders_editable_by_role']) && in_array($record['id_tree'], $_SESSION['list_folders_editable_by_role'])) {
             if (empty($restrictedTo)) {
-                $restrictedTo = $_SESSION['user_id'];
+                $restrictedTo = $session->get('user-id');
             } else {
-                $restrictedTo .= ',' . $_SESSION['user_id'];
+                $restrictedTo .= ',' . $session->get('user-id');
             }
         }
         
@@ -379,9 +379,9 @@ if (isset($_GET['type']) === false) {
             $restrictedToRole = true;
         }
 
-        if (($record['perso'] === 1 && $record['author'] !== $_SESSION['user_id'])
+        if (($record['perso'] === 1 && $record['author'] !== $session->get('user-id'))
             || (empty($record['restricted_to']) === false
-            && in_array($_SESSION['user_id'], explode(';', $record['restricted_to'])) === false)
+            && in_array($session->get('user-id'), explode(';', $record['restricted_to'])) === false)
             || ($restrictedToRole === true)
         ) {
             $getItemInList = false;
@@ -436,7 +436,7 @@ if (isset($_GET['type']) === false) {
         $arr_data[$record['id']]['item_key'] = (string) $record['item_key'];
         $arr_data[$record['id']]['link'] = (string) $record['url'] !== '0' && empty($record['url']) === false ? filter_var($record['url'], FILTER_SANITIZE_URL) : '';
         // Is favorite?
-        if (in_array($record['id'], $_SESSION['favourites']) === true) {
+        if (in_array($record['id'], $session->get('user-favorites')) === true) {
             $arr_data[$record['id']]['enable_favourites'] = 1;
         } else {
             $arr_data[$record['id']]['enable_favourites'] = 0;
@@ -496,9 +496,9 @@ if (isset($_GET['type']) === false) {
 
         if (isset($_SESSION['list_folders_editable_by_role']) && in_array($record['id_tree'], $_SESSION['list_folders_editable_by_role'])) {
             if (empty($restrictedTo)) {
-                $restrictedTo = $_SESSION['user_id'];
+                $restrictedTo = $session->get('user-id');
             } else {
-                $restrictedTo .= ',' . $_SESSION['user_id'];
+                $restrictedTo .= ',' . $session->get('user-id');
             }
         }
 
@@ -523,8 +523,8 @@ if (isset($_GET['type']) === false) {
             $itemIsPersonal = true;
             $right = 70;
         // ----- END CASE 1 -----
-        } elseif (((isset($_SESSION['user_manager']) === true && (int) $_SESSION['user_manager'] === 1)
-            || (isset($_SESSION['user_can_manage_all_users']) === true && (int) $_SESSION['user_can_manage_all_users'] === 1))
+        } elseif (((null !== $session->get('user-manager') && (int) $session->get('user-manager') === 1)
+            || (null !== $session->get('user-can_manage_all_users') && (int) $session->get('user-can_manage_all_users') === 1))
             && (isset($SETTINGS['manager_edit']) === true && (int) $SETTINGS['manager_edit'] === 1)
             && $record['perso'] !== 1
         ) {
@@ -533,9 +533,9 @@ if (isset($_GET['type']) === false) {
             $right = 70;
         // ----- END CASE 3 -----
         } elseif (empty($record['restricted_to']) === false
-            && in_array($_SESSION['user_id'], explode(';', $record['restricted_to'])) === true
+            && in_array($session->get('user-id'), explode(';', $record['restricted_to'])) === true
             && $record['perso'] !== 1
-            && (int) $_SESSION['user_read_only'] !== 1
+            && (int) $session->get('user-read_only') === 0
         ) {
             // Case 4 - Is this item limited to Users? Is current user in this list?
             // Allow all rights
@@ -543,38 +543,38 @@ if (isset($_GET['type']) === false) {
         // ----- END CASE 4 -----
         } elseif ($user_is_included_in_role === true
             && $record['perso'] !== 1
-            && (int) $_SESSION['user_read_only'] !== 1
+            && (int) $session->get('user-read_only') === 0
         ) {
             // Case 5 - Is this item limited to group of users? Is current user in one of those groups?
             // Allow all rights
             $right = 60;
         // ----- END CASE 5 -----
         } elseif ($record['perso'] !== 1
-            && (int) $_SESSION['user_read_only'] === 1
+            && (int) $session->get('user-read_only') === 1
         ) {
             // Case 6 - Is user readonly?
             // Allow limited rights
             $right = 10;
         // ----- END CASE 6 -----
         } elseif ($record['perso'] !== 1
-            && (int) $_SESSION['user_read_only'] === 1
+            && (int) $session->get('user-read_only') === 1
         ) {
             // Case 7 - Is user readonly?
             // Allow limited rights
             $right = 10;
         // ----- END CASE 7 -----
         } elseif ($record['perso'] !== 1
-            && (int) $_SESSION['user_read_only'] === 1
+            && (int) $session->get('user-read_only') === 1
         ) {
             // Case 8 - Is user allowed to access?
             // Allow rights
             $right = 10;
         // ----- END CASE 8 -----
         } elseif (((empty($record['restricted_to']) === false
-            && in_array($_SESSION['user_id'], explode(';', $record['restricted_to'])) === false)
+            && in_array($session->get('user-id'), explode(';', $record['restricted_to'])) === false)
             || ($user_is_included_in_role === false && $item_is_restricted_to_role === true))
             && $record['perso'] !== 1
-            && (int) $_SESSION['user_read_only'] !== 1
+            && (int) $session->get('user-read_only') === 0
         ) {
             // Case 9 - Is this item limited to Users or Groups? Is current user in this list?
             // If no then Allow none
@@ -651,7 +651,7 @@ if (isset($_GET['type']) === false) {
                 INNER JOIN ' . prefixTable('sharekeys_items') . ' AS s ON (s.object_id = i.id)
                 WHERE i.id = %i AND s.user_id = %i',
                 $record['id'],
-                $_SESSION['user_id']
+                $session->get('user-id')
             );
             // Uncrypt PW
             if (DB::count() === 0 || empty($data_item['pw']) === true) {
@@ -662,7 +662,7 @@ if (isset($_GET['type']) === false) {
                     $data_item['pw'],
                     decryptUserObjectKey(
                         $data_item['share_key'],
-                        $_SESSION['user']['private_key']
+                        $session->get('user-private_key')
                     )
                 );
             }
@@ -675,7 +675,7 @@ if (isset($_GET['type']) === false) {
             }
         }
         //$arr_data[$record['id']]['pw'] = strtr($pw, '"', '&quot;');
-        if (in_array($record['id'], $_SESSION['favourites'])) {
+        if (in_array($record['id'], $session->get('user-favorites'))) {
             $arr_data[$record['id']]['is_favorite'] = 1;
         } else {
             $arr_data[$record['id']]['is_favorite'] = 0;

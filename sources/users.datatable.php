@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
@@ -37,9 +38,8 @@ require_once 'main.functions.php';
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
+$session = SessionManager::getSession();
 $lang = new Language(); 
-session_name('teampass_session');
-session_start();
 
 // Load config if $SETTINGS not defined
 try {
@@ -60,8 +60,8 @@ $checkUserAccess = new PerformChecks(
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
         'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
     ]
 );
@@ -151,8 +151,8 @@ if (isset($_GET['letter']) === true
 }
 
 // enlarge the query in case of Manager
-if ((int) $_SESSION['is_admin'] === 0
-    && (int) $_SESSION['user_can_manage_all_users'] === 0
+if ((int) $session->get('user-admin') === 0
+    && (int) $session->get('user-can_manage_all_users') === 0
 ) {
     $sWhere .= ' AND ';
     $arrUserRoles = array_filter($_SESSION['user_roles']);
@@ -188,9 +188,9 @@ if (DB::count() > 0) {
 
 foreach ($rows as $record) {
     //Show user only if can be administrated by the adapted Roles manager
-    if ((int) $_SESSION['is_admin'] === 1
+    if ((int) $session->get('user-admin') === 1
         || in_array($record['isAdministratedByRole'], $_SESSION['user_roles'])
-        || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $record['admin'] === 0 && (int) $record['id'] !== (int) $_SESSION['user_id'])
+        || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $record['admin'] === 0 && (int) $record['id'] !== (int) $session->get('user-id'))
     ) {
         $showUserFolders = true;
     } else {

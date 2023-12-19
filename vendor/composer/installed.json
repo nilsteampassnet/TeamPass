@@ -60,17 +60,17 @@
         },
         {
             "name": "carbonphp/carbon-doctrine-types",
-            "version": "3.0.0",
-            "version_normalized": "3.0.0.0",
+            "version": "3.1.0",
+            "version_normalized": "3.1.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/CarbonPHP/carbon-doctrine-types.git",
-                "reference": "49856fbc09fe91b5433381faec60e3620ad364ad"
+                "reference": "a31d3358a2a5d6ae947df1691d1f321418a5f3d5"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/CarbonPHP/carbon-doctrine-types/zipball/49856fbc09fe91b5433381faec60e3620ad364ad",
-                "reference": "49856fbc09fe91b5433381faec60e3620ad364ad",
+                "url": "https://api.github.com/repos/CarbonPHP/carbon-doctrine-types/zipball/a31d3358a2a5d6ae947df1691d1f321418a5f3d5",
+                "reference": "a31d3358a2a5d6ae947df1691d1f321418a5f3d5",
                 "shasum": ""
             },
             "require": {
@@ -84,7 +84,7 @@
                 "nesbot/carbon": "^2.71.0 || ^3.0.0",
                 "phpunit/phpunit": "^10.3"
             },
-            "time": "2023-10-01T14:36:55+00:00",
+            "time": "2023-12-10T15:33:53+00:00",
             "type": "library",
             "installation-source": "dist",
             "autoload": {
@@ -112,7 +112,7 @@
             ],
             "support": {
                 "issues": "https://github.com/CarbonPHP/carbon-doctrine-types/issues",
-                "source": "https://github.com/CarbonPHP/carbon-doctrine-types/tree/3.0.0"
+                "source": "https://github.com/CarbonPHP/carbon-doctrine-types/tree/3.1.0"
             },
             "funding": [
                 {
@@ -970,8 +970,8 @@
         },
         {
             "name": "illuminate/collections",
-            "version": "v10.35.0",
-            "version_normalized": "10.35.0.0",
+            "version": "v10.37.3",
+            "version_normalized": "10.37.3.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/collections.git",
@@ -1028,8 +1028,8 @@
         },
         {
             "name": "illuminate/conditionable",
-            "version": "v10.35.0",
-            "version_normalized": "10.35.0.0",
+            "version": "v10.37.3",
+            "version_normalized": "10.37.3.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/conditionable.git",
@@ -1077,8 +1077,8 @@
         },
         {
             "name": "illuminate/container",
-            "version": "v10.35.0",
-            "version_normalized": "10.35.0.0",
+            "version": "v10.37.3",
+            "version_normalized": "10.37.3.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/container.git",
@@ -1131,8 +1131,8 @@
         },
         {
             "name": "illuminate/contracts",
-            "version": "v10.35.0",
-            "version_normalized": "10.35.0.0",
+            "version": "v10.37.3",
+            "version_normalized": "10.37.3.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/contracts.git",
@@ -1182,17 +1182,17 @@
         },
         {
             "name": "illuminate/filesystem",
-            "version": "v10.35.0",
-            "version_normalized": "10.35.0.0",
+            "version": "v10.37.3",
+            "version_normalized": "10.37.3.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/filesystem.git",
-                "reference": "8a412afd1b56f762aafe2747d5e2b79267f97436"
+                "reference": "3b28fdd05812399d401d2bcc03b4a6abb5882979"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/illuminate/filesystem/zipball/8a412afd1b56f762aafe2747d5e2b79267f97436",
-                "reference": "8a412afd1b56f762aafe2747d5e2b79267f97436",
+                "url": "https://api.github.com/repos/illuminate/filesystem/zipball/3b28fdd05812399d401d2bcc03b4a6abb5882979",
+                "reference": "3b28fdd05812399d401d2bcc03b4a6abb5882979",
                 "shasum": ""
             },
             "require": {
@@ -1216,7 +1216,7 @@
                 "symfony/filesystem": "Required to enable support for relative symbolic links (^6.2).",
                 "symfony/mime": "Required to enable support for guessing extensions (^6.2)."
             },
-            "time": "2023-11-08T14:19:58+00:00",
+            "time": "2023-12-06T15:24:58+00:00",
             "type": "library",
             "extra": {
                 "branch-alias": {
@@ -1249,8 +1249,8 @@
         },
         {
             "name": "illuminate/macroable",
-            "version": "v10.35.0",
-            "version_normalized": "10.35.0.0",
+            "version": "v10.37.3",
+            "version_normalized": "10.37.3.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/macroable.git",
@@ -1298,17 +1298,17 @@
         },
         {
             "name": "illuminate/support",
-            "version": "v10.35.0",
-            "version_normalized": "10.35.0.0",
+            "version": "v10.37.3",
+            "version_normalized": "10.37.3.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/support.git",
-                "reference": "84fd6e3a041c93bf8dca1349caf994023ee5c9e0"
+                "reference": "c28657bdda8014017197e2a40edd7d162ce03e8a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/illuminate/support/zipball/84fd6e3a041c93bf8dca1349caf994023ee5c9e0",
-                "reference": "84fd6e3a041c93bf8dca1349caf994023ee5c9e0",
+                "url": "https://api.github.com/repos/illuminate/support/zipball/c28657bdda8014017197e2a40edd7d162ce03e8a",
+                "reference": "c28657bdda8014017197e2a40edd7d162ce03e8a",
                 "shasum": ""
             },
             "require": {
@@ -1336,7 +1336,7 @@
                 "symfony/var-dumper": "Required to use the dd function (^6.2).",
                 "vlucas/phpdotenv": "Required to use the Env class and env helper (^5.4.1)."
             },
-            "time": "2023-12-04T22:26:42+00:00",
+            "time": "2023-12-12T19:36:09+00:00",
             "type": "library",
             "extra": {
                 "branch-alias": {
@@ -1372,17 +1372,17 @@
         },
         {
             "name": "illuminate/translation",
-            "version": "v10.35.0",
-            "version_normalized": "10.35.0.0",
+            "version": "v10.37.3",
+            "version_normalized": "10.37.3.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/translation.git",
-                "reference": "7579bd97c6e0a746d1309b5c27803cb8dfc961fe"
+                "reference": "9df0066e77e0d2afcc9a23838ee52e2542530682"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/illuminate/translation/zipball/7579bd97c6e0a746d1309b5c27803cb8dfc961fe",
-                "reference": "7579bd97c6e0a746d1309b5c27803cb8dfc961fe",
+                "url": "https://api.github.com/repos/illuminate/translation/zipball/9df0066e77e0d2afcc9a23838ee52e2542530682",
+                "reference": "9df0066e77e0d2afcc9a23838ee52e2542530682",
                 "shasum": ""
             },
             "require": {
@@ -1393,7 +1393,7 @@
                 "illuminate/support": "^10.0",
                 "php": "^8.1"
             },
-            "time": "2023-11-22T15:44:28+00:00",
+            "time": "2023-12-12T14:56:20+00:00",
             "type": "library",
             "extra": {
                 "branch-alias": {
@@ -1426,17 +1426,17 @@
         },
         {
             "name": "illuminate/validation",
-            "version": "v10.35.0",
-            "version_normalized": "10.35.0.0",
+            "version": "v10.37.3",
+            "version_normalized": "10.37.3.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/validation.git",
-                "reference": "8458748fe2b5fcac81a8b48f3752793f9d734bad"
+                "reference": "262a82d6d1bfb722a1b8c0b32dd335b46b141e92"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/illuminate/validation/zipball/8458748fe2b5fcac81a8b48f3752793f9d734bad",
-                "reference": "8458748fe2b5fcac81a8b48f3752793f9d734bad",
+                "url": "https://api.github.com/repos/illuminate/validation/zipball/262a82d6d1bfb722a1b8c0b32dd335b46b141e92",
+                "reference": "262a82d6d1bfb722a1b8c0b32dd335b46b141e92",
                 "shasum": ""
             },
             "require": {
@@ -1457,7 +1457,7 @@
             "suggest": {
                 "illuminate/database": "Required to use the database presence verifier (^10.0)."
             },
-            "time": "2023-11-30T22:32:43+00:00",
+            "time": "2023-12-11T16:48:56+00:00",
             "type": "library",
             "extra": {
                 "branch-alias": {
@@ -4118,6 +4118,44 @@
                 "relative": true
             },
             "install-path": "../teampassclasses/performchecks"
+        },
+        {
+            "name": "teampassclasses/sessionmanager",
+            "version": "dev-master",
+            "version_normalized": "dev-master",
+            "dist": {
+                "type": "path",
+                "url": "includes/libraries/teampassclasses/sessionmanager",
+                "reference": "3d59d6c5d4e65b0276ef0806491c32c7b6b20788"
+            },
+            "require": {
+                "php": "^8.0"
+            },
+            "type": "library",
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "TeampassClasses\\SessionManager\\": "src/"
+                }
+            },
+            "license": [
+                "GPL-3.0-only"
+            ],
+            "authors": [
+                {
+                    "name": "Nils Laumaillé"
+                }
+            ],
+            "description": "Manage session with component HttdFoundation from Synfony.",
+            "keywords": [
+                "access",
+                "rights"
+            ],
+            "transport-options": {
+                "symlink": false,
+                "relative": true
+            },
+            "install-path": "../teampassclasses/sessionmanager"
         },
         {
             "name": "teampassclasses/superglobal",

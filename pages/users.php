@@ -25,6 +25,7 @@ declare(strict_types=1);
  */
 
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\PerformChecks\PerformChecks;
@@ -55,8 +56,8 @@ $checkUserAccess = new PerformChecks(
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
         'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
     ]
 );
@@ -87,7 +88,7 @@ $optionsRoles = '';
 $userRoles = explode(';', $_SESSION['fonction_id']);
 // If administrator then all roles are shown
 // else only the Roles the users is associated to.
-if ((int) $_SESSION['is_admin'] === 1) {
+if ((int) $session->get('user-admin') === 1) {
     $optionsManagedBy .= '<option value="0">' . $lang->get('administrators_only') . '</option>';
 }
 
@@ -97,13 +98,13 @@ $rows = DB::query(
     ORDER BY title ASC'
 );
 foreach ($rows as $record) {
-    if ((int) $_SESSION['is_admin'] === 1 || in_array($record['id'], $_SESSION['user_roles']) === true) {
+    if ((int) $session->get('user-admin') === 1 || in_array($record['id'], $_SESSION['user_roles']) === true) {
         $optionsManagedBy .= '<option value="' . $record['id'] . '">' . $lang->get('managers_of') . ' ' . addslashes($record['title']) . '</option>';
     }
     if (
-        (int) $_SESSION['is_admin'] === 1
-        || (((int) $superGlobal->get('user_manager', 'SESSION') === 1 || (int) $_SESSION['user_can_manage_all_users'] === 1)
-            && (in_array($record['id'], $userRoles) === true) || (int) $record['creator_id'] === (int) $_SESSION['user_id'])
+        (int) $session->get('user-admin') === 1
+        || (((int) $session->get('user-manager') === 1 || (int) $session->get('user-can_manage_all_users') === 1)
+            && (in_array($record['id'], $userRoles) === true) || (int) $record['creator_id'] === (int) $session->get('user-id'))
     ) {
         $optionsRoles .= '<option value="' . $record['id'] . '">' . addslashes($record['title']) . '</option>';
     }
@@ -155,7 +156,7 @@ foreach ($treeDesc as $t) {
                         <button type="button" class="btn btn-primary btn-sm tp-action mr-2" data-action="refresh">
                             <i class="fa-solid fa-sync-alt mr-2"></i><?php echo $lang->get('refresh'); ?>
                         </button><?php
-                                    echo isset($SETTINGS['ldap_mode']) === true && (int) $SETTINGS['ldap_mode'] === 1 && (int) $_SESSION['is_admin'] === 1 ?
+                                    echo isset($SETTINGS['ldap_mode']) === true && (int) $SETTINGS['ldap_mode'] === 1 && (int) $session->get('user-admin') === 1 ?
                                         '<button type="button" class="btn btn-primary btn-sm tp-action mr-2" data-action="ldap-sync">
                             <i class="fa-solid fa-address-card mr-2"></i>' . $lang->get('ldap_synchronization') . '
                         </button>' : '';

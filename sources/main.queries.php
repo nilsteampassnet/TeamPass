@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 use PasswordLib\PasswordLib;
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use Hackzilla\PasswordGenerator\Generator\ComputerPasswordGenerator;
 use Hackzilla\PasswordGenerator\RandomGenerator\Php7RandomGenerator;
@@ -30,6 +31,23 @@ use TeampassClasses\PerformChecks\PerformChecks;
 
 // Load functions
 require_once 'main.functions.php';
+require_once 'sessionManager.php';
+
+// Resume the session
+if (isset($_POST['sessionId'])) {
+    $sessionId = $_POST['sessionId'];
+    // Validate the session ID format to prevent injection attacks
+    if (preg_match('/^[a-z0-9]{26,40}$/', $sessionId)) {
+        session_id($sessionId);
+    } else {
+        // Invalid session ID, handle the error
+        echo "Invalid session ID";
+        exit;
+    }
+}
+
+require_once 'sessionManager.php';
+$session = SessionManager::getSession();
 
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
@@ -66,8 +84,8 @@ $checkUserAccess = new PerformChecks(
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
         'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
     ]
 );
@@ -98,14 +116,14 @@ if (
     // continue
     mainQuery($SETTINGS);
 } elseif (
-    isset($_SESSION['user_id']) === true
+    null !== $session->get('user-id')
     && $checkUserAccess->userAccessPage('home') === false
 ) {
     $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error'); //not allowed page
     include __DIR__.'/../error.php';
     exit();
-} elseif ((isset($_SESSION['user_id']) === true
-        && $superGlobal->get('key', 'SESSION') !== null)
+} elseif ((null !== $session->get('user-id')
+        && $session->get('key') !== null)
     || (isset($post_type) === true
         && null !== filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES))
 ) {
@@ -303,6 +321,9 @@ function passwordHandler(string $post_type, /*php8 array|null|string*/ $dataRece
  */
 function userHandler(string $post_type, /*php8 array|null|string*/ $dataReceived, array $SETTINGS): string
 {
+    require_once 'sessionManager.php';
+    $session = SessionManager::getSession();
+
     switch ($post_type) {
         /*
         * Get info 
@@ -340,7 +361,7 @@ function userHandler(string $post_type, /*php8 array|null|string*/ $dataReceived
         * Refresh list of last items seen
         */
         case 'refresh_list_items_seen'://action_user
-            if (isset($_SESSION['user_id']) === false || (int) $_SESSION['user_id'] > 0) {
+            if (null !== $session->get('user-id') || (int) $session->get('user-id') > 0) {
                 return refreshUserItemsSeenList(
                     $SETTINGS
                 );
@@ -591,6 +612,7 @@ function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived,
  */
 function systemHandler(string $post_type, array|null|string $dataReceived, array $SETTINGS): string
 {
+    $session = SessionManager::getSession();
     switch ($post_type) {
         /*
         * How many items for this user
@@ -683,7 +705,7 @@ function systemHandler(string $post_type, array|null|string $dataReceived, array
             DB::insert(
                 prefixTable('tokens'),
                 array(
-                    'user_id' => (int) $_SESSION['user_id'],
+                    'user_id' => (int) $session->get('user-id'),
                     'token' => $token,
                     'reason' => filter_input(INPUT_POST, 'reason', FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                     'creation_timestamp' => time(),
@@ -770,12 +792,13 @@ function userIsReady(int $userid, string $dir): string
  */
 function userGetSessionTime(int $userid, string $dir, int $maximum_session_expiration_time): string
 {
+    $session = SessionManager::getSession();
     // Send back
     return prepareExchangedData(
         array(
             'error' => false,
-            'timestamp' => $_SESSION['sessionDuration'],
-            'max_time_to_add' => intdiv((($maximum_session_expiration_time*60) - ((int) $_SESSION['sessionDuration'] - time())), 60),
+            'timestamp' => $session->get('user-session_duration'),
+            'max_time_to_add' => intdiv((($maximum_session_expiration_time*60) - ((int) $session->get('user-session_duration') - time())), 60),
             'max_session_duration' => $maximum_session_expiration_time,
         ),
         'encode'
@@ -855,6 +878,7 @@ function changePassword(
     array $SETTINGS
 ): string
 {
+    $session = SessionManager::getSession();
     // load passwordLib library
     $pwdlib = new PasswordLib();
 
@@ -869,7 +893,7 @@ function changePassword(
         || $post_change_request === 'user_decides_to_change_password'
     ) {
         // Check that current user is correct
-        if ((int) $post_user_id !== (int) $_SESSION['user_id']) {
+        if ((int) $post_user_id !== (int) $session->get('user-id')) {
             return prepareExchangedData(
                 array(
                     'error' => true,
@@ -936,14 +960,14 @@ function changePassword(
         }
 
         // update sessions
-        $_SESSION['last_pw_change'] = mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'));
-        $_SESSION['validite_pw'] = true;
+        $session->set('user-last_pw_change', mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y')));
+        $session->set('user-validite_pw', 1);
 
         // BEfore updating, check that the pwd is correct
         if ($pwdlib->verifyPasswordHash($post_new_password, $post_new_password_hashed) === true && empty($dataUser['private_key']) === false) {
             $special_action = 'none';
             if ($post_change_request === 'reset_user_password_expected') {
-                $_SESSION['user']['private_key'] = decryptPrivateKey($post_current_password, $dataUser['private_key']);
+                $session->set('user-private_key', decryptPrivateKey($post_current_password, $dataUser['private_key']));
             }
 
             // update DB
@@ -954,13 +978,13 @@ function changePassword(
                     'last_pw_change' => mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y')),
                     'last_pw' => $post_current_password,
                     'special' => $special_action,
-                    'private_key' => encryptPrivateKey($post_new_password, $_SESSION['user']['private_key']),
+                    'private_key' => encryptPrivateKey($post_new_password, $session->get('user-private_key')),
                 ),
                 'id = %i',
                 $post_user_id
             );
             // update LOG
-            logEvents($SETTINGS, 'user_mngt', 'at_user_pwd_changed', (string) $_SESSION['user_id'], $_SESSION['login'], $post_user_id);
+            logEvents($SETTINGS, 'user_mngt', 'at_user_pwd_changed', (string) $session->get('user-id'), $session->get('user-login'), $post_user_id);
 
             // Send back
             return prepareExchangedData(
@@ -1293,6 +1317,9 @@ function refreshUserItemsSeenList(
     array $SETTINGS
 ): string
 {
+    require_once 'sessionManager.php';
+    $session = SessionManager::getSession();
+
     // get list of last items seen
     $arr_html = array();
     $rows = DB::query(
@@ -1303,7 +1330,7 @@ function refreshUserItemsSeenList(
         ORDER BY l.date DESC
         LIMIT 0, 100',
         'at_shown',
-        $_SESSION['user_id']
+        $session->get('user-id')
     );
     if (DB::count() > 0) {
         foreach ($rows as $record) {
@@ -1328,7 +1355,7 @@ function refreshUserItemsSeenList(
     // get wainting suggestions
     $nb_suggestions_waiting = 0;
     if (isKeyExistingAndEqual('enable_suggestion', 1, $SETTINGS) === true
-        && ((int) $_SESSION['user_admin'] === 1 || (int) $_SESSION['user_manager'] === 1)
+        && ((int) $session->get('user-admin') === 1 || (int) $session->get('user-manager') === 1)
     ) {
         DB::query('SELECT * FROM ' . prefixTable('suggestion'));
         $nb_suggestions_waiting = DB::count();
@@ -1586,6 +1613,7 @@ function isUserPasswordCorrect(
     array $SETTINGS
 ): string
 {
+    $session = SessionManager::getSession();
     // Load user's language
     $lang = new Language(); 
     
@@ -1626,8 +1654,8 @@ function isUserPasswordCorrect(
             if ($currentUserKey !== null) {
                 // Decrypt itemkey with user key
                 // use old password to decrypt private_key
-                $_SESSION['user']['private_key'] = decryptPrivateKey($post_user_password, $userInfo['private_key']);
-                $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $_SESSION['user']['private_key']);
+                $session->set('user-private_key', decryptPrivateKey($post_user_password, $userInfo['private_key']));
+                $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $session->get('user-private_key'));
 
                 //echo $post_user_password."  --  ".$userInfo['private_key']. ";;";
 
@@ -1682,12 +1710,13 @@ function changePrivateKeyEncryptionPassword(
     array $SETTINGS
 ): string
 {
+    $session = SessionManager::getSession();
     // Load user's language
     $lang = new Language(); 
     
     if (empty($post_new_code) === true) {
-        if (empty($_SESSION['user_pwd']) === false) {
-            $post_new_code = $_SESSION['user_pwd'];
+        if (empty($session->get('user-password')) === false) {
+            $post_new_code = $session->get('user-password');
         } else {
             // no user password???
             return prepareExchangedData(
@@ -1732,9 +1761,7 @@ function changePrivateKeyEncryptionPassword(
                 $post_user_id
             );
 
-            // Load superGlobals
-            $superGlobal = new SuperGlobal();
-            $superGlobal->put('private_key', $privateKey, 'SESSION', 'user');
+            $session->set('user-private_key', $privateKey);
         }
 
         // Return
@@ -2186,6 +2213,7 @@ function continueReEncryptingUserSharekeysStep10(
     array $SETTINGS
 ): array 
 {
+    $session = SessionManager::getSession();
     // Loop on items
     $rows = DB::query(
         'SELECT id, pw
@@ -2200,7 +2228,7 @@ function continueReEncryptingUserSharekeysStep10(
             FROM ' . prefixTable('sharekeys_items') . '
             WHERE object_id = %i AND user_id = %i',
             $record['id'],
-            $_SESSION['user_id']
+            $session->get('user-id')
         );
 
         // do we have any input? (#3481)
@@ -2209,7 +2237,7 @@ function continueReEncryptingUserSharekeysStep10(
         }
 
         // Decrypt itemkey with admin key
-        $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $_SESSION['user']['private_key']);
+        $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $session->get('user-private_key'));
         
         // Encrypt Item key
         $share_key_for_item = encryptUserObjectKey($itemKey, $user_public_key);
@@ -2226,7 +2254,7 @@ function continueReEncryptingUserSharekeysStep10(
             );
         } else {
             // Get itemIncrement from selected user
-            if ((int) $post_user_id !== (int) $_SESSION['user_id']) {
+            if ((int) $post_user_id !== (int) $session->get('user-id')) {
                 $currentUserKey = DB::queryFirstRow(
                     'SELECT increment_id
                     FROM ' . prefixTable('sharekeys_items') . '
@@ -2283,6 +2311,7 @@ function continueReEncryptingUserSharekeysStep20(
     array $SETTINGS
 ): array
 {
+    $session = SessionManager::getSession();
     // Loop on logs
     $rows = DB::query(
         'SELECT increment_id
@@ -2297,7 +2326,7 @@ function continueReEncryptingUserSharekeysStep20(
             FROM ' . prefixTable('sharekeys_logs') . '
             WHERE object_id = %i AND user_id = %i',
             $record['increment_id'],
-            $_SESSION['user_id']
+            $session->get('user-id')
         );
 
         // do we have any input? (#3481)
@@ -2306,7 +2335,7 @@ function continueReEncryptingUserSharekeysStep20(
         }
 
         // Decrypt itemkey with admin key
-        $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $_SESSION['user']['private_key']);
+        $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $session->get('user-private_key'));
 
         // Encrypt Item key
         $share_key_for_item = encryptUserObjectKey($itemKey, $user_public_key);
@@ -2323,7 +2352,7 @@ function continueReEncryptingUserSharekeysStep20(
             );
         } else {
             // Get itemIncrement from selected user
-            if ((int) $post_user_id !== (int) $_SESSION['user_id']) {
+            if ((int) $post_user_id !== (int) $session->get('user-id')) {
                 $currentUserKey = DB::queryFirstRow(
                     'SELECT increment_id
                     FROM ' . prefixTable('sharekeys_items') . '
@@ -2369,6 +2398,7 @@ function continueReEncryptingUserSharekeysStep30(
     array $SETTINGS
 ): array
 {
+    $session = SessionManager::getSession();
     // Loop on fields
     $rows = DB::query(
         'SELECT id
@@ -2383,7 +2413,7 @@ function continueReEncryptingUserSharekeysStep30(
             FROM ' . prefixTable('sharekeys_fields') . '
             WHERE object_id = %i AND user_id = %i',
             $record['id'],
-            $_SESSION['user_id']
+            $session->get('user-id')
         );
 
         // do we have any input? (#3481)
@@ -2392,7 +2422,7 @@ function continueReEncryptingUserSharekeysStep30(
         }
 
         // Decrypt itemkey with admin key
-        $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $_SESSION['user']['private_key']);
+        $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $session->get('user-private_key'));
 
         // Encrypt Item key
         $share_key_for_item = encryptUserObjectKey($itemKey, $user_public_key);
@@ -2409,7 +2439,7 @@ function continueReEncryptingUserSharekeysStep30(
             );
         } else {
             // Get itemIncrement from selected user
-            if ((int) $post_user_id !== (int) $_SESSION['user_id']) {
+            if ((int) $post_user_id !== (int) $session->get('user-id')) {
                 $currentUserKey = DB::queryFirstRow(
                     'SELECT increment_id
                     FROM ' . prefixTable('sharekeys_items') . '
@@ -2455,6 +2485,7 @@ function continueReEncryptingUserSharekeysStep40(
     array $SETTINGS
 ): array
 {
+    $session = SessionManager::getSession();
     // Loop on suggestions
     $rows = DB::query(
         'SELECT id
@@ -2468,7 +2499,7 @@ function continueReEncryptingUserSharekeysStep40(
             FROM ' . prefixTable('sharekeys_suggestions') . '
             WHERE object_id = %i AND user_id = %i',
             $record['id'],
-            $_SESSION['user_id']
+            $session->get('user-id')
         );
 
         // do we have any input? (#3481)
@@ -2477,7 +2508,7 @@ function continueReEncryptingUserSharekeysStep40(
         }
 
         // Decrypt itemkey with admin key
-        $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $_SESSION['user']['private_key']);
+        $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $session->get('user-private_key'));
 
         // Encrypt Item key
         $share_key_for_item = encryptUserObjectKey($itemKey, $user_public_key);
@@ -2494,7 +2525,7 @@ function continueReEncryptingUserSharekeysStep40(
             );
         } else {
             // Get itemIncrement from selected user
-            if ((int) $post_user_id !== (int) $_SESSION['user_id']) {
+            if ((int) $post_user_id !== (int) $session->get('user-id')) {
                 $currentUserKey = DB::queryFirstRow(
                     'SELECT increment_id
                     FROM ' . prefixTable('sharekeys_items') . '
@@ -2539,6 +2570,7 @@ function continueReEncryptingUserSharekeysStep50(
     array $SETTINGS
 ): array
 {
+    $session = SessionManager::getSession();
     // Loop on files
     $rows = DB::query(
         'SELECT id
@@ -2553,7 +2585,7 @@ function continueReEncryptingUserSharekeysStep50(
             FROM ' . prefixTable('sharekeys_files') . '
             WHERE object_id = %i AND user_id = %i',
             $record['id'],
-            $_SESSION['user_id']
+            $session->get('user-id')
         );
 
         // do we have any input? (#3481)
@@ -2562,7 +2594,7 @@ function continueReEncryptingUserSharekeysStep50(
         }
 
         // Decrypt itemkey with admin key
-        $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $_SESSION['user']['private_key']);
+        $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $session->get('user-private_key'));
 
         // Encrypt Item key
         $share_key_for_item = encryptUserObjectKey($itemKey, $user_public_key);
@@ -2579,7 +2611,7 @@ function continueReEncryptingUserSharekeysStep50(
             );
         } else {
             // Get itemIncrement from selected user
-            if ((int) $post_user_id !== (int) $_SESSION['user_id']) {
+            if ((int) $post_user_id !== (int) $session->get('user-id')) {
                 $currentUserKey = DB::queryFirstRow(
                     'SELECT increment_id
                     FROM ' . prefixTable('sharekeys_items') . '
@@ -2625,8 +2657,9 @@ function continueReEncryptingUserSharekeysStep60(
     array $SETTINGS
 ): array
 {
+    $session = SessionManager::getSession();
     // IF USER IS NOT THE SAME
-    if ((int) $post_user_id === (int) $_SESSION['user_id']) {
+    if ((int) $post_user_id === (int) $session->get('user-id')) {
         return [
             'next_start' => 0,
             'post_action' => 'finished',
@@ -2649,11 +2682,11 @@ function continueReEncryptingUserSharekeysStep60(
                 FROM ' . prefixTable('sharekeys_items') . '
                 WHERE object_id = %i AND user_id = %i',
                 $record['id'],
-                $_SESSION['user_id']
+                $session->get('user-id')
             );
 
             // Decrypt itemkey with admin key
-            $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $_SESSION['user']['private_key']);
+            $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $session->get('user-private_key'));
 
             // Encrypt Item key
             $share_key_for_item = encryptUserObjectKey($itemKey, $user_public_key);
@@ -2670,7 +2703,7 @@ function continueReEncryptingUserSharekeysStep60(
                 );
             } else {
                 // Get itemIncrement from selected user
-                if ((int) $post_user_id !== (int) $_SESSION['user_id']) {
+                if ((int) $post_user_id !== (int) $session->get('user-id')) {
                     $currentUserKey = DB::queryFirstRow(
                         'SELECT increment_id
                         FROM ' . prefixTable('sharekeys_items') . '
@@ -2716,9 +2749,8 @@ function migrateTo3_DoUserPersonalItemsEncryption(
 ) {
     $next_step = '';
     
-    // Load user's language
     $lang = new Language(); 
-    
+    $session = SessionManager::getSession();    
     
     if (isUserIdValid($post_user_id) === true) {
         // Check if user exists
@@ -2829,8 +2861,8 @@ function migrateTo3_DoUserPersonalItemsEncryption(
                                 prefixTable('sharekeys_files'),
                                 array(
                                     'object_id' => (int) $record2['id'],
-                                    'user_id' => (int) $_SESSION['user_id'],
-                                    'share_key' => encryptUserObjectKey($encryptedFile['objectKey'], $_SESSION['user']['public_key']),
+                                    'user_id' => (int) $session->get('user-id'),
+                                    'share_key' => encryptUserObjectKey($encryptedFile['objectKey'], $session->get('user-public_key')),
                                 )
                             );
 
@@ -2947,8 +2979,8 @@ function changeUserAuthenticationPassword(
     array $SETTINGS
 )
 {
-    // Load user's language
     $lang = new Language(); 
+    $session = SessionManager::getSession();
     
     if (isUserIdValid($post_user_id) === true) {
         // Get user info
@@ -2976,9 +3008,9 @@ function changeUserAuthenticationPassword(
 
             // Load superGlobals
             $superGlobal = new SuperGlobal();
-$lang = new Language(); 
+            $lang = new Language(); 
 
-            if ($superGlobal->get('private_key', 'SESSION', 'user') === $privateKey) {
+            if ($session->get('user-private_key') === $privateKey) {
                 // Encrypt it with new password
                 $hashedPrivateKey = encryptPrivateKey($post_new_pwd, $privateKey);
 
@@ -3032,7 +3064,15 @@ $lang = new Language();
     );
 }
 
-            
+/**
+ * Change user LDAP auth password
+ *
+ * @param integer $post_user_id
+ * @param string $post_previous_pwd
+ * @param string $post_current_pwd
+ * @param array $SETTINGS
+ * @return string
+ */            
 function changeUserLDAPAuthenticationPassword(
     int $post_user_id,
     string $post_previous_pwd,
@@ -3040,6 +3080,7 @@ function changeUserLDAPAuthenticationPassword(
     array $SETTINGS
 )
 {
+    $session = SessionManager::getSession();
     // Load user's language
     $lang = new Language(); 
     
@@ -3077,8 +3118,7 @@ function changeUserLDAPAuthenticationPassword(
                 );
 
                 // Load superGlobals
-                $superGlobal = new SuperGlobal();
-                $superGlobal->put('private_key', $privateKey, 'SESSION', 'user');
+                $session->set('user-private_key', $privateKey);
 
                 return prepareExchangedData(
                     array(
@@ -3144,7 +3184,7 @@ function changeUserLDAPAuthenticationPassword(
                     // Load superGlobals
                     $superGlobal = new SuperGlobal();
                     $lang = new Language(); 
-                    $superGlobal->put('private_key', $privateKey, 'SESSION', 'user');
+                    $session->set('user-private_key', $privateKey);
 
                     return prepareExchangedData(
                         array(
@@ -3177,26 +3217,35 @@ function changeUserLDAPAuthenticationPassword(
     );
 }
 
-
+/**
+ * Change user LDAP auth password
+ *
+ * @param integer $post_user_id
+ * @param string $post_current_pwd
+ * @param string $post_new_pwd
+ * @param array $SETTINGS
+ * @return string
+ */
 function increaseSessionDuration(
     int $duration
 ): string
 {
+    $session = SessionManager::getSession();
     // check if session is not already expired.
-    if ($_SESSION['sessionDuration'] > time()) {
+    if ($session->get('user-session_duration') > time()) {
         // Calculate end of session
-        $_SESSION['sessionDuration'] = (int) ($_SESSION['sessionDuration'] + $duration);
+        $session->set('user-session_duration', (int) $session->get('user-session_duration') + $duration);
         // Update table
         DB::update(
             prefixTable('users'),
             array(
-                'session_end' => $_SESSION['sessionDuration'],
+                'session_end' => $session->get('user-session_duration'),
             ),
             'id = %i',
-            $_SESSION['user_id']
+            $session->get('user-id')
         );
         // Return data
-        return '[{"new_value":"' . $_SESSION['sessionDuration'] . '"}]';
+        return '[{"new_value":"' . $session->get('user-session_duration') . '"}]';
     }
     
     return '[{"new_value":"expired"}]';

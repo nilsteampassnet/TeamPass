@@ -23,6 +23,7 @@ declare(strict_types=1);
 use voku\helper\AntiXSS;
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
@@ -30,13 +31,11 @@ use TeampassClasses\PerformChecks\PerformChecks;
 
 // Load functions
 require_once 'main.functions.php';
-
+$session = SessionManager::getSession();
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
-$lang = new Language(); 
-session_name('teampass_session');
-session_start();
+$lang = new Language();
 
 // Load config if $SETTINGS not defined
 try {
@@ -57,8 +56,8 @@ $checkUserAccess = new PerformChecks(
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
         'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
     ]
 );
@@ -132,7 +131,7 @@ if (null === $post_user_token) {
                 'end_timestamp' => time() + 10,
             ),
             'user_id = %i AND token = %s',
-            $_SESSION['user_id'],
+            $session->get('user-id'),
             $post_user_token
         );
     } else {
@@ -151,7 +150,7 @@ if (null === $post_user_token) {
                     'end_timestamp' => time() + 30,
                 ),
                 'user_id = %i AND token = %s',
-                $_SESSION['user_id'],
+                $session->get('user-id'),
                 $post_user_token
             );
             // decrease counter of files to upload
@@ -168,7 +167,7 @@ if (null === $post_user_token) {
             'SELECT end_timestamp
             FROM ' . prefixTable('tokens') . '
             WHERE user_id = %i AND token = %s',
-            $_SESSION['user_id'],
+            $session->get('user-id'),
             $post_user_token
         );
         // clear user token
@@ -176,7 +175,7 @@ if (null === $post_user_token) {
             DB::delete(
                 prefixTable('tokens'),
                 'user_id = %i AND token = %s',
-                $_SESSION['user_id'],
+                $session->get('user-id'),
                 $post_user_token
             );
             unset($_SESSION[$post_user_token]);
@@ -439,8 +438,8 @@ if (null !== $post_type_upload && $post_type_upload === 'item_attachments') {
             prefixTable('sharekeys_files'),
             array(
                 'object_id' => (int) $newID,
-                'user_id' => (int) $_SESSION['user_id'],
-                'share_key' => encryptUserObjectKey($newFile['objectKey'], $_SESSION['user']['public_key']),
+                'user_id' => (int) $session->get('user-id'),
+                'share_key' => encryptUserObjectKey($newFile['objectKey'], $session->get('user-public_key')),
             )
         );
     }
@@ -456,7 +455,7 @@ if (null !== $post_type_upload && $post_type_upload === 'item_attachments') {
             array(
                 'id_item' => $post_itemId,
                 'date' => time(),
-                'id_user' => $_SESSION['user_id'],
+                'id_user' => $session->get('user-id'),
                 'action' => 'at_modification',
                 'raison' => 'at_add_file : ' . $fileName . ':' . $newID,
             )

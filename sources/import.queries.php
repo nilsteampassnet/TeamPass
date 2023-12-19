@@ -26,6 +26,7 @@ use Goodby\CSV\Import\Standard\LexerConfig;
 use voku\helper\AntiXSS;
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
@@ -36,9 +37,8 @@ require_once 'main.functions.php';
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
+$session = SessionManager::getSession();
 $lang = new Language(); 
-session_name('teampass_session');
-session_start();
 
 // Load config if $SETTINGS not defined
 try {
@@ -59,8 +59,8 @@ $checkUserAccess = new PerformChecks(
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
         'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
     ]
 );
@@ -109,7 +109,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
     //Check if import CSV file format is what expected
     case 'import_file_format_csv':
         // Check KEY and rights
-        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+        if ($post_key !== $session->get('key')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -280,7 +280,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
     //Insert into DB the items the user has selected
     case 'import_items':
         // Check KEY and rights
-        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+        if ($post_key !== $session->get('key')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -396,7 +396,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
                 array(
                     'id_item' => $newId,
                     'date' => time(),
-                    'id_user' => $_SESSION['user_id'],
+                    'id_user' => $session->get('user-id'),
                     'action' => 'at_creation',
                 )
             );
@@ -415,7 +415,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
                     'perso' => $personalFolder === 0 ? 0 : 1,
                     'login' => empty($item['login']) ? '' : substr($item['login'], 0, 500),
                     'folder' => $data_fld['title'],
-                    'author' => $_SESSION['user_id'],
+                    'author' => $session->get('user-id'),
                     'timestamp' => time(),
                     'tags' => '',
                     'restricted_to' => '0',
@@ -438,7 +438,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
     //Check if import KEEPASS file format is what expected
     case 'import_file_format_keepass':
         // Check KEY and rights
-        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+        if ($post_key !== $session->get('key')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -601,7 +601,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
     // KEEPASS - CREATE FOLDERS
     case 'keepass_create_folders':
         // Check KEY and rights
-        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+        if ($post_key !== $session->get('key')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -673,7 +673,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
     // KEEPASS - CREATE ITEMS
     case 'keepass_create_items':
         // Check KEY and rights
-        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+        if ($post_key !== $session->get('key')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -773,7 +773,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
                 array(
                     'id_item' => $newId,
                     'date' => time(),
-                    'id_user' => $_SESSION['user_id'],
+                    'id_user' => $session->get('user-id'),
                     'action' => 'at_creation',
                     'raison' => 'at_import',
                 )
@@ -793,7 +793,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
                     'login' => substr(stripslashes($item['UserName']), 0, 500),
                     'restricted_to' => '0',
                     'folder' => $destinationFolderMore['title'],
-                    'author' => $_SESSION['user_id'],
+                    'author' => $session->get('user-id'),
                     'renewal_period' => '0',
                     'timestamp' => time(),
                 )

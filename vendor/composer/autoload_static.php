@@ -42,6 +42,7 @@ class ComposerStaticInitf8d0a111ac97059c58e49ca16fe551d0
             'Tightenco\\Collect\\' => 18,
             'TiBeN\\' => 6,
             'TeampassClasses\\SuperGlobal\\' => 28,
+            'TeampassClasses\\SessionManager\\' => 31,
             'TeampassClasses\\PerformChecks\\' => 30,
             'TeampassClasses\\NestedTree\\' => 27,
             'TeampassClasses\\Language\\' => 25,
@@ -159,6 +160,10 @@ class ComposerStaticInitf8d0a111ac97059c58e49ca16fe551d0
         'TeampassClasses\\SuperGlobal\\' => 
         array (
             0 => __DIR__ . '/..' . '/teampassclasses/superglobal/src',
+        ),
+        'TeampassClasses\\SessionManager\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/teampassclasses/sessionmanager/src',
         ),
         'TeampassClasses\\PerformChecks\\' => 
         array (
@@ -1852,6 +1857,7 @@ class ComposerStaticInitf8d0a111ac97059c58e49ca16fe551d0
         'TeampassClasses\\Language\\Language' => __DIR__ . '/..' . '/teampassclasses/language/src/Language.php',
         'TeampassClasses\\NestedTree\\NestedTree' => __DIR__ . '/..' . '/teampassclasses/nestedtree/src/NestedTree.php',
         'TeampassClasses\\PerformChecks\\PerformChecks' => __DIR__ . '/..' . '/teampassclasses/performchecks/src/PerformChecks.php',
+        'TeampassClasses\\SessionManager\\SessionManager' => __DIR__ . '/..' . '/teampassclasses/sessionmanager/src/SessionManager.php',
         'TeampassClasses\\SuperGlobal\\SuperGlobal' => __DIR__ . '/..' . '/teampassclasses/superglobal/src/SuperGlobal.php',
         'TiBeN\\CrontabManager\\CrontabAdapter' => __DIR__ . '/..' . '/tiben/crontab-manager/src/CrontabManager/CrontabAdapter.php',
         'TiBeN\\CrontabManager\\CrontabAdapterInterface' => __DIR__ . '/..' . '/tiben/crontab-manager/src/CrontabManager/CrontabAdapterInterface.php',

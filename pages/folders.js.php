@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
@@ -35,7 +36,7 @@ loadClasses();
 $superGlobal = new SuperGlobal();
 $lang = new Language(); 
 
-if ($superGlobal->get('key', 'SESSION') === null) {
+if ($session->get('key') === null) {
     die('Hacking attempt...');
 }
 
@@ -57,8 +58,8 @@ $checkUserAccess = new PerformChecks(
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
         'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
     ]
 );
@@ -145,12 +146,12 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             $.post(
                 'sources/folders.queries.php', {
                     type: 'add_folder',
-                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
-                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                    key: '<?php echo $session->get('key'); ?>'
                 },
                 function(data) {
                     //decrypt data
-                    data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
+                    data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>');
                     console.log(data)
                     if (data.error === true) {
                         // ERROR
@@ -170,10 +171,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         $.post(
                             'sources/folders.queries.php', {
                                 type: 'refresh_folders_list',
-                                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                                key: '<?php echo $session->get('key'); ?>'
                             },
                             function(data) { //decrypt data
-                                data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
+                                data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>');
                                 console.log(data);
 
                                 // prepare options list
@@ -258,11 +259,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             $.post(
                 'sources/folders.queries.php', {
                     type: 'delete_folders',
-                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
-                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                    key: '<?php echo $session->get('key'); ?>'
                 },
                 function(data) { //decrypt data
-                    data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
+                    data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>');
 
                     if (data.error === true) {
                         // ERROR
@@ -332,10 +333,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         $.post(
             'sources/folders.queries.php', {
                 type: 'build_matrix',
-                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                key: '<?php echo $session->get('key'); ?>'
             },
             function(data) {
-                data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
+                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
                 console.log(data);
                 if (data.error !== false) {
                     // Show error
@@ -516,10 +517,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         $.post(
             'sources/folders.queries.php', {
                 type: 'select_sub_folders',
-                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                key: '<?php echo $session->get('key'); ?>'
             },
             function(data) { //decrypt data
-                data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
+                data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>');
 
             }
         );
@@ -578,10 +579,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 'sources/folders.queries.php', {
                     type: 'select_sub_folders',
                     id: id,
-                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                    key: '<?php echo $session->get('key'); ?>'
                 },
                 function(data) {
-                    data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
+                    data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
                     console.log(data)
                     // check/uncheck checkbox
                     if (data.subfolders !== '') {
@@ -620,10 +621,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 'sources/folders.queries.php', {
                     type: 'select_sub_folders',
                     id: id,
-                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                    key: '<?php echo $session->get('key'); ?>'
                 },
                 function(data) {
-                    data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
+                    data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
                     // check/uncheck checkbox
                     if (data.subfolders !== '') {
                         $.each(JSON.parse(data.subfolders), function(i, value) {
@@ -794,12 +795,12 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             $.post(
                 'sources/folders.queries.php', {
                     type: 'update_folder',
-                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
-                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                    key: '<?php echo $session->get('key'); ?>'
                 },
                 function(data) {
                     //decrypt data
-                    data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
+                    data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>');
 
                     if (data.error === true) {
                         // ERROR

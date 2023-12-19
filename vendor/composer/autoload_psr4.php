@@ -12,6 +12,7 @@ return array(
     'Tightenco\\Collect\\' => array($vendorDir . '/tightenco/collect/src/Collect'),
     'TiBeN\\' => array($vendorDir . '/tiben/crontab-manager/src'),
     'TeampassClasses\\SuperGlobal\\' => array($vendorDir . '/teampassclasses/superglobal/src'),
+    'TeampassClasses\\SessionManager\\' => array($vendorDir . '/teampassclasses/sessionmanager/src'),
     'TeampassClasses\\PerformChecks\\' => array($vendorDir . '/teampassclasses/performchecks/src'),
     'TeampassClasses\\NestedTree\\' => array($vendorDir . '/teampassclasses/nestedtree/src'),
     'TeampassClasses\\Language\\' => array($vendorDir . '/teampassclasses/language/src'),
