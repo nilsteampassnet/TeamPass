@@ -49,7 +49,7 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+            'type' => isset($_POST['type']) === true ? htmlspecialchars($_POST['type']) : '',
         ],
         [
             'type' => 'trim|escape',
@@ -58,7 +58,6 @@ $checkUserAccess = new PerformChecks(
     [
         'user_id' => returnIfSet($session->get('user-id'), null),
         'user_key' => returnIfSet($session->get('key'), null),
-        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
     ]
 );
 // Handle the case
@@ -68,7 +67,7 @@ if (
     $checkUserAccess->checkSession() === false
 ) {
     // Not allowed page
-    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+    $session->set('system-error_code', ERR_NOT_ALLOWED);
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -216,7 +215,7 @@ if (null !== $post_type) {
                 }
 
                 //generate 2d key
-                $_SESSION['key_tmp'] = GenerateCryptKey(20, false, true, true, false, true, $SETTINGS);
+                $session->set('user-key_tmp', GenerateCryptKey(16, false, true, true, false, true, $SETTINGS));
 
                 //update LOG
                 logEvents(
@@ -233,7 +232,7 @@ if (null !== $post_type) {
                         'message' => '',
                         'download' => 'sources/downloadFile.php?name=' . urlencode($filename) .
                             '&sub=files&file=' . $filename . '&type=sql&key=' . $session->get('key') . '&key_tmp=' .
-                            $_SESSION['key_tmp'] . '&pathIsFiles=1',
+                            $session->get('user-key_tmp') . '&pathIsFiles=1',
                     ),
                     'encode'
                 );

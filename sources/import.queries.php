@@ -25,10 +25,8 @@ use Goodby\CSV\Import\Standard\Interpreter;
 use Goodby\CSV\Import\Standard\LexerConfig;
 use voku\helper\AntiXSS;
 use TeampassClasses\NestedTree\NestedTree;
-use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
-use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
 
 // Load functions
@@ -36,7 +34,6 @@ require_once 'main.functions.php';
 
 // init
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
 $session = SessionManager::getSession();
 $lang = new Language(); 
 
@@ -52,7 +49,7 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+            'type' => isset($_POST['type']) === true ? htmlspecialchars($_POST['type']) : '',
         ],
         [
             'type' => 'trim|escape',
@@ -61,7 +58,6 @@ $checkUserAccess = new PerformChecks(
     [
         'user_id' => returnIfSet($session->get('user-id'), null),
         'user_key' => returnIfSet($session->get('key'), null),
-        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
     ]
 );
 // Handle the case
@@ -71,7 +67,7 @@ if (
     $checkUserAccess->checkSession() === false
 ) {
     // Not allowed page
-    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+    $session->set('system-error_code', ERR_NOT_ALLOWED);
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -338,8 +334,8 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
 
             // Handle case where pw is empty
             // if not allowed then warn user
-            if ((isset($_SESSION['user']['create_item_without_password']) === true
-                && (int) $_SESSION['user']['create_item_without_password'] !== 1
+            if ((null !== $session->get('user-create_item_without_password')
+                && (int) $session->get('user-create_item_without_password') !== 1
                 ) ||
                 empty($item['pwd']) === false
             ) {
@@ -711,8 +707,8 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
 
             // Handle case where pw is empty
             // if not allowed then warn user
-            if ((isset($_SESSION['user']['create_item_without_password']) === true
-                && (int) $_SESSION['user']['create_item_without_password'] !== 1
+            if ((null !== $session->get('user-create_item_without_password')
+                && (int) $session->get('user-create_item_without_password') !== 1
                 ) ||
                 empty($item['Password']) === false
             ) {

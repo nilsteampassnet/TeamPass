@@ -26,8 +26,6 @@ declare(strict_types=1);
 
 
 use TeampassClasses\PerformChecks\PerformChecks;
-use TeampassClasses\SuperGlobal\SuperGlobal;
-use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 
 // Load functions
@@ -35,7 +33,6 @@ require_once __DIR__.'/../sources/main.functions.php';
 
 // init
 loadClasses();
-$superGlobal = new SuperGlobal();
 $lang = new Language(); 
 
 if ($session->get('key') === null) {
@@ -53,7 +50,7 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+            'type' => isset($_POST['type']) === true ? htmlspecialchars($_POST['type']) : '',
         ],
         [
             'type' => 'trim|escape',
@@ -62,14 +59,13 @@ $checkUserAccess = new PerformChecks(
     [
         'user_id' => returnIfSet($session->get('user-id'), null),
         'user_key' => returnIfSet($session->get('key'), null),
-        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
     ]
 );
 // Handle the case
 echo $checkUserAccess->caseHandler();
 if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('items') === false) {
     // Not allowed page
-    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+    $session->set('system-error_code', ERR_NOT_ALLOWED);
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -733,7 +729,7 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
                     format: '<?php echo str_replace(['Y', 'M'], ['yyyy', 'mm'], $SETTINGS['date_format']); ?>',
                     todayHighlight: true,
                     todayBtn: true,
-                    language: '<?php $userLang = $superGlobal->get('user_language_code', 'SESSION'); echo isset($userLang) === null ? $userLang : 'en'; ?>'
+                    language: '<?php $userLang = $session->get('user-language_code'); echo isset($userLang) === null ? $userLang : 'en'; ?>'
                 });
                 
                 // Add track-change class
@@ -3436,7 +3432,6 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
                         $('#jstree').html('<div class="alert alert-warning mt-3 mr-1 ml-1"><i class="fa-solid fa-exclamation-triangle mr-2"></i>' +
                             '<?php echo $lang->get('no_data_to_display'); ?>' +
                             '</div>');
-                        //return false;
                     } else {
                         refreshFoldersInfo(data.html_json.folders, 'clear');
                     }
@@ -3511,7 +3506,7 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
             sending = '';
 
         if (null === folders) return false;
-
+        
         if (action === 'clear') {
             sending = JSON.stringify(folders.map(a => parseInt(a.id)));
         } else if (action === 'update') {
@@ -5338,7 +5333,7 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
 
                 // Prepare Select2 inputs
                 $('.select2').select2({
-                    language: '<?php echo $userLang = $superGlobal->get('user_language_code', 'SESSION'); echo isset($userLang) === null ? $userLang : 'en'; ?>',
+                    language: '<?php echo $userLang = $session->get('user-language_code'); echo isset($userLang) === null ? $userLang : 'en'; ?>',
                     theme: "bootstrap4",
                 });
 
@@ -5347,7 +5342,7 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
                     format: '<?php echo str_replace(['Y', 'M'], ['yyyy', 'mm'], $SETTINGS['date_format']); ?>',
                     todayHighlight: true,
                     todayBtn: true,
-                    language: '<?php echo $userLang = $superGlobal->get('user_language_code', 'SESSION'); echo isset($userLang) === null ? $userLang : 'en'; ?>'
+                    language: '<?php echo $userLang = $session->get('user-language_code'); echo isset($userLang) === null ? $userLang : 'en'; ?>'
                 });
 
                 // Prepare Date range picker with time picker
@@ -5629,7 +5624,7 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
                 format: '<?php echo str_replace(['Y', 'M'], ['yyyy', 'mm'], $SETTINGS['date_format']); ?>',
                 todayHighlight: true,
                 todayBtn: true,
-                language: '<?php echo $userLang = $superGlobal->get('user_language_code', 'SESSION'); echo isset($userLang) === null ? $userLang : 'en'; ?>'
+                language: '<?php echo $userLang = $session->get('user-language_code'); echo isset($userLang) === null ? $userLang : 'en'; ?>'
             });
 
             $('#warningModal #add-history-label').focus();
@@ -6056,7 +6051,7 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
 
                     // Prepare Select2
                     $('.select2').select2({
-                        language: '<?php echo $superGlobal->get('user_language_code', 'SESSION'); ?>',
+                        language: '<?php echo $session->get('user-language_code'); ?>',
                         theme: "bootstrap4",
                     });
 

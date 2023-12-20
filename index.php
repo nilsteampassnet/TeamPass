@@ -138,11 +138,11 @@ if (null === $session->get('user-validite_pw') && $post_language === null && $se
     );
     if (empty($dataLanguage['valeur'])) {
         $session->set('user-language', 'english');
-        $superGlobal->put('user_language_flag', 'us.png', 'SESSION');
+        $session->set('user-language_flag', 'us.png');
         $session_user_language = 'english';
     } else {
         $session->set('user-language', $dataLanguage['valeur']);
-        $superGlobal->put('user_language_flag', $dataLanguage['flag'], 'SESSION');
+        $session->set('user-language_flag', $dataLanguage['flag']);
         $session_user_language = $dataLanguage['valeur'];
     }
 } elseif (isset($SETTINGS['default_language']) === true && $session_user_language === null) {
@@ -947,7 +947,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                         } elseif ((int) $session_user_admin === 1) {
                             include $SETTINGS['cpassman_dir'] . '/pages/admin.php';
                         } else {
-                            $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+                            $session->set('system-error_code', ERR_NOT_ALLOWED);
                             //not allowed page
                             include $SETTINGS['cpassman_dir'] . '/error.php';
                         }
@@ -961,25 +961,25 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                             ) {
                                 //include $SETTINGS['cpassman_dir'] . '/pages/' . $mngPages[$_GET['page']];
                             } else {
-                                $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+                                $session->set('system-error_code', ERR_NOT_ALLOWED);
                                 //not allowed page
                                 include $SETTINGS['cpassman_dir'] . '/error.php';
                             }
                         } else {
-                            $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+                            $session->set('system-error_code', ERR_NOT_ALLOWED);
                             //not allowed page
                             include $SETTINGS['cpassman_dir'] . '/error.php';
                         }
                     } elseif (empty($get['page']) === false) {
                         include $SETTINGS['cpassman_dir'] . '/pages/' . $get['page'] . '.php';
                     } else {
-                        $superGlobal->put('code', ERR_NOT_EXIST, 'SESSION', 'error');
+                        $session->set('system-array_roles', ERR_NOT_EXIST);
                         //page doesn't exist
                         include $SETTINGS['cpassman_dir'].'/error.php';
                     }
 
     // Case where login attempts have been identified
-    if ((int) $superGlobal->get('unsuccessfull_login_attempts', 'SESSION') !== 0
+    if ((int) $session->get('user-unsuccessfull_login_attempts_nb') !== 0
         && (bool) $session->get('user-unsuccessfull_login_attempts_shown') === false
     ) {
         ?>
@@ -1028,17 +1028,16 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
     ) {
         include './includes/core/otv.php';
     } else {
-        $superGlobal->put('code', ERR_VALID_SESSION, 'SESSION', 'error');
-        $superGlobal->put(
-            'initial_url',
+        $session->set('system-error_code', ERR_VALID_SESSION);
+        $session->set(
+            'user-initial_url',
             filter_var(
                 substr(
                     $server['request_uri'],
                     strpos($server['request_uri'], 'index.php?')
                 ),
                 FILTER_SANITIZE_URL
-            ),
-            'SESSION'
+            )
         );
         include $SETTINGS['cpassman_dir'] . '/error.php';
     }

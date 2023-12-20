@@ -80,4 +80,22 @@ class SessionManager
         // Réaffecter le tableau à la session
         self::getSession()->set($key, $sessionArray);
     }
+
+    public static function addRemoveFromSessionAssociativeArray($key, $values = [], $action = 'add') {
+        // Récupérer le tableau de la session
+        $sessionArray = self::getSession()->get($key, []);
+
+        if ($action === 'add') {
+            // Ajouter la valeur au tableau
+            array_push($sessionArray, $values);
+        } elseif ($action === 'remove') {
+            // Si la valeur existe dans le tableau, la supprimer
+            if (($key = array_search($values, $sessionArray)) !== false) {
+                unset($sessionArray[$key]);
+            }
+        }
+
+        // Réaffecter le tableau à la session
+        self::getSession()->set($key, $sessionArray);
+    }
 }

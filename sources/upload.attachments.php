@@ -49,7 +49,7 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+            'type' => isset($_POST['type']) === true ? htmlspecialchars($_POST['type']) : '',
         ],
         [
             'type' => 'trim|escape',
@@ -58,7 +58,6 @@ $checkUserAccess = new PerformChecks(
     [
         'user_id' => returnIfSet($session->get('user-id'), null),
         'user_key' => returnIfSet($session->get('key'), null),
-        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
     ]
 );
 // Handle the case
@@ -68,7 +67,7 @@ if (
     $checkUserAccess->checkSession() === false
 ) {
     // Not allowed page
-    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+    $session->set('system-error_code', ERR_NOT_ALLOWED);
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -96,7 +95,7 @@ if (null !== filter_input(INPUT_POST, 'PHPSESSID', FILTER_SANITIZE_FULL_SPECIAL_
 }
 
 // Prepare POST variables
-$post_user_token = filter_input(INPUT_POST, 'user_token', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_user_token = filter_input(INPUT_POST, 'user_upload_token', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $post_type_upload = filter_input(INPUT_POST, 'type_upload', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $post_itemId = filter_input(INPUT_POST, 'itemId', FILTER_SANITIZE_NUMBER_INT);
 $post_files_number = filter_input(INPUT_POST, 'files_number', FILTER_SANITIZE_NUMBER_INT);
@@ -120,9 +119,9 @@ if (null === $post_user_token) {
     DB::delete(prefixTable('tokens'), 'end_timestamp < %i', time());
 
     if (
-        isset($_SESSION[$post_user_token])
+        null !== $session->get($post_user_token)
         && ($chunk < $chunks - 1)
-        && $_SESSION[$post_user_token] >= 0
+        && $session->get($post_user_token) >= 0
     ) {
         // increase end_timestamp for token
         DB::update(
@@ -137,12 +136,12 @@ if (null === $post_user_token) {
     } else {
         // create a session if several files to upload
         if (
-            isset($_SESSION[$post_user_token]) === false
-            || empty($_SESSION[$post_user_token])
-            || $_SESSION[$post_user_token] === '0'
+            null === $session->get($post_user_token)
+            || empty($session->get($post_user_token)) === true
+            || (int) $session->get($post_user_token) === 0
         ) {
-            $_SESSION[$post_user_token] = $post_files_number;
-        } elseif ($_SESSION[$post_user_token] > 0) {
+            $session->set($post_user_token, $post_files_number);
+        } elseif ((int) $session->get($post_user_token) > 0) {
             // increase end_timestamp for token
             DB::update(
                 prefixTable('tokens'),
@@ -154,10 +153,10 @@ if (null === $post_user_token) {
                 $post_user_token
             );
             // decrease counter of files to upload
-            --$_SESSION[$post_user_token];
+            $session->set($post_user_token, $session->get($post_user_token) - 1);
         } else {
             // no more files to upload, kill session
-            unset($_SESSION[$post_user_token]);
+            $session->remove($post_user_token);
             handleAttachmentError('No user token found.', 110);
             die();
         }
@@ -171,19 +170,19 @@ if (null === $post_user_token) {
             $post_user_token
         );
         // clear user token
-        if ($_SESSION[$post_user_token] === 0) {
+        if ((int) $session->get($post_user_token) === 0) {
             DB::delete(
                 prefixTable('tokens'),
                 'user_id = %i AND token = %s',
                 $session->get('user-id'),
                 $post_user_token
             );
-            unset($_SESSION[$post_user_token]);
+            $session->remove($post_user_token);
         }
 
         if (time() > $data['end_timestamp']) {
             // too old
-            unset($_SESSION[$post_user_token]);
+            $session->remove($post_user_token);
             handleAttachmentError('User token expired.', 110);
             die();
         }

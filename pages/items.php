@@ -24,19 +24,16 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
-use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\PerformChecks\PerformChecks;
 
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
-$session = SessionManager::getSession();
 // init
+$session = SessionManager::getSession();
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
-$lang = new Language($session->get('user-language'), __DIR__. '/../includes/language/'); 
+$lang = new Language(); 
 
 // Load config if $SETTINGS not defined
 try {
@@ -49,7 +46,7 @@ error_log('DEBUG items.php');
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+            'type' => isset($_POST['type']) === true ? htmlspecialchars($_POST['type']) : '',
         ],
         [
             'type' => 'trim|escape',
@@ -58,7 +55,6 @@ $checkUserAccess = new PerformChecks(
     [
         'user_id' => returnIfSet($session->get('user-id'), null),
         'user_key' => returnIfSet($session->get('key'), null),
-        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
     ]
 );
 // Handle the case
@@ -66,7 +62,7 @@ echo $checkUserAccess->caseHandler();
 if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('items') === false) {
     error_log('DEBUG: En ERREUR /!\\');
     // Not allowed page
-    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+    $session->set('system-error_code', ERR_NOT_ALLOWED);
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -472,9 +468,9 @@ foreach ($rows as $reccord) {
                             <div class="tab-pane" id="tab_4">
                                 <div id="form-item-field" class="hidden">
                                     <?php
-                                        $session_item_fields = $superGlobal->get('item_fields', 'SESSION');
+                                        $session_item_fields = $session->get('system-item_fields');//print_r($session_item_fields);
                                         if (isset($session_item_fields) === true) {
-                                            foreach ($session_item_fields as $category) {
+                                            foreach ($session_item_fields as $category) {print_r($category);
                                                 echo '
                                             <div class="callout callout-info form-item-category hidden" id="form-item-category-' . $category['id'] . '">
                                                 <h5>' . $category['title'] . '</h5>

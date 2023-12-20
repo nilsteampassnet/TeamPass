@@ -80,7 +80,7 @@ if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir'
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+            'type' => isset($_POST['type']) === true ? htmlspecialchars($_POST['type']) : '',
         ],
         [
             'type' => 'trim|escape',
@@ -97,7 +97,7 @@ $checkUserAccess = new PerformChecks(
 echo $checkUserAccess->caseHandler();
 if ($checkUserAccess->checkSession() === false) {
     // Not allowed page
-    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+    $session->set('system-error_code', ERR_NOT_ALLOWED);
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -242,7 +242,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     // Prepare GET variables
     $sessionAdmin = $session->get('user-admin');
     $sessionPwdAttempts = $session->get('pwd_attempts');
-    $sessionUrl = $superGlobal->get('initial_url', 'SESSION');
+    $sessionUrl = $session->get('user-initial_url');
     $server = [];
     $server['PHP_AUTH_USER'] = $superGlobal->get('PHP_AUTH_USER', 'SERVER');
     $server['PHP_AUTH_PW'] = $superGlobal->get('PHP_AUTH_PW', 'SERVER');
@@ -256,21 +256,21 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             'decode',
             $session->get('key')
         );
-        $superGlobal->put('key', $session->get('key'), 'SESSION');
+        //$session->set('key', $session->get('key'));
     }
 
     // Check if Duo auth is in progress and pass the pw and login back to the standard login process
     if(
         isKeyExistingAndEqual('duo', 1, $SETTINGS) === true
         && $dataReceived['user_2fa_selection'] === 'duo'
-        && $superGlobal->get('duo_status','SESSION') === 'IN_PROGRESS'
+        && $session->get('user-duo_status') === 'IN_PROGRESS'
         && !empty($dataReceived['duo_state'])
     ){
         $key = hash('sha256', $dataReceived['duo_state']);
         $iv = substr(hash('sha256', $dataReceived['duo_state']), 0, 16);
-        $duo_data_dec = openssl_decrypt(base64_decode($superGlobal->get('duo_data','SESSION')), 'AES-256-CBC', $key, 0, $iv);
+        $duo_data_dec = openssl_decrypt(base64_decode($session->get('user-duo_status')), 'AES-256-CBC', $key, 0, $iv);
         // Clear the data from the Duo process to continue clean with the standard login process
-        $superGlobal->forget('duo_data','SESSION');
+        $session->set('user-duo_data','');
         if($duo_data_dec === false){
             echo prepareExchangedData(
                 [
@@ -463,7 +463,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             $userLdap['ldapConnection']
         ) === true
     ) {
-        $superGlobal->put('autoriser', true, 'SESSION');
+        //$superGlobal->put('autoriser', true, 'SESSION');
         $session->set('pwd_attempts', 0);
 
         // Check if any unsuccessfull login tries exist
@@ -474,7 +474,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             $username,
             $SETTINGS,
         );
-        $sessionVariables = [];
             
         // Save account in SESSION
         $session->set('user-unsuccessfull_login_attempts_list', $attemptsInfos['attemptsList'] === 0 ? true : false);
@@ -563,6 +562,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         // store
         $session->set('user-roles', $userInfo['fonction_id']);
         $session->set('user-roles_array', array_filter(explode(';', $userInfo['fonction_id'])));
+        error_log('user-roles_array 1: ' . print_r(explode(';', $userInfo['fonction_id']), true));
         // build array of roles
         $session->set('user-pw_complexity', 0);
         $session->set('system-array_roles', []);
@@ -579,7 +579,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                 $userInfo['admin'] = $userInfo['gestionnaire'] = $userInfo['can_manage_all_users'] = $userInfo['read_only'] = 0;
             }
             foreach ($rolesList as $role) {
-                SessionManager::addRemoveFromSessionArray(
+                SessionManager::addRemoveFromSessionAssociativeArray(
                     'system-array_roles',
                     [
                         'id' => $role['id'],
@@ -631,22 +631,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             }
         }
 
-        // build complete array of roles
-        /*
-        // COMMENTED OUT AS NOT USED ANYMORE
-        $superGlobal->put('arr_roles_full', [], 'SESSION');
-        $rows = DB::query('SELECT id, title FROM ' . prefixTable('roles_title') . ' ORDER BY title ASC');
-        foreach ($rows as $record) {
-            $superGlobal->put(
-                $record['id'],
-                [
-                    'id' => $record['id'],
-                    'title' => $record['title'],
-                ],
-                'SESSION',
-                'arr_roles_full'
-            );
-        }*/
         // Set some settings
         $SETTINGS['update_needed'] = '';
 
@@ -670,7 +654,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         );
         
         // Get user's rights
-        if ($userLdap['user_initial_creation_through_ldap'] !== false) {
+        if ($userLdap['user_initial_creation_through_ldap'] === true) {
             // is new LDAP user. Show only his personal folder
             if ($SETTINGS['enable_pf_feature'] === '1') {
                 $session->set('user-personal_visible_folders', [$userInfo['id']]);
@@ -685,8 +669,8 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             $session->set('user-list_folders_limited', []);
             $session->set('system-list_folders_editable_by_role', []);
             $session->set('system-list_restricted_folders_for_items', []);
-            $superGlobal->put('nb_folders', 1, 'SESSION');
-            $superGlobal->put('nb_roles', 0, 'SESSION');
+            $session->set('user-nb_folders', 1);
+            $session->set('user-nb_roles', 1);
         } else {
             identifyUserRights(
                 $userInfo['groupes_visibles'],
@@ -697,11 +681,11 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             );
         }
         // Get some more elements
-        $superGlobal->put('screenHeight', $dataReceived['screenHeight'], 'SESSION');
+        $session->set('system-screen_height', $dataReceived['screenHeight']);
 
         // Get last seen items
-        $superGlobal->put('latest_items_tab', [], 'SESSION');
-        $superGlobal->put('nb_roles', 0, 'SESSION');
+        $session->set('user-latest_items_tab', []);
+        $session->set('user-nb_roles', 0);
         foreach ($session->get('user-latest_items') as $item) {
             if (! empty($item)) {
                 $dataLastItems = DB::queryFirstRow(
@@ -710,15 +694,14 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                     WHERE id=%i',
                     $item
                 );
-                $superGlobal->put(
-                    $item,
+                SessionManager::addRemoveFromSessionAssociativeArray(
+                    'user-latest_items_tab',
                     [
                         'id' => $item,
                         'label' => $dataLastItems['label'],
                         'url' => 'index.php?page=items&amp;group=' . $dataLastItems['id_tree'] . '&amp;id=' . $item,
                     ],
-                    'SESSION',
-                    'latest_items_tab'
+                    'add'
                 );
             }
         }
@@ -731,7 +714,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             (int) $session->get('user-id')
         );
         if (DB::count() > 0 && empty($cacheTreeData['visible_folders']) === true) {
-            $superGlobal->put('cache_tree', '', 'SESSION');
+            $session->set('user-cache_tree', '');
             // Prepare new task
             DB::insert(
                 prefixTable('processes'),
@@ -747,7 +730,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                 )
             );
         } else {
-            $superGlobal->put('cache_tree', $cacheTreeData['visible_folders'], 'SESSION');
+            $session->set('user-cache_tree', $cacheTreeData['visible_folders']);
         }
 
         // send back the random key
@@ -1642,17 +1625,15 @@ function ldapCreateUser(string $login, string $passwordClear, string $userEmail,
  */
 function googleMFACheck(string $username, array $userInfo, $dataReceived, array $SETTINGS): array
 {
-    $session = SessionManager::getSession();
-    
-    // Load superGlobals
-    $superGlobal = new SuperGlobal();
+    $session = SessionManager::getSession();    
     $lang = new Language(); 
+
     if (
         isset($dataReceived['GACode']) === true
         && empty($dataReceived['GACode']) === false
     ) {
         $sessionAdmin = $session->get('user-admin');
-        $sessionUrl = $superGlobal->get('initial_url', 'SESSION');
+        $sessionUrl = $session->get('user-initial_url');
         $sessionPwdAttempts = $session->get('pwd_attempts');
         // create new instance
         $tfa = new TwoFactorAuth($SETTINGS['ga_website_name']);
@@ -1750,8 +1731,8 @@ function duoMFACheck(
     $lang = new Language(); 
 
     $sessionPwdAttempts = $session->get('pwd_attempts');
-    $saved_state = null !== $superGlobal->get('duo_state','SESSION') ? $superGlobal->get('duo_state','SESSION') : '';
-    $duo_status = null !== $superGlobal->get('duo_status','SESSION') ? $superGlobal->get('duo_status','SESSION') : '';
+    $saved_state = null !== $session->get('user-duo_state') ? $session->get('user-duo_state') : '';
+    $duo_status = null !== $session->get('user-duo_status') ? $session->get('user-duo_status') : '';
 
     // Ensure state and login are set
     if (
@@ -1769,8 +1750,8 @@ function duoMFACheck(
 
     // Ensure state matches from initial request
     if ($duo_status === 'IN_PROGRESS' && $dataReceived['duo_state'] !== $saved_state) {
-        $superGlobal->put('duo_state', '', 'SESSION');
-        $superGlobal->put('duo_status', '', 'SESSION');
+        $session->set('user-duo_state', '');
+        $session->set('user-duo_status', '');
 
         // We did not received a proper Duo state
         return [
@@ -1884,14 +1865,14 @@ function duoMFAPerform(
                 'duo_pwd' => $dataReceived['pw'],
             ]);
             $duo_data_enc = openssl_encrypt($duo_data, 'AES-256-CBC', $key, 0, $iv);
-            $superGlobal->put('duo_state', $duo_state, 'SESSION');
-            $superGlobal->put('duo_data', base64_encode($duo_data_enc), 'SESSION');
-            $superGlobal->put('duo_status', 'IN_PROGRESS', 'SESSION');
+            $session->set('user-duo_state', $duo_state);
+            $session->set('user-duo_data', base64_encode($duo_data_enc));
+            $session->set('user-duo_status', 'IN_PROGRESS');
             $session->set('user-login', $username);
             
             // If we got here we can reset the password attempts
             $session->set('pwd_attempts', 0);
-            unset($superGlobal);
+            
             return [
                 'error' => false,
                 'message' => '',
@@ -1923,9 +1904,9 @@ function duoMFAPerform(
         }
         // return the response (which should be the user name)
         if ($decoded_token['preferred_username'] === $username) {
-            $superGlobal->put('duo_status', 'COMPLET', 'SESSION');
-            $superGlobal->forget('duo_state','SESSION');
-            $superGlobal->forget('duo_data','SESSION');
+            $session->set('user-duo_status', 'COMPLET');
+            $session->set('user-duo_state','');
+            $session->set('user-duo_data','');
             $session->set('user-login', $username);
 
             return [
@@ -1936,10 +1917,9 @@ function duoMFAPerform(
             ];
         } else {
             // Something wrong, username from the original Duo request is different than the one received now
-            $superGlobal->forget('duo_status','SESSION');
-            $superGlobal->forget('duo_state','SESSION');
-            $superGlobal->forget('duo_data','SESSION');
-            unset($superGlobal);
+            $session->set('user-duo_status','');
+            $session->set('user-duo_state','');
+            $session->set('user-duo_data','');
 
             return [
                 'error' => true,
@@ -1950,10 +1930,9 @@ function duoMFAPerform(
         }
     }
     // If we are here something wrong
-    $superGlobal->forget('duo_status','SESSION');
-    $superGlobal->forget('duo_state','SESSION');
-    $superGlobal->forget('duo_data','SESSION');
-    unset($superGlobal);
+    $session->set('user-duo_status','');
+    $session->set('user-duo_state','');
+    $session->set('user-duo_data','');
     return [
         'error' => true,
         'message' => $lang->get('duo_login_mismatch'),
@@ -2466,10 +2445,9 @@ function identifyDoMFAChecks(
 
             if ($ret['error'] !== false) {
                 logEvents($SETTINGS, 'failed_auth', 'bad_duo_mfa', '', stripslashes($username), stripslashes($username));
-                $superGlobal->forget('duo_state','SESSION');
-                $superGlobal->forget('duo_data','SESSION');
-                $superGlobal->forget('duo_status','SESSION');
-                unset($superGlobal);
+                $session->set('user-duo_status','');
+                $session->set('user-duo_state','');
+                $session->set('user-duo_data','');
                 return [
                     'error' => true,
                     'mfaData' => $ret,

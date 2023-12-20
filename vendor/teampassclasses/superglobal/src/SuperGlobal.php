@@ -107,8 +107,11 @@ class SuperGlobal
             return (isset($_GET[$key]) === true ? $this->dataSanitizerCall($_GET[$key])['key']  : null);
         } elseif ($type === 'COOKIE') {
             return (isset($_COOKIE[$key]) === true ? $this->dataSanitizerCall($_COOKIE[$key])['key'] : null);
-        } elseif ($type === 'POST') {
-            return (isset($_POST[$key]) === true ? $this->dataSanitizerCall($_POST[$key])['key']  : null);
+        //} elseif ($type === 'POST') {
+        //    return (isset($_POST[$key]) === true ? $this->dataSanitizerCall($_POST[$key])['key']  : null);
+        } else {
+            error_log('TEAMPASS - Superglobal::get() - Unknown type: ' . $type . ' - Key: ' . $key);
+            return null;
         }
     }
 

@@ -1664,7 +1664,7 @@ $lang = new Language();
                             teampassUser['login'] = "<?php echo returnIfSet($session->get('user-login'), 0); ?>";
                             teampassUser['lastname'] = "<?php echo returnIfSet($session->get('user-lastname'), 0); ?>";
                             teampassUser['name'] = "<?php echo returnIfSet($session->get('user-name'), 0); ?>";
-                            teampassUser['pskDefinedInDatabase'] = <?php echo returnIfSet($superGlobal->get('encrypted_psk', 'SESSION', 'user'), 0, 1); ?>;
+                            teampassUser['pskDefinedInDatabase'] = <?php echo returnIfSet($session->get('user-encrypted_psk'), 0, 1); ?>;
                             teampassUser['can_create_root_folder'] = <?php echo returnIfSet($session->get('user-can_create_root_folder'), 0); ?>;
                             teampassUser['special'] = '<?php echo returnIfSet($session->get('user-special'), 0); ?>';
                         }

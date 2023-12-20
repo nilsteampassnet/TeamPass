@@ -52,7 +52,7 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+            'type' => isset($_POST['type']) === true ? htmlspecialchars($_POST['type']) : '',
         ],
         [
             'type' => 'trim|escape',
@@ -61,14 +61,13 @@ $checkUserAccess = new PerformChecks(
     [
         'user_id' => returnIfSet($session->get('user-id'), null),
         'user_key' => returnIfSet($session->get('key'), null),
-        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
     ]
 );
 // Handle the case
 echo $checkUserAccess->caseHandler();
 if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('export') === false) {
     // Not allowed page
-    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+    $session->set('system-error_code', ERR_NOT_ALLOWED);
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -86,7 +85,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
     // Prepare Select2 inputs
     $('.select2').select2({
-        language: '<?php echo $superGlobal->get('user_language_code', 'SESSION'); ?>'
+        language: '<?php echo $session->get('user-language_code'); ?>'
     });
 
     // Select2 with buttons selectall        
@@ -144,7 +143,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     });
 
     $('.select2-all').select2({
-        language: '<?php echo $superGlobal->get('user_language_code', 'SESSION'); ?>',
+        language: '<?php echo $session->get('user-language_code'); ?>',
         dropdownAdapter: $.fn.select2.amd.require('select2/selectAllAdapter')
     })
     .on("change", function(e) {

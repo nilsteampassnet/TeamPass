@@ -49,7 +49,7 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+            'type' => isset($_POST['type']) === true ? htmlspecialchars($_POST['type']) : '',
         ],
         [
             'type' => 'trim|escape',
@@ -58,7 +58,6 @@ $checkUserAccess = new PerformChecks(
     [
         'user_id' => returnIfSet($session->get('user-id'), null),
         'user_key' => returnIfSet($session->get('key'), null),
-        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
     ]
 );
 // Handle the case
@@ -68,7 +67,7 @@ if (
     $checkUserAccess->checkSession() === false
 ) {
     // Not allowed page
-    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+    $session->set('system-error_code', ERR_NOT_ALLOWED);
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -85,7 +84,7 @@ error_reporting(E_ERROR);
 // --------------------------------- //
 
 // Prepare POST variables
-$post_user_token = filter_input(INPUT_POST, 'user_token', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_user_token = filter_input(INPUT_POST, 'user_upload_token', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $post_type_upload = filter_input(INPUT_POST, 'type_upload', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $post_timezone = filter_input(INPUT_POST, 'timezone', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
@@ -474,7 +473,7 @@ if (
         array(
             'error' => false,
             'filename' => htmlentities($session->get('user-avatar'), ENT_QUOTES),
-            'filename_thumb' => htmlentities($_SESSION['user_avatar_thumb'], ENT_QUOTES),
+            'filename_thumb' => htmlentities($session->get('user-avatar_thumb'), ENT_QUOTES),
         ),
         'encode'
     );

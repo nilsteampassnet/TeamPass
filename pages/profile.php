@@ -37,7 +37,7 @@ require_once __DIR__.'/../sources/main.functions.php';
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
 $session = new Session();
-$lang = new Language($session->get('user-language'), __DIR__. '/../includes/language/'); 
+$lang = new Language(); 
 
 // Load config if $SETTINGS not defined
 try {
@@ -50,7 +50,7 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+            'type' => isset($_POST['type']) === true ? htmlspecialchars($_POST['type']) : '',
         ],
         [
             'type' => 'trim|escape',
@@ -59,14 +59,13 @@ $checkUserAccess = new PerformChecks(
     [
         'user_id' => returnIfSet($session->get('user-id'), null),
         'user_key' => returnIfSet($session->get('key'), null),
-        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
     ]
 );
 // Handle the case
 echo $checkUserAccess->caseHandler();
 if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('profile') === false) {
     // Not allowed page
-    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+    $session->set('system-error_code', ERR_NOT_ALLOWED);
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -299,7 +298,7 @@ foreach ($session->get('user-roles_array') as $role) {
                                         '</a>
                                     </li>';
                                     }
-                                    if (
+                                    /*if (
                                         isset($SETTINGS['agses_authentication_enabled']) === true
                                         && (int) $SETTINGS['agses_authentication_enabled'] === 1
                                     ) {
@@ -310,7 +309,7 @@ foreach ($session->get('user-roles_array') as $role) {
                                             $_SESSION['user_agsescardid'] ?? '',
                                             '</a>
                                     </li>';
-                                    }
+                                    }*/
                                     ?>
                                 </ul>
                             </div>
@@ -444,7 +443,7 @@ foreach ($session->get('user-roles_array') as $role) {
                                     </div>
 
                                     <?php
-                                    if (
+                                    /*if (
                                         isset($SETTINGS['agses_authentication_enabled']) === true
                                         && (int) $SETTINGS['agses_authentication_enabled'] === 1
                                     ) {
@@ -459,7 +458,7 @@ foreach ($session->get('user-roles_array') as $role) {
                                             </div>
                                         </div>
                                     <?php
-                                    }
+                                    }*/
                                     ?>
 
                                     <div class="form-group">

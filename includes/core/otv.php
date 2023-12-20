@@ -57,9 +57,9 @@ $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
             </div>
             <div class="card-body login-card-body">
 <?php
-if (!empty($superGlobal->get('code', 'GET')) === true
-    && !empty($superGlobal->get('stamp', 'GET')) === true
-    && !empty($superGlobal->get('key', 'GET')) === true
+if (empty($superGlobal->get('code', 'GET')) === false
+    && empty($superGlobal->get('stamp', 'GET')) === false
+    && empty($superGlobal->get('key', 'GET')) === false
 ) {
     if (isset($SETTINGS['otv_is_enabled']) === false
         || (int) $SETTINGS['otv_is_enabled'] === 0

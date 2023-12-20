@@ -58,9 +58,6 @@ class PerformChecks
             if (isset($this->sessionVar['user_key']) === true && (is_null($this->sessionVar['user_key']) === true || empty($this->sessionVar['user_key']) === true)) {
                 return false;
             }
-            if (isset($this->sessionVar['CPM']) === true && (is_null($this->sessionVar['CPM']) === true || $this->sessionVar['CPM'] !== 1)) {
-                return false;
-            }
         }
 
         return true;

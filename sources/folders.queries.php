@@ -20,10 +20,8 @@ declare(strict_types=1);
  */
 
 use TeampassClasses\NestedTree\NestedTree;
-use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
-use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
 
 // Load functions
@@ -31,7 +29,6 @@ require_once 'main.functions.php';
 
 // init
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
 $session = SessionManager::getSession();
 $lang = new Language(); 
 
@@ -47,7 +44,7 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+            'type' => isset($_POST['type']) === true ? htmlspecialchars($_POST['type']) : '',
         ],
         [
             'type' => 'trim|escape',
@@ -56,7 +53,6 @@ $checkUserAccess = new PerformChecks(
     [
         'user_id' => returnIfSet($session->get('user-id'), null),
         'user_key' => returnIfSet($session->get('key'), null),
-        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
     ]
 );
 // Handle the case
@@ -66,7 +62,7 @@ if (
     $checkUserAccess->checkSession() === false
 ) {
     // Not allowed page
-    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+    $session->set('system-error_code', ERR_NOT_ALLOWED);
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -977,7 +973,7 @@ if (null !== $post_type) {
                             }
 
                             //Actualize the variable
-                            --$_SESSION['nb_folders'];
+                            $session->set('user-nb_folders', $session->get('user-nb_folders') - 1);
                         }
                     }
 
@@ -1052,7 +1048,7 @@ if (null !== $post_type) {
 
             // Test if target folder is Read-only
             // If it is then stop
-            if (in_array($post_target_folder_id, $_SESSION['read_only_folders']) === true) {
+            if (in_array($post_target_folder_id, $session->get('user-read_only_folders')) === true) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -1066,7 +1062,7 @@ if (null !== $post_type) {
             // Get all allowed folders
             $array_all_visible_folders = array_merge(
                 $session->get('user-accessible_folders'),
-                $_SESSION['read_only_folders'],
+                $session->get('user-read_only_folders'),
                 $session->get('user-personal_visible_folders')
             );
 

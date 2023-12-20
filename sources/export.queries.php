@@ -22,7 +22,6 @@ declare(strict_types=1);
 
 use voku\helper\AntiXSS;
 use TeampassClasses\NestedTree\NestedTree;
-use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
@@ -35,7 +34,6 @@ require_once 'main.functions.php';
 $session = SessionManager::getSession();
 // init
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
 $lang = new Language(); 
 
 
@@ -51,7 +49,7 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+            'type' => isset($_POST['type']) === true ? htmlspecialchars($_POST['type']) : '',
         ],
         [
             'type' => 'trim|escape',
@@ -60,7 +58,6 @@ $checkUserAccess = new PerformChecks(
     [
         'user_id' => returnIfSet($session->get('user-id'), null),
         'user_key' => returnIfSet($session->get('key'), null),
-        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
     ]
 );
 // Handle the case
@@ -70,7 +67,7 @@ if (
     $checkUserAccess->checkSession() === false
 ) {
     // Not allowed page
-    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+    $session->set('system-error_code', ERR_NOT_ALLOWED);
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -137,7 +134,7 @@ if (null !== $post_type) {
 
             foreach (json_decode(html_entity_decode($post_ids)) as $id) {
                 if (
-                    in_array($id, $_SESSION['forbiden_pfs']) === false
+                    in_array($id, $session->get('user-forbiden_personal_folders')) === false
                     && in_array($id, $session->get('user-accessible_folders')) === true
                 ) {
                     $rows = DB::query(
@@ -349,7 +346,7 @@ if (null !== $post_type) {
             $post_export_tag = filter_var($dataReceived['export_tag'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
             if (
-                in_array($post_id, $_SESSION['forbiden_pfs']) === false
+                in_array($post_id, $session->get('user-forbiden_personal_folders')) === false
                 && in_array($post_id, $session->get('user-accessible_folders')) === true
             ) {
                 // get path
@@ -710,7 +707,7 @@ if (null !== $post_type) {
                 foreach ($rows as $record) {
                     // check if folder allowed
                     if (
-                        in_array($record['folder_id'], $_SESSION['forbiden_pfs']) === false
+                        in_array($record['folder_id'], $session->get('user-forbiden_personal_folders')) === false
                         && in_array($record['folder_id'], $session->get('user-accessible_folders')) === true
                         && (in_array($record['folder_id'], $session->get('user-no_access_folders')) === false)
                     ) {

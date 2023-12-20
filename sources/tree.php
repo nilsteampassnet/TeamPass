@@ -20,10 +20,8 @@ declare(strict_types=1);
  */
 
 
-use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
-use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\NestedTree\NestedTree;
 use Symfony\Component\HttpFoundation\Session\Session;
@@ -33,7 +31,6 @@ require_once 'main.functions.php';
 
 // init
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
 $session = SessionManager::getSession();
 $lang = new Language(); 
 $session = new Session();
@@ -50,7 +47,7 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+            'type' => isset($_POST['type']) === true ? htmlspecialchars($_POST['type']) : '',
         ],
         [
             'type' => 'trim|escape',
@@ -59,7 +56,6 @@ $checkUserAccess = new PerformChecks(
     [
         'user_id' => returnIfSet($session->get('user-id'), null),
         'user_key' => returnIfSet($session->get('key'), null),
-        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
     ]
 );
 // Handle the case
@@ -69,7 +65,7 @@ if (
     $checkUserAccess->checkSession() === false
 ) {
     // Not allowed page
-    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+    $session->set('system-error_code', ERR_NOT_ALLOWED);
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -88,7 +84,7 @@ $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
 // Prepare sanitization
 $data = [
-    'forbidenPfs' => isset($_SESSION['forbiden_pfs']) === true ? json_encode($_SESSION['forbiden_pfs']) : '{}',
+    'forbidenPfs' => null !== $session->get('user-forbiden_personal_folders') ? json_encode($session->get('user-forbiden_personal_folders')) : '{}',
     'visibleFolders' => null !== $session->get('user-accessible_folders') ? json_encode($session->get('user-accessible_folders')) : '{}',
     'userId' => null !== $session->get('user-id') ? $session->get('user-id') : '',
     'userLogin' => null !== $session->get('user-login') ? $session->get('user-login') : '',
@@ -96,7 +92,7 @@ $data = [
     'limitedFolders' => null !== $session->get('user-list_folders_limited') ? json_encode($session->get('user-list_folders_limited')) : '{}',
     'readOnlyFolders' => null !== $session->get('user-read_only_folders') ? json_encode($session->get('user-read_only_folders')) : '{}',
     'personalVisibleFolders' => null !== $session->get('user-personal_visible_folders') ? json_encode($session->get('user-personal_visible_folders')) : '{}',
-    'userTreeLastRefresh' => isset($_SESSION['user_tree_last_refresh_timestamp']) === true ? $_SESSION['user_tree_last_refresh_timestamp'] : '',
+    'userTreeLastRefresh' => null !== $session->get('user-tree_last_refresh_timestamp') ? $session->get('user-tree_last_refresh_timestamp') : '',
     'forceRefresh' => isset($_GET['force_refresh']) === true ? $_GET['force_refresh'] : '',
     'nodeId' => isset($_GET['id']) === true ? $_GET['id'] : '',
     'restrictedFoldersForItems' => isset($_GET['list_restricted_folders_for_items']) === true ? json_encode($_GET['list_restricted_folders_for_items']) : '{}',
@@ -145,7 +141,7 @@ if (DB::count() === 0) {
 $goTreeRefresh = loadTreeStrategy(
     (int) $lastFolderChange['valeur'],
     (int) $inputData['userTreeLastRefresh'],
-    /** @scrutinizer ignore-type */(array) (is_null($superGlobal->get('user_tree_structure', 'SESSION')) === true || empty($superGlobal->get('user_tree_structure', 'SESSION')) === true) ? [] : $superGlobal->get('user_tree_structure', 'SESSION'),
+    (null === $session->get('user-tree_structure') || empty($session->get('user-tree_structure')) === true) ? [] : $session->get('user-tree_structure'),
     (int) $inputData['userId'],
     (int) $inputData['forceRefresh']
 );
@@ -228,8 +224,8 @@ if ($goTreeRefresh['state'] === true || empty($inputData['nodeId']) === false ||
     }
 
     // Save in SESSION
-    $superGlobal->put('user_tree_structure', $ret_json, 'SESSION');
-    $superGlobal->put('user_tree_last_refresh_timestamp', time(), 'SESSION');
+    $session->set('user-tree_structure', $ret_json);
+    $session->set('user-tree_last_refresh_timestamp', time());
 
     $ret_json = json_encode($ret_json);
 

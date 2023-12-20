@@ -32,6 +32,7 @@ use TeampassClasses\Language\Language;
 
 require_once 'main.functions.php';
 $session = SessionManager::getSession();
+$superGlobal = new SuperGlobal();
 $lang = new Language(); 
 
 // Load config if $SETTINGS not defined
@@ -176,11 +177,11 @@ if (isset($languagesList) === false) {
     $rows = DB::query('SELECT * FROM ' . prefixTable('languages') . ' GROUP BY name, label, code, flag, id ORDER BY name ASC');
     foreach ($rows as $record) {
         array_push($languagesList, $record['name']);
-        if ($superGlobal->get('user-language', 'SESSION', 'user') === $record['name'] ) {
-            $superGlobal->put('user_language_flag', $record['flag'], 'SESSION');
-            $superGlobal->put('user_language_code', $record['code'], 'SESSION');
-            $superGlobal->put('user_language_label', $record['label'], 'SESSION');
-            $superGlobal->put('user_language_id', $record['id'], 'SESSION');
+        if ($session->get('user-language') === $record['name'] ) {
+            $session->set('user-language_flag', $record['flag']);
+            $session->set('user-language_code', $record['code']);
+            //$session->set('user-language_label', $record['label']);
+            //$session->set('user-language_id', $record['id']);
         }
     }
 }
@@ -379,10 +380,10 @@ if (
     if (isset($cert_name) === true && empty($cert_name) === false && $cert_name !== $cert_issuer) {
         if (isset($server['HTTPS'])) {
             header('Strict-Transport-Security: max-age=500');
-            $_SESSION['error']['sts'] = 0;
+            $session->set('system-error_sts', 0);
         }
     } elseif ($cert_name === $cert_issuer) {
-        $_SESSION['error']['sts'] = 1;
+        $session->set('system-error_sts', 1);
     }
 }
 
@@ -441,7 +442,7 @@ if (null !== $session->get('user-id') && empty($session->get('user-id')) === fal
             $SETTINGS
         );
         if (null !== $session->get('user-can_create_root_folder') && (int) $session->get('user-can_create_root_folder') === 1) {
-            array_push($session->get('user-accessible_folders'), 0);
+            SessionManager::addRemoveFromSessionArray('user-accessible_folders', [0], 'add');
         }
 
         // user type
@@ -469,7 +470,7 @@ if (
     && $get['page'] === 'items'
     && null !== $session->get('user-roles')
 ) {
-    $_SESSION['item_fields'] = [];
+    $session->set('system-item_fields', []);
     $rows = DB::query(
         'SELECT *
             FROM ' . prefixTable('categories') . '
@@ -515,13 +516,14 @@ if (
         }
 
         // store the categories
-        array_push(
-            $_SESSION['item_fields'],
+        SessionManager::addRemoveFromSessionAssociativeArray(
+            'system-item_fields',
             [
                 'id' => $record['id'],
                 'title' => addslashes($record['title']),
                 'fields' => $arrFields,
-            ]
+            ],
+            'add'
         );
     }
 }
@@ -553,19 +555,19 @@ if (isset($SETTINGS['ldap_mode']) === true && (int) $SETTINGS['ldap_mode'] === 1
     }
 }
 
-$_SESSION['temporary']['user_can_printout'] = false;
+$session->set('user-can_printout', 0);
 if (
     isset($SETTINGS['roles_allowed_to_print']) === true
     && null !== $session->get('user-roles_array')
-    && (! isset($_SESSION['temporary']['user_can_printout']) || empty($_SESSION['temporary']['user_can_printout']))
+    && (null === $session->get('user-can_printout') || empty($session->get('user-can_printout')) === true)
 ) {
     foreach (explode(';', $SETTINGS['roles_allowed_to_print']) as $role) {
         if (in_array($role, $session->get('user-roles_array')) === true) {
-            $_SESSION['temporary']['user_can_printout'] = true;
+            $session->set('user-can_printout', 1);
         }
     }
 }
 
 /* CHECK NUMBER OF USER ONLINE */
 DB::query('SELECT * FROM ' . prefixTable('users') . ' WHERE timestamp>=%i', time() - 600);
-$_SESSION['nb_users_online'] = DB::count();
+$session->set('system-nb_users_online', DB::count());

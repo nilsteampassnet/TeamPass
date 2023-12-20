@@ -21,10 +21,8 @@ declare(strict_types=1);
 
 use LdapRecord\Connection;
 use TeampassClasses\NestedTree\NestedTree;
-use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
-use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
 use PasswordLib\PasswordLib;
 use Symfony\Component\HttpFoundation\Session\Session;
@@ -34,7 +32,6 @@ require_once 'main.functions.php';
 
 // init
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
 $session = SessionManager::getSession();
 $lang = new Language(); 
 $session = new Session();
@@ -50,7 +47,7 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+            'type' => isset($_POST['type']) === true ? htmlspecialchars($_POST['type']) : '',
         ],
         [
             'type' => 'trim|escape',
@@ -59,14 +56,13 @@ $checkUserAccess = new PerformChecks(
     [
         'user_id' => returnIfSet($session->get('user-id'), null),
         'user_key' => returnIfSet($session->get('key'), null),
-        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
     ]
 );
 // Handle the case
 echo $checkUserAccess->caseHandler();
 if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('profile') === false) {
     // Not allowed page
-    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+    $session->set('system-error_code', ERR_NOT_ALLOWED);
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -987,9 +983,7 @@ if (null !== $post_type) {
             $user_id = htmlspecialchars_decode($data_received['user_id']);
             $salt_user = htmlspecialchars_decode($data_received['salt_user']);
 
-            if (!isset($_SESSION['user']['clear_psk']) || $_SESSION['user']['clear_psk'] == '') {
-                echo '[ { "error" : "no_sk" } ]';
-            } elseif ($salt_user == '') {
+            if ($salt_user == '') {
                 echo '[ { "error" : "no_sk_user" } ]';
             } elseif ($user_id == '') {
                 echo '[ { "error" : "no_user_id" } ]';
@@ -2578,7 +2572,7 @@ if (null !== $post_type) {
 
             if (DB::count() === 0) {
                 // check if admin role is set. If yes then check if originator is allowed
-                if ((int) $session->get('user-admin') !== 1 && (int) $_SESSION['gestionnaire'] !== 1) {
+                if ((int) $session->get('user-admin') !== 1 && (int) $session->get('user-manager') !== 1) {
                     echo prepareExchangedData(
                         array(
                             'error' => true,

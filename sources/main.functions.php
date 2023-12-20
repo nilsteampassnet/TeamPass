@@ -59,45 +59,6 @@ header('Cache-Control: no-cache, must-revalidate');
 
 loadClasses('DB');
 
-/**
- * Convert language code to string.
- *
- * @param string $string String to get
- */
-function langHdl(string $string): string
-{
-    if (empty($string) === true) {
-        // Manage error
-        return 'ERROR in language strings!';
-    }
-
-    // Load
-    
-    $session = SessionManager::getSession();
-    $superGlobal = new SuperGlobal();
-    $antiXss = new AntiXSS();
-    // Get language string
-    $session_language = $superGlobal->get(trim($string), 'SESSION', 'lang');
-    if (is_null($session_language) === true) {
-        /* 
-            Load the English version to $_SESSION so we don't 
-            return bad JSON (multiple includes add BOM characters to the json returned 
-            which makes jquery unhappy on the UI, especially on the log page)
-            and improve performance by avoiding to include the file for every missing strings.
-        */
-        if (isset($_SESSION['teampass']) === false || isset($_SESSION['teampass']['en_lang'][trim($string)]) === false) {
-            $_SESSION['teampass']['en_lang'] = include_once __DIR__. '/../includes/language/english.php';
-            $session_language = isset($_SESSION['teampass']['en_lang'][trim($string)]) === false ? '' : $_SESSION['teampass']['en_lang'][trim($string)];
-        } else {
-            $session_language = $_SESSION['teampass']['en_lang'][trim($string)];
-        }
-    }
-    // If after all this, we still don't have the string even in english (especially with old logs), return the language code
-    if (empty($session_language) === true) {
-        return trim($string);
-    }
-    return (string) $antiXss->xss_clean($session_language);//esc_html($session_language);
-}
 
 /**
  * genHash().
@@ -328,9 +289,7 @@ function identifyUserRights(
     $idFonctions,
     $SETTINGS
 ) {
-    
     $session = SessionManager::getSession();
-    $superGlobal = new SuperGlobal();
     $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
     // Check if user is ADMINISTRATOR    
@@ -375,9 +334,6 @@ function identAdmin($idFonctions, $SETTINGS, $tree)
 {
     
     $session = SessionManager::getSession();
-    // Load superglobal
-    $superGlobal = new SuperGlobal();
-    // Init
     $groupesVisibles = [];
     $session->set('user-personal_folders', []);
     $session->set('user-accessible_folders', []);
@@ -387,8 +343,7 @@ function identAdmin($idFonctions, $SETTINGS, $tree)
     $session->set('system-list_restricted_folders_for_items', []);
     $session->set('system-list_folders_editable_by_role', []);
     $session->set('user-list_folders_limited', []);
-    $superGlobal->put('forbiden_pfs', [], 'SESSION');
-    // Get superglobals
+    $session->set('user-forbiden_personal_folders', []);
     $globalsUserId = $session->get('user-id');
     $globalsVisibleFolders = $session->get('user-accessible_folders');
     $globalsPersonalVisibleFolders = $session->get('user-personal_visible_folders');
@@ -398,7 +353,7 @@ function identAdmin($idFonctions, $SETTINGS, $tree)
         array_push($groupesVisibles, $record['id']);
     }
     $session->set('user-accessible_folders', $groupesVisibles);
-    $superGlobal->put('all_non_personal_folders', $groupesVisibles, 'SESSION');
+    $session->set('user-all_non_personal_folders', $groupesVisibles);
     // Exclude all PF
     $where = new WhereClause('and');
     // create a WHERE statement of pieces joined by ANDs
@@ -492,8 +447,6 @@ function identUser(
 ) {
     
     $session = SessionManager::getSession();
-    // Load superglobal
-    $superGlobal = new SuperGlobal();
     // Init
     $session->set('user-accessible_folders', []);
     $session->set('user-personal_folders', []);
@@ -510,7 +463,6 @@ function identUser(
     $foldersLimited = [];
     $foldersLimitedFull = [];
     $allowedFoldersByRoles = [];
-    // Get superglobals
     $globalsUserId = $session->get('user-id');
     $globalsPersonalFolders = $session->get('user-personal_folder_enabled');
     // Ensure consistency in array format
@@ -589,25 +541,24 @@ function identUser(
     $session->set('user-read_only_folders', $readOnlyFolders);
     $session->set('user-no_access_folders', $noAccessFolders);
     $session->set('user-personal_folders', $personalFolders);
-    $superGlobal->put('list_folders_limited', $foldersLimited, 'SESSION');
-    $superGlobal->put('list_folders_editable_by_role', $allowedFoldersByRoles, 'SESSION');
+    $session->set('user-list_folders_limited', $foldersLimited);
+    $session->set('system-list_folders_editable_by_role', $allowedFoldersByRoles, 'SESSION');
     $session->set('system-list_restricted_folders_for_items', $restrictedFoldersForItems);
-    $superGlobal->put('forbiden_pfs', $noAccessPersonalFolders, 'SESSION');
-    $superGlobal->put(
+    $session->set('user-forbiden_personal_folders', $noAccessPersonalFolders);
+    $session->set(
         'all_folders_including_no_access',
         array_unique(array_merge(
             $allowedFolders,
             $personalFolders,
             $noAccessFolders,
             $readOnlyFolders
-        ), SORT_NUMERIC),
-        'SESSION'
+        ), SORT_NUMERIC)
     );
     // Folders and Roles numbers
     DB::queryfirstrow('SELECT id FROM ' . prefixTable('nested_tree') . '');
-    $superGlobal->put('nb_folders', DB::count(), 'SESSION');
+    $session->set('user-nb_folders', DB::count());
     DB::queryfirstrow('SELECT id FROM ' . prefixTable('roles_title'));
-    $superGlobal->put('nb_roles', DB::count(), 'SESSION');
+    $session->set('user-nb_roles', DB::count());
     // check if change proposals on User's items
     if (isset($SETTINGS['enable_suggestion']) === true && (int) $SETTINGS['enable_suggestion'] === 1) {
         $countNewItems = DB::query(
@@ -618,9 +569,9 @@ function identUser(
             'at_creation',
             $globalsUserId
         );
-        $superGlobal->put('nb_item_change_proposals', $countNewItems, 'SESSION');
+        $session->set('user-nb_item_change_proposals', $countNewItems);
     } else {
-        $superGlobal->put('nb_item_change_proposals', 0, 'SESSION');
+        $session->set('user-nb_item_change_proposals', 0);
     }
 
     return true;
@@ -892,11 +843,8 @@ function cacheTableRefresh(): void
  */
 function cacheTableUpdate(?int $ident = null): void
 {
-    
     $session = SessionManager::getSession();
-    // Load class DB
     loadClasses('DB');
-    $superGlobal = new SuperGlobal();
 
     //Load Tree
     $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
@@ -968,8 +916,6 @@ function cacheTableUpdate(?int $ident = null): void
 function cacheTableAdd(?int $ident = null): void
 {
     $session = SessionManager::getSession();
-
-    $superGlobal = new SuperGlobal();
     $globalsUserId = $session->get('user-id');
 
     // Load class DB
@@ -1761,61 +1707,6 @@ function logItems(
 }
 
 /**
- * If enabled, then notify admin/manager.
- *
- * @param int    $item_id  Item id
- * @param string $action   Action to do
- * @param array  $SETTINGS Teampass settings
- * 
- * @return void
- */
-/*
-function notifyOnChange(int $item_id, string $action, array $SETTINGS): void
-{
-    if (
-        isset($SETTINGS['enable_email_notification_on_item_shown']) === true
-        && (int) $SETTINGS['enable_email_notification_on_item_shown'] === 1
-        && $action === 'at_shown'
-    ) {
-        // Load superglobal
-        include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-        $superGlobal = new SuperGlobal();
-        // Get superglobals
-        $globalsLastname = $superGlobal->get('lastname', 'SESSION');
-        $globalsName = $superGlobal->get('name', 'SESSION');
-        $globalsNotifiedEmails = $superGlobal->get('listNotificationEmails', 'SESSION');
-        // Get info about item
-        $dataItem = DB::queryfirstrow(
-            'SELECT id, id_tree, label
-            FROM ' . prefixTable('items') . '
-            WHERE id = %i',
-            $item_id
-        );
-        $item_label = $dataItem['label'];
-        // send back infos
-        DB::insert(
-            prefixTable('emails'),
-            [
-                'timestamp' => time(),
-                'subject' => $lang->get('email_on_open_notification_subject'),
-                'body' => str_replace(
-                    ['#tp_user#', '#tp_item#', '#tp_link#'],
-                    [
-                        addslashes($globalsName . ' ' . $globalsLastname),
-                        addslashes($item_label),
-                        $SETTINGS['cpassman_url'] . '/index.php?page=items&group=' . $dataItem['id_tree'] . '&id=' . $item_id,
-                    ],
-                    $lang->get('email_on_open_notification_mail')
-                ),
-                'receivers' => $globalsNotifiedEmails,
-                'status' => '',
-            ]
-        );
-    }
-}
-*/
-
-/**
  * Prepare notification email to subscribers.
  *
  * @param int    $item_id  Item id
@@ -1828,10 +1719,7 @@ function notifyOnChange(int $item_id, string $action, array $SETTINGS): void
 function notifyChangesToSubscribers(int $item_id, string $label, array $changes, array $SETTINGS): void
 {
     $session = SessionManager::getSession();
-    // Load superglobal
-    $superGlobal = new SuperGlobal();
     $lang = new Language(); 
-    // Get superglobals
     $globalsUserId = $session->get('user-id');
     $globalsLastname = $session->get('user-lastname');
     $globalsName = $session->get('user-name');
@@ -2347,10 +2235,8 @@ function accessToItemIsGranted(int $item_id, array $SETTINGS)
 {
     
     $session = SessionManager::getSession();
-    $superGlobal = new SuperGlobal();
-    // Prepare superGlobal variables
     $session_groupes_visibles = $session->get('user-accessible_folders');
-    $session_list_restricted_folders_for_items = $superGlobal->get('list_restricted_folders_for_items', 'SESSION');
+    $session_list_restricted_folders_for_items = $session->set('system-list_restricted_folders_for_items');
     // Load item data
     $data = DB::queryFirstRow(
         'SELECT id_tree
@@ -2813,9 +2699,6 @@ function storeUsersShareKey(
 ): void {
     
     $session = SessionManager::getSession();
-    $superGlobal = new SuperGlobal();
-
-    // Load class DB
     loadClasses('DB');
 
     // Delete existing entries for this object
@@ -3389,14 +3272,9 @@ function defineComplexity() : void
  *
  * @param array     $data
  * @param array     $filters
- * @param string    $path
  * @return array|string
  */
-function dataSanitizer(
-    array $data,
-    array $filters,
-    string $path = __DIR__. '/..' // Path to Teampass root
-)
+function dataSanitizer(array $data, array $filters): array|string
 {
     // Load Sanitizer library
     $sanitizer = new Sanitizer($data, $filters);
@@ -3500,7 +3378,6 @@ function loadFoldersListByCache(
             'data' => [],
         ];
     }
-
     
     $session = SessionManager::getSession();
 
@@ -3517,7 +3394,7 @@ function loadFoldersListByCache(
 
     // Case when an update in the tree has been done
     // Refresh is then mandatory
-    if ((int) $lastFolderChange['valeur'] > (int) (isset($_SESSION['user_tree_last_refresh_timestamp']) === true ? $_SESSION['user_tree_last_refresh_timestamp'] : 0)) {
+    if ((int) $lastFolderChange['valeur'] > (int) (null !== $session->get('user-tree_last_refresh_timestamp') ? $session->get('user-tree_last_refresh_timestamp') : 0)) {
         return [
             'state' => false,
             'data' => [],
@@ -3526,10 +3403,10 @@ function loadFoldersListByCache(
 
     // Does this user has the tree structure in session?
     // If yes then use it
-    if (count(isset($_SESSION['teampassUser'][$sessionName]) === true ? $_SESSION['teampassUser'][$sessionName] : []) > 0) {
+    if (count(null !== $session->get('user-folders_list') ? $session->get('user-folders_list') : []) > 0) {
         return [
             'state' => true,
-            'data' => json_encode($_SESSION['teampassUser'][$sessionName]),
+            'data' => json_encode($session->get('user-folders_list')),
         ];
     }
 
@@ -3541,6 +3418,11 @@ function loadFoldersListByCache(
         $session->get('user-id')
     );
     if (empty($userCacheTree[$fieldName]) === false && $userCacheTree[$fieldName] !== '[]') {
+        SessionManager::addRemoveFromSessionAssociativeArray(
+            'user-folders_list',
+            [$userCacheTree[$fieldName]],
+            'add'
+        );
         return [
             'state' => true,
             'data' => $userCacheTree[$fieldName],
@@ -4324,9 +4206,6 @@ function loadClasses(string $className = ''): void
  */
 function getCurrectPage($SETTINGS)
 {
-    
-    $session = SessionManager::getSession();
-    // Load libraries
     $superGlobal = new SuperGlobal();
 
     // Parse the url

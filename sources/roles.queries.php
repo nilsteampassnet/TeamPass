@@ -21,7 +21,6 @@ declare(strict_types=1);
 
 use LdapRecord\Connection;
 use TeampassClasses\NestedTree\NestedTree;
-use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use TeampassClasses\PerformChecks\PerformChecks;
@@ -32,7 +31,6 @@ require_once 'main.functions.php';
 
 // init
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
 $session = SessionManager::getSession();
 $lang = new Language(); 
 
@@ -48,7 +46,7 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+            'type' => isset($_POST['type']) === true ? htmlspecialchars($_POST['type']) : '',
         ],
         [
             'type' => 'trim|escape',
@@ -57,7 +55,6 @@ $checkUserAccess = new PerformChecks(
     [
         'user_id' => returnIfSet($session->get('user-id'), null),
         'user_key' => returnIfSet($session->get('key'), null),
-        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
     ]
 );
 // Handle the case
@@ -67,7 +64,7 @@ if (
     $checkUserAccess->checkSession() === false
 ) {
     // Not allowed page
-    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+    $session->set('system-error_code', ERR_NOT_ALLOWED);
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -440,7 +437,7 @@ if (null !== $post_type) {
 
                     if ($role_id !== 0) {
                         //Actualize the variable
-                        ++$_SESSION['nb_roles'];
+                        $session->set('user-nb_roles', $session->get('user-nb_roles') + 1);
 
                         // get some data
                         $data_tmp = DB::queryfirstrow(
@@ -462,6 +459,7 @@ if (null !== $post_type) {
                             $session->get('user-id')
                         );
                         $session->set('user-roles_array', explode(';', $session->get('user-roles')));
+                        error_log('user-roles_array 3: ' . print_r(explode(';', $session->get('user-roles')), true));
 
                         $return['new_role_id'] = $role_id;
                     }
@@ -554,7 +552,7 @@ if (null !== $post_type) {
             );
 
             //Actualize the variable
-            --$_SESSION['nb_roles'];
+            $session->set('user-nb_roles', $session->get('user-nb_roles') - 1);
 
             // parse all users to remove this role
             $rows = DB::query(

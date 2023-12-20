@@ -59,7 +59,7 @@ if (null !== $session->get('user-id') && empty($session->get('user-id')) === fal
     $user_token = '';
 }
 
-if (empty($user_id) === false && isset($_SESSION['CPM']) === true) {
+if (empty($user_id) === false) {
     // clear in db
     DB::update(
         DB_PREFIX.'users',

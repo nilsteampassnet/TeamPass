@@ -25,18 +25,13 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-use TeampassClasses\SuperGlobal\SuperGlobal;
-use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
-use EZimuel\PHPSecureSession;
-use TeampassClasses\PerformChecks\PerformChecks;
 
 // Load functions
 require_once __DIR__.'/sources/main.functions.php';
 
 // init
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
 $lang = new Language(); 
 
 // Load config if $SETTINGS not defined
@@ -78,13 +73,13 @@ if (
     }
 } else {
     $errorCode = '';
-    if (@$_SESSION['error']['code'] === ERR_NOT_ALLOWED) {
+    if (@$session->get('system-error_code') === ERR_NOT_ALLOWED) {
         $errorCode = 'ERROR NOT ALLOWED';
-    } elseif (@$_SESSION['error']['code'] === ERR_NOT_EXIST) {
+    } elseif (@$session->get('system-error_code') === ERR_NOT_EXIST) {
         $errorCode = 'ERROR NOT EXISTS';
-    } elseif (@$_SESSION['error']['code'] === ERR_SESS_EXPIRED) {
+    } elseif (@$session->get('system-error_code') === ERR_SESS_EXPIRED) {
         $errorCode = 'ERROR SESSION EXPIRED';
-    } elseif (@$_SESSION['error']['code'] === ERR_VALID_SESSION) {
+    } elseif (@$session->get('system-error_code') === ERR_VALID_SESSION) {
         $errorCode = 'ERROR NOT ALLOWED';
     } ?>
     <!-- Main content -->

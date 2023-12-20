@@ -19,7 +19,6 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
@@ -31,7 +30,6 @@ require_once 'main.functions.php';
 
 // init
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
 $session = SessionManager::getSession();
 $lang = new Language(); 
 
@@ -47,7 +45,7 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+            'type' => isset($_POST['type']) === true ? htmlspecialchars($_POST['type']) : '',
         ],
         [
             'type' => 'trim|escape',
@@ -56,7 +54,6 @@ $checkUserAccess = new PerformChecks(
     [
         'user_id' => returnIfSet($session->get('user-id'), null),
         'user_key' => returnIfSet($session->get('key'), null),
-        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
     ]
 );
 // Handle the case
@@ -66,7 +63,7 @@ if (
     $checkUserAccess->checkSession() === false
 ) {
     // Not allowed page
-    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+    $session->set('system-error_code', ERR_NOT_ALLOWED);
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -109,7 +106,7 @@ if (null !== $post_type) {
             );
 
             foreach (explode(';', $post_ids) as $id) {
-                if (!in_array($id, $_SESSION['forbiden_pfs']) && in_array($id, $session->get('user-accessible_folders'))) {
+                if (in_array($id, $session->get('user-forbiden_personal_folders')) === false && in_array($id, $session->get('user-accessible_folders')) === true) {
                     $rows = DB::query(
                         'SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso,
                         i.label as label, i.description as description, i.pw as pw, i.login as login, i.pw_iv as pw_iv
@@ -204,8 +201,8 @@ if (null !== $post_type) {
             }
 
             // check if psk is set
-            if (isset($_SESSION['user']['encrypted_psk']) === false
-                || empty($_SESSION['user']['encrypted_psk']) === true
+            if (null === $session->get('user-encrypted_psk')
+                || empty($session->get('user-encrypted_psk')) === true
             ) {
                 echo prepareExchangedData(
                     array(

@@ -20,7 +20,6 @@ declare(strict_types=1);
  */
 
 use PasswordLib\PasswordLib;
-use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use Hackzilla\PasswordGenerator\Generator\ComputerPasswordGenerator;
@@ -46,22 +45,9 @@ if (isset($_POST['sessionId'])) {
 }
 
 $session = SessionManager::getSession();
-
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
 $lang = new Language(); 
 
-if (isset($_SESSION) === false) {
-    session_name('teampass_session');
-    session_start();
-    $_SESSION['CPM'] = 1;
-}
-
-if (isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1) {
-    $_SESSION['error']['code'] = '1004';
-    include __DIR__.'/../error.php';
-    exit();
-}
 
 // Load config
 try {
@@ -75,7 +61,7 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+            'type' => isset($_POST['type']) === true ? htmlspecialchars($_POST['type']) : '',
         ],
         [
             'type' => 'trim|escape',
@@ -84,10 +70,9 @@ $checkUserAccess = new PerformChecks(
     [
         'user_id' => returnIfSet($session->get('user-id'), null),
         'user_key' => returnIfSet($session->get('key'), null),
-        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
     ]
 );
-/*// Handle the case
+// Handle the case
 echo $checkUserAccess->caseHandler();
 if (
     ($checkUserAccess->userAccessPage('home') === false ||
@@ -95,10 +80,10 @@ if (
     && filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== 'get_teampass_settings'
 ) {
     // Not allowed page
-    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+    $session->set('system-error_code', ERR_NOT_ALLOWED);
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
-}*/
+}
 
 // Define Timezone
 date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
@@ -117,7 +102,7 @@ if (
     null !== $session->get('user-id')
     && $checkUserAccess->userAccessPage('home') === false
 ) {
-    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error'); //not allowed page
+    $session->set('system-error_code', ERR_NOT_ALLOWED); //not allowed page
     include __DIR__.'/../error.php';
     exit();
 } elseif ((null !== $session->get('user-id')
@@ -128,7 +113,7 @@ if (
     // continue
     mainQuery($SETTINGS);
 } else {
-    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error'); //not allowed page
+    $session->set('system-error_code', ERR_NOT_ALLOWED); //not allowed page
     include __DIR__.'/../error.php';
     exit();
 }
@@ -1371,6 +1356,7 @@ function sendingStatistics(
     array $SETTINGS
 ): void
 {
+    $session = SessionManager::getSession();
     if (
         isSetArrayOfValues([$SETTINGS['send_statistics_items'], $SETTINGS['send_stats_time']]) === true
         && isKeyExistingAndEqual('send_stats', 1, $SETTINGS) === true
@@ -1428,7 +1414,7 @@ function sendingStatistics(
         );
 
         //permits to test only once by session
-        $_SESSION['temporary']['send_stats_done'] = true;
+        $session->set('system-send_stats_done', 1);
         $SETTINGS['send_stats_time'] = time();
 
         // save change in config file
@@ -1690,9 +1676,6 @@ function isUserPasswordCorrect(
         array(
             'error' => true,
             'message' => $lang->get('password_is_not_correct'),
-            //'debug' => isset($itemKey) === true ? base64_decode($itemKey) : '',
-            //'debug2' => $_SESSION['user']['private_key'],
-            //'debug3' => $post_user_password,
         ),
         'encode'
     );
@@ -3002,8 +2985,6 @@ function changeUserAuthenticationPassword(
                 );
             }
 
-            // Load superGlobals
-            $superGlobal = new SuperGlobal();
             $lang = new Language(); 
 
             if ($session->get('user-private_key') === $privateKey) {
@@ -3029,7 +3010,7 @@ function changeUserAuthenticationPassword(
                     $post_user_id
                 );
 
-                $superGlobal->put('private_key', $privateKey, 'SESSION', 'user');
+                $session->set('user-private_key', $privateKey);
 
                 return prepareExchangedData(
                     array(
@@ -3113,7 +3094,6 @@ function changeUserLDAPAuthenticationPassword(
                     $post_user_id
                 );
 
-                // Load superGlobals
                 $session->set('user-private_key', $privateKey);
 
                 return prepareExchangedData(
@@ -3177,8 +3157,6 @@ function changeUserLDAPAuthenticationPassword(
                         $post_user_id
                     );
                     
-                    // Load superGlobals
-                    $superGlobal = new SuperGlobal();
                     $lang = new Language(); 
                     $session->set('user-private_key', $privateKey);
 

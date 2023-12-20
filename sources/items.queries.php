@@ -22,7 +22,6 @@ declare(strict_types=1);
 
 use voku\helper\AntiXSS;
 use TeampassClasses\NestedTree\NestedTree;
-use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
@@ -34,7 +33,6 @@ require_once 'main.functions.php';
 
 // init
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
 $session = SessionManager::getSession();
 $lang = new Language(); 
 
@@ -50,7 +48,7 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+            'type' => isset($_POST['type']) === true ? htmlspecialchars($_POST['type']) : '',
         ],
         [
             'type' => 'trim|escape',
@@ -59,7 +57,6 @@ $checkUserAccess = new PerformChecks(
     [
         'user_id' => returnIfSet($session->get('user-id'), null),
         'user_key' => returnIfSet($session->get('key', 'SESSION'), null),
-        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
     ]
 );
 // Handle the case
@@ -69,7 +66,7 @@ if (
     $checkUserAccess->checkSession() === false
 ) {
     // Not allowed page
-    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+    $session->set('system-error_code', ERR_NOT_ALLOWED);
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -122,7 +119,7 @@ if (defined('TP_PW_COMPLEXITY') === false) {
 
 // Prepare POST variables
 $data = [
-    'type' => returnIfSet($superGlobal->get('type', 'POST')),
+    'type' => isset($_POST['type']) === true ? $_POST['type'] : '',
     'data' => isset($_POST['data']) === true ? $_POST['data'] : '',
     'key' => isset($_POST['key']) === true ? $_POST['key'] : '',
     'label' => isset($_POST['label']) === true ? $_POST['label'] : '',
@@ -245,8 +242,6 @@ switch ($inputData['type']) {
                 FILTER_SANITIZE_FULL_SPECIAL_CHARS
             );
             $post_restricted_to_roles = $post_restricted_to_roles !== false ? json_decode($post_restricted_to_roles) : '';
-            $post_salt_key_set = isset($_SESSION['user']['session_psk']) === true
-                && empty($_SESSION['user']['session_psk']) === false ? '1' : '0';
             $post_tags = htmlspecialchars_decode($dataReceived['tags']);
             $post_template_id = filter_var($dataReceived['template_id'], FILTER_SANITIZE_NUMBER_INT);
             $post_url = filter_var(htmlspecialchars_decode($dataReceived['url']), FILTER_SANITIZE_URL);
@@ -318,8 +313,8 @@ switch ($inputData['type']) {
             // is pwd empty?
             if (
                 empty($post_password) === true
-                && isset($_SESSION['user']['create_item_without_password']) === true
-                && (int) $_SESSION['user']['create_item_without_password'] !== 1
+                && null !== $session->get('user-create_item_without_password')
+                && (int) $session->get('user-create_item_without_password') !== 1
             ) {
                 echo (string) prepareExchangedData(
                     array(
@@ -406,8 +401,6 @@ switch ($inputData['type']) {
             if (
                 isset($SETTINGS['duplicate_item']) === true
                 && (int) $SETTINGS['duplicate_item'] === 0
-                && (int) $post_salt_key_set === 1
-                && isset($post_salt_key_set) === true
                 && (int) $post_folder_is_personal === 1
                 && isset($post_folder_is_personal) === true
             ) {
@@ -422,8 +415,8 @@ switch ($inputData['type']) {
             ) {
                 // Handle case where pw is empty
                 // if not allowed then warn user
-                if ((isset($_SESSION['user']['create_item_without_password']) === true
-                        && (int) $_SESSION['user']['create_item_without_password'] !== 1) ||
+                if ((null !== $session->get('user-create_item_without_password')
+                        && (int) $session->get('user-create_item_without_password') !== 1) ||
                     empty($post_password) === false
                 ) {
                     // NEW ENCRYPTION
@@ -942,8 +935,8 @@ switch ($inputData['type']) {
             // Check PWD EMPTY
             if (
                 empty($pw) === true
-                && isset($_SESSION['user']['create_item_without_password']) === true
-                && (int) $_SESSION['user']['create_item_without_password'] !== 1
+                && null !== $session->get('user-create_item_without_password')
+                && (int) $session->get('user-create_item_without_password') !== 1
             ) {
                 echo (string) prepareExchangedData(
                     array(
@@ -1125,8 +1118,8 @@ switch ($inputData['type']) {
                 }
 
                 // encrypt PW
-                if ((isset($_SESSION['user']['create_item_without_password']) === true
-                        && (int) $_SESSION['user']['create_item_without_password'] !== 1)
+                if ((null !== $session->get('user-create_item_without_password')
+                        && (int) $session->get('user-create_item_without_password') !== 1)
                     || empty($post_password) === false
                 ) {
                     //-----
@@ -1931,7 +1924,7 @@ switch ($inputData['type']) {
                 }
 
                 // generate 2d key
-                $_SESSION['key_tmp'] = bin2hex(GenerateCryptKey(16, false, true, true, false, true, $SETTINGS));
+                $session->set('user-key_tmp', bin2hex(GenerateCryptKey(16, false, true, true, false, true, $SETTINGS)));
 
                 // Send email
                 if (is_array($post_diffusion_list) === true && count($post_diffusion_list) > 0) {
@@ -2392,7 +2385,7 @@ switch ($inputData['type']) {
         }
 
         // Step #1
-        $_SESSION['user']['show_step2'] = false;
+        $session->set('system-show_step2', false);
 
         // Decrypt and retreive data in JSON format
         $dataReceived = prepareExchangedData(
@@ -2480,7 +2473,7 @@ switch ($inputData['type']) {
 
         // Get all USERS infos
         $listeRestriction = is_null($dataItem['restricted_to']) === false ? array_filter(explode(';', $dataItem['restricted_to'])) : [];
-        $_SESSION['listNotificationEmails'] = '';
+        $session->set('system-emails_list_for_notif', '');
 
         /*$user_in_restricted_list_of_item = false;
         $rows = DB::query(
@@ -2989,7 +2982,7 @@ switch ($inputData['type']) {
         $arrData['timestamp'] = time();
 
         // Set temporary session variable to allow step2
-        $_SESSION['user']['show_step2'] = true;
+        $session->set('system-show_step2', true);
 
         // Error
         $arrData['error'] = '';
@@ -3007,7 +3000,7 @@ switch ($inputData['type']) {
     */
     case 'showDetailsStep2':
         // Is this query expected (must be run after a step1 and not standalone)
-        if ($_SESSION['user']['show_step2'] !== true) {
+        if ($session->get('system-show_step2') !== true) {
             // Check KEY and rights
             if ($inputData['key'] !== $session->get('key')) {
                 echo (string) prepareExchangedData(
@@ -3112,7 +3105,7 @@ switch ($inputData['type']) {
                 && $restrictionActive === false) === true
         ) {
             // generate 2d key
-            $_SESSION['key_tmp'] = bin2hex(GenerateCryptKey(16, false, true, true, false, true, $SETTINGS));
+            $session->set('user-key_tmp', bin2hex(GenerateCryptKey(16, false, true, true, false, true, $SETTINGS)));
 
             // Prepare files listing
             $attachments = [];
@@ -3134,7 +3127,7 @@ switch ($inputData['type']) {
                         'size' => formatSizeUnits((int) $record['size']),
                         'is_image' => in_array(strtolower($record['extension']), TP_IMAGE_FILE_EXT) === true ? 1 : 0,
                         'id' => $record['id'],
-                        'key' => $_SESSION['key_tmp'],
+                        'key' => $session->get('user-key_tmp'),
                     )
                 );
             }
@@ -3293,7 +3286,7 @@ switch ($inputData['type']) {
                 $returnArray['otv_links'] = (int) DB::count();
             }
 
-            $_SESSION['user']['show_step2'] = false;
+            $session->set('system-show_step2', false);
             
             echo (string) prepareExchangedData(
                 $returnArray,
@@ -3736,7 +3729,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => $lang->get('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to')." BOOH 1",
                 ),
                 'encode'
             );
@@ -3747,7 +3740,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => $lang->get('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to')." BOOH 2",
                 ),
                 'encode'
             );
@@ -3892,13 +3885,6 @@ switch ($inputData['type']) {
                 $accessLevel = 30;
             }
             $uniqueLoadData['accessLevel'] = $accessLevel;
-
-            /*
-            // check if this folder is a PF. If yes check if saltket is set
-            if ((!isset($_SESSION['user']['encrypted_psk']) || empty($_SESSION['user']['encrypted_psk'])) && $folderIsPf === true) {
-                $showError = 'is_pf_but_no_saltkey';
-            }
-            */
             $uniqueLoadData['showError'] = $showError;
 
             // check if items exist
@@ -4475,39 +4461,6 @@ switch ($inputData['type']) {
                 WHERE id=%i',
                 $inputData['itemId']
             );
-            
-            /*
-            // is user allowed to access this folder - readonly
-            if (null !== $inputData['folderId'] && empty($inputData['folderId']) === false) {
-                if (
-                    in_array($inputData['folderId'], $_SESSION['read_only_folders']) === true
-                    || in_array($inputData['folderId'], $session->get('user-accessible_folders')) === false
-                ) {
-                    // check if this item can be modified by anyone
-                    if (isset($SETTINGS['anyone_can_modify']) && (int) $SETTINGS['anyone_can_modify'] === 1) {
-                        if ((int) $dataItem['anyone_can_modify'] !== 1) {
-                            // else return not authorized
-                            $returnValues = array(
-                                'error' => true,
-                                'message' => $lang->get('error_not_allowed_to'),
-                            );
-                            echo (string) prepareExchangedData(
-$SETTINGS['cpassman_dir'],$returnValues, 'encode');
-                            break;
-                        }
-                    } else {
-                        // else return not authorized
-                        $returnValues = array(
-                            'error' => true,
-                            'message' => $lang->get('error_not_allowed_to'),
-                        );
-                        echo (string) prepareExchangedData(
-$SETTINGS['cpassman_dir'],$returnValues, 'encode');
-                        break;
-                    }
-                }
-            }
-            */
 
             // Lock Item (if already locked), go back and warn
             $dataTmp = DB::queryFirstRow('SELECT timestamp, user_id FROM ' . prefixTable('items_edition') . ' WHERE item_id = %i', $inputData['itemId']);
@@ -4883,9 +4836,15 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                 WHERE id = %i',
                 $inputData['itemId']
             );
-            $_SESSION['favourites_tab'][$inputData['itemId']] = array(
-                'label' => $data['label'],
-                'url' => 'index.php?page=items&amp;group=' . $data['id_tree'] . '&amp;id=' . $inputData['itemId'],
+            SessionManager::addRemoveFromSessionAssociativeArray(
+                'user-favorites_tab',
+                [
+                    $inputData['itemId'] => [
+                        'label' => $data['label'],
+                        'url' => 'index.php?page=items&amp;group=' . $data['id_tree'] . '&amp;id=' . $inputData['itemId'],
+                    ],
+                ],
+                'add'
             );
         } elseif ((int) $inputData['action'] === 1) {
             // delete from session
@@ -4901,10 +4860,11 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                 $session->get('user-id')
             );
             // refresh session fav list
-            if (isset($_SESSION['favourites_tab'])) {
-                foreach ($_SESSION['favourites_tab'] as $key => $value) {
+            if (null !== $session->get('user-favorites_tab')) {
+                $user_favorites_tab = $session->get('user-favorites_tab');
+                foreach ($user_favorites_tab as $key => $value) {
                     if ($key === $inputData['id']) {
-                        unset($_SESSION['favourites_tab'][$key]);
+                        SessionManager::addRemoveFromSessionAssociativeArray('user-favorites_tab', [$key], 'remove');
                         break;
                     }
                 }
@@ -6314,7 +6274,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
         if (isset($dataReceived['force_refresh_cache']) === true && $dataReceived['force_refresh_cache'] === false) {
             $goCachedFolders = loadFoldersListByCache('visible_folders', 'folders');
             if ($goCachedFolders['state'] === true) {
-                $arr_data['folders'] = json_decode($goCachedFolders['data'], true);//print_r($arr_data);
+                $arr_data['folders'] = json_decode($goCachedFolders['data'], true);
                 // send data
                 echo (string) prepareExchangedData(
                     [
@@ -6357,7 +6317,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
         foreach ($folders as $folder) {
             // Be sure that user can only see folders he/she is allowed to
             if (
-                in_array($folder->id, $_SESSION['forbiden_pfs']) === false
+                in_array($folder->id, $session->get('user-forbiden_personal_folders')) === false
                 || in_array($folder->id, $session->get('user-accessible_folders')) === true
                 || in_array($folder->id, $listFoldersLimitedKeys) === true
                 || in_array($folder->id, $listRestrictedFoldersForItemsKeys) === true
@@ -6385,7 +6345,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                     $disabled = 0;
                     if (
                         in_array($folder->id, $session->get('user-accessible_folders')) === false
-                        || in_array($folder->id, $_SESSION['read_only_folders']) === true
+                        || in_array($folder->id, $session->get('user-read_only_folders')) === true
                         //|| ((int) $session->get('user-read_only') === 1 && in_array($folder->id, $session->get('user-personal_visible_folders')) === false)
                     ) {
                         $disabled = 1;
@@ -6414,8 +6374,8 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                     // Is this folder an active folders? (where user can do something)
                     $is_visible_active = 0;
                     if (
-                        isset($_SESSION['read_only_folders']) === true
-                        && in_array($folder->id, $_SESSION['read_only_folders']) === true
+                        null !== $session->get('user-read_only_folders')
+                        && in_array($folder->id, $session->get('user-read_only_folders')) === true
                     ) {
                         $is_visible_active = 1;
                     }
@@ -6815,49 +6775,6 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
             WHERE id = %i',
             $inputData['itemId']
         );
-        /*
-        $dataItemLog = DB::queryfirstrow(
-            'SELECT id_user
-            FROM ' . prefixTable('log_items') . '
-            WHERE id_item = %i AND action = %s',
-            $inputData['itemId'],
-            'at_creation'
-        );
-        $dataAuthor = DB::queryfirstrow(
-            'SELECT email, login
-            FROM ' . prefixTable('users') . '
-            WHERE id = %i',
-            $dataItemLog['id_user']
-        );
-
-        // Get path
-        $path = geItemReadablePath(
-            $dataItem['id_tree'],
-            $dataItem['label'],
-            $SETTINGS
-        );
-        */
-
-        /*$ret = sendEmail(
-            $lang->get('email_request_access_subject'),
-            str_replace(
-                array(
-                    '#tp_item_author#',
-                    '#tp_user#',
-                    '#tp_item#',
-                    '#tp_reason#',
-                ),
-                array(
-                    ' '.addslashes($dataAuthor['login']),
-                    addslashes($_SESSION['login']),
-                    $path,
-                    nl2br(addslashes($post_email_body)),
-                ),
-                $lang->get('email_request_access_mail')
-            ),
-            $dataAuthor['email'],
-            $SETTINGS
-        );*/
 
         // Do log
         logItems(

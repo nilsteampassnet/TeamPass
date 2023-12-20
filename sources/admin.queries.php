@@ -54,7 +54,7 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+            'type' => isset($_POST['type']) === true ? htmlspecialchars($_POST['type']) : '',
         ],
         [
             'type' => 'trim|escape',
@@ -63,14 +63,13 @@ $checkUserAccess = new PerformChecks(
     [
         'user_id' => returnIfSet($session->get('user-id'), null),
         'user_key' => returnIfSet($session->get('key'), null),
-        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
     ]
 );
 // Handle the case
 echo $checkUserAccess->caseHandler();
 if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('admin') === false) {
     // Not allowed page
-    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+    $session->set('system-error_code', ERR_NOT_ALLOWED);
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -276,12 +275,12 @@ switch ($post_type) {
             }
 
             //generate 2d key
-            $_SESSION['key_tmp'] = GenerateCryptKey(20, false, true, true, false, true, $SETTINGS);
+            $session->set('user-key_tmp', GenerateCryptKey(20, false, true, true, false, true, $SETTINGS));
 
             //update LOG
             logEvents($SETTINGS, 'admin_action', 'dataBase backup', (string) $session->get('user-id'), $session->get('user-login'));
 
-            echo '[{"result":"db_backup" , "href":"sources/downloadFile.php?name=' . urlencode($filename) . '&sub=files&file=' . $filename . '&type=sql&key=' . $session->get('key') . '&key_tmp=' . $_SESSION['key_tmp'] . '&pathIsFiles=1"}]';
+            echo '[{"result":"db_backup" , "href":"sources/downloadFile.php?name=' . urlencode($filename) . '&sub=files&file=' . $filename . '&type=sql&key=' . $session->get('key') . '&key_tmp=' . $session->get('user-key_tmp') . '&pathIsFiles=1"}]';
         }
         break;
 
@@ -710,7 +709,7 @@ switch ($post_type) {
         require_once 'main.functions.php';
 
         // store old sk
-        $_SESSION['reencrypt_old_salt'] = file_get_contents(SECUREPATH.'/'.SECUREFILE);
+        $session->set('user-reencrypt_old_salt', file_get_contents(SECUREPATH.'/'.SECUREFILE));
 
         // generate new saltkey
         $old_sk_filename = SECUREPATH.'/'.SECUREFILE . date('Y_m_d', mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'))) . '.' . time();
@@ -725,7 +724,7 @@ switch ($post_type) {
         );
 
         // store new sk
-        $_SESSION['reencrypt_new_salt'] = file_get_contents(SECUREPATH.'/'.SECUREFILE);
+        $session->set('user-reencrypt_new_salt', file_get_contents(SECUREPATH.'/'.SECUREFILE));
 
         //put tool in maintenance.
         DB::update(
@@ -767,7 +766,7 @@ switch ($post_type) {
                 'current_table' => 'old_sk',
                 'current_field' => 'old_sk',
                 'value_id' => 'old_sk',
-                'value' => $_SESSION['reencrypt_old_salt'],
+                'value' => $session->get('user-reencrypt_old_salt'),
                 'current_sql' => 'old_sk',
                 'value2' => $old_sk_filename,
                 'result' => 'none',
@@ -830,7 +829,7 @@ switch ($post_type) {
         require_once 'main.functions.php';
 
         // prepare SK
-        if (empty($_SESSION['reencrypt_new_salt']) || empty($_SESSION['reencrypt_old_salt'])) {
+        if (empty($session->get('user-reencrypt_new_salt')) === true || empty($session->get('user-reencrypt_old_salt')) === true) {
             // SK is not correct
             echo prepareExchangedData(
                 array(
@@ -893,14 +892,14 @@ switch ($post_type) {
 
                     $pw = cryption(
                         $record['pw'],
-                        $_SESSION['reencrypt_old_salt'],
+                        $session->get('user-reencrypt_old_salt'),
                         'decrypt',
                         $SETTINGS
                     );
                     //encrypt with new SALT
                     $encrypt = cryption(
                         $pw['string'],
-                        $_SESSION['reencrypt_new_salt'],
+                        $session->get('user-reencrypt_new_salt'),
                         'encrypt',
                         $SETTINGS
                     );
@@ -959,14 +958,14 @@ switch ($post_type) {
                     if (!empty($tmp[1])) {
                         $pw = cryption(
                             $tmp[1],
-                            $_SESSION['reencrypt_old_salt'],
+                            $session->get('user-reencrypt_old_salt'),
                             'decrypt',
                             $SETTINGS
                         );
                         //encrypt with new SALT
                         $encrypt = cryption(
                             $pw['string'],
-                            $_SESSION['reencrypt_new_salt'],
+                            $session->get('user-reencrypt_new_salt'),
                             'encrypt',
                             $SETTINGS
                         );
@@ -1021,14 +1020,14 @@ switch ($post_type) {
 
                     $pw = cryption(
                         $record['data'],
-                        $_SESSION['reencrypt_old_salt'],
+                        $session->get('user-reencrypt_old_salt'),
                         'decrypt',
                         $SETTINGS
                     );
                     //encrypt with new SALT
                     $encrypt = cryption(
                         $pw['string'],
-                        $_SESSION['reencrypt_new_salt'],
+                        $session->get('user-reencrypt_new_salt'),
                         'encrypt',
                         $SETTINGS
                     );
@@ -1172,8 +1171,8 @@ switch ($post_type) {
                 'nextAction' => $nextAction,
                 'nextStart' => $nextStart,
                 'nbOfItems' => $nb_of_items,
-                'oldsk' => $_SESSION['reencrypt_old_salt'],
-                'newsk' => $_SESSION['reencrypt_new_salt'],
+                'oldsk' => $session->get('user-reencrypt_old_salt'),
+                'newsk' => $session->get('user-reencrypt_new_salt'),
             ),
             'encode'
         );

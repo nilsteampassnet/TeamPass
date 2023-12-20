@@ -51,7 +51,7 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+            'type' => isset($_POST['type']) === true ? htmlspecialchars($_POST['type']) : '',
         ],
         [
             'type' => 'trim|escape',
@@ -60,14 +60,13 @@ $checkUserAccess = new PerformChecks(
     [
         'user_id' => returnIfSet($session->get('user-id'), null),
         'user_key' => returnIfSet($session->get('key'), null),
-        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
     ]
 );
 // Handle the case
 echo $checkUserAccess->caseHandler();
 if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('roles') === false) {
     // Not allowed page
-    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+    $session->set('system-error_code', ERR_NOT_ALLOWED);
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -99,7 +98,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
     // Preapre select drop list
     $('#roles-list.select2').select2({
-        language: '<?php echo $superGlobal->get('user_language_code', 'SESSION'); ?>',
+        language: '<?php echo $session->get('user-language_code'); ?>',
         placeholder: '<?php echo $lang->get('select_a_role'); ?>',
         allowClear: true
     });
@@ -112,7 +111,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
 
     $('#form-complexity-list.select2').select2({
-        language: '<?php echo $superGlobal->get('user_language_code', 'SESSION'); ?>'
+        language: '<?php echo $session->get('user-language_code'); ?>'
     });
 
     //iCheck for checkbox and radio inputs
@@ -777,7 +776,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         var selectedOption = $('#roles-list option[value=' + $('#roles-list').find(':selected').val() + ']');
                         selectedOption.remove();
                         $("#roles-list").select2({
-                            language: '<?php echo $superGlobal->get('user_language_code', 'SESSION'); ?>',
+                            language: '<?php echo $session->get('user-language_code'); ?>',
                             placeholder: '<?php echo $lang->get('select_a_role'); ?>',
                             allowClear: true
                         });
