@@ -2227,7 +2227,9 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
             toastr.remove();
             toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
 
-            clipboardOTPCode.destroy();
+            if (clipboardOTPCode) {
+                clipboardOTPCode.destroy();
+            }
 
             // Load item info
             Details(
