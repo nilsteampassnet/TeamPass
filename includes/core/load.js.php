@@ -90,7 +90,7 @@ $lang = new Language();
                     $('#date_end_session').val(data[0].new_value);
                     $('#countdown').css('color', 'white');
                 } else {
-                    $(location).attr('href', 'index.php?session=expired');
+                    //$(location).attr('href', 'index.php?session=expired');
                 }
             },
             'json'
@@ -99,7 +99,6 @@ $lang = new Language();
 
     // Start real time
     // get list of last items
-    console.log(">>>> "+store.get('teampassUser'))
     if (store.get('teampassUser') !== undefined && parseInt(store.get('teampassUser').user_id) > 0
         && String('<?php echo $session->get('key'); ?>') === store.get('teampassUser').sessionKey
         && (Date.now() - store.get('teampassUser').sessionStartTimestamp) < (store.get('teampassUser').sessionDuration * 1000)

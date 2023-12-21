@@ -2664,7 +2664,7 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
                     isNewItem: store.get('teampassItem').isNewItem,
                     isPersonal: store.get('teampassItem').folderIsPersonal,
                     edit_item: false,
-                    user_token: store.get('teampassApplication').attachmentToken,
+                    user_upload_token: store.get('teampassApplication').attachmentToken,
                     randomId: store.get('teampassApplication').uploadedFileId,
                     files_number: $('#form-item-hidden-pickFilesNumber').val(),
                     file_size: file.size

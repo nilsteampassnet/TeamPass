@@ -201,14 +201,6 @@ if (array_key_exists($get['page'], $utilitiesPages) === true) {
                 location.replace('./includes/core/logout.php');
             }
         }
-
-        //history.pushState(null, null, 'index.php?session=expired');
-        /*function preventBack() {
-            window.history.forward(); 
-        }        
-        setTimeout("preventBack()", 0);        
-        window.onunload = function () { null };
-        */
         //]]>
     </script>
 

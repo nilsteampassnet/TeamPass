@@ -217,7 +217,7 @@ if ((isset($get['session']) === true
             $session->get('user-id')
         );
     }
-
+    error_log('DEBUG: Session expired (core.php l210)');
     // REDIRECTION PAGE ERREUR
     echo '
     <script language="javascript" type="text/javascript">
