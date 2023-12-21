@@ -605,6 +605,7 @@ function identUserGetFoldersFromRoles($userRoles, $allowedFoldersByRoles, $readO
     }
     $allowedFoldersByRoles = array_unique($allowedFoldersByRoles);
     $readOnlyFolders = array_unique($readOnlyFolders);
+    
     // Clean arrays
     foreach ($allowedFoldersByRoles as $value) {
         $key = array_search($value, $readOnlyFolders);
@@ -612,7 +613,6 @@ function identUserGetFoldersFromRoles($userRoles, $allowedFoldersByRoles, $readO
             unset($readOnlyFolders[$key]);
         }
     }
-
     return [
         'readOnlyFolders' => $readOnlyFolders,
         'allowedFoldersByRoles' => $allowedFoldersByRoles

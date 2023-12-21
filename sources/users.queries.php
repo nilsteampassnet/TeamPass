@@ -1474,10 +1474,10 @@ if (null !== $post_type) {
                 'gestionnaire' => empty($post_is_manager) === true ? 0 : $post_is_manager,
                 'read_only' => empty($post_is_read_only) === true ? 0 : $post_is_read_only,
                 'personal_folder' => empty($post_has_personal_folder) === true ? 0 : $post_has_personal_folder,
-                'user-language' => $SETTINGS['default_language'],
-                'fonction_id' => is_null($post_groups) === true ? '' : implode(';', $post_groups),
-                'groupes_interdits' => is_null($post_forbidden_flds) === true ? '' : implode(';', $post_forbidden_flds),
-                'groupes_visibles' => is_null($post_allowed_flds) === true ? '' : implode(';', $post_allowed_flds),
+                'user_language' => $SETTINGS['default_language'],
+                'fonction_id' => is_null($post_groups) === true ? '' : implode(';', array_unique($post_groups)),
+                'groupes_interdits' => is_null($post_forbidden_flds) === true ? '' : implode(';', array_unique($post_forbidden_flds)),
+                'groupes_visibles' => is_null($post_allowed_flds) === true ? '' : implode(';', array_unique($post_allowed_flds)),
                 'isAdministratedByRole' => $post_is_administrated_by,
                 'can_create_root_folder' => empty($post_root_level) === true ? 0 : $post_root_level,
                 'mfa_enabled' => empty($post_mfa_enabled) === true ? 0 : $post_mfa_enabled,
@@ -2139,7 +2139,7 @@ if (null !== $post_type) {
 
             // Check user
             if (
-                null !== $session->get('user-id')
+                null === $session->get('user-id')
                 || empty($session->get('user-id')) === true
             ) {
                 echo prepareExchangedData(

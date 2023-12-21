@@ -2576,7 +2576,6 @@ switch ($inputData['type']) {
                 $pw = '';
             }
         } else {
-            error_log("DEBUG KEYS : ".$session->get('user-private_key')." ++ ".$session->get('user-public_key')." ;; ");
             $decryptedObject = decryptUserObjectKey($userKey['share_key'], $session->get('user-private_key'));
             // if null then we have an error.
             // suspecting bad password
@@ -6254,7 +6253,7 @@ switch ($inputData['type']) {
             break;
         }
         $arr_data = [];
-        $arr_folders = [];
+        $arrayFolders = [];
 
         // decrypt and retreive data in JSON format
         $dataReceived = prepareExchangedData(
@@ -6272,6 +6271,7 @@ switch ($inputData['type']) {
 
         // do we have a cache to be used?
         if (isset($dataReceived['force_refresh_cache']) === true && $dataReceived['force_refresh_cache'] === false) {
+            error_log('ici1');
             $goCachedFolders = loadFoldersListByCache('visible_folders', 'folders');
             if ($goCachedFolders['state'] === true) {
                 $arr_data['folders'] = json_decode($goCachedFolders['data'], true);
@@ -6286,7 +6286,7 @@ switch ($inputData['type']) {
                 break;
             }
         }
-
+        error_log('ici2');
         // Build list of visible folders
         if (
             (int) $session->get('user-admin') === 1
@@ -6312,8 +6312,6 @@ switch ($inputData['type']) {
         //Build tree
         $tree->rebuild();
         $folders = $tree->getDescendants();
-        $inc = 0;
-
         foreach ($folders as $folder) {
             // Be sure that user can only see folders he/she is allowed to
             if (
@@ -6341,49 +6339,42 @@ switch ($inputData['type']) {
 
                 if ($displayThisNode === true) {
                     // ALL FOLDERS
-                    // Is this folder disabled?
-                    $disabled = 0;
-                    if (
-                        in_array($folder->id, $session->get('user-accessible_folders')) === false
-                        || in_array($folder->id, $session->get('user-read_only_folders')) === true
-                        //|| ((int) $session->get('user-read_only') === 1 && in_array($folder->id, $session->get('user-personal_visible_folders')) === false)
-                    ) {
-                        $disabled = 1;
-                    }
-
                     // Build path
                     $arbo = $tree->getPath($folder->id, false);
-                    $arr_data['folders'][$inc]['path'] = '';
+                    $path = '';
                     foreach ($arbo as $elem) {
-                        if (empty($arr_data['folders'][$inc]['path']) === true) {
-                            $arr_data['folders'][$inc]['path'] = htmlspecialchars(stripslashes(htmlspecialchars_decode($elem->title, ENT_QUOTES)), ENT_QUOTES);
-                        } else {
-                            $arr_data['folders'][$inc]['path'] .= ' / ' . htmlspecialchars(stripslashes(htmlspecialchars_decode($elem->title, ENT_QUOTES)), ENT_QUOTES);
-                        }
+                        $path = (empty($path) ? '' : $path . ' / ') . htmlspecialchars(stripslashes(htmlspecialchars_decode($elem->title, ENT_QUOTES)), ENT_QUOTES);
                     }
 
                     // Build array
-                    $arr_data['folders'][$inc]['id'] = (int) $folder->id;
-                    $arr_data['folders'][$inc]['level'] = (int) $folder->nlevel;
-                    $arr_data['folders'][$inc]['title'] = ((int) $folder->title === (int) $session->get('user-id') && (int) $folder->nlevel === 1) ? htmlspecialchars_decode($session->get('user-login')) : htmlspecialchars_decode($folder->title, ENT_QUOTES);
-                    $arr_data['folders'][$inc]['disabled'] = $disabled;
-                    $arr_data['folders'][$inc]['parent_id'] = (int) $folder->parent_id;
-                    $arr_data['folders'][$inc]['perso'] = (int) $folder->personal_folder;
-                    //array_push($arr_folders, (int) $folder->id);
-
-                    // Is this folder an active folders? (where user can do something)
-                    $is_visible_active = 0;
-                    if (
-                        null !== $session->get('user-read_only_folders')
-                        && in_array($folder->id, $session->get('user-read_only_folders')) === true
-                    ) {
-                        $is_visible_active = 1;
-                    }
-                    $arr_data['folders'][$inc]['is_visible_active'] = $is_visible_active;
-
-                    ++$inc;
+                    array_push($arrayFolders, [
+                        'id' => (int) $folder->id,
+                        'level' => (int) $folder->nlevel,
+                        'title' => ((int) $folder->title === (int) $session->get('user-id') && (int) $folder->nlevel === 1) ? htmlspecialchars_decode($session->get('user-login')) : htmlspecialchars_decode($folder->title, ENT_QUOTES),
+                        'disabled' => (
+                            in_array($folder->id, $session->get('user-accessible_folders')) === false
+                            || in_array($folder->id, $session->get('user-read_only_folders')) === true
+                            //|| ((int) $session->get('user-read_only') === 1 && in_array($folder->id, $session->get('user-personal_visible_folders')) === false)
+                        ) ? 1 : 0,
+                        'parent_id' => (int) $folder->parent_id,
+                        'perso' => (int) $folder->personal_folder,
+                        'path' => $path,
+                        'is_visible_active' => (null !== $session->get('user-read_only_folders') && in_array($folder->id, $session->get('user-read_only_folders'))) ? 1 : 0,
+                    ]);
                 }
             }
+        }
+        if (empty($arrayFolders) === false) {
+            $arr_data['folders'] = $arrayFolders;
+
+            $session->set('user-folders_list', $arr_data['folders']);
+
+            cacheTreeUserHandler(
+                (int) $session->get('user-id'),
+                json_encode($arr_data['folders']),
+                $SETTINGS,
+                'visible_folders',
+            );
         }
         /*
         if (isset($arr_data['folders']) === true) {
@@ -7040,6 +7031,24 @@ switch ($inputData['type']) {
         $arr = json_decode($data['visible_folders'], true);
         $ids = is_null($arr) === true ? [] : array_column($arr, 'id');
 
+        // Is folder in Read Only list for this user?
+        if (in_array($inputData['treeId'], $session->get('user-read_only_folders')) === true) {
+            $data = array(
+                'error' => false,
+                'access' => true,
+                'edit' => false,
+                'delete' => false,
+            );
+
+            // send data
+            echo (string) prepareExchangedData(
+                $data,
+                'encode'
+            );
+            break;
+        }
+
+
         // Check rights of this role on this folder
         // Is there no edit or no delete defined
         $data = DB::queryFirstColumn(
@@ -7056,6 +7065,9 @@ switch ($inputData['type']) {
             } elseif ($access === 'NE') {
                 $edit = false;
             } elseif ($access === 'NDNE') {
+                $edit = false;
+                $delete = false;
+            } elseif ($access === 'R') {
                 $edit = false;
                 $delete = false;
             }

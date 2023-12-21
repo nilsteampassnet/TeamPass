@@ -1059,11 +1059,12 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
     }
     $session->set('user-initial_url', '');
     
-
     // LOGIN form
     include $SETTINGS['cpassman_dir'] . '/includes/core/login.php';
+} else {
+    // Clear session
+    $session->invalidate();
 }
-
     ?>
 
     <!-- Modal -->

@@ -69,7 +69,7 @@ function countdown()
     // Manage end of session
     if ($('#temps_restant').val() !== '' && DayTill <= '00:00:00' && parseInt($('#please_login').val()) !== 1) {
         $('#please_login').val('1');
-        //$(location).attr('href','index.php?session=expired');
+        $(location).attr('href','index.php?session=expired');
     }
 
     //Rewrite the string to the correct information.

@@ -41,7 +41,7 @@ try {
 } catch (Exception $e) {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
-error_log('DEBUG items.php');
+
 // Do checks
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
@@ -66,7 +66,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
-error_log('DEBUG: on continu');
 // Define Timezone
 date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
 

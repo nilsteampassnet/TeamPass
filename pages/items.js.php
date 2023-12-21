@@ -2224,7 +2224,9 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
             toastr.remove();
             toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
 
-            clipboardOTPCode.destroy();
+            if (clipboardOTPCode) {
+                clipboardOTPCode.destroy();
+            }
 
             // Load item info
             Details(
@@ -3454,7 +3456,8 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
                             '&nbsp;'.repeat(value.level) +
                             value.title + (value.path !== '' ? ' [' + value.path + ']' : '') + '</option>';
                     });
-
+console.log('--- html_visible --- ');
+console.log(html_visible);
                     // Append new list
                     $('#form-item-folder, #form-item-copy-destination, #form-folder-add-parent,' +
                             '#form-folder-delete-selection, #form-folder-copy-source, #form-folder-copy-destination')
@@ -3512,7 +3515,7 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
         } else if (action === 'update') {
             sending = JSON.stringify([folders]);
         }
-
+        console.log(folders);
         if (debugJavascript === true) {
             console.info('INPUTS for refresh_folders_other_info');
             console.log(sending);

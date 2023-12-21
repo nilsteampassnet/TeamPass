@@ -561,8 +561,8 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         }
         // store
         $session->set('user-roles', $userInfo['fonction_id']);
-        $session->set('user-roles_array', array_filter(explode(';', $userInfo['fonction_id'])));
-        error_log('user-roles_array 1: ' . print_r(explode(';', $userInfo['fonction_id']), true));
+        $session->set('user-roles_array', array_unique(array_filter(explode(';', $userInfo['fonction_id']))));
+        
         // build array of roles
         $session->set('user-pw_complexity', 0);
         $session->set('system-array_roles', []);

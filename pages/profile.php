@@ -177,7 +177,7 @@ foreach ($session->get('user-roles_array') as $role) {
                         </h3>
 
                         <p class="text-info text-center"><?php echo $session->get('user-email'); ?></p>
-                        <p class="text-muted text-center"><?php echo $server->get('user_privilege'); ?></p>
+                        <p class="text-muted text-center"><?php echo $session->get('user-privilege'); ?></p>
 
                         <ul class="list-group list-group-unbordered mb-3">
                             <li class="list-group-item">
