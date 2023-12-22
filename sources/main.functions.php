@@ -3330,6 +3330,7 @@ function cacheTreeUserHandler(int $user_id, string $data, array $SETTINGS, strin
                 'increment_id = %i',
                 $userCacheId['increment_id']
             );
+        /* USELESS
         } else {
             DB::update(
                 prefixTable('cache_tree'),
@@ -3338,7 +3339,7 @@ function cacheTreeUserHandler(int $user_id, string $data, array $SETTINGS, strin
                 ],
                 'increment_id = %i',
                 $userCacheId['increment_id']
-            );
+            );*/
         }
     }
 }

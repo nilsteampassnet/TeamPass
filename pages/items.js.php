@@ -2577,69 +2577,72 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
     /**
      * PLUPLOAD
      */
+    <?php
+    $max_file_size = '';
+    if (strrpos($SETTINGS['upload_maxfilesize'], 'mb') === false) {
+        $max_file_size = $SETTINGS['upload_maxfilesize'] . 'mb';
+    } else {
+        $max_file_size = $SETTINGS['upload_maxfilesize'];
+    }
+
+    $mime_types = [];
+    if (
+        isset($SETTINGS['upload_all_extensions_file']) === false
+        || (isset($SETTINGS['upload_all_extensions_file']) === true
+            && (int) $SETTINGS['upload_all_extensions_file'] === 0)
+    ) {
+        $mime_types = [
+            [
+                'title' => 'Image files',
+                'extensions' => $SETTINGS['upload_imagesext']
+            ],
+            [
+                'title' => 'Package files',
+                'extensions' => $SETTINGS['upload_pkgext']
+            ],
+            [
+                'title' => 'Documents files',
+                'extensions' => $SETTINGS['upload_docext']
+            ],
+            [
+                'title' => 'Other files',
+                'extensions' => $SETTINGS['upload_otherext']
+            ]
+        ];
+    }
+
+    $prevent_empty = isset($SETTINGS['upload_zero_byte_file']) === true && (int) $SETTINGS['upload_zero_byte_file'] === 1 ? false : true;
+
+    $resize = null;
+    if ((int) $SETTINGS['upload_imageresize_options'] === 1) {
+        $resize = [
+            'width' => $SETTINGS['upload_imageresize_width'],
+            'height' => $SETTINGS['upload_imageresize_height'],
+            'quality' => $SETTINGS['upload_imageresize_quality']
+        ];
+    }
+    ?>
+
+    var max_file_size = '<?php echo $max_file_size; ?>';
+    var mime_types = <?php echo json_encode($mime_types); ?>;
+    var prevent_empty = <?php echo json_encode($prevent_empty); ?>;
+    var resize = <?php echo json_encode($resize); ?>;
+
     var uploader_attachments = new plupload.Uploader({
         runtimes: 'html5,flash,silverlight,html4',
         browse_button: 'form-item-attach-pickfiles',
         container: 'form-item-upload-zone',
-        max_file_size: '<?php
-            if (strrpos($SETTINGS['upload_maxfilesize'], 'mb') === false) {
-                echo $SETTINGS['upload_maxfilesize'] . 'mb';
-            } else {
-                echo $SETTINGS['upload_maxfilesize'];
-            }
-            ?>',
+        max_file_size: max_file_size,
         chunk_size: '1mb',
         dragdrop: true,
         url: '<?php echo $SETTINGS['cpassman_url']; ?>/sources/upload.attachments.php',
         flash_swf_url: '<?php echo $SETTINGS['cpassman_url']; ?>/includes/libraries/plupload/js/Moxie.swf',
         silverlight_xap_url: '<?php echo $SETTINGS['cpassman_url']; ?>/includes/libraries/plupload/js/Moxie.xap',
         filters: {
-            mime_types: [
-                <?php
-                if (
-                    isset($SETTINGS['upload_all_extensions_file']) === false
-                    || (isset($SETTINGS['upload_all_extensions_file']) === true
-                        && (int) $SETTINGS['upload_all_extensions_file'] === 0)
-                ) {
-                    ?> {
-                        title: 'Image files',
-                        extensions: '<?php echo $SETTINGS['upload_imagesext']; ?>'
-                    },
-                    {
-                        title: 'Package files',
-                        extensions: '<?php echo $SETTINGS['upload_pkgext']; ?>'
-                    },
-                    {
-                        title: 'Documents files',
-                        extensions: '<?php echo $SETTINGS['upload_docext']; ?>'
-                    },
-                    {
-                        title: 'Other files',
-                        extensions: '<?php echo $SETTINGS['upload_otherext']; ?>'
-                    }
-                <?php
-                }
-                ?>
-            ],
-            <?php
-            if (isset($SETTINGS['upload_zero_byte_file']) === true && (int) $SETTINGS['upload_zero_byte_file'] === 1) {
-                ?>
-                prevent_empty: false
-            <?php
-            }
-            ?>
+            mime_types: mime_types,
+            prevent_empty: prevent_empty
         },
-        <?php
-        if ((int) $SETTINGS['upload_imageresize_options'] === 1) {
-            ?>
-            resize: {
-                width: <?php echo $SETTINGS['upload_imageresize_width']; ?>,
-                height: <?php echo $SETTINGS['upload_imageresize_height']; ?>,
-                quality: <?php echo $SETTINGS['upload_imageresize_quality']; ?>
-            },
-        <?php
-        }
-        ?>
+        resize: resize,
         init: {
             BeforeUpload: function(up, file) {
                 toastr.info(
@@ -3456,8 +3459,7 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
                             '&nbsp;'.repeat(value.level) +
                             value.title + (value.path !== '' ? ' [' + value.path + ']' : '') + '</option>';
                     });
-console.log('--- html_visible --- ');
-console.log(html_visible);
+                    
                     // Append new list
                     $('#form-item-folder, #form-item-copy-destination, #form-folder-add-parent,' +
                             '#form-folder-delete-selection, #form-folder-copy-source, #form-folder-copy-destination')

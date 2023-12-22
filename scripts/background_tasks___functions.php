@@ -128,13 +128,13 @@ function performVisibleFoldersHtmlUpdate (int $user_id)
         array_push(
             $html,
             [
-                "path" => $path,
                 "id" => $idFolder,
                 "level" => count($tree_path),
                 "title" => $folder['title'],
                 "disabled" => 0,
                 "parent_id" => $folder['parent_id'],
                 "perso" => $folder['personal_folder'],
+                "path" => $path,
                 "is_visible_active" => 1,
             ]
         );

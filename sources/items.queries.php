@@ -6308,7 +6308,7 @@ switch ($inputData['type']) {
         } else {
             $listRestrictedFoldersForItemsKeys = array();
         }
-
+        
         //Build tree
         $tree->rebuild();
         $folders = $tree->getDescendants();
@@ -6365,10 +6365,13 @@ switch ($inputData['type']) {
             }
         }
         if (empty($arrayFolders) === false) {
+            // store array to return
             $arr_data['folders'] = $arrayFolders;
 
+            // update session
             $session->set('user-folders_list', $arr_data['folders']);
 
+            // update cache
             cacheTreeUserHandler(
                 (int) $session->get('user-id'),
                 json_encode($arr_data['folders']),
@@ -6376,25 +6379,6 @@ switch ($inputData['type']) {
                 'visible_folders',
             );
         }
-        /*
-        if (isset($arr_data['folders']) === true) {
-            // save to cache_tree
-            cacheTreeUserHandler(
-                (int) $session->get('user-id'),
-                json_encode($arr_data['folders']),
-                $SETTINGS,
-                'visible_folders',
-            );
-
-            // save to cache_tree
-            cacheTreeUserHandler(
-                (int) $session->get('user-id'),
-                json_encode($arr_folders),
-                $SETTINGS,
-                'folders',
-            );
-        }
-        */
 
         // send data
         echo (string) prepareExchangedData(
