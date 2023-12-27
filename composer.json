@@ -74,6 +74,13 @@
             "options": {
                 "symlink": false
             }
+        },
+        {
+            "type": "path",
+            "url": "includes/libraries/teampassclasses/ldapextra",
+            "options": {
+                "symlink": false
+            }
         }
     ],
     "require": {
@@ -117,6 +124,7 @@
         "teampassclasses/performchecks": "dev-master",
         "teampassclasses/encryption": "dev-master",
         "teampassclasses/language": "dev-master",
+        "teampassclasses/ldapextra": "dev-master",
         "duosecurity/duo_universal_php": "^1.0",
         "spomky-labs/otphp": "^11.2"
     }

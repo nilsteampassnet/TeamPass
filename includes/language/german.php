@@ -1150,5 +1150,7 @@ return array(
     'at_otp_status' => 'OTP status',
     'phone_number' => 'Related phone number (optional)',
     'otp_secret' => 'OTP secret key',
+    'settings_ldap_group_objectclasses_attibute' => 'AD Group ObjectClasses attribute',
+    'settings_ldap_group_objectclasses_attibute_tip' => 'Les objectClasses à utiliser pour rechercher les groupes. Plusieurs objectClasses sont séparés par une virgule(,). Exemples : groupOfNames,group outop,posixGroup',
 
 );

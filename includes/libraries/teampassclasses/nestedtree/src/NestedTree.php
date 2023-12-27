@@ -21,6 +21,12 @@ namespace TeampassClasses\NestedTree;
 
 class NestedTree
 {
+    protected $table;
+    protected $idField;
+    protected $parentField;
+    protected $fields;
+    protected $link;
+
     /**
      * Constructor. Set the database table name and necessary field names.
      *

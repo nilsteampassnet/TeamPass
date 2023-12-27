@@ -125,6 +125,16 @@ mysqli_query(
     'ALTER TABLE `' . $pre . 'ldap_groups_roles` CHANGE `ldap_group_id` `ldap_group_id` VARCHAR(500) NOT NULL;'
 );
 
+
+// Add new setting 'ldap_group_objectclasses_attibute'
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'ldap_group_objectclasses_attibute'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'ldap_group_objectclasses_attibute', 'top,groupofuniquenames')"
+    );
+}
+
 //---<END 3.1.1
 
 //---------------------------------------------------------------------

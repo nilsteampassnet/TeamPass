@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "03e73eb43898c12527e3d290ba9e07e7",
+    "content-hash": "f07602465b3861b2835165f78846a201",
     "packages": [
         {
             "name": "brick/math",
@@ -63,16 +63,16 @@
         },
         {
             "name": "carbonphp/carbon-doctrine-types",
-            "version": "3.0.0",
+            "version": "3.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/CarbonPHP/carbon-doctrine-types.git",
-                "reference": "49856fbc09fe91b5433381faec60e3620ad364ad"
+                "reference": "a31d3358a2a5d6ae947df1691d1f321418a5f3d5"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/CarbonPHP/carbon-doctrine-types/zipball/49856fbc09fe91b5433381faec60e3620ad364ad",
-                "reference": "49856fbc09fe91b5433381faec60e3620ad364ad",
+                "url": "https://api.github.com/repos/CarbonPHP/carbon-doctrine-types/zipball/a31d3358a2a5d6ae947df1691d1f321418a5f3d5",
+                "reference": "a31d3358a2a5d6ae947df1691d1f321418a5f3d5",
                 "shasum": ""
             },
             "require": {
@@ -112,7 +112,7 @@
             ],
             "support": {
                 "issues": "https://github.com/CarbonPHP/carbon-doctrine-types/issues",
-                "source": "https://github.com/CarbonPHP/carbon-doctrine-types/tree/3.0.0"
+                "source": "https://github.com/CarbonPHP/carbon-doctrine-types/tree/3.1.0"
             },
             "funding": [
                 {
@@ -128,7 +128,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2023-10-01T14:36:55+00:00"
+            "time": "2023-12-10T15:33:53+00:00"
         },
         {
             "name": "defuse/php-encryption",
@@ -931,16 +931,16 @@
         },
         {
             "name": "illuminate/collections",
-            "version": "v10.35.0",
+            "version": "v10.39.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/collections.git",
-                "reference": "8e4c4f97ea066cd6aec962ef8a6abc09dfd5e754"
+                "reference": "63fc240a047788fbc2ebe153de85cb72fce88440"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/illuminate/collections/zipball/8e4c4f97ea066cd6aec962ef8a6abc09dfd5e754",
-                "reference": "8e4c4f97ea066cd6aec962ef8a6abc09dfd5e754",
+                "url": "https://api.github.com/repos/illuminate/collections/zipball/63fc240a047788fbc2ebe153de85cb72fce88440",
+                "reference": "63fc240a047788fbc2ebe153de85cb72fce88440",
                 "shasum": ""
             },
             "require": {
@@ -982,11 +982,11 @@
                 "issues": "https://github.com/laravel/framework/issues",
                 "source": "https://github.com/laravel/framework"
             },
-            "time": "2023-11-27T14:46:52+00:00"
+            "time": "2023-12-21T14:17:35+00:00"
         },
         {
             "name": "illuminate/conditionable",
-            "version": "v10.35.0",
+            "version": "v10.39.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/conditionable.git",
@@ -1032,7 +1032,7 @@
         },
         {
             "name": "illuminate/container",
-            "version": "v10.35.0",
+            "version": "v10.39.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/container.git",
@@ -1083,7 +1083,7 @@
         },
         {
             "name": "illuminate/contracts",
-            "version": "v10.35.0",
+            "version": "v10.39.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/contracts.git",
@@ -1131,16 +1131,16 @@
         },
         {
             "name": "illuminate/filesystem",
-            "version": "v10.35.0",
+            "version": "v10.39.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/filesystem.git",
-                "reference": "8a412afd1b56f762aafe2747d5e2b79267f97436"
+                "reference": "c765c61cf1308d4f5f3dc3c03ed5f920953b795c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/illuminate/filesystem/zipball/8a412afd1b56f762aafe2747d5e2b79267f97436",
-                "reference": "8a412afd1b56f762aafe2747d5e2b79267f97436",
+                "url": "https://api.github.com/repos/illuminate/filesystem/zipball/c765c61cf1308d4f5f3dc3c03ed5f920953b795c",
+                "reference": "c765c61cf1308d4f5f3dc3c03ed5f920953b795c",
                 "shasum": ""
             },
             "require": {
@@ -1171,6 +1171,9 @@
                 }
             },
             "autoload": {
+                "files": [
+                    "functions.php"
+                ],
                 "psr-4": {
                     "Illuminate\\Filesystem\\": ""
                 }
@@ -1191,11 +1194,11 @@
                 "issues": "https://github.com/laravel/framework/issues",
                 "source": "https://github.com/laravel/framework"
             },
-            "time": "2023-11-08T14:19:58+00:00"
+            "time": "2023-12-21T15:30:21+00:00"
         },
         {
             "name": "illuminate/macroable",
-            "version": "v10.35.0",
+            "version": "v10.39.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/macroable.git",
@@ -1241,16 +1244,16 @@
         },
         {
             "name": "illuminate/support",
-            "version": "v10.35.0",
+            "version": "v10.39.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/support.git",
-                "reference": "84fd6e3a041c93bf8dca1349caf994023ee5c9e0"
+                "reference": "6705007f24091863fefdf1f9320ac2c121cf37f1"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/illuminate/support/zipball/84fd6e3a041c93bf8dca1349caf994023ee5c9e0",
-                "reference": "84fd6e3a041c93bf8dca1349caf994023ee5c9e0",
+                "url": "https://api.github.com/repos/illuminate/support/zipball/6705007f24091863fefdf1f9320ac2c121cf37f1",
+                "reference": "6705007f24091863fefdf1f9320ac2c121cf37f1",
                 "shasum": ""
             },
             "require": {
@@ -1308,20 +1311,20 @@
                 "issues": "https://github.com/laravel/framework/issues",
                 "source": "https://github.com/laravel/framework"
             },
-            "time": "2023-12-04T22:26:42+00:00"
+            "time": "2023-12-25T01:11:56+00:00"
         },
         {
             "name": "illuminate/translation",
-            "version": "v10.35.0",
+            "version": "v10.39.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/translation.git",
-                "reference": "7579bd97c6e0a746d1309b5c27803cb8dfc961fe"
+                "reference": "9df0066e77e0d2afcc9a23838ee52e2542530682"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/illuminate/translation/zipball/7579bd97c6e0a746d1309b5c27803cb8dfc961fe",
-                "reference": "7579bd97c6e0a746d1309b5c27803cb8dfc961fe",
+                "url": "https://api.github.com/repos/illuminate/translation/zipball/9df0066e77e0d2afcc9a23838ee52e2542530682",
+                "reference": "9df0066e77e0d2afcc9a23838ee52e2542530682",
                 "shasum": ""
             },
             "require": {
@@ -1359,20 +1362,20 @@
                 "issues": "https://github.com/laravel/framework/issues",
                 "source": "https://github.com/laravel/framework"
             },
-            "time": "2023-11-22T15:44:28+00:00"
+            "time": "2023-12-12T14:56:20+00:00"
         },
         {
             "name": "illuminate/validation",
-            "version": "v10.35.0",
+            "version": "v10.39.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/validation.git",
-                "reference": "8458748fe2b5fcac81a8b48f3752793f9d734bad"
+                "reference": "e8bf04e6a76120743a39c2b1f0d4d00924bbc9db"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/illuminate/validation/zipball/8458748fe2b5fcac81a8b48f3752793f9d734bad",
-                "reference": "8458748fe2b5fcac81a8b48f3752793f9d734bad",
+                "url": "https://api.github.com/repos/illuminate/validation/zipball/e8bf04e6a76120743a39c2b1f0d4d00924bbc9db",
+                "reference": "e8bf04e6a76120743a39c2b1f0d4d00924bbc9db",
                 "shasum": ""
             },
             "require": {
@@ -1420,7 +1423,7 @@
                 "issues": "https://github.com/laravel/framework/issues",
                 "source": "https://github.com/laravel/framework"
             },
-            "time": "2023-11-30T22:32:43+00:00"
+            "time": "2023-12-23T15:07:45+00:00"
         },
         {
             "name": "moxiecode/plupload",
@@ -3870,6 +3873,41 @@
             }
         },
         {
+            "name": "teampassclasses/ldapextra",
+            "version": "dev-master",
+            "dist": {
+                "type": "path",
+                "url": "includes/libraries/teampassclasses/ldapextra",
+                "reference": "81f049be19cfd37f81cc45b50d0d70ce611f67ee"
+            },
+            "require": {
+                "php": "^7.4 || ^8.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "TeampassClasses\\LdapExtra\\": "src/"
+                }
+            },
+            "license": [
+                "GPL-3.0-only"
+            ],
+            "authors": [
+                {
+                    "name": "Nils Laumaillé"
+                }
+            ],
+            "description": "Extended LDAP functionalities for OpenLDAP and Active Directory.",
+            "keywords": [
+                "nested",
+                "tree"
+            ],
+            "transport-options": {
+                "symlink": false,
+                "relative": true
+            }
+        },
+        {
             "name": "teampassclasses/nestedtree",
             "version": "dev-master",
             "dist": {
@@ -4476,7 +4514,8 @@
         "ezimuel/php-secure-session": 20,
         "teampassclasses/performchecks": 20,
         "teampassclasses/encryption": 20,
-        "teampassclasses/language": 20
+        "teampassclasses/language": 20,
+        "teampassclasses/ldapextra": 20
     },
     "prefer-stable": true,
     "prefer-lowest": false,

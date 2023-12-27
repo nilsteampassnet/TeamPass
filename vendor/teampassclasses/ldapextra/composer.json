@@ -1,0 +1,23 @@
+{
+    "name": "teampassclasses/ldapextra",
+    "description": "Extended LDAP functionalities for OpenLDAP and Active Directory.",
+    "type": "library",
+    "license": "GPL-3.0-only",
+    "keywords": [
+        "nested",
+        "tree"
+    ],
+    "authors": [
+        {
+            "name": "Nils Laumaillé"
+        }
+    ],
+    "require": {
+        "php": "^7.4 || ^8.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "TeampassClasses\\LdapExtra\\": "src/"
+        }
+    }
+}
