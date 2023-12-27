@@ -15,6 +15,7 @@ class ComposerStaticInitf8d0a111ac97059c58e49ca16fe551d0
         'a1105708a18b76903365ca1c4aa61b02' => __DIR__ . '/..' . '/symfony/translation/Resources/functions.php',
         'f598d06aa772fa33d905e87be6398fb1' => __DIR__ . '/..' . '/symfony/polyfill-intl-idn/bootstrap.php',
         '72579e7bd17821bb1321b87411366eae' => __DIR__ . '/..' . '/illuminate/support/helpers.php',
+        '06a34129a50df3d9257ee706cf3c875b' => __DIR__ . '/..' . '/illuminate/filesystem/functions.php',
         '662a729f963d39afe703c9d9b7ab4a8c' => __DIR__ . '/..' . '/symfony/polyfill-php83/bootstrap.php',
         'def43f6c87e4f8dfd0c9e1b1bab14fe8' => __DIR__ . '/..' . '/symfony/polyfill-iconv/bootstrap.php',
         '8825ede83f2f289127722d4e842cf7e8' => __DIR__ . '/..' . '/symfony/polyfill-intl-grapheme/bootstrap.php',
@@ -45,6 +46,7 @@ class ComposerStaticInitf8d0a111ac97059c58e49ca16fe551d0
             'TeampassClasses\\SessionManager\\' => 31,
             'TeampassClasses\\PerformChecks\\' => 30,
             'TeampassClasses\\NestedTree\\' => 27,
+            'TeampassClasses\\LdapExtra\\' => 26,
             'TeampassClasses\\Language\\' => 25,
             'TeampassClasses\\Encryption\\' => 27,
         ),
@@ -172,6 +174,10 @@ class ComposerStaticInitf8d0a111ac97059c58e49ca16fe551d0
         'TeampassClasses\\NestedTree\\' => 
         array (
             0 => __DIR__ . '/..' . '/teampassclasses/nestedtree/src',
+        ),
+        'TeampassClasses\\LdapExtra\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/teampassclasses/ldapextra/src',
         ),
         'TeampassClasses\\Language\\' => 
         array (
@@ -1855,6 +1861,9 @@ class ComposerStaticInitf8d0a111ac97059c58e49ca16fe551d0
         'TCPDF_STATIC' => __DIR__ . '/..' . '/tecnickcom/tcpdf/include/tcpdf_static.php',
         'TeampassClasses\\Encryption\\Encryption' => __DIR__ . '/..' . '/teampassclasses/encryption/src/Encryption.php',
         'TeampassClasses\\Language\\Language' => __DIR__ . '/..' . '/teampassclasses/language/src/Language.php',
+        'TeampassClasses\\LdapExtra\\ActiveDirectoryExtra' => __DIR__ . '/..' . '/teampassclasses/ldapextra/src/ActiveDirectoryExtra.php',
+        'TeampassClasses\\LdapExtra\\LdapExtra' => __DIR__ . '/..' . '/teampassclasses/ldapextra/src/LdapExtra.php',
+        'TeampassClasses\\LdapExtra\\OpenLdapExtra' => __DIR__ . '/..' . '/teampassclasses/ldapextra/src/OpenLdapExtra.php',
         'TeampassClasses\\NestedTree\\NestedTree' => __DIR__ . '/..' . '/teampassclasses/nestedtree/src/NestedTree.php',
         'TeampassClasses\\PerformChecks\\PerformChecks' => __DIR__ . '/..' . '/teampassclasses/performchecks/src/PerformChecks.php',
         'TeampassClasses\\SessionManager\\SessionManager' => __DIR__ . '/..' . '/teampassclasses/sessionmanager/src/SessionManager.php',

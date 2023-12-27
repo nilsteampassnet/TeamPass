@@ -38,6 +38,9 @@ use PasswordLib\PasswordLib;
 use Duo\DuoUniversal\Client;
 use Duo\DuoUniversal\DuoException;
 use RobThree\Auth\TwoFactorAuth;
+use TeampassClasses\LdapExtra\LdapExtra;
+use TeampassClasses\LdapExtra\OpenLdapExtra;
+use TeampassClasses\LdapExtra\ActiveDirectoryExtra;
 
 // Load functions
 require_once 'main.functions.php';
@@ -1160,44 +1163,45 @@ function checkUserPasswordValidity($userInfo, $numDaysBeforePwExpiration, $lastP
 function authenticateThroughAD(string $username, array $userInfo, string $passwordClear, array $SETTINGS): array
 {
     $lang = new Language(); 
-    // Build ldap configuration array
-    $config = [
-        // Mandatory Configuration Options
-        'hosts' => explode(',', $SETTINGS['ldap_hosts']),
-        'base_dn' => $SETTINGS['ldap_bdn'],
-        'username' => $SETTINGS['ldap_username'],
-        'password' => $SETTINGS['ldap_password'],
-        // Optional Configuration Options
-        'port' => $SETTINGS['ldap_port'],
-        'use_ssl' => (int) $SETTINGS['ldap_ssl'] === 1 ? true : false,
-        'use_tls' => (int) $SETTINGS['ldap_tls'] === 1 ? true : false,
-        'version' => 3,
-        'timeout' => 5,
-        'follow_referrals' => false,
-        // Custom LDAP Options
-        'options' => [
-            // See: http://php.net/ldap_set_option
-            LDAP_OPT_X_TLS_REQUIRE_CERT => isset($SETTINGS['ldap_tls_certifacte_check']) === false ? 'LDAP_OPT_X_TLS_NEVER' : $SETTINGS['ldap_tls_certifacte_check'],
-        ],
-    ];
+
+    // 1- Connect to LDAP
+    try {
+        switch ($SETTINGS['ldap_type']) {
+            case 'ActiveDirectory':
+                $ldapExtra = new LdapExtra($SETTINGS);
+                $ldapConnection = $ldapExtra->establishLdapConnection();
+                $activeDirectoryExtra = new ActiveDirectoryExtra();
+                break;
+            case 'OpenLDAP':
+                // Establish connection for OpenLDAP
+                $ldapExtra = new LdapExtra($SETTINGS);
+                $ldapConnection = $ldapExtra->establishLdapConnection();
+
+                // Create an instance of OpenLdapExtra and configure it
+                $openLdapExtra = new OpenLdapExtra();
+                break;
+            default:
+                throw new Exception("Unsupported LDAP type: " . $SETTINGS['ldap_type']);
+        }
+    } catch (Exception $e) {
+        echo prepareExchangedData(array(
+            'error' => true,
+            'message' => $e->getMessage(),
+        ), 'encode');
+        exit;
+    }
     
     try {
-        // 1- Connect to LDAP
-        $connection = new Connection($config);
-        $connection->connect();
-        Container::addConnection($connection);
-
         // 2- Get user info from AD
         // We want to isolate attribute ldap_user_attribute or mostly samAccountName
-        $userADInfos = $connection->query()
+        $userADInfos = $ldapConnection->query()
             ->where((isset($SETTINGS['ldap_user_attribute']) ===true && empty($SETTINGS['ldap_user_attribute']) === false) ? $SETTINGS['ldap_user_attribute'] : 'samaccountname', '=', $username)
             ->firstOrFail();
 
         // Is user enabled? Only ActiveDirectory
-        if ($SETTINGS['ldap_type'] === 'ActiveDirectory') {
-            require_once 'ldap.activedirectory.php';
-
-            if (userIsEnabled((string) $userADInfos['dn'], $connection) === false) {
+        if ($SETTINGS['ldap_type'] === 'ActiveDirectory' && isset($activeDirectoryExtra) && $activeDirectoryExtra instanceof ActiveDirectoryExtra) {
+            //require_once 'ldap.activedirectory.php';
+            if ($activeDirectoryExtra->userIsEnabled((string) $userADInfos['dn'], $ldapConnection) === false) {
                 return [
                     'error' => true,
                     'message' => "Error : User is not enabled",
@@ -1205,36 +1209,10 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
             }
         }
 
-        // Determining Auth Failure Cause
-        $message = '';
-        /*
-        // REQUIRES LIBRARY version 3.x
-        $dispatcher = Container::getDispatcher();
-        $dispatcher->listen(Failed::class, function (Failed $event) use (&$message) {
-            $ldap = $event->getConnection();
-        
-            // The diagnostic message will be available here.
-            $error = $ldap->getDiagnosticMessage();
-            if ($error !== null) {
-                if (strpos($error, '532') !== false) {
-                    $message = 'Your password has expired.';
-                } elseif (strpos($error, '533') !== false) {
-                    $message = 'Your account is disabled.';
-                } elseif (strpos($error, '701') !== false) {
-                    $message = 'Your account has expired.';
-                } elseif (strpos($error, '775') !== false) {
-                    $message = 'Your account is locked.';
-                } else {
-                    $message = 'Username or password is incorrect.';
-                }
-            }
-        });
-        */
-
         // 3- User auth attempt
         // For AD, we use attribute userPrincipalName
         // For OpenLDAP and others, we use attribute dn
-        $userAuthAttempt = $connection->auth()->attempt(
+        $userAuthAttempt = $ldapConnection->auth()->attempt(
             $SETTINGS['ldap_type'] === 'ActiveDirectory' ?
                 $userADInfos['userprincipalname'][0] :  // refering to https://ldaprecord.com/docs/core/v2/authentication#basic-authentication
                 $userADInfos['dn'],
@@ -1245,7 +1223,7 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
         if ($userAuthAttempt === false) {
             return [
                 'error' => true,
-                'message' => "Error: ".$message,
+                'message' => "Error: User is not authenticated",
             ];
         }
 
@@ -1302,23 +1280,30 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
     }
 
     // Update user info with his AD groups
-    if ($SETTINGS['ldap_type'] === 'ActiveDirectory') {
-        require_once 'ldap.activedirectory.php';
+    if ($SETTINGS['ldap_type'] === 'ActiveDirectory' && isset($activeDirectoryExtra) && $activeDirectoryExtra instanceof ActiveDirectoryExtra) {
+        $userGroupsData = $activeDirectoryExtra->getUserADGroups(
+            $userADInfos[(isset($SETTINGS['ldap_user_dn_attribute']) === true && empty($SETTINGS['ldap_user_dn_attribute']) === false) ? $SETTINGS['ldap_user_dn_attribute'] : 'distinguishedname'][0], 
+            $ldapConnection, 
+            $SETTINGS
+        );
+    } elseif ($SETTINGS['ldap_type'] == 'OpenLDAP' && isset($openLdapExtra) && $openLdapExtra instanceof OpenLdapExtra) {
+        $userGroupsData = $openLdapExtra->getUserADGroups(
+            $userADInfos['dn'],
+            $ldapConnection,
+            $SETTINGS
+        );
     } else {
-        require_once 'ldap.openldap.php';
+        // error
+        return [
+            'error' => true,
+            'message' => "Error: Unsupported LDAP type: " . $SETTINGS['ldap_type'],
+        ];
     }
-    $ret = getUserADGroups(
-        $SETTINGS['ldap_type'] === 'ActiveDirectory' ?
-            $userADInfos[(isset($SETTINGS['ldap_user_dn_attribute']) === true && empty($SETTINGS['ldap_user_dn_attribute']) === false) ? $SETTINGS['ldap_user_dn_attribute'] : 'distinguishedname'][0] :
-            $userADInfos['dn'], 
-        $connection, 
-        $SETTINGS
-    );
     
     handleUserADGroups(
         $username,
         $userInfo,
-        $ret['userGroups'],
+        $userGroupsData['userGroups'],
         $SETTINGS
     );
 

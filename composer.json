@@ -81,6 +81,13 @@
             "options": {
                 "symlink": false
             }
+        },
+        {
+            "type": "path",
+            "url": "includes/libraries/teampassclasses/ldapextra",
+            "options": {
+                "symlink": false
+            }
         }
     ],
     "require": {
@@ -127,6 +134,7 @@
         "duosecurity/duo_universal_php": "^1.0",
         "spomky-labs/otphp": "^11.2",
         "symfony/http-foundation": "^6.4",
-        "teampassclasses/sessionmanager": "dev-master"
+        "teampassclasses/sessionmanager": "dev-master",        
+        "teampassclasses/ldapextra": "dev-master"
     }
 }

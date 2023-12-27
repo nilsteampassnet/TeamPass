@@ -24,7 +24,9 @@ use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use TeampassClasses\PerformChecks\PerformChecks;
-
+use TeampassClasses\LdapExtra\LdapExtra;
+use TeampassClasses\LdapExtra\OpenLdapExtra;
+use TeampassClasses\LdapExtra\ActiveDirectoryExtra;
 
 // Load functions
 require_once 'main.functions.php';
@@ -693,104 +695,72 @@ if (null !== $post_type) {
                 break;
             }
 
-            // load libraries
-            require_once __DIR__.'/../vendor/autoload.php';
 
-            // Build ldap configuration array
-            $config = [
-                // Mandatory Configuration Options
-                'hosts'            => explode(',', $SETTINGS['ldap_hosts']),
-                'base_dn'          => $SETTINGS['ldap_bdn'],
-                'username'         => $SETTINGS['ldap_username'],
-                'password'         => $SETTINGS['ldap_password'],
-            
-                // Optional Configuration Options
-                'port'             => $SETTINGS['ldap_port'],
-                'use_ssl'          => (int) $SETTINGS['ldap_ssl'] === 1 ? true : false,
-                'use_tls'          => (int) $SETTINGS['ldap_tls'] === 1 ? true : false,
-                'version'          => 3,
-                'timeout'          => 5,
-                'follow_referrals' => false,
-            
-                // Custom LDAP Options
-                'options' => [
-                    // See: http://php.net/ldap_set_option
-                    LDAP_OPT_X_TLS_REQUIRE_CERT => (isset($SETTINGS['ldap_tls_certiface_check']) ? $SETTINGS['ldap_tls_certiface_check'] : LDAP_OPT_X_TLS_HARD),
-                ]
-            ];
-
-            $connection = new Connection($config);
-
-            // Connect to LDAP
-            try {
-                $connection->connect();
-            
-            } catch (\LdapRecord\Auth\BindException $e) {
-                $error = $e->getDetailedError();
-
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => "Error : ".$error->getErrorCode()." - ".$error->getErrorMessage(). "<br>".$error->getDiagnosticMessage(),
-                    ),
-                    'encode'
-                );
-                break;
-            }
-
-            // prepare groups criteria
-            $pattern = '/\((.*?)\)/'; // matches anything inside parentheses
-            // finds all matches and saves them to $matches array
-            preg_match_all(
-                $pattern,
-                $SETTINGS['ldap_group_object_filter'],
-                $matches
-            );
-            $searchCriteria = [];
-            foreach($matches[0] as $match) {
-                $parts = [];
-                if (!str_contains($match, ',')) {
-                    $tmp = explode("=", trim($match, '()'));
-                    $parts = [$tmp[0], '=', $tmp[1]];
-                } else {
-                    $parts = explode(",", trim($match, '()'));
-                }
-                $searchCriteria[] = $parts;
-            }
-            
-            $retGroups = $connection->query()->where($searchCriteria)->get();
-            //error_log("Contenu de l'array : " . print_r($retGroups, true));
-            // check if synched with roles in Teampass
+            // Initialisation de la connexion LDAP et des paramètres
+            $connection = null;
+            $ldapExtra = null;
             $retAD = [];
-            foreach($retGroups as $key => $group) {
-                // exists in Teampass
-                $role_detail = DB::queryfirstrow(
-                    'SELECT a.increment_id, a.role_id, r.title
-                    FROM '.prefixTable('ldap_groups_roles').' AS a
-                    INNER JOIN '.prefixTable('roles_title').' AS r ON r.id = a.role_id
-                    WHERE ldap_group_id = %s',
-                    $group[(isset($SETTINGS['ldap_guid_attibute']) === true && empty($SETTINGS['ldap_guid_attibute']) === false ? $SETTINGS['ldap_guid_attibute']: 'gidnumber')][0]
-                );
-                $counter = DB::count();
 
-                if ($counter > 0) {
-                    $retGroups[$key]['teampass_role_id'] = $role_detail['role_id'];
-                } else {
-                    $retGroups[$key]['teampass_role_id'] = 0;
+            try {
+                switch ($SETTINGS['ldap_type']) {
+                    case 'ActiveDirectory':
+                        $ldapExtra = new LdapExtra($SETTINGS);
+                        $ldapConnection = $ldapExtra->establishLdapConnection();
+
+                        // Create an instance of OpenLdapExtra and configure it
+                        $openLdapExtra = new ActiveDirectoryExtra();
+                        $groupsData = $openLdapExtra->getADGroups($ldapConnection, $SETTINGS);
+                        break;
+                    case 'OpenLDAP':
+                        // Establish connection for OpenLDAP
+                        $ldapExtra = new LdapExtra($SETTINGS);
+                        $ldapConnection = $ldapExtra->establishLdapConnection();
+
+                        // Create an instance of OpenLdapExtra and configure it
+                        $openLdapExtra = new OpenLdapExtra();
+                        $groupsData = $openLdapExtra->getADGroups($ldapConnection, $SETTINGS);
+                        break;
+                    default:
+                        throw new Exception("Unsupported LDAP type: " . $SETTINGS['ldap_type']);
                 }
-                
-                array_push(
-                    $retAD,
-                    [
-                        'ad_group_id' => (int) $group[(isset($SETTINGS['ldap_guid_attibute']) === true && empty($SETTINGS['ldap_guid_attibute']) === false ? $SETTINGS['ldap_guid_attibute'] : 'gidnumber')][0],
-                        'ad_group_title' => $group['cn'][0],
-                        'role_id' => $counter> 0 ? (int) $role_detail['role_id'] : -1,
-                        'id' => $counter > 0 ? (int) $role_detail['increment_id'] : -1,
-                        'role_title' => $counter > 0 ? $role_detail['title'] : '',
-                    ]
-                );
+            } catch (Exception $e) {
+                echo prepareExchangedData(array(
+                    'error' => true,
+                    'message' => $e->getMessage(),
+                ), 'encode');
+                exit;
             }
-
+            
+            // Check the type of LDAP and perform actions based on that
+            if ($groupsData['error']) {
+                // Handle error
+                error_log("Error: " . print_r($groupsData['message'], true));
+            } else {
+                // Handle successful retrieval of groups
+                // exists in Teampass
+                //error_log("Error: " . print_r($groupsData['userGroups'], true));
+                foreach($groupsData['userGroups'] as $key => $group) {
+                    $role_detail = DB::queryfirstrow(
+                        'SELECT a.increment_id as increment_id, a.role_id as role_id, r.title as title
+                        FROM '.prefixTable('ldap_groups_roles').' AS a
+                        INNER JOIN '.prefixTable('roles_title').' AS r ON r.id = a.role_id
+                        WHERE a.ldap_group_id = %i',
+                        $key
+                    );
+                    $counter = DB::count();
+                    
+                    array_push(
+                        $retAD,
+                        [
+                            'ad_group_id' => $key,
+                            'ad_group_title' => $group['ad_group_title'],
+                            'role_id' => ($counter > 0) ? (int) $role_detail['role_id'] : $group['role_id'],
+                            'id' => ($counter > 0) ? (int) $role_detail['increment_id'] : $group['id'],
+                            'role_title' => ($counter > 0) ? $role_detail['title'] : $group['role_title'],
+                        ]
+                    );
+                }
+            }
             
             // Get all groups in Teampass
             $teampassRoles = array();
@@ -799,7 +769,7 @@ if (null !== $post_type) {
                 array_push(
                     $teampassRoles,
                     array(
-                        'id' => $record['id'],
+                        'id' => (int) $record['id'],
                         'title' => $record['title']
                     )
                 );

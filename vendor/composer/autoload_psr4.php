@@ -15,6 +15,7 @@ return array(
     'TeampassClasses\\SessionManager\\' => array($vendorDir . '/teampassclasses/sessionmanager/src'),
     'TeampassClasses\\PerformChecks\\' => array($vendorDir . '/teampassclasses/performchecks/src'),
     'TeampassClasses\\NestedTree\\' => array($vendorDir . '/teampassclasses/nestedtree/src'),
+    'TeampassClasses\\LdapExtra\\' => array($vendorDir . '/teampassclasses/ldapextra/src'),
     'TeampassClasses\\Language\\' => array($vendorDir . '/teampassclasses/language/src'),
     'TeampassClasses\\Encryption\\' => array($vendorDir . '/teampassclasses/encryption/src'),
     'Symfony\\Polyfill\\Php83\\' => array($vendorDir . '/symfony/polyfill-php83'),

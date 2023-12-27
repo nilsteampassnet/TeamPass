@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "9976460c0cdcd9f3324810b6294ea775",
+    "content-hash": "492793af5c93cd7b04a2af32d7fd404c",
     "packages": [
         {
             "name": "brick/math",
@@ -931,16 +931,16 @@
         },
         {
             "name": "illuminate/collections",
-            "version": "v10.37.3",
+            "version": "v10.39.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/collections.git",
-                "reference": "8e4c4f97ea066cd6aec962ef8a6abc09dfd5e754"
+                "reference": "63fc240a047788fbc2ebe153de85cb72fce88440"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/illuminate/collections/zipball/8e4c4f97ea066cd6aec962ef8a6abc09dfd5e754",
-                "reference": "8e4c4f97ea066cd6aec962ef8a6abc09dfd5e754",
+                "url": "https://api.github.com/repos/illuminate/collections/zipball/63fc240a047788fbc2ebe153de85cb72fce88440",
+                "reference": "63fc240a047788fbc2ebe153de85cb72fce88440",
                 "shasum": ""
             },
             "require": {
@@ -982,11 +982,11 @@
                 "issues": "https://github.com/laravel/framework/issues",
                 "source": "https://github.com/laravel/framework"
             },
-            "time": "2023-11-27T14:46:52+00:00"
+            "time": "2023-12-21T14:17:35+00:00"
         },
         {
             "name": "illuminate/conditionable",
-            "version": "v10.37.3",
+            "version": "v10.39.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/conditionable.git",
@@ -1032,7 +1032,7 @@
         },
         {
             "name": "illuminate/container",
-            "version": "v10.37.3",
+            "version": "v10.39.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/container.git",
@@ -1083,7 +1083,7 @@
         },
         {
             "name": "illuminate/contracts",
-            "version": "v10.37.3",
+            "version": "v10.39.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/contracts.git",
@@ -1131,16 +1131,16 @@
         },
         {
             "name": "illuminate/filesystem",
-            "version": "v10.37.3",
+            "version": "v10.39.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/filesystem.git",
-                "reference": "3b28fdd05812399d401d2bcc03b4a6abb5882979"
+                "reference": "c765c61cf1308d4f5f3dc3c03ed5f920953b795c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/illuminate/filesystem/zipball/3b28fdd05812399d401d2bcc03b4a6abb5882979",
-                "reference": "3b28fdd05812399d401d2bcc03b4a6abb5882979",
+                "url": "https://api.github.com/repos/illuminate/filesystem/zipball/c765c61cf1308d4f5f3dc3c03ed5f920953b795c",
+                "reference": "c765c61cf1308d4f5f3dc3c03ed5f920953b795c",
                 "shasum": ""
             },
             "require": {
@@ -1171,6 +1171,9 @@
                 }
             },
             "autoload": {
+                "files": [
+                    "functions.php"
+                ],
                 "psr-4": {
                     "Illuminate\\Filesystem\\": ""
                 }
@@ -1191,11 +1194,11 @@
                 "issues": "https://github.com/laravel/framework/issues",
                 "source": "https://github.com/laravel/framework"
             },
-            "time": "2023-12-06T15:24:58+00:00"
+            "time": "2023-12-21T15:30:21+00:00"
         },
         {
             "name": "illuminate/macroable",
-            "version": "v10.37.3",
+            "version": "v10.39.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/macroable.git",
@@ -1241,16 +1244,16 @@
         },
         {
             "name": "illuminate/support",
-            "version": "v10.37.3",
+            "version": "v10.39.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/support.git",
-                "reference": "c28657bdda8014017197e2a40edd7d162ce03e8a"
+                "reference": "6705007f24091863fefdf1f9320ac2c121cf37f1"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/illuminate/support/zipball/c28657bdda8014017197e2a40edd7d162ce03e8a",
-                "reference": "c28657bdda8014017197e2a40edd7d162ce03e8a",
+                "url": "https://api.github.com/repos/illuminate/support/zipball/6705007f24091863fefdf1f9320ac2c121cf37f1",
+                "reference": "6705007f24091863fefdf1f9320ac2c121cf37f1",
                 "shasum": ""
             },
             "require": {
@@ -1308,11 +1311,11 @@
                 "issues": "https://github.com/laravel/framework/issues",
                 "source": "https://github.com/laravel/framework"
             },
-            "time": "2023-12-12T19:36:09+00:00"
+            "time": "2023-12-25T01:11:56+00:00"
         },
         {
             "name": "illuminate/translation",
-            "version": "v10.37.3",
+            "version": "v10.39.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/translation.git",
@@ -1363,16 +1366,16 @@
         },
         {
             "name": "illuminate/validation",
-            "version": "v10.37.3",
+            "version": "v10.39.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/validation.git",
-                "reference": "262a82d6d1bfb722a1b8c0b32dd335b46b141e92"
+                "reference": "e8bf04e6a76120743a39c2b1f0d4d00924bbc9db"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/illuminate/validation/zipball/262a82d6d1bfb722a1b8c0b32dd335b46b141e92",
-                "reference": "262a82d6d1bfb722a1b8c0b32dd335b46b141e92",
+                "url": "https://api.github.com/repos/illuminate/validation/zipball/e8bf04e6a76120743a39c2b1f0d4d00924bbc9db",
+                "reference": "e8bf04e6a76120743a39c2b1f0d4d00924bbc9db",
                 "shasum": ""
             },
             "require": {
@@ -1420,7 +1423,7 @@
                 "issues": "https://github.com/laravel/framework/issues",
                 "source": "https://github.com/laravel/framework"
             },
-            "time": "2023-12-11T16:48:56+00:00"
+            "time": "2023-12-23T15:07:45+00:00"
         },
         {
             "name": "moxiecode/plupload",
@@ -3870,6 +3873,41 @@
             }
         },
         {
+            "name": "teampassclasses/ldapextra",
+            "version": "dev-master",
+            "dist": {
+                "type": "path",
+                "url": "includes/libraries/teampassclasses/ldapextra",
+                "reference": "81f049be19cfd37f81cc45b50d0d70ce611f67ee"
+            },
+            "require": {
+                "php": "^7.4 || ^8.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "TeampassClasses\\LdapExtra\\": "src/"
+                }
+            },
+            "license": [
+                "GPL-3.0-only"
+            ],
+            "authors": [
+                {
+                    "name": "Nils Laumaillé"
+                }
+            ],
+            "description": "Extended LDAP functionalities for OpenLDAP and Active Directory.",
+            "keywords": [
+                "nested",
+                "tree"
+            ],
+            "transport-options": {
+                "symlink": false,
+                "relative": true
+            }
+        },
+        {
             "name": "teampassclasses/nestedtree",
             "version": "dev-master",
             "dist": {
@@ -4512,7 +4550,8 @@
         "teampassclasses/performchecks": 20,
         "teampassclasses/encryption": 20,
         "teampassclasses/language": 20,
-        "teampassclasses/sessionmanager": 20
+        "teampassclasses/sessionmanager": 20,
+        "teampassclasses/ldapextra": 20
     },
     "prefer-stable": true,
     "prefer-lowest": false,
