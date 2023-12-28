@@ -762,8 +762,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                         $lang->get('email_body_on_user_login')
                     ),
                     $val['email'],
-                    $lang->get('administrator'),
-                    $SETTINGS
+                    $lang->get('administrator')
                 );
             }
         }
@@ -1183,10 +1182,10 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
                 throw new Exception("Unsupported LDAP type: " . $SETTINGS['ldap_type']);
         }
     } catch (Exception $e) {
-        return prepareExchangedData(array(
+        return [
             'error' => true,
-            'message' => $e->getMessage(),
-        ), 'encode');
+            'message' => "Error:".$e->getMessage(),
+        ];
     }
     
     try {

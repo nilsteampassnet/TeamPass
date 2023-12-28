@@ -767,8 +767,7 @@ switch ($inputData['type']) {
                                             $lang->get('new_item_email_body')
                                     ),
                                     $emailAddress,
-                                    $post_diffusion_list_names[$cpt],
-                                    $SETTINGS
+                                    $post_diffusion_list_names[$cpt]
                                 );
                             }
                             $cpt++;
@@ -1939,8 +1938,7 @@ switch ($inputData['type']) {
                                     $lang->get('email_body_item_updated')
                                 ),
                                 $emailAddress,
-                                $post_diffusion_list_names[$cpt],
-                                $SETTINGS
+                                $post_diffusion_list_names[$cpt]
                             );
                             $cpt++;
                         }
@@ -3259,8 +3257,7 @@ switch ($inputData['type']) {
                         $lang->get('email_on_open_notification_mail')
                     ),
                     implode(",", $reveivers),
-                    "",
-                    $SETTINGS
+                    ""
                 );
             }
 
@@ -5676,8 +5673,7 @@ switch ($inputData['type']) {
                     $lang->get('email_request_access_mail')
                 ),
                 $dataAuthor['email'],
-                "",
-                $SETTINGS
+                ""
             );
         } elseif ($inputData['cat'] === 'share_this_item') {
             $dataItem = DB::queryfirstrow(
@@ -5712,8 +5708,7 @@ switch ($inputData['type']) {
                     $lang->get('email_share_item_mail')
                 ),
                 $inputData['receipt'],
-                "",
-                $SETTINGS
+                ""
             );
         }
 

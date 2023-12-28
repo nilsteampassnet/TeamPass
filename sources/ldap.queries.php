@@ -113,7 +113,7 @@ switch ($post_type) {
 
         // prepare variables
         $post_username = filter_var($dataReceived['username'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-        $post_password = filter_var($dataReceived['password'], FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
+        $post_password = $dataReceived['password']; // No filtering as password can contain special chars
 
         // Check if data is correct
         if (empty($post_username) === true && empty($post_password) === true) {

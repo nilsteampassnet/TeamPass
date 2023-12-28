@@ -1103,8 +1103,7 @@ function prepareSendingEmail(
     $subject,
     $body,
     $email,
-    $receiverName,
-    $SETTINGS
+    $receiverName = ''
 ): void 
 {
     DB::insert(
@@ -1205,6 +1204,64 @@ function buildEmail(
     $cron = false
 )
 {
+    // Load PHPMailer
+    $mail = new PHPMailer(true);
+    $languageDir = $SETTINGS['cpassman_dir'] . '/vendor/phpmailer/phpmailer/language/';
+
+    try {
+        // Set language and SMTPDebug
+        $mail->setLanguage('en', $languageDir);
+        $mail->SMTPDebug = ($cron || $silent) ? 0 : $SETTINGS['email_debug_level'];
+
+        // Configure SMTP
+        $mail->isSMTP();
+        $mail->Host = $SETTINGS['email_smtp_server'];
+        $mail->SMTPAuth = (int) $SETTINGS['email_smtp_auth'] === 1;
+        $mail->Username = $SETTINGS['email_auth_username'];
+        $mail->Password = $SETTINGS['email_auth_pwd'];
+        $mail->Port = (int) $SETTINGS['email_port'];
+        $mail->SMTPSecure = $SETTINGS['email_security'] !== 'none' ? $SETTINGS['email_security'] : '';
+        $mail->SMTPAutoTLS = $SETTINGS['email_security'] !== 'none';
+        $mail->SMTPOptions = [
+            'ssl' => [
+                'verify_peer' => false,
+                'verify_peer_name' => false,
+                'allow_self_signed' => true,
+            ],
+        ];
+
+        // Set From and FromName
+        $mail->From = $SETTINGS['email_from'];
+        $mail->FromName = $SETTINGS['email_from_name'];
+
+        // Prepare recipients
+        foreach (array_filter(explode(',', $email)) as $dest) {
+            $mail->addAddress($dest);
+        }
+        
+        // Prepare HTML and AltBody
+        $text_html = emailBody($textMail);
+        $mail->WordWrap = 80;
+        $mail->isHtml(true);
+        $mail->Subject = $subject;
+        $mail->Body = $text_html;
+        $mail->AltBody = is_null($textMailAlt) ? '' : $textMailAlt;
+
+        // Send email
+        $mail->send();
+        $mail->smtpClose();
+
+        return '';
+    } catch (Exception $e) {
+        if (!$silent || (int) $SETTINGS['email_debug_level'] !== 0) {
+            return json_encode([
+                'error' => true,
+                'errorInfo' => str_replace(["\n", "\t", "\r"], '', $mail->ErrorInfo),
+            ]);
+        }
+        return '';
+    }
+    /*
     // load PHPMailer
     $mail = new PHPMailer(true);
 
@@ -1272,6 +1329,7 @@ function buildEmail(
             'errorInfo' => str_replace(["\n", "\t", "\r"], '', $mail->ErrorInfo),
         ]
     );
+    */
 }
 
 /**

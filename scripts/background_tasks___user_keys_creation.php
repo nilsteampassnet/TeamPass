@@ -1114,7 +1114,6 @@ function sendMailToUser(
         $post_subject,
         $post_body,
         $post_receipt,
-        "",
-        $SETTINGS
+        ""
     );
 }

@@ -1150,15 +1150,14 @@ function generateQRCode(
 
     // send mail?
     if ((int) $post_send_mail === 1) {
-        sendEmail(
+        prepareSendingEmail(
             $lang->get('email_ga_subject'),
             str_replace(
                 '#2FACode#',
                 $gaTemporaryCode,
                 $lang->get('email_ga_text')
             ),
-            $dataUser['email'],
-            $SETTINGS
+            $dataUser['email']
         );
 
         // send back
