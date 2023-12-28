@@ -148,8 +148,8 @@ if ($post_type === 'identify_user') {
             $remainingSeconds = $nextPossibleAttempts - time();
             $errorResponse = prepareExchangedData([
                 'value' => 'bruteforce_wait',
-                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
-                'initial_url' => isset($sessionUrl) ? $sessionUrl : '',
+                'user_admin' => null !== $session->get('user-admin') ? (int) $session->get('user-admin') : 0,
+                'initial_url' => null !== $session->get('user-initial_url') ? $session->get('user-initial_url') : '',
                 'pwd_attempts' => 0,
                 'error' => true,
                 'message' => $lang->get('error_bad_credentials_more_than_3_times'),
@@ -1183,11 +1183,10 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
                 throw new Exception("Unsupported LDAP type: " . $SETTINGS['ldap_type']);
         }
     } catch (Exception $e) {
-        echo prepareExchangedData(array(
+        return prepareExchangedData(array(
             'error' => true,
             'message' => $e->getMessage(),
         ), 'encode');
-        exit;
     }
     
     try {
@@ -1198,7 +1197,7 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
             ->firstOrFail();
 
         // Is user enabled? Only ActiveDirectory
-        if ($SETTINGS['ldap_type'] === 'ActiveDirectory' && isset($activeDirectoryExtra) && $activeDirectoryExtra instanceof ActiveDirectoryExtra) {
+        if ($SETTINGS['ldap_type'] === 'ActiveDirectory' && isset($activeDirectoryExtra) === true && $activeDirectoryExtra instanceof ActiveDirectoryExtra) {
             //require_once 'ldap.activedirectory.php';
             if ($activeDirectoryExtra->userIsEnabled((string) $userADInfos['dn'], $ldapConnection) === false) {
                 return [

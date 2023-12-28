@@ -27,6 +27,9 @@ use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
+use TeampassClasses\LdapExtra\LdapExtra;
+use TeampassClasses\LdapExtra\OpenLdapExtra;
+use TeampassClasses\LdapExtra\ActiveDirectoryExtra;
 
 // Load functions
 require_once 'main.functions.php';
@@ -124,56 +127,58 @@ switch ($post_type) {
             break;
         }
 
-        // Build ldap configuration array
-        $config = [
-            // Mandatory Configuration Options
-            'hosts'            => explode(",", $SETTINGS['ldap_hosts']),
-            'base_dn'          => $SETTINGS['ldap_bdn'],
-            'username'         => $SETTINGS['ldap_username'],
-            'password'         => $SETTINGS['ldap_password'],
-            // Optional Configuration Options
-            'port'             => $SETTINGS['ldap_port'],
-            'use_ssl'          => (int) $SETTINGS['ldap_ssl'] === 1 ? true : false,
-            'use_tls'          => (int) $SETTINGS['ldap_tls'] === 1 ? true : false,
-            'version'          => 3,
-            'timeout'          => 5,
-            'follow_referrals' => false,
-            // Custom LDAP Options
-            'options' => [
-                // See: http://php.net/ldap_set_option
-                LDAP_OPT_X_TLS_REQUIRE_CERT => isset($SETTINGS['ldap_tls_certifacte_check']) === false ? 'LDAP_OPT_X_TLS_NEVER' : $SETTINGS['ldap_tls_certifacte_check'],
-            ]
-        ];
-        //prepare connection
-        $connection = new Connection($config);
-
+        // 1- Connect to LDAP
         try {
-            $connection->connect();
-            Container::addConnection($connection);
+            switch ($SETTINGS['ldap_type']) {
+                case 'ActiveDirectory':
+                    $ldapExtra = new LdapExtra($SETTINGS);
+                    $ldapConnection = $ldapExtra->establishLdapConnection();
+                    $activeDirectoryExtra = new ActiveDirectoryExtra();
+                    break;
+                case 'OpenLDAP':
+                    // Establish connection for OpenLDAP
+                    $ldapExtra = new LdapExtra($SETTINGS);
+                    $ldapConnection = $ldapExtra->establishLdapConnection();
 
-        } catch (\LdapRecord\Auth\BindException $e) {
-            $error = $e->getDetailedError();
-
-            echo prepareExchangedData(
+                    // Create an instance of OpenLdapExtra and configure it
+                    $openLdapExtra = new OpenLdapExtra();
+                    break;
+                default:
+                    throw new Exception("Unsupported LDAP type: " . $SETTINGS['ldap_type']);
+            }
+        } catch (Exception $e) {
+            echo  prepareExchangedData(
                 array(
-                    'error' => true,
-                    'message' => "Error : ".(isset($error) === true ? $error->getErrorCode()." - ".$error->getErrorMessage(). "<br>".$error->getDiagnosticMessage() : $e),
-                ),
-                'encode'
-            );
+                'error' => true,
+                'message' => $e->getMessage(),
+            ), 'encode');
             break;
         }
-        
-        // Get user info from AD
-        // We want to isolate attribute ldap_user_attribute
+
         try {
-            $user = $connection->query()
+            // 2- Get user info from AD
+            // We want to isolate attribute ldap_user_attribute or mostly samAccountName
+            $userADInfos = $ldapConnection->query()
                 ->where((isset($SETTINGS['ldap_user_attribute']) ===true && empty($SETTINGS['ldap_user_attribute']) === false) ? $SETTINGS['ldap_user_attribute'] : 'samaccountname', '=', $post_username)
                 ->firstOrFail();
-            
-        } catch (\LdapRecord\LdapRecordException $e) {
+
+            // Is user enabled? Only ActiveDirectory
+            if ($SETTINGS['ldap_type'] === 'ActiveDirectory' && isset($activeDirectoryExtra) === true && $activeDirectoryExtra instanceof ActiveDirectoryExtra) {
+                //require_once 'ldap.activedirectory.php';
+                if ($activeDirectoryExtra->userIsEnabled((string) $userADInfos['dn'], $ldapConnection) === false) {
+                    echo prepareExchangedData(
+                        array(
+                        'error' => true,
+                        'message' => "Error : User is not enabled",
+                        ),
+                        'encode'
+                    );
+                    break;
+                }
+            }
+    
+        } catch (\LdapRecord\Query\ObjectNotFoundException $e) {
             $error = $e->getDetailedError();
-            
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -183,52 +188,64 @@ switch ($post_type) {
             );
             break;
         }
-        
+
         try {
-            $userAuthAttempt = $connection->auth()->attempt(
+            // 3- User auth attempt
+            // For AD, we use attribute userPrincipalName
+            // For OpenLDAP and others, we use attribute dn
+            $userAuthAttempt = $ldapConnection->auth()->attempt(
                 $SETTINGS['ldap_type'] === 'ActiveDirectory' ?
-                    $user['userprincipalname'][0] :
-                    $user['dn'],
+                    $userADInfos['userprincipalname'][0] :  // refering to https://ldaprecord.com/docs/core/v2/authentication#basic-authentication
+                    $userADInfos['dn'],
                 $post_password
             );
-        } catch (\LdapRecord\LdapRecordException $e) {
-            $error = $e->getDetailedError();
-            
-            echo prepareExchangedData(
-                array(
-                    'error' => true,
-                    'message' => $lang->get('error').' : '.(isset($error) === true ? $error->getErrorCode()." - ".$error->getErrorMessage(). "<br>".$error->getDiagnosticMessage() : $e),
-                ),
-                'encode'
-            );
-            break;
-        }
-        
-        if ($userAuthAttempt === true) {
-            // Update user info with his AD groups
-            if ($SETTINGS['ldap_type'] === 'ActiveDirectory') {
-                require_once 'ldap.activedirectory.php';
-            } else {
-                require_once 'ldap.openldap.php';
+    
+            // User is not auth then return error
+            if ($userAuthAttempt === false) {
+                echo  prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => "Error: User is not authenticated",
+                    ),
+                    'encode'
+                );
+                break;
             }
-            
-            echo prepareExchangedData(
-                array(
-                    'error' => false,
-                    'message' => "User is successfully authenticated",
-                    'extra' => $SETTINGS['ldap_user_attribute'].'='.$post_username.','.$SETTINGS['ldap_bdn'],
-                ),
-                'encode'
-            );
-        } else {
+        } catch (\LdapRecord\Query\ObjectNotFoundException $e) {
+            $error = $e->getDetailedError();
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => "Error : User could not be authentificated",
+                    'message' => $lang->get('error')." - ".(isset($error) === true ? $error->getErrorCode()." - ".$error->getErrorMessage(). "<br>".$error->getDiagnosticMessage() : $e),
                 ),
                 'encode'
             );
         }
+    
+        // 4- Check shadowexpire attribute
+        // if === 1 then user disabled
+        if (
+            (isset($userADInfos['shadowexpire'][0]) === true && (int) $userADInfos['shadowexpire'][0] === 1)
+            ||
+            (isset($userADInfos['accountexpires'][0]) === true && (int) $userADInfos['accountexpires'][0] < time() && (int) $userADInfos['accountexpires'][0] != 0)
+        ) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_ad_user_expired'),
+                ),
+                'encode'
+            );
+        }
+
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => "User is successfully authenticated",
+                'extra' => $SETTINGS['ldap_user_attribute'].'='.$post_username.','.$SETTINGS['ldap_bdn'],
+            ),
+            'encode'
+        );
 
     break;
 }
