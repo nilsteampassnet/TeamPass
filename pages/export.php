@@ -24,7 +24,6 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use TeampassClasses\NestedTree\NestedTree;
@@ -35,7 +34,6 @@ require_once __DIR__.'/../sources/main.functions.php';
 
 // init
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
 $lang = new Language(); 
 
 // Load config if $SETTINGS not defined
@@ -128,7 +126,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                         <div class="container-fluid">
                             <div class="row">
                                 <div class="col-md-12 justify-content-center">
-                                    <div id="export-password-strength" class="justify-content-center" style=""></div>
+                                    <div id="export-password-strength" class="justify-content-center"></div>
                                     <input type="hidden" id="export-password-complex" value="0">
                                 </div>
                             </div>

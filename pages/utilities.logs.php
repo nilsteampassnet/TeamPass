@@ -24,7 +24,6 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use TeampassClasses\NestedTree\NestedTree;
@@ -35,7 +34,6 @@ require_once __DIR__.'/../sources/main.functions.php';
 
 // init
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
 $lang = new Language(); 
 
 // Load config if $SETTINGS not defined
@@ -127,9 +125,9 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                 <table class="table table-striped nowrap table-responsive-sm" id="table-connections" style="width:100%;">
                                     <thead>
                                         <tr>
-                                            <th style=""><?php echo $lang->get('date'); ?></th>
-                                            <th style=""><?php echo $lang->get('action'); ?></th>
-                                            <th style=""><?php echo $lang->get('user'); ?></th>
+                                            <th><?php echo $lang->get('date'); ?></th>
+                                            <th><?php echo $lang->get('action'); ?></th>
+                                            <th><?php echo $lang->get('user'); ?></th>
                                         </tr>
                                     </thead>
                                 </table>
@@ -138,9 +136,9 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                 <table class="table table-striped nowrap table-responsive-sm" id="table-errors" style="width:100%;">
                                     <thead>
                                         <tr>
-                                            <th style=""><?php echo $lang->get('date'); ?></th>
-                                            <th style=""><?php echo $lang->get('label'); ?></th>
-                                            <th style=""><?php echo $lang->get('user'); ?></th>
+                                            <th><?php echo $lang->get('date'); ?></th>
+                                            <th><?php echo $lang->get('label'); ?></th>
+                                            <th><?php echo $lang->get('user'); ?></th>
                                         </tr>
                                     </thead>
                                 </table>
@@ -149,9 +147,9 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                 <table class="table table-striped nowrap table-responsive-sm" id="table-copy" style="width:100%;">
                                     <thead>
                                         <tr>
-                                            <th style=""><?php echo $lang->get('date'); ?></th>
-                                            <th style=""><?php echo $lang->get('label'); ?></th>
-                                            <th style=""><?php echo $lang->get('user'); ?></th>
+                                            <th><?php echo $lang->get('date'); ?></th>
+                                            <th><?php echo $lang->get('label'); ?></th>
+                                            <th><?php echo $lang->get('user'); ?></th>
                                         </tr>
                                     </thead>
                                 </table>
@@ -160,10 +158,10 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                 <table class="table table-striped nowrap table-responsive-sm" id="table-admin" style="width:100%;">
                                     <thead>
                                         <tr>
-                                            <th style=""><?php echo $lang->get('date'); ?></th>
-                                            <th style=""><?php echo $lang->get('author'); ?></th>
-                                            <th style=""><?php echo $lang->get('action'); ?></th>
-                                            <th style=""><?php echo $lang->get('who'); ?></th>
+                                            <th><?php echo $lang->get('date'); ?></th>
+                                            <th><?php echo $lang->get('author'); ?></th>
+                                            <th><?php echo $lang->get('action'); ?></th>
+                                            <th><?php echo $lang->get('who'); ?></th>
                                         </tr>
                                     </thead>
                                 </table>
@@ -172,13 +170,13 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                 <table class="table table-striped nowrap table-responsive-sm" id="table-items" style="width:100%;">
                                     <thead>
                                         <tr>
-                                            <th style=""><?php echo $lang->get('date'); ?></th>
-                                            <th style=""><?php echo $lang->get('id'); ?></th>
-                                            <th style=""><?php echo $lang->get('label'); ?></th>
-                                            <th style=""><?php echo $lang->get('folder'); ?></th>
-                                            <th style=""><?php echo $lang->get('user'); ?></th>
-                                            <th style=""><?php echo $lang->get('action'); ?></th>
-                                            <th style=""><?php echo $lang->get('at_personnel'); ?></th>
+                                            <th><?php echo $lang->get('date'); ?></th>
+                                            <th><?php echo $lang->get('id'); ?></th>
+                                            <th><?php echo $lang->get('label'); ?></th>
+                                            <th><?php echo $lang->get('folder'); ?></th>
+                                            <th><?php echo $lang->get('user'); ?></th>
+                                            <th><?php echo $lang->get('action'); ?></th>
+                                            <th><?php echo $lang->get('at_personnel'); ?></th>
                                         </tr>
                                     </thead>
                                 </table>
@@ -187,10 +185,10 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                 <table class="table table-striped nowrap table-responsive-sm" id="table-failed">
                                     <thead>
                                         <tr>
-                                            <th style=""><?php echo $lang->get('date'); ?></th>
-                                            <th style=""><?php echo $lang->get('label'); ?></th>
-                                            <th style=""><?php echo $lang->get('user'); ?></th>
-                                            <th style=""><?php echo $lang->get('ip'); ?></th>
+                                            <th><?php echo $lang->get('date'); ?></th>
+                                            <th><?php echo $lang->get('label'); ?></th>
+                                            <th><?php echo $lang->get('user'); ?></th>
+                                            <th><?php echo $lang->get('ip'); ?></th>
                                         </tr>
                                     </thead>
                                 </table>

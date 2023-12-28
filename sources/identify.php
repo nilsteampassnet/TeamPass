@@ -62,7 +62,6 @@ if (isset($_POST['sessionId'])) {
 $session = SessionManager::getSession();
 
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
 $lang = new Language(); 
 
 
@@ -1448,9 +1447,6 @@ function finalizeAuthentication(
 function yubicoMFACheck($dataReceived, string $userInfo, array $SETTINGS): array
 {
     $session = SessionManager::getSession();
-    
-    // Load superGlobals
-    $superGlobal = new SuperGlobal();
     $lang = new Language(); 
     $sessionAdmin = $session->get('user-admin');
     $sessionUrl = $session->get('user-initial_url');
@@ -1710,9 +1706,6 @@ function duoMFACheck(
 ): array
 {
     $session = SessionManager::getSession();
-    
-    // Load superGlobals
-    $superGlobal = new SuperGlobal();
     $lang = new Language(); 
 
     $sessionPwdAttempts = $session->get('pwd_attempts');
@@ -1778,9 +1771,6 @@ function duoMFAPerform(
 ): array
 {
     $session = SessionManager::getSession();
-    
-    // Load superGlobals
-    $superGlobal = new SuperGlobal();
     $lang = new Language(); 
 
     try {
@@ -2168,11 +2158,8 @@ function identifyDoInitialChecks(
 ): array
 {
     $session = SessionManager::getSession();
-    
     $checks = new initialChecks();
     $enable_ad_user_auto_creation = isset($SETTINGS['enable_ad_user_auto_creation']) === true && (int) $SETTINGS['enable_ad_user_auto_creation'] === 1 ? true : false;
-    // Load superGlobals
-    $superGlobal = new SuperGlobal();
     $lang = new Language(); 
     
     // Brute force management
@@ -2357,9 +2344,6 @@ function identifyDoMFAChecks(
 ): array
 {    
     $session = SessionManager::getSession();
-    
-    // Load superGlobals
-    $superGlobal = new SuperGlobal();
     $lang = new Language(); 
     
     switch ($userInitialData['user_mfa_mode']) {

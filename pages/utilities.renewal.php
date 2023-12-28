@@ -23,7 +23,7 @@ declare(strict_types=1);
  *
  * @see       https://www.teampass.net
  */
-use TeampassClasses\SuperGlobal\SuperGlobal;
+
 use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use TeampassClasses\NestedTree\NestedTree;
@@ -34,7 +34,6 @@ require_once __DIR__.'/../sources/main.functions.php';
 
 // init
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
 $lang = new Language(); 
 
 // Load config if $SETTINGS not defined
@@ -122,10 +121,10 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                             <table class="table table-striped table-responsive" id="table-renewal" style="width:100%;">
                                 <thead>
                                     <tr>
-                                        <th style=""></th>
-                                        <th style=""><?php echo $lang->get('label'); ?></th>
-                                        <th style=""><?php echo $lang->get('expiration_date'); ?></th>
-                                        <th style=""><?php echo $lang->get('folder'); ?></th>
+                                        <th></th>
+                                        <th><?php echo $lang->get('label'); ?></th>
+                                        <th><?php echo $lang->get('expiration_date'); ?></th>
+                                        <th><?php echo $lang->get('folder'); ?></th>
                                     </tr>
                                 </thead>
                             </table>

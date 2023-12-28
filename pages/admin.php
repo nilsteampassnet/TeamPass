@@ -26,7 +26,6 @@ declare(strict_types=1);
 use TiBeN\CrontabManager\CrontabJob;
 use TiBeN\CrontabManager\CrontabAdapter;
 use TiBeN\CrontabManager\CrontabRepository;
-use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
@@ -38,10 +37,7 @@ require_once __DIR__.'/../sources/main.functions.php';
 
 // init
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
 $lang = new Language(); 
-//session_name('teampass_session');
-//session_start();
 
 // Load config if $SETTINGS not defined
 try {

@@ -23,7 +23,6 @@ use LdapRecord\Connection;
 use LdapRecord\Container;
 use voku\helper\AntiXSS;
 use TeampassClasses\NestedTree\NestedTree;
-use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
@@ -34,7 +33,6 @@ require_once 'main.functions.php';
 
 // init
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
 $session = SessionManager::getSession();
 $lang = new Language(); 
 

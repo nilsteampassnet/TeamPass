@@ -21,7 +21,6 @@ declare(strict_types=1);
 use TiBeN\CrontabManager\CrontabJob;
 use TiBeN\CrontabManager\CrontabAdapter;
 use TiBeN\CrontabManager\CrontabRepository;
-use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
@@ -33,7 +32,6 @@ require_once 'main.functions.php';
 
 // init
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
 $session = SessionManager::getSession();
 $lang = new Language(); 
 

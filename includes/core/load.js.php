@@ -24,7 +24,6 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 
@@ -47,7 +46,6 @@ if (
     </script>
 <?php
 }
-$superGlobal = new SuperGlobal();
 $lang = new Language(); 
 ?>
 

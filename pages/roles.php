@@ -25,7 +25,6 @@ declare(strict_types=1);
  */
 
 
-use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use TeampassClasses\NestedTree\NestedTree;
@@ -36,7 +35,6 @@ require_once __DIR__.'/../sources/main.functions.php';
 
 // init
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
 $lang = new Language(); 
 
 // Load config if $SETTINGS not defined
@@ -218,7 +216,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                             <tr>
                                                 <th style="width: 25%;"><i class="fa-solid fa-people-group mr-1"></i><?php echo $lang->get('ad_group'); ?></th>
                                                 <th style="width: 25pw;"></th>
-                                                <th style=""><i class="fa-solid fa-graduation-cap mr-1"></i><?php echo $lang->get('mapped_with_role'); ?></th>
+                                                <th><i class="fa-solid fa-graduation-cap mr-1"></i><?php echo $lang->get('mapped_with_role'); ?></th>
                                             </tr>
                                         </thead>
                                         <tbody id="row-ldap-body">

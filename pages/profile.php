@@ -28,7 +28,6 @@ use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use TeampassClasses\PerformChecks\PerformChecks;
-use Symfony\Component\HttpFoundation\Session\Session;
 
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
@@ -36,7 +35,6 @@ require_once __DIR__.'/../sources/main.functions.php';
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
-$session = new Session();
 $lang = new Language(); 
 
 // Load config if $SETTINGS not defined

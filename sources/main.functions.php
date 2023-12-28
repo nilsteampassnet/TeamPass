@@ -2236,7 +2236,7 @@ function accessToItemIsGranted(int $item_id, array $SETTINGS)
     
     $session = SessionManager::getSession();
     $session_groupes_visibles = $session->get('user-accessible_folders');
-    $session_list_restricted_folders_for_items = $session->set('system-list_restricted_folders_for_items');
+    $session_list_restricted_folders_for_items = $session->get('system-list_restricted_folders_for_items');
     // Load item data
     $data = DB::queryFirstRow(
         'SELECT id_tree

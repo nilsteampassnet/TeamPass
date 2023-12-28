@@ -24,7 +24,6 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use TeampassClasses\NestedTree\NestedTree;
@@ -34,8 +33,8 @@ use TeampassClasses\PerformChecks\PerformChecks;
 require_once __DIR__.'/../sources/main.functions.php';
 
 // init
+$session = SessionManager::getSession();
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
 $lang = new Language(); 
 
 // Load config if $SETTINGS not defined

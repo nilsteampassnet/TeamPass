@@ -19,8 +19,6 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-
-use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
@@ -39,7 +37,6 @@ $session = SessionManager::getSession();
 
 // init
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
 $lang = new Language();
 
 // Load config if $SETTINGS not defined

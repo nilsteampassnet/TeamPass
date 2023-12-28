@@ -22,7 +22,6 @@ declare(strict_types=1);
 
 use voku\helper\AntiXSS;
 use TeampassClasses\NestedTree\NestedTree;
-use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
@@ -34,7 +33,6 @@ require_once 'main.functions.php';
 $session = SessionManager::getSession();
 // init
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
 $lang = new Language();
 
 // Load config if $SETTINGS not defined

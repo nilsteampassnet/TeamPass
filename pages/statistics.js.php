@@ -25,7 +25,6 @@ declare(strict_types=1);
  */
 
 use TeampassClasses\PerformChecks\PerformChecks;
-use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 // Load functions
@@ -33,7 +32,6 @@ require_once __DIR__.'/../sources/main.functions.php';
 
 // init
 loadClasses();
-$superGlobal = new SuperGlobal();
 $lang = new Language(); 
 
 if ($session->get('key') === null) {

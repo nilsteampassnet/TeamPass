@@ -25,7 +25,6 @@ use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use TeampassClasses\PerformChecks\PerformChecks;
 use PasswordLib\PasswordLib;
-use Symfony\Component\HttpFoundation\Session\Session;
 
 // Load functions
 require_once 'main.functions.php';
@@ -33,8 +32,7 @@ require_once 'main.functions.php';
 // init
 loadClasses('DB');
 $session = SessionManager::getSession();
-$lang = new Language(); 
-$session = new Session();
+$lang = new Language();
 
 // Load config if $SETTINGS not defined
 try {

@@ -244,7 +244,7 @@ foreach ($treeDesc as $t) {
                                             <th style="width: 25%;"><i class="fa-solid fa-id-badge mr-1"></i><?php echo $lang->get('login'); ?></th>
                                             <th style="width: 60px; text-align:center;"><i class="fa-solid fa-info infotip pointer" title="<?php echo $lang->get('more_information'); ?>"></i></th>
                                             <th style="width: 60px;"><i class="fa-solid fa-sync-alt infotip pointer" title="<?php echo $lang->get('synchronized'); ?>"></i></th>
-                                            <th style=""><i class="fa-solid fa-graduation-cap mr-1"></i><?php echo $lang->get('roles'); ?></th>
+                                            <th><i class="fa-solid fa-graduation-cap mr-1"></i><?php echo $lang->get('roles'); ?></th>
                                             <th style="width: 15%;"><i class="fa-solid fa-wrench mr-1"></i><?php echo $lang->get('action'); ?></th>
                                         </tr>
                                     </thead>

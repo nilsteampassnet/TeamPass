@@ -1034,7 +1034,7 @@ if (null !== $post_type) {
         </table></div>
         <input type="button" value="Hide all" onclick="hideAll()" />
         <div id="footer" style="text-align:center;">
-            <a href="https://teampass.net/about/" target="_blank" style="">' . TP_TOOL_NAME . '&nbsp;' . TP_VERSION . '&nbsp;' . TP_COPYRIGHT . '</a>
+            <a href="https://teampass.net/about/" target="_blank">' . TP_TOOL_NAME . '&nbsp;' . TP_VERSION . '&nbsp;' . TP_COPYRIGHT . '</a>
         </div>
         <div id="enc_html" style="display:none;">' . $encrypted_text . '</div>
         </body>

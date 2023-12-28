@@ -23,7 +23,7 @@ declare(strict_types=1);
  *
  * @see       https://www.teampass.net
  */
-use TeampassClasses\SuperGlobal\SuperGlobal;
+
 use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use TeampassClasses\NestedTree\NestedTree;
@@ -34,7 +34,6 @@ require_once __DIR__.'/../sources/main.functions.php';
 
 // init
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
 $lang = new Language(); 
 
 // Load config if $SETTINGS not defined
@@ -113,10 +112,10 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                 <table class="table table-striped table-responsive" id="table-in_edition" style="width:100%;">
                                     <thead>
                                         <tr>
-                                            <th style=""></th>
-                                            <th style=""><?php echo $lang->get('item_edition_start_hour'); ?></th>
-                                            <th style=""><?php echo $lang->get('user'); ?></th>
-                                            <th style=""><?php echo $lang->get('label'); ?></th>
+                                            <th></th>
+                                            <th><?php echo $lang->get('item_edition_start_hour'); ?></th>
+                                            <th><?php echo $lang->get('user'); ?></th>
+                                            <th><?php echo $lang->get('label'); ?></th>
                                         </tr>
                                     </thead>
                                 </table>
@@ -125,10 +124,10 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                 <table class="table table-striped table-responsive" id="table-logged_in" style="width:100%;">
                                     <thead>
                                         <tr>
-                                            <th style=""></th>
-                                            <th style=""><?php echo $lang->get('user'); ?></th>
-                                            <th style=""><?php echo $lang->get('role'); ?></th>
-                                            <th style=""><?php echo $lang->get('login_time'); ?></th>
+                                            <th></th>
+                                            <th><?php echo $lang->get('user'); ?></th>
+                                            <th><?php echo $lang->get('role'); ?></th>
+                                            <th><?php echo $lang->get('login_time'); ?></th>
                                         </tr>
                                     </thead>
                                 </table>

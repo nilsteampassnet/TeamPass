@@ -34,7 +34,6 @@ require_once __DIR__.'/../sources/main.functions.php';
 
 // init
 loadClasses();
-$superGlobal = new SuperGlobal();
 $lang = new Language(); 
 
 if ($session->get('key') === null) {

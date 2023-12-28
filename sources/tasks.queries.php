@@ -23,7 +23,6 @@ use EZimuel\PHPSecureSession;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Process;
 use TeampassClasses\PerformChecks\PerformChecks;
-use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 // Load functions
@@ -33,7 +32,6 @@ $session = SessionManager::getSession();
 
 // init
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
 $lang = new Language(); 
 
 

@@ -389,11 +389,11 @@ catch (Exception $e) {
                                 <table class="table table-striped" id="table-tasks_in_progress" style="width:100%;">
                                     <thead>
                                         <tr>
-                                            <th style=""></th>
-                                            <th style=""><?php echo $lang->get('created_at'); ?></th>
-                                            <th style=""><?php echo $lang->get('updated_at'); ?></th>
-                                            <th style=""><?php echo $lang->get('type'); ?></th>
-                                            <th style=""><?php echo $lang->get('user'); ?></th>
+                                            <th></th>
+                                            <th><?php echo $lang->get('created_at'); ?></th>
+                                            <th><?php echo $lang->get('updated_at'); ?></th>
+                                            <th><?php echo $lang->get('type'); ?></th>
+                                            <th><?php echo $lang->get('user'); ?></th>
                                         </tr>
                                     </thead>
                                 </table>
@@ -403,13 +403,13 @@ catch (Exception $e) {
                                 <table class="table table-striped" id="table-tasks_finished" style="width:100%;">
                                     <thead>
                                         <tr>
-                                            <th style=""></th>
-                                            <th style=""><?php echo $lang->get('created_at'); ?></th>
-                                            <th style=""><?php echo $lang->get('started_at'); ?></th>
-                                            <th style=""><?php echo $lang->get('finished_at'); ?></th>
-                                            <th style=""><?php echo $lang->get('execution_time'); ?></th>
-                                            <th style=""><?php echo $lang->get('type'); ?></th>
-                                            <th style=""><?php echo $lang->get('user'); ?></th>
+                                            <th></th>
+                                            <th><?php echo $lang->get('created_at'); ?></th>
+                                            <th><?php echo $lang->get('started_at'); ?></th>
+                                            <th><?php echo $lang->get('finished_at'); ?></th>
+                                            <th><?php echo $lang->get('execution_time'); ?></th>
+                                            <th><?php echo $lang->get('type'); ?></th>
+                                            <th><?php echo $lang->get('user'); ?></th>
                                         </tr>
                                     </thead>
                                 </table>
