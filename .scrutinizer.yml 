@@ -5,3 +5,7 @@ build:
         override:
           - 'composer install'
           - 'if ! pecl list | grep -q ldap; then pecl install ldap || echo "LDAP installation failed"; fi'
+      tests:
+        override:
+          - php-scrutinizer-run
+          - phpcs-run
