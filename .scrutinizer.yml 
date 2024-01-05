@@ -1,5 +1,8 @@
 build:
   nodes:
+    dependencies:
+      override:
+        - true
     analysis:
       dependencies:
         override:
@@ -9,6 +12,3 @@ build:
         override:
           - php-scrutinizer-run
           - phpcs-run
-  dependencies:
-    override:
-      - true
