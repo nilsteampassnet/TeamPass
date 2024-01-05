@@ -23,6 +23,7 @@ declare(strict_types=1);
 use voku\helper\AntiXSS;
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\SessionManager\SessionManager;
+use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
@@ -34,6 +35,7 @@ require_once 'main.functions.php';
 // init
 loadClasses('DB');
 $session = SessionManager::getSession();
+$request = Request::createFromGlobals();
 $lang = new Language(); 
 
 // Load config if $SETTINGS not defined
@@ -48,7 +50,7 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => isset($_POST['type']) === true ? htmlspecialchars($_POST['type']) : '',
+            'type' => null !== $request->request->get('type') ? htmlspecialchars($request->request->get('type')) : '',
         ],
         [
             'type' => 'trim|escape',
@@ -132,8 +134,8 @@ $data = [
     'destination' => isset($_POST['destination']) === true ? $_POST['destination'] : '',
     'source' => isset($_POST['source']) === true ? $_POST['source'] : '',
     'userId' => isset($_POST['user_id']) === true ? $_POST['user_id'] : '',
-    'getType' => isset($_GET['type']) === true ? $_GET['type'] : '',
-    'getTerm' => isset($_GET['term']) === true ? $_GET['term'] : '',
+    'getType' => null !== $request->query->get('type') ? $request->query->get('type') : '',
+    'getTerm' => null !== $request->query->get('term') ? $request->query->get('term') : '',
     'option' => isset($_POST['option']) === true ? $_POST['option'] : '',
     'fileSuffix' => isset($_POST['file_suffix']) === true ? $_POST['file_suffix'] : '',
     'context' => isset($_POST['context']) === true ? $_POST['context'] : '',

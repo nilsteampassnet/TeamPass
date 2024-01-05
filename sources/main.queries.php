@@ -31,23 +31,12 @@ use TeampassClasses\PerformChecks\PerformChecks;
 // Load functions
 require_once 'main.functions.php';
 
-// Resume the session
-if (isset($_POST['sessionId'])) {
-    $sessionId = $_POST['sessionId'];
-    // Validate the session ID format to prevent injection attacks
-    if (preg_match('/^[a-z0-9]{26,40}$/', $sessionId)) {
-        session_id($sessionId);
-    } else {
-        // Invalid session ID, handle the error
-        echo "Invalid session ID";
-        exit;
-    }
-}
-
 $session = SessionManager::getSession();
 loadClasses('DB');
 $lang = new Language(); 
 
+error_log('Main.queries.php L51 : '.$session->get('key'));
+// TODO : ajouter un check sue l'envoi de la key
 
 // Load config
 try {
@@ -77,7 +66,7 @@ echo $checkUserAccess->caseHandler();
 if (
     ($checkUserAccess->userAccessPage('home') === false ||
     $checkUserAccess->checkSession() === false)
-    && filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== 'get_teampass_settings'
+    && in_array(filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS), ['get_teampass_settings', 'ga_generate_qr']) === false
 ) {
     // Not allowed page
     $session->set('system-error_code', ERR_NOT_ALLOWED);
@@ -131,10 +120,11 @@ function mainQuery(array $SETTINGS)
     include_once __DIR__.'/../sources/main.functions.php';
 
     // Load libraries
+    $session = SessionManager::getSession();
     loadClasses('DB');
 
     // User's language loading
-    $lang = new Language(); 
+    $lang = new Language();
 
     // Prepare post variables
     $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
@@ -149,11 +139,11 @@ function mainQuery(array $SETTINGS)
                 'error' => true,
                 'message' => $lang->get('key_is_not_correct'),
             ),
-            'encode'
+            'encode',
+            $post_key
         );
         return false;
     }
-    
     // decrypt and retreive data in JSON format
     $dataReceived = empty($post_data) === false ? prepareExchangedData(
         $post_data,
@@ -166,7 +156,7 @@ function mainQuery(array $SETTINGS)
             break;
 
         case 'action_user':
-            echo userHandler($post_type, $dataReceived, $SETTINGS);
+            echo userHandler($post_type, $dataReceived, $SETTINGS, $post_key);
             break;
 
         case 'action_mail':
@@ -300,9 +290,10 @@ function passwordHandler(string $post_type, /*php8 array|null|string*/ $dataRece
  * @param string $post_type
  * @param array|null|string $dataReceived
  * @param array $SETTINGS
+ * @param string $post_key
  * @return string
  */
-function userHandler(string $post_type, /*php8 array|null|string*/ $dataReceived, array $SETTINGS): string
+function userHandler(string $post_type, array|null|string $dataReceived, array $SETTINGS, string $post_key): string
 {
     $session = SessionManager::getSession();
 
@@ -370,7 +361,8 @@ function userHandler(string $post_type, /*php8 array|null|string*/ $dataReceived
                 (string) filter_var($dataReceived['login'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 (string) filter_var($dataReceived['pwd'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 (string) filter_var($dataReceived['token'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                $SETTINGS
+                $SETTINGS,
+                (string) $post_key
             );
 
         /*
@@ -994,8 +986,6 @@ function changePassword(
         'encode'
     );
 }
-
-
 
 function generateQRCode(
     $post_id,

@@ -1061,8 +1061,7 @@ function cronContinueReEncryptingUserSharekeysStep10(
                     '#password#' => cryption($extra_arguments['new_user_pwd'], '','decrypt', $SETTINGS)['string'],
                 ],
                 FILTER_SANITIZE_FULL_SPECIAL_CHARS
-            ),
-            $SETTINGS
+            )
         );
     }
         
@@ -1091,15 +1090,13 @@ function cronContinueReEncryptingUserSharekeysStep10(
  * @param string $post_body
  * @param string $post_subject
  * @param array $post_replace
- * @param array $SETTINGS
  * @return void
  */
 function sendMailToUser(
     string $post_receipt,
     string $post_body,
     string $post_subject,
-    array $post_replace,
-    array $SETTINGS
+    array $post_replace
 ): void
 {
     if (count($post_replace) > 0 && is_null($post_replace) === false) {

@@ -26,7 +26,7 @@ declare(strict_types=1);
 
 use voku\helper\AntiXSS;
 use TeampassClasses\NestedTree\NestedTree;
-use TeampassClasses\SuperGlobal\SuperGlobal;
+use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
@@ -37,7 +37,8 @@ require_once 'main.functions.php';
 
 // init
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
+
+    $request = Request::createFromGlobals();
 $session = SessionManager::getSession();
 $lang = new Language(); 
 
@@ -88,16 +89,16 @@ set_time_limit(0);
 // --------------------------------- //
 
 // Prepare GET variables
-$get_filename = $superGlobal->get('name', 'GET');
-$get_fileid = $superGlobal->get('fileid', 'GET');
-$get_pathIsFiles = $superGlobal->get('pathIsFiles', 'GET');
+$get_filename = $request->query->get('name');
+$get_fileid = $request->query->get('fileid');
+$get_pathIsFiles = $request->query->get('pathIsFiles');
 
 // prepare Encryption class calls
 header('Content-disposition: attachment; filename=' . rawurldecode(basename($get_filename)));
 header('Content-Type: application/octet-stream');
 header('Cache-Control: must-revalidate, no-cache, no-store');
 header('Expires: 0');
-if (isset($_GET['pathIsFiles']) && (int) $get_pathIsFiles === 1) {
+if (null !== $request->query->get('pathIsFiles') && (int) $get_pathIsFiles === 1) {
     readfile($SETTINGS['path_to_files_folder'] . '/' . basename($get_filename));
 } else {
     // get file key

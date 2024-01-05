@@ -46,7 +46,7 @@ if (
     </script>
 <?php
 }
-$lang = new Language(); 
+$lang = new Language();
 ?>
 
 <script type="text/javascript">
@@ -56,7 +56,7 @@ $lang = new Language();
 
 
     $(document).ready(function() {
-        //console.log('-- PAGE LOADED --'+$(location).attr('href').includes('?')+" -- "+store.get('teampassUser'));
+        console.log('-- PAGE LOADED --'+$(location).attr('href').includes('?')+" -- <?php echo $session->get('key');?>");
         if ($(location).attr('href').includes('?') === true && $(location).attr('href').includes('post_type') === false && (store.get('teampassUser') === undefined || parseInt(store.get('teampassUser').user_id) <= 0)) {
             $(location).attr('href', 'index.php?session=expired');
             return false;
@@ -1588,17 +1588,22 @@ $lang = new Language();
 
 
     function loadSettings() {
-        if (Number.isInteger(<?php echo $session->get('user-id'); ?>) === false) {
+        /*if (Number.isInteger(<?php echo $session->get('user-id'); ?>) === false) {
             return false;
-        }
+        }*/
+        console.log('Key appel get_teampass_settings : <?php echo $session->get('key'); ?>');
         return $.post(
             "sources/main.queries.php", {
                 type: "get_teampass_settings",
                 type_category: 'action_system',
-                key: '<?php echo $session->get('key'); ?>'
+                key: '<?php echo $session->get('key'); ?>',
+                xhrFields: {
+                    withCredentials: true
+                }
             },
             function(data) {
                 try {
+                    console.log('Key réception get_teampass_settings : <?php echo $session->get('key'); ?>');
                     data = prepareExchangedData(
                         data,
                         "decode",

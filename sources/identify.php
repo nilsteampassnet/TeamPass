@@ -26,7 +26,7 @@ declare(strict_types=1);
 
 use voku\helper\AntiXSS;
 use EZimuel\PHPSecureSession;
-use TeampassClasses\SuperGlobal\SuperGlobal;
+use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use TeampassClasses\PerformChecks\PerformChecks;
@@ -45,21 +45,9 @@ use TeampassClasses\LdapExtra\ActiveDirectoryExtra;
 // Load functions
 require_once 'main.functions.php';
 
-// Resume the session
-if (isset($_POST['sessionId'])) {
-    $sessionId = $_POST['sessionId'];
-    // Validate the session ID format to prevent injection attacks
-    if (preg_match('/^[a-z0-9]{26,40}$/', $sessionId)) {
-        session_id($sessionId);
-    } else {
-        // Invalid session ID, handle the error
-        echo "Invalid session ID";
-        exit;
-    }
-}
-
 // init
 $session = SessionManager::getSession();
+// TODO : ajouter un check sue l'envoi de la key
 
 loadClasses('DB');
 $lang = new Language(); 
@@ -76,7 +64,7 @@ if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir'
     $SETTINGS = [];
     $SETTINGS['cpassman_dir'] = '..';
 }
-
+error_log('Identify.php: '.print_r($_POST, true));
 // Do checks
 // Instantiate the class with posted data
 $checkUserAccess = new PerformChecks(
@@ -98,6 +86,7 @@ $checkUserAccess = new PerformChecks(
 // Handle the case
 echo $checkUserAccess->caseHandler();
 if ($checkUserAccess->checkSession() === false) {
+    error_log('Identify.php L89 - REFUS - '.$checkUserAccess->checkSession());
     // Not allowed page
     $session->set('system-error_code', ERR_NOT_ALLOWED);
     include $SETTINGS['cpassman_dir'] . '/error.php';
@@ -163,6 +152,7 @@ if ($post_type === 'identify_user') {
         // Increment the counter of login attempts
         $sessionPwdAttempts = ($sessionPwdAttempts === '') ? 1 : ++$sessionPwdAttempts;
         $session->set('pwd_attempts', $sessionPwdAttempts);
+        error_log('DEBUG DEBUG 1');
 
         // Check for brute force attempts
         if ($sessionPwdAttempts <= 3) {
@@ -191,7 +181,7 @@ if ($post_type === 'identify_user') {
                 echo $errorResponse;
                 return false;
             }
-
+            
             // Identify the user through Teampass process
             identifyUser($post_data, $SETTINGS);
         }
@@ -237,7 +227,8 @@ if ($post_type === 'identify_user') {
 function identifyUser(string $sentData, array $SETTINGS): bool
 {
     $antiXss = new AntiXSS();
-    $superGlobal = new SuperGlobal();
+    
+    $request = Request::createFromGlobals();
     $lang = new Language();
     $session = SessionManager::getSession();
 
@@ -246,8 +237,8 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     $sessionPwdAttempts = $session->get('pwd_attempts');
     $sessionUrl = $session->get('user-initial_url');
     $server = [];
-    $server['PHP_AUTH_USER'] = $superGlobal->get('PHP_AUTH_USER', 'SERVER');
-    $server['PHP_AUTH_PW'] = $superGlobal->get('PHP_AUTH_PW', 'SERVER');
+    $server['PHP_AUTH_USER'] =  $request->server->get('PHP_AUTH_USER');
+    $server['PHP_AUTH_PW'] = $request->server->get('PHP_AUTH_PW');
     
     // decrypt and retreive data in JSON format
     if ($session->get('key') === null) {
@@ -258,7 +249,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             'decode',
             $session->get('key')
         );
-        //$session->set('key', $session->get('key'));
     }
 
     // Check if Duo auth is in progress and pass the pw and login back to the standard login process
@@ -465,7 +455,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             $userLdap['ldapConnection']
         ) === true
     ) {
-        //$superGlobal->put('autoriser', true, 'SESSION');
         $session->set('pwd_attempts', 0);
 
         // Check if any unsuccessfull login tries exist
@@ -476,7 +465,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             $username,
             $SETTINGS,
         );
-            
+        error_log('Identify.php L467 USER authentifié');
         // Save account in SESSION
         $session->set('user-unsuccessfull_login_attempts_list', $attemptsInfos['attemptsList'] === 0 ? true : false);
         $session->set('user-unsuccessfull_login_attempts_shown', $attemptsInfos['attemptsCount'] === 0 ? true : false);
@@ -505,7 +494,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             'user-tree_load_strategy',
             (isset($userInfo['treeloadstrategy']) === false || empty($userInfo['treeloadstrategy']) === true) ? 'full' : $userInfo['treeloadstrategy']
         );
-        //$superGlobal->put('user_agsescardid', $userInfo['agses-usercardid'], 'SESSION', 'user');
         $session->set('user-language', $userInfo['user_language']);
         $session->set('user-timezone', $userInfo['usertimezone']);
         $session->set('user-keys_recovery_time', $userInfo['keys_recovery_time']);
@@ -769,7 +757,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
 
         // Ensure Complexity levels are translated
         defineComplexity();
-
+error_log('Identify.php L760 retour en des valeurs');
         echo prepareExchangedData(
             [
                 'value' => $return,

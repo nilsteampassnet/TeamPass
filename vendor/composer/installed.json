@@ -2055,17 +2055,17 @@
         },
         {
             "name": "phpseclib/phpseclib",
-            "version": "1.0.21",
-            "version_normalized": "1.0.21.0",
+            "version": "1.0.22",
+            "version_normalized": "1.0.22.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/phpseclib/phpseclib.git",
-                "reference": "de7ec75b54d6a1f3d549d03a2bf3e3e392c3bc36"
+                "reference": "db278731472afb1621353b659609b0f9054a1879"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpseclib/phpseclib/zipball/de7ec75b54d6a1f3d549d03a2bf3e3e392c3bc36",
-                "reference": "de7ec75b54d6a1f3d549d03a2bf3e3e392c3bc36",
+                "url": "https://api.github.com/repos/phpseclib/phpseclib/zipball/db278731472afb1621353b659609b0f9054a1879",
+                "reference": "db278731472afb1621353b659609b0f9054a1879",
                 "shasum": ""
             },
             "require": {
@@ -2083,7 +2083,7 @@
                 "ext-xml": "Install the XML extension to load XML formatted public keys.",
                 "pear-pear/PHP_Compat": "Install PHP_Compat to get phpseclib working on PHP < 5.0.0."
             },
-            "time": "2023-07-09T15:16:21+00:00",
+            "time": "2023-12-29T01:44:43+00:00",
             "type": "library",
             "installation-source": "dist",
             "autoload": {
@@ -2156,7 +2156,7 @@
             ],
             "support": {
                 "issues": "https://github.com/phpseclib/phpseclib/issues",
-                "source": "https://github.com/phpseclib/phpseclib/tree/1.0.21"
+                "source": "https://github.com/phpseclib/phpseclib/tree/1.0.22"
             },
             "funding": [
                 {
@@ -2713,17 +2713,17 @@
         },
         {
             "name": "symfony/contracts",
-            "version": "v3.4.0",
-            "version_normalized": "3.4.0.0",
+            "version": "v3.4.1",
+            "version_normalized": "3.4.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/contracts.git",
-                "reference": "f59eb1feac6dcc21b5954f7ab3e7a902160de9d3"
+                "reference": "db06a3f3c52adeb7a1e84745cece0a9c474f518a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/contracts/zipball/f59eb1feac6dcc21b5954f7ab3e7a902160de9d3",
-                "reference": "f59eb1feac6dcc21b5954f7ab3e7a902160de9d3",
+                "url": "https://api.github.com/repos/symfony/contracts/zipball/db06a3f3c52adeb7a1e84745cece0a9c474f518a",
+                "reference": "db06a3f3c52adeb7a1e84745cece0a9c474f518a",
                 "shasum": ""
             },
             "require": {
@@ -2746,7 +2746,7 @@
             "require-dev": {
                 "symfony/polyfill-intl-idn": "^1.10"
             },
-            "time": "2023-10-02T13:27:40+00:00",
+            "time": "2023-12-26T14:02:43+00:00",
             "type": "library",
             "extra": {
                 "branch-alias": {
@@ -2791,7 +2791,7 @@
                 "standards"
             ],
             "support": {
-                "source": "https://github.com/symfony/contracts/tree/v3.4.0"
+                "source": "https://github.com/symfony/contracts/tree/v3.4.1"
             },
             "funding": [
                 {
@@ -2878,17 +2878,17 @@
         },
         {
             "name": "symfony/http-foundation",
-            "version": "v6.4.0",
-            "version_normalized": "6.4.0.0",
+            "version": "v6.4.2",
+            "version_normalized": "6.4.2.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/http-foundation.git",
-                "reference": "44a6d39a9cc11e154547d882d5aac1e014440771"
+                "reference": "172d807f9ef3fc3fbed8377cc57c20d389269271"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/http-foundation/zipball/44a6d39a9cc11e154547d882d5aac1e014440771",
-                "reference": "44a6d39a9cc11e154547d882d5aac1e014440771",
+                "url": "https://api.github.com/repos/symfony/http-foundation/zipball/172d807f9ef3fc3fbed8377cc57c20d389269271",
+                "reference": "172d807f9ef3fc3fbed8377cc57c20d389269271",
                 "shasum": ""
             },
             "require": {
@@ -2910,7 +2910,7 @@
                 "symfony/mime": "^5.4|^6.0|^7.0",
                 "symfony/rate-limiter": "^5.4|^6.0|^7.0"
             },
-            "time": "2023-11-20T16:41:16+00:00",
+            "time": "2023-12-27T22:16:42+00:00",
             "type": "library",
             "installation-source": "dist",
             "autoload": {
@@ -2938,7 +2938,7 @@
             "description": "Defines an object-oriented layer for the HTTP specification",
             "homepage": "https://symfony.com",
             "support": {
-                "source": "https://github.com/symfony/http-foundation/tree/v6.4.0"
+                "source": "https://github.com/symfony/http-foundation/tree/v6.4.2"
             },
             "funding": [
                 {
@@ -3726,23 +3726,23 @@
         },
         {
             "name": "symfony/process",
-            "version": "v6.4.0",
-            "version_normalized": "6.4.0.0",
+            "version": "v6.4.2",
+            "version_normalized": "6.4.2.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/process.git",
-                "reference": "191703b1566d97a5425dc969e4350d32b8ef17aa"
+                "reference": "c4b1ef0bc80533d87a2e969806172f1c2a980241"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/process/zipball/191703b1566d97a5425dc969e4350d32b8ef17aa",
-                "reference": "191703b1566d97a5425dc969e4350d32b8ef17aa",
+                "url": "https://api.github.com/repos/symfony/process/zipball/c4b1ef0bc80533d87a2e969806172f1c2a980241",
+                "reference": "c4b1ef0bc80533d87a2e969806172f1c2a980241",
                 "shasum": ""
             },
             "require": {
                 "php": ">=8.1"
             },
-            "time": "2023-11-17T21:06:49+00:00",
+            "time": "2023-12-22T16:42:54+00:00",
             "type": "library",
             "installation-source": "dist",
             "autoload": {
@@ -3770,7 +3770,7 @@
             "description": "Executes commands in sub-processes",
             "homepage": "https://symfony.com",
             "support": {
-                "source": "https://github.com/symfony/process/tree/v6.4.0"
+                "source": "https://github.com/symfony/process/tree/v6.4.2"
             },
             "funding": [
                 {
@@ -3790,17 +3790,17 @@
         },
         {
             "name": "symfony/translation",
-            "version": "v6.4.0",
-            "version_normalized": "6.4.0.0",
+            "version": "v6.4.2",
+            "version_normalized": "6.4.2.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/translation.git",
-                "reference": "b1035dbc2a344b21f8fa8ac451c7ecec4ea45f37"
+                "reference": "a2ab2ec1a462e53016de8e8d5e8912bfd62ea681"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/translation/zipball/b1035dbc2a344b21f8fa8ac451c7ecec4ea45f37",
-                "reference": "b1035dbc2a344b21f8fa8ac451c7ecec4ea45f37",
+                "url": "https://api.github.com/repos/symfony/translation/zipball/a2ab2ec1a462e53016de8e8d5e8912bfd62ea681",
+                "reference": "a2ab2ec1a462e53016de8e8d5e8912bfd62ea681",
                 "shasum": ""
             },
             "require": {
@@ -3837,7 +3837,7 @@
                 "symfony/service-contracts": "^2.5|^3",
                 "symfony/yaml": "^5.4|^6.0|^7.0"
             },
-            "time": "2023-11-29T08:14:36+00:00",
+            "time": "2023-12-18T09:25:29+00:00",
             "type": "library",
             "installation-source": "dist",
             "autoload": {
@@ -3868,7 +3868,7 @@
             "description": "Provides tools to internationalize your application",
             "homepage": "https://symfony.com",
             "support": {
-                "source": "https://github.com/symfony/translation/tree/v6.4.0"
+                "source": "https://github.com/symfony/translation/tree/v6.4.2"
             },
             "funding": [
                 {
@@ -3888,17 +3888,17 @@
         },
         {
             "name": "symfony/var-dumper",
-            "version": "v6.4.0",
-            "version_normalized": "6.4.0.0",
+            "version": "v6.4.2",
+            "version_normalized": "6.4.2.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/var-dumper.git",
-                "reference": "c40f7d17e91d8b407582ed51a2bbf83c52c367f6"
+                "reference": "68d6573ec98715ddcae5a0a85bee3c1c27a4c33f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/var-dumper/zipball/c40f7d17e91d8b407582ed51a2bbf83c52c367f6",
-                "reference": "c40f7d17e91d8b407582ed51a2bbf83c52c367f6",
+                "url": "https://api.github.com/repos/symfony/var-dumper/zipball/68d6573ec98715ddcae5a0a85bee3c1c27a4c33f",
+                "reference": "68d6573ec98715ddcae5a0a85bee3c1c27a4c33f",
                 "shasum": ""
             },
             "require": {
@@ -3918,7 +3918,7 @@
                 "symfony/uid": "^5.4|^6.0|^7.0",
                 "twig/twig": "^2.13|^3.0.4"
             },
-            "time": "2023-11-09T08:28:32+00:00",
+            "time": "2023-12-28T19:16:56+00:00",
             "bin": [
                 "Resources/bin/var-dump-server"
             ],
@@ -3956,7 +3956,7 @@
                 "dump"
             ],
             "support": {
-                "source": "https://github.com/symfony/var-dumper/tree/v6.4.0"
+                "source": "https://github.com/symfony/var-dumper/tree/v6.4.2"
             },
             "funding": [
                 {
@@ -4197,44 +4197,6 @@
                 "relative": true
             },
             "install-path": "../teampassclasses/sessionmanager"
-        },
-        {
-            "name": "teampassclasses/superglobal",
-            "version": "dev-master",
-            "version_normalized": "dev-master",
-            "dist": {
-                "type": "path",
-                "url": "includes/libraries/teampassclasses/superglobal",
-                "reference": "f1a3be3120cba06901a5412c17f75d36bf315e25"
-            },
-            "require": {
-                "php": "^7.4 || ^8.0"
-            },
-            "type": "library",
-            "installation-source": "dist",
-            "autoload": {
-                "psr-4": {
-                    "TeampassClasses\\SuperGlobal\\": "src/"
-                }
-            },
-            "license": [
-                "GPL-3.0-only"
-            ],
-            "authors": [
-                {
-                    "name": "Nils Laumaillé"
-                }
-            ],
-            "description": "Handle project's global variables.",
-            "keywords": [
-                "nested",
-                "tree"
-            ],
-            "transport-options": {
-                "symlink": false,
-                "relative": true
-            },
-            "install-path": "../teampassclasses/superglobal"
         },
         {
             "name": "tecnickcom/tcpdf",

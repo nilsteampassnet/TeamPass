@@ -570,3 +570,31 @@ const sanitizeDom = (str) => {
     div.remove();
     return newString;
 }
+
+
+function doAjaxQuery(type, url, data) {
+    return new Promise(function(resolve, reject) {
+        $.ajax({
+            type: type,
+            url: url, 
+            data: data,
+            dataType: 'json',
+            success: function(response) {
+                // Traitement de la réponse
+                console.log(response);
+
+                // Vous pouvez également effectuer des opérations ici avec la réponse
+
+                // Résoudre la promesse avec la réponse
+                resolve(response);
+            },
+            error: function(xhr, status, error) {
+                // Gestion des erreurs
+                console.error(error);
+
+                // Rejeter la promesse en cas d'erreur
+                reject(error);
+            }
+        });
+    });
+}

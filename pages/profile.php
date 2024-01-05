@@ -24,8 +24,7 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-use TeampassClasses\SuperGlobal\SuperGlobal;
-use TeampassClasses\SessionManager\SessionManager;
+use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\Language\Language;
 use TeampassClasses\PerformChecks\PerformChecks;
 
@@ -34,7 +33,8 @@ require_once __DIR__.'/../sources/main.functions.php';
 
 // init
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
+
+$request = Request::createFromGlobals();
 $lang = new Language(); 
 
 // Load config if $SETTINGS not defined
@@ -79,7 +79,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 
 // Prepare GET variables
 $get = [];
-$get['tab'] = $superGlobal->get('tab', 'GET') === null ? '' : $superGlobal->get('tab', 'GET');
+$get['tab'] = $request->query->get('tab') === null ? '' : $request->query->get('tab');
 // user type
 if ($session->get('user-admin') === 1) {
     $session->set('user-privilege', $lang->get('god'));

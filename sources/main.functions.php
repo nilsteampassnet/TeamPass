@@ -30,7 +30,7 @@ use Elegant\Sanitizer\Sanitizer;
 use voku\helper\AntiXSS;
 use Hackzilla\PasswordGenerator\Generator\ComputerPasswordGenerator;
 use Hackzilla\PasswordGenerator\RandomGenerator\Php7RandomGenerator;
-use TeampassClasses\SuperGlobal\SuperGlobal;
+use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use TeampassClasses\NestedTree\NestedTree;
@@ -39,6 +39,7 @@ use Defuse\Crypto\Crypto;
 use Defuse\Crypto\KeyProtectedByPassword;
 use Defuse\Crypto\File as CryptoFile;
 use Defuse\Crypto\Exception as CryptoException;
+use Elegant\Sanitizer\Filters\Uppercase;
 use PHPMailer\PHPMailer\PHPMailer;
 use PasswordLib\PasswordLib;
 use Symfony\Component\Process\Exception\ProcessFailedException;
@@ -55,9 +56,8 @@ if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir'
 header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, must-revalidate');
 
-
-
 loadClasses('DB');
+$session = SessionManager::getSession();
 
 
 /**
@@ -1469,15 +1469,13 @@ function utf8Converter(array $array): array
 function prepareExchangedData($data, string $type, ?string $key = null)
 {
     $session = SessionManager::getSession();
-    
+    $cookieValue = SessionManager::getCookieValue('PHPSESSID');
     // get session
-    if ($key !== null) {
-        $session->set('key', $key);
-        $globalsKey = $key;
-    } else {
-        $globalsKey = $session->get('key');
+    if ($key !== null || !$session->has('key')) {// || $session->get('key') !== $cookieValue) {
+        //$session->set('key', $cookieValue);
+        //error_log('DEBUG : Réinitialisation de la clé de session ' . $session->get('key'));
     }
-    
+    error_log(strtoupper($type).' - Valeur de la clé de session ' . $session->get('key')." --- et la valeur du COOKIE : ".$cookieValue);
     // Perform
     if ($type === 'encode' && is_array($data) === true) {
         // Now encode
@@ -1486,7 +1484,7 @@ function prepareExchangedData($data, string $type, ?string $key = null)
                 $data,
                 JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP
             ),
-            $globalsKey
+            $session->get('key')
         );
     }
     if ($type === 'decode' && is_array($data) === false) {
@@ -1494,7 +1492,7 @@ function prepareExchangedData($data, string $type, ?string $key = null)
         return json_decode(
             (string) Encryption::decrypt(
                 (string) $data,
-                $globalsKey
+                $session->get('key')
             ),
             true
         );
@@ -2769,7 +2767,6 @@ function storeUsersShareKey(
     }
     
     if (
-        //((int) $post_folder_is_personal === 1 && in_array($post_folder_id, $superGlobal->get('personal_folders', 'SESSION')) === true) ||
         $onlyForUser === true || (int) $post_folder_is_personal === 1
     ) {
         // Only create the sharekey for a user
@@ -4265,13 +4262,14 @@ function loadClasses(string $className = ''): void
  */
 function getCurrectPage($SETTINGS)
 {
-    $superGlobal = new SuperGlobal();
+    
+    $request = Request::createFromGlobals();
 
     // Parse the url
     parse_str(
         substr(
-            (string) $superGlobal->get('REQUEST_URI', 'SERVER'),
-            strpos((string) $superGlobal->get('REQUEST_URI', 'SERVER'), '?') + 1
+            (string) $request->server->get('REQUEST_URI'),
+            strpos((string) $request->server->get('REQUEST_URI'), '?') + 1
         ),
         $result
     );

@@ -95,9 +95,10 @@ declare(strict_types=1);
         // Show tooltips
         $('.infotip').tooltip();
     });
-
+    
     // Ensure session is ready in case of disconnection
-    if (store.get('teampassSettings') === undefined) {
+    const teampassSettings = store.get('teampassSettings');
+    if (teampassSettings === null || typeof teampassSettings === 'undefined' || Object.keys(teampassSettings).length === 0) {
         store.set(
             'teampassSettings', {},
             function(teampassSettings) {}
@@ -105,12 +106,7 @@ declare(strict_types=1);
         $.when(
             // Load teampass settings
             (function() {
-                if (store.get('teampassUser') !== undefined) {
-                    return loadSettings();
-                } else {
-                    // Retourner une promesse résolue si la condition n'est pas satisfaite
-                    return $.Deferred().resolve().promise();
-                }
+                return loadSettings();
             })()
         ).then(function() {
             showMFAMethod();
@@ -536,11 +532,14 @@ declare(strict_types=1);
             'sources/identify.php', {
                 type: 'get2FAMethods',
                 login: $('#login').val(),
-                sessionId: '<?php echo session_id(); ?>'
+                xhrFields: {
+                    withCredentials: true
+                }
             },
             function(data) {
+                //data = prepareExchangedData(data, 'decode', "<?php echo $session->get('key'); ?>");
                 data = JSON.parse(data);
-                console.log(data)
+                console.log("Voici ma clé reçue "+data.key+' et ma clé locale<?php echo $session->get('key'); ?>')
                 if (data.key !== '<?php echo $session->get('key'); ?>') {
                     // No session was found, warn user
                     toastr.remove();
@@ -565,7 +564,7 @@ declare(strict_types=1);
                     data = prepareExchangedData(
                         data.ret,
                         "decode",
-                        "<?php echo $session->get('key'); ?>"
+                        data.key
                     );
                 } catch (e) {
                     // error
@@ -669,9 +668,12 @@ declare(strict_types=1);
                     'encode',
                     '<?php echo $session->get('key'); ?>'
                 ),
-                sessionId: '<?php echo session_id(); ?>'
+                xhrFields: {
+                    withCredentials: true
+                },
             },
             function(receivedData) {
+                console.log('ICI la KEY est : <?php echo $session->get('key'); ?>')
                 try {
                     var data = prepareExchangedData(
                         receivedData,

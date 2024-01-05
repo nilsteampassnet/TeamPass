@@ -23,7 +23,6 @@ namespace TeampassClasses\Language;
  * @see       https://www.teampass.net
 */
 
-use TeampassClasses\SuperGlobal\SuperGlobal;
 
 class Language {
     private $language;
@@ -31,7 +30,6 @@ class Language {
     private $translations;
 
     public function __construct($language = null, $path = __DIR__."/../../../../includes/language") {
-        $superGlobal = new SuperGlobal();
         if (null === $language || empty($language) === true ) {
             $language = 'english';
         }

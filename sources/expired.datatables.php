@@ -26,7 +26,7 @@ declare(strict_types=1);
 
 use voku\helper\AntiXSS;
 use TeampassClasses\NestedTree\NestedTree;
-use TeampassClasses\SuperGlobal\SuperGlobal;
+use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
@@ -39,7 +39,7 @@ $session = SessionManager::getSession();
 
 // init
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
+$request = Request::createFromGlobals();
 $lang = new Language(); 
 
 // Load config if $SETTINGS not defined

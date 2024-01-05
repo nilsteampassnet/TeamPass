@@ -26,13 +26,13 @@ declare(strict_types=1);
 
 
 use voku\helper\AntiXSS;
-use TeampassClasses\SuperGlobal\SuperGlobal;
+use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 
 require_once 'main.functions.php';
-$session = SessionManager::getSession();
-$superGlobal = new SuperGlobal();
+
+$request = Request::createFromGlobals();
 $lang = new Language(); 
 
 // Load config if $SETTINGS not defined
@@ -70,18 +70,18 @@ function teampassRedirect($url)
 
 // Prepare GET variables
 $server = [];
-$server['https'] = $superGlobal->get('HTTPS', 'SERVER');
-$server['request_uri'] = $superGlobal->get('REQUEST_URI', 'SERVER');
-$server['http_host'] = $superGlobal->get('HTTP_HOST', 'SERVER');
-$server['ssl_server_cert'] = $superGlobal->get('ssl_server_cert', 'SERVER');
-$server['remote_addr'] = $superGlobal->get('remote_addr', 'SERVER');
-$server['http_user_agent'] = $superGlobal->get('http_user_agent', 'SERVER');
+$server['https'] = $request->server->get('HTTPS');
+$server['request_uri'] = $request->server->get('REQUEST_URI');
+$server['http_host'] = $request->server->get('HTTP_HOST');
+$server['ssl_server_cert'] = $request->server->get('ssl_server_cert');
+$server['remote_addr'] = $request->server->get('remote_addr');
+$server['http_user_agent'] = $request->server->get('http_user_agent');
 
 $get = [];
-$get['session'] = $superGlobal->get('session', 'GET');
-$get['action'] = $superGlobal->get('action', 'GET');
-$get['type'] = $superGlobal->get('type', 'GET');
-$get['page'] = $superGlobal->get('page', 'GET');
+$get['session'] = $request->query->get('session');
+$get['action'] = $request->query->get('action');
+$get['type'] = $request->query->get('type');
+$get['page'] = $request->query->get('page');
 
 // Redirect needed?
 if (isset($server['https']) === true
@@ -217,6 +217,9 @@ if ((isset($get['session']) === true
             $session->get('user-id')
         );
     }
+    // CLear PHPSESSID
+    $session->invalidate();
+    //session_regenerate_id(true);
     error_log('DEBUG: Session expired (core.php l210)');
     // REDIRECTION PAGE ERREUR
     echo '
@@ -240,11 +243,13 @@ if (empty($session->get('user-session_duration')) === false) {
 }
 
 // get some init
-if (null === $session->get('user-id') || (int) $session->get('user-id') === 0) {
-    $key = GenerateCryptKey(50, false, true, true, false, true, ['cpassman_dir' => '.']);
-    $session->set('key', $key);
-    error_log('DEBUG: Creation de la nouvelle key: ' . $key." -- user ID : ".$session->get('user-id'));
-}
+/*if (null === $session->get('user-id') || (int) $session->get('user-id') === 0) {
+    // Vérifiez si la clé de session 'key' est définie
+    if (!$session->has('key')) {
+        $session->set('key', $superGlobal->get('PHPSESSID', 'COOKIE'));
+        error_log('DEBUG: Création de la nouvelle clé de session: ' . $session->get('key') . " ;; " . $superGlobal->get('PHPSESSID', 'COOKIE') . " -- user ID : " . $session->get('user-id'));
+    }
+}*/
 
 if (
     null !== $session->get('user-id')

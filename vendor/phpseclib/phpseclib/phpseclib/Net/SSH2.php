@@ -1100,6 +1100,14 @@ class Net_SSH2
     var $smartMFA = true;
 
     /**
+     * Extra packets counter
+     *
+     * @var bool
+     * @access private
+     */
+    var $extra_packets;
+
+    /**
      * Default Constructor.
      *
      * $host can either be a string, representing the host, or a stream resource.
@@ -1139,6 +1147,7 @@ class Net_SSH2
             4 => 'NET_SSH2_MSG_DEBUG',
             5 => 'NET_SSH2_MSG_SERVICE_REQUEST',
             6 => 'NET_SSH2_MSG_SERVICE_ACCEPT',
+            7 => 'NET_SSH2_MSG_EXT_INFO', // RFC 8308
             20 => 'NET_SSH2_MSG_KEXINIT',
             21 => 'NET_SSH2_MSG_NEWKEYS',
             30 => 'NET_SSH2_MSG_KEXDH_INIT',
@@ -1511,6 +1520,8 @@ class Net_SSH2
             $preferred['client_to_server']['comp'] :
             $this->getSupportedCompressionAlgorithms();
 
+        $kex_algorithms = array_merge($kex_algorithms, array('ext-info-c', 'kex-strict-c-v00@openssh.com'));
+
         // some SSH servers have buggy implementations of some of the above algorithms
         switch (true) {
             case $this->server_identifier == 'SSH-2.0-SSHD':
@@ -1573,6 +1584,7 @@ class Net_SSH2
                 return false;
             }
 
+            $this->extra_packets = 0;
             $kexinit_payload_server = $this->_get_binary_packet();
             if ($kexinit_payload_server === false) {
                 $this->bitmap = 0;
@@ -1597,6 +1609,12 @@ class Net_SSH2
         }
         $temp = unpack('Nlength', $this->_string_shift($response, 4));
         $this->kex_algorithms = explode(',', $this->_string_shift($response, $temp['length']));
+        if (in_array('kex-strict-s-v00@openssh.com', $this->kex_algorithms)) {
+            if ($this->session_id === false && $this->extra_packets) {
+                user_error('Possible Terrapin Attack detected');
+                return $this->_disconnect(NET_SSH2_DISCONNECT_KEY_EXCHANGE_FAILED);
+            }
+        }
 
         if (strlen($response) < 4) {
             return false;
@@ -1983,6 +2001,10 @@ class Net_SSH2
             return false;
         }
 
+        if (in_array('kex-strict-s-v00@openssh.com', $this->kex_algorithms)) {
+            $this->get_seq_no = $this->send_seq_no = 0;
+        }
+
         $this->encrypt = $this->_encryption_algorithm_to_crypt_instance($encrypt);
         $this->decrypt = $this->_encryption_algorithm_to_crypt_instance($decrypt);
 
@@ -2275,7 +2297,9 @@ class Net_SSH2
     function login($username)
     {
         $args = func_get_args();
-        $this->auth[] = $args;
+        if (!$this->retry_connect) {
+            $this->auth[] = $args;
+        }
 
         // try logging with 'none' as an authentication method first since that's what
         // PuTTY does
@@ -2417,6 +2441,35 @@ class Net_SSH2
                 return false;
             }
             extract(unpack('Ctype', $this->_string_shift($response, 1)));
+
+            if ($type == NET_SSH2_MSG_EXT_INFO) {
+                if (strlen($response) < 4) {
+                    return false;
+                }
+                $nr_extensions = unpack('Nlength', $this->_string_shift($response, 4));
+                for ($i = 0; $i < $nr_extensions['length']; $i++) {
+                    if (strlen($response) < 4) {
+                        return false;
+                    }
+                    $temp = unpack('Nlength', $this->_string_shift($response, 4));
+                    $extension_name = $this->_string_shift($response, $temp['length']);
+                    if ($extension_name == 'server-sig-algs') {
+                        if (strlen($response) < 4) {
+                            return false;
+                        }
+                        $temp = unpack('Nlength', $this->_string_shift($response, 4));
+                        $this->supported_private_key_algorithms = explode(',', $this->_string_shift($response, $temp['length']));
+                    }
+                }
+
+                $response = $this->_get_binary_packet();
+                if ($response === false) {
+                    $this->bitmap = 0;
+                    user_error('Connection closed by server');
+                    return false;
+                }
+                extract(unpack('Ctype', $this->_string_shift($response, 1)));
+            }
 
             if ($type != NET_SSH2_MSG_SERVICE_ACCEPT) {
                 user_error('Expected SSH_MSG_SERVICE_ACCEPT');
@@ -2789,7 +2842,7 @@ class Net_SSH2
 
         $algos = array('rsa-sha2-256', 'rsa-sha2-512', 'ssh-rsa');
         if (isset($this->preferred['hostkey'])) {
-            $algos = array_intersect($this->preferred['hostkey'], $algos);
+            $algos = array_intersect($algos, $this->preferred['hostkey']);
         }
         $algo = $this->_array_intersect_first($algos, $this->supported_private_key_algorithms);
 
@@ -3746,9 +3799,11 @@ class Net_SSH2
                 $this->bitmap = 0;
                 return false;
             case NET_SSH2_MSG_IGNORE:
+                $this->extra_packets++;
                 $payload = $this->_get_binary_packet($skip_channel_filter);
                 break;
             case NET_SSH2_MSG_DEBUG:
+                $this->extra_packets++;
                 $this->_string_shift($payload, 2);
                 if (strlen($payload) < 4) {
                     return false;
@@ -3760,6 +3815,7 @@ class Net_SSH2
             case NET_SSH2_MSG_UNIMPLEMENTED:
                 return false;
             case NET_SSH2_MSG_KEXINIT:
+                // this is here for key re-exchanges after the initial key exchange
                 if ($this->session_id !== false) {
                     $this->send_kex_first = false;
                     if (!$this->_key_exchange($payload)) {

@@ -23,9 +23,9 @@ class ComposerStaticInitf8d0a111ac97059c58e49ca16fe551d0
         'fe62ba7e10580d903cc46d808b5961a4' => __DIR__ . '/..' . '/tightenco/collect/src/Collect/Support/helpers.php',
         'caf31cc6ec7cf2241cb6f12c226c3846' => __DIR__ . '/..' . '/tightenco/collect/src/Collect/Support/alias.php',
         'b46ad4fe52f4d1899a2951c7e6ea56b0' => __DIR__ . '/..' . '/voku/portable-utf8/bootstrap.php',
+        '2324d0e5cadd603331d27de142371f0b' => __DIR__ . '/..' . '/symfony/contracts/Deprecation/function.php',
         'decc78cc4436b1292c6c0d151b19445c' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/bootstrap.php',
         '3919eeb97e98d4648304477f8ef734ba' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/Crypt/Random.php',
-        '2324d0e5cadd603331d27de142371f0b' => __DIR__ . '/..' . '/symfony/contracts/Deprecation/function.php',
     );
 
     public static $prefixLengthsPsr4 = array (
@@ -42,7 +42,6 @@ class ComposerStaticInitf8d0a111ac97059c58e49ca16fe551d0
         array (
             'Tightenco\\Collect\\' => 18,
             'TiBeN\\' => 6,
-            'TeampassClasses\\SuperGlobal\\' => 28,
             'TeampassClasses\\SessionManager\\' => 31,
             'TeampassClasses\\PerformChecks\\' => 30,
             'TeampassClasses\\NestedTree\\' => 27,
@@ -158,10 +157,6 @@ class ComposerStaticInitf8d0a111ac97059c58e49ca16fe551d0
         'TiBeN\\' => 
         array (
             0 => __DIR__ . '/..' . '/tiben/crontab-manager/src',
-        ),
-        'TeampassClasses\\SuperGlobal\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/teampassclasses/superglobal/src',
         ),
         'TeampassClasses\\SessionManager\\' => 
         array (
@@ -1867,7 +1862,6 @@ class ComposerStaticInitf8d0a111ac97059c58e49ca16fe551d0
         'TeampassClasses\\NestedTree\\NestedTree' => __DIR__ . '/..' . '/teampassclasses/nestedtree/src/NestedTree.php',
         'TeampassClasses\\PerformChecks\\PerformChecks' => __DIR__ . '/..' . '/teampassclasses/performchecks/src/PerformChecks.php',
         'TeampassClasses\\SessionManager\\SessionManager' => __DIR__ . '/..' . '/teampassclasses/sessionmanager/src/SessionManager.php',
-        'TeampassClasses\\SuperGlobal\\SuperGlobal' => __DIR__ . '/..' . '/teampassclasses/superglobal/src/SuperGlobal.php',
         'TiBeN\\CrontabManager\\CrontabAdapter' => __DIR__ . '/..' . '/tiben/crontab-manager/src/CrontabManager/CrontabAdapter.php',
         'TiBeN\\CrontabManager\\CrontabAdapterInterface' => __DIR__ . '/..' . '/tiben/crontab-manager/src/CrontabManager/CrontabAdapterInterface.php',
         'TiBeN\\CrontabManager\\CrontabJob' => __DIR__ . '/..' . '/tiben/crontab-manager/src/CrontabManager/CrontabJob.php',

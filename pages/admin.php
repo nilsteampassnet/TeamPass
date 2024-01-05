@@ -36,6 +36,7 @@ use TeampassClasses\Encryption\Encryption;
 require_once __DIR__.'/../sources/main.functions.php';
 
 // init
+$session = SessionManager::getSession();
 loadClasses('DB');
 $lang = new Language(); 
 

@@ -115,6 +115,7 @@ class PerformChecks
                 'SELECT id FROM ' . prefixTable('users') . ' WHERE login = %s',
                 $this->sessionVar['login']
             );
+            error_log('PerformCheck initialLogin() :  - SELECT id FROM ' . prefixTable('users') . ' WHERE login = '.$this->sessionVar['login']);
             if (DB::count() > 0) {
                 return true;
             }

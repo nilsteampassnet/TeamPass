@@ -24,7 +24,7 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-use TeampassClasses\SuperGlobal\SuperGlobal;
+use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 
@@ -55,10 +55,11 @@ if (file_exists(__DIR__.'/includes/config/settings.php') === false) {
     exit;
 }
 
+
 // initialise CSRFGuard library
 require_once __DIR__.'/includes/libraries/csrfp/libs/csrf/csrfprotector.php';
 csrfProtector::init();
-session_id();
+//session_id();
 
 // Load config
 try {
@@ -78,11 +79,15 @@ if (isset($SETTINGS['cpassman_dir']) === false || $SETTINGS['cpassman_dir'] === 
 // Load functions
 require_once __DIR__. '/includes/config/include.php';
 require_once __DIR__.'/sources/main.functions.php';
-
+//error_log('>>>>> '.SessionManager::getCookieValue('PHPSESSID'));
 // init
 loadClasses();
+error_log('Index.php - init de la session');
 $session = SessionManager::getSession();
-$superGlobal = new SuperGlobal();
+$request = Request::createFromGlobals();
+
+$session->set('key', SessionManager::getCookieValue('PHPSESSID'));
+error_log('DEBUG : KEY sur index.php ' . $session->get('key')." -- ".SessionManager::getCookieValue('PHPSESSID'));
 
 // Quick major version check -> upgrade needed?
 if (isset($SETTINGS['teampass_version']) === true && version_compare(TP_VERSION, $SETTINGS['teampass_version']) > 0) {
@@ -97,14 +102,13 @@ if (isset($SETTINGS['teampass_version']) === true && version_compare(TP_VERSION,
 }
 
 if (isset($SETTINGS['cpassman_url']) === false || $SETTINGS['cpassman_url'] === '') {
-    $SETTINGS['cpassman_url'] = $superGlobal->get('REQUEST_URI', 'SERVER');
+    $SETTINGS['cpassman_url'] = $request->server->get('REQUEST_URI');
 }
 
 // Load Core library
 require_once $SETTINGS['cpassman_dir'] . '/sources/core.php';
 // Prepare POST variables
 $post_language = filter_input(INPUT_POST, 'language', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-// Prepare superGlobal variables
 $session_user_language = $session->get('user-language');
 $session_user_admin = $session->get('user-admin');
 $session_user_human_resources = (int) $session->get('user-can_manage_all_users');
@@ -112,16 +116,16 @@ $session_name = $session->get('user-name');
 $session_lastname = $session->get('user-lastname');
 $session_user_manager = $session->get('user-manager');
 $session_initial_url = $session->get('user-initial_url');
-$session_nb_users_online = $superGlobal->get('nb_users_online', 'SESSION');
+$session_nb_users_online = $session->get('nb_users_online');
 $session_auth_type = $session->get('user-auth_type');
 
 $server = [];
-$server['request_uri'] = (string) $superGlobal->get('REQUEST_URI', 'SERVER');
-$server['request_time'] = (int) $superGlobal->get('REQUEST_TIME', 'SERVER');
+$server['request_uri'] = (string) $request->server->get('REQUEST_URI');
+$server['request_time'] = (int) $request->server->get('REQUEST_TIME');
 
 $get = [];
-$get['page'] = $superGlobal->get('page', 'GET') === null ? '' : $superGlobal->get('page', 'GET');
-$get['otv'] = $superGlobal->get('otv', 'GET') === null ? '' : $superGlobal->get('otv', 'GET');
+$get['page'] = $request->query->get('page') === null ? '' : $request->query->get('page');
+$get['otv'] = $request->query->get('otv') === null ? '' : $request->query->get('otv');
 
 /* DEFINE WHAT LANGUAGE TO USE */
 if (null === $session->get('user-validite_pw') && $post_language === null && $session_user_language === null) {
@@ -235,6 +239,7 @@ if (array_key_exists($get['page'], $utilitiesPages) === true) {
 
 
 <?php
+error_log(print_r($session->all(), true));
 // display an item in the context of OTV link
 if ((null === $session->get('user-validite_pw') || empty($session->get('user-validite_pw')) === true || empty($session->get('user-id')) === true)
     && empty($get['otv']) === false)
@@ -1016,7 +1021,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
     && empty($get['otv']) === false
 ) {
     // case where one-shot viewer
-    if (empty($superGlobal->get('code', 'GET')) === false && empty($superGlobal->get('stamp', 'GET')) === false
+    if (empty($request->query->get('code')) === false && empty($request->query->get('stamp')) === false
     ) {
         include './includes/core/otv.php';
     } else {
@@ -1052,18 +1057,26 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
             <script language="javascript" type="text/javascript">
             <!--
                 sessionStorage.clear();
+                store.set(
+                    "teampassSettings", {},
+                    function(teampassSettings) {}
+                );
                 window.location.href = "index.php";
             -->
             </script>';
         exit;
     }
     $session->set('user-initial_url', '');
-    
+    //$session->invalidate();
+    //session_regenerate_id(true);
+    error_log('index.php L1069');
     // LOGIN form
     include $SETTINGS['cpassman_dir'] . '/includes/core/login.php';
 } else {
     // Clear session
+    error_log('index.php L1074');
     $session->invalidate();
+    //session_regenerate_id(true);
 }
     ?>
 
@@ -1142,7 +1155,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
 
     <?php
     $get = [];
-    $get['page'] = $superGlobal->get('page', 'GET') === null ? '' : $superGlobal->get('page', 'GET');
+    $get['page'] = $request->query->get('page') === null ? '' : $request->query->get('page');
     if ($menuAdmin === true) {
         ?>
         <link rel="stylesheet" href="./plugins/toggles/css/toggles.css" />
@@ -1274,7 +1287,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
 
 <?php
 $get = [];
-$get['page'] = $superGlobal->get('page', 'GET') === null ? '' : $superGlobal->get('page', 'GET');
+$get['page'] = $request->query->get('page') === null ? '' : $request->query->get('page');
 
 // Load links, css and javascripts
 if (isset($SETTINGS['cpassman_dir']) === true) {

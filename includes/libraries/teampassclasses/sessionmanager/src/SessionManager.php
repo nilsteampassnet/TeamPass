@@ -19,6 +19,7 @@ namespace TeampassClasses\SessionManager;
  */
 
 use Symfony\Component\HttpFoundation\Session\Session;
+use Symfony\Component\HttpFoundation\Request;
 
 class SessionManager
 {
@@ -28,7 +29,8 @@ class SessionManager
     {
         if (null === self::$session) {
             self::$session = new Session();
-            if (session_status() == PHP_SESSION_NONE) {
+            if (session_status() === PHP_SESSION_NONE) {
+                error_log('On passe dans session->start() '.session_status() ." --- ". PHP_SESSION_NONE." --- ". PHP_SESSION_ACTIVE);
                 self::$session->start();
             }
         }
@@ -97,5 +99,17 @@ class SessionManager
 
         // Réaffecter le tableau à la session
         self::getSession()->set($key, $sessionArray);
+    }
+
+    public static function getCookieValue($cookieName)
+    {
+        $request = Request::createFromGlobals();
+
+        // Vérifier si le cookie existe
+        if ($request->cookies->has($cookieName)) {
+            return $request->cookies->get($cookieName);
+        }
+
+        return null;
     }
 }

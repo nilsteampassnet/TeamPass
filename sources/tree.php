@@ -20,6 +20,7 @@ declare(strict_types=1);
  */
 
 
+use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use TeampassClasses\PerformChecks\PerformChecks;
@@ -31,6 +32,7 @@ require_once 'main.functions.php';
 // init
 loadClasses('DB');
 $session = SessionManager::getSession();
+$request = Request::createFromGlobals();
 $lang = new Language();
 
 // Load config if $SETTINGS not defined
@@ -45,7 +47,7 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => isset($_POST['type']) === true ? htmlspecialchars($_POST['type']) : '',
+            'type' => null !== $request->request->get('type') ? htmlspecialchars($request->request->get('type')) : '',
         ],
         [
             'type' => 'trim|escape',
@@ -91,9 +93,9 @@ $data = [
     'readOnlyFolders' => null !== $session->get('user-read_only_folders') ? json_encode($session->get('user-read_only_folders')) : '{}',
     'personalVisibleFolders' => null !== $session->get('user-personal_visible_folders') ? json_encode($session->get('user-personal_visible_folders')) : '{}',
     'userTreeLastRefresh' => null !== $session->get('user-tree_last_refresh_timestamp') ? $session->get('user-tree_last_refresh_timestamp') : '',
-    'forceRefresh' => isset($_GET['force_refresh']) === true ? $_GET['force_refresh'] : '',
-    'nodeId' => isset($_GET['id']) === true ? $_GET['id'] : '',
-    'restrictedFoldersForItems' => isset($_GET['list_restricted_folders_for_items']) === true ? json_encode($_GET['list_restricted_folders_for_items']) : '{}',
+    'forceRefresh' => null !== $request->query->get('force_refresh') ? $request->query->get('force_refresh') : '',
+    'nodeId' => null !== $request->query->get('id') ? $request->query->get('id') : '',
+    'restrictedFoldersForItems' => null !== $request->query->get('list_restricted_folders_for_items') ? json_encode($request->query->get('list_restricted_folders_for_items')) : '{}',
     'noAccessFolders' => null !== $session->get('user-no_access_folders') ? json_encode($session->get('user-no_access_folders')) : '{}',
     'personalFolders' => null !== $session->get('user-personal_folders') ? json_encode($session->get('user-personal_folders')) : '{}',
     'userCanCreateRootFolder' => null !== $session->get('user-can_create_root_folder') ? json_encode($session->get('user-can_create_root_folder')) : '{}',

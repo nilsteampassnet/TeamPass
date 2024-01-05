@@ -19,18 +19,16 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-
-use voku\helper\AntiXSS;
-use TeampassClasses\NestedTree\NestedTree;
+use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
-use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
 
 
 // Load functions
 require_once 'main.functions.php';
 $session = SessionManager::getSession();
+$request = Request::createFromGlobals();
 // init
 loadClasses('DB');
 $lang = new Language();
@@ -82,26 +80,24 @@ set_time_limit(0);
 // --------------------------------- //
 
 //check for session
-if (null !== filter_input(INPUT_POST, 'PHPSESSID', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
-    //session_id(filter_input(INPUT_POST, 'PHPSESSID', FILTER_SANITIZE_FULL_SPECIAL_CHARS));
-    session_regenerate_id(true);
-} elseif (isset($_GET['PHPSESSID'])) {
-    //session_id(filter_var($_GET['PHPSESSID'], FILTER_SANITIZE_FULL_SPECIAL_CHARS));
-    session_regenerate_id(true);
+if (null !== $request->request->filter('PHPSESSID', null, FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
+    session_id($request->request->filter('PHPSESSID', null, FILTER_SANITIZE_FULL_SPECIAL_CHARS));
+} elseif (null !== $request->query->get('PHPSESSID')) {
+    session_id(filter_var($request->query->get('PHPSESSID'), FILTER_SANITIZE_FULL_SPECIAL_CHARS));
 } else {
     handleAttachmentError('No Session was found.', 100);
 }
 
 // Prepare POST variables
-$post_user_token = filter_input(INPUT_POST, 'user_upload_token', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-$post_type_upload = filter_input(INPUT_POST, 'type_upload', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-$post_itemId = filter_input(INPUT_POST, 'itemId', FILTER_SANITIZE_NUMBER_INT);
-$post_files_number = filter_input(INPUT_POST, 'files_number', FILTER_SANITIZE_NUMBER_INT);
-$post_timezone = filter_input(INPUT_POST, 'timezone', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-$post_isNewItem = filter_input(INPUT_POST, 'isNewItem', FILTER_SANITIZE_NUMBER_INT);
-$post_randomId = filter_input(INPUT_POST, 'randomId', FILTER_SANITIZE_NUMBER_INT);
-$post_isPersonal = filter_input(INPUT_POST, 'isPersonal', FILTER_SANITIZE_NUMBER_INT);
-$post_fileSize= filter_input(INPUT_POST, 'file_size', FILTER_SANITIZE_NUMBER_INT);
+$post_user_token = $request->request->filter('user_upload_token', null, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_type_upload = $request->request->filter('type_upload', null, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_itemId = $request->request->filter('itemId', null, FILTER_SANITIZE_NUMBER_INT);
+$post_files_number = $request->request->filter('files_number', null, FILTER_SANITIZE_NUMBER_INT);
+$post_timezone = $request->request->filter('timezone', null, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_isNewItem = $request->request->filter('isNewItem', null, FILTER_SANITIZE_NUMBER_INT);
+$post_randomId = $request->request->filter('randomId', null, FILTER_SANITIZE_NUMBER_INT);
+$post_isPersonal = $request->request->filter('isPersonal', null, FILTER_SANITIZE_NUMBER_INT);
+$post_fileSize= $request->request->filter('file_size', null, FILTER_SANITIZE_NUMBER_INT);
 
 // Get parameters
 $chunk = isset($_REQUEST['chunk']) ? (int) $_REQUEST['chunk'] : 0;

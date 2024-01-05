@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\SessionManager\SessionManager;
+use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\Language\Language;
 use TeampassClasses\PerformChecks\PerformChecks;
 
@@ -35,6 +36,7 @@ require_once 'main.functions.php';
 // init
 loadClasses('DB');
 $session = SessionManager::getSession();
+$request = Request::createFromGlobals();
 $lang = new Language(); 
 
 // Load config if $SETTINGS not defined
@@ -49,7 +51,7 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => isset($_POST['type']) === true ? htmlspecialchars($_POST['type']) : '',
+            'type' => null !== $request->request->get('type') ? htmlspecialchars($request->request->get('type')) : '',
         ],
         [
             'type' => 'trim|escape',
@@ -87,7 +89,7 @@ set_time_limit(0);
 if (null === $session->get('user-accessible_folders')
     || empty($session->get('user-accessible_folders')) === true
 ) {
-    echo '{"sEcho": ' . intval($_GET['sEcho']) . ' ,"iTotalRecords": "0", "iTotalDisplayRecords": "0", "aaData": [] }';
+    echo '{"sEcho": ' . intval($request->query->get('sEcho')) . ' ,"iTotalRecords": "0", "iTotalDisplayRecords": "0", "aaData": [] }';
     exit;
 }
 
@@ -99,14 +101,14 @@ $sOrder = $sLimit = $sWhere = '';
 $sWhere = 'c.id_tree IN %ls_idtree';
 //limit search to the visible folders
 
-if (isset($_GET['limited']) === false
-    || (isset($_GET['limited']) === true && $_GET['limited'] === 'false')
+if (null === $request->query->get('limited')
+    || (null !== $request->query->get('limited') && $request->query->get('limited') === 'false')
 ) {
     $folders = $session->get('user-accessible_folders');
 } else {
     // Build tree
     $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
-    $folders = $tree->getDescendants(filter_var($_GET['limited'], FILTER_SANITIZE_NUMBER_INT), true);
+    $folders = $tree->getDescendants($request->query->filter('limited', null, FILTER_SANITIZE_NUMBER_INT), true);
     $folders = array_keys($folders);
 }
 
@@ -143,22 +145,23 @@ if (empty($row['id']) === false) {
 /* BUILD QUERY */
 //Paging
 $sLimit = '';
-if (isset($_GET['start']) === true && $_GET['length'] !== '-1') {
-    $sLimit = 'LIMIT ' . filter_var($_GET['start'], FILTER_SANITIZE_NUMBER_INT) . ', ' . filter_var($_GET['length'], FILTER_SANITIZE_NUMBER_INT) . '';
+if (null !== $request->query->get('start') && $request->query->get('length') !== '-1') {
+    $sLimit = 'LIMIT ' . $request->query->filter('start', null, FILTER_SANITIZE_NUMBER_INT) . ', ' . $request->query->filter('length', null, FILTER_SANITIZE_NUMBER_INT) . '';
 }
 
 //Ordering
 $sOrder = '';
-if (isset($_GET['order']) === true) {
-    if (in_array(strtoupper($_GET['order'][0]['dir']), $aSortTypes) === false) {
+$orderParam = $request->query->all()['order'] ?? null;
+if (isset($orderParam) && is_array($orderParam)) {
+    if (in_array(strtoupper($orderParam[0]['dir']), $aSortTypes) === false) {
         // possible attack - stop
         echo '[{}]';
         exit;
     }
     $sOrder = 'ORDER BY  ';
-    if ($_GET['order'][0]['column'] >= 0) {
-        $sOrder .= '' . $aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)] . ' '
-                . filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS) . ', ';
+    if ($orderParam[0]['column'] >= 0) {
+        $sOrder .= '' . $aColumns[filter_var($orderParam[0]['column'], FILTER_SANITIZE_NUMBER_INT)] . ' '
+                . filter_var($orderParam[0]['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS) . ', ';
     }
 
     $sOrder = substr_replace($sOrder, '', -2);
@@ -171,11 +174,12 @@ if (isset($_GET['order']) === true) {
 
 // Define criteria
 $search_criteria = '';
-if (isset($_GET['search']) === true) {
-    if (empty($_GET['search']['value']) === false) {
-        $search_criteria = filter_var($_GET['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-    } elseif (empty($_GET['search']) === false) {
-        $search_criteria = filter_var($_GET['search'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$orderSearch = $request->query->all()['search'] ?? null;
+if (isset($orderParam) && is_array($orderParam)) {
+    if (empty($orderSearch['value']) === false) {
+        $search_criteria = filter_var($orderSearch['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+    } elseif (empty($orderSearch) === false) {
+        $search_criteria = filter_var($orderSearch, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
     }
 }
 
@@ -270,10 +274,11 @@ $rows_fields = DB::query(
 /*
  * Output
  */
-if (isset($_GET['type']) === false) {
+
+if (null === $request->query->get('type')) {
     $sOutput = '{';
-    if (isset($_GET['draw']) === true) {
-        $sOutput .= '"draw": ' . intval($_GET['draw']) . ', ';
+    if (null !== $request->query->get('draw')) {
+        $sOutput .= '"draw": ' . (int) $request->query->get('draw') . ', ';
     }
     $sOutput .= '"data": [';
     $sOutputConst = '';
@@ -415,7 +420,7 @@ if (isset($_GET['type']) === false) {
     $sOutput .= '"recordsTotal": ' . $iTotal . ', ';
     $sOutput .= '"recordsFiltered": ' . $iTotal . ' }';
     echo ($sOutput);
-} elseif (isset($_GET['type']) && ($_GET['type'] === 'search_for_items' || $_GET['type'] === 'search_for_items_with_tags')) {
+} elseif (null !== $request->query->get('type') && ($request->query->get('type') === 'search_for_items' || $request->query->get('type') === 'search_for_items_with_tags')) {
     include_once 'main.functions.php';
     include_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $session->get('user-language') . '.php';
 
@@ -683,7 +688,7 @@ if (isset($_GET['type']) === false) {
         'html_json' => filter_var_array($arr_data, FILTER_SANITIZE_FULL_SPECIAL_CHARS),
         'message' => (string) $iTotal.' '.$lang->get('find_message'),
         'total' => (int) $iTotal,
-        'start' => (int) (isset($_GET['start']) === true && (int) $_GET['length'] !== -1) ? (int) $_GET['start'] + (int) $_GET['length'] : -1,
+        'start' => (int) (null !== $request->query->get('start') && (int) $request->query->get('length') !== -1) ? (int) $request->query->get('start') + (int) $request->query->get('length') : -1,
     ];
     echo prepareExchangedData(
         $returnValues,

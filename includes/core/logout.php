@@ -24,7 +24,7 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-use TeampassClasses\SuperGlobal\SuperGlobal;
+use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use TeampassClasses\NestedTree\NestedTree;
@@ -34,7 +34,8 @@ require_once __DIR__.'/../../sources/main.functions.php';
 
 // init
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
+
+$request = Request::createFromGlobals();
 $lang = new Language(); 
 $session = SessionManager::getSession();
 
@@ -47,7 +48,7 @@ try {
 
 $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 $get = [];
-$get['user_id'] = $superGlobal->get('user_id', 'GET');
+$get['user_id'] = $request->query->get('user_id');
 
 // Update table by deleting ID
 if (null !== $session->get('user-id') && empty($session->get('user-id')) === false) {
@@ -82,6 +83,7 @@ if (empty($user_id) === false) {
 
 // erase session table
 $session->invalidate();
+//session_regenerate_id(true);
 
 echo '
     <script type="text/javascript" src="../../plugins/store.js/dist/store.everything.min.js"></script>
