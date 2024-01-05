@@ -9,3 +9,6 @@ build:
         override:
           - php-scrutinizer-run
           - phpcs-run
+  dependencies:
+    override:
+      - true
