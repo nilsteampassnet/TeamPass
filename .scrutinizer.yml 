@@ -3,7 +3,5 @@ build:
     analysis:
       tests:
         override:
-          - 
-            command: 'pecl install ldap || echo "LDAP installation failed, proceeding with build."'
-          - 
-            command: 'composer install'
+          - command: 'pecl install ldap || echo "LDAP installation failed, proceeding with build."'
+          - command: 'composer install'
