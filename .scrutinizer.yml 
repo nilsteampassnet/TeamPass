@@ -1,7 +1,5 @@
 build:
-  nodes:
-    analysis:
-      tests:
+    dependencies:
         override:
-          - command: 'pecl install ldap || echo "LDAP installation failed, proceeding with build."'
-          - command: 'composer install'
+            - pecl install ldap || echo "LDAP installation failed, proceeding with build."
+            - composer install
