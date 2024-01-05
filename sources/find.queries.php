@@ -174,12 +174,10 @@ if (isset($orderParam) && is_array($orderParam)) {
 
 // Define criteria
 $search_criteria = '';
-$orderSearch = $request->query->all()['search'] ?? null;
-if (isset($orderParam) && is_array($orderParam)) {
-    if (empty($orderSearch['value']) === false) {
-        $search_criteria = filter_var($orderSearch['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-    } elseif (empty($orderSearch) === false) {
-        $search_criteria = filter_var($orderSearch, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$searchParam = $request->query->all()['search'] ?? null;
+if (isset($searchParam) && is_array($searchParam)) {
+    if (empty($searchParam['value']) === false) {
+        $search_criteria = filter_var($searchParam['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
     }
 }
 
