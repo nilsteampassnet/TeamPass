@@ -3,5 +3,5 @@ build:
     analysis:
       dependencies:
         override:
-          - pecl install ldap || echo "LDAP installation failed, proceeding with build."
-          - composer install
+          - 'composer install'
+          - 'if ! pecl list | grep -q ldap; then pecl install ldap || echo "LDAP installation failed"; fi'
