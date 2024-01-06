@@ -29,9 +29,7 @@ use TiBeN\CrontabManager\CrontabRepository;
 use TeampassClasses\SessionManager\SessionManager;
 use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\Language\Language;
-use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
-use TeampassClasses\Encryption\Encryption;
 
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
@@ -40,9 +38,7 @@ require_once __DIR__.'/../sources/main.functions.php';
 $session = SessionManager::getSession();
 $request = Request::createFromGlobals();
 loadClasses('DB');
-$session = SessionManager::getSession();
-$request = Request::createFromGlobals();
-$lang = new Language(); 
+$lang = new Language();
 
 // Load config if $SETTINGS not defined
 try {
