@@ -35,6 +35,8 @@ require_once __DIR__.'/../sources/main.functions.php';
 $session = SessionManager::getSession();
 $request = Request::createFromGlobals();
 loadClasses('DB');
+$session = SessionManager::getSession();
+$request = Request::createFromGlobals();
 $lang = new Language(); 
 
 // Load config if $SETTINGS not defined

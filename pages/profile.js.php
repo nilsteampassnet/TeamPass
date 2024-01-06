@@ -35,6 +35,8 @@ require_once __DIR__.'/../sources/main.functions.php';
 
 // init
 loadClasses();
+$session = SessionManager::getSession();
+$request = Request::createFromGlobals();
 $lang = new Language(); 
 
 if ($session->get('key') === null) {

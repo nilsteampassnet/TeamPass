@@ -35,6 +35,8 @@ require_once 'main.functions.php';
 $session = SessionManager::getSession();
 $request = Request::createFromGlobals();
 loadClasses('DB');
+$session = SessionManager::getSession();
+$request = Request::createFromGlobals();
 $lang = new Language(); 
 
 error_log('Main.queries.php L51 : '.$session->get('key'));

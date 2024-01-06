@@ -48,6 +48,8 @@ if (
 <?php
 }
 $lang = new Language();
+$session = SessionManager::getSession();
+$request = Request::createFromGlobals();
 ?>
 
 <script type="text/javascript">

@@ -33,6 +33,8 @@ require_once 'main.functions.php';
 $session = SessionManager::getSession();
 // init
 loadClasses('DB');
+$session = SessionManager::getSession();
+$request = Request::createFromGlobals();
 $lang = new Language(); 
 
 

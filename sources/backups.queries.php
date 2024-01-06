@@ -34,6 +34,8 @@ $session = SessionManager::getSession();
 
 // init
 loadClasses('DB');
+$session = SessionManager::getSession();
+$request = Request::createFromGlobals();
 $lang = new Language(); 
 
 // Load config if $SETTINGS not defined

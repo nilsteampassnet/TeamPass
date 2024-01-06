@@ -26,7 +26,6 @@ declare(strict_types=1);
 use TiBeN\CrontabManager\CrontabJob;
 use TiBeN\CrontabManager\CrontabAdapter;
 use TiBeN\CrontabManager\CrontabRepository;
-use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\SessionManager\SessionManager;
 use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\Language\Language;
@@ -39,6 +38,11 @@ try {
 } catch (Exception $e) {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
+
+loadClasses();
+$session = SessionManager::getSession();
+$request = Request::createFromGlobals();
+$lang = new Language(); 
 
 // Do checks
 $checkUserAccess = new PerformChecks(
@@ -63,8 +67,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
-
-$lang = new Language(); 
 
 // Define Timezone
 date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
