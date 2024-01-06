@@ -269,19 +269,19 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
 
     // PREPARE UPLOADER with plupload
+<?php
+$maxFileSize = (strrpos($SETTINGS['upload_maxfilesize'], 'mb') === false)
+    ? $SETTINGS['upload_maxfilesize'] . 'mb'
+    : $SETTINGS['upload_maxfilesize'];
+?>
+
     var restoreOperationId = '',
         uploader_restoreDB = new plupload.Uploader({
             runtimes: "gears,html5,flash,silverlight,browserplus",
             browse_button: "onthefly-restore-file-select",
             container: "onthefly-restore-file",
-            max_file_size: '<?php
-            if (strrpos($SETTINGS['upload_maxfilesize'], 'mb') === false) {
-                echo $SETTINGS['upload_maxfilesize'] . 'mb';
-            } else {
-                echo $SETTINGS['upload_maxfilesize'];
-            }
-            ?>',
-            chunk_size: '5mb',
+            max_file_size: "<?php echo $maxFileSize; ?>",
+            chunk_size: "5mb",
             unique_names: true,
             dragdrop: true,
             multiple_queues: false,
