@@ -186,7 +186,7 @@ if (isset($languagesList) === false) {
     }
 }
 
-if (null !== $session->get('user-timezone') && $session->get('user-timezone') !== 'not_defined') {
+if ($session->has('user-timezone') && null !== $session->get('user-timezone') && $session->get('user-timezone') !== 'not_defined') {
     // use user timezone
     date_default_timezone_set($session->get('user-timezone'));
 } elseif (isset($SETTINGS['timezone']) === false || $SETTINGS['timezone'] === null) {
@@ -205,7 +205,7 @@ if ((isset($get['session']) === true
         && filter_input(INPUT_POST, 'session', FILTER_SANITIZE_FULL_SPECIAL_CHARS) === 'expired')
 ) {
     // Clear User tempo key
-    if (null !== $session->get('user-id')) {
+    if ($session->has('user-id') && null !== $session->get('user-id')) {
         DB::update(
             prefixTable('users'),
             [
@@ -252,7 +252,7 @@ if (empty($session->get('user-session_duration')) === false) {
 }*/
 
 if (
-    null !== $session->get('user-id')
+    $session->has('user-id') && null !== $session->get('user-id')
     && isset($get['type']) === false
     && isset($get['action']) === false
     && (int) $session->get('user-id') !== 0
@@ -276,7 +276,7 @@ if (
     if (
         isset($SETTINGS['log_connections']) === true
         && (int) $SETTINGS['log_connections'] === 1
-        && null !== $session->get('user-login')
+        && $session->has('user-login') && null !== $session->get('user-login')
         && empty($session->get('user-login')) === false
     ) {
         logEvents($SETTINGS, 'user_connection', 'disconnect', (string) $session->get('user-id'), $session->get('user-login'));
@@ -296,7 +296,7 @@ if (
 // CHECK IF UPDATE IS NEEDED
 if ((isset($SETTINGS['update_needed']) === true && ($SETTINGS['update_needed'] !== false
         || empty($SETTINGS['update_needed']) === true))
-    && (null !== $session->get('user-admin') && $session->get('user-admin') === 1)
+    && ($session->has('user-admin') && $session->get('user-admin') && null !== $session->get('user-admin') && $session->get('user-admin') === 1)
 ) {
     $row = DB::queryFirstRow(
         'SELECT valeur FROM ' . prefixTable('misc') . ' WHERE type=%s_type AND intitule=%s_intitule',
@@ -318,9 +318,9 @@ if ((isset($SETTINGS['update_needed']) === true && ($SETTINGS['update_needed'] !
 * reject all others
 */
 if (isset($SETTINGS['maintenance_mode']) === true && (int) $SETTINGS['maintenance_mode'] === 1) {
-    if (null !== $session->get('user-admin') && (int) $session->get('user-admin') !== 1) {
+    if ($session->has('user-admin') && (int) $session->get('user-admin') && null !== $session->get('user-admin') && (int) $session->get('user-admin') !== 1) {
         // Update table by deleting ID
-        if (null !== $session->get('user-id')) {
+        if ($session->has('user-id') && null !== $session->get('user-id')) {
             DB::update(
                 prefixTable('users'),
                 [
@@ -393,7 +393,7 @@ if (
 }
 
 /* LOAD INFORMATION CONCERNING USER */
-if (null !== $session->get('user-id') && empty($session->get('user-id')) === false) {
+if ($session->has('user-timezone') && null !== $session->get('user-id') && empty($session->get('user-id')) === false) {
     // query on user
     $data = DB::queryfirstrow(
         'SELECT login, admin, gestionnaire, can_manage_all_users, groupes_visibles, groupes_interdits, fonction_id, last_connexion, roles_from_ad_groups FROM ' . prefixTable('users') . ' WHERE id=%i',
@@ -446,7 +446,7 @@ if (null !== $session->get('user-id') && empty($session->get('user-id')) === fal
             is_null($data['roles_from_ad_groups']) === true ? $data['fonction_id'] : (empty($data['roles_from_ad_groups']) === true ? $data['fonction_id'] : $data['fonction_id'] . ';' . $data['roles_from_ad_groups']),
             $SETTINGS
         );
-        if (null !== $session->get('user-can_create_root_folder') && (int) $session->get('user-can_create_root_folder') === 1) {
+        if ($session->has('user-can_create_root_folder') && (int) $session->get('user-can_create_root_folder') && null !== $session->get('user-can_create_root_folder') && (int) $session->get('user-can_create_root_folder') === 1) {
             SessionManager::addRemoveFromSessionArray('user-accessible_folders', [0], 'add');
         }
 
@@ -473,7 +473,7 @@ if (
     && (int) $SETTINGS['item_extra_fields'] === 1
     && isset($get['page']) === true
     && $get['page'] === 'items'
-    && null !== $session->get('user-roles')
+    && $session->has('user-roles') && null !== $session->get('user-roles')
 ) {
     $session->set('system-item_fields', []);
     $rows = DB::query(
@@ -543,7 +543,7 @@ if (isset($SETTINGS['ldap_mode']) === true && (int) $SETTINGS['ldap_mode'] === 1
     $session->set('user-last_pw_change', 1);
     $session->set('user-validite_pw', 1);
 } else {
-    if (null !== $session->get('user-last_pw_change')) {
+    if ($session->has('user-last_pw_change') && null !== $session->get('user-last_pw_change')) {
         if ((int) $SETTINGS['pw_life_duration'] === 0) {
             $session->set('user-num_days_before_exp', 'infinite');
             $session->set('user-validite_pw', 1);
@@ -563,7 +563,7 @@ if (isset($SETTINGS['ldap_mode']) === true && (int) $SETTINGS['ldap_mode'] === 1
 $session->set('user-can_printout', 0);
 if (
     isset($SETTINGS['roles_allowed_to_print']) === true
-    && null !== $session->get('user-roles_array')
+    && $session->has('user-roles_array') && null !== $session->get('user-roles_array')
     && (null === $session->get('user-can_printout') || empty($session->get('user-can_printout')) === true)
 ) {
     foreach (explode(';', $SETTINGS['roles_allowed_to_print']) as $role) {

@@ -25,6 +25,6 @@ define("IKEY", "");
 define("SKEY", "");
 define("HOST", "");
 
-if (null !== $session->get('system-timezone')) {
+if ($session->has('system-timezone') && null !== $session->get('system-timezone')) {
     date_default_timezone_set($session->get('system-timezone'));
 }

@@ -641,7 +641,7 @@ if (null !== $post_type) {
                 || ((int) $session->get('user-manager') === 1 || (int) $session->get('user-can_manage_all_users') === 1)
                 || (isset($SETTINGS['enable_user_can_create_folders']) === true
                     && (int) $SETTINGS['enable_user_can_create_folders'] == 1)
-                || (null !== $session->get('user-can_create_root_folder') && (int) $session->get('user-can_create_root_folder') === 1)
+                || ($session->has('user-can_create_root_folder') && (int) $session->get('user-can_create_root_folder') && null !== $session->get('user-can_create_root_folder') && (int) $session->get('user-can_create_root_folder') === 1)
             ) {
                 //create folder
                 DB::insert(

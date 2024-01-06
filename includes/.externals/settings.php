@@ -10,7 +10,7 @@ define("DB_ENCODING", "");
 define("SECUREPATH", "");
 define("SALT", "");
 
-if (null !== $session->get('system-timezone')) {
+if ($session->has('system-timezone') && null !== $session->get('system-timezone')) {
     date_default_timezone_set($session->get('system-timezone'));
 }
 

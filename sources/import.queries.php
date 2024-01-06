@@ -336,7 +336,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
 
             // Handle case where pw is empty
             // if not allowed then warn user
-            if ((null !== $session->get('user-create_item_without_password')
+            if (($session->has('user-create_item_without_password') && null !== $session->get('user-create_item_without_password')
                 && (int) $session->get('user-create_item_without_password') !== 1
                 ) ||
                 empty($item['pwd']) === false
@@ -709,7 +709,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
 
             // Handle case where pw is empty
             // if not allowed then warn user
-            if ((null !== $session->get('user-create_item_without_password')
+            if (($session->has('user-create_item_without_password') && null !== $session->get('user-create_item_without_password')
                 && (int) $session->get('user-create_item_without_password') !== 1
                 ) ||
                 empty($item['Password']) === false

@@ -246,7 +246,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
 {
     include './includes/core/otv.php';
     exit;
-} elseif (null !== $session->get('user-validite_pw') && $session->get('user-validite_pw') === 1 && 
+} elseif ($session->has('user-validite_pw') && $session->get('user-validite_pw') && null !== $session->get('user-validite_pw') && $session->get('user-validite_pw') === 1 && 
     empty($get['page']) === false && empty($session->get('user-id')) === false
 ) {
     ?>

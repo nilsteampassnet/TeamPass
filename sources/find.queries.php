@@ -521,8 +521,8 @@ if (null === $request->query->get('type')) {
             $itemIsPersonal = true;
             $right = 70;
         // ----- END CASE 1 -----
-        } elseif (((null !== $session->get('user-manager') && (int) $session->get('user-manager') === 1)
-            || (null !== $session->get('user-can_manage_all_users') && (int) $session->get('user-can_manage_all_users') === 1))
+        } elseif ((($session->has('user-manager') && (int) $session->get('user-manager') && null !== $session->get('user-manager') && (int) $session->get('user-manager') === 1)
+            || ($session->has('user-can_manage_all_users') && (int) $session->get('user-can_manage_all_users') && null !== $session->get('user-can_manage_all_users') && (int) $session->get('user-can_manage_all_users') === 1))
             && (isset($SETTINGS['manager_edit']) === true && (int) $SETTINGS['manager_edit'] === 1)
             && $record['perso'] !== 1
         ) {

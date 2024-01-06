@@ -51,7 +51,7 @@ $get = [];
 $get['user_id'] = $request->query->get('user_id');
 
 // Update table by deleting ID
-if (null !== $session->get('user-id') && empty($session->get('user-id')) === false) {
+if ($session->has('user-id') && null !== $session->get('user-id') && empty($session->get('user-id')) === false) {
     $user_id = $session->get('user-id');
 } elseif (isset($get['token']) === true && empty($get['token']) === false) {
     $user_token = $get['token'];

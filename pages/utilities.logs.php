@@ -200,7 +200,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                     </div>
 
                     <div class="card-footer<?php
-                                            echo null !== $session->get('user-admin') && (int) $session->get('user-admin') === 1 ? '' : ' hidden';
+                                            echo $session->has('user-admin') && (int) $session->get('user-admin') && null !== $session->get('user-admin') && (int) $session->get('user-admin') === 1 ? '' : ' hidden';
                                             ?>">
                         <div class="form-group">
                             <h5><i class="fas fa-broom mr-2"></i><?php echo $lang->get('purge') . ' ' . $lang->get('date_range'); ?></h5>

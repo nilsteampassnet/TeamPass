@@ -46,8 +46,6 @@ use TeampassClasses\LdapExtra\ActiveDirectoryExtra;
 require_once 'main.functions.php';
 
 // init
-$session = SessionManager::getSession();
-$request = Request::createFromGlobals();
 loadClasses('DB');
 $session = SessionManager::getSession();
 $request = Request::createFromGlobals();
@@ -767,7 +765,7 @@ error_log('Identify.php L760 retour en des valeurs');
                 'initial_url' => $antiXss->xss_clean($sessionUrl),
                 'pwd_attempts' => 0,
                 'error' => false,
-                'message' => null !== $session->get('user-upgrade_needed') && (int) $session->get('user-upgrade_needed') === 1 ? 'ask_for_otc' : '',
+                'message' => $session->has('user-upgrade_needed') && (int) $session->get('user-upgrade_needed') && (int) $session->get('user-upgrade_needed') === 1 ? 'ask_for_otc' : '',
                 'first_connection' => $session->get('user-validite_pw') === 0 ? true : false,
                 'password_complexity' => TP_PW_COMPLEXITY[$session->get('user-pw_complexity')][1],
                 'password_change_expected' => $userInfo['special'] === 'password_change_expected' ? true : false,
@@ -800,7 +798,7 @@ error_log('Identify.php L760 retour en des valeurs');
                 'first_connection' => $session->get('user-validite_pw') === 0 ? true : false,
                 'password_complexity' => TP_PW_COMPLEXITY[$session->get('user-pw_complexity')][1],
                 'password_change_expected' => $userInfo['special'] === 'password_change_expected' ? true : false,
-                'private_key_conform' => null !== $session->get('user-private_key')
+                'private_key_conform' => $session->has('user-private_key') && null !== $session->get('user-private_key')
                     && empty($session->get('user-private_key')) === false
                     && $session->get('user-private_key') !== 'none' ? true : false,
                 'session_key' => $session->get('key'),

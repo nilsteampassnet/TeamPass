@@ -495,7 +495,7 @@ if (null !== $post_type) {
                 empty($post_date_from) === false
                 && empty($post_date_to) === false
                 && empty($post_log_type) === false
-                && (null !== $session->get('user-admin') && (int) $session->get('user-admin') === 1)
+                && ($session->has('user-admin') && (int) $session->get('user-admin') && null !== $session->get('user-admin') && (int) $session->get('user-admin') === 1)
             ) {
                 if ($post_log_type === 'items') {
                     DB::query(

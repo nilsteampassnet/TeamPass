@@ -92,13 +92,13 @@ if (
     // continue
     mainQuery($SETTINGS);
 } elseif (
-    null !== $session->get('user-id')
+    $session->has('user-id') && null !== $session->get('user-id')
     && $checkUserAccess->userAccessPage('home') === false
 ) {
     $session->set('system-error_code', ERR_NOT_ALLOWED); //not allowed page
     include __DIR__.'/../error.php';
     exit();
-} elseif ((null !== $session->get('user-id')
+} elseif (($session->has('user-id') && null !== $session->get('user-id')
         && $session->get('key') !== null)
     || (isset($post_type) === true
         && null !== filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES))
@@ -338,7 +338,7 @@ function userHandler(string $post_type, array|null|string $dataReceived, array $
         * Refresh list of last items seen
         */
         case 'refresh_list_items_seen'://action_user
-            if (null !== $session->get('user-id') || (int) $session->get('user-id') > 0) {
+            if ($session->has('user-id') || (int) $session->get('user-id') && null !== $session->get('user-id') || (int) $session->get('user-id') > 0) {
                 return refreshUserItemsSeenList(
                     $SETTINGS
                 );

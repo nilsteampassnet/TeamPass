@@ -58,7 +58,7 @@ if (
     && filter_input(INPUT_POST, 'session', FILTER_SANITIZE_FULL_SPECIAL_CHARS) === 'expired'
 ) {
     // Update table by deleting ID
-    if (null !== $session->get('user-id')) {
+    if ($session->has('user-id') && null !== $session->get('user-id')) {
         DB::update(
             DB_PREFIX . 'users',
             [

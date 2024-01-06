@@ -315,7 +315,7 @@ switch ($inputData['type']) {
             // is pwd empty?
             if (
                 empty($post_password) === true
-                && null !== $session->get('user-create_item_without_password')
+                && $session->has('user-create_item_without_password') && null !== $session->get('user-create_item_without_password')
                 && (int) $session->get('user-create_item_without_password') !== 1
             ) {
                 echo (string) prepareExchangedData(
@@ -417,7 +417,7 @@ switch ($inputData['type']) {
             ) {
                 // Handle case where pw is empty
                 // if not allowed then warn user
-                if ((null !== $session->get('user-create_item_without_password')
+                if (($session->has('user-create_item_without_password') && $session->has('user-create_item_without_password') && null !== $session->get('user-create_item_without_password')
                         && (int) $session->get('user-create_item_without_password') !== 1) ||
                     empty($post_password) === false
                 ) {
@@ -936,7 +936,7 @@ switch ($inputData['type']) {
             // Check PWD EMPTY
             if (
                 empty($pw) === true
-                && null !== $session->get('user-create_item_without_password')
+                && $session->has('user-create_item_without_password') && $session->has('user-create_item_without_password') && null !== $session->get('user-create_item_without_password')
                 && (int) $session->get('user-create_item_without_password') !== 1
             ) {
                 echo (string) prepareExchangedData(
@@ -1119,7 +1119,7 @@ switch ($inputData['type']) {
                 }
 
                 // encrypt PW
-                if ((null !== $session->get('user-create_item_without_password')
+                if (($session->has('user-create_item_without_password') && $session->has('user-create_item_without_password') && null !== $session->get('user-create_item_without_password')
                         && (int) $session->get('user-create_item_without_password') !== 1)
                     || empty($post_password) === false
                 ) {
@@ -3150,7 +3150,7 @@ switch ($inputData['type']) {
             $returnArray['otp_secret'] = (string) $secret;
 
             // Add this item to the latests list
-            if (null !== $session->get('user-latest_items') && isset($SETTINGS['max_latest_items']) && 
+            if ($session->has('user-latest_items') && $session->has('user-latest_items') && null !== $session->get('user-latest_items') && isset($SETTINGS['max_latest_items']) && 
                 in_array($dataItem['id'], $session->get('user-latest_items')) === false
             ) {
                 if (count($session->get('user-latest_items')) >= $SETTINGS['max_latest_items']) {
@@ -4006,7 +4006,7 @@ switch ($inputData['type']) {
             $uniqueLoadData['categoriesStructure'] = $categoriesStructure;
             */
 
-            if (null !== $session->get('system-list_folders_editable_by_role')) {
+            if ($session->has('system-list_folders_editable_by_role') && $session->has('system-list_folders_editable_by_role') && null !== $session->get('system-list_folders_editable_by_role')) {
                 $list_folders_editable_by_role = in_array($inputData['id'], $session->get('system-list_folders_editable_by_role'));
             } else {
                 $list_folders_editable_by_role = '';
@@ -4206,8 +4206,8 @@ switch ($inputData['type']) {
                         $right = 70;
                         // ---
                         // ----- END CASE 1 -----
-                    } elseif (((null !== $session->get('user-manager') && (int) $session->get('user-manager') === 1)
-                            || (null !== $session->get('user-can_manage_all_users') && (int) $session->get('user-can_manage_all_users') === 1))
+                    } elseif ((($session->has('user-manager') && (int) $session->get('user-manager') && $session->has('user-manager') && (int) $session->get('user-manager') && null !== $session->get('user-manager') && (int) $session->get('user-manager') === 1)
+                            || ($session->has('user-can_manage_all_users') && (int) $session->get('user-can_manage_all_users') && $session->has('user-can_manage_all_users') && (int) $session->get('user-can_manage_all_users') && null !== $session->get('user-can_manage_all_users') && (int) $session->get('user-can_manage_all_users') === 1))
                         && (isset($SETTINGS['manager_edit']) === true && (int) $SETTINGS['manager_edit'] === 1)
                         && (int) $record['perso'] !== 1
                         && $user_is_in_restricted_list === true
@@ -4858,7 +4858,7 @@ switch ($inputData['type']) {
                 $session->get('user-id')
             );
             // refresh session fav list
-            if (null !== $session->get('user-favorites_tab')) {
+            if ($session->has('user-favorites_tab') && $session->has('user-favorites_tab') && null !== $session->get('user-favorites_tab')) {
                 $user_favorites_tab = $session->get('user-favorites_tab');
                 foreach ($user_favorites_tab as $key => $value) {
                     if ($key === $inputData['id']) {
@@ -6259,7 +6259,7 @@ switch ($inputData['type']) {
         );
 
         // Will we show the root folder?
-        if (null !== $session->get('user-can_create_root_folder') && (int) $session->get('user-can_create_root_folder') === 1
+        if ($session->has('user-can_create_root_folder') && (int) $session->get('user-can_create_root_folder') && $session->has('user-can_create_root_folder') && (int) $session->get('user-can_create_root_folder') && null !== $session->get('user-can_create_root_folder') && (int) $session->get('user-can_create_root_folder') === 1
         ) {
             $arr_data['can_create_root_folder'] = 1;
         } else {

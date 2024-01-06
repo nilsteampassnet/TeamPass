@@ -247,7 +247,7 @@ foreach ($session->get('user-roles_array') as $role) {
                                     <?php
                                     if (null !== $session->get('user-last_pw_change') && ! empty($session->get('user-last_pw_change') === true)) {
                                         // Handle last password change string
-                                        if (null !== $session->get('user-last_pw_change')) {
+                                        if ($session->has('user-last_pw_change') && null !== $session->get('user-last_pw_change')) {
                                             if (isset($SETTINGS['date_format']) === true) {
                                                 $last_pw_change = date($SETTINGS['date_format']." ".$SETTINGS['time_format'], (int) $userInfo['last_pw_change']);
                                             } else {
@@ -259,7 +259,7 @@ foreach ($session->get('user-roles_array') as $role) {
 
                                         // Handle expiration for pw
                                         if (
-                                            null !== $session->get('user-num_days_before_exp')
+                                            $session->has('user-num_days_before_exp') && null !== $session->get('user-num_days_before_exp')
                                             || $session->get('user-num_days_before_exp') === ''
                                             || $session->get('user-num_days_before_exp') === 'infinite'
                                         ) {
@@ -316,7 +316,7 @@ foreach ($session->get('user-roles_array') as $role) {
                             <div class="tab-pane<?php echo $get['tab'] === 'timeline' ? ' active' : ''; ?>" id="tab_timeline">
                                 <?php
                                 if (
-                                    null !== $session->get('user-unsuccessfull_login_attempts_list')
+                                    $session->has('user-unsuccessfull_login_attempts_list') && null !== $session->get('user-unsuccessfull_login_attempts_list')
                                     && $session->get('user-unsuccessfull_login_attempts_nb') !== 0
                                     && $session->get('user-unsuccessfull_login_attempts_shown') === false
                                 ) {
@@ -399,7 +399,7 @@ foreach ($session->get('user-roles_array') as $role) {
                                                 foreach ($zones as $key => $zone) {
                                                     echo '
                                                 <option value="' . $key . '"',
-                                                    null !== $session->get('user-timezone') && $session->get('user-timezone') === $key ?
+                                                    $session->has('user-timezone') && $session->get('user-timezone') && null !== $session->get('user-timezone') && $session->get('user-timezone') === $key ?
                                                     ' selected' :
                                                     (isset($SETTINGS['timezone']) === true && $SETTINGS['timezone'] === $key ? ' selected' : ''),
                                                 '>' . $zone . '</option>';
@@ -429,11 +429,11 @@ foreach ($session->get('user-roles_array') as $role) {
                                         <div class="col-sm-10">
                                             <select class="form-control" id="profile-user-treeloadstrategy">
                                                 
-                                                <option value="sequential" <?php echo null !== $session->get('user-tree_load_strategy') && $session->get('user-tree_load_strategy') === 'sequential' ? ' selected' : '';?>>
+                                                <option value="sequential" <?php echo $session->has('user-tree_load_strategy') && $session->get('user-tree_load_strategy') && null !== $session->get('user-tree_load_strategy') && $session->get('user-tree_load_strategy') === 'sequential' ? ' selected' : '';?>>
                                                     <?php echo $lang->get('sequential'); ?>
                                                 </option>
                                                 
-                                                <option value="full" <?php echo null !== $session->get('user-tree_load_strategy') && $session->get('user-tree_load_strategy') === 'full' ? ' selected' : '';?>>
+                                                <option value="full" <?php echo $session->has('user-tree_load_strategy') && $session->get('user-tree_load_strategy') && null !== $session->get('user-tree_load_strategy') && $session->get('user-tree_load_strategy') === 'full' ? ' selected' : '';?>>
                                                     <?php echo $lang->get('full'); ?>
                                                 </option>
                                             </select>
