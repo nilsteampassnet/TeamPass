@@ -22,6 +22,7 @@ declare(strict_types=1);
 use LdapRecord\Connection;
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\SessionManager\SessionManager;
+use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\Language\Language;
 use TeampassClasses\PerformChecks\PerformChecks;
 use PasswordLib\PasswordLib;
@@ -45,7 +46,7 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => isset($_POST['type']) === true ? htmlspecialchars($_POST['type']) : '',
+            'type' => $request->request->get('type', '') !== '' ? htmlspecialchars($request->request->get('type')) : '',
         ],
         [
             'type' => 'trim|escape',

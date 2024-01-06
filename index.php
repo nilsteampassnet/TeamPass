@@ -24,8 +24,8 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\SessionManager\SessionManager;
+use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\Language\Language;
 
 header('X-XSS-Protection: 1; mode=block');

@@ -25,6 +25,7 @@
 use voku\helper\AntiXSS;
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\SessionManager\SessionManager;
+use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;

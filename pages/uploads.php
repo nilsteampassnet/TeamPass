@@ -18,6 +18,7 @@
  */
 
 use TeampassClasses\SessionManager\SessionManager;
+use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\Language\Language;
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\PerformChecks\PerformChecks;
@@ -40,7 +41,7 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => isset($_POST['type']) === true ? htmlspecialchars($_POST['type']) : '',
+            'type' => $request->request->get('type', '') !== '' ? htmlspecialchars($request->request->get('type')) : '',
         ],
         [
             'type' => 'trim|escape',

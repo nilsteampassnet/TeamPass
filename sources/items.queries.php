@@ -121,27 +121,27 @@ if (defined('TP_PW_COMPLEXITY') === false) {
 
 // Prepare POST variables
 $data = [
-    'type' => isset($_POST['type']) === true ? $_POST['type'] : '',
-    'data' => isset($_POST['data']) === true ? $_POST['data'] : '',
-    'key' => isset($_POST['key']) === true ? $_POST['key'] : '',
-    'label' => isset($_POST['label']) === true ? $_POST['label'] : '',
-    'status' => isset($_POST['status']) === true ? $_POST['status'] : '',
-    'cat' => isset($_POST['cat']) === true ? $_POST['cat'] : '',
-    'receipt' => isset($_POST['receipt']) === true ? $_POST['receipt'] : '',
-    'itemId' => isset($_POST['item_id']) === true ? $_POST['item_id'] : '',
-    'folderId' => isset($_POST['folder_id']) === true ? $_POST['folder_id'] : '',
-    'id' => isset($_POST['id']) === true ? $_POST['id'] : '',
-    'destination' => isset($_POST['destination']) === true ? $_POST['destination'] : '',
-    'source' => isset($_POST['source']) === true ? $_POST['source'] : '',
-    'userId' => isset($_POST['user_id']) === true ? $_POST['user_id'] : '',
-    'getType' => null !== $request->query->get('type') ? $request->query->get('type') : '',
-    'getTerm' => null !== $request->query->get('term') ? $request->query->get('term') : '',
-    'option' => isset($_POST['option']) === true ? $_POST['option'] : '',
-    'fileSuffix' => isset($_POST['file_suffix']) === true ? $_POST['file_suffix'] : '',
-    'context' => isset($_POST['context']) === true ? $_POST['context'] : '',
-    'notifyType' => isset($_POST['notify_type']) === true ? $_POST['notify_type'] : '',
-    'timestamp' => isset($_POST['timestamp']) === true ? $_POST['timestamp'] : '',
-    'itemKey' => isset($_POST['item_key']) === true ? $_POST['item_key'] : '',
+    'type' => $request->request->filter('type', '', FILTER_SANITIZE_SPECIAL_CHARS),
+    'data' => $request->request->filter('data', '', FILTER_SANITIZE_SPECIAL_CHARS),
+    'key' => $request->request->filter('key', '', FILTER_SANITIZE_SPECIAL_CHARS),
+    'label' => $request->request->filter('label', '', FILTER_SANITIZE_SPECIAL_CHARS),
+    'status' => $request->request->filter('status', '', FILTER_SANITIZE_SPECIAL_CHARS),
+    'cat' => $request->request->filter('cat', '', FILTER_SANITIZE_SPECIAL_CHARS),
+    'receipt' => $request->request->filter('receipt', '', FILTER_SANITIZE_SPECIAL_CHARS),
+    'itemId' => $request->request->filter('item_id', '', FILTER_SANITIZE_SPECIAL_CHARS),
+    'folderId' => $request->request->filter('folder_id', '', FILTER_SANITIZE_SPECIAL_CHARS),
+    'id' => $request->request->filter('id', '', FILTER_SANITIZE_SPECIAL_CHARS),
+    'destination' => $request->request->filter('destination', '', FILTER_SANITIZE_SPECIAL_CHARS),
+    'source' => $request->request->filter('source', '', FILTER_SANITIZE_SPECIAL_CHARS),
+    'userId' => $request->request->filter('user_id', '', FILTER_SANITIZE_SPECIAL_CHARS),
+    'getType' => $request->query->get('type', ''),
+    'getTerm' => $request->query->get('term', ''),
+    'option' => $request->request->filter('option', '', FILTER_SANITIZE_SPECIAL_CHARS),
+    'fileSuffix' => $request->request->filter('file_suffix', '', FILTER_SANITIZE_SPECIAL_CHARS),
+    'context' => $request->request->filter('context', '', FILTER_SANITIZE_SPECIAL_CHARS),
+    'notifyType' => $request->request->filter('notify_type', '', FILTER_SANITIZE_SPECIAL_CHARS),
+    'timestamp' => $request->request->filter('timestamp', '', FILTER_SANITIZE_SPECIAL_CHARS),
+    'itemKey' => $request->request->filter('item_key', '', FILTER_SANITIZE_SPECIAL_CHARS),
 ];
 
 $filters = [
@@ -5648,7 +5648,7 @@ switch ($inputData['type']) {
         $inputData['id'] = filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT);
         $inputData['receipt'] = filter_var($dataReceived['receipt'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         $inputData['cat'] = filter_var($dataReceived['cat'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-        $post_content = isset($_POST['name']) === true ? explode(',', filter_input(INPUT_POST, 'content', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) : '';
+        $post_content = $request->request->has('name') ? explode(',', $request->request->filter('content', '', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) : '';
 
         // get links url
         if (empty($SETTINGS['email_server_url']) === true) {

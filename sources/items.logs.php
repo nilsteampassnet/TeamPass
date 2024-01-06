@@ -20,6 +20,7 @@ declare(strict_types=1);
  */
 
 use TeampassClasses\SessionManager\SessionManager;
+use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
@@ -31,6 +32,7 @@ require_once 'main.functions.php';
 // init
 loadClasses('DB');
 $session = SessionManager::getSession();
+$request = Request::createFromGlobals();
 $lang = new Language(); 
 
 // Load config if $SETTINGS not defined
@@ -45,7 +47,7 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => isset($_POST['type']) === true ? htmlspecialchars($_POST['type']) : '',
+            'type' => $request->request->get('type', '') !== '' ? htmlspecialchars($request->request->get('type')) : '',
         ],
         [
             'type' => 'trim|escape',

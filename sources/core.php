@@ -26,8 +26,8 @@ declare(strict_types=1);
 
 
 use voku\helper\AntiXSS;
-use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\SessionManager\SessionManager;
+use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\Language\Language;
 
 require_once 'main.functions.php';

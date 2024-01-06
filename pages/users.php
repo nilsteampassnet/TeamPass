@@ -46,7 +46,7 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => isset($_POST['type']) === true ? htmlspecialchars($_POST['type']) : '',
+            'type' => $request->request->get('type', '') !== '' ? htmlspecialchars($request->request->get('type')) : '',
         ],
         [
             'type' => 'trim|escape',

@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\SessionManager\SessionManager;
+use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\Language\Language;
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
@@ -49,7 +50,7 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => isset($_POST['type']) === true ? htmlspecialchars($_POST['type']) : '',
+            'type' => $request->request->get('type', '') !== '' ? htmlspecialchars($request->request->get('type')) : '',
         ],
         [
             'type' => 'trim|escape',

@@ -24,13 +24,13 @@ use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Process;
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\SessionManager\SessionManager;
+use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\Language\Language;
 // Load functions
 require_once 'main.functions.php';
 // Case permit to check if SESSION is still valid        
 $session = SessionManager::getSession();
-
-// init
+$request = Request::createFromGlobals();
 loadClasses('DB');
 $lang = new Language(); 
 
@@ -47,7 +47,7 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => isset($_POST['type']) === true ? htmlspecialchars($_POST['type']) : '',
+            'type' => $request->request->get('type', '') !== '' ? htmlspecialchars($request->request->get('type')) : '',
         ],
         [
             'type' => 'trim|escape',

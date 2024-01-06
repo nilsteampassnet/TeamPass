@@ -26,8 +26,8 @@ declare(strict_types=1);
 
 use voku\helper\AntiXSS;
 use EZimuel\PHPSecureSession;
-use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\SessionManager\SessionManager;
+use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\Language\Language;
 use TeampassClasses\PerformChecks\PerformChecks;
 use LdapRecord\Connection;
@@ -47,8 +47,7 @@ require_once 'main.functions.php';
 
 // init
 $session = SessionManager::getSession();
-// TODO : ajouter un check sue l'envoi de la key
-
+$request = Request::createFromGlobals();
 loadClasses('DB');
 $lang = new Language(); 
 
@@ -70,7 +69,7 @@ error_log('Identify.php: '.print_r($_POST, true));
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => isset($_POST['type']) === true ? htmlspecialchars($_POST['type']) : '',
+            'type' => $request->request->get('type', '') !== '' ? htmlspecialchars($request->request->get('type')) : '',
         ],
         [
             'type' => 'trim|escape',
