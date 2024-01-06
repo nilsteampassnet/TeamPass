@@ -3724,195 +3724,114 @@ function handleUserKeys(
         WHERE id = %i',
         TP_USER_ID
     );
-    if (DB::count() > 0) {
-        // Do we need to generate new user password
-        if ($generate_user_new_password === true) {
-            // Generate a new password
-            $passwordClear = GenerateCryptKey(20, false, true, true, false, true);
-        }
-
-        // Hash the password
-        $pwdlib = new PasswordLib();
-        $hashedPassword = $pwdlib->createPasswordHash($passwordClear);
-        if ($pwdlib->verifyPasswordHash($passwordClear, $hashedPassword) === false) {
-            return prepareExchangedData(
-                array(
-                    'error' => true,
-                    'message' => $lang->get('pw_hash_not_correct'),
-                ),
-                'encode'
-            );
-        }
-
-        // Generate new keys
-        if ($user_self_change === true && empty($recovery_public_key) === false && empty($recovery_private_key) === false){
-            $userKeys = [
-                'public_key' => $recovery_public_key,
-                'private_key_clear' => $recovery_private_key,
-                'private_key' => encryptPrivateKey($passwordClear, $recovery_private_key),
-            ];
-        } else {
-            $userKeys = generateUserKeys($passwordClear);
-        }
-
-        // Save in DB
-        DB::update(
-            prefixTable('users'),
+    if (DB::count() === 0) {
+        return prepareExchangedData(
             array(
-                'pw' => $hashedPassword,
-                'public_key' => $userKeys['public_key'],
-                'private_key' => $userKeys['private_key'],
+                'error' => true,
+                'message' => 'User not exists',
             ),
-            'id=%i',
-            $userId
-        );
-
-        // update session too
-        if ($userId === $session->get('user-id')) {
-            $session->set('user-private_key', $userKeys['private_key_clear']);
-            $session->set('user-public_key', $userKeys['public_key']);
-        }
-
-        // Manage empty encryption key
-        // Let's take the user's password if asked and if no encryption key provided
-        $encryptionKey = $encryptWithUserPassword === true && empty($encryptionKey) === true ? $passwordClear : $encryptionKey;
-
-        // Create process
-        DB::insert(
-            prefixTable('processes'),
-            array(
-                'created_at' => time(),
-                'process_type' => 'create_user_keys',
-                'arguments' => json_encode([
-                    'new_user_id' => (int) $userId,
-                    'new_user_pwd' => cryption($passwordClear, '','encrypt')['string'],
-                    'new_user_code' => cryption(empty($encryptionKey) === true ? uniqidReal(20) : $encryptionKey, '','encrypt')['string'],
-                    'owner_id' => (int) TP_USER_ID,
-                    'creator_pwd' => $userTP['pw'],
-                    'send_email' => $sendEmailToUser === true ? 1 : 0,
-                    'otp_provided_new_value' => 1,
-                    'email_body' => empty($emailBody) === true ? '' : $lang->get($emailBody),
-                    'user_self_change' => $user_self_change === true ? 1 : 0,
-                ]),
-                'updated_at' => '',
-                'finished_at' => '',
-                'output' => '',
-            )
-        );
-        $processId = DB::insertId();
-
-        // Delete existing keys
-        if ($deleteExistingKeys === true) {
-            deleteUserObjetsKeys(
-                (int) $userId,
-            );
-        }
-
-        // Create tasks
-        DB::insert(
-            prefixTable('processes_tasks'),
-            array(
-                'process_id' => $processId,
-                'created_at' => time(),
-                'task' => json_encode([
-                    'step' => 'step0',
-                    'index' => 0,
-                    'nb' => $nbItemsToTreat,
-                ]),
-            )
-        );
-
-        DB::insert(
-            prefixTable('processes_tasks'),
-            array(
-                'process_id' => $processId,
-                'created_at' => time(),
-                'task' => json_encode([
-                    'step' => 'step10',
-                    'index' => 0,
-                    'nb' => $nbItemsToTreat,
-                ]),
-            )
-        );
-
-        DB::insert(
-            prefixTable('processes_tasks'),
-            array(
-                'process_id' => $processId,
-                'created_at' => time(),
-                'task' => json_encode([
-                    'step' => 'step20',
-                    'index' => 0,
-                    'nb' => $nbItemsToTreat,
-                ]),
-            )
-        );
-
-        DB::insert(
-            prefixTable('processes_tasks'),
-            array(
-                'process_id' => $processId,
-                'created_at' => time(),
-                'task' => json_encode([
-                    'step' => 'step30',
-                    'index' => 0,
-                    'nb' => $nbItemsToTreat,
-                ]),
-            )
-        );
-
-        DB::insert(
-            prefixTable('processes_tasks'),
-            array(
-                'process_id' => $processId,
-                'created_at' => time(),
-                'task' => json_encode([
-                    'step' => 'step40',
-                    'index' => 0,
-                    'nb' => $nbItemsToTreat,
-                ]),
-            )
-        );
-
-        DB::insert(
-            prefixTable('processes_tasks'),
-            array(
-                'process_id' => $processId,
-                'created_at' => time(),
-                'task' => json_encode([
-                    'step' => 'step50',
-                    'index' => 0,
-                    'nb' => $nbItemsToTreat,
-                ]),
-            )
-        );
-
-        DB::insert(
-            prefixTable('processes_tasks'),
-            array(
-                'process_id' => $processId,
-                'created_at' => time(),
-                'task' => json_encode([
-                    'step' => 'step60',
-                    'index' => 0,
-                    'nb' => $nbItemsToTreat,
-                ]),
-            )
-        );
-
-        // update user's new status
-        DB::update(
-            prefixTable('users'),
-            [
-                'is_ready_for_usage' => 0,
-                'otp_provided' => 1,
-                'ongoing_process_id' => $processId,
-                'special' => 'generate-keys',
-            ],
-            'id=%i',
-            $userId
+            'encode'
         );
     }
+
+    // Do we need to generate new user password
+    if ($generate_user_new_password === true) {
+        // Generate a new password
+        $passwordClear = GenerateCryptKey(20, false, true, true, false, true);
+    }
+
+    // Hash the password
+    $pwdlib = new PasswordLib();
+    $hashedPassword = $pwdlib->createPasswordHash($passwordClear);
+    if ($pwdlib->verifyPasswordHash($passwordClear, $hashedPassword) === false) {
+        return prepareExchangedData(
+            array(
+                'error' => true,
+                'message' => $lang->get('pw_hash_not_correct'),
+            ),
+            'encode'
+        );
+    }
+
+    // Generate new keys
+    if ($user_self_change === true && empty($recovery_public_key) === false && empty($recovery_private_key) === false){
+        $userKeys = [
+            'public_key' => $recovery_public_key,
+            'private_key_clear' => $recovery_private_key,
+            'private_key' => encryptPrivateKey($passwordClear, $recovery_private_key),
+        ];
+    } else {
+        $userKeys = generateUserKeys($passwordClear);
+    }
+
+    // Save in DB
+    DB::update(
+        prefixTable('users'),
+        array(
+            'pw' => $hashedPassword,
+            'public_key' => $userKeys['public_key'],
+            'private_key' => $userKeys['private_key'],
+        ),
+        'id=%i',
+        $userId
+    );
+
+    // update session too
+    if ($userId === $session->get('user-id')) {
+        $session->set('user-private_key', $userKeys['private_key_clear']);
+        $session->set('user-public_key', $userKeys['public_key']);
+    }
+
+    // Manage empty encryption key
+    // Let's take the user's password if asked and if no encryption key provided
+    $encryptionKey = $encryptWithUserPassword === true && empty($encryptionKey) === true ? $passwordClear : $encryptionKey;
+
+    // Create process
+    DB::insert(
+        prefixTable('processes'),
+        array(
+            'created_at' => time(),
+            'process_type' => 'create_user_keys',
+            'arguments' => json_encode([
+                'new_user_id' => (int) $userId,
+                'new_user_pwd' => cryption($passwordClear, '','encrypt')['string'],
+                'new_user_code' => cryption(empty($encryptionKey) === true ? uniqidReal(20) : $encryptionKey, '','encrypt')['string'],
+                'owner_id' => (int) TP_USER_ID,
+                'creator_pwd' => $userTP['pw'],
+                'send_email' => $sendEmailToUser === true ? 1 : 0,
+                'otp_provided_new_value' => 1,
+                'email_body' => empty($emailBody) === true ? '' : $lang->get($emailBody),
+                'user_self_change' => $user_self_change === true ? 1 : 0,
+            ]),
+            'updated_at' => '',
+            'finished_at' => '',
+            'output' => '',
+        )
+    );
+    $processId = DB::insertId();
+
+    // Delete existing keys
+    if ($deleteExistingKeys === true) {
+        deleteUserObjetsKeys(
+            (int) $userId,
+        );
+    }
+
+    // Create tasks
+    createUserTasks($processId, $nbItemsToTreat);
+
+    // update user's new status
+    DB::update(
+        prefixTable('users'),
+        [
+            'is_ready_for_usage' => 0,
+            'otp_provided' => 1,
+            'ongoing_process_id' => $processId,
+            'special' => 'generate-keys',
+        ],
+        'id=%i',
+        $userId
+    );
 
     return prepareExchangedData(
         array(
@@ -3920,6 +3839,108 @@ function handleUserKeys(
             'message' => '',
         ),
         'encode'
+    );
+}
+
+/**
+ * Permits to generate a new password for a user
+ *
+ * @param integer $processId
+ * @param integer $nbItemsToTreat
+ * @return void
+ 
+ */
+function createUserTasks($processId, $nbItemsToTreat): void
+{
+    DB::insert(
+        prefixTable('processes_tasks'),
+        array(
+            'process_id' => $processId,
+            'created_at' => time(),
+            'task' => json_encode([
+                'step' => 'step0',
+                'index' => 0,
+                'nb' => $nbItemsToTreat,
+            ]),
+        )
+    );
+
+    DB::insert(
+        prefixTable('processes_tasks'),
+        array(
+            'process_id' => $processId,
+            'created_at' => time(),
+            'task' => json_encode([
+                'step' => 'step10',
+                'index' => 0,
+                'nb' => $nbItemsToTreat,
+            ]),
+        )
+    );
+
+    DB::insert(
+        prefixTable('processes_tasks'),
+        array(
+            'process_id' => $processId,
+            'created_at' => time(),
+            'task' => json_encode([
+                'step' => 'step20',
+                'index' => 0,
+                'nb' => $nbItemsToTreat,
+            ]),
+        )
+    );
+
+    DB::insert(
+        prefixTable('processes_tasks'),
+        array(
+            'process_id' => $processId,
+            'created_at' => time(),
+            'task' => json_encode([
+                'step' => 'step30',
+                'index' => 0,
+                'nb' => $nbItemsToTreat,
+            ]),
+        )
+    );
+
+    DB::insert(
+        prefixTable('processes_tasks'),
+        array(
+            'process_id' => $processId,
+            'created_at' => time(),
+            'task' => json_encode([
+                'step' => 'step40',
+                'index' => 0,
+                'nb' => $nbItemsToTreat,
+            ]),
+        )
+    );
+
+    DB::insert(
+        prefixTable('processes_tasks'),
+        array(
+            'process_id' => $processId,
+            'created_at' => time(),
+            'task' => json_encode([
+                'step' => 'step50',
+                'index' => 0,
+                'nb' => $nbItemsToTreat,
+            ]),
+        )
+    );
+
+    DB::insert(
+        prefixTable('processes_tasks'),
+        array(
+            'process_id' => $processId,
+            'created_at' => time(),
+            'task' => json_encode([
+                'step' => 'step60',
+                'index' => 0,
+                'nb' => $nbItemsToTreat,
+            ]),
+        )
     );
 }
 
