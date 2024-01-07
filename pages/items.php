@@ -64,7 +64,6 @@ $checkUserAccess = new PerformChecks(
 // Handle the case
 echo $checkUserAccess->caseHandler();
 if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('items') === false) {
-    error_log('DEBUG: En ERREUR /!\\');
     // Not allowed page
     $session->set('system-error_code', ERR_NOT_ALLOWED);
     include $SETTINGS['cpassman_dir'] . '/error.php';

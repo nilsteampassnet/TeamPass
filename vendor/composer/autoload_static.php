@@ -64,6 +64,7 @@ class ComposerStaticInitf8d0a111ac97059c58e49ca16fe551d0
             'Symfony\\Component\\VarDumper\\' => 28,
             'Symfony\\Component\\Translation\\' => 30,
             'Symfony\\Component\\Process\\' => 26,
+            'Symfony\\Component\\PasswordHasher\\' => 33,
             'Symfony\\Component\\Mime\\' => 23,
             'Symfony\\Component\\HttpFoundation\\' => 33,
             'Symfony\\Component\\Finder\\' => 25,
@@ -234,6 +235,10 @@ class ComposerStaticInitf8d0a111ac97059c58e49ca16fe551d0
         'Symfony\\Component\\Process\\' => 
         array (
             0 => __DIR__ . '/..' . '/symfony/process',
+        ),
+        'Symfony\\Component\\PasswordHasher\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/symfony/password-hasher',
         ),
         'Symfony\\Component\\Mime\\' => 
         array (
@@ -1616,6 +1621,24 @@ class ComposerStaticInitf8d0a111ac97059c58e49ca16fe551d0
         'Symfony\\Component\\Mime\\Test\\Constraint\\EmailHtmlBodyContains' => __DIR__ . '/..' . '/symfony/mime/Test/Constraint/EmailHtmlBodyContains.php',
         'Symfony\\Component\\Mime\\Test\\Constraint\\EmailSubjectContains' => __DIR__ . '/..' . '/symfony/mime/Test/Constraint/EmailSubjectContains.php',
         'Symfony\\Component\\Mime\\Test\\Constraint\\EmailTextBodyContains' => __DIR__ . '/..' . '/symfony/mime/Test/Constraint/EmailTextBodyContains.php',
+        'Symfony\\Component\\PasswordHasher\\Command\\UserPasswordHashCommand' => __DIR__ . '/..' . '/symfony/password-hasher/Command/UserPasswordHashCommand.php',
+        'Symfony\\Component\\PasswordHasher\\Exception\\ExceptionInterface' => __DIR__ . '/..' . '/symfony/password-hasher/Exception/ExceptionInterface.php',
+        'Symfony\\Component\\PasswordHasher\\Exception\\InvalidPasswordException' => __DIR__ . '/..' . '/symfony/password-hasher/Exception/InvalidPasswordException.php',
+        'Symfony\\Component\\PasswordHasher\\Exception\\LogicException' => __DIR__ . '/..' . '/symfony/password-hasher/Exception/LogicException.php',
+        'Symfony\\Component\\PasswordHasher\\Hasher\\CheckPasswordLengthTrait' => __DIR__ . '/..' . '/symfony/password-hasher/Hasher/CheckPasswordLengthTrait.php',
+        'Symfony\\Component\\PasswordHasher\\Hasher\\MessageDigestPasswordHasher' => __DIR__ . '/..' . '/symfony/password-hasher/Hasher/MessageDigestPasswordHasher.php',
+        'Symfony\\Component\\PasswordHasher\\Hasher\\MigratingPasswordHasher' => __DIR__ . '/..' . '/symfony/password-hasher/Hasher/MigratingPasswordHasher.php',
+        'Symfony\\Component\\PasswordHasher\\Hasher\\NativePasswordHasher' => __DIR__ . '/..' . '/symfony/password-hasher/Hasher/NativePasswordHasher.php',
+        'Symfony\\Component\\PasswordHasher\\Hasher\\PasswordHasherAwareInterface' => __DIR__ . '/..' . '/symfony/password-hasher/Hasher/PasswordHasherAwareInterface.php',
+        'Symfony\\Component\\PasswordHasher\\Hasher\\PasswordHasherFactory' => __DIR__ . '/..' . '/symfony/password-hasher/Hasher/PasswordHasherFactory.php',
+        'Symfony\\Component\\PasswordHasher\\Hasher\\PasswordHasherFactoryInterface' => __DIR__ . '/..' . '/symfony/password-hasher/Hasher/PasswordHasherFactoryInterface.php',
+        'Symfony\\Component\\PasswordHasher\\Hasher\\Pbkdf2PasswordHasher' => __DIR__ . '/..' . '/symfony/password-hasher/Hasher/Pbkdf2PasswordHasher.php',
+        'Symfony\\Component\\PasswordHasher\\Hasher\\PlaintextPasswordHasher' => __DIR__ . '/..' . '/symfony/password-hasher/Hasher/PlaintextPasswordHasher.php',
+        'Symfony\\Component\\PasswordHasher\\Hasher\\SodiumPasswordHasher' => __DIR__ . '/..' . '/symfony/password-hasher/Hasher/SodiumPasswordHasher.php',
+        'Symfony\\Component\\PasswordHasher\\Hasher\\UserPasswordHasher' => __DIR__ . '/..' . '/symfony/password-hasher/Hasher/UserPasswordHasher.php',
+        'Symfony\\Component\\PasswordHasher\\Hasher\\UserPasswordHasherInterface' => __DIR__ . '/..' . '/symfony/password-hasher/Hasher/UserPasswordHasherInterface.php',
+        'Symfony\\Component\\PasswordHasher\\LegacyPasswordHasherInterface' => __DIR__ . '/..' . '/symfony/password-hasher/LegacyPasswordHasherInterface.php',
+        'Symfony\\Component\\PasswordHasher\\PasswordHasherInterface' => __DIR__ . '/..' . '/symfony/password-hasher/PasswordHasherInterface.php',
         'Symfony\\Component\\Process\\Exception\\ExceptionInterface' => __DIR__ . '/..' . '/symfony/process/Exception/ExceptionInterface.php',
         'Symfony\\Component\\Process\\Exception\\InvalidArgumentException' => __DIR__ . '/..' . '/symfony/process/Exception/InvalidArgumentException.php',
         'Symfony\\Component\\Process\\Exception\\LogicException' => __DIR__ . '/..' . '/symfony/process/Exception/LogicException.php',

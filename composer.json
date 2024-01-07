@@ -135,6 +135,7 @@
         "symfony/http-foundation": "^6.4",
         "teampassclasses/sessionmanager": "dev-master",        
         "teampassclasses/ldapextra": "dev-master",        
-        "teampassclasses/superglobal": "dev-master"
+        "teampassclasses/superglobal": "dev-master",
+        "symfony/password-hasher": "^6.4"
     }
 }

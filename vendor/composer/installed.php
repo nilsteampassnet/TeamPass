@@ -484,6 +484,15 @@
             'reference' => 'ca4f58b2ef4baa8f6cecbeca2573f88cd577d205',
             'dev_requirement' => false,
         ),
+        'symfony/password-hasher' => array(
+            'pretty_version' => 'v6.4.0',
+            'version' => '6.4.0.0',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../symfony/password-hasher',
+            'aliases' => array(),
+            'reference' => 'e001f752338a49d644ee0523fd7891aabaccb7e2',
+            'dev_requirement' => false,
+        ),
         'symfony/polyfill-iconv' => array(
             'pretty_version' => 'v1.28.0',
             'version' => '1.28.0.0',

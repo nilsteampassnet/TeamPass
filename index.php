@@ -82,12 +82,12 @@ require_once __DIR__.'/sources/main.functions.php';
 //error_log('>>>>> '.SessionManager::getCookieValue('PHPSESSID'));
 // init
 loadClasses();
-error_log('Index.php - init de la session');
+//error_log('Index.php - init de la session');
 $session = SessionManager::getSession();
 $request = Request::createFromGlobals();
 
 $session->set('key', SessionManager::getCookieValue('PHPSESSID'));
-error_log('DEBUG : KEY sur index.php ' . $session->get('key')." -- ".SessionManager::getCookieValue('PHPSESSID'));
+//error_log('DEBUG : KEY sur index.php ' . $session->get('key')." -- ".SessionManager::getCookieValue('PHPSESSID'));
 
 // Quick major version check -> upgrade needed?
 if (isset($SETTINGS['teampass_version']) === true && version_compare(TP_VERSION, $SETTINGS['teampass_version']) > 0) {
@@ -239,7 +239,7 @@ if (array_key_exists($get['page'], $utilitiesPages) === true) {
 
 
 <?php
-error_log(print_r($session->all(), true));
+//error_log(print_r($session->all(), true));
 // display an item in the context of OTV link
 if ((null === $session->get('user-validite_pw') || empty($session->get('user-validite_pw')) === true || empty($session->get('user-id')) === true)
     && empty($get['otv']) === false)
@@ -1067,16 +1067,12 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
         exit;
     }
     $session->set('user-initial_url', '');
-    //$session->invalidate();
-    //session_regenerate_id(true);
-    error_log('index.php L1069');
+    
     // LOGIN form
     include $SETTINGS['cpassman_dir'] . '/includes/core/login.php';
 } else {
     // Clear session
-    error_log('index.php L1074');
     $session->invalidate();
-    //session_regenerate_id(true);
 }
     ?>
 
