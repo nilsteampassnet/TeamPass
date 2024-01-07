@@ -89,9 +89,9 @@ set_time_limit(0);
 // --------------------------------- //
 
 // Prepare GET variables
-$get_filename = $antiXss->xss_clean($request->query->get('name'));
+$get_filename = (string) $antiXss->xss_clean($request->query->get('name'));
 $get_fileid = $antiXss->xss_clean($request->query->get('fileid'));
-$get_pathIsFiles = $antiXss->xss_clean($request->query->get('pathIsFiles'));
+$get_pathIsFiles = (string) $antiXss->xss_clean($request->query->get('pathIsFiles'));
 
 // prepare Encryption class calls
 header('Content-disposition: attachment; filename=' . rawurldecode(basename($get_filename)));
