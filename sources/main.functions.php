@@ -1213,12 +1213,14 @@ function buildEmail(
         $mail->setLanguage('en', $languageDir);
         $mail->SMTPDebug = ($cron || $silent) ? 0 : $SETTINGS['email_debug_level'];
         
+        /*
         // Define custom Debug output function
         $mail->Debugoutput = function($str, $level) {
             // Path to your log file
             $logFilePath = '/var/log/phpmailer.log';
             file_put_contents($logFilePath, gmdate('Y-m-d H:i:s'). "\t$level\t$str\n", FILE_APPEND | LOCK_EX);
         };
+        */
 
         // Configure SMTP
         $mail->isSMTP();
@@ -1253,11 +1255,11 @@ function buildEmail(
         $mail->Subject = $subject;
         $mail->Body = $text_html;
         $mail->AltBody = is_null($textMailAlt) ? '' : $textMailAlt;
-        error_log('Je vais envoyer le mail - error log level: '.$SETTINGS['email_debug_level'].' - Server: '.$SETTINGS['email_smtp_server']);
+        
         // Send email
         $mail->send();
         $mail->smtpClose();
-        error_log('Mail envoyé');
+        
         return '';
     } catch (Exception $e) {
         if (!$silent || (int) $SETTINGS['email_debug_level'] !== 0) {
@@ -1268,71 +1270,6 @@ function buildEmail(
         }
         return '';
     }
-    
-    /*
-    // load PHPMailer
-    $mail = new PHPMailer(true);
-
-    // send to user
-    $mail->setLanguage('en', $SETTINGS['cpassman_dir'] . '/vendor/phpmailer/phpmailer/language/');
-    $mail->SMTPDebug = isset($SETTINGS['email_debug_level']) === true && $cron === false && $silent === false ? $SETTINGS['email_debug_level'] : 0;
-    $mail->Port = (int) $SETTINGS['email_port'];
-    //COULD BE USED
-    $mail->CharSet = 'utf-8';
-    $mail->SMTPSecure = $SETTINGS['email_security'] !== 'none' ? $SETTINGS['email_security'] : '';
-    $mail->SMTPAutoTLS = $SETTINGS['email_security'] !== 'none' ? true : false;
-    $mail->SMTPOptions = [
-        'ssl' => [
-            'verify_peer' => false,
-            'verify_peer_name' => false,
-            'allow_self_signed' => true,
-        ],
-    ];
-    $mail->isSmtp();
-    $mail->Host = $SETTINGS['email_smtp_server'];
-    $mail->SMTPAuth = (int) $SETTINGS['email_smtp_auth'] === 1 ? true : false;
-    $mail->Username = $SETTINGS['email_auth_username'];
-    $mail->Password = $SETTINGS['email_auth_pwd'];
-    $mail->From = $SETTINGS['email_from'];
-    $mail->FromName = $SETTINGS['email_from_name'];
-    // Prepare recipients
-    foreach (array_filter(explode(',', $email)) as $dest) {
-        $mail->addAddress($dest);
-    }
-    
-    // Prepare HTML
-    $text_html = emailBody($textMail);
-    $mail->WordWrap = 80;
-    // set word wrap
-    $mail->isHtml(true);
-    // send as HTML
-    $mail->Subject = $subject;
-    $mail->Body = $text_html;
-    $mail->AltBody = is_null($textMailAlt) === false ? $textMailAlt : '';
-
-    try {
-        // send email
-        $mail->send();
-    } catch (Exception $e) {
-        if ($silent === false || (int) $SETTINGS['email_debug_level'] !== 0) {
-            return json_encode(
-                [
-                    'error' => true,
-                    'errorInfo' => str_replace(["\n", "\t", "\r"], '', $mail->ErrorInfo),
-                ]
-            );
-        }
-        return '';
-    }
-    $mail->smtpClose();
-
-    return json_encode(
-        [
-            'error' => true,
-            'errorInfo' => str_replace(["\n", "\t", "\r"], '', $mail->ErrorInfo),
-        ]
-    );
-    */
 }
 
 /**
