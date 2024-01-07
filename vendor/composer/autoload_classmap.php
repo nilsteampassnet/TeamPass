@@ -1436,6 +1436,7 @@ return array(
     'TeampassClasses\\NestedTree\\NestedTree' => $vendorDir . '/teampassclasses/nestedtree/src/NestedTree.php',
     'TeampassClasses\\PerformChecks\\PerformChecks' => $vendorDir . '/teampassclasses/performchecks/src/PerformChecks.php',
     'TeampassClasses\\SessionManager\\SessionManager' => $vendorDir . '/teampassclasses/sessionmanager/src/SessionManager.php',
+    'TeampassClasses\\SuperGlobal\\SuperGlobal' => $vendorDir . '/teampassclasses/superglobal/src/SuperGlobal.php',
     'TiBeN\\CrontabManager\\CrontabAdapter' => $vendorDir . '/tiben/crontab-manager/src/CrontabManager/CrontabAdapter.php',
     'TiBeN\\CrontabManager\\CrontabAdapterInterface' => $vendorDir . '/tiben/crontab-manager/src/CrontabManager/CrontabAdapterInterface.php',
     'TiBeN\\CrontabManager\\CrontabJob' => $vendorDir . '/tiben/crontab-manager/src/CrontabManager/CrontabJob.php',

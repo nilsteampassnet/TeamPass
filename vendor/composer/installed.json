@@ -4199,6 +4199,44 @@
             "install-path": "../teampassclasses/sessionmanager"
         },
         {
+            "name": "teampassclasses/superglobal",
+            "version": "dev-master",
+            "version_normalized": "dev-master",
+            "dist": {
+                "type": "path",
+                "url": "includes/libraries/teampassclasses/superglobal",
+                "reference": "f1a3be3120cba06901a5412c17f75d36bf315e25"
+            },
+            "require": {
+                "php": "^7.4 || ^8.0"
+            },
+            "type": "library",
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "TeampassClasses\\SuperGlobal\\": "src/"
+                }
+            },
+            "license": [
+                "GPL-3.0-only"
+            ],
+            "authors": [
+                {
+                    "name": "Nils Laumaillé"
+                }
+            ],
+            "description": "Handle project's global variables.",
+            "keywords": [
+                "nested",
+                "tree"
+            ],
+            "transport-options": {
+                "symlink": false,
+                "relative": true
+            },
+            "install-path": "../teampassclasses/superglobal"
+        },
+        {
             "name": "tecnickcom/tcpdf",
             "version": "6.6.5",
             "version_normalized": "6.6.5.0",

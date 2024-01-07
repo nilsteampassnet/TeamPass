@@ -655,6 +655,15 @@
             'reference' => '3d59d6c5d4e65b0276ef0806491c32c7b6b20788',
             'dev_requirement' => false,
         ),
+        'teampassclasses/superglobal' => array(
+            'pretty_version' => 'dev-master',
+            'version' => 'dev-master',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../teampassclasses/superglobal',
+            'aliases' => array(),
+            'reference' => 'f1a3be3120cba06901a5412c17f75d36bf315e25',
+            'dev_requirement' => false,
+        ),
         'tecnickcom/tcpdf' => array(
             'pretty_version' => '6.6.5',
             'version' => '6.6.5.0',

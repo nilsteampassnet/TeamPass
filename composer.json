@@ -81,6 +81,13 @@
             "options": {
                 "symlink": false
             }
+        },
+        {
+            "type": "path",
+            "url": "includes/libraries/teampassclasses/superglobal",
+            "options": {
+                "symlink": false
+            }
         }
     ],
     "require": {
@@ -127,6 +134,7 @@
         "spomky-labs/otphp": "^11.2",
         "symfony/http-foundation": "^6.4",
         "teampassclasses/sessionmanager": "dev-master",        
-        "teampassclasses/ldapextra": "dev-master"
+        "teampassclasses/ldapextra": "dev-master",        
+        "teampassclasses/superglobal": "dev-master"
     }
 }

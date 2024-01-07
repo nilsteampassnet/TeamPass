@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "96d4e66523e45afec76cb7ef29cd050d",
+    "content-hash": "120c06366634d4936d3c5ed551e6bed4",
     "packages": [
         {
             "name": "brick/math",
@@ -4013,6 +4013,41 @@
             }
         },
         {
+            "name": "teampassclasses/superglobal",
+            "version": "dev-master",
+            "dist": {
+                "type": "path",
+                "url": "includes/libraries/teampassclasses/superglobal",
+                "reference": "f1a3be3120cba06901a5412c17f75d36bf315e25"
+            },
+            "require": {
+                "php": "^7.4 || ^8.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "TeampassClasses\\SuperGlobal\\": "src/"
+                }
+            },
+            "license": [
+                "GPL-3.0-only"
+            ],
+            "authors": [
+                {
+                    "name": "Nils Laumaillé"
+                }
+            ],
+            "description": "Handle project's global variables.",
+            "keywords": [
+                "nested",
+                "tree"
+            ],
+            "transport-options": {
+                "symlink": false,
+                "relative": true
+            }
+        },
+        {
             "name": "tecnickcom/tcpdf",
             "version": "6.6.5",
             "source": {
@@ -4515,7 +4550,8 @@
         "teampassclasses/encryption": 20,
         "teampassclasses/language": 20,
         "teampassclasses/sessionmanager": 20,
-        "teampassclasses/ldapextra": 20
+        "teampassclasses/ldapextra": 20,
+        "teampassclasses/superglobal": 20
     },
     "prefer-stable": true,
     "prefer-lowest": false,
