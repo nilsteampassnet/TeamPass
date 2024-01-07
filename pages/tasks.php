@@ -26,7 +26,8 @@ declare(strict_types=1);
 use TiBeN\CrontabManager\CrontabJob;
 use TiBeN\CrontabManager\CrontabAdapter;
 use TiBeN\CrontabManager\CrontabRepository;
-use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
+use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\Language\Language;
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\PerformChecks\PerformChecks;
@@ -38,31 +39,34 @@ try {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
+loadClasses();
+$session = SessionManager::getSession();
+$request = Request::createFromGlobals();
+$lang = new Language(); 
+
 // Do checks
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+            'type' => $request->request->get('type', '') !== '' ? htmlspecialchars($request->request->get('type')) : '',
         ],
         [
             'type' => 'trim|escape',
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
-        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
     ]
 );
 // Handle the case
 echo $checkUserAccess->caseHandler();
 if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('tasks') === false) {
     // Not allowed page
-    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+    $session->set('system-error_code', ERR_NOT_ALLOWED);
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
-
 
 // Define Timezone
 date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
@@ -388,11 +392,11 @@ catch (Exception $e) {
                                 <table class="table table-striped" id="table-tasks_in_progress" style="width:100%;">
                                     <thead>
                                         <tr>
-                                            <th style=""></th>
-                                            <th style=""><?php echo $lang->get('created_at'); ?></th>
-                                            <th style=""><?php echo $lang->get('updated_at'); ?></th>
-                                            <th style=""><?php echo $lang->get('type'); ?></th>
-                                            <th style=""><?php echo $lang->get('user'); ?></th>
+                                            <th></th>
+                                            <th><?php echo $lang->get('created_at'); ?></th>
+                                            <th><?php echo $lang->get('updated_at'); ?></th>
+                                            <th><?php echo $lang->get('type'); ?></th>
+                                            <th><?php echo $lang->get('user'); ?></th>
                                         </tr>
                                     </thead>
                                 </table>
@@ -402,13 +406,13 @@ catch (Exception $e) {
                                 <table class="table table-striped" id="table-tasks_finished" style="width:100%;">
                                     <thead>
                                         <tr>
-                                            <th style=""></th>
-                                            <th style=""><?php echo $lang->get('created_at'); ?></th>
-                                            <th style=""><?php echo $lang->get('started_at'); ?></th>
-                                            <th style=""><?php echo $lang->get('finished_at'); ?></th>
-                                            <th style=""><?php echo $lang->get('execution_time'); ?></th>
-                                            <th style=""><?php echo $lang->get('type'); ?></th>
-                                            <th style=""><?php echo $lang->get('user'); ?></th>
+                                            <th></th>
+                                            <th><?php echo $lang->get('created_at'); ?></th>
+                                            <th><?php echo $lang->get('started_at'); ?></th>
+                                            <th><?php echo $lang->get('finished_at'); ?></th>
+                                            <th><?php echo $lang->get('execution_time'); ?></th>
+                                            <th><?php echo $lang->get('type'); ?></th>
+                                            <th><?php echo $lang->get('user'); ?></th>
                                         </tr>
                                     </thead>
                                 </table>

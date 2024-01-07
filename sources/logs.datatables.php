@@ -24,7 +24,8 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
+use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
@@ -35,10 +36,9 @@ require_once 'main.functions.php';
 
 // init
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
+$session = SessionManager::getSession();
+$request = Request::createFromGlobals();
 $lang = new Language(); 
-session_name('teampass_session');
-session_start();
 
 // Load config if $SETTINGS not defined
 try {
@@ -52,16 +52,15 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+            'type' => $request->request->get('type', '') !== '' ? htmlspecialchars($request->request->get('type')) : '',
         ],
         [
             'type' => 'trim|escape',
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
-        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
     ]
 );
 // Handle the case
@@ -71,7 +70,7 @@ if (
     $checkUserAccess->checkSession() === false
 ) {
     // Not allowed page
-    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+    $session->set('system-error_code', ERR_NOT_ALLOWED);
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -88,43 +87,51 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
 // prepare the queries
-if (isset($_GET['action']) === true) {
+if ($request->query->get('action') !== null) {
     //init SQL variables
     $sWhere = $sOrder = $sLimit = '';
     $aSortTypes = ['asc', 'desc'];
     /* BUILD QUERY */
     //Paging
-    if (isset($_GET['length']) === true && (int) $_GET['length'] !== -1) {
-        $sLimit = ' LIMIT '.filter_var($_GET['start'], FILTER_SANITIZE_NUMBER_INT).', '.filter_var($_GET['length'], FILTER_SANITIZE_NUMBER_INT).'';
+    if ($request->query->has('length') && (int) $request->query->filter('length', null, FILTER_SANITIZE_NUMBER_INT) !== -1) {
+        $start = $request->query->filter('start', 0, FILTER_SANITIZE_NUMBER_INT);
+        $length = $request->query->filter('length', 0, FILTER_SANITIZE_NUMBER_INT);
+        $sLimit = " LIMIT $start, $length";
     }
 }
 
-if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
+$params = $request->query->all();
+
+if (isset($params['action']) && $params['action'] === 'connections') {
     //Columns name
     $aColumns = ['l.date', 'l.label', 'l.qui', 'u.login', 'u.name', 'u.lastname'];
     //Ordering
-    if (isset($_GET['order'][0]['dir']) === true
-        && in_array($_GET['order'][0]['dir'], $aSortTypes) === true
-        && isset($_GET['order'][0]['column']) === true
-        && (int) $_GET['order'][0]['column'] !== 0
-        && $_GET['order'][0]['column'] !== 'asc'
-    ) {
-        $sOrder = 'ORDER BY  '.
-            $aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '.
-            filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS).' ';
-    } else {
-        $sOrder = 'ORDER BY  '.
-            $aColumns[0].' DESC';
+    if (isset($params['order']) && is_array($params['order'])) {
+        $order = $params['order'][0] ?? [];
+        if (isset($order['dir'], $order['column']) 
+            && in_array($order['dir'], $aSortTypes, true) 
+            && (int) $order['column'] !== 0
+            && $order['column'] !== 'asc') {
+
+            $columnIndex = filter_var($order['column'], FILTER_SANITIZE_NUMBER_INT);
+            $dir = filter_var($order['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $sOrder = 'ORDER BY ' . $aColumns[$columnIndex] . ' ' . $dir . ' ';
+        } else {
+            $sOrder = 'ORDER BY ' . $aColumns[0] . ' DESC';
+        }
     }
 
     // Filtering
     $sWhere = "WHERE l.type = 'user_connection'";
-    if (isset($_GET['search']['value']) === true && $_GET['search']['value'] !== '') {
-        $sWhere .= ' AND (';
-        for ($i = 0; $i < count($aColumns); ++$i) {
-            $sWhere .= $aColumns[$i]." LIKE '%".filter_var($_GET['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' OR ";
+    if (isset($params['search']) && isset($params['search']['value'])) {
+        $searchValue = filter_var($params['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        if ($searchValue !== '') {
+            $sWhere .= ' AND (';
+            foreach ($aColumns as $column) {
+                $sWhere .= $column . " LIKE '%" . $searchValue . "%' OR ";
+            }
+            $sWhere = substr_replace($sWhere, '', -3) . ')';
         }
-        $sWhere = substr_replace((string) $sWhere, '', -3).') ';
     }
 
     $iTotal = DB::queryFirstField(
@@ -148,7 +155,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
            * Output
         */
     $sOutput = '{';
-    $sOutput .= '"sEcho": '.intval($_GET['draw']).', ';
+    $sOutput .= '"sEcho": '. (int) $request->query->get('draw') . ', ';
     $sOutput .= '"iTotalRecords": '.$iTotal.', ';
     $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
     $sOutput .= '"aaData": ';
@@ -175,32 +182,32 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     }
 
     /* ERRORS LOG */
-} elseif (isset($_GET['action']) && $_GET['action'] === 'access') {
+} elseif (isset($params['action']) && $params['action'] === 'access') {
     //Columns name
     $aColumns = ['l.date', 'i.label', 'u.login'];
     //Ordering
-    if (isset($_GET['order'][0]['dir']) === true
-        && in_array($_GET['order'][0]['dir'], $aSortTypes) === true
-        && isset($_GET['order'][0]['column']) === true
-        && (int) $_GET['order'][0]['column'] !== 0
-        && $_GET['order'][0]['column'] !== 'asc'
-    ) {
-        $sOrder = 'ORDER BY  '.
-            $aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '.
-            filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS).' ';
+    $order = $params['order'][0] ?? [];
+    if (isset($order['dir'], $order['column'])
+        && in_array($order['dir'], $aSortTypes, true)
+        && (int) $order['column'] !== 0
+        && $order['column'] !== 'asc') {
+
+        $columnIndex = filter_var($order['column'], FILTER_SANITIZE_NUMBER_INT);
+        $dir = filter_var($order['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        $sOrder = 'ORDER BY ' . $aColumns[$columnIndex] . ' ' . $dir . ' ';
     } else {
-        $sOrder = 'ORDER BY  '.
-            $aColumns[0].' DESC';
+        $sOrder = 'ORDER BY ' . $aColumns[0] . ' DESC';
     }
 
     // Filtering
-    $sWhere = " WHERE l.action = 'at_shown'";
-    if ($_GET['sSearch'] !== '') {
+    $sWhere = "WHERE l.action = 'at_shown'";
+    $sSearch = $params['sSearch'] ?? '';
+    if ($sSearch !== '') {
         $sWhere .= ' AND (';
-        for ($i = 0; $i < count($aColumns); ++$i) {
-            $sWhere .= $aColumns[$i].' LIKE %ss_'.$i.' OR ';
+        foreach ($aColumns as $i => $column) {
+            $sWhere .= $column . " LIKE '%". filter_var($sSearch, FILTER_SANITIZE_FULL_SPECIAL_CHARS) . "%' OR ";
         }
-        $sWhere = substr_replace((string) $sWhere, '', -3).') ';
+        $sWhere = substr_replace($sWhere, '', -3) . ')';
     }
 
     $iTotal = DB::queryFirstField(
@@ -208,31 +215,22 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
             FROM '.prefixTable('log_items').' as l
             INNER JOIN '.prefixTable('items').' as i ON (l.id_item=i.id)
             INNER JOIN '.prefixTable('users').' as u ON (l.id_user=u.id)'.
-            $sWhere,
-            [
-                '0' => filter_var($_GET['sSearch'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                '1' => filter_var($_GET['sSearch'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                '2' => filter_var($_GET['sSearch'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-            ]
+            $sWhere
     );
+
     $rows = DB::query(
         'SELECT l.date as date, u.login as login, i.label as label
             FROM '.prefixTable('log_items').' as l
             INNER JOIN '.prefixTable('items').' as i ON (l.id_item=i.id)
             INNER JOIN '.prefixTable('users').' as u ON (l.id_user=u.id)
-            $sWhere
-            $sOrder
-            $sLimit',
-            [
-                '0' => filter_var($_GET['sSearch'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                '1' => filter_var($_GET['sSearch'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                '2' => filter_var($_GET['sSearch'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-            ]
+            '.$sWhere.'
+            '.$sOrder.'
+            '.$sLimit
     );
     $iFilteredTotal = DB::count();
     // Output
     $sOutput = '{';
-    $sOutput .= '"sEcho": '.intval($_GET['draw']).', ';
+    $sOutput .= '"sEcho": '. (int) $request->query->get('draw') . ', ';
     $sOutput .= '"iTotalRecords": '.$iTotal.', ';
     $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
     $sOutput .= '"aaData": ';
@@ -259,32 +257,32 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     }
 
     /* COPY LOG */
-} elseif (isset($_GET['action']) && $_GET['action'] === 'copy') {
+} elseif (isset($params['action']) && $params['action'] === 'copy') {
     //Columns name
     $aColumns = ['l.date', 'i.label', 'u.login'];
     //Ordering
-    if (isset($_GET['order'][0]['dir']) === true
-        && in_array($_GET['order'][0]['dir'], $aSortTypes) === true
-        && isset($_GET['order'][0]['column']) === true
-        && (int) $_GET['order'][0]['column'] !== 0
-        && $_GET['order'][0]['column'] !== 'asc'
-    ) {
-        $sOrder = 'ORDER BY  '.
-            $aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '.
-            filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS).' ';
+    $order = $params['order'][0] ?? [];
+    if (isset($order['dir'], $order['column'])
+        && in_array($order['dir'], $aSortTypes, true)
+        && (int) $order['column'] !== 0
+        && $order['column'] !== 'asc') {
+
+        $columnIndex = filter_var($order['column'], FILTER_SANITIZE_NUMBER_INT);
+        $dir = filter_var($order['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        $sOrder = 'ORDER BY ' . $aColumns[$columnIndex] . ' ' . $dir . ' ';
     } else {
-        $sOrder = 'ORDER BY  '.
-            $aColumns[0].' DESC';
+        $sOrder = 'ORDER BY ' . $aColumns[0] . ' DESC';
     }
 
     // Filtering
     $sWhere = "WHERE l.action = 'at_copy'";
-    if (isset($_GET['search']['value']) === true && $_GET['search']['value'] !== '') {
+    $searchValue = $params['search']['value'] ?? '';
+    if ($searchValue !== '') {
         $sWhere .= ' AND (';
-        for ($i = 0; $i < count($aColumns); ++$i) {
-            $sWhere .= $aColumns[$i]." LIKE '%".filter_var($_GET['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' OR ";
+        foreach ($aColumns as $column) {
+            $sWhere .= $column . " LIKE '%" . filter_var($searchValue, FILTER_SANITIZE_FULL_SPECIAL_CHARS) . "%' OR ";
         }
-        $sWhere = substr_replace((string) $sWhere, '', -3).') ';
+        $sWhere = substr_replace($sWhere, '', -3) . ')';
     }
 
     $iTotal = DB::queryFirstField(
@@ -307,7 +305,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     $iFilteredTotal = DB::count();
     // Output
     $sOutput = '{';
-    $sOutput .= '"sEcho": '.intval($_GET['draw']).', ';
+    $sOutput .= '"sEcho": '. (int) $request->query->get('draw') . ', ';
     $sOutput .= '"iTotalRecords": '.$iTotal.', ';
     $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
     $sOutput .= '"aaData": ';
@@ -336,30 +334,30 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     /*
     * ADMIN LOG
      */
-} elseif (isset($_GET['action']) && $_GET['action'] === 'admin') {
+} elseif (isset($params['action']) && $params['action'] === 'admin') {
     //Columns name
     $aColumns = ['l.date', 'u.login', 'l.label', 'l.field_1'];
     //Ordering
-    if (isset($_GET['order'][0]['dir']) === true
-        && in_array($_GET['order'][0]['dir'], $aSortTypes) === true
-        && isset($_GET['order'][0]['column']) === true
-    ) {
-        $sOrder = 'ORDER BY  '.
-            $aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '.
-            filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS).' ';
+    $order = $params['order'][0] ?? [];
+    if (isset($order['dir'], $order['column']) 
+        && in_array($order['dir'], $aSortTypes, true)) {
+        
+        $columnIndex = filter_var($order['column'], FILTER_SANITIZE_NUMBER_INT);
+        $dir = filter_var($order['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        $sOrder = 'ORDER BY ' . $aColumns[$columnIndex] . ' ' . $dir . ' ';
     } else {
-        $sOrder = 'ORDER BY  '.
-            $aColumns[0].' DESC';
+        $sOrder = 'ORDER BY ' . $aColumns[0] . ' DESC';
     }
 
     // Filtering
     $sWhere = "WHERE l.type IN ('admin_action', 'user_mngt')";
-    if (isset($_GET['search']['value']) === true && $_GET['search']['value'] !== '') {
+    $searchValue = $params['search']['value'] ?? '';
+    if ($searchValue !== '') {
         $sWhere .= ' AND (';
-        for ($i = 0; $i < count($aColumns); ++$i) {
-            $sWhere .= $aColumns[$i]." LIKE '%".filter_var($_GET['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' OR ";
+        foreach ($aColumns as $column) {
+            $sWhere .= $column . " LIKE '%" . filter_var($searchValue, FILTER_SANITIZE_FULL_SPECIAL_CHARS) . "%' OR ";
         }
-        $sWhere = substr_replace((string) $sWhere, '', -3).') ';
+        $sWhere = substr_replace($sWhere, '', -3) . ')';
     }
 
     $iTotal = DB::queryFirstField(
@@ -381,7 +379,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
          * Output
         */
     $sOutput = '{';
-    $sOutput .= '"sEcho": '.intval($_GET['draw']).', ';
+    $sOutput .= '"sEcho": '. (int) $request->query->get('draw') . ', ';
     $sOutput .= '"iTotalRecords": '.$iTotal.', ';
     $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
     $sOutput .= '"aaData": [ ';
@@ -436,36 +434,37 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     }
     $sOutput .= '] }';
 /* ITEMS */
-} elseif (isset($_GET['action']) && $_GET['action'] === 'items') {
+} elseif (isset($params['action']) && $params['action'] === 'items') {
     require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
     //Columns name
     $aColumns = ['l.date', 'i.label', 'u.login', 'l.action', 'i.perso', 'i.id', 't.title'];
     //Ordering
-    if (isset($_GET['order'][0]['dir']) === true
-        && in_array($_GET['order'][0]['dir'], $aSortTypes) === true
-        && isset($_GET['order'][0]['column']) === true
-        && (int) $_GET['order'][0]['column'] !== 0
-        && $_GET['order'][0]['column'] !== 'asc'
-    ) {
-        $sOrder = 'ORDER BY  '.
-            $aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '.
-            filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS).' ';
+    $order = $params['order'][0] ?? [];
+    if (isset($order['dir'], $order['column']) 
+        && in_array($order['dir'], $aSortTypes, true)
+        && (int) $order['column'] !== 0
+        && $order['column'] !== 'asc') {
+
+        $columnIndex = filter_var($order['column'], FILTER_SANITIZE_NUMBER_INT);
+        $dir = filter_var($order['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        $sOrder = 'ORDER BY ' . $aColumns[$columnIndex] . ' ' . $dir . ' ';
     } else {
-        $sOrder = 'ORDER BY  '.
-            $aColumns[0].' DESC';
+        $sOrder = 'ORDER BY ' . $aColumns[0] . ' DESC';
     }
 
     // Filtering
     $sWhere = '';
-    if (isset($_GET['search']['value']) === true && $_GET['search']['value'] !== '') {
+    $search = $params['search'] ?? [];
+    $searchValue = $search['value'] ?? '';
+    if ($searchValue !== '') {
         $sWhere .= ' WHERE (';
-        if (isset($_GET['search']['column']) === true && $_GET['search']['column'] !== 'all') {
-            $sWhere .= $_GET['search']['column']." LIKE '%".filter_var($_GET['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%') ";
+        if (isset($search['column']) && $search['column'] !== 'all') {
+            $sWhere .= $search['column'] . " LIKE '%" . filter_var($searchValue, FILTER_SANITIZE_FULL_SPECIAL_CHARS) . "%') ";
         } else {
-            for ($i = 0; $i < count($aColumns); ++$i) {
-                $sWhere .= $aColumns[$i]." LIKE '%".filter_var($_GET['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' OR ";
+            foreach ($aColumns as $column) {
+                $sWhere .= $column . " LIKE '%" . filter_var($searchValue, FILTER_SANITIZE_FULL_SPECIAL_CHARS) . "%' OR ";
             }
-            $sWhere = substr((string) $sWhere, 0, -3).') ';
+            $sWhere = substr($sWhere, 0, -3) . ') ';
         }
     }
     
@@ -494,7 +493,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     $iFilteredTotal = DB::count();
     // Output
     $sOutput = '{';
-    $sOutput .= '"sEcho": '.intval($_GET['draw']).', ';
+    $sOutput .= '"sEcho": '. (int) $request->query->get('draw') . ', ';
     $sOutput .= '"iTotalRecords": '.$iTotal.', ';
     $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
     $sOutput .= '"aaData": [ ';
@@ -531,37 +530,32 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     }
     $sOutput .= '] }';
 /* FAILED AUTHENTICATION */
-} elseif (isset($_GET['action']) && $_GET['action'] === 'failed_auth') {
+} elseif (isset($params['action']) && $params['action'] === 'failed_auth') {
     //Columns name
     $aColumns = ['l.date', 'l.label', 'l.qui', 'l.field_1'];
     //Ordering
-    if (isset($_GET['order'][0]['dir']) === true
-        && in_array($_GET['order'][0]['dir'], $aSortTypes) === true
-        && isset($_GET['order'][0]['column']) === true
-        && (int) $_GET['order'][0]['column'] !== 0
-        && $_GET['order'][0]['column'] !== 'asc'
-    ) {
-        $sOrder = 'ORDER BY  '.
-            $aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '.
-            filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS).' ';
+    $order = $params['order'][0] ?? [];
+    if (isset($order['dir'], $order['column']) 
+        && in_array($order['dir'], $aSortTypes, true)
+        && (int) $order['column'] !== 0
+        && $order['column'] !== 'asc') {
+
+        $columnIndex = filter_var($order['column'], FILTER_SANITIZE_NUMBER_INT);
+        $dir = filter_var($order['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        $sOrder = 'ORDER BY ' . $aColumns[$columnIndex] . ' ' . $dir . ' ';
     } else {
-        $sOrder = 'ORDER BY  '.
-            $aColumns[0].' DESC';
+        $sOrder = 'ORDER BY ' . $aColumns[0] . ' DESC';
     }
 
-    /*
-       * Filtering
-       * NOTE this does not match the built-in DataTables filtering which does it
-       * word by word on any field. It's possible to do here, but concerned about efficiency
-       * on very large tables, and MySQL's regex functionality is very limited
-    */
+    // Filtering
     $sWhere = "WHERE l.type = 'failed_auth'";
-    if (isset($_GET['search']['value']) === true && $_GET['search']['value'] !== '') {
+    $searchValue = $params['search']['value'] ?? '';
+    if ($searchValue !== '') {
         $sWhere .= ' AND (';
-        for ($i = 0; $i < count($aColumns); ++$i) {
-            $sWhere .= $aColumns[$i]." LIKE '%".filter_var($_GET['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' OR ";
+        foreach ($aColumns as $column) {
+            $sWhere .= $column . " LIKE '%" . filter_var($searchValue, FILTER_SANITIZE_FULL_SPECIAL_CHARS) . "%' OR ";
         }
-        $sWhere = substr_replace($sWhere, '', -3).') ';
+        $sWhere = substr_replace($sWhere, '', -3) . ')';
     }
 
     $iTotal = DB::queryFirstField(
@@ -582,7 +576,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
         $iTotal = 0;
     }
     $sOutput = '{';
-    $sOutput .= '"sEcho": '.intval($_GET['draw']).', ';
+    $sOutput .= '"sEcho": '. (int) $request->query->get('draw') . ', ';
     $sOutput .= '"iTotalRecords": '.$iTotal.', ';
     $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
     $sOutput .= '"aaData": ';
@@ -612,37 +606,32 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     } else {
         $sOutput .= '[] }';
     }
-} elseif (isset($_GET['action']) && $_GET['action'] === 'errors') {
+} elseif (isset($params['action']) && $params['action'] === 'errors') {
     //Columns name
     $aColumns = ['l.date', 'l.label', 'l.qui', 'u.login', 'u.name', 'u.lastname'];
     //Ordering
-    if (isset($_GET['order'][0]['dir']) === true
-        && in_array($_GET['order'][0]['dir'], $aSortTypes) === true
-        && isset($_GET['order'][0]['column']) === true
-        && (int) $_GET['order'][0]['column'] !== 0
-        && $_GET['order'][0]['column'] !== 'asc'
-    ) {
-        $sOrder = 'ORDER BY  '.
-            $aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '.
-            filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS).' ';
+    $order = $params['order'][0] ?? [];
+    if (isset($order['dir'], $order['column']) 
+        && in_array($order['dir'], $aSortTypes, true)
+        && (int) $order['column'] !== 0
+        && $order['column'] !== 'asc') {
+
+        $columnIndex = filter_var($order['column'], FILTER_SANITIZE_NUMBER_INT);
+        $dir = filter_var($order['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        $sOrder = 'ORDER BY ' . $aColumns[$columnIndex] . ' ' . $dir . ' ';
     } else {
-        $sOrder = 'ORDER BY  '.
-            $aColumns[0].' DESC';
+        $sOrder = 'ORDER BY ' . $aColumns[0] . ' DESC';
     }
 
-    /*
-       * Filtering
-       * NOTE this does not match the built-in DataTables filtering which does it
-       * word by word on any field. It's possible to do here, but concerned about efficiency
-       * on very large tables, and MySQL's regex functionality is very limited
-    */
+    // Filtering
     $sWhere = "WHERE l.type = 'error'";
-    if (isset($_GET['search']['value']) === true && $_GET['search']['value'] !== '') {
+    $searchValue = $params['search']['value'] ?? '';
+    if ($searchValue !== '') {
         $sWhere .= ' AND (';
-        for ($i = 0; $i < count($aColumns); ++$i) {
-            $sWhere .= $aColumns[$i]." LIKE '%".filter_var($_GET['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' OR ";
+        foreach ($aColumns as $column) {
+            $sWhere .= $column . " LIKE '%" . filter_var($searchValue, FILTER_SANITIZE_FULL_SPECIAL_CHARS) . "%' OR ";
         }
-        $sWhere = substr_replace($sWhere, '', -3).') ';
+        $sWhere = substr_replace($sWhere, '', -3) . ')';
     }
 
     $iTotal = DB::queryFirstField(
@@ -664,7 +653,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     $iFilteredTotal = DB::count();
     // Output
     $sOutput = '{';
-    $sOutput .= '"sEcho": '.intval($_GET['draw']).', ';
+    $sOutput .= '"sEcho": '. (int) $request->query->get('draw') . ', ';
     $sOutput .= '"iTotalRecords": '.$iTotal.', ';
     $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
     $sOutput .= '"aaData": ';
@@ -689,36 +678,32 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     } else {
         $sOutput .= '[] }';
     }
-} elseif (isset($_GET['action']) && $_GET['action'] === 'items_in_edition') {
+} elseif (isset($params['action']) && $params['action'] === 'items_in_edition') {
     //Columns name
     $aColumns = ['e.timestamp', 'u.login', 'i.label', 'u.name', 'u.lastname'];
     //Ordering
-    if (isset($_GET['order'][0]['dir']) === true
-        && in_array($_GET['order'][0]['dir'], $aSortTypes) === true
-        && isset($_GET['order'][0]['column']) === true
-        && (int) $_GET['order'][0]['column'] !== 0
-        && $_GET['order'][0]['column'] !== 'asc'
-    ) {
-        $sOrder = 'ORDER BY  '.
-            $aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '.
-            filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS).' ';
+    $order = $params['order'][0] ?? [];
+    if (isset($order['dir'], $order['column']) 
+        && in_array($order['dir'], $aSortTypes, true)
+        && (int) $order['column'] !== 0
+        && $order['column'] !== 'asc') {
+
+        $columnIndex = filter_var($order['column'], FILTER_SANITIZE_NUMBER_INT);
+        $dir = filter_var($order['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        $sOrder = 'ORDER BY ' . $aColumns[$columnIndex] . ' ' . $dir . ' ';
     } else {
-        $sOrder = 'ORDER BY  '.
-            $aColumns[0].' DESC';
+        $sOrder = 'ORDER BY ' . $aColumns[0] . ' DESC';
     }
 
-    /*
-       * Filtering
-       * NOTE this does not match the built-in DataTables filtering which does it
-       * word by word on any field. It's possible to do here, but concerned about efficiency
-       * on very large tables, and MySQL's regex functionality is very limited
-    */
-    if (isset($_GET['search']['value']) === true && $_GET['search']['value'] !== '') {
+    // Filtering
+    $sWhere = '';
+    $searchValue = $params['search']['value'] ?? '';
+    if ($searchValue !== '') {
         $sWhere = ' WHERE (';
-        for ($i = 0; $i < count($aColumns); ++$i) {
-            $sWhere .= $aColumns[$i]." LIKE '%".filter_var($_GET['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' OR ";
+        foreach ($aColumns as $column) {
+            $sWhere .= $column . " LIKE '%" . filter_var($searchValue, FILTER_SANITIZE_FULL_SPECIAL_CHARS) . "%' OR ";
         }
-        $sWhere = substr_replace($sWhere, '', -3).') ';
+        $sWhere = substr_replace($sWhere, '', -3) . ')';
     }
 
     $iTotal = DB::queryFirstField(
@@ -741,7 +726,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     $iFilteredTotal = DB::count();
     // Output
     $sOutput = '{';
-    $sOutput .= '"sEcho": '.intval($_GET['draw']).', ';
+    $sOutput .= '"sEcho": '. (int) $request->query->get('draw') . ', ';
     $sOutput .= '"iTotalRecords": '.$iTotal.', ';
     $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
     $sOutput .= '"aaData": ';
@@ -771,31 +756,32 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     } else {
         $sOutput .= '[] }';
     }
-} elseif (isset($_GET['action']) && $_GET['action'] === 'users_logged_in') {
+} elseif (isset($params['action']) && $params['action'] === 'users_logged_in') {
     //Columns name
     $aColumns = ['login', 'name', 'lastname', 'timestamp', 'last_connexion'];
     //Ordering
-    if (isset($_GET['order'][0]['dir']) === true
-        && in_array($_GET['order'][0]['dir'], $aSortTypes) === true
-        && isset($_GET['order'][0]['column']) === true
-        && (int) $_GET['order'][0]['column'] !== 0
-        && $_GET['order'][0]['column'] !== 'asc'
-    ) {
-        $sOrder = 'ORDER BY  '.
-            $aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '.
-            filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS).' ';
+    $order = $params['order'][0] ?? [];
+    if (isset($order['dir'], $order['column']) 
+        && in_array($order['dir'], $aSortTypes, true)
+        && (int) $order['column'] !== 0
+        && $order['column'] !== 'asc') {
+
+        $columnIndex = filter_var($order['column'], FILTER_SANITIZE_NUMBER_INT);
+        $dir = filter_var($order['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        $sOrder = 'ORDER BY ' . $aColumns[$columnIndex] . ' ' . $dir . ' ';
     } else {
-        $sOrder = 'ORDER BY  '.
-            $aColumns[0].' DESC';
+        $sOrder = 'ORDER BY ' . $aColumns[0] . ' DESC';
     }
 
+    // Where clause
     $sWhere = ' WHERE ((timestamp != "" AND session_end >= "'.time().'")';
-    if (isset($_GET['search']['value']) === true && $_GET['search']['value'] !== '') {
-        $sWhere = ' AND (';
-        for ($i = 0; $i < count($aColumns); ++$i) {
-            $sWhere .= $aColumns[$i]." LIKE '%".filter_var($_GET['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' OR ";
+    $searchValue = $params['search']['value'] ?? '';
+    if ($searchValue !== '') {
+        $sWhere .= ' AND (';
+        foreach ($aColumns as $column) {
+            $sWhere .= $column . " LIKE '%" . filter_var($searchValue, FILTER_SANITIZE_FULL_SPECIAL_CHARS) . "%' OR ";
         }
-        $sWhere = substr_replace($sWhere, '', -3).') ';
+        $sWhere = substr_replace($sWhere, '', -3) . ') ';
     }
     $sWhere .= ') ';
     $iTotal = DB::queryFirstField(
@@ -813,7 +799,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     $iFilteredTotal = DB::count();
     // Output
     $sOutput = '{';
-    $sOutput .= '"sEcho": '.intval($_GET['draw']).', ';
+    $sOutput .= '"sEcho": '. (int) $request->query->get('draw') . ', ';
     $sOutput .= '"iTotalRecords": '.$iTotal.', ';
     $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
     $sOutput .= '"aaData": ';
@@ -850,31 +836,32 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     } else {
         $sOutput .= '[] }';
     }
-} elseif (isset($_GET['action']) && $_GET['action'] === 'tasks_in_progress') {
+} elseif (isset($params['action']) && $params['action'] === 'tasks_in_progress') {
     //Columns name
     $aColumns = ['p.increment_id', 'p.created_at', 'p.updated_at', 'p.process_type', 'p.is_in_progress'];
     //Ordering
-    if (isset($_GET['order'][0]['dir']) === true
-        && in_array($_GET['order'][0]['dir'], $aSortTypes) === true
-        && isset($_GET['order'][0]['column']) === true
-        && (int) $_GET['order'][0]['column'] !== 0
-        && $_GET['order'][0]['column'] !== 'asc'
-    ) {
-        $sOrder = 'ORDER BY  '.
-            $aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '.
-            filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS).' ';
+    $order = $params['order'][0] ?? [];
+    if (isset($order['dir'], $order['column']) 
+        && in_array($order['dir'], $aSortTypes, true)
+        && (int) $order['column'] !== 0
+        && $order['column'] !== 'asc') {
+
+        $columnIndex = filter_var($order['column'], FILTER_SANITIZE_NUMBER_INT);
+        $dir = filter_var($order['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        $sOrder = 'ORDER BY ' . $aColumns[$columnIndex] . ' ' . $dir . ' ';
     } else {
-        $sOrder = 'ORDER BY  '.
-            $aColumns[0].' DESC';
+        $sOrder = 'ORDER BY ' . $aColumns[0] . ' DESC';
     }
 
+    // Where clause
     $sWhere = ' WHERE ((p.finished_at = "")';
-    if (isset($_GET['search']['value']) === true && $_GET['search']['value'] !== '') {
+    $searchValue = $params['search']['value'] ?? '';
+    if ($searchValue !== '') {
         $sWhere .= ' AND (';
-        for ($i = 0; $i < count($aColumns); ++$i) {
-            $sWhere .= $aColumns[$i]." LIKE '%".filter_var($_GET['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' OR ";
+        foreach ($aColumns as $column) {
+            $sWhere .= $column . " LIKE '%" . filter_var($searchValue, FILTER_SANITIZE_FULL_SPECIAL_CHARS) . "%' OR ";
         }
-        $sWhere = substr_replace($sWhere, '', -3).') ';
+        $sWhere = substr_replace($sWhere, '', -3) . ')';
     }
     $sWhere .= ') ';
     DB::debugmode(false);
@@ -895,7 +882,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     $iFilteredTotal = DB::count();
     // Output
     $sOutput = '{';
-    $sOutput .= '"sEcho": '.intval($_GET['draw']).', ';
+    $sOutput .= '"sEcho": '. (int) $request->query->get('draw') . ', ';
     $sOutput .= '"iTotalRecords": '.$iTotal.', ';
     $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
     $sOutput .= '"aaData": ';
@@ -935,31 +922,32 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     } else {
         $sOutput .= '[] }';
     }
-} elseif (isset($_GET['action']) && $_GET['action'] === 'tasks_finished') {
+} elseif (isset($params['action']) && $params['action'] === 'tasks_finished') {
     //Columns name
     $aColumns = ['p.created_at', 'p.finished_at', 'p.process_type', 'u.name'];
     //Ordering
-    if (isset($_GET['order'][0]['dir']) === true
-        && in_array($_GET['order'][0]['dir'], $aSortTypes) === true
-        && isset($_GET['order'][0]['column']) === true
-        && (int) $_GET['order'][0]['column'] !== 0
-        && $_GET['order'][0]['column'] !== 'asc'
-    ) {
-        $sOrder = 'ORDER BY  '.
-            $aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '.
-            filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS).' ';
+    $order = $params['order'][0] ?? [];
+    if (isset($order['dir'], $order['column']) 
+        && in_array($order['dir'], $aSortTypes, true)
+        && (int) $order['column'] !== 0
+        && $order['column'] !== 'asc') {
+
+        $columnIndex = filter_var($order['column'], FILTER_SANITIZE_NUMBER_INT);
+        $dir = filter_var($order['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        $sOrder = 'ORDER BY ' . $aColumns[$columnIndex] . ' ' . $dir . ' ';
     } else {
-        $sOrder = 'ORDER BY  '.
-            $aColumns[0].' DESC';
+        $sOrder = 'ORDER BY ' . $aColumns[0] . ' DESC';
     }
 
+    // Where clause
     $sWhere = ' WHERE ((finished_at != "")';
-    if (isset($_GET['search']['value']) === true && $_GET['search']['value'] !== '') {
+    $searchValue = $params['search']['value'] ?? '';
+    if ($searchValue !== '') {
         $sWhere .= ' AND (';
-        for ($i = 0; $i < count($aColumns); ++$i) {
-            $sWhere .= $aColumns[$i]." LIKE '%".filter_var($_GET['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' OR ";
+        foreach ($aColumns as $column) {
+            $sWhere .= $column . " LIKE '%" . filter_var($searchValue, FILTER_SANITIZE_FULL_SPECIAL_CHARS) . "%' OR ";
         }
-        $sWhere = substr_replace($sWhere, '', -3).') ';
+        $sWhere = substr_replace($sWhere, '', -3) . ')';
     }
     $sWhere .= ') ';
     
@@ -982,7 +970,7 @@ if (isset($_GET['action']) === true && $_GET['action'] === 'connections') {
     $iFilteredTotal = DB::count();
     // Output
     $sOutput = '{';
-    $sOutput .= '"sEcho": '.intval($_GET['draw']).', ';
+    $sOutput .= '"sEcho": '. (int) $request->query->get('draw') . ', ';
     $sOutput .= '"iTotalRecords": '.$iTotal.', ';
     $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
     $sOutput .= '"aaData": ';

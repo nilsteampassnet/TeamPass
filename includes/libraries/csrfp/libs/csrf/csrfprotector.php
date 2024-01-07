@@ -4,6 +4,7 @@
  */
 
 Use EZimuel\PHPSecureSession;
+use TeampassClasses\SessionManager\SessionManager;
 include __DIR__ ."/csrfpCookieConfig.php";      // cookie config class
 include __DIR__ ."/csrfpDefaultLogger.php";     // Logger class
 include __DIR__ ."/csrfpAction.php";            // Actions enumerator
@@ -130,11 +131,13 @@ if (!defined('__CSRF_PROTECTOR__')) {
                 return;
             }
 
+            
+            //SessionManager::getSession();
             // Start session in case its not, and unit test is not going on
             if (session_id() == '' && !defined('__CSRFP_UNIT_TEST__')) {
-                session_name('teampass_session');
+                //session_name('teampass_session');
                 session_start();
-                $_SESSION['CPM'] = 1;
+                //$_SESSION['CPM'] = 1;
             }
 
             // Load configuration file and properties & Check locally for a 
@@ -417,14 +420,22 @@ if (!defined('__CSRF_PROTECTOR__')) {
                 self::$cookieConfig = new csrfpCookieConfig(self::$config['cookieConfig']);
             }
 
-            setcookie(
-                self::$config['CSRFP_TOKEN'], 
-                $token,
-                time() + self::$cookieConfig->expire,
-                self::$cookieConfig->path,
-                self::$cookieConfig->domain,
-                (bool) self::$cookieConfig->secure,
-                (bool) self::$cookieConfig->httponly);
+            if (is_object(self::$cookieConfig) && 
+                isset(self::$cookieConfig->expire, 
+                    self::$cookieConfig->path, 
+                    self::$cookieConfig->domain, 
+                    self::$cookieConfig->secure, 
+                    self::$cookieConfig->httponly)) {
+                setcookie(
+                    self::$config['CSRFP_TOKEN'], 
+                    $token,
+                    time() + self::$cookieConfig->expire,
+                    self::$cookieConfig->path,
+                    self::$cookieConfig->domain,
+                    (bool) self::$cookieConfig->secure,
+                    (bool) self::$cookieConfig->httponly
+                );
+            }
         }
 
         /*

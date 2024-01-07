@@ -22,20 +22,21 @@ declare(strict_types=1);
 
 use voku\helper\AntiXSS;
 use TeampassClasses\NestedTree\NestedTree;
-use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
+use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
 
 // Load functions
 require_once 'main.functions.php';
-
+$session = SessionManager::getSession();
 // init
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
+$session = SessionManager::getSession();
+$request = Request::createFromGlobals();
 $lang = new Language(); 
-session_name('teampass_session');
-session_start();
+
 
 // Load config if $SETTINGS not defined
 try {
@@ -49,16 +50,15 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+            'type' => $request->request->get('type', '') !== '' ? htmlspecialchars($request->request->get('type')) : '',
         ],
         [
             'type' => 'trim|escape',
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
-        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
     ]
 );
 // Handle the case
@@ -68,7 +68,7 @@ if (
     $checkUserAccess->checkSession() === false
 ) {
     // Not allowed page
-    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+    $session->set('system-error_code', ERR_NOT_ALLOWED);
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -85,7 +85,7 @@ error_reporting(E_ERROR);
 // --------------------------------- //
 
 // Prepare POST variables
-$post_user_token = filter_input(INPUT_POST, 'user_token', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_user_token = filter_input(INPUT_POST, 'user_upload_token', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $post_type_upload = filter_input(INPUT_POST, 'type_upload', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $post_timezone = filter_input(INPUT_POST, 'timezone', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
@@ -110,21 +110,21 @@ if (null === $post_user_token) {
                 'end_timestamp' => time() + 10,
             ),
             'user_id = %i AND token = %s',
-            $_SESSION['user_id'],
+            $session->get('user-id'),
             $post_user_token
         );
     } else {
         // check if token is expired
         $data = DB::queryFirstRow(
             'SELECT end_timestamp FROM ' . prefixTable('tokens') . ' WHERE user_id = %i AND token = %s',
-            $_SESSION['user_id'],
+            $session->get('user-id'),
             $post_user_token
         );
         // clear user token
         DB::delete(
             prefixTable('tokens'),
             'user_id = %i AND token = %s',
-            $_SESSION['user_id'],
+            $session->get('user-id'),
             $post_user_token
         );
 
@@ -453,7 +453,7 @@ if (
     }
 
     // get current avatar and delete it
-    $data = DB::queryFirstRow('SELECT avatar, avatar_thumb FROM ' . prefixTable('users') . ' WHERE id=%i', $_SESSION['user_id']);
+    $data = DB::queryFirstRow('SELECT avatar, avatar_thumb FROM ' . prefixTable('users') . ' WHERE id=%i', $session->get('user-id'));
     fileDelete($targetDir . DIRECTORY_SEPARATOR . $data['avatar'], $SETTINGS);
     fileDelete($targetDir . DIRECTORY_SEPARATOR . $data['avatar_thumb'], $SETTINGS);
 
@@ -462,19 +462,19 @@ if (
         'UPDATE ' . prefixTable('users') . "
         SET avatar='" . $newFileName . '.' . $ext . "', avatar_thumb='" . $newFileName . '_thumb' . '.' . $ext . "'
         WHERE id=%i",
-        $_SESSION['user_id']
+        $session->get('user-id')
     );
 
     // store in session
-    $_SESSION['user_avatar'] = $newFileName . '.' . $ext;
-    $_SESSION['user_avatar_thumb'] = $newFileName . '_thumb' . '.' . $ext;
+    $session->set('user-avatar', $newFileName . '.' . $ext);
+    $session->set('user-avatar_thumb', $newFileName . '_thumb' . '.' . $ext);
 
     // return info
     echo prepareExchangedData(
         array(
             'error' => false,
-            'filename' => htmlentities($_SESSION['user_avatar'], ENT_QUOTES),
-            'filename_thumb' => htmlentities($_SESSION['user_avatar_thumb'], ENT_QUOTES),
+            'filename' => htmlentities($session->get('user-avatar'), ENT_QUOTES),
+            'filename_thumb' => htmlentities($session->get('user-avatar_thumb'), ENT_QUOTES),
         ),
         'encode'
     );

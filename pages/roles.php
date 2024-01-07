@@ -25,7 +25,8 @@ declare(strict_types=1);
  */
 
 
-use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
+use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\Language\Language;
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\PerformChecks\PerformChecks;
@@ -35,7 +36,8 @@ require_once __DIR__.'/../sources/main.functions.php';
 
 // init
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
+$session = SessionManager::getSession();
+$request = Request::createFromGlobals();
 $lang = new Language(); 
 
 // Load config if $SETTINGS not defined
@@ -49,23 +51,22 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+            'type' => $request->request->get('type', '') !== '' ? htmlspecialchars($request->request->get('type')) : '',
         ],
         [
             'type' => 'trim|escape',
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
-        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
     ]
 );
 // Handle the case
 echo $checkUserAccess->caseHandler();
 if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('roles') === false) {
     // Not allowed page
-    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+    $session->set('system-error_code', ERR_NOT_ALLOWED);
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -112,7 +113,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                             <i class="fa-solid fa-trash mr-2"></i><?php echo $lang->get('delete'); ?>
                         </button>
                         <?php
-                            echo isset($SETTINGS['enable_ad_users_with_ad_groups']) === true && (int) $SETTINGS['enable_ad_users_with_ad_groups'] === 1 && (int) $_SESSION['is_admin'] === 1 ?
+                            echo isset($SETTINGS['enable_ad_users_with_ad_groups']) === true && (int) $SETTINGS['enable_ad_users_with_ad_groups'] === 1 && (int) $session->get('user-admin') === 1 ?
                         '<button type="button" class="btn btn-primary btn-sm tp-action mr-2" data-action="ldap" id="button-ldap">
                             <i class="fa-solid fa-address-card mr-2"></i>'.$lang->get('ldap_synchronization').'
                         </button>' : '';
@@ -124,9 +125,9 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                             <select id="roles-list" class="form-control form-item-control select2" style="width:100%;">
                                 <option></option>
                                 <?php
-                                $arrUserRoles = array_filter($_SESSION['user_roles']);
+                                $arrUserRoles = array_filter($session->get('user-roles_array'));
                                 $where = '';
-                                if (count($arrUserRoles) > 0 && (int) $_SESSION['is_admin'] !== 1) {
+                                if (count($arrUserRoles) > 0 && (int) $session->get('user-admin') !== 1) {
                                     $where = ' WHERE id IN (' . implode(',', $arrUserRoles) . ')';
                                 }
                                 $rows = DB::query('SELECT * FROM ' . prefixTable('roles_title') . $where);
@@ -199,7 +200,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 
                         <!-- LDAP SYNC FORM -->
                         <?php
-                        if (isset($SETTINGS['enable_ad_users_with_ad_groups']) === true && (int) $SETTINGS['enable_ad_users_with_ad_groups'] === 1 && (int) $_SESSION['is_admin'] === 1) {
+                        if (isset($SETTINGS['enable_ad_users_with_ad_groups']) === true && (int) $SETTINGS['enable_ad_users_with_ad_groups'] === 1 && (int) $session->get('user-admin') === 1) {
                             ?>
                         <div class="card hidden card-info" id="card-roles-ldap-sync">
                             <div class="card-header">
@@ -218,7 +219,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                             <tr>
                                                 <th style="width: 25%;"><i class="fa-solid fa-people-group mr-1"></i><?php echo $lang->get('ad_group'); ?></th>
                                                 <th style="width: 25pw;"></th>
-                                                <th style=""><i class="fa-solid fa-graduation-cap mr-1"></i><?php echo $lang->get('mapped_with_role'); ?></th>
+                                                <th><i class="fa-solid fa-graduation-cap mr-1"></i><?php echo $lang->get('mapped_with_role'); ?></th>
                                             </tr>
                                         </thead>
                                         <tbody id="row-ldap-body">

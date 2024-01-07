@@ -51,6 +51,6 @@ class Language {
     }
 
     public function get($key) {
-        return $this->translations[$key] ?? $key;
+        return htmlspecialchars($this->translations[$key], ENT_QUOTES, 'UTF-8') ?? $key;
     }
 }

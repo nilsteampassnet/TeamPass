@@ -24,7 +24,8 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
+use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\Language\Language;
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\PerformChecks\PerformChecks;
@@ -34,7 +35,8 @@ require_once __DIR__.'/../sources/main.functions.php';
 
 // init
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
+$session = SessionManager::getSession();
+$request = Request::createFromGlobals();
 $lang = new Language(); 
 
 // Load config if $SETTINGS not defined
@@ -48,23 +50,22 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+            'type' => $request->request->get('type', '') !== '' ? htmlspecialchars($request->request->get('type')) : '',
         ],
         [
             'type' => 'trim|escape',
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
-        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
     ]
 );
 // Handle the case
 echo $checkUserAccess->caseHandler();
 if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('users') === false) {
     // Not allowed page
-    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+    $session->set('system-error_code', ERR_NOT_ALLOWED);
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -84,10 +85,10 @@ $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 // PREPARE LIST OF OPTIONS
 $optionsManagedBy = '';
 $optionsRoles = '';
-$userRoles = explode(';', $_SESSION['fonction_id']);
+$userRoles = explode(';', $session->get('user-roles'));
 // If administrator then all roles are shown
 // else only the Roles the users is associated to.
-if ((int) $_SESSION['is_admin'] === 1) {
+if ((int) $session->get('user-admin') === 1) {
     $optionsManagedBy .= '<option value="0">' . $lang->get('administrators_only') . '</option>';
 }
 
@@ -97,13 +98,13 @@ $rows = DB::query(
     ORDER BY title ASC'
 );
 foreach ($rows as $record) {
-    if ((int) $_SESSION['is_admin'] === 1 || in_array($record['id'], $_SESSION['user_roles']) === true) {
+    if ((int) $session->get('user-admin') === 1 || in_array($record['id'], $session->get('user-roles_array')) === true) {
         $optionsManagedBy .= '<option value="' . $record['id'] . '">' . $lang->get('managers_of') . ' ' . addslashes($record['title']) . '</option>';
     }
     if (
-        (int) $_SESSION['is_admin'] === 1
-        || (((int) $superGlobal->get('user_manager', 'SESSION') === 1 || (int) $_SESSION['user_can_manage_all_users'] === 1)
-            && (in_array($record['id'], $userRoles) === true) || (int) $record['creator_id'] === (int) $_SESSION['user_id'])
+        (int) $session->get('user-admin') === 1
+        || (((int) $session->get('user-manager') === 1 || (int) $session->get('user-can_manage_all_users') === 1)
+            && (in_array($record['id'], $userRoles) === true) || (int) $record['creator_id'] === (int) $session->get('user-id'))
     ) {
         $optionsRoles .= '<option value="' . $record['id'] . '">' . addslashes($record['title']) . '</option>';
     }
@@ -113,8 +114,8 @@ $treeDesc = $tree->getDescendants();
 $foldersList = '';
 foreach ($treeDesc as $t) {
     if (
-        in_array($t->id, $_SESSION['groupes_visibles']) === true
-        && in_array($t->id, $_SESSION['personal_visible_groups']) === false
+        in_array($t->id, $session->get('user-accessible_folders')) === true
+        && in_array($t->id, $session->get('user-personal_visible_folders')) === false
     ) {
         $ident = '';
         for ($y = 1; $y < $t->nlevel; ++$y) {
@@ -155,7 +156,7 @@ foreach ($treeDesc as $t) {
                         <button type="button" class="btn btn-primary btn-sm tp-action mr-2" data-action="refresh">
                             <i class="fa-solid fa-sync-alt mr-2"></i><?php echo $lang->get('refresh'); ?>
                         </button><?php
-                                    echo isset($SETTINGS['ldap_mode']) === true && (int) $SETTINGS['ldap_mode'] === 1 && (int) $_SESSION['is_admin'] === 1 ?
+                                    echo isset($SETTINGS['ldap_mode']) === true && (int) $SETTINGS['ldap_mode'] === 1 && (int) $session->get('user-admin') === 1 ?
                                         '<button type="button" class="btn btn-primary btn-sm tp-action mr-2" data-action="ldap-sync">
                             <i class="fa-solid fa-address-card mr-2"></i>' . $lang->get('ldap_synchronization') . '
                         </button>' : '';
@@ -247,7 +248,7 @@ foreach ($treeDesc as $t) {
                                             <th style="width: 25%;"><i class="fa-solid fa-id-badge mr-1"></i><?php echo $lang->get('login'); ?></th>
                                             <th style="width: 60px; text-align:center;"><i class="fa-solid fa-info infotip pointer" title="<?php echo $lang->get('more_information'); ?>"></i></th>
                                             <th style="width: 60px;"><i class="fa-solid fa-sync-alt infotip pointer" title="<?php echo $lang->get('synchronized'); ?>"></i></th>
-                                            <th style=""><i class="fa-solid fa-graduation-cap mr-1"></i><?php echo $lang->get('roles'); ?></th>
+                                            <th><i class="fa-solid fa-graduation-cap mr-1"></i><?php echo $lang->get('roles'); ?></th>
                                             <th style="width: 15%;"><i class="fa-solid fa-wrench mr-1"></i><?php echo $lang->get('action'); ?></th>
                                         </tr>
                                     </thead>

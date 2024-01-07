@@ -24,7 +24,8 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
+use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\Language\Language;
 use TeampassClasses\NestedTree\NestedTree;
 
@@ -33,10 +34,10 @@ require_once __DIR__.'/../../sources/main.functions.php';
 
 // init
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
+
+$request = Request::createFromGlobals();
 $lang = new Language(); 
-session_name('teampass_session');
-session_start();
+$session = SessionManager::getSession();
 
 // Load config if $SETTINGS not defined
 try {
@@ -47,11 +48,11 @@ try {
 
 $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 $get = [];
-$get['user_id'] = $superGlobal->get('user_id', 'GET');
+$get['user_id'] = $request->query->get('user_id');
 
 // Update table by deleting ID
-if (isset($_SESSION['user_id']) === true && empty($_SESSION['user_id']) === false) {
-    $user_id = $_SESSION['user_id'];
+if ($session->has('user-id') && null !== $session->get('user-id') && empty($session->get('user-id')) === false) {
+    $user_id = $session->get('user-id');
 } elseif (isset($get['token']) === true && empty($get['token']) === false) {
     $user_token = $get['token'];
 } else {
@@ -59,7 +60,7 @@ if (isset($_SESSION['user_id']) === true && empty($_SESSION['user_id']) === fals
     $user_token = '';
 }
 
-if (empty($user_id) === false && isset($_SESSION['CPM']) === true) {
+if (empty($user_id) === false) {
     // clear in db
     DB::update(
         DB_PREFIX.'users',
@@ -76,16 +77,14 @@ if (empty($user_id) === false && isset($_SESSION['CPM']) === true) {
     if (isset($SETTINGS['log_connections']) === true
         && (int) $SETTINGS['log_connections'] === 1
     ) {
-        logEvents($SETTINGS, 'user_connection', 'disconnect', (string) $user_id, isset($_SESSION['login']) === true ? $_SESSION['login'] : '');
+        logEvents($SETTINGS, 'user_connection', 'disconnect', (string) $user_id, null !== $session->get('user-login') ? $session->get('user-login') : '');
     }
 }
 
 // erase session table
-session_destroy();
-$_SESSION = [];
-session_name('teampass_session');
-session_start();
-$_SESSION['CPM'] = 1;
+$session->invalidate();
+//session_regenerate_id(true);
+
 echo '
     <script type="text/javascript" src="../../plugins/store.js/dist/store.everything.min.js"></script>
     <script language="javascript" type="text/javascript">

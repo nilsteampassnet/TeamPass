@@ -22,7 +22,8 @@
  * @see       https://www.teampass.net
  */
 
-use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
+use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\Language\Language;
 
 // Load functions
@@ -30,10 +31,9 @@ require_once __DIR__.'/../sources/main.functions.php';
 
 // init
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
+$session = SessionManager::getSession();
+$request = Request::createFromGlobals();
 $lang = new Language(); 
-session_name('teampass_session');
-session_start();
 
 // Load config if $SETTINGS not defined
 try {
@@ -1064,8 +1064,7 @@ function cronContinueReEncryptingUserSharekeysStep10(
                     '#password#' => cryption($extra_arguments['new_user_pwd'], '','decrypt', $SETTINGS)['string'],
                 ],
                 FILTER_SANITIZE_FULL_SPECIAL_CHARS
-            ),
-            $SETTINGS
+            )
         );
     }
         
@@ -1094,15 +1093,13 @@ function cronContinueReEncryptingUserSharekeysStep10(
  * @param string $post_body
  * @param string $post_subject
  * @param array $post_replace
- * @param array $SETTINGS
  * @return void
  */
 function sendMailToUser(
     string $post_receipt,
     string $post_body,
     string $post_subject,
-    array $post_replace,
-    array $SETTINGS
+    array $post_replace
 ): void
 {
     if (count($post_replace) > 0 && is_null($post_replace) === false) {
@@ -1117,7 +1114,6 @@ function sendMailToUser(
         $post_subject,
         $post_body,
         $post_receipt,
-        "",
-        $SETTINGS
+        ""
     );
 }

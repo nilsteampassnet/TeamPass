@@ -19,8 +19,8 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-
-use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
+use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
@@ -34,13 +34,10 @@ use Defuse\Crypto\Exception as CryptoException;
 
 // Load functions
 require_once 'main.functions.php';
-
-// init
+$session = SessionManager::getSession();
+$request = Request::createFromGlobals();
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
-$lang = new Language(); 
-session_name('teampass_session');
-session_start();
+$lang = new Language();
 
 // Load config if $SETTINGS not defined
 try {
@@ -54,23 +51,22 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+            'type' => $request->request->get('type', '') !== '' ? htmlspecialchars($request->request->get('type')) : '',
         ],
         [
             'type' => 'trim|escape',
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
-        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
     ]
 );
 // Handle the case
 echo $checkUserAccess->caseHandler();
 if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('admin') === false) {
     // Not allowed page
-    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+    $session->set('system-error_code', ERR_NOT_ALLOWED);
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -168,7 +164,7 @@ switch ($post_type) {
         //CASE for creating a DB backup
     case 'admin_action_db_backup':
         // Check KEY
-        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+        if ($post_key !== $session->get('key')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -179,7 +175,7 @@ switch ($post_type) {
             break;
         }
         // Is admin?
-        if ($_SESSION['is_admin'] === true) {
+        if ($session->get('user-admin') === 1) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -276,12 +272,12 @@ switch ($post_type) {
             }
 
             //generate 2d key
-            $_SESSION['key_tmp'] = GenerateCryptKey(20, false, true, true, false, true, $SETTINGS);
+            $session->set('user-key_tmp', GenerateCryptKey(20, false, true, true, false, true, $SETTINGS));
 
             //update LOG
-            logEvents($SETTINGS, 'admin_action', 'dataBase backup', (string) $_SESSION['user_id'], $_SESSION['login']);
+            logEvents($SETTINGS, 'admin_action', 'dataBase backup', (string) $session->get('user-id'), $session->get('user-login'));
 
-            echo '[{"result":"db_backup" , "href":"sources/downloadFile.php?name=' . urlencode($filename) . '&sub=files&file=' . $filename . '&type=sql&key=' . $superGlobal->get('key', 'SESSION') . '&key_tmp=' . $_SESSION['key_tmp'] . '&pathIsFiles=1"}]';
+            echo '[{"result":"db_backup" , "href":"sources/downloadFile.php?name=' . urlencode($filename) . '&sub=files&file=' . $filename . '&type=sql&key=' . $session->get('key') . '&key_tmp=' . $session->get('user-key_tmp') . '&pathIsFiles=1"}]';
         }
         break;
 
@@ -289,7 +285,7 @@ switch ($post_type) {
         //CASE for restoring a DB backup
     case 'admin_action_db_restore':
         // Check KEY
-        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+        if ($post_key !== $session->get('key')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -300,7 +296,7 @@ switch ($post_type) {
             break;
         }
         // Is admin?
-        if ($_SESSION['is_admin'] === true) {
+        if ($session->get('user-admin') === 1) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -380,7 +376,7 @@ switch ($post_type) {
         //CASE for optimizing the DB
     case 'admin_action_db_optimize':
         // Check KEY
-        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+        if ($post_key !== $session->get('key')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -391,7 +387,7 @@ switch ($post_type) {
             break;
         }
         // Is admin?
-        if ($_SESSION['is_admin'] === true) {
+        if ($session->get('user-admin') === 1) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -451,8 +447,8 @@ switch ($post_type) {
             $SETTINGS,
             'system',
             'admin_action_db_optimize',
-            (string) $_SESSION['user_id'],
-            $_SESSION['login'],
+            (string) $session->get('user-id'),
+            $session->get('user-login'),
             'success'
         );
 
@@ -475,7 +471,7 @@ switch ($post_type) {
     */
     case 'admin_action_reload_cache_table':
         // Check KEY
-        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+        if ($post_key !== $session->get('key')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -486,7 +482,7 @@ switch ($post_type) {
             break;
         }
         // Is admin?
-        if ($_SESSION['is_admin'] === true) {
+        if ($session->get('user-admin') === 1) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -505,8 +501,8 @@ switch ($post_type) {
             $SETTINGS,
             'system',
             'admin_action_reload_cache_table',
-            (string) $_SESSION['user_id'],
-            $_SESSION['login'],
+            (string) $session->get('user-id'),
+            $session->get('user-login'),
             'success'
         );
 
@@ -526,7 +522,7 @@ switch ($post_type) {
     */
     case 'admin_action_rebuild_config_file':
         // Check KEY
-        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+        if ($post_key !== $session->get('key')) {
             echo prepareExchangedData(
                 [
                     'error' => true,
@@ -537,7 +533,7 @@ switch ($post_type) {
             break;
         }
         // Is admin?
-        if ($_SESSION['is_admin'] === true) {
+        if ($session->get('user-admin') === 1) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -557,8 +553,8 @@ switch ($post_type) {
             $SETTINGS,
             'system',
             'admin_action_rebuild_config_file',
-            (string) $_SESSION['user_id'],
-            $_SESSION['login'],
+            (string) $session->get('user-id'),
+            $session->get('user-login'),
             $ret === true ? 'success' : $ret
         );
 
@@ -589,7 +585,7 @@ switch ($post_type) {
     */
     case 'admin_action_backup_decrypt':
         // Check KEY
-        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+        if ($post_key !== $session->get('key')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -600,7 +596,7 @@ switch ($post_type) {
             break;
         }
         // Is admin?
-        if ($_SESSION['is_admin'] === true) {
+        if ($session->get('user-admin') === 1) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -684,7 +680,7 @@ switch ($post_type) {
     */
     case 'admin_action_change_salt_key___start':
         // Check KEY
-        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+        if ($post_key !== $session->get('key')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -695,7 +691,7 @@ switch ($post_type) {
             break;
         }
         // Is admin?
-        if ($_SESSION['is_admin'] === true) {
+        if ($session->get('user-admin') === 1) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -710,7 +706,7 @@ switch ($post_type) {
         require_once 'main.functions.php';
 
         // store old sk
-        $_SESSION['reencrypt_old_salt'] = file_get_contents(SECUREPATH.'/'.SECUREFILE);
+        $session->set('user-reencrypt_old_salt', file_get_contents(SECUREPATH.'/'.SECUREFILE));
 
         // generate new saltkey
         $old_sk_filename = SECUREPATH.'/'.SECUREFILE . date('Y_m_d', mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'))) . '.' . time();
@@ -725,7 +721,7 @@ switch ($post_type) {
         );
 
         // store new sk
-        $_SESSION['reencrypt_new_salt'] = file_get_contents(SECUREPATH.'/'.SECUREFILE);
+        $session->set('user-reencrypt_new_salt', file_get_contents(SECUREPATH.'/'.SECUREFILE));
 
         //put tool in maintenance.
         DB::update(
@@ -738,7 +734,7 @@ switch ($post_type) {
             'admin'
         );
         //log
-        logEvents($SETTINGS, 'system', 'change_salt_key', (string) $_SESSION['user_id'], $_SESSION['login']);
+        logEvents($SETTINGS, 'system', 'change_salt_key', (string) $session->get('user-id'), $session->get('user-login'));
 
         // get number of items to change
         DB::query('SELECT id FROM ' . prefixTable('items') . ' WHERE perso = %i', 0);
@@ -767,7 +763,7 @@ switch ($post_type) {
                 'current_table' => 'old_sk',
                 'current_field' => 'old_sk',
                 'value_id' => 'old_sk',
-                'value' => $_SESSION['reencrypt_old_salt'],
+                'value' => $session->get('user-reencrypt_old_salt'),
                 'current_sql' => 'old_sk',
                 'value2' => $old_sk_filename,
                 'result' => 'none',
@@ -802,7 +798,7 @@ switch ($post_type) {
     */
     case 'admin_action_change_salt_key___encrypt':
         // Check KEY
-        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+        if ($post_key !== $session->get('key')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -815,7 +811,7 @@ switch ($post_type) {
             break;
         }
         // Is admin?
-        if ($_SESSION['is_admin'] === true) {
+        if ($session->get('user-admin') === 1) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -830,7 +826,7 @@ switch ($post_type) {
         require_once 'main.functions.php';
 
         // prepare SK
-        if (empty($_SESSION['reencrypt_new_salt']) || empty($_SESSION['reencrypt_old_salt'])) {
+        if (empty($session->get('user-reencrypt_new_salt')) === true || empty($session->get('user-reencrypt_old_salt')) === true) {
             // SK is not correct
             echo prepareExchangedData(
                 array(
@@ -893,14 +889,14 @@ switch ($post_type) {
 
                     $pw = cryption(
                         $record['pw'],
-                        $_SESSION['reencrypt_old_salt'],
+                        $session->get('user-reencrypt_old_salt'),
                         'decrypt',
                         $SETTINGS
                     );
                     //encrypt with new SALT
                     $encrypt = cryption(
                         $pw['string'],
-                        $_SESSION['reencrypt_new_salt'],
+                        $session->get('user-reencrypt_new_salt'),
                         'encrypt',
                         $SETTINGS
                     );
@@ -959,14 +955,14 @@ switch ($post_type) {
                     if (!empty($tmp[1])) {
                         $pw = cryption(
                             $tmp[1],
-                            $_SESSION['reencrypt_old_salt'],
+                            $session->get('user-reencrypt_old_salt'),
                             'decrypt',
                             $SETTINGS
                         );
                         //encrypt with new SALT
                         $encrypt = cryption(
                             $pw['string'],
-                            $_SESSION['reencrypt_new_salt'],
+                            $session->get('user-reencrypt_new_salt'),
                             'encrypt',
                             $SETTINGS
                         );
@@ -1021,14 +1017,14 @@ switch ($post_type) {
 
                     $pw = cryption(
                         $record['data'],
-                        $_SESSION['reencrypt_old_salt'],
+                        $session->get('user-reencrypt_old_salt'),
                         'decrypt',
                         $SETTINGS
                     );
                     //encrypt with new SALT
                     $encrypt = cryption(
                         $pw['string'],
-                        $_SESSION['reencrypt_new_salt'],
+                        $session->get('user-reencrypt_new_salt'),
                         'encrypt',
                         $SETTINGS
                     );
@@ -1172,8 +1168,8 @@ switch ($post_type) {
                 'nextAction' => $nextAction,
                 'nextStart' => $nextStart,
                 'nbOfItems' => $nb_of_items,
-                'oldsk' => $_SESSION['reencrypt_old_salt'],
-                'newsk' => $_SESSION['reencrypt_new_salt'],
+                'oldsk' => $session->get('user-reencrypt_old_salt'),
+                'newsk' => $session->get('user-reencrypt_new_salt'),
             ),
             'encode'
         );
@@ -1184,7 +1180,7 @@ switch ($post_type) {
     */
     case 'admin_action_change_salt_key___end':
         // Check KEY
-        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+        if ($post_key !== $session->get('key')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -1195,7 +1191,7 @@ switch ($post_type) {
             break;
         }
         // Is admin?
-        if ($_SESSION['is_admin'] === true) {
+        if ($session->get('user-admin') === 1) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -1234,7 +1230,7 @@ switch ($post_type) {
     */
     case 'admin_action_change_salt_key___restore_backup':
         // Check KEY
-        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+        if ($post_key !== $session->get('key')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -1245,7 +1241,7 @@ switch ($post_type) {
             break;
         }
         // Is admin?
-        if ($_SESSION['is_admin'] === true) {
+        if ($session->get('user-admin') === 1) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -1311,7 +1307,7 @@ switch ($post_type) {
     */
     case 'admin_action_change_salt_key___delete_backup':
         // Check KEY
-        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+        if ($post_key !== $session->get('key')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -1322,7 +1318,7 @@ switch ($post_type) {
             break;
         }
         // Is admin?
-        if ($_SESSION['is_admin'] === true) {
+        if ($session->get('user-admin') === 1) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -1356,7 +1352,7 @@ switch ($post_type) {
     */
     case 'admin_email_test_configuration':
         // Check KEY
-        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+        if ($post_key !== $session->get('key')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -1368,7 +1364,7 @@ switch ($post_type) {
         }
 
         // User has an email set?
-        if (empty($_SESSION['user_email'])) {
+        if (empty($session->get('user-email')) === true) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -1383,7 +1379,7 @@ switch ($post_type) {
             sendEmail(
                 $lang->get('admin_email_test_subject'),
                 $lang->get('admin_email_test_body'),
-                $_SESSION['user_email'],
+                $session->get('user-email'),
                 $SETTINGS
             );
             echo prepareExchangedData(
@@ -1401,7 +1397,7 @@ switch ($post_type) {
     */
     case 'admin_email_send_backlog':
         // Check KEY
-        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+        if ($post_key !== $session->get('key')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -1465,8 +1461,8 @@ switch ($post_type) {
                         $SETTINGS,
                         'admin_action',
                         'Emails backlog',
-                        (string) $_SESSION['user_id'],
-                        $_SESSION['login']
+                        (string) $session->get('user-id'),
+                        $session->get('user-login')
                     );
                 }
 
@@ -1490,7 +1486,7 @@ switch ($post_type) {
     */
     case 'admin_email_send_backlog_old':
         // Check KEY
-        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+        if ($post_key !== $session->get('key')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -1533,7 +1529,7 @@ switch ($post_type) {
         }
 
         //update LOG
-        logEvents($SETTINGS, 'admin_action', 'Emails backlog', (string) $_SESSION['user_id'], $_SESSION['login']);
+        logEvents($SETTINGS, 'admin_action', 'Emails backlog', (string) $session->get('user-id'), $session->get('user-login'));
 
         echo prepareExchangedData(
             array(
@@ -1549,7 +1545,7 @@ switch ($post_type) {
     */
     case 'admin_action_attachments_cryption':
         // Check KEY
-        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+        if ($post_key !== $session->get('key')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -1560,7 +1556,7 @@ switch ($post_type) {
             break;
         }
         // Is admin?
-        if ($_SESSION['is_admin'] === true) {
+        if ($session->get('user-admin') === 1) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -1623,7 +1619,7 @@ switch ($post_type) {
      */
     case 'admin_action_attachments_cryption_continu':
         // Check KEY
-        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+        if ($post_key !== $session->get('key')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -1634,7 +1630,7 @@ switch ($post_type) {
             break;
         }
         // Is admin?
-        if ($_SESSION['is_admin'] === true) {
+        if ($session->get('user-admin') === 1) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -1721,8 +1717,8 @@ switch ($post_type) {
                 $SETTINGS,
                 'admin_action',
                 'attachments_encryption_changed',
-                (string) $_SESSION['user_id'],
-                $_SESSION['login'],
+                (string) $session->get('user-id'),
+                $session->get('user-login'),
                 $post_option === 'attachments-decrypt' ? 'clear' : 'encrypted'
             );
 
@@ -1748,7 +1744,7 @@ switch ($post_type) {
      */
     case 'admin_action_api_save_key':
         // Check KEY
-        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+        if ($post_key !== $session->get('key')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -1759,7 +1755,7 @@ switch ($post_type) {
             break;
         }
         // Is admin?
-        if ($_SESSION['is_admin'] === true) {
+        if ($session->get('user-admin') === 1) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -1843,7 +1839,7 @@ switch ($post_type) {
     */
     case 'admin_action_api_save_ip':
         // Check KEY
-        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+        if ($post_key !== $session->get('key')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -1854,7 +1850,7 @@ switch ($post_type) {
             break;
         }
         // Is admin?
-        if ($_SESSION['is_admin'] === true) {
+        if ($session->get('user-admin') === 1) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -1960,7 +1956,7 @@ switch ($post_type) {
         //Libraries call
         require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
         // Check KEY
-        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+        if ($post_key !== $session->get('key')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -2044,7 +2040,7 @@ switch ($post_type) {
 
     case 'save_google_options':
         // Check KEY and rights
-        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+        if ($post_key !== $session->get('key')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -2128,7 +2124,7 @@ switch ($post_type) {
 
     case 'save_agses_options':
         // Check KEY and rights
-        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+        if ($post_key !== $session->get('key')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -2237,7 +2233,7 @@ switch ($post_type) {
 
     case 'save_option_change':
         // Check KEY and rights
-        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+        if ($post_key !== $session->get('key')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -2388,7 +2384,7 @@ switch ($post_type) {
 
     case 'get_values_for_statistics':
         // Check KEY and rights
-        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+        if ($post_key !== $session->get('key')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -2409,7 +2405,7 @@ switch ($post_type) {
 
     case 'save_sending_statistics':
         // Check KEY and rights
-        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+        if ($post_key !== $session->get('key')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -2490,7 +2486,7 @@ switch ($post_type) {
 
     case 'is_backup_table_existing':
         // Check KEY and rights
-        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+        if ($post_key !== $session->get('key')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -2515,7 +2511,7 @@ switch ($post_type) {
 
     case 'get_list_of_roles':
         // Check KEY and rights
-        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+        if ($post_key !== $session->get('key')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,

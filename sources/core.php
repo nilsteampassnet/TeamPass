@@ -26,12 +26,13 @@ declare(strict_types=1);
 
 
 use voku\helper\AntiXSS;
-use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
+use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\Language\Language;
 
-// Load functions
 require_once 'main.functions.php';
-$superGlobal = new SuperGlobal();
+
+$request = Request::createFromGlobals();
 $lang = new Language(); 
 
 // Load config if $SETTINGS not defined
@@ -69,18 +70,18 @@ function teampassRedirect($url)
 
 // Prepare GET variables
 $server = [];
-$server['https'] = $superGlobal->get('HTTPS', 'SERVER');
-$server['request_uri'] = $superGlobal->get('REQUEST_URI', 'SERVER');
-$server['http_host'] = $superGlobal->get('HTTP_HOST', 'SERVER');
-$server['ssl_server_cert'] = $superGlobal->get('ssl_server_cert', 'SERVER');
-$server['remote_addr'] = $superGlobal->get('remote_addr', 'SERVER');
-$server['http_user_agent'] = $superGlobal->get('http_user_agent', 'SERVER');
+$server['https'] = $request->server->get('HTTPS');
+$server['request_uri'] = $request->server->get('REQUEST_URI');
+$server['http_host'] = $request->server->get('HTTP_HOST');
+$server['ssl_server_cert'] = $request->server->get('ssl_server_cert');
+$server['remote_addr'] = $request->server->get('remote_addr');
+$server['http_user_agent'] = $request->server->get('http_user_agent');
 
 $get = [];
-$get['session'] = $superGlobal->get('session', 'GET');
-$get['action'] = $superGlobal->get('action', 'GET');
-$get['type'] = $superGlobal->get('type', 'GET');
-$get['page'] = $superGlobal->get('page', 'GET');
+$get['session'] = $request->query->get('session');
+$get['action'] = $request->query->get('action');
+$get['type'] = $request->query->get('type');
+$get['page'] = $request->query->get('page');
 
 // Redirect needed?
 if (isset($server['https']) === true
@@ -94,18 +95,16 @@ if (isset($server['https']) === true
 // Load pwComplexity
 if (defined('TP_PW_COMPLEXITY') === false) {
     // Pw complexity levels
-    if (isset($_SESSION['user']['user_language']) === true && $_SESSION['user']['user_language'] !== '0') {
-        define(
-            'TP_PW_COMPLEXITY',
-            [
-                TP_PW_STRENGTH_1 => [TP_PW_STRENGTH_1, $lang->get('complex_level1'), 'fas fa-thermometer-empty text-danger'],
-                TP_PW_STRENGTH_2 => [TP_PW_STRENGTH_2, $lang->get('complex_level2'), 'fas fa-thermometer-quarter text-warning'],
-                TP_PW_STRENGTH_3 => [TP_PW_STRENGTH_3, $lang->get('complex_level3'), 'fas fa-thermometer-half text-warning'],
-                TP_PW_STRENGTH_4 => [TP_PW_STRENGTH_4, $lang->get('complex_level4'), 'fas fa-thermometer-three-quarters text-success'],
-                TP_PW_STRENGTH_5 => [TP_PW_STRENGTH_5, $lang->get('complex_level5'), 'fas fa-thermometer-full text-success'],
-            ]
-        );
-    }
+    define(
+        'TP_PW_COMPLEXITY',
+        [
+            TP_PW_STRENGTH_1 => [TP_PW_STRENGTH_1, $lang->get('complex_level1'), 'fas fa-thermometer-empty text-danger'],
+            TP_PW_STRENGTH_2 => [TP_PW_STRENGTH_2, $lang->get('complex_level2'), 'fas fa-thermometer-quarter text-warning'],
+            TP_PW_STRENGTH_3 => [TP_PW_STRENGTH_3, $lang->get('complex_level3'), 'fas fa-thermometer-half text-warning'],
+            TP_PW_STRENGTH_4 => [TP_PW_STRENGTH_4, $lang->get('complex_level4'), 'fas fa-thermometer-three-quarters text-success'],
+            TP_PW_STRENGTH_5 => [TP_PW_STRENGTH_5, $lang->get('complex_level5'), 'fas fa-thermometer-full text-success'],
+        ]
+    );
 }
 
 // LOAD CPASSMAN SETTINGS
@@ -178,18 +177,18 @@ if (isset($languagesList) === false) {
     $rows = DB::query('SELECT * FROM ' . prefixTable('languages') . ' GROUP BY name, label, code, flag, id ORDER BY name ASC');
     foreach ($rows as $record) {
         array_push($languagesList, $record['name']);
-        if ($superGlobal->get('user_language', 'SESSION', 'user') === $record['name'] ) {
-            $superGlobal->put('user_language_flag', $record['flag'], 'SESSION');
-            $superGlobal->put('user_language_code', $record['code'], 'SESSION');
-            $superGlobal->put('user_language_label', $record['label'], 'SESSION');
-            $superGlobal->put('user_language_id', $record['id'], 'SESSION');
+        if ($session->get('user-language') === $record['name'] ) {
+            $session->set('user-language_flag', $record['flag']);
+            $session->set('user-language_code', $record['code']);
+            //$session->set('user-language_label', $record['label']);
+            //$session->set('user-language_id', $record['id']);
         }
     }
 }
 
-if (isset($_SESSION['user_timezone']) === true && $_SESSION['user_timezone'] !== 'not_defined') {
+if ($session->has('user-timezone') && null !== $session->get('user-timezone') && $session->get('user-timezone') !== 'not_defined') {
     // use user timezone
-    date_default_timezone_set($_SESSION['user_timezone']);
+    date_default_timezone_set($session->get('user-timezone'));
 } elseif (isset($SETTINGS['timezone']) === false || $SETTINGS['timezone'] === null) {
     // use server timezone
     date_default_timezone_set('UTC');
@@ -205,8 +204,9 @@ if ((isset($get['session']) === true
     || (filter_input(INPUT_POST, 'session', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== null
         && filter_input(INPUT_POST, 'session', FILTER_SANITIZE_FULL_SPECIAL_CHARS) === 'expired')
 ) {
+    error_log('EXPIRED SESSION');
     // Clear User tempo key
-    if (isset($_SESSION['user_id']) === true) {
+    if ($session->has('user-id') && null !== $session->get('user-id')) {
         DB::update(
             prefixTable('users'),
             [
@@ -215,10 +215,12 @@ if ((isset($get['session']) === true
                 'session_end' => '',
             ],
             'id=%i',
-            $_SESSION['user_id']
+            $session->get('user-id')
         );
     }
-
+    // CLear PHPSESSID
+    $session->invalidate();
+    
     // REDIRECTION PAGE ERREUR
     echo '
     <script language="javascript" type="text/javascript">
@@ -231,30 +233,23 @@ if ((isset($get['session']) === true
 }
 
 // CHECK IF SESSION EXISTS AND IF SESSION IS VALID
-if (empty($_SESSION['sessionDuration']) === false) {
+if (empty($session->get('user-session_duration')) === false) {
     $dataSession = DB::queryFirstRow(
         'SELECT key_tempo FROM ' . prefixTable('users') . ' WHERE id=%i',
-        $_SESSION['user_id']
+        $session->get('user-id')
     );
 } else {
     $dataSession['key_tempo'] = '';
 }
 
-// get some init
-if (isset($_SESSION['user_id']) === false || (int) $_SESSION['user_id'] === 0) {
-    $superGlobal->put('key', GenerateCryptKey(50, false, true, true, false, true, ['cpassman_dir' => '.']), 'SESSION');
-    $_SESSION['user_id'] = 0;
-    $_SESSION['id'] = 1;
-}
-
 if (
-    isset($_SESSION['user_id']) === true
+    $session->has('user-id') && null !== $session->get('user-id')
     && isset($get['type']) === false
     && isset($get['action']) === false
-    && (int) $_SESSION['user_id'] !== 0
-    && (empty($_SESSION['sessionDuration']) === true
-        || $_SESSION['sessionDuration'] < time()
-        || $superGlobal->get('key', 'SESSION') === null
+    && (int) $session->get('user-id') !== 0
+    && (empty($session->get('user-session_duration')) === true
+        || $session->get('user-session_duration') < time()
+        || null === $session->get('key')
         || empty($dataSession['key_tempo']) === true)
 ) {
     // Update table by deleting ID
@@ -266,22 +261,20 @@ if (
             'session_end' => '',
         ],
         'id=%i',
-        $_SESSION['user_id']
+        $session->get('user-id')
     );
     //Log into DB the user's disconnection
     if (
         isset($SETTINGS['log_connections']) === true
         && (int) $SETTINGS['log_connections'] === 1
-        && isset($_SESSION['login']) === true
-        && empty($_SESSION['login']) === false
+        && $session->has('user-login') && null !== $session->get('user-login')
+        && empty($session->get('user-login')) === false
     ) {
-        logEvents($SETTINGS, 'user_connection', 'disconnect', (string) $_SESSION['user_id'], $_SESSION['login']);
+        logEvents($SETTINGS, 'user_connection', 'disconnect', (string) $session->get('user-id'), $session->get('user-login'));
     }
 
     // erase session table
-    session_unset();
-    session_destroy();
-    $_SESSION = [];
+    $session->invalidate();
     //Redirection
     echo '
     <script language="javascript" type="text/javascript">
@@ -294,7 +287,7 @@ if (
 // CHECK IF UPDATE IS NEEDED
 if ((isset($SETTINGS['update_needed']) === true && ($SETTINGS['update_needed'] !== false
         || empty($SETTINGS['update_needed']) === true))
-    && (isset($_SESSION['user_admin']) === true && $_SESSION['user_admin'] === 1)
+    && ($session->has('user-admin') && $session->get('user-admin') && null !== $session->get('user-admin') && $session->get('user-admin') === 1)
 ) {
     $row = DB::queryFirstRow(
         'SELECT valeur FROM ' . prefixTable('misc') . ' WHERE type=%s_type AND intitule=%s_intitule',
@@ -316,9 +309,9 @@ if ((isset($SETTINGS['update_needed']) === true && ($SETTINGS['update_needed'] !
 * reject all others
 */
 if (isset($SETTINGS['maintenance_mode']) === true && (int) $SETTINGS['maintenance_mode'] === 1) {
-    if (isset($_SESSION['user_admin']) === true && (int) $_SESSION['user_admin'] !== 1) {
+    if ($session->has('user-admin') && (int) $session->get('user-admin') && null !== $session->get('user-admin') && (int) $session->get('user-admin') !== 1) {
         // Update table by deleting ID
-        if (isset($_SESSION['user_id']) === true) {
+        if ($session->has('user-id') && null !== $session->get('user-id')) {
             DB::update(
                 prefixTable('users'),
                 [
@@ -327,13 +320,13 @@ if (isset($SETTINGS['maintenance_mode']) === true && (int) $SETTINGS['maintenanc
                     'session_end' => '',
                 ],
                 'id=%i',
-                $_SESSION['user_id']
+                $session->get('user-id')
             );
         }
 
         //Log into DB the user's disconnection
         if (isset($SETTINGS['log_connections']) === true && (int) $SETTINGS['log_connections'] === 1) {
-            logEvents($SETTINGS, 'user_connection', 'disconnect', (string) $_SESSION['user_id'], $_SESSION['login']);
+            logEvents($SETTINGS, 'user_connection', 'disconnect', (string) $session->get('user-id'), $session->get('user-login'));
         }
 
         syslog(
@@ -370,27 +363,32 @@ if (
     $server_cert = openssl_x509_parse($server['ssl_server_cert']);
     $cert_name = $server_cert['name'];
     $cert_issuer = '';
-    foreach ($server_cert['issuer'] as $key => $value) {
-        if (is_array($value) === false) {
-            $cert_issuer .= "/${key}=${value}";
+    /** @var array $issuer */
+    $issuer = $server_cert['issuer'];
+
+    if (is_array($issuer)) {
+        foreach ($issuer as $key => $value) {
+            if (is_array($value) === false) {
+                $cert_issuer .= "/{$key}={$value}";
+            }
         }
     }
     if (isset($cert_name) === true && empty($cert_name) === false && $cert_name !== $cert_issuer) {
         if (isset($server['HTTPS'])) {
             header('Strict-Transport-Security: max-age=500');
-            $_SESSION['error']['sts'] = 0;
+            $session->set('system-error_sts', 0);
         }
     } elseif ($cert_name === $cert_issuer) {
-        $_SESSION['error']['sts'] = 1;
+        $session->set('system-error_sts', 1);
     }
 }
 
 /* LOAD INFORMATION CONCERNING USER */
-if (isset($_SESSION['user_id']) === true && empty($_SESSION['user_id']) === false) {
+if ($session->has('user-timezone') && null !== $session->get('user-id') && empty($session->get('user-id')) === false) {
     // query on user
     $data = DB::queryfirstrow(
         'SELECT login, admin, gestionnaire, can_manage_all_users, groupes_visibles, groupes_interdits, fonction_id, last_connexion, roles_from_ad_groups FROM ' . prefixTable('users') . ' WHERE id=%i',
-        $_SESSION['user_id']
+        $session->get('user-id')
     );
     //Check if user has been deleted or unlogged
     if (empty($data) === true) {
@@ -407,26 +405,27 @@ if (isset($_SESSION['user_id']) === true && empty($_SESSION['user_id']) === fals
         </script>';
     } else {
         // update user's rights
-        $_SESSION['user_admin'] = $data['admin'];
-        $_SESSION['user_manager'] = $data['gestionnaire'];
-        $_SESSION['user_can_manage_all_users'] = $data['can_manage_all_users'];
-        $_SESSION['groupes_visibles'] = [];
-        $_SESSION['no_access_folders'] = [];
+        $session->set('user-admin', $data['admin']);
+        $session->set('user-manager', $data['gestionnaire']);
+        $session->set('user-can_manage_all_users', $data['can_manage_all_users']);
+
+        $session->set('user-accessible_folders', []);
+        $session->set('user-no_access_folders', []);
         if (empty($data['groupes_visibles']) === false) {
-            $_SESSION['groupes_visibles'] = array_filter(explode(';', $data['groupes_visibles']));
+            $session->set('user-accessible_folders', array_filter(explode(';', $data['groupes_visibles'])));
         }
         if (empty($data['groupes_interdits']) === false) {
-            $_SESSION['no_access_folders'] = array_filter(explode(';', $data['groupes_interdits']));
+            $session->set('user-no_access_folders', array_filter(explode(';', $data['groupes_interdits'])));
         }
 
-        if (isset($_SESSION['sessionDuration']) === false) {
+        if (null === $session->get('user-session_duration')) {
             DB::update(
                 prefixTable('users'),
                 [
                     'timestamp' => time(),
                 ],
                 'id=%i',
-                $_SESSION['user_id']
+                $session->get('user-id')
             );
         }
 
@@ -438,20 +437,20 @@ if (isset($_SESSION['user_id']) === true && empty($_SESSION['user_id']) === fals
             is_null($data['roles_from_ad_groups']) === true ? $data['fonction_id'] : (empty($data['roles_from_ad_groups']) === true ? $data['fonction_id'] : $data['fonction_id'] . ';' . $data['roles_from_ad_groups']),
             $SETTINGS
         );
-        if (isset($_SESSION['can_create_root_folder']) === true && (int) $_SESSION['can_create_root_folder'] === 1) {
-            array_push($_SESSION['groupes_visibles'], 0);
+        if ($session->has('user-can_create_root_folder') && (int) $session->get('user-can_create_root_folder') && null !== $session->get('user-can_create_root_folder') && (int) $session->get('user-can_create_root_folder') === 1) {
+            SessionManager::addRemoveFromSessionArray('user-accessible_folders', [0], 'add');
         }
 
         // user type
         if (isset($LANG) === true) {
-            if ((int) $_SESSION['user_admin'] === 1) {
-                $_SESSION['user_privilege'] = $LANG['god'];
-            } elseif ((int) $_SESSION['user_manager'] === 1) {
-                $_SESSION['user_privilege'] = $LANG['gestionnaire'];
-            } elseif ((int) $_SESSION['user_read_only'] === 1) {
-                $_SESSION['user_privilege'] = $LANG['read_only_account'];
+            if ((int) $session->get('user-admin') === 1) {
+                $session->set('user-privilege', $LANG['god']);
+            } elseif ((int) $session->get('user-manager') === 1) {
+                $session->set('user-privilege', $LANG['gestionnaire']);
+            } elseif ((int) $session->get('user-read_only') === 1) {
+                $session->set('user-privilege', $LANG['read_only_account']);
             } else {
-                $_SESSION['user_privilege'] = $LANG['user'];
+                $session->set('user-privilege', $LANG['user']);
             }
         }
     }
@@ -465,9 +464,9 @@ if (
     && (int) $SETTINGS['item_extra_fields'] === 1
     && isset($get['page']) === true
     && $get['page'] === 'items'
-    && isset($_SESSION['fonction_id']) === true
+    && $session->has('user-roles') && null !== $session->get('user-roles')
 ) {
-    $_SESSION['item_fields'] = [];
+    $session->set('system-item_fields', []);
     $rows = DB::query(
         'SELECT *
             FROM ' . prefixTable('categories') . '
@@ -491,7 +490,7 @@ if (
                     $field['role_visibility'] === 'all'
                     || count(
                         array_intersect(
-                            explode(';', $_SESSION['fonction_id']),
+                            explode(';', $session->get('user-roles')),
                             explode(',', $field['role_visibility'])
                         )
                     ) > 0
@@ -513,13 +512,14 @@ if (
         }
 
         // store the categories
-        array_push(
-            $_SESSION['item_fields'],
+        SessionManager::addRemoveFromSessionAssociativeArray(
+            'system-item_fields',
             [
                 'id' => $record['id'],
                 'title' => addslashes($record['title']),
                 'fields' => $arrFields,
-            ]
+            ],
+            'add'
         );
     }
 }
@@ -528,44 +528,42 @@ if (
 * CHECK PASSWORD VALIDITY
 * Don't take into consideration if LDAP in use
 */
-$_SESSION['numDaysBeforePwExpiration'] = '';
+$session->set('user-num_days_before_exp', '');
 //initiliaze variable
 if (isset($SETTINGS['ldap_mode']) === true && (int) $SETTINGS['ldap_mode'] === 1) {
-    $_SESSION['validite_pw'] = true;
-    $_SESSION['last_pw_change'] = true;
+    $session->set('user-last_pw_change', 1);
+    $session->set('user-validite_pw', 1);
 } else {
-    if (isset($_SESSION['last_pw_change']) === true) {
+    if ($session->has('user-last_pw_change') && null !== $session->get('user-last_pw_change')) {
         if ((int) $SETTINGS['pw_life_duration'] === 0) {
-            $_SESSION['numDaysBeforePwExpiration'] = 'infinite';
-            $_SESSION['validite_pw'] = true;
+            $session->set('user-num_days_before_exp', 'infinite');
+            $session->set('user-validite_pw', 1);
         } else {
-            $_SESSION['numDaysBeforePwExpiration'] = $SETTINGS['pw_life_duration'] - round(
-                (mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y')) - $_SESSION['last_pw_change']) / (24 * 60 * 60)
-            );
-            if ($_SESSION['numDaysBeforePwExpiration'] <= 0) {
-                $_SESSION['validite_pw'] = false;
+            $session->set('user-num_days_before_exp', $SETTINGS['pw_life_duration'] - round((mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y')) - $session->get('user-last_pw_change')) / (24 * 60 * 60)));
+            if ($session->get('user-num_days_before_exp') <= 0) {
+                $session->set('user-validite_pw', 0);
             } else {
-                $_SESSION['validite_pw'] = true;
+                $session->set('user-validite_pw', 1);
             }
         }
     } else {
-        $_SESSION['validite_pw'] = false;
+        $session->set('user-validite_pw', 0);
     }
 }
 
-$_SESSION['temporary']['user_can_printout'] = false;
+$session->set('user-can_printout', 0);
 if (
     isset($SETTINGS['roles_allowed_to_print']) === true
-    && isset($_SESSION['user_roles']) === true
-    && (! isset($_SESSION['temporary']['user_can_printout']) || empty($_SESSION['temporary']['user_can_printout']))
+    && $session->has('user-roles_array') && null !== $session->get('user-roles_array')
+    && (null === $session->get('user-can_printout') || empty($session->get('user-can_printout')) === true)
 ) {
     foreach (explode(';', $SETTINGS['roles_allowed_to_print']) as $role) {
-        if (in_array($role, $_SESSION['user_roles']) === true) {
-            $_SESSION['temporary']['user_can_printout'] = true;
+        if (in_array($role, $session->get('user-roles_array')) === true) {
+            $session->set('user-can_printout', 1);
         }
     }
 }
 
 /* CHECK NUMBER OF USER ONLINE */
 DB::query('SELECT * FROM ' . prefixTable('users') . ' WHERE timestamp>=%i', time() - 600);
-$_SESSION['nb_users_online'] = DB::count();
+$session->set('system-nb_users_online', DB::count());

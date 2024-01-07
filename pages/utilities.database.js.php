@@ -25,17 +25,20 @@ declare(strict_types=1);
  */
 
 use TeampassClasses\PerformChecks\PerformChecks;
-use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
+use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\Language\Language;
+
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
 
 // init
 loadClasses();
-$superGlobal = new SuperGlobal();
+$session = SessionManager::getSession();
+$request = Request::createFromGlobals();
 $lang = new Language(); 
 
-if ($superGlobal->get('key', 'SESSION') === null) {
+if ($session->get('key') === null) {
     die('Hacking attempt...');
 }
 
@@ -50,23 +53,22 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+            'type' => $request->request->get('type', '') !== '' ? htmlspecialchars($request->request->get('type')) : '',
         ],
         [
             'type' => 'trim|escape',
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
-        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
     ]
 );
 // Handle the case
 echo $checkUserAccess->caseHandler();
 if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('utilities.database') === false) {
     // Not allowed page
-    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+    $session->set('system-error_code', ERR_NOT_ALLOWED);
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -113,7 +115,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             }*/
         },
         'language': {
-            'url': '<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user']['user_language']; ?>.txt'
+            'url': '<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $session->get('user-language'); ?>.txt'
         },
         'preDrawCallback': function() {
             toastr.remove();
@@ -165,7 +167,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 }*/
             },
             'language': {
-                'url': '<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user']['user_language']; ?>.txt'
+                'url': '<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $session->get('user-language'); ?>.txt'
             },
             'preDrawCallback': function() {
                 toastr.remove();
@@ -200,7 +202,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 "sources/items.queries.php", {
                     type: "free_item_for_edition",
                     id: $(this).data('id'),
-                    key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
+                    key: "<?php echo $session->get('key'); ?>"
                 },
                 function(data) {
                     oTableConnections.ajax.reload();
@@ -220,7 +222,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 "sources/users.queries.php", {
                     type: "disconnect_user",
                     user_id: $(this).data('id'),
-                    key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
+                    key: "<?php echo $session->get('key'); ?>"
                 },
                 function(data) {
                     oTableLoggedIn.ajax.reload();

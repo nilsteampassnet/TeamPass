@@ -23,7 +23,9 @@ declare(strict_types=1);
  *
  * @see       https://www.teampass.net
  */
-use TeampassClasses\SuperGlobal\SuperGlobal;
+
+use TeampassClasses\SessionManager\SessionManager;
+use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\Language\Language;
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\PerformChecks\PerformChecks;
@@ -33,7 +35,8 @@ require_once __DIR__.'/../sources/main.functions.php';
 
 // init
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
+$session = SessionManager::getSession();
+$request = Request::createFromGlobals();
 $lang = new Language(); 
 
 // Load config if $SETTINGS not defined
@@ -47,23 +50,22 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+            'type' => $request->request->get('type', '') !== '' ? htmlspecialchars($request->request->get('type')) : '',
         ],
         [
             'type' => 'trim|escape',
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
-        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
     ]
 );
 // Handle the case
 echo $checkUserAccess->caseHandler();
 if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('favourites') === false) {
     // Not allowed page
-    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+    $session->set('system-error_code', ERR_NOT_ALLOWED);
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -74,6 +76,7 @@ date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['tim
 // Set header properties
 header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, no-store, must-revalidate');
+$lang = new Language(); 
 
 // --------------------------------- //
 
@@ -100,7 +103,10 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                     <h3 class="card-title">&nbsp;</h3>
                 </div>-->
                 <!-- /.card-header -->
-                <div class="card-body p-0<?php echo empty($_SESSION['favourites']) === false ? '' : ' hidden'; ?>" id="favorites">
+                <?php
+                if (count($session->get('user-favorites')) > 0) {
+                    ?>
+                <div class="card-body p-0" id="favorites">
                     <table class="table table-condensed table-responsive">
                         <tr>
                             <th style="width: 100px"></th>
@@ -109,7 +115,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                             <th style="min-width:20%;"><?php echo $lang->get('group'); ?></th>
                         </tr>
                         <?php
-                        foreach ($_SESSION['favourites'] as $fav) {
+                        foreach ($session->get('user-favorites') as $fav) {
                             if (empty($fav) === false) {
                                 $data = DB::queryFirstRow(
                                     'SELECT i.label, i.description, i.id, i.id_tree, t.title
@@ -127,7 +133,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                         </td>
                                         <td><?php echo $data['label']; ?></td>
                                         <td><?php echo $data['description']; ?></td>
-                                        <td><?php echo $data['title'] === $_SESSION['user_id'] ? $_SESSION['login'] : $data['title']; ?></td>
+                                        <td><?php echo $data['title'] === $session->get('user-id') ? $session->get('user-login') : $data['title']; ?></td>
                                     </tr>
                         <?php
                                 }
@@ -135,12 +141,16 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                         } ?>
                     </table>
                 </div>
+                <?php
+                } else {?>
 
-                <div class="card-body<?php echo empty($_SESSION['favourites']) === false ? ' hidden' : ''; ?>" id="no-favorite">
+                <div class="card-body" id="no-favorite">
                     <div class="alert alert-info">
                         <h5><i class="icon fa fa-info mr-2"></i><?php echo $lang->get('currently_no_favorites'); ?></h5>
                     </div>
                 </div>
+                <?php
+                } ?>
             </div>
         </div>
     </div>

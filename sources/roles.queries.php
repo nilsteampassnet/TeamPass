@@ -21,22 +21,22 @@ declare(strict_types=1);
 
 use LdapRecord\Connection;
 use TeampassClasses\NestedTree\NestedTree;
-use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
+use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\Language\Language;
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\LdapExtra\LdapExtra;
 use TeampassClasses\LdapExtra\OpenLdapExtra;
-
+use TeampassClasses\LdapExtra\ActiveDirectoryExtra;
 
 // Load functions
 require_once 'main.functions.php';
 
 // init
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
+$session = SessionManager::getSession();
+$request = Request::createFromGlobals();
 $lang = new Language(); 
-session_name('teampass_session');
-session_start();
 
 // Load config if $SETTINGS not defined
 try {
@@ -50,16 +50,15 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+            'type' => $request->request->get('type', '') !== '' ? htmlspecialchars($request->request->get('type')) : '',
         ],
         [
             'type' => 'trim|escape',
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
-        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
     ]
 );
 // Handle the case
@@ -69,7 +68,7 @@ if (
     $checkUserAccess->checkSession() === false
 ) {
     // Not allowed page
-    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+    $session->set('system-error_code', ERR_NOT_ALLOWED);
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -98,7 +97,7 @@ if (null !== $post_type) {
          */
         case 'build_matrix':
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -107,7 +106,7 @@ if (null !== $post_type) {
                     'encode'
                 );
                 break;
-            } elseif ($_SESSION['user_read_only'] === true) {
+            } elseif ($session->get('user-read_only') === 1) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -125,8 +124,8 @@ if (null !== $post_type) {
             //Display each folder with associated rights by role
             $descendants = $tree->getDescendants();
             foreach ($descendants as $node) {
-                if (in_array($node->id, $_SESSION['groupes_visibles']) === true
-                    && in_array($node->id, $_SESSION['personal_visible_groups']) === false
+                if (in_array($node->id, $session->get('user-accessible_folders')) === true
+                    && in_array($node->id, $session->get('user-personal_visible_folders')) === false
                 ) {
                     $arrNode = array();
                     $arrNode['ident'] = (int) $node->nlevel;
@@ -172,7 +171,7 @@ if (null !== $post_type) {
 
         case 'change_access_right_on_folder':
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -181,7 +180,7 @@ if (null !== $post_type) {
                     'encode'
                 );
                 break;
-            } elseif ($_SESSION['user_read_only'] === true) {
+            } elseif ($session->get('user-read_only') === 1) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -297,7 +296,7 @@ if (null !== $post_type) {
 
         case 'change_role_definition':
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -306,7 +305,7 @@ if (null !== $post_type) {
                     'encode'
                 );
                 break;
-            } elseif ($_SESSION['user_read_only'] === true) {
+            } elseif ($session->get('user-read_only') === 1) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -380,7 +379,7 @@ if (null !== $post_type) {
                             'title' => $post_label,
                             'complexity' => $post_complexity,
                             'allow_pw_change' => $post_allowEdit,
-                            'creator_id' => $_SESSION['user_id'],
+                            'creator_id' => $session->get('user-id'),
                         )
                     );
                     $return['new_role_id'] = DB::insertId();
@@ -435,38 +434,35 @@ if (null !== $post_type) {
                             'title' => $post_label,
                             'complexity' => $post_complexity,
                             'allow_pw_change' => $post_allowEdit,
-                            'creator_id' => $_SESSION['user_id'],
+                            'creator_id' => $session->get('user-id'),
                         )
                     );
                     $role_id = DB::insertId();
 
                     if ($role_id !== 0) {
                         //Actualize the variable
-                        ++$_SESSION['nb_roles'];
+                        $session->set('user-nb_roles', $session->get('user-nb_roles') + 1);
 
                         // get some data
                         $data_tmp = DB::queryfirstrow(
                             'SELECT fonction_id FROM '.prefixTable('users').' WHERE id = %s',
-                            $_SESSION['user_id']
+                            $session->get('user-id')
                         );
 
                         // add new role to user
-                        $tmp = str_replace(';;', ';', $data_tmp['fonction_id']);
-                        if (substr($tmp, -1) == ';') {
-                            $_SESSION['fonction_id'] = str_replace(';;', ';', $data_tmp['fonction_id'].$role_id);
-                        } else {
-                            $_SESSION['fonction_id'] = str_replace(';;', ';', $data_tmp['fonction_id'].';'.$role_id);
-                        }
+                        $tmp = $data_tmp['fonction_id'] . (substr($data_tmp['fonction_id'], -1) == ';' ? $role_id : ';' . $role_id);
+                        $session->set('user-roles', str_replace(';;', ';', $tmp));
+
                         // store in DB
                         DB::update(
                             prefixTable('users'),
                             [
-                                'fonction_id' => $_SESSION['fonction_id'],
+                                'fonction_id' => $session->get('user-roles'),
                             ],
                             'id = %i',
-                            $_SESSION['user_id']
+                            $session->get('user-id')
                         );
-                        $_SESSION['user_roles'] = explode(';', $_SESSION['fonction_id']);
+                        $session->set('user-roles_array', explode(';', $session->get('user-roles')));
 
                         $return['new_role_id'] = $role_id;
                     }
@@ -517,7 +513,7 @@ if (null !== $post_type) {
 
         case 'delete_role':
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -526,7 +522,7 @@ if (null !== $post_type) {
                     'encode'
                 );
                 break;
-            } elseif ($_SESSION['user_read_only'] === true) {
+            } elseif ($session->get('user-read_only') === 1) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -559,7 +555,7 @@ if (null !== $post_type) {
             );
 
             //Actualize the variable
-            --$_SESSION['nb_roles'];
+            $session->set('user-nb_roles', $session->get('user-nb_roles') - 1);
 
             // parse all users to remove this role
             $rows = DB::query(
@@ -602,7 +598,7 @@ if (null !== $post_type) {
 
         case 'load_rights_for_compare':
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -611,7 +607,7 @@ if (null !== $post_type) {
                     'encode'
                 );
                 break;
-            } elseif ($_SESSION['user_read_only'] === true) {
+            } elseif ($session->get('user-read_only') === 1) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -629,8 +625,8 @@ if (null !== $post_type) {
             //Display each folder with associated rights by role
             $descendants = $tree->getDescendants();
             foreach ($descendants as $node) {
-                if (in_array($node->id, $_SESSION['groupes_visibles']) === true
-                    && in_array($node->id, $_SESSION['personal_visible_groups']) === false
+                if (in_array($node->id, $session->get('user-accessible_folders')) === true
+                    && in_array($node->id, $session->get('user-personal_visible_folders')) === false
                 ) {
                     $arrNode = array();
                     $arrNode['ident'] = (int) $node->nlevel;
@@ -678,7 +674,7 @@ if (null !== $post_type) {
         */
         case 'get_list_of_groups_in_ldap':
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -711,6 +707,10 @@ if (null !== $post_type) {
                     case 'ActiveDirectory':
                         $ldapExtra = new LdapExtra($SETTINGS);
                         $ldapConnection = $ldapExtra->establishLdapConnection();
+
+                        // Create an instance of OpenLdapExtra and configure it
+                        $openLdapExtra = new ActiveDirectoryExtra();
+                        $groupsData = $openLdapExtra->getADGroups($ldapConnection, $SETTINGS);
                         break;
                     case 'OpenLDAP':
                         // Establish connection for OpenLDAP
@@ -735,7 +735,6 @@ if (null !== $post_type) {
             // Check the type of LDAP and perform actions based on that
             if ($groupsData['error']) {
                 // Handle error
-                error_log("Error: " . print_r($groupsData['message'], true));
             } else {
                 // Handle successful retrieval of groups
                 // exists in Teampass
@@ -790,7 +789,7 @@ if (null !== $post_type) {
         //
         case "map_role_with_adgroup":
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,

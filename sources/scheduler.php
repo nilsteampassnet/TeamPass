@@ -24,8 +24,6 @@
 use GO\Scheduler;
 use EZimuel\PHPSecureSession;
 
-session_name('teampass_session');
-session_start();
 
 // Load config
 require_once __DIR__.'/../includes/config/tp.config.php';

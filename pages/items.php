@@ -24,17 +24,19 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
+use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\Language\Language;
-use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\PerformChecks\PerformChecks;
 
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
-
 // init
+$session = SessionManager::getSession();
+$request = Request::createFromGlobals();
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
+$session = SessionManager::getSession();
+$request = Request::createFromGlobals();
 $lang = new Language(); 
 
 // Load config if $SETTINGS not defined
@@ -48,27 +50,25 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+            'type' => $request->request->get('type', '') !== '' ? htmlspecialchars($request->request->get('type')) : '',
         ],
         [
             'type' => 'trim|escape',
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
-        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
     ]
 );
 // Handle the case
 echo $checkUserAccess->caseHandler();
 if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('items') === false) {
     // Not allowed page
-    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+    $session->set('system-error_code', ERR_NOT_ALLOWED);
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
-
 // Define Timezone
 date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
 
@@ -79,10 +79,10 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 // --------------------------------- //
 
 // Prepare SESSION variables
-$session_user_admin = $superGlobal->get('user_admin', 'SESSION');
+$session_user_admin = $session->get('user-admin');
 
 if ((int) $session_user_admin === 1) {
-    $superGlobal->put('groupes_visibles', $superGlobal->get('personal_visible_groups', 'SESSION', 'user'), 'SESSION');
+    $session->set('user-accessible_folders', $session->get('user-personal_visible_folders'));
 }
 
 // Get list of users
@@ -223,7 +223,7 @@ foreach ($rows as $reccord) {
                                 <div class="container-fluid mb-0">
                                     <div class="row">
                                         <div class="col-md-12 justify-content-center">
-                                            <div id="form-item-password-strength" class="justify-content-center" style=""></div>
+                                            <div id="form-item-password-strength" class="justify-content-center"></div>
                                         </div>
                                     </div>
                                 </div>
@@ -470,9 +470,9 @@ foreach ($rows as $reccord) {
                             <div class="tab-pane" id="tab_4">
                                 <div id="form-item-field" class="hidden">
                                     <?php
-                                        $session_item_fields = $superGlobal->get('item_fields', 'SESSION');
+                                        $session_item_fields = $session->get('system-item_fields');//print_r($session_item_fields);
                                         if (isset($session_item_fields) === true) {
-                                            foreach ($session_item_fields as $category) {
+                                            foreach ($session_item_fields as $category) {print_r($category);
                                                 echo '
                                             <div class="callout callout-info form-item-category hidden" id="form-item-category-' . $category['id'] . '">
                                                 <h5>' . $category['title'] . '</h5>
@@ -1412,7 +1412,7 @@ foreach ($rows as $reccord) {
                         </div>
                     </div>
                 </div>
-                <div class="card-body p-0" style="">
+                <div class="card-body p-0">
                     <!-- FOLDERS PLACE -->
                     <div id="jstree" style="overflow:auto;"></div>
                 </div>

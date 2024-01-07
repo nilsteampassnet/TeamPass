@@ -25,9 +25,9 @@ use Goodby\CSV\Import\Standard\Interpreter;
 use Goodby\CSV\Import\Standard\LexerConfig;
 use voku\helper\AntiXSS;
 use TeampassClasses\NestedTree\NestedTree;
-use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
+use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\Language\Language;
-use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
 
 // Load functions
@@ -35,10 +35,9 @@ require_once 'main.functions.php';
 
 // init
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
+$session = SessionManager::getSession();
+$request = Request::createFromGlobals();
 $lang = new Language(); 
-session_name('teampass_session');
-session_start();
 
 // Load config if $SETTINGS not defined
 try {
@@ -52,16 +51,15 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+            'type' => $request->request->get('type', '') !== '' ? htmlspecialchars($request->request->get('type')) : '',
         ],
         [
             'type' => 'trim|escape',
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
-        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
     ]
 );
 // Handle the case
@@ -71,7 +69,7 @@ if (
     $checkUserAccess->checkSession() === false
 ) {
     // Not allowed page
-    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+    $session->set('system-error_code', ERR_NOT_ALLOWED);
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -109,7 +107,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
     //Check if import CSV file format is what expected
     case 'import_file_format_csv':
         // Check KEY and rights
-        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+        if ($post_key !== $session->get('key')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -280,7 +278,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
     //Insert into DB the items the user has selected
     case 'import_items':
         // Check KEY and rights
-        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+        if ($post_key !== $session->get('key')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -318,7 +316,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
         );
 
         //Get some info about personal folder
-        if (in_array($post_folder, $_SESSION['personal_folders']) === true) {
+        if (in_array($post_folder, $session->get('user-personal_folders')) === true) {
             $personalFolder = 1;
         } else {
             $personalFolder = 0;
@@ -338,8 +336,8 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
 
             // Handle case where pw is empty
             // if not allowed then warn user
-            if ((isset($_SESSION['user']['create_item_without_password']) === true
-                && (int) $_SESSION['user']['create_item_without_password'] !== 1
+            if (($session->has('user-create_item_without_password') && null !== $session->get('user-create_item_without_password')
+                && (int) $session->get('user-create_item_without_password') !== 1
                 ) ||
                 empty($item['pwd']) === false
             ) {
@@ -379,7 +377,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
 
             //if asked, anyone in role can modify
             if ((int) $post_edit_role === 1) {
-                foreach ($_SESSION['arr_roles'] as $role) {
+                foreach ($session->get('system-array_roles') as $role) {
                     DB::insert(
                         prefixTable('restriction_to_roles'),
                         array(
@@ -396,7 +394,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
                 array(
                     'id_item' => $newId,
                     'date' => time(),
-                    'id_user' => $_SESSION['user_id'],
+                    'id_user' => $session->get('user-id'),
                     'action' => 'at_creation',
                 )
             );
@@ -415,7 +413,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
                     'perso' => $personalFolder === 0 ? 0 : 1,
                     'login' => empty($item['login']) ? '' : substr($item['login'], 0, 500),
                     'folder' => $data_fld['title'],
-                    'author' => $_SESSION['user_id'],
+                    'author' => $session->get('user-id'),
                     'timestamp' => time(),
                     'tags' => '',
                     'restricted_to' => '0',
@@ -438,7 +436,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
     //Check if import KEEPASS file format is what expected
     case 'import_file_format_keepass':
         // Check KEY and rights
-        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+        if ($post_key !== $session->get('key')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -601,7 +599,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
     // KEEPASS - CREATE FOLDERS
     case 'keepass_create_folders':
         // Check KEY and rights
-        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+        if ($post_key !== $session->get('key')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -627,7 +625,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
         );
 
         // get destination folder informations
-        $destinationFolderInfos = getFolderComplexity($post_folder_id, $_SESSION['personal_folders']);
+        $destinationFolderInfos = getFolderComplexity($post_folder_id, $session->get('user-personal_folders'));
         $arrFolders[$post_folder_id] = [
             'id' => (int) $post_folder_id,
             'level' => 1,
@@ -673,7 +671,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
     // KEEPASS - CREATE ITEMS
     case 'keepass_create_items':
         // Check KEY and rights
-        if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+        if ($post_key !== $session->get('key')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -711,8 +709,8 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
 
             // Handle case where pw is empty
             // if not allowed then warn user
-            if ((isset($_SESSION['user']['create_item_without_password']) === true
-                && (int) $_SESSION['user']['create_item_without_password'] !== 1
+            if (($session->has('user-create_item_without_password') && null !== $session->get('user-create_item_without_password')
+                && (int) $session->get('user-create_item_without_password') !== 1
                 ) ||
                 empty($item['Password']) === false
             ) {
@@ -756,7 +754,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
 
             //if asked, anyone in role can modify
             if ($post_edit_role === 1) {
-                foreach ($_SESSION['arr_roles'] as $role) {
+                foreach ($session->get('system-array_roles') as $role) {
                     DB::insert(
                         prefixTable('restriction_to_roles'),
                         array(
@@ -773,7 +771,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
                 array(
                     'id_item' => $newId,
                     'date' => time(),
-                    'id_user' => $_SESSION['user_id'],
+                    'id_user' => $session->get('user-id'),
                     'action' => 'at_creation',
                     'raison' => 'at_import',
                 )
@@ -793,7 +791,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
                     'login' => substr(stripslashes($item['UserName']), 0, 500),
                     'restricted_to' => '0',
                     'folder' => $destinationFolderMore['title'],
-                    'author' => $_SESSION['user_id'],
+                    'author' => $session->get('user-id'),
                     'renewal_period' => '0',
                     'timestamp' => time(),
                 )
@@ -830,6 +828,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
  */
 function createFolder($folderTitle, $parentId, $folderLevel, $startPathLevel, $levelPwComplexity)
 {
+    $session = SessionManager::getSession();
     //create folder - if not exists at the same level
     DB::query(
         'SELECT * FROM '.prefixTable('nested_tree').'
@@ -872,7 +871,7 @@ function createFolder($folderTitle, $parentId, $folderLevel, $startPathLevel, $l
         );
 
         //For each role to which the user depends on, add the folder just created.
-        foreach ($_SESSION['arr_roles'] as $role) {
+        foreach ($session->get('system-array_roles') as $role) {
             DB::insert(
                 prefixTable('roles_values'),
                 array(
@@ -884,7 +883,7 @@ function createFolder($folderTitle, $parentId, $folderLevel, $startPathLevel, $l
         }
 
         //Add this new folder to the list of visible folders for the user.
-        array_push($_SESSION['groupes_visibles'], $id);
+        $session->set('user-accessible_folders', $id);
 
         return $id;
     }

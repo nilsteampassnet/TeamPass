@@ -19,7 +19,8 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
+use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
@@ -30,10 +31,9 @@ require_once 'main.functions.php';
 
 // init
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
+$session = SessionManager::getSession();
+$request = Request::createFromGlobals();
 $lang = new Language(); 
-session_name('teampass_session');
-session_start();
 
 // Load config if $SETTINGS not defined
 try {
@@ -47,16 +47,15 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+            'type' => $request->request->get('type', '') !== '' ? htmlspecialchars($request->request->get('type')) : '',
         ],
         [
             'type' => 'trim|escape',
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
-        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
     ]
 );
 // Handle the case
@@ -66,7 +65,7 @@ if (
     $checkUserAccess->checkSession() === false
 ) {
     // Not allowed page
-    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+    $session->set('system-error_code', ERR_NOT_ALLOWED);
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -109,7 +108,7 @@ if (null !== $post_type) {
             );
 
             foreach (explode(';', $post_ids) as $id) {
-                if (!in_array($id, $_SESSION['forbiden_pfs']) && in_array($id, $_SESSION['groupes_visibles'])) {
+                if (in_array($id, $session->get('user-forbiden_personal_folders')) === false && in_array($id, $session->get('user-accessible_folders')) === true) {
                     $rows = DB::query(
                         'SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso,
                         i.label as label, i.description as description, i.pw as pw, i.login as login, i.pw_iv as pw_iv
@@ -135,13 +134,13 @@ if (null !== $post_type) {
                         $restricted_users_array = explode(';', $record['restricted_to']);
                         //exclude all results except the first one returned by query
                         if (empty($id_managed) || $id_managed != $record['id']) {
-                            if ((in_array($id, $_SESSION['personal_visible_groups'])
+                            if ((in_array($id, $session->get('user-personal_visible_folders'))
                                 && !($record['perso'] === '1'
-                                    && $_SESSION['user_id'] === $record['restricted_to'])
+                                    && $session->get('user-id') === $record['restricted_to'])
                                 && !empty($record['restricted_to']))
                                 ||
                                 (!empty($record['restricted_to'])
-                                    && !in_array($_SESSION['user_id'], $restricted_users_array)
+                                    && !in_array($session->get('user-id'), $restricted_users_array)
                                 )
                             ) {
                                 //exclude this case
@@ -192,7 +191,7 @@ if (null !== $post_type) {
 
         //CASE start user personal pwd re-encryption
         case 'reencrypt_personal_pwd_start':
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== $superGlobal->get('key', 'SESSION')) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -204,8 +203,8 @@ if (null !== $post_type) {
             }
 
             // check if psk is set
-            if (isset($_SESSION['user']['encrypted_psk']) === false
-                || empty($_SESSION['user']['encrypted_psk']) === true
+            if (null === $session->get('user-encrypted_psk')
+                || empty($session->get('user-encrypted_psk')) === true
             ) {
                 echo prepareExchangedData(
                     array(
@@ -240,7 +239,7 @@ if (null !== $post_type) {
 
         //CASE auto update server password
         case 'server_auto_update_password':
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -289,6 +288,7 @@ if (null !== $post_type) {
                 );
                 break;
             } else {
+                /** @ignore */
                 $ssh = new phpseclib\Net\SSH2($parse['host'], $parse['port']);
                 if (!$ssh->login($dataReceived['ssh_root'], $dataReceived['ssh_pwd'])) {
                     echo prepareExchangedData(
@@ -329,9 +329,9 @@ if (null !== $post_type) {
                     $SETTINGS,
                     (int) $dataReceived['currentId'],
                     $dataItem['label'],
-                    $_SESSION['user_id'],
+                    $session->get('user-id'),
                     'at_modification',
-                    $_SESSION['login'],
+                    $session->get('user-login'),
                     'at_pw :'.$dataItem['pw'],
                     'defuse'
                 );
@@ -352,7 +352,7 @@ if (null !== $post_type) {
             break;
 
         case 'server_auto_update_password_frequency':
-            if ($post_key !== $superGlobal->get('key', 'SESSION')
+            if ($post_key !== $session->get('key')
                 || null === filter_input(INPUT_POST, 'id', FILTER_SANITIZE_FULL_SPECIAL_CHARS)
                 || null === filter_input(INPUT_POST, 'freq', FILTER_SANITIZE_FULL_SPECIAL_CHARS)
             ) {

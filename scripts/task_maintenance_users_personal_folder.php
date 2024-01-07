@@ -23,7 +23,8 @@
  */
 
 use TeampassClasses\NestedTree\NestedTree;
-use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
+use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\Language\Language;
 
 // Load functions
@@ -31,10 +32,7 @@ require_once __DIR__.'/../sources/main.functions.php';
 
 // init
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
-$lang = new Language(); 
-session_name('teampass_session');
-session_start();
+$lang = new Language();
 
 // Load config if $SETTINGS not defined
 try {

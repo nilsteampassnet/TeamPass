@@ -1,6 +1,7 @@
 <?php
 
 namespace TeampassClasses\Encryption;
+use Exception;
 
 /**
  * Encryption class for encrypt/decrypt that works between programming languages.
@@ -10,7 +11,6 @@ namespace TeampassClasses\Encryption;
  */
 class Encryption
 {
-
 
     /**
      * @link http://php.net/manual/en/function.openssl-get-cipher-methods.php Available methods.
@@ -89,7 +89,7 @@ class Encryption
      * @link http://php.net/manual/en/function.openssl-get-cipher-methods.php Available methods.
      * @param string $cipherMethod
      */
-    public static function setCipherMethod($cipherMethod)
+    public function setCipherMethod($cipherMethod)
     {
         $this->encryptMethod = $cipherMethod;
     }// setCipherMethod

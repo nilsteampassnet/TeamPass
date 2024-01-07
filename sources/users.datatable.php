@@ -25,7 +25,8 @@ declare(strict_types=1);
  */
 
 
-use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
+use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
@@ -36,10 +37,9 @@ require_once 'main.functions.php';
 
 // init
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
+$session = SessionManager::getSession();
+$request = Request::createFromGlobals();
 $lang = new Language(); 
-session_name('teampass_session');
-session_start();
 
 // Load config if $SETTINGS not defined
 try {
@@ -53,16 +53,15 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+            'type' => $request->request->get('type', '') !== '' ? htmlspecialchars($request->request->get('type')) : '',
         ],
         [
             'type' => 'trim|escape',
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
-        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
     ]
 );
 // Handle the case
@@ -72,7 +71,7 @@ if (
     $checkUserAccess->checkSession() === false
 ) {
     // Not allowed page
-    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+    $session->set('system-error_code', ERR_NOT_ALLOWED);
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -90,6 +89,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
 // Build FUNCTIONS list
+$params = $request->query->all();
 $rolesList = [];
 $titles = DB::query('SELECT id,title FROM '.prefixTable('roles_title').' ORDER BY title ASC');
 foreach ($titles as $title) {
@@ -103,19 +103,23 @@ $aSortTypes = ['asc', 'desc'];
 //init SQL variables
 $sWhere = $sOrder = $sLimit = '';
 /* BUILD QUERY */
-//Paging
+// Paging
 $sLimit = '';
-if (isset($_GET['length']) === true && (int) $_GET['length'] !== -1) {
-    $sLimit = ' LIMIT '.filter_var($_GET['start'], FILTER_SANITIZE_NUMBER_INT).', '.filter_var($_GET['length'], FILTER_SANITIZE_NUMBER_INT).'';
+if (isset($params['length']) && (int) $params['length'] !== -1) {
+    $start = filter_var($params['start'], FILTER_SANITIZE_NUMBER_INT);
+    $length = filter_var($params['length'], FILTER_SANITIZE_NUMBER_INT);
+    $sLimit = " LIMIT $start, $length";
 }
 
-//Ordering
-if (isset($_GET['order'][0]['dir']) && in_array($_GET['order'][0]['dir'], $aSortTypes)) {
+// Ordering
+$sOrder = '';
+$order = $params['order'][0] ?? null;
+if ($order && in_array($order['dir'], $aSortTypes)) {
     $sOrder = 'ORDER BY  ';
-    if (preg_match('#^(asc|desc)$#i', $_GET['order'][0]['column'])
-    ) {
-        $sOrder .= ''.$aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '
-        .filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_FULL_SPECIAL_CHARS).', ';
+    if (isset($order['column']) && preg_match('#^(asc|desc)$#i', $order['dir'])) {
+        $columnIndex = filter_var($order['column'], FILTER_SANITIZE_NUMBER_INT);
+        $dir = filter_var($order['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        $sOrder .= $aColumns[$columnIndex] . ' ' . $dir . ', ';
     }
 
     $sOrder = substr_replace($sOrder, '', -2);
@@ -133,29 +137,33 @@ if (isset($_GET['order'][0]['dir']) && in_array($_GET['order'][0]['dir'], $aSort
 
 // exclude any deleted user
 $sWhere = ' WHERE deleted_at IS NULL AND id NOT IN (9999991,9999997,9999998,9999999)';
-if (isset($_GET['letter']) === true
-    && $_GET['letter'] !== ''
-    && $_GET['letter'] !== 'None'
-) {
+
+$letter = $request->query->filter('letter', '', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$searchValue = isset($params['search']) && isset($params['search']['value']) ? filter_var($params['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '';
+
+if ($letter !== '' && $letter !== 'None') {
     $sWhere .= ' AND (';
-    $sWhere .= $aColumns[1]." LIKE '".filter_var($_GET['letter'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' OR ";
-    $sWhere .= $aColumns[2]." LIKE '".filter_var($_GET['letter'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' OR ";
-    $sWhere .= $aColumns[3]." LIKE '".filter_var($_GET['letter'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' ";
-    $sWhere = ')';
-} elseif (isset($_GET['search']['value']) === true && $_GET['search']['value'] !== '') {
+    $sWhere .= $aColumns[1] . " LIKE '" . $letter . "%' OR ";
+    $sWhere .= $aColumns[2] . " LIKE '" . $letter . "%' OR ";
+    $sWhere .= $aColumns[3] . " LIKE '" . $letter . "%' ";
+    $sWhere .= ')';
+} elseif ($searchValue !== '') {
     $sWhere .= ' AND (';
-    $sWhere .= $aColumns[1]." LIKE '".filter_var($_GET['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' OR ";
-    $sWhere .= $aColumns[2]." LIKE '".filter_var($_GET['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' OR ";
-    $sWhere .= $aColumns[3]." LIKE '".filter_var($_GET['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' ";
+    $sWhere .= $aColumns[1] . " LIKE '" . $searchValue . "%' OR ";
+    $sWhere .= $aColumns[2] . " LIKE '" . $searchValue . "%' OR ";
+    $sWhere .= $aColumns[3] . " LIKE '" . $searchValue . "%' ";
     $sWhere .= ')';
 }
 
+
+
+
 // enlarge the query in case of Manager
-if ((int) $_SESSION['is_admin'] === 0
-    && (int) $_SESSION['user_can_manage_all_users'] === 0
+if ((int) $session->get('user-admin') === 0
+    && (int) $session->get('user-can_manage_all_users') === 0
 ) {
     $sWhere .= ' AND ';
-    $arrUserRoles = array_filter($_SESSION['user_roles']);
+    $arrUserRoles = array_filter($session->get('user-roles_array'));
     if (count($arrUserRoles) > 0) {
         $sWhere .= 'isAdministratedByRole IN ('.implode(',', $arrUserRoles).')';
     }
@@ -176,7 +184,7 @@ $rows = DB::query(
 
 // Output
 $sOutput = '{';
-$sOutput .= '"sEcho": '.intval($_GET['draw']).', ';
+$sOutput .= '"sEcho": '.(int) $request->query->get('draw').', ';
 $sOutput .= '"iTotalRecords": '.$iTotal.', ';
 $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
 $sOutput .= '"aaData": ';
@@ -188,9 +196,9 @@ if (DB::count() > 0) {
 
 foreach ($rows as $record) {
     //Show user only if can be administrated by the adapted Roles manager
-    if ((int) $_SESSION['is_admin'] === 1
-        || in_array($record['isAdministratedByRole'], $_SESSION['user_roles'])
-        || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $record['admin'] === 0 && (int) $record['id'] !== (int) $_SESSION['user_id'])
+    if ((int) $session->get('user-admin') === 1
+        || in_array($record['isAdministratedByRole'], $session->get('user-roles_array'))
+        || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $record['admin'] === 0 && (int) $record['id'] !== (int) $session->get('user-id'))
     ) {
         $showUserFolders = true;
     } else {

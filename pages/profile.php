@@ -24,7 +24,7 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-use TeampassClasses\SuperGlobal\SuperGlobal;
+use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\Language\Language;
 use TeampassClasses\PerformChecks\PerformChecks;
 
@@ -33,7 +33,8 @@ require_once __DIR__.'/../sources/main.functions.php';
 
 // init
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
+
+$request = Request::createFromGlobals();
 $lang = new Language(); 
 
 // Load config if $SETTINGS not defined
@@ -47,23 +48,22 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+            'type' => $request->request->get('type', '') !== '' ? htmlspecialchars($request->request->get('type')) : '',
         ],
         [
             'type' => 'trim|escape',
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
-        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
     ]
 );
 // Handle the case
 echo $checkUserAccess->caseHandler();
 if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('profile') === false) {
     // Not allowed page
-    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+    $session->set('system-error_code', ERR_NOT_ALLOWED);
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -79,18 +79,18 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 
 // Prepare GET variables
 $get = [];
-$get['tab'] = $superGlobal->get('tab', 'GET') === null ? '' : $superGlobal->get('tab', 'GET');
+$get['tab'] = $request->query->get('tab') === null ? '' : $request->query->get('tab');
 // user type
-if ($_SESSION['user_admin'] === '1') {
-    $_SESSION['user_privilege'] = $lang->get('god');
-} elseif ($_SESSION['user_manager'] === '1') {
-    $_SESSION['user_privilege'] = $lang->get('gestionnaire');
-} elseif ($_SESSION['user_read_only'] === '1') {
-    $_SESSION['user_privilege'] = $lang->get('read_only_account');
-} elseif ($_SESSION['user_can_manage_all_users'] === '1') {
-    $_SESSION['user_privilege'] = $lang->get('human_resources');
+if ($session->get('user-admin') === 1) {
+    $session->set('user-privilege', $lang->get('god'));
+} elseif ($session->get('user-manager') === 1) {
+    $session->set('user-privilege', $lang->get('gestionnaire'));
+} elseif ($session->get('user-read_only') === 1) {
+    $session->set('user-privilege', $lang->get('read_only_account'));
+} elseif ($session->get('user-can_manage_all_users') === 1) {
+    $session->set('user-privilege', $lang->get('human_resources'));
 } else {
-    $_SESSION['user_privilege'] = $lang->get('user');
+    $session->set('user-privilege', $lang->get('user'));
 }
 
 // prepare list of timezones
@@ -98,18 +98,18 @@ $zones = timezone_list();
 // prepare list of languages
 $languages = DB::query('SELECT label, name FROM ' . prefixTable('languages') . ' ORDER BY label ASC');
 // Do some stats
-DB::query('SELECT id_item FROM ' . prefixTable('log_items') . ' WHERE action = "at_creation" AND  id_user = "' . $_SESSION['user_id'] . '"');
+DB::query('SELECT id_item FROM ' . prefixTable('log_items') . ' WHERE action = "at_creation" AND  id_user = "' . $session->get('user-id') . '"');
 $userItemsNumber = DB::count();
-DB::query('SELECT id_item FROM ' . prefixTable('log_items') . ' WHERE action = "at_modification" AND  id_user = "' . $_SESSION['user_id'] . '"');
+DB::query('SELECT id_item FROM ' . prefixTable('log_items') . ' WHERE action = "at_modification" AND  id_user = "' . $session->get('user-id') . '"');
 $userModificationNumber = DB::count();
-DB::query('SELECT id_item FROM ' . prefixTable('log_items') . ' WHERE action = "at_shown" AND  id_user = "' . $_SESSION['user_id'] . '"');
+DB::query('SELECT id_item FROM ' . prefixTable('log_items') . ' WHERE action = "at_shown" AND  id_user = "' . $session->get('user-id') . '"');
 $userSeenItemsNumber = DB::count();
-DB::query('SELECT id_item FROM ' . prefixTable('log_items') . ' WHERE action = "at_password_shown" AND  id_user = "' . $_SESSION['user_id'] . '"');
+DB::query('SELECT id_item FROM ' . prefixTable('log_items') . ' WHERE action = "at_password_shown" AND  id_user = "' . $session->get('user-id') . '"');
 $userSeenPasswordsNumber = DB::count();
 $userInfo = DB::queryFirstRow(
     'SELECT avatar, last_pw_change
     FROM ' . prefixTable('users') . ' 
-    WHERE id = "' . $_SESSION['user_id'] . '"'
+    WHERE id = "' . $session->get('user-id') . '"'
 );
 if (empty($userInfo['avatar']) === true) {
     $avatar = $SETTINGS['cpassman_url'] . '/includes/images/photo.jpg';
@@ -119,7 +119,7 @@ if (empty($userInfo['avatar']) === true) {
 
 // Get Groups name
 $userParOfGroups = [];
-foreach ($_SESSION['user_roles'] as $role) {
+foreach ($session->get('user-roles_array') as $role) {
     $tmp = DB::queryFirstRow(
         'SELECT title 
         FROM ' . prefixTable('roles_title') . ' 
@@ -166,16 +166,16 @@ foreach ($_SESSION['user_roles'] as $role) {
 
                         <h3 id="profile-username" class="text-center">
                             <?php
-                            if (isset($_SESSION['name']) === true && empty($_SESSION['name']) === false) {
-                                echo $_SESSION['name'] . ' ' . $_SESSION['lastname'];
+                            if (null !== $session->get('user-name') && empty($session->get('user-name')) === false) {
+                                echo $session->get('user-name') . ' ' . $session->get('user-lastname');
                             } else {
-                                echo $_SESSION['login'];
+                                echo $session->get('user-login');
                             }
                             ?>
                         </h3>
 
-                        <p class="text-info text-center"><?php echo $_SESSION['user_email']; ?></p>
-                        <p class="text-muted text-center"><?php echo $_SESSION['user_privilege']; ?></p>
+                        <p class="text-info text-center"><?php echo $session->get('user-email'); ?></p>
+                        <p class="text-muted text-center"><?php echo $session->get('user-privilege'); ?></p>
 
                         <ul class="list-group list-group-unbordered mb-3">
                             <li class="list-group-item">
@@ -231,27 +231,27 @@ foreach ($_SESSION['user_roles'] as $role) {
                                         <a class="float-right">
                                             <?php
                                             if (isset($SETTINGS['date_format']) === true) {
-                                                echo date($SETTINGS['date_format'], (int) $_SESSION['last_connection']);
+                                                echo date($SETTINGS['date_format'], (int) $session->get('user-last_connection'));
                                             } else {
-                                                echo date('d/m/Y', (int) $_SESSION['last_connection']);
+                                                echo date('d/m/Y', (int) $session->get('user-last_connection'));
                                             }
                                             echo ' ' . $lang->get('at') . ' ';
                                             if (isset($SETTINGS['time_format']) === true) {
-                                                echo date($SETTINGS['time_format'], (int) $_SESSION['last_connection']);
+                                                echo date($SETTINGS['time_format'], (int) $session->get('user-last_connection'));
                                             } else {
-                                                echo date('H:i:s', (int) $_SESSION['last_connection']);
+                                                echo date('H:i:s', (int) $session->get('user-last_connection'));
                                             }
                                             ?>
                                         </a>
                                     </li>
                                     <?php
-                                    if (isset($_SESSION['last_pw_change']) && ! empty($_SESSION['last_pw_change'])) {
+                                    if (null !== $session->get('user-last_pw_change') && ! empty($session->get('user-last_pw_change') === true)) {
                                         // Handle last password change string
-                                        if (isset($_SESSION['last_pw_change']) === true) {
+                                        if ($session->has('user-last_pw_change') && null !== $session->get('user-last_pw_change')) {
                                             if (isset($SETTINGS['date_format']) === true) {
                                                 $last_pw_change = date($SETTINGS['date_format']." ".$SETTINGS['time_format'], (int) $userInfo['last_pw_change']);
                                             } else {
-                                                $last_pw_change = date('d/m/Y', (int) $_SESSION['last_pw_change']);
+                                                $last_pw_change = date('d/m/Y', (int) $session->get('user-last_pw_change'));
                                             }
                                         } else {
                                             $last_pw_change = '-';
@@ -259,13 +259,13 @@ foreach ($_SESSION['user_roles'] as $role) {
 
                                         // Handle expiration for pw
                                         if (
-                                            isset($_SESSION['numDaysBeforePwExpiration']) === false
-                                            || $_SESSION['numDaysBeforePwExpiration'] === ''
-                                            || $_SESSION['numDaysBeforePwExpiration'] === 'infinite'
+                                            $session->has('user-num_days_before_exp') && null !== $session->get('user-num_days_before_exp')
+                                            || $session->get('user-num_days_before_exp') === ''
+                                            || $session->get('user-num_days_before_exp') === 'infinite'
                                         ) {
                                             $numDaysBeforePwExpiration = '';
                                         } else {
-                                            $numDaysBeforePwExpiration = $LANG['index_pw_expiration'] . ' ' . $_SESSION['numDaysBeforePwExpiration'] . ' ' . $LANG['days'] . '.';
+                                            $numDaysBeforePwExpiration = $LANG['index_pw_expiration'] . ' ' . $session->get('user-num_days_before_exp') . ' ' . $LANG['days'] . '.';
                                         }
                                         echo '
                                     <li class="list-group-item">
@@ -283,7 +283,7 @@ foreach ($_SESSION['user_roles'] as $role) {
                                     <li class="list-group-item">
                                         <b><i class="fas fa-stream fa-fw fa-lg mr-2"></i><?php echo $lang->get('tree_load_strategy'); ?></b>
                                         <a class="float-right">
-                                            <span id="profile-plupload-runtime"><?php echo isset($_SESSION['user']['user_treeloadstrategy']) === true ? $_SESSION['user']['user_treeloadstrategy'] : ''; ?></span>
+                                            <span id="profile-plupload-runtime"><?php echo null !== $session->get('user-tree_load_strategy') ? $session->get('user-tree_load_strategy') : ''; ?></span>
                                         </a>
                                     </li>
                                     <?php
@@ -292,11 +292,11 @@ foreach ($_SESSION['user_roles'] as $role) {
                                     <li class="list-group-item">
                                         <b><i class="fas fa-paper-plane fa-fw fa-lg mr-2"></i>' . $lang->get('user_profile_api_key') . '</b>
                                         <a class="float-right" id="profile-user-api-token">',
-                                            isset($_SESSION['user']['api-key']) === true ? $_SESSION['user']['api-key'] : '',
+                                            null !== $session->get('user-api_key') ? $session->get('user-api_key') : '',
                                         '</a>
                                     </li>';
                                     }
-                                    if (
+                                    /*if (
                                         isset($SETTINGS['agses_authentication_enabled']) === true
                                         && (int) $SETTINGS['agses_authentication_enabled'] === 1
                                     ) {
@@ -307,7 +307,7 @@ foreach ($_SESSION['user_roles'] as $role) {
                                             $_SESSION['user_agsescardid'] ?? '',
                                             '</a>
                                     </li>';
-                                    }
+                                    }*/
                                     ?>
                                 </ul>
                             </div>
@@ -316,22 +316,22 @@ foreach ($_SESSION['user_roles'] as $role) {
                             <div class="tab-pane<?php echo $get['tab'] === 'timeline' ? ' active' : ''; ?>" id="tab_timeline">
                                 <?php
                                 if (
-                                    isset($_SESSION['user']['unsuccessfull_login_attempts_list']) === true
-                                    && $_SESSION['user']['unsuccessfull_login_attempts_nb'] !== 0
-                                    && $_SESSION['user']['unsuccessfull_login_attempts_shown'] === false
+                                    $session->has('user-unsuccessfull_login_attempts_list') && null !== $session->get('user-unsuccessfull_login_attempts_list')
+                                    && $session->get('user-unsuccessfull_login_attempts_nb') !== 0
+                                    && $session->get('user-unsuccessfull_login_attempts_shown') === false
                                 ) {
                                     ?>
                                     <div class="alert alert-warning mt-4">
                                         <span class="text-bold"><?php echo $lang->get('last_login_attempts'); ?></span>
                                         <ul class="">
                                             <?php
-                                                foreach ($_SESSION['user']['unsuccessfull_login_attempts_list'] as $entry) {
+                                                foreach ($session->get('user-unsuccessfull_login_attempts_list') as $entry) {
                                                     echo '<li class="">' . $entry . '</li>';
                                                 } ?>
                                         </ul>
                                     </div>
                                 <?php
-                                    $_SESSION['user']['unsuccessfull_login_attempts_shown'] = true;
+                                    $session->set('user-unsuccessfull_login_attempts_shown', true);
                                 }
                                 ?>
                                 <div class="mt-4">
@@ -348,8 +348,8 @@ foreach ($_SESSION['user_roles'] as $role) {
                                                     WHERE l.id_user = %i AND l.action IN ("at_access")
                                                     ORDER BY date DESC
                                                     LIMIT 0, 40',
-                                            $_SESSION['user_id'],
-                                            $_SESSION['user_id']
+                                            $session->get('user-id'),
+                                            $session->get('user-id')
                                         );
                                         foreach ($rows as $record) {
                                             if (substr($record['labelAction'], 0, 3) === 'at_') {
@@ -373,21 +373,21 @@ foreach ($_SESSION['user_roles'] as $role) {
                                     <div class="form-group">
                                         <label for="profile-name" class="col-sm-2 control-label"><?php echo $lang->get('name'); ?></label>
                                         <div class="col-sm-10">
-                                            <input type="text" class="form-control" id="profile-user-name" placeholder="" value="<?php echo $_SESSION['name']; ?>">
+                                            <input type="text" class="form-control" id="profile-user-name" placeholder="" value="<?php echo $session->get('user-name'); ?>">
                                         </div>
                                     </div>
 
                                     <div class="form-group">
                                         <label for="profile-lastname" class="col-sm-2 control-label"><?php echo $lang->get('lastname'); ?></label>
                                         <div class="col-sm-10">
-                                            <input type="text" class="form-control" id="profile-user-lastname" placeholder="" value="<?php echo $_SESSION['lastname']; ?>">
+                                            <input type="text" class="form-control" id="profile-user-lastname" placeholder="" value="<?php echo $session->get('user-lastname'); ?>">
                                         </div>
                                     </div>
 
                                     <div class="form-group">
                                         <label for="profile-email" class="col-sm-2 control-label"><?php echo $lang->get('email'); ?></label>
                                         <div class="col-sm-10">
-                                            <input type="email" class="form-control" id="profile-user-email" placeholder="name@domain.com" value="<?php echo $_SESSION['user_email']; ?>">
+                                            <input type="email" class="form-control" id="profile-user-email" placeholder="name@domain.com" value="<?php echo $session->get('user-email'); ?>">
                                         </div>
                                     </div>
 
@@ -399,7 +399,7 @@ foreach ($_SESSION['user_roles'] as $role) {
                                                 foreach ($zones as $key => $zone) {
                                                     echo '
                                                 <option value="' . $key . '"',
-                                                    isset($_SESSION['user_timezone']) === true && $_SESSION['user_timezone'] === $key ?
+                                                    $session->has('user-timezone') && $session->get('user-timezone') && null !== $session->get('user-timezone') && $session->get('user-timezone') === $key ?
                                                     ' selected' :
                                                     (isset($SETTINGS['timezone']) === true && $SETTINGS['timezone'] === $key ? ' selected' : ''),
                                                 '>' . $zone . '</option>';
@@ -415,7 +415,7 @@ foreach ($_SESSION['user_roles'] as $role) {
                                                 <?php
                                                     foreach ($languages as $language) {
                                                         echo '<option value="' . $language['name'] . '"',
-                                                        strtolower($_SESSION['user']['user_language']) === strtolower($language['name']) ?
+                                                        strtolower($session->get('user-language')) === strtolower($language['name']) ?
                                                         ' selected="selected"' : '',
                                                     '>' . $language['label'] . '</option>';
                                                     }
@@ -429,11 +429,11 @@ foreach ($_SESSION['user_roles'] as $role) {
                                         <div class="col-sm-10">
                                             <select class="form-control" id="profile-user-treeloadstrategy">
                                                 
-                                                <option value="sequential" <?php echo isset($_SESSION['user']['user_treeloadstrategy']) === true && $_SESSION['user']['user_treeloadstrategy'] === 'sequential' ? ' selected' : '';?>>
+                                                <option value="sequential" <?php echo $session->has('user-tree_load_strategy') && $session->get('user-tree_load_strategy') && null !== $session->get('user-tree_load_strategy') && $session->get('user-tree_load_strategy') === 'sequential' ? ' selected' : '';?>>
                                                     <?php echo $lang->get('sequential'); ?>
                                                 </option>
                                                 
-                                                <option value="full" <?php echo isset($_SESSION['user']['user_treeloadstrategy']) === true && $_SESSION['user']['user_treeloadstrategy'] === 'full' ? ' selected' : '';?>>
+                                                <option value="full" <?php echo $session->has('user-tree_load_strategy') && $session->get('user-tree_load_strategy') && null !== $session->get('user-tree_load_strategy') && $session->get('user-tree_load_strategy') === 'full' ? ' selected' : '';?>>
                                                     <?php echo $lang->get('full'); ?>
                                                 </option>
                                             </select>
@@ -441,7 +441,7 @@ foreach ($_SESSION['user_roles'] as $role) {
                                     </div>
 
                                     <?php
-                                    if (
+                                    /*if (
                                         isset($SETTINGS['agses_authentication_enabled']) === true
                                         && (int) $SETTINGS['agses_authentication_enabled'] === 1
                                     ) {
@@ -456,7 +456,7 @@ foreach ($_SESSION['user_roles'] as $role) {
                                             </div>
                                         </div>
                                     <?php
-                                    }
+                                    }*/
                                     ?>
 
                                     <div class="form-group">

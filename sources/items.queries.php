@@ -22,7 +22,8 @@ declare(strict_types=1);
 
 use voku\helper\AntiXSS;
 use TeampassClasses\NestedTree\NestedTree;
-use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
+use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
@@ -33,10 +34,9 @@ require_once 'main.functions.php';
 
 // init
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
+$session = SessionManager::getSession();
+$request = Request::createFromGlobals();
 $lang = new Language(); 
-session_name('teampass_session');
-session_start();
 
 // Load config if $SETTINGS not defined
 try {
@@ -50,16 +50,15 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+            'type' => null !== $request->request->get('type') ? htmlspecialchars($request->request->get('type')) : '',
         ],
         [
             'type' => 'trim|escape',
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
-        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key', 'SESSION'), null),
     ]
 );
 // Handle the case
@@ -69,7 +68,7 @@ if (
     $checkUserAccess->checkSession() === false
 ) {
     // Not allowed page
-    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+    $session->set('system-error_code', ERR_NOT_ALLOWED);
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -95,7 +94,7 @@ if (isset($SETTINGS['timezone']) === true) {
     date_default_timezone_set('UTC');
 }
 
-require_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $_SESSION['user']['user_language'] . '.php';
+require_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $session->get('user-language') . '.php';
 header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, must-revalidate');
 
@@ -122,27 +121,27 @@ if (defined('TP_PW_COMPLEXITY') === false) {
 
 // Prepare POST variables
 $data = [
-    'type' => returnIfSet($superGlobal->get('type', 'POST')),
-    'data' => isset($_POST['data']) === true ? $_POST['data'] : '',
-    'key' => isset($_POST['key']) === true ? $_POST['key'] : '',
-    'label' => isset($_POST['label']) === true ? $_POST['label'] : '',
-    'status' => isset($_POST['status']) === true ? $_POST['status'] : '',
-    'cat' => isset($_POST['cat']) === true ? $_POST['cat'] : '',
-    'receipt' => isset($_POST['receipt']) === true ? $_POST['receipt'] : '',
-    'itemId' => isset($_POST['item_id']) === true ? $_POST['item_id'] : '',
-    'folderId' => isset($_POST['folder_id']) === true ? $_POST['folder_id'] : '',
-    'id' => isset($_POST['id']) === true ? $_POST['id'] : '',
-    'destination' => isset($_POST['destination']) === true ? $_POST['destination'] : '',
-    'source' => isset($_POST['source']) === true ? $_POST['source'] : '',
-    'userId' => isset($_POST['user_id']) === true ? $_POST['user_id'] : '',
-    'getType' => isset($_GET['type']) === true ? $_GET['type'] : '',
-    'getTerm' => isset($_GET['term']) === true ? $_GET['term'] : '',
-    'option' => isset($_POST['option']) === true ? $_POST['option'] : '',
-    'fileSuffix' => isset($_POST['file_suffix']) === true ? $_POST['file_suffix'] : '',
-    'context' => isset($_POST['context']) === true ? $_POST['context'] : '',
-    'notifyType' => isset($_POST['notify_type']) === true ? $_POST['notify_type'] : '',
-    'timestamp' => isset($_POST['timestamp']) === true ? $_POST['timestamp'] : '',
-    'itemKey' => isset($_POST['item_key']) === true ? $_POST['item_key'] : '',
+    'type' => $request->request->filter('type', '', FILTER_SANITIZE_SPECIAL_CHARS),
+    'data' => $request->request->filter('data', '', FILTER_SANITIZE_SPECIAL_CHARS),
+    'key' => $request->request->filter('key', '', FILTER_SANITIZE_SPECIAL_CHARS),
+    'label' => $request->request->filter('label', '', FILTER_SANITIZE_SPECIAL_CHARS),
+    'status' => $request->request->filter('status', '', FILTER_SANITIZE_SPECIAL_CHARS),
+    'cat' => $request->request->filter('cat', '', FILTER_SANITIZE_SPECIAL_CHARS),
+    'receipt' => $request->request->filter('receipt', '', FILTER_SANITIZE_SPECIAL_CHARS),
+    'itemId' => $request->request->filter('item_id', '', FILTER_SANITIZE_SPECIAL_CHARS),
+    'folderId' => $request->request->filter('folder_id', '', FILTER_SANITIZE_SPECIAL_CHARS),
+    'id' => $request->request->filter('id', '', FILTER_SANITIZE_SPECIAL_CHARS),
+    'destination' => $request->request->filter('destination', '', FILTER_SANITIZE_SPECIAL_CHARS),
+    'source' => $request->request->filter('source', '', FILTER_SANITIZE_SPECIAL_CHARS),
+    'userId' => $request->request->filter('user_id', '', FILTER_SANITIZE_SPECIAL_CHARS),
+    'getType' => $request->query->get('type', ''),
+    'getTerm' => $request->query->get('term', ''),
+    'option' => $request->request->filter('option', '', FILTER_SANITIZE_SPECIAL_CHARS),
+    'fileSuffix' => $request->request->filter('file_suffix', '', FILTER_SANITIZE_SPECIAL_CHARS),
+    'context' => $request->request->filter('context', '', FILTER_SANITIZE_SPECIAL_CHARS),
+    'notifyType' => $request->request->filter('notify_type', '', FILTER_SANITIZE_SPECIAL_CHARS),
+    'timestamp' => $request->request->filter('timestamp', '', FILTER_SANITIZE_SPECIAL_CHARS),
+    'itemKey' => $request->request->filter('item_key', '', FILTER_SANITIZE_SPECIAL_CHARS),
 ];
 
 $filters = [
@@ -183,7 +182,7 @@ switch ($inputData['type']) {
     */
     case 'new_item':
         // Check KEY and rights
-        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
+        if ($inputData['key'] !== $session->get('key')) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -193,7 +192,7 @@ switch ($inputData['type']) {
             );
             break;
         }
-        if ($_SESSION['user_read_only'] === true) {
+        if ($session->get('user-read_only') === 1) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -245,8 +244,6 @@ switch ($inputData['type']) {
                 FILTER_SANITIZE_FULL_SPECIAL_CHARS
             );
             $post_restricted_to_roles = $post_restricted_to_roles !== false ? json_decode($post_restricted_to_roles) : '';
-            $post_salt_key_set = isset($_SESSION['user']['session_psk']) === true
-                && empty($_SESSION['user']['session_psk']) === false ? '1' : '0';
             $post_tags = htmlspecialchars_decode($dataReceived['tags']);
             $post_template_id = filter_var($dataReceived['template_id'], FILTER_SANITIZE_NUMBER_INT);
             $post_url = filter_var(htmlspecialchars_decode($dataReceived['url']), FILTER_SANITIZE_URL);
@@ -258,8 +255,8 @@ switch ($inputData['type']) {
 
             //-> DO A SET OF CHECKS
             // Perform a check in case of Read-Only user creating an item in his PF
-            if ($_SESSION['user_read_only'] === true
-                && (in_array($inputData['folderId'], $_SESSION['personal_folders']) === false
+            if ($session->get('user-read_only') === 1
+                && (in_array($inputData['folderId'], $session->get('user-personal_folders')) === false
                 || $post_folder_is_personal !== 1)
             ) {
                 echo (string) prepareExchangedData(
@@ -273,10 +270,10 @@ switch ($inputData['type']) {
             }
 
             // Is author authorized to create in this folder
-            if (count($_SESSION['list_folders_limited']) > 0) {
-                if (in_array($inputData['folderId'], array_keys($_SESSION['list_folders_limited'])) === false
-                    && in_array($inputData['folderId'], $_SESSION['groupes_visibles']) === false
-                    && in_array($inputData['folderId'], $_SESSION['personal_folders']) === false
+            if (count($session->get('user-list_folders_limited')) > 0) {
+                if (in_array($inputData['folderId'], array_keys($session->get('user-list_folders_limited'))) === false
+                    && in_array($inputData['folderId'], $session->get('user-accessible_folders')) === false
+                    && in_array($inputData['folderId'], $session->get('user-personal_folders')) === false
                 ) {
                     echo (string) prepareExchangedData(
                         array(
@@ -288,7 +285,7 @@ switch ($inputData['type']) {
                     break;
                 }
             } else {
-                if (in_array($inputData['folderId'], $_SESSION['groupes_visibles']) === false) {
+                if (in_array($inputData['folderId'], $session->get('user-accessible_folders')) === false) {
                     echo (string) prepareExchangedData(
                         array(
                             'error' => true,
@@ -302,8 +299,8 @@ switch ($inputData['type']) {
 
             // perform a check in case of Read-Only user creating an item in his PF
             if (
-                $_SESSION['user_read_only'] === true
-                && in_array($inputData['folderId'], $_SESSION['personal_folders']) === false
+                $session->get('user-read_only') === 1
+                && in_array($inputData['folderId'], $session->get('user-personal_folders')) === false
             ) {
                 echo (string) prepareExchangedData(
                     array(
@@ -318,8 +315,8 @@ switch ($inputData['type']) {
             // is pwd empty?
             if (
                 empty($post_password) === true
-                && isset($_SESSION['user']['create_item_without_password']) === true
-                && (int) $_SESSION['user']['create_item_without_password'] !== 1
+                && $session->has('user-create_item_without_password') && null !== $session->get('user-create_item_without_password')
+                && (int) $session->get('user-create_item_without_password') !== 1
             ) {
                 echo (string) prepareExchangedData(
                     array(
@@ -406,8 +403,6 @@ switch ($inputData['type']) {
             if (
                 isset($SETTINGS['duplicate_item']) === true
                 && (int) $SETTINGS['duplicate_item'] === 0
-                && (int) $post_salt_key_set === 1
-                && isset($post_salt_key_set) === true
                 && (int) $post_folder_is_personal === 1
                 && isset($post_folder_is_personal) === true
             ) {
@@ -422,8 +417,8 @@ switch ($inputData['type']) {
             ) {
                 // Handle case where pw is empty
                 // if not allowed then warn user
-                if ((isset($_SESSION['user']['create_item_without_password']) === true
-                        && (int) $_SESSION['user']['create_item_without_password'] !== 1) ||
+                if (($session->has('user-create_item_without_password') && $session->has('user-create_item_without_password') && null !== $session->get('user-create_item_without_password')
+                        && (int) $session->get('user-create_item_without_password') !== 1) ||
                     empty($post_password) === false
                 ) {
                     // NEW ENCRYPTION
@@ -693,9 +688,9 @@ switch ($inputData['type']) {
                     $SETTINGS,
                     (int) $newID,
                     $inputData['label'],
-                    $_SESSION['user_id'],
+                    $session->get('user-id'),
                     'at_creation',
-                    $_SESSION['login']
+                    $session->get('user-login')
                 );
 
                 // Add tags
@@ -739,7 +734,7 @@ switch ($inputData['type']) {
                 if ((int) $post_folder_is_personal === 0) {
                     storeTask(
                         'new_item',
-                        $_SESSION['user_id'],
+                        $session->get('user-id'),
                         0,
                         (int) $inputData['folderId'],
                         (int) $newID,
@@ -774,8 +769,7 @@ switch ($inputData['type']) {
                                             $lang->get('new_item_email_body')
                                     ),
                                     $emailAddress,
-                                    $post_diffusion_list_names[$cpt],
-                                    $SETTINGS
+                                    $post_diffusion_list_names[$cpt]
                                 );
                             }
                             $cpt++;
@@ -830,7 +824,7 @@ switch ($inputData['type']) {
     */
     case 'update_item':
         // Check KEY and rights
-        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
+        if ($inputData['key'] !== $session->get('key')) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -840,7 +834,7 @@ switch ($inputData['type']) {
             );
             break;
         }
-        if ($_SESSION['user_read_only'] === true) {
+        if ($session->get('user-read_only') === 1) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -913,8 +907,8 @@ switch ($inputData['type']) {
             //-> DO A SET OF CHECKS
             // Perform a check in case of Read-Only user creating an item in his PF
             if (
-                $_SESSION['user_read_only'] === true
-                && (in_array($inputData['folderId'], $_SESSION['personal_folders']) === false
+                $session->get('user-read_only') === 1
+                && (in_array($inputData['folderId'], $session->get('user-personal_folders')) === false
                     || $post_folder_is_personal !== 1)
             ) {
                 echo (string) prepareExchangedData(
@@ -942,8 +936,8 @@ switch ($inputData['type']) {
             // Check PWD EMPTY
             if (
                 empty($pw) === true
-                && isset($_SESSION['user']['create_item_without_password']) === true
-                && (int) $_SESSION['user']['create_item_without_password'] !== 1
+                && $session->has('user-create_item_without_password') && $session->has('user-create_item_without_password') && null !== $session->get('user-create_item_without_password')
+                && (int) $session->get('user-create_item_without_password') !== 1
             ) {
                 echo (string) prepareExchangedData(
                     array(
@@ -1027,7 +1021,7 @@ switch ($inputData['type']) {
                 FROM ' . prefixTable('sharekeys_items') . '
                 WHERE object_id = %i AND user_id = %s',
                 $inputData['itemId'],
-                $_SESSION['user_id']
+                $session->get('user-id')
             );
             if (DB::count() === 0) {
                 echo (string) prepareExchangedData(
@@ -1043,28 +1037,29 @@ switch ($inputData['type']) {
             // check that actual user can access this item
             $restrictionActive = true;
             $restrictedTo = is_null($dataItem['restricted_to']) === false ? array_filter(explode(';', $dataItem['restricted_to'])) : [];
-            if (in_array($_SESSION['user_id'], $restrictedTo) === true) {
+            if (in_array($session->get('user-id'), $restrictedTo) === true) {
                 $restrictionActive = false;
             }
             if (empty($dataItem['restricted_to']) === true) {
                 $restrictionActive = false;
             }
 
-            if ((in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) === true
+            $session__list_restricted_folders_for_items = $session->get('system-list_restricted_folders_for_items') ?? [];
+            if ((in_array($dataItem['id_tree'], $session->get('user-accessible_folders')) === true
                     && ((int) $dataItem['perso'] === 0
                         || ((int) $dataItem['perso'] === 1
-                            //&& (int) $_SESSION['user_id'] === (int) $dataItem['id_user']))
+                            //&& (int) $session->get('user-id') === (int) $dataItem['id_user']))
                         ))
                     && $restrictionActive === false)
                 || (isset($SETTINGS['anyone_can_modify']) === true
                     && (int) $SETTINGS['anyone_can_modify'] === 1
                     && (int) $dataItem['anyone_can_modify'] === 1
-                    && (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) === true
-                        || (int) $_SESSION['is_admin'] === 1)
+                    && (in_array($dataItem['id_tree'], $session->get('user-accessible_folders')) === true
+                        || (int) $session->get('user-admin') === 1)
                     && $restrictionActive === false)
                 || (null !== $inputData['folderId']
-                    && isset($_SESSION['list_restricted_folders_for_items'][$inputData['folderId']]) === true
-                    && in_array($inputData['id'], $_SESSION['list_restricted_folders_for_items'][$inputData['folderId']]) === true
+                    && count($session__list_restricted_folders_for_items) > 0
+                    && in_array($inputData['id'], $session__list_restricted_folders_for_items[$inputData['folderId']]) === true
                     && $restrictionActive === false)
             ) {
                 // Get existing values
@@ -1084,7 +1079,7 @@ switch ($inputData['type']) {
                     'SELECT share_key
                     FROM ' . prefixTable('sharekeys_items') . '
                     WHERE user_id = %i AND object_id = %i',
-                    $_SESSION['user_id'],
+                    $session->get('user-id'),
                     $inputData['itemId']
                 );
                 if (DB::count() === 0 || empty($data['pw']) === true) {
@@ -1095,7 +1090,7 @@ switch ($inputData['type']) {
                         $data['pw'],
                         decryptUserObjectKey(
                             $userKey['share_key'],
-                            $_SESSION['user']['private_key']
+                            $session->get('user-private_key')
                         )
                     ));
                 }
@@ -1113,9 +1108,9 @@ switch ($inputData['type']) {
                         $SETTINGS,
                         (int) $inputData['itemId'],
                         $inputData['label'],
-                        $_SESSION['user_id'],
+                        $session->get('user-id'),
                         'at_modification',
-                        $_SESSION['login'],
+                        $session->get('user-login'),
                         'at_pw',
                         TP_ENCRYPTION_NAME,
                         NULL,
@@ -1124,8 +1119,8 @@ switch ($inputData['type']) {
                 }
 
                 // encrypt PW
-                if ((isset($_SESSION['user']['create_item_without_password']) === true
-                        && (int) $_SESSION['user']['create_item_without_password'] !== 1)
+                if (($session->has('user-create_item_without_password') && $session->has('user-create_item_without_password') && null !== $session->get('user-create_item_without_password')
+                        && (int) $session->get('user-create_item_without_password') !== 1)
                     || empty($post_password) === false
                 ) {
                     //-----
@@ -1193,9 +1188,9 @@ switch ($inputData['type']) {
                         $SETTINGS,
                         (int) $inputData['itemId'],
                         $inputData['label'],
-                        $_SESSION['user_id'],
+                        $session->get('user-id'),
                         'at_modification',
-                        $_SESSION['login'],
+                        $session->get('user-login'),
                         'at_tag : ' . implode(' ', $itemTags) . ' => ' . $post_tags
                     );
                 }
@@ -1215,7 +1210,7 @@ switch ($inputData['type']) {
                         'anyone_can_modify' => (int) $post_anyone_can_modify,
                         'complexity_level' => (int) $post_complexity_level,
                         'encryption_type' => TP_ENCRYPTION_NAME,
-                        'perso' => in_array($inputData['folderId'], $_SESSION['personal_folders']) === true ? 1 : 0,
+                        'perso' => in_array($inputData['folderId'], $session->get('user-personal_folders')) === true ? 1 : 0,
                         'fa_icon' => $post_fa_icon,
                         'updated_at' => time(),
                     ),
@@ -1319,9 +1314,9 @@ switch ($inputData['type']) {
                                     $SETTINGS,
                                     (int) $inputData['itemId'],
                                     $inputData['label'],
-                                    $_SESSION['user_id'],
+                                    $session->get('user-id'),
                                     'at_modification',
-                                    $_SESSION['login'],
+                                    $session->get('user-login'),
                                     'at_field : ' . $dataTmpCat['title'] . ' : ' . $field['value']
                                 );
                             } else {
@@ -1332,7 +1327,7 @@ switch ($inputData['type']) {
                                         'SELECT share_key
                                         FROM ' . prefixTable('sharekeys_fields') . '
                                         WHERE user_id = %i AND object_id = %i',
-                                        $_SESSION['user_id'],
+                                        $session->get('user-id'),
                                         $dataTmpCat['field_item_id']
                                     );
 
@@ -1342,7 +1337,7 @@ switch ($inputData['type']) {
                                             $dataTmpCat['data'],
                                             decryptUserObjectKey(
                                                 $userKey['share_key'],
-                                                $_SESSION['user']['private_key']
+                                                $session->get('user-private_key')
                                             )
                                         ));
                                     } else {
@@ -1401,9 +1396,9 @@ switch ($inputData['type']) {
                                         $SETTINGS,
                                         (int) $inputData['itemId'],
                                         $inputData['label'],
-                                        $_SESSION['user_id'],
+                                        $session->get('user-id'),
                                         'at_modification',
-                                        $_SESSION['login'],
+                                        $session->get('user-login'),
                                         'at_field : ' . $dataTmpCat['title'] . ' => ' . $oldVal
                                     );
                                 }
@@ -1507,9 +1502,9 @@ switch ($inputData['type']) {
                                 $SETTINGS,
                                 (int) $inputData['itemId'],
                                 $inputData['label'],
-                                $_SESSION['user_id'],
+                                $session->get('user-id'),
                                 'at_modification',
-                                $_SESSION['login'],
+                                $session->get('user-login'),
                                 'at_automatic_del : enabled'
                             );
                         }
@@ -1550,9 +1545,9 @@ switch ($inputData['type']) {
                                 $SETTINGS,
                                 (int) $inputData['itemId'],
                                 $inputData['label'],
-                                $_SESSION['user_id'],
+                                $session->get('user-id'),
                                 'at_modification',
-                                $_SESSION['login'],
+                                $session->get('user-login'),
                                 'at_automatic_del : disabled'
                             );
                         }
@@ -1705,9 +1700,9 @@ switch ($inputData['type']) {
                         $SETTINGS,
                         (int) $inputData['itemId'],
                         $inputData['label'],
-                        $_SESSION['user_id'],
+                        $session->get('user-id'),
                         'at_modification',
-                        $_SESSION['login'],
+                        $session->get('user-login'),
                         'at_otp_status:' . ((int) $post_otp_is_enabled === 0 ? 'disabled' : 'enabled')
                     );
                 } elseif (DB::count() === 0 && empty($post_otp_secret) === false) {
@@ -1749,9 +1744,9 @@ switch ($inputData['type']) {
                         $SETTINGS,
                         (int) $inputData['itemId'],
                         $inputData['label'],
-                        $_SESSION['user_id'],
+                        $session->get('user-id'),
                         'at_modification',
-                        $_SESSION['login'],
+                        $session->get('user-login'),
                         'at_restriction : ' . (count($diffUsersRestiction) > 0 ?
                             implode(', ', $arrayOfUsersRestriction) . (count($diffRolesRestiction) > 0 ? ', ' : '') : '') . (count($diffRolesRestiction) > 0 ? implode(', ', $arrayOfRestrictionRoles) : '')
                     );
@@ -1770,9 +1765,9 @@ switch ($inputData['type']) {
                         $SETTINGS,
                         (int) $inputData['itemId'],
                         $inputData['label'],
-                        $_SESSION['user_id'],
+                        $session->get('user-id'),
                         'at_modification',
-                        $_SESSION['login'],
+                        $session->get('user-login'),
                         'at_label : ' . $data['label'] . ' => ' . $inputData['label']
                     );
                 }
@@ -1789,9 +1784,9 @@ switch ($inputData['type']) {
                         $SETTINGS,
                         (int) $inputData['itemId'],
                         $inputData['label'],
-                        $_SESSION['user_id'],
+                        $session->get('user-id'),
                         'at_modification',
-                        $_SESSION['login'],
+                        $session->get('user-login'),
                         'at_login : ' . $data['login'] . ' => ' . $post_login
                     );
                 }
@@ -1808,9 +1803,9 @@ switch ($inputData['type']) {
                         $SETTINGS,
                         (int) $inputData['itemId'],
                         $inputData['label'],
-                        $_SESSION['user_id'],
+                        $session->get('user-id'),
                         'at_modification',
-                        $_SESSION['login'],
+                        $session->get('user-login'),
                         'at_email : ' . $data['email'] . ' => ' . $post_email
                     );
                 }
@@ -1827,9 +1822,9 @@ switch ($inputData['type']) {
                         $SETTINGS,
                         (int) $inputData['itemId'],
                         $inputData['label'],
-                        $_SESSION['user_id'],
+                        $session->get('user-id'),
                         'at_modification',
-                        $_SESSION['login'],
+                        $session->get('user-login'),
                         'at_url : ' . $data['url'] . ' => ' . $post_url
                     );
                 }
@@ -1846,9 +1841,9 @@ switch ($inputData['type']) {
                         $SETTINGS,
                         (int) $inputData['itemId'],
                         $inputData['label'],
-                        $_SESSION['user_id'],
+                        $session->get('user-id'),
                         'at_modification',
-                        $_SESSION['login'],
+                        $session->get('user-login'),
                         'at_description'
                     );
                 }
@@ -1868,9 +1863,9 @@ switch ($inputData['type']) {
                         $SETTINGS,
                         (int) $inputData['itemId'],
                         $inputData['label'],
-                        $_SESSION['user_id'],
+                        $session->get('user-id'),
                         'at_modification',
-                        $_SESSION['login'],
+                        $session->get('user-login'),
                         'at_category : ' . $dataTmp[0]['title'] . ' => ' . $dataTmp[1]['title']
                     );
                 }
@@ -1887,9 +1882,9 @@ switch ($inputData['type']) {
                         $SETTINGS,
                         (int) $inputData['itemId'],
                         $inputData['label'],
-                        $_SESSION['user_id'],
+                        $session->get('user-id'),
                         'at_modification',
-                        $_SESSION['login'],
+                        $session->get('user-login'),
                         'at_anyoneconmodify : ' . ((int) $post_anyone_can_modify === 0 ? 'disabled' : 'enabled')
                     );
                 }
@@ -1930,7 +1925,7 @@ switch ($inputData['type']) {
                 }
 
                 // generate 2d key
-                $_SESSION['key_tmp'] = bin2hex(GenerateCryptKey(16, false, true, true, false, true, $SETTINGS));
+                $session->set('user-key_tmp', bin2hex(GenerateCryptKey(16, false, true, true, false, true, $SETTINGS)));
 
                 // Send email
                 if (is_array($post_diffusion_list) === true && count($post_diffusion_list) > 0) {
@@ -1941,12 +1936,11 @@ switch ($inputData['type']) {
                                 $lang->get('email_subject_item_updated'),
                                 str_replace(
                                     array('#item_label#', '#item_category#', '#item_id#', '#url#', '#name#', '#lastname#', '#folder_name#'),
-                                    array($inputData['label'], $inputData['folderId'], $inputData['itemId'], $SETTINGS['cpassman_url'], $_SESSION['name'], $_SESSION['lastname'], $dataFolderSettings['title']),
+                                    array($inputData['label'], $inputData['folderId'], $inputData['itemId'], $SETTINGS['cpassman_url'], $session->get('user-name'), $session->get('user-lastname'), $dataFolderSettings['title']),
                                     $lang->get('email_body_item_updated')
                                 ),
                                 $emailAddress,
-                                $post_diffusion_list_names[$cpt],
-                                $SETTINGS
+                                $post_diffusion_list_names[$cpt]
                             );
                             $cpt++;
                         }
@@ -1991,7 +1985,7 @@ switch ($inputData['type']) {
     */
     case 'copy_item':
         // Check KEY and rights
-        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
+        if ($inputData['key'] !== $session->get('key')) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -2001,7 +1995,7 @@ switch ($inputData['type']) {
             );
             break;
         }
-        if ($_SESSION['user_read_only'] === true) {
+        if ($session->get('user-read_only') === 1) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -2026,9 +2020,9 @@ switch ($inputData['type']) {
 
         // perform a check in case of Read-Only user creating an item in his PF
         if (
-            (int) $_SESSION['user_read_only'] === 1
-            && (in_array($post_source_id, $_SESSION['personal_folders']) === false
-                || in_array($post_dest_id, $_SESSION['personal_folders']) === false)
+            (int) $session->get('user-read_only') === 1
+            && (in_array($post_source_id, $session->get('user-personal_folders')) === false
+                || in_array($post_dest_id, $session->get('user-personal_folders')) === false)
         ) {
             echo (string) prepareExchangedData(
                 array(
@@ -2057,7 +2051,7 @@ switch ($inputData['type']) {
             );
 
             // Check if the folder where this item is accessible to the user
-            if (in_array($originalRecord['id_tree'], $_SESSION['groupes_visibles']) === false) {
+            if (in_array($originalRecord['id_tree'], $session->get('user-accessible_folders')) === false) {
                 echo (string) prepareExchangedData(
                     array(
                         'error' => true,
@@ -2080,7 +2074,7 @@ switch ($inputData['type']) {
                 'SELECT share_key
                 FROM ' . prefixTable('sharekeys_items') . '
                 WHERE user_id = %i AND object_id = %i',
-                $_SESSION['user_id'],
+                $session->get('user-id'),
                 $inputData['itemId']
             );
             if (DB::count() === 0) {
@@ -2102,7 +2096,7 @@ switch ($inputData['type']) {
                         $originalRecord['pw'],
                         decryptUserObjectKey(
                             $userKey['share_key'],
-                            $_SESSION['user']['private_key']
+                            $session->get('user-private_key')
                         )
                     )
                 )
@@ -2220,7 +2214,7 @@ switch ($inputData['type']) {
                 FROM ' . prefixTable('files') . ' AS f
                 INNER JOIN ' . prefixTable('sharekeys_files') . ' AS s ON (f.id = s.object_id)
                 WHERE s.user_id = %i AND f.id_item = %i',
-                $_SESSION['user_id'],
+                $session->get('user-id'),
                 $inputData['itemId']
             );
             foreach ($rows as $record) {
@@ -2230,7 +2224,7 @@ switch ($inputData['type']) {
                     $fileContent = decryptFile(
                         $record['file'],
                         $SETTINGS['path_to_upload_folder'],
-                        decryptUserObjectKey($record['share_key'], $_SESSION['user']['private_key'])
+                        decryptUserObjectKey($record['share_key'], $session->get('user-private_key'))
                     );
 
                     // Step2 - create file
@@ -2298,7 +2292,7 @@ switch ($inputData['type']) {
             if ((int) $dataDestination['personal_folder'] !== 1) {
                 storeTask(
                     'item_copy',
-                    $_SESSION['user_id'],
+                    $session->get('user-id'),
                     0,
                     (int) $post_dest_id,
                     (int) $newItemId,
@@ -2336,18 +2330,18 @@ switch ($inputData['type']) {
                 $SETTINGS,
                 (int) $newItemId,
                 $originalRecord['label'],
-                $_SESSION['user_id'],
+                $session->get('user-id'),
                 'at_creation',
-                $_SESSION['login']
+                $session->get('user-login')
             );
             // Add the fact that item has been copied in logs
             logItems(
                 $SETTINGS,
                 (int) $newItemId,
                 $originalRecord['label'],
-                $_SESSION['user_id'],
+                $session->get('user-id'),
                 'at_copy',
-                $_SESSION['login']
+                $session->get('user-login')
             );
             // reload cache table
             include_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
@@ -2379,7 +2373,7 @@ switch ($inputData['type']) {
     */
     case 'show_details_item':
         // Check KEY and rights
-        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
+        if ($inputData['key'] !== $session->get('key')) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -2391,7 +2385,7 @@ switch ($inputData['type']) {
         }
 
         // Step #1
-        $_SESSION['user']['show_step2'] = false;
+        $session->set('system-show_step2', false);
 
         // Decrypt and retreive data in JSON format
         $dataReceived = prepareExchangedData(
@@ -2469,7 +2463,7 @@ switch ($inputData['type']) {
             FROM ' . prefixTable('notification') . '
             WHERE item_id = %i AND user_id = %i',
             $inputData['id'],
-            $_SESSION['user_id']
+            $session->get('user-id')
         );
         if (DB::count() > 0) {
             $arrData['notification_status'] = true;
@@ -2479,7 +2473,7 @@ switch ($inputData['type']) {
 
         // Get all USERS infos
         $listeRestriction = is_null($dataItem['restricted_to']) === false ? array_filter(explode(';', $dataItem['restricted_to'])) : [];
-        $_SESSION['listNotificationEmails'] = '';
+        $session->set('system-emails_list_for_notif', '');
 
         /*$user_in_restricted_list_of_item = false;
         $rows = DB::query(
@@ -2500,12 +2494,12 @@ switch ($inputData['type']) {
             // Get restriction list for users
             if (in_array($user['id'], $listRest) === true) {
                 array_push($listeRestriction, $user['id']);
-                if ($_SESSION['user_id'] === $user['id']) {
+                if ($session->get('user-id') === $user['id']) {
                     $user_in_restricted_list_of_item = true;
                 }
             }
         }*/
-        $user_in_restricted_list_of_item = in_array($_SESSION['user_id'], $listeRestriction) === true ? true : false;
+        $user_in_restricted_list_of_item = in_array($session->get('user-id'), $listeRestriction) === true ? true : false;
 
         // manage case of API user
         if ($dataItem['id_user'] === API_USER_ID) {
@@ -2532,8 +2526,8 @@ switch ($inputData['type']) {
         $restrictionActive = true;
         $restrictedTo = is_null($dataItem['restricted_to']) === false ? array_filter(explode(';', $dataItem['restricted_to'])) : [];
         if (
-            in_array($_SESSION['user_id'], $restrictedTo) === true
-            || ((int) $_SESSION['user_manager'] === 1 && (int) $SETTINGS['manager_edit'] === 1)
+            in_array($session->get('user-id'), $restrictedTo) === true
+            || ((int) $session->get('user-manager') === 1 && (int) $SETTINGS['manager_edit'] === 1)
         ) {
             $restrictionActive = false;
         }
@@ -2549,7 +2543,7 @@ switch ($inputData['type']) {
             $inputData['id']
         );
         foreach ($rows_tmp as $rec_tmp) {
-            if (in_array($rec_tmp['role_id'], explode(';', $_SESSION['fonction_id']))) {
+            if (in_array($rec_tmp['role_id'], explode(';', $session->get('user-roles')))) {
                 $restrictionActive = false;
             }
         }
@@ -2560,7 +2554,7 @@ switch ($inputData['type']) {
             'SELECT share_key
             FROM ' . prefixTable('sharekeys_items') . '
             WHERE user_id = %i AND object_id = %i',
-            $_SESSION['user_id'],
+            $session->get('user-id'),
             $inputData['id']
         );
         if (DB::count() === 0 || empty($dataItem['pw']) === true) {
@@ -2582,7 +2576,7 @@ switch ($inputData['type']) {
                 $pw = '';
             }
         } else {
-            $decryptedObject = decryptUserObjectKey($userKey['share_key'], $_SESSION['user']['private_key']);
+            $decryptedObject = decryptUserObjectKey($userKey['share_key'], $session->get('user-private_key'));
             // if null then we have an error.
             // suspecting bad password
             if (empty($decryptedObject) === false) {
@@ -2596,40 +2590,29 @@ switch ($inputData['type']) {
                 $pw = '';
                 $arrData['pwd_encryption_error'] = 'inconsistent_password';
                 $arrData['pwd_encryption_error_message'] = $lang->get('error_new_ldap_password_detected');
-                /*echo (string) prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => $lang->get('error_new_ldap_password_detected').'<br><button type="button" class="btn btn-block btn-warning toastr-inside-button"><i class="fa-solid fa-key fa-fw mr-2"></i>'.$lang->get('sync_new_ldap_password').'</button>',
-                        'show_detail_option' => 2,
-                        'error_type' => 'inconsistent_password',
-                    ),
-                    'encode'
-                );*/
             }
         }
 
-        // echo $dataItem['id_tree']." ;; ";
-        //print_r($_SESSION['groupes_visibles']);
-        //echo in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']).' ;; '.$restrictionActive." ;; ";
         // check user is admin
+        $session__list_restricted_folders_for_items = $session->get('system-list_restricted_folders_for_items') ?? [];
         if (
-            (int) $_SESSION['user_admin'] === 1
+            (int) $session->get('user-admin') === 1
             && (int) $dataItem['perso'] !== 1
         ) {
             $arrData['show_details'] = 0;
             // ---
             // ---
         } elseif ((
-                (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) === true || (int) $_SESSION['is_admin'] === 1)
-                && ((int) $dataItem['perso'] === 0 || ((int) $dataItem['perso'] === 1 && in_array($dataItem['id_tree'], $_SESSION['personal_folders']) === true))
+                (in_array($dataItem['id_tree'], $session->get('user-accessible_folders')) === true || (int) $session->get('user-admin') === 1)
+                && ((int) $dataItem['perso'] === 0 || ((int) $dataItem['perso'] === 1 && in_array($dataItem['id_tree'], $session->get('user-personal_folders')) === true))
                 && $restrictionActive === false)
             || (isset($SETTINGS['anyone_can_modify']) && (int) $SETTINGS['anyone_can_modify'] === 1
                 && (int) $dataItem['anyone_can_modify'] === 1
-                && (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || (int) $_SESSION['is_admin'] === 1)
+                && (in_array($dataItem['id_tree'], $session->get('user-accessible_folders')) || (int) $session->get('user-admin') === 1)
                 && $restrictionActive === false)
             || (null !== $inputData['folderId']
-                && isset($_SESSION['list_restricted_folders_for_items'][$inputData['folderId']])
-                && in_array($inputData['id'], $_SESSION['list_restricted_folders_for_items'][$inputData['folderId']])
+                && isset($session__list_restricted_folders_for_items[$inputData['folderId']])
+                && in_array($inputData['id'], $session__list_restricted_folders_for_items[$inputData['folderId']])
                 && (int) $post_restricted === 1
                 && $user_in_restricted_list_of_item === true)
             || (isset($SETTINGS['restricted_to_roles']) && (int) $SETTINGS['restricted_to_roles'] === 1
@@ -2645,7 +2628,7 @@ switch ($inputData['type']) {
                 FROM '.prefixTable('roles_values').' AS r
                 WHERE r.folder_id = %i AND r.role_id IN %ls',
                 $dataItem['id_tree'],
-                $_SESSION['groupes_visibles']
+                $session->get('user-accessible_folders')
             );
             foreach ($rows as $record) {
                 // TODO
@@ -2653,12 +2636,12 @@ switch ($inputData['type']) {
 
             // Display menu icon for deleting if user is allowed
             if (
-                (int) $dataItem['id_user'] === (int) $_SESSION['user_id']
-                || (int) $_SESSION['is_admin'] === 1
-                || ((int) $_SESSION['user_manager'] === 1 && (int) $SETTINGS['manager_edit'] === 1)
+                (int) $dataItem['id_user'] === (int) $session->get('user-id')
+                || (int) $session->get('user-admin') === 1
+                || ((int) $session->get('user-manager') === 1 && (int) $SETTINGS['manager_edit'] === 1)
                 || (int) $dataItem['anyone_can_modify'] === 1
-                || in_array($dataItem['id_tree'], $_SESSION['list_folders_editable_by_role']) === true
-                || in_array($_SESSION['user_id'], $restrictedTo) === true
+                || in_array($dataItem['id_tree'], $session->get('system-list_folders_editable_by_role')) === true
+                || in_array($session->get('user-id'), $restrictedTo) === true
                 //|| count($restrictedTo) === 0
                 || (int) $post_folder_access_level === 30
                 || (int) $post_item_rights >= 40
@@ -2751,9 +2734,9 @@ switch ($inputData['type']) {
                     $SETTINGS,
                     (int) $inputData['id'],
                     $dataItem['label'],
-                    (int) $_SESSION['user_id'],
+                    (int) $session->get('user-id'),
                     'at_shown',
-                    $_SESSION['login']
+                    $session->get('user-login')
                 );
             }
 
@@ -2806,7 +2789,7 @@ switch ($inputData['type']) {
                             'SELECT share_key
                             FROM ' . prefixTable('sharekeys_fields') . '
                             WHERE user_id = %i AND object_id = %i',
-                            $_SESSION['user_id'],
+                            $session->get('user-id'),
                             $row['id']
                         );
                         //db::debugmode(false);
@@ -2833,7 +2816,7 @@ switch ($inputData['type']) {
                                     $row['data'],
                                     decryptUserObjectKey(
                                         $userKey['share_key'],
-                                        $_SESSION['user']['private_key']
+                                        $session->get('user-private_key')
                                     )
                                 ),
                                 'encrypted' => true,
@@ -2912,7 +2895,7 @@ switch ($inputData['type']) {
 
                 // Now delete if required
                 if ($dataDelete !== null && ((int) $dataDelete['del_enabled'] === 1
-                    || intval($arrData['id_user']) !== intval($_SESSION['user_id'])))
+                    || intval($arrData['id_user']) !== intval($session->get('user-id'))))
                 {
                     if ((int) $dataDelete['del_type'] === 1 && $dataDelete['del_value'] >= 1) {
                         // decrease counter
@@ -2951,9 +2934,9 @@ switch ($inputData['type']) {
                             $SETTINGS,
                             (int) $inputData['id'],
                             $dataItem['label'],
-                            (int) $_SESSION['user_id'],
+                            (int) $session->get('user-id'),
                             'at_delete',
-                            $_SESSION['login'],
+                            $session->get('user-login'),
                             'at_automatically_deleted'
                         );
 
@@ -2998,7 +2981,7 @@ switch ($inputData['type']) {
         $arrData['timestamp'] = time();
 
         // Set temporary session variable to allow step2
-        $_SESSION['user']['show_step2'] = true;
+        $session->set('system-show_step2', true);
 
         // Error
         $arrData['error'] = '';
@@ -3016,9 +2999,9 @@ switch ($inputData['type']) {
     */
     case 'showDetailsStep2':
         // Is this query expected (must be run after a step1 and not standalone)
-        if ($_SESSION['user']['show_step2'] !== true) {
+        if ($session->get('system-show_step2') !== true) {
             // Check KEY and rights
-            if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
+            if ($inputData['key'] !== $session->get('key')) {
                 echo (string) prepareExchangedData(
                     array(
                         'error' => true,
@@ -3028,7 +3011,7 @@ switch ($inputData['type']) {
                 );
                 break;
             }
-            if ($_SESSION['user_read_only'] === true) {
+            if ($session->get('user-read_only') === 1) {
                 echo (string) prepareExchangedData(
                     array(
                         'error' => true,
@@ -3069,8 +3052,8 @@ switch ($inputData['type']) {
         $restrictionActive = true;
         $restrictedTo = is_null($dataItem['restricted_to']) === false ? array_filter(explode(';', $dataItem['restricted_to'])) : [];
         if (
-            in_array($_SESSION['user_id'], $restrictedTo)
-            || (((int) $_SESSION['user_manager'] === 1 || (int) $_SESSION['user_can_manage_all_users'] === 1)
+            in_array($session->get('user-id'), $restrictedTo)
+            || (((int) $session->get('user-manager') === 1 || (int) $session->get('user-can_manage_all_users') === 1)
                 && (int) $SETTINGS['manager_edit'] === 1)
         ) {
             $restrictionActive = false;
@@ -3087,14 +3070,15 @@ switch ($inputData['type']) {
             $inputData['id']
         );
         foreach ($rows_tmp as $rec_tmp) {
-            if (in_array($rec_tmp['role_id'], explode(';', $_SESSION['fonction_id']))) {
+            if (in_array($rec_tmp['role_id'], explode(';', $session->get('user-roles')))) {
                 $restrictionActive = false;
             }
         }
 
         // check user is admin
+        $session__list_restricted_folders_for_items = $session->get('system-list_restricted_folders_for_items') ?? [];
         if (
-            (int) $_SESSION['is_admin'] === 1
+            (int) $session->get('user-admin') === 1
             && (int) $dataItem['perso'] === 0
         ) {
             $returnArray['show_details'] = 0;
@@ -3104,23 +3088,23 @@ switch ($inputData['type']) {
             );
         // Check if actual USER can see this ITEM
         } elseif ((
-                (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) === true || (int) $_SESSION['is_admin'] === 1)
-                && ((int) $dataItem['perso'] === 0 || ((int) $dataItem['perso'] === 1 && in_array($dataItem['id_tree'], $_SESSION['personal_folders']) === true))
+                (in_array($dataItem['id_tree'], $session->get('user-accessible_folders')) === true || (int) $session->get('user-admin') === 1)
+                && ((int) $dataItem['perso'] === 0 || ((int) $dataItem['perso'] === 1 && in_array($dataItem['id_tree'], $session->get('user-personal_folders')) === true))
                 && $restrictionActive === false) === true
             || (isset($SETTINGS['anyone_can_modify']) === true && (int) $SETTINGS['anyone_can_modify'] === 1
                 && (int) (int) $dataItem['anyone_can_modify'] === 1
-                && (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || (int) $_SESSION['is_admin'] === 1)
+                && (in_array($dataItem['id_tree'], $session->get('user-accessible_folders')) || (int) $session->get('user-admin') === 1)
                 && $restrictionActive === false) === true
             || (null !== $inputData['folderId']
-                && isset($_SESSION['list_restricted_folders_for_items'][$inputData['folderId']]) === true
-                && in_array($inputData['id'], $_SESSION['list_restricted_folders_for_items'][$inputData['folderId']]) === true
+                && isset($session__list_restricted_folders_for_items[$inputData['folderId']]) === true
+                && in_array($inputData['id'], $session__list_restricted_folders_for_items[$inputData['folderId']]) === true
                 && (int) $post_restricted === 1
                 && $user_in_restricted_list_of_item === true) === true
             || (isset($SETTINGS['restricted_to_roles']) === true && (int) $SETTINGS['restricted_to_roles'] === 1
                 && $restrictionActive === false) === true
         ) {
             // generate 2d key
-            $_SESSION['key_tmp'] = bin2hex(GenerateCryptKey(16, false, true, true, false, true, $SETTINGS));
+            $session->set('user-key_tmp', bin2hex(GenerateCryptKey(16, false, true, true, false, true, $SETTINGS)));
 
             // Prepare files listing
             $attachments = [];
@@ -3142,14 +3126,14 @@ switch ($inputData['type']) {
                         'size' => formatSizeUnits((int) $record['size']),
                         'is_image' => in_array(strtolower($record['extension']), TP_IMAGE_FILE_EXT) === true ? 1 : 0,
                         'id' => $record['id'],
-                        'key' => $_SESSION['key_tmp'],
+                        'key' => $session->get('user-key_tmp'),
                     )
                 );
             }
             $returnArray['attachments'] = $attachments;
 
             // disable add bookmark if alread bookmarked
-            $returnArray['favourite'] = in_array($inputData['id'], $_SESSION['favourites']) === true ? 1 : 0;
+            $returnArray['favourite'] = in_array($inputData['id'], $session->get('user-favorites')) === true ? 1 : 0;
             
             // get OTP enabled for item
             $returnArray['otp_for_item_enabled'] = (int) $dataItem['otp_for_item_enabled'];
@@ -3166,18 +3150,21 @@ switch ($inputData['type']) {
             $returnArray['otp_secret'] = (string) $secret;
 
             // Add this item to the latests list
-            if (isset($_SESSION['latest_items']) && isset($SETTINGS['max_latest_items']) && !in_array($dataItem['id'], $_SESSION['latest_items'])) {
-                if (count($_SESSION['latest_items']) >= $SETTINGS['max_latest_items']) {
-                    array_pop($_SESSION['latest_items']); //delete last items
+            if ($session->has('user-latest_items') && $session->has('user-latest_items') && null !== $session->get('user-latest_items') && isset($SETTINGS['max_latest_items']) && 
+                in_array($dataItem['id'], $session->get('user-latest_items')) === false
+            ) {
+                if (count($session->get('user-latest_items')) >= $SETTINGS['max_latest_items']) {
+                    // delete last items
+                    SessionManager::specificOpsOnSessionArray('user-latest_items', 'pop');
                 }
-                array_unshift($_SESSION['latest_items'], $dataItem['id']);
+                SessionManager::specificOpsOnSessionArray('user-latest_items', 'unshift', $dataItem['id']);
                 // update DB
                 DB::update(
                     prefixTable('users'),
                     array(
-                        'latest_items' => implode(';', $_SESSION['latest_items']),
+                        'latest_items' => implode(';', $session->get('user-latest_items')),
                     ),
-                    'id=' . $_SESSION['user_id']
+                    'id=' . $session->get('user-id')
                 );
             }
 
@@ -3265,15 +3252,14 @@ switch ($inputData['type']) {
                     str_replace(
                         array('#tp_user#', '#tp_item#', '#tp_link#'),
                         array(
-                            addslashes($_SESSION['login']),
+                            addslashes($session->get('user-login')),
                             $path,
                             $SETTINGS['cpassman_url'] . '/index.php?page=items&group=' . $dataItem['id_tree'] . '&id=' . $dataItem['id'],
                         ),
                         $lang->get('email_on_open_notification_mail')
                     ),
                     implode(",", $reveivers),
-                    "",
-                    $SETTINGS
+                    ""
                 );
             }
 
@@ -3298,7 +3284,7 @@ switch ($inputData['type']) {
                 $returnArray['otv_links'] = (int) DB::count();
             }
 
-            $_SESSION['user']['show_step2'] = false;
+            $session->set('system-show_step2', false);
             
             echo (string) prepareExchangedData(
                 $returnArray,
@@ -3318,7 +3304,7 @@ switch ($inputData['type']) {
     */
     case 'delete_item':
         // Check KEY and rights
-        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
+        if ($inputData['key'] !== $session->get('key')) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -3328,7 +3314,7 @@ switch ($inputData['type']) {
             );
             break;
         }
-        if ($_SESSION['user_read_only'] === true) {
+        if ($session->get('user-read_only') === 1) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -3420,9 +3406,9 @@ switch ($inputData['type']) {
             $SETTINGS,
             (int) $inputData['itemId'],
             $inputData['label'],
-            $_SESSION['user_id'],
+            $session->get('user-id'),
             'at_delete',
-            $_SESSION['login']
+            $session->get('user-login')
         );
         // Update CACHE table
         updateCacheTable('delete_value', (int) $inputData['itemId']);
@@ -3443,7 +3429,7 @@ switch ($inputData['type']) {
     */
     case 'show_opt_code':
         // Check KEY and rights
-        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
+        if ($inputData['key'] !== $session->get('key')) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -3453,7 +3439,7 @@ switch ($inputData['type']) {
             );
             break;
         }
-        if ($_SESSION['user_read_only'] === true) {
+        if ($session->get('user-read_only') === 1) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -3509,7 +3495,7 @@ switch ($inputData['type']) {
     */
     case 'update_folder':
         // Check KEY and rights
-        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
+        if ($inputData['key'] !== $session->get('key')) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -3519,7 +3505,7 @@ switch ($inputData['type']) {
             );
             break;
         }
-        if ($_SESSION['user_read_only'] === true) {
+        if ($session->get('user-read_only') === 1) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -3540,7 +3526,7 @@ switch ($inputData['type']) {
         $inputData['folderId'] = filter_var(htmlspecialchars_decode($dataReceived['folder']), FILTER_SANITIZE_NUMBER_INT);
 
         // Check if user is allowed to access this folder
-        if (!in_array($inputData['folderId'], $_SESSION['groupes_visibles'])) {
+        if (!in_array($inputData['folderId'], $session->get('user-accessible_folders'))) {
             echo '[{"error" : "' . $lang->get('error_not_allowed_to') . '"}]';
             break;
         }
@@ -3575,7 +3561,7 @@ switch ($inputData['type']) {
 
         // check if complexity level is good
         // if manager or admin don't care
-        if ($_SESSION['is_admin'] !== 1 && $_SESSION['user_manager'] !== 1 && $data['personal_folder'] === '0') {
+        if ($session->get('user-admin') !== 1 && $session->get('user-manager') !== 1 && $data['personal_folder'] === '0') {
             $data = DB::queryfirstrow(
                 'SELECT valeur
                 FROM ' . prefixTable('misc') . '
@@ -3594,7 +3580,7 @@ switch ($inputData['type']) {
             'SELECT title, parent_id, personal_folder FROM ' . prefixTable('nested_tree') . ' WHERE id = %i',
             $dataReceived['folder']
         );
-        if ($tmp['parent_id'] !== 0 || $tmp['title'] !== $_SESSION['user_id'] || $tmp['personal_folder'] !== 1) {
+        if ($tmp['parent_id'] !== 0 || $tmp['title'] !== $session->get('user-id') || $tmp['personal_folder'] !== 1) {
             DB::update(
                 prefixTable('nested_tree'),
                 array(
@@ -3626,7 +3612,7 @@ switch ($inputData['type']) {
     */
     case 'move_folder':
         // Check KEY and rights
-        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
+        if ($inputData['key'] !== $session->get('key')) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -3636,7 +3622,7 @@ switch ($inputData['type']) {
             );
             break;
         }
-        if ($_SESSION['user_read_only'] === true) {
+        if ($session->get('user-read_only') === 1) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -3655,8 +3641,8 @@ switch ($inputData['type']) {
         $post_target_folder_id = filter_var(htmlspecialchars_decode($dataReceived['target_folder_id']), FILTER_SANITIZE_NUMBER_INT);
 
         // Check that user can access this folder
-        if ((in_array($post_source_folder_id, $_SESSION['groupes_visibles']) === false ||
-                in_array($post_target_folder_id, $_SESSION['groupes_visibles']) === false) && ($post_target_folder_id === '0' &&
+        if ((in_array($post_source_folder_id, $session->get('user-accessible_folders')) === false ||
+                in_array($post_target_folder_id, $session->get('user-accessible_folders')) === false) && ($post_target_folder_id === '0' &&
                 isset($SETTINGS['can_create_root_folder']) === true && (int) $SETTINGS['can_create_root_folder'] === 1)
         ) {
             $returnValues = '[{"error" : "' . $lang->get('error_not_allowed_to') . '"}]';
@@ -3693,7 +3679,7 @@ switch ($inputData['type']) {
         }
 
         // check if source or target folder is PF. If Yes, then cancel operation
-        if ($tmp_source['title'] === $_SESSION['user_id'] || $tmp_target['title'] === $_SESSION['user_id']) {
+        if ($tmp_source['title'] === $session->get('user-id') || $tmp_target['title'] === $session->get('user-id')) {
             $returnValues = '[{"error" : "' . $lang->get('error_not_allowed_to') . '"}]';
             echo $returnValues;
             break;
@@ -3737,22 +3723,22 @@ switch ($inputData['type']) {
     */
     case 'do_items_list_in_folder':
         // Check KEY and rights
-        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
+        if ($inputData['key'] !== $session->get('key')) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => $lang->get('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to')." BOOH 1",
                 ),
                 'encode'
             );
             break;
         }
 
-        if (count($_SESSION['user_roles']) === 0) {
+        if (count($session->get('user-roles_array')) === 0) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => $lang->get('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to')." BOOH 2",
                 ),
                 'encode'
             );
@@ -3783,7 +3769,7 @@ switch ($inputData['type']) {
         $post_nb_items_to_display_once = filter_var($dataReceived['nb_items_to_display_once'], FILTER_SANITIZE_NUMBER_INT);
 
         $arr_arbo = [];
-        $folderIsPf = in_array($inputData['id'], $_SESSION['personal_folders']) === true ? true : false;
+        $folderIsPf = in_array($inputData['id'], $session->get('user-personal_folders')) === true ? true : false;
         $showError = 0;
         $itemsIDList = $rights = $returnedData = $uniqueLoadData = $html_json = array();
         // Build query limits
@@ -3798,8 +3784,8 @@ switch ($inputData['type']) {
             // Prepare tree
             $arbo = $tree->getPath($inputData['id'], true);
             foreach ($arbo as $elem) {
-                if ($elem->title === $_SESSION['user_id'] && (int) $elem->nlevel === 1) {
-                    $elem->title = $_SESSION['login'];
+                if ($elem->title === $session->get('user-id') && (int) $elem->nlevel === 1) {
+                    $elem->title = $session->get('user-login');
                 }
                 // Store path elements
                 array_push(
@@ -3807,7 +3793,7 @@ switch ($inputData['type']) {
                     array(
                         'id' => $elem->id,
                         'title' => htmlspecialchars(stripslashes(htmlspecialchars_decode($elem->title, ENT_QUOTES)), ENT_QUOTES),
-                        'visible' => in_array($elem->id, $_SESSION['groupes_visibles']) ? 1 : 0,
+                        'visible' => in_array($elem->id, $session->get('user-accessible_folders')) ? 1 : 0,
                     )
                 );
             }
@@ -3829,7 +3815,7 @@ switch ($inputData['type']) {
 
             // CHeck if roles have 'allow_pw_change' set to true
             $forceItemEditPrivilege = false;
-            foreach ($_SESSION['user_roles'] as $role) {
+            foreach ($session->get('user-roles_array') as $role) {
                 $roleQ = DB::queryfirstrow(
                     'SELECT allow_pw_change
                     FROM ' . prefixTable('roles_title') . '
@@ -3843,10 +3829,16 @@ switch ($inputData['type']) {
             }
 
             // is this folder a personal one
-            $folder_is_personal = in_array($inputData['id'], $_SESSION['personal_folders']);
+            $folder_is_personal = in_array($inputData['id'], $session->get('user-personal_folders'));
             $uniqueLoadData['folder_is_personal'] = $folder_is_personal;
 
-            $folder_is_in_personal = in_array($inputData['id'], array_merge($_SESSION['personal_visible_groups'], $_SESSION['personal_folders']));
+            $folder_is_in_personal = in_array(
+                $inputData['id'],
+                array_merge(
+                    $session->get('user-personal_visible_folders'),
+                    $session->get('user-personal_folders')
+                )
+            );
             $uniqueLoadData['folder_is_in_personal'] = $folder_is_in_personal;
 
 
@@ -3855,7 +3847,7 @@ switch ($inputData['type']) {
                 $accessLevel = 20;
                 $arrTmp = [];
                 
-                foreach ($_SESSION['user_roles'] as $role) {
+                foreach ($session->get('user-roles_array') as $role) {
                     $access = DB::queryFirstRow(
                         'SELECT type FROM ' . prefixTable('roles_values') . ' WHERE role_id = %i AND folder_id = %i',
                         $role,
@@ -3877,7 +3869,7 @@ switch ($inputData['type']) {
                             array_push($arrTmp, 15);
                         } else {
                             // Ensure to give access Right if allowed folder
-                            if (in_array($inputData['id'], $_SESSION['groupes_visibles']) === true) {
+                            if (in_array($inputData['id'], $session->get('user-accessible_folders')) === true) {
                                 array_push($arrTmp, 30);
                             } else {
                                 array_push($arrTmp, 0);
@@ -3891,27 +3883,21 @@ switch ($inputData['type']) {
                 $accessLevel = 30;
             }
             $uniqueLoadData['accessLevel'] = $accessLevel;
-
-            /*
-            // check if this folder is a PF. If yes check if saltket is set
-            if ((!isset($_SESSION['user']['encrypted_psk']) || empty($_SESSION['user']['encrypted_psk'])) && $folderIsPf === true) {
-                $showError = 'is_pf_but_no_saltkey';
-            }
-            */
             $uniqueLoadData['showError'] = $showError;
 
             // check if items exist
             $where = new WhereClause('and');
-            if (null !== $post_restricted && (int) $post_restricted === 1 && empty($_SESSION['list_folders_limited'][$inputData['id']]) === false) {
-                $counter = count($_SESSION['list_folders_limited'][$inputData['id']]);
+            $session__user_list_folders_limited = $session->get('user-list_folders_limited');
+            if (null !== $post_restricted && (int) $post_restricted === 1 && empty($session__user_list_folders_limited[$inputData['id']]) === false) {
+                $counter = count($session__user_list_folders_limited[$inputData['id']]);
                 $uniqueLoadData['counter'] = $counter;
                 // check if this folder is visible
             } elseif (!in_array(
                 $inputData['id'],
                 array_merge(
-                    $_SESSION['groupes_visibles'],
-                    is_array($_SESSION['list_restricted_folders_for_items']) === true ? array_keys($_SESSION['list_restricted_folders_for_items']) : array(),
-                    is_array($_SESSION['list_folders_limited']) === true ? array_keys($_SESSION['list_folders_limited']) : array()
+                    $session->get('user-accessible_folders'),
+                    array_keys($session->get('system-list_restricted_folders_for_items')),
+                    array_keys($session->get('user-list_folders_limited'))
                 )
             )) {
                 echo (string) prepareExchangedData(
@@ -3986,7 +3972,7 @@ switch ($inputData['type']) {
                             if ($field['role_visibility'] === 'all'
                                 || count(
                                     array_intersect(
-                                        explode(';', $_SESSION['fonction_id']),
+                                        explode(';', $session->get('user-roles')),
                                         explode(',', $field['role_visibility'])
                                     )
                                 ) > 0
@@ -4020,8 +4006,8 @@ switch ($inputData['type']) {
             $uniqueLoadData['categoriesStructure'] = $categoriesStructure;
             */
 
-            if (isset($_SESSION['list_folders_editable_by_role'])) {
-                $list_folders_editable_by_role = in_array($inputData['id'], $_SESSION['list_folders_editable_by_role']);
+            if ($session->has('system-list_folders_editable_by_role') && $session->has('system-list_folders_editable_by_role') && null !== $session->get('system-list_folders_editable_by_role')) {
+                $list_folders_editable_by_role = in_array($inputData['id'], $session->get('system-list_folders_editable_by_role'));
             } else {
                 $list_folders_editable_by_role = '';
             }
@@ -4046,8 +4032,9 @@ switch ($inputData['type']) {
         
         // prepare query WHere conditions
         $where = new WhereClause('and');
-        if (null !== $post_restricted && (int) $post_restricted === 1 && empty($_SESSION['list_folders_limited'][$inputData['id']]) === false) {
-            $where->add('i.id IN %ls', $_SESSION['list_folders_limited'][$inputData['id']]);
+        $session__user_list_folders_limited = $session->get('user-list_folders_limited');
+        if (null !== $post_restricted && (int) $post_restricted === 1 && empty($session__user_list_folders_limited[$inputData['id']]) === false) {
+            $where->add('i.id IN %ls', $session__user_list_folders_limited[$inputData['id']]);
         } else {
             $where->add('i.id_tree=%i', $inputData['id']);
         }
@@ -4147,7 +4134,7 @@ switch ($inputData['type']) {
                         FROM ' . prefixTable('restriction_to_roles') . '
                         WHERE item_id = %i AND role_id IN %ls',
                         $record['id'],
-                        $_SESSION['user_roles']
+                        $session->get('user-roles_array')
                     );
                     if (DB::count() > 0) {
                         $user_is_included_in_role = true;
@@ -4156,8 +4143,8 @@ switch ($inputData['type']) {
                     // Is user in restricted list of users
                     if (empty($record['restricted_to']) === false) {
                         if (
-                            in_array($_SESSION['user_id'], explode(';', $record['restricted_to'])) === true
-                            || (((int) $_SESSION['user_manager'] === 1 || (int) $_SESSION['user_can_manage_all_users'] === 1)
+                            in_array($session->get('user-id'), explode(';', $record['restricted_to'])) === true
+                            || (((int) $session->get('user-manager') === 1 || (int) $session->get('user-can_manage_all_users') === 1)
                                 && (int) $SETTINGS['manager_edit'] === 1)
                         ) {
                             $user_is_in_restricted_list = true;
@@ -4191,7 +4178,7 @@ switch ($inputData['type']) {
                     $html_json[$record['id']]['login'] = $record['login'];
                     $html_json[$record['id']]['anyone_can_modify'] = (int) $record['anyone_can_modify'];
                     $html_json[$record['id']]['is_result_of_search'] = 0;
-                    $html_json[$record['id']]['is_favourited'] = in_array($record['id'], $_SESSION['favourites']) === true ? 1 : 0;
+                    $html_json[$record['id']]['is_favourited'] = in_array($record['id'], $session->get('user-favorites')) === true ? 1 : 0;
                     $html_json[$record['id']]['link'] = $record['link'];
                     $html_json[$record['id']]['fa_icon'] = $record['fa_icon'];
 
@@ -4208,7 +4195,7 @@ switch ($inputData['type']) {
                     if (
                         (int) $record['perso'] === 1
                         && $record['log_action'] === 'at_creation'
-                        && $record['log_user'] === $_SESSION['user_id']
+                        && $record['log_user'] === $session->get('user-id')
                         && (int) $folder_is_in_personal === 1
                         && (int) $folder_is_personal === 1
                     ) {
@@ -4219,8 +4206,8 @@ switch ($inputData['type']) {
                         $right = 70;
                         // ---
                         // ----- END CASE 1 -----
-                    } elseif (((isset($_SESSION['user_manager']) === true && (int) $_SESSION['user_manager'] === 1)
-                            || (isset($_SESSION['user_can_manage_all_users']) === true && (int) $_SESSION['user_can_manage_all_users'] === 1))
+                    } elseif ((($session->has('user-manager') && (int) $session->get('user-manager') && $session->has('user-manager') && (int) $session->get('user-manager') && null !== $session->get('user-manager') && (int) $session->get('user-manager') === 1)
+                            || ($session->has('user-can_manage_all_users') && (int) $session->get('user-can_manage_all_users') && $session->has('user-can_manage_all_users') && (int) $session->get('user-can_manage_all_users') && null !== $session->get('user-can_manage_all_users') && (int) $session->get('user-can_manage_all_users') === 1))
                         && (isset($SETTINGS['manager_edit']) === true && (int) $SETTINGS['manager_edit'] === 1)
                         && (int) $record['perso'] !== 1
                         && $user_is_in_restricted_list === true
@@ -4233,7 +4220,7 @@ switch ($inputData['type']) {
                     } elseif (
                         (int) $record['anyone_can_modify'] === 1
                         && (int) $record['perso'] !== 1
-                        && (int) $_SESSION['user_read_only'] !== 1
+                        && (int) $session->get('user-read_only') === 0
                     ) {
                         // Case 3 - Has this item the setting "anyone can modify" set to true?
                         // Allow all rights
@@ -4243,7 +4230,7 @@ switch ($inputData['type']) {
                     } elseif (
                         $user_is_in_restricted_list === true
                         && (int) $record['perso'] !== 1
-                        && (int) $_SESSION['user_read_only'] !== 1
+                        && (int) $session->get('user-read_only') === 0
                     ) {
                         // Case 4 - Is this item limited to Users? Is current user in this list?
                         // Allow all rights
@@ -4253,7 +4240,7 @@ switch ($inputData['type']) {
                     } elseif (
                         $user_is_included_in_role === true
                         && (int) $record['perso'] !== 1
-                        && (int) $_SESSION['user_read_only'] !== 1
+                        && (int) $session->get('user-read_only') === 0
                     ) {
                         // Case 5 - Is this item limited to group of users? Is current user in one of those groups?
                         // Allow all rights
@@ -4262,7 +4249,7 @@ switch ($inputData['type']) {
                         // ----- END CASE 5 -----
                     } elseif (
                         (int) $record['perso'] !== 1
-                        && (int) $_SESSION['user_read_only'] === 1
+                        && (int) $session->get('user-read_only') === 1
                     ) {
                         // Case 6 - Is user readonly?
                         // Allow limited rights
@@ -4271,7 +4258,7 @@ switch ($inputData['type']) {
                         // ----- END CASE 6 -----
                     } elseif (
                         (int) $record['perso'] !== 1
-                        && (int) $_SESSION['user_read_only'] === 1
+                        && (int) $session->get('user-read_only') === 1
                     ) {
                         // Case 7 - Is user readonly?
                         // Allow limited rights
@@ -4280,7 +4267,7 @@ switch ($inputData['type']) {
                         // ----- END CASE 7 -----
                     } elseif (
                         (int) $record['perso'] !== 1
-                        && (int) $_SESSION['user_read_only'] === 1
+                        && (int) $session->get('user-read_only') === 1
                     ) {
                         // Case 8 - Is user allowed to access?
                         // Allow rights
@@ -4289,7 +4276,7 @@ switch ($inputData['type']) {
                         // ----- END CASE 8 -----
                     } elseif (($user_is_included_in_role === false && $item_is_restricted_to_role === true)
                         && (int) $record['perso'] !== 1
-                        && (int) $_SESSION['user_read_only'] !== 1
+                        && (int) $session->get('user-read_only') === 0
                     ) {
                         // Case 9 - Is this item limited to Users or Groups? Is current user in this list?
                         // If no then Allow none
@@ -4402,7 +4389,7 @@ switch ($inputData['type']) {
 
     case 'show_item_password':
         // Check KEY
-        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
+        if ($inputData['key'] !== $session->get('key')) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -4419,7 +4406,7 @@ switch ($inputData['type']) {
             FROM ' . prefixTable('items') . ' AS i
             INNER JOIN ' . prefixTable('sharekeys_items') . ' AS s ON (s.object_id = i.id)
             WHERE user_id = %i AND i.item_key = %s',
-            $_SESSION['user_id'],
+            $session->get('user-id'),
             $inputData['itemKey']
         );
 
@@ -4432,16 +4419,16 @@ switch ($inputData['type']) {
                 $dataItem['pw'],
                 decryptUserObjectKey(
                     $dataItem['share_key'],
-                    $_SESSION['user']['private_key']
+                    $session->get('user-private_key')
                 )
             );
 
-            $log = 'Used user ID: '.$_SESSION['user_id']."\n";
-            $log .= 'Used user Private key: '.$_SESSION['user']['private_key']."\n";
+            $log = 'Used user ID: '.$session->get('user-id')."\n";
+            $log .= 'Used user Private key: '.$session->get('user-private_key')."\n";
             $log .= '$currentUserKey: '.$dataItem['share_key']."\n";
             $log .= 'itemKey: '.decryptUserObjectKey(
                 $dataItem['share_key'],
-                $_SESSION['user']['private_key']
+                $session->get('user-private_key')
             )."\n\n";
             file_put_contents('/var/www/html/tplog.log', $log, FILE_APPEND | LOCK_EX);
         }
@@ -4472,39 +4459,6 @@ switch ($inputData['type']) {
                 WHERE id=%i',
                 $inputData['itemId']
             );
-            
-            /*
-            // is user allowed to access this folder - readonly
-            if (null !== $inputData['folderId'] && empty($inputData['folderId']) === false) {
-                if (
-                    in_array($inputData['folderId'], $_SESSION['read_only_folders']) === true
-                    || in_array($inputData['folderId'], $_SESSION['groupes_visibles']) === false
-                ) {
-                    // check if this item can be modified by anyone
-                    if (isset($SETTINGS['anyone_can_modify']) && (int) $SETTINGS['anyone_can_modify'] === 1) {
-                        if ((int) $dataItem['anyone_can_modify'] !== 1) {
-                            // else return not authorized
-                            $returnValues = array(
-                                'error' => true,
-                                'message' => $lang->get('error_not_allowed_to'),
-                            );
-                            echo (string) prepareExchangedData(
-$SETTINGS['cpassman_dir'],$returnValues, 'encode');
-                            break;
-                        }
-                    } else {
-                        // else return not authorized
-                        $returnValues = array(
-                            'error' => true,
-                            'message' => $lang->get('error_not_allowed_to'),
-                        );
-                        echo (string) prepareExchangedData(
-$SETTINGS['cpassman_dir'],$returnValues, 'encode');
-                        break;
-                    }
-                }
-            }
-            */
 
             // Lock Item (if already locked), go back and warn
             $dataTmp = DB::queryFirstRow('SELECT timestamp, user_id FROM ' . prefixTable('items_edition') . ' WHERE item_id = %i', $inputData['itemId']);
@@ -4524,14 +4478,14 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
             }
 
             // If edition by same user (and token not freed before for any reason, then update timestamp)
-            if (empty($dataTmp['timestamp']) === false && $dataTmp['user_id'] === $_SESSION['user_id']) {
+            if (empty($dataTmp['timestamp']) === false && $dataTmp['user_id'] === $session->get('user-id')) {
                 DB::update(
                     prefixTable('items_edition'),
                     array(
                         'timestamp' => time(),
                     ),
                     'user_id = %i AND item_id = %i',
-                    $_SESSION['user_id'],
+                    $session->get('user-id'),
                     $inputData['itemId']
                 );
                 // If no token for this Item, then initialize one
@@ -4541,7 +4495,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                     array(
                         'timestamp' => time(),
                         'item_id' => $inputData['itemId'],
-                        'user_id' => (int) $_SESSION['user_id'],
+                        'user_id' => (int) $session->get('user-id'),
                     )
                 );
                 // Edition not possible
@@ -4578,11 +4532,11 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                 || $inputData['context'] === 'copy_folder'
             ) {
                 if (
-                    (int) $_SESSION['is_admin'] !== 1
-                    && ((int) $_SESSION['user_manager'] !== 1)
+                    (int) $session->get('user-admin') !== 1
+                    && ((int) $session->get('user-manager') !== 1)
                     && (isset($SETTINGS['enable_user_can_create_folders'])
                         && (int) $SETTINGS['enable_user_can_create_folders'] !== 1)
-                    && ((int) $data_this_folder['personal_folder'] !== 1 && $data_this_folder['title'] !== $_SESSION['user_id'])   // take into consideration if this is a personal folder
+                    && ((int) $data_this_folder['personal_folder'] !== 1 && $data_this_folder['title'] !== $session->get('user-id'))   // take into consideration if this is a personal folder
                 ) {
                     $returnValues = array(
                         'error' => true,
@@ -4642,7 +4596,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
             
             $folder_is_personal = $data_pf !== null ? (int) $data_pf['personal_folder'] : 0;
             
-            $visibilite = $_SESSION['name'] . ' ' . $_SESSION['lastname'] . ' (' . $_SESSION['login'] . ')';
+            $visibilite = $session->get('user-name') . ' ' . $session->get('user-lastname') . ' (' . $session->get('user-login') . ')';
         }
 
         recupDroitCreationSansComplexite($inputData['folderId']);
@@ -4694,7 +4648,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
         $accessLevel = 20;
         if ($folder_is_personal === 0) {
             $arrTmp = [];
-            foreach ($_SESSION['user_roles'] as $role) {
+            foreach ($session->get('user-roles_array') as $role) {
                 //db::debugmode(true);
                 $access = DB::queryFirstRow(
                     'SELECT type
@@ -4717,7 +4671,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                         array_push($arrTmp, 15);
                     } else {
                         // Ensure to give access Right if allowed folder
-                        if (in_array($inputData['id'], $_SESSION['groupes_visibles']) === true) {
+                        if (in_array($inputData['id'], $session->get('user-accessible_folders')) === true) {
                             array_push($arrTmp, 30);
                         } else {
                             array_push($arrTmp, 0);
@@ -4756,7 +4710,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
     */
     case 'delete_attached_file':
         // Check KEY
-        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
+        if ($inputData['key'] !== $session->get('key')) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -4791,7 +4745,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
         );
 
         // Check that user can access this folder
-        if (in_array($data_item['id_tree'], $_SESSION['groupes_visibles']) === false) {
+        if (in_array($data_item['id_tree'], $session->get('user-accessible_folders')) === false) {
             echo (string) prepareExchangedData(
                 array('error' => 'ERR_FOLDER_NOT_ALLOWED'),
                 'encode'
@@ -4812,9 +4766,9 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                 $SETTINGS,
                 (int) $data['id_item'],
                 $data['name'],
-                $_SESSION['user_id'],
+                $session->get('user-id'),
                 'at_modification',
-                $_SESSION['login'],
+                $session->get('user-login'),
                 'at_del_file : ' . $data['name']
             );
 
@@ -4847,8 +4801,8 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
     case 'action_on_quick_icon':
         // Check KEY and rights
         if (
-            $inputData['key'] !== $superGlobal->get('key', 'SESSION')
-            || $_SESSION['user_read_only'] === true || !isset($SETTINGS['pwd_maximum_length'])
+            $inputData['key'] !== $session->get('key')
+            || $session->get('user-read_only') === 1 || !isset($SETTINGS['pwd_maximum_length'])
         ) {
             // error
             exit;
@@ -4864,15 +4818,14 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
 
         if ((int) $inputData['action'] === 0) {
             // Add new favourite
-            array_push($_SESSION['favourites'], $inputData['itemId']);
-            //print_r($_SESSION['favourites']);
+            SessionManager::addRemoveFromSessionArray('user-favorites', [$inputData['itemId']], 'add');
             DB::update(
                 prefixTable('users'),
                 array(
-                    'favourites' => implode(';', $_SESSION['favourites']),
+                    'favourites' => implode(';', $session->get('user-favorites')),
                 ),
                 'id = %i',
-                $_SESSION['user_id']
+                $session->get('user-id')
             );
             // Update SESSION with this new favourite
             $data = DB::queryfirstrow(
@@ -4881,32 +4834,35 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                 WHERE id = %i',
                 $inputData['itemId']
             );
-            $_SESSION['favourites_tab'][$inputData['itemId']] = array(
-                'label' => $data['label'],
-                'url' => 'index.php?page=items&amp;group=' . $data['id_tree'] . '&amp;id=' . $inputData['itemId'],
+            SessionManager::addRemoveFromSessionAssociativeArray(
+                'user-favorites_tab',
+                [
+                    $inputData['itemId'] => [
+                        'label' => $data['label'],
+                        'url' => 'index.php?page=items&amp;group=' . $data['id_tree'] . '&amp;id=' . $inputData['itemId'],
+                    ],
+                ],
+                'add'
             );
         } elseif ((int) $inputData['action'] === 1) {
             // delete from session
-            foreach ($_SESSION['favourites'] as $key => $value) {
-                if ($_SESSION['favourites'][$key] === $inputData['itemId']) {
-                    unset($_SESSION['favourites'][$key]);
-                    break;
-                }
-            }
+            SessionManager::addRemoveFromSessionArray('user-favorites', [$inputData['itemId']], 'remove');
+
             // delete from DB
             DB::update(
                 prefixTable('users'),
                 array(
-                    'favourites' => implode(';', $_SESSION['favourites']),
+                    'favourites' => implode(';', $session->get('user-favorites')),
                 ),
                 'id = %i',
-                $_SESSION['user_id']
+                $session->get('user-id')
             );
             // refresh session fav list
-            if (isset($_SESSION['favourites_tab'])) {
-                foreach ($_SESSION['favourites_tab'] as $key => $value) {
+            if ($session->has('user-favorites_tab') && $session->has('user-favorites_tab') && null !== $session->get('user-favorites_tab')) {
+                $user_favorites_tab = $session->get('user-favorites_tab');
+                foreach ($user_favorites_tab as $key => $value) {
                     if ($key === $inputData['id']) {
-                        unset($_SESSION['favourites_tab'][$key]);
+                        SessionManager::addRemoveFromSessionAssociativeArray('user-favorites_tab', [$key], 'remove');
                         break;
                     }
                 }
@@ -4920,7 +4876,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
     */
     case 'move_item':
         // Check KEY and rights
-        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
+        if ($inputData['key'] !== $session->get('key')) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -4930,7 +4886,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
             );
             break;
         }
-        if ($_SESSION['user_read_only'] === true || isset($SETTINGS['pwd_maximum_length']) === false) {
+        if ($session->get('user-read_only') === 1 || isset($SETTINGS['pwd_maximum_length']) === false) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -4968,8 +4924,8 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
 
         // Check that user can access this folder
         if (
-            in_array($dataSource['id_tree'], $_SESSION['groupes_visibles']) === false
-            || in_array($inputData['folderId'], $_SESSION['groupes_visibles']) === false
+            in_array($dataSource['id_tree'], $session->get('user-accessible_folders')) === false
+            || in_array($inputData['folderId'], $session->get('user-accessible_folders')) === false
             //|| (int) $dataSource['personal_folder'] === (int) $dataDestination['personal_folder']
         ) {
             echo (string) prepareExchangedData(
@@ -5007,7 +4963,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                 prefixTable('sharekeys_items'),
                 'object_id = %i AND user_id != %i',
                 $inputData['itemId'],
-                $_SESSION['user_id']
+                $session->get('user-id')
             );
 
             // Remove all item sharekeys fields
@@ -5023,7 +4979,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                     prefixTable('sharekeys_fields'),
                     'object_id = %i AND user_id != %i',
                     $field['id'],
-                    $_SESSION['user_id']
+                    $session->get('user-id')
                 );
             }
 
@@ -5040,7 +4996,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                     prefixTable('sharekeys_files'),
                     'object_id = %i AND user_id != %i',
                     $attachment['id'],
-                    $_SESSION['user_id']
+                    $session->get('user-id')
                 );
             }
 
@@ -5080,17 +5036,17 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                 'SELECT share_key
                 FROM ' . prefixTable('sharekeys_items') . '
                 WHERE user_id = %i AND object_id = %i',
-                $_SESSION['user_id'],
+                $session->get('user-id'),
                 $inputData['itemId']
             );
             if (DB::count() > 0) {
-                $objectKey = decryptUserObjectKey($userKey['share_key'], $_SESSION['user']['private_key']);
+                $objectKey = decryptUserObjectKey($userKey['share_key'], $session->get('user-private_key'));
 
                 // This is a public object
                 $users = DB::query(
                     'SELECT id, public_key
                     FROM ' . prefixTable('users') . '
-                    WHERE id NOT IN ("' . OTV_USER_ID . '","' . SSH_USER_ID . '","' . API_USER_ID . '","' . $_SESSION['user_id'] . '")
+                    WHERE id NOT IN ("' . OTV_USER_ID . '","' . SSH_USER_ID . '","' . API_USER_ID . '","' . $session->get('user-id') . '")
                     AND public_key != ""'
                 );
                 foreach ($users as $user) {
@@ -5119,17 +5075,17 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                     'SELECT share_key
                     FROM ' . prefixTable('sharekeys_fields') . '
                     WHERE user_id = %i AND object_id = %i',
-                    $_SESSION['user_id'],
+                    $session->get('user-id'),
                     $field['id']
                 );
                 if (DB::count() > 0) {
-                    $objectKey = decryptUserObjectKey($userKey['share_key'], $_SESSION['user']['private_key']);
+                    $objectKey = decryptUserObjectKey($userKey['share_key'], $session->get('user-private_key'));
 
                     // This is a public object
                     $users = DB::query(
                         'SELECT id, public_key
                         FROM ' . prefixTable('users') . '
-                        WHERE id NOT IN ("' . OTV_USER_ID . '","' . SSH_USER_ID . '","' . API_USER_ID . '","' . $_SESSION['user_id'] . '")
+                        WHERE id NOT IN ("' . OTV_USER_ID . '","' . SSH_USER_ID . '","' . API_USER_ID . '","' . $session->get('user-id') . '")
                         AND public_key != ""'
                     );
                     foreach ($users as $user) {
@@ -5159,17 +5115,17 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                     'SELECT share_key
                     FROM ' . prefixTable('sharekeys_files') . '
                     WHERE user_id = %i AND object_id = %i',
-                    $_SESSION['user_id'],
+                    $session->get('user-id'),
                     $attachment['id']
                 );
                 if (DB::count() > 0) {
-                    $objectKey = decryptUserObjectKey($userKey['share_key'], $_SESSION['user']['private_key']);
+                    $objectKey = decryptUserObjectKey($userKey['share_key'], $session->get('user-private_key'));
 
                     // This is a public object
                     $users = DB::query(
                         'SELECT id, public_key
                         FROM ' . prefixTable('users') . '
-                        WHERE id NOT IN ("' . OTV_USER_ID . '","' . SSH_USER_ID . '","' . API_USER_ID . '","' . $_SESSION['user_id'] . '")
+                        WHERE id NOT IN ("' . OTV_USER_ID . '","' . SSH_USER_ID . '","' . API_USER_ID . '","' . $session->get('user-id') . '")
                         AND public_key != ""'
                     );
                     foreach ($users as $user) {
@@ -5204,9 +5160,9 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
             $SETTINGS,
             (int) $inputData['itemId'],
             $dataSource['label'],
-            $_SESSION['user_id'],
+            $session->get('user-id'),
             'at_modification',
-            $_SESSION['login'],
+            $session->get('user-login'),
             'at_moved : ' . $dataSource['title'] . ' -> ' . $dataDestination['title']
         );
 
@@ -5231,7 +5187,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
     */
     case 'mass_move_items':
         // Check KEY and rights
-        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
+        if ($inputData['key'] !== $session->get('key')) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -5241,7 +5197,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
             );
             break;
         }
-        if ($_SESSION['user_read_only'] === true || isset($SETTINGS['pwd_maximum_length']) === false) {
+        if ($session->get('user-read_only') === 1 || isset($SETTINGS['pwd_maximum_length']) === false) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -5274,8 +5230,8 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
 
                 // Check that user can access this folder
                 if (
-                    in_array($dataSource['id_tree'], $_SESSION['groupes_visibles']) === false
-                    || in_array($inputData['folderId'], $_SESSION['groupes_visibles']) === false
+                    in_array($dataSource['id_tree'], $session->get('user-accessible_folders')) === false
+                    || in_array($inputData['folderId'], $session->get('user-accessible_folders')) === false
                 ) {
                     echo (string) prepareExchangedData(
                         array(
@@ -5324,7 +5280,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                         prefixTable('sharekeys_items'),
                         'object_id = %i AND user_id != %i',
                         $item_id,
-                        $_SESSION['user_id']
+                        $session->get('user-id')
                     );
 
                     // Remove all item sharekeys fields
@@ -5340,7 +5296,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                             prefixTable('sharekeys_fields'),
                             'object_id = %i AND user_id != %i',
                             $field['id'],
-                            $_SESSION['user_id']
+                            $session->get('user-id')
                         );
                     }
 
@@ -5357,7 +5313,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                             prefixTable('sharekeys_files'),
                             'object_id = %i AND user_id != %i',
                             $attachment['id'],
-                            $_SESSION['user_id']
+                            $session->get('user-id')
                         );
                     }
 
@@ -5405,17 +5361,17 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                         'SELECT share_key
                         FROM ' . prefixTable('sharekeys_items') . '
                         WHERE user_id = %i AND object_id = %i',
-                        $_SESSION['user_id'],
+                        $session->get('user-id'),
                         $item_id
                     );
                     if (DB::count() > 0) {
-                        $objectKey = decryptUserObjectKey($userKey['share_key'], $_SESSION['user']['private_key']);
+                        $objectKey = decryptUserObjectKey($userKey['share_key'], $session->get('user-private_key'));
 
                         // This is a public object
                         $users = DB::query(
                             'SELECT id, public_key
                             FROM ' . prefixTable('users') . '
-                            WHERE id NOT IN ("' . OTV_USER_ID . '","' . SSH_USER_ID . '","' . API_USER_ID . '","' . $_SESSION['user_id'] . '")
+                            WHERE id NOT IN ("' . OTV_USER_ID . '","' . SSH_USER_ID . '","' . API_USER_ID . '","' . $session->get('user-id') . '")
                             AND public_key != ""'
                         );
                         foreach ($users as $user) {
@@ -5444,17 +5400,17 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                             'SELECT share_key
                             FROM ' . prefixTable('sharekeys_fields') . '
                             WHERE user_id = %i AND object_id = %i',
-                            $_SESSION['user_id'],
+                            $session->get('user-id'),
                             $field['id']
                         );
                         if (DB::count() > 0) {
-                            $objectKey = decryptUserObjectKey($userKey['share_key'], $_SESSION['user']['private_key']);
+                            $objectKey = decryptUserObjectKey($userKey['share_key'], $session->get('user-private_key'));
 
                             // This is a public object
                             $users = DB::query(
                                 'SELECT id, public_key
                                 FROM ' . prefixTable('users') . '
-                                WHERE id NOT IN ("' . OTV_USER_ID . '","' . SSH_USER_ID . '","' . API_USER_ID . '","' . $_SESSION['user_id'] . '")
+                                WHERE id NOT IN ("' . OTV_USER_ID . '","' . SSH_USER_ID . '","' . API_USER_ID . '","' . $session->get('user-id') . '")
                                 AND public_key != ""'
                             );
                             foreach ($users as $user) {
@@ -5484,17 +5440,17 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                             'SELECT share_key
                             FROM ' . prefixTable('sharekeys_files') . '
                             WHERE user_id = %i AND object_id = %i',
-                            $_SESSION['user_id'],
+                            $session->get('user-id'),
                             $attachment['id']
                         );
                         if (DB::count() > 0) {
-                            $objectKey = decryptUserObjectKey($userKey['share_key'], $_SESSION['user']['private_key']);
+                            $objectKey = decryptUserObjectKey($userKey['share_key'], $session->get('user-private_key'));
 
                             // This is a public object
                             $users = DB::query(
                                 'SELECT id, public_key
                                 FROM ' . prefixTable('users') . '
-                                WHERE id NOT IN ("' . OTV_USER_ID . '","' . SSH_USER_ID . '","' . API_USER_ID . '","' . $_SESSION['user_id'] . '")
+                                WHERE id NOT IN ("' . OTV_USER_ID . '","' . SSH_USER_ID . '","' . API_USER_ID . '","' . $session->get('user-id') . '")
                                 AND public_key != ""'
                             );
                             foreach ($users as $user) {
@@ -5528,9 +5484,9 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                     $SETTINGS,
                     (int) $item_id,
                     $dataSource['label'],
-                    $_SESSION['user_id'],
+                    $session->get('user-id'),
                     'at_modification',
-                    $_SESSION['login'],
+                    $session->get('user-login'),
                     'at_moved : ' . $dataSource['title'] . ' -> ' . $dataDestination['title']
                 );
             }
@@ -5555,7 +5511,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
     */
     case 'mass_delete_items':
         // Check KEY and rights
-        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
+        if ($inputData['key'] !== $session->get('key')) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -5565,7 +5521,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
             );
             break;
         }
-        if ($_SESSION['user_read_only'] === true) {
+        if ($session->get('user-read_only') === 1) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -5584,7 +5540,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
         $post_item_ids = filter_var($dataReceived['item_ids'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
         // perform a check in case of Read-Only user creating an item in his PF
-        if ($_SESSION['user_read_only'] === true) {
+        if ($session->get('user-read_only') === 1) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -5608,7 +5564,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
 
                 // Check that user can access this folder
                 if (
-                    in_array($dataSource['id_tree'], $_SESSION['groupes_visibles']) === false
+                    in_array($dataSource['id_tree'], $session->get('user-accessible_folders')) === false
                 ) {
                     echo (string) prepareExchangedData(
                         array(
@@ -5636,9 +5592,9 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                     $SETTINGS,
                     (int) $item_id,
                     $dataSource['label'],
-                    $_SESSION['user_id'],
+                    $session->get('user-id'),
                     'at_delete',
-                    $_SESSION['login']
+                    $session->get('user-login')
                 );
 
                 // Update CACHE table
@@ -5661,7 +5617,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
     */
     case 'send_email':
         // Check KEY
-        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
+        if ($inputData['key'] !== $session->get('key')) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -5671,7 +5627,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
             );
             break;
         }
-        if ($_SESSION['user_read_only'] === true) {
+        if ($session->get('user-read_only') === 1) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -5692,7 +5648,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
         $inputData['id'] = filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT);
         $inputData['receipt'] = filter_var($dataReceived['receipt'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         $inputData['cat'] = filter_var($dataReceived['cat'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-        $post_content = isset($_POST['name']) === true ? explode(',', filter_input(INPUT_POST, 'content', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) : '';
+        $post_content = $request->request->has('name') ? explode(',', $request->request->filter('content', '', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) : '';
 
         // get links url
         if (empty($SETTINGS['email_server_url']) === true) {
@@ -5715,12 +5671,11 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                 $lang->get('email_request_access_subject'),
                 str_replace(
                     array('#tp_item_author#', '#tp_user#', '#tp_item#'),
-                    array(' ' . addslashes($dataAuthor['login']), addslashes($_SESSION['login']), $path),
+                    array(' ' . addslashes($dataAuthor['login']), addslashes($session->get('user-login')), $path),
                     $lang->get('email_request_access_mail')
                 ),
                 $dataAuthor['email'],
-                "",
-                $SETTINGS
+                ""
             );
         } elseif ($inputData['cat'] === 'share_this_item') {
             $dataItem = DB::queryfirstrow(
@@ -5749,14 +5704,13 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                     array(
                         empty($SETTINGS['email_server_url']) === false ?
                             $SETTINGS['email_server_url'] . '/index.php?page=items&group=' . $dataItem['id_tree'] . '&id=' . $inputData['id'] : $SETTINGS['cpassman_url'] . '/index.php?page=items&group=' . $dataItem['id_tree'] . '&id=' . $inputData['id'],
-                        addslashes($_SESSION['login']),
+                        addslashes($session->get('user-login')),
                         addslashes($path),
                     ),
                     $lang->get('email_share_item_mail')
                 ),
                 $inputData['receipt'],
-                "",
-                $SETTINGS
+                ""
             );
         }
 
@@ -5775,7 +5729,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
     */
     /*
     case 'notify_a_user':
-        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
+        if ($inputData['key'] !== $session->get('key')) {
             echo '[{"error" : "something_wrong"}]';
             break;
         }
@@ -5825,7 +5779,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
     * Item History Log - add new entry
     */
     case 'history_entry_add':
-        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
+        if ($inputData['key'] !== $session->get('key')) {
             $data = array('error' => 'key_is_wrong');
             echo (string) prepareExchangedData(
                 $data,
@@ -5844,6 +5798,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
         $label = filter_var($dataReceived['label'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         $date = filter_var($dataReceived['date'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         $time = filter_var($dataReceived['time'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        $session__user_list_folders_limited = $session->get('user-list_folders_limited');
 
         // Get all informations for this item
         $dataItem = DB::queryfirstrow(
@@ -5857,25 +5812,25 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
         // check that actual user can access this item
         $restrictionActive = true;
         $restrictedTo = is_null($dataItem['restricted_to']) === false ? array_filter(explode(';', $dataItem['restricted_to'])) : [];
-        if (in_array($_SESSION['user_id'], $restrictedTo)) {
+        if (in_array($session->get('user-id'), $restrictedTo)) {
             $restrictionActive = false;
         }
         if (empty($dataItem['restricted_to'])) {
             $restrictionActive = false;
         }
 
-        if (((in_array($dataItem['id_tree'], $_SESSION['groupes_visibles'])) && ((int) $dataItem['perso'] === 0 || ((int) $dataItem['perso'] === 1 && $dataItem['id_user'] === $_SESSION['user_id'])) && $restrictionActive === false)
-            || (isset($SETTINGS['anyone_can_modify']) && (int) $SETTINGS['anyone_can_modify'] === 1 && (int) $dataItem['anyone_can_modify'] === 1 && (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || (int) $_SESSION['is_admin'] === 1) && $restrictionActive === false)
-            || (is_array($_SESSION['list_folders_limited'][$inputData['folderId']]) === true && in_array($inputData['id'], $_SESSION['list_folders_limited'][$inputData['folderId']]) === true)
+        if (((in_array($dataItem['id_tree'], $session->get('user-accessible_folders'))) && ((int) $dataItem['perso'] === 0 || ((int) $dataItem['perso'] === 1 && $dataItem['id_user'] === $session->get('user-id'))) && $restrictionActive === false)
+            || (isset($SETTINGS['anyone_can_modify']) && (int) $SETTINGS['anyone_can_modify'] === 1 && (int) $dataItem['anyone_can_modify'] === 1 && (in_array($dataItem['id_tree'], $session->get('user-accessible_folders')) || (int) $session->get('user-admin') === 1) && $restrictionActive === false)
+            || (is_array($session__user_list_folders_limited[$inputData['folderId']]) === true && in_array($inputData['id'], $session__user_list_folders_limited[$inputData['folderId']]) === true)
         ) {
             // Query
             logItems(
                 $SETTINGS,
                 (int) $item_id,
                 $dataItem['label'],
-                $_SESSION['user_id'],
+                $session->get('user-id'),
                 'at_manual',
-                $_SESSION['login'],
+                $session->get('user-login'),
                 htmlspecialchars_decode($label, ENT_QUOTES),
                 null,
                 (string) dateToStamp($date.' '.$time, $SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'])
@@ -5885,7 +5840,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                 'SELECT * FROM ' . prefixTable('log_items') . ' WHERE id_item = %i ORDER BY date DESC',
                 $item_id
             );
-            $historic = date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $data['date']) . ' - ' . $_SESSION['login'] . ' - ' . $lang->get($data['action']) . ' - ' . $data['raison'];
+            $historic = date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $data['date']) . ' - ' . $session->get('user-login') . ' - ' . $lang->get($data['action']) . ' - ' . $data['raison'];
             // send back
             $data = array(
                 'error' => '',
@@ -5911,7 +5866,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
     */
     case 'free_item_for_edition':
         // Check KEY
-        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
+        if ($inputData['key'] !== $session->get('key')) {
             echo '[ { "error" : "key_not_conform" } ]';
             break;
         }
@@ -5949,7 +5904,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
     */
     case 'generate_OTV_url':
         // Check KEY
-        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
+        if ($inputData['key'] !== $session->get('key')) {
             echo '[ { "error" : "key_not_conform" } ]';
             break;
         }
@@ -5986,7 +5941,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
             FROM ' . prefixTable('items') . ' AS i
             INNER JOIN ' . prefixTable('sharekeys_items') . ' AS s ON (i.id = s.object_id)
             WHERE s.user_id = %i AND s.object_id = %i',
-            $_SESSION['user_id'],
+            $session->get('user-id'),
             $dataReceived['id']
         );
         if (DB::count() === 0 || empty($itemQ['pw']) === true) {
@@ -5997,7 +5952,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                 $itemQ['pw'],
                 decryptUserObjectKey(
                     $itemQ['share_key'],
-                    $_SESSION['user']['private_key']
+                    $session->get('user-private_key')
                 )
             ));
         }
@@ -6017,7 +5972,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                 'id' => null,
                 'item_id' => $dataReceived['id'],
                 'timestamp' => time(),
-                'originator' => intval($_SESSION['user_id']),
+                'originator' => intval($session->get('user-id')),
                 'code' => $otv_code,
                 'encrypted' => $passwd['string'],
                 'time_limit' => (int) $dataReceived['days'] * (int) TP_ONE_DAY_SECONDS + time(),
@@ -6054,7 +6009,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
     */
     case 'update_OTV_url':
         // Check KEY
-        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
+        if ($inputData['key'] !== $session->get('key')) {
             echo '[ { "error" : "key_not_conform" } ]';
             break;
         }
@@ -6113,7 +6068,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
     */
     case 'image_preview_preparation':
         // Check KEY
-        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
+        if ($inputData['key'] !== $session->get('key')) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -6132,7 +6087,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
             FROM ' . prefixTable('files') . ' AS f
             INNER JOIN ' . prefixTable('sharekeys_files') . ' AS s ON (f.id = s.object_id)
             WHERE s.user_id = %i AND s.object_id = %i',
-            $_SESSION['user_id'],
+            $session->get('user-id'),
             $inputData['id']
         );
 
@@ -6161,7 +6116,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
         $fileContent = decryptFile(
             $image_code,
             $SETTINGS['path_to_upload_folder'],
-            decryptUserObjectKey($file_info['share_key'], $_SESSION['user']['private_key'])
+            decryptUserObjectKey($file_info['share_key'], $session->get('user-private_key'))
         );
 
         // Encrypt data to return
@@ -6183,7 +6138,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
     /*
     case 'delete_file':
         // Check KEY
-        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
+        if ($inputData['key'] !== $session->get('key')) {
             echo '[ { "error" : "key_not_conform" } ]';
             break;
         }
@@ -6205,7 +6160,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
     */
     case 'check_for_title_duplicate':
         // Check KEY
-        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
+        if ($inputData['key'] !== $session->get('key')) {
             echo '[ { "error" : "key_not_conform" } ]';
             break;
         }
@@ -6222,7 +6177,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
 
         // don't check if Personal Folder
         $data = DB::queryFirstRow('SELECT title FROM ' . prefixTable('nested_tree') . ' WHERE id = %i', $idFolder);
-        if ($data['title'] === $_SESSION['user_id']) {
+        if ($data['title'] === $session->get('user-id')) {
             // send data
             echo '[{"duplicate" : "' . $duplicate . '" , error" : ""}]';
         } else {
@@ -6284,7 +6239,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
     */
     case 'refresh_visible_folders':
         // Check KEY
-        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
+        if ($inputData['key'] !== $session->get('key')) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -6295,7 +6250,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
             break;
         }
         $arr_data = [];
-        $arr_folders = [];
+        $arrayFolders = [];
 
         // decrypt and retreive data in JSON format
         $dataReceived = prepareExchangedData(
@@ -6304,9 +6259,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
         );
 
         // Will we show the root folder?
-        if (
-            isset($_SESSION['can_create_root_folder']) === true
-            && (int) $_SESSION['can_create_root_folder'] === 1
+        if ($session->has('user-can_create_root_folder') && (int) $session->get('user-can_create_root_folder') && $session->has('user-can_create_root_folder') && (int) $session->get('user-can_create_root_folder') && null !== $session->get('user-can_create_root_folder') && (int) $session->get('user-can_create_root_folder') === 1
         ) {
             $arr_data['can_create_root_folder'] = 1;
         } else {
@@ -6317,7 +6270,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
         if (isset($dataReceived['force_refresh_cache']) === true && $dataReceived['force_refresh_cache'] === false) {
             $goCachedFolders = loadFoldersListByCache('visible_folders', 'folders');
             if ($goCachedFolders['state'] === true) {
-                $arr_data['folders'] = json_decode($goCachedFolders['data'], true);//print_r($arr_data);
+                $arr_data['folders'] = json_decode($goCachedFolders['data'], true);
                 // send data
                 echo (string) prepareExchangedData(
                     [
@@ -6329,39 +6282,36 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                 break;
             }
         }
-
         // Build list of visible folders
         if (
-            (int) $_SESSION['user_admin'] === 1
+            (int) $session->get('user-admin') === 1
         ) {
-            $_SESSION['groupes_visibles'] = $_SESSION['personal_visible_groups'];
+            $session->set('user-accessible_folders', $session->get('user-personal_visible_folders'));
         }
 
-        if (isset($_SESSION['list_folders_limited']) && count($_SESSION['list_folders_limited']) > 0) {
-            $listFoldersLimitedKeys = is_array($_SESSION['list_folders_limited']) === true ? array_keys($_SESSION['list_folders_limited']) : [];
+        if (null !== $session->get('user-list_folders_limited') && count($session->get('user-list_folders_limited')) > 0) {
+            $listFoldersLimitedKeys = array_keys($session->get('user-list_folders_limited'));
         } else {
             $listFoldersLimitedKeys = array();
         }
         // list of items accessible but not in an allowed folder
         if (
-            isset($_SESSION['list_restricted_folders_for_items'])
-            && count($_SESSION['list_restricted_folders_for_items']) > 0
+            null !== $session->get('system-list_restricted_folders_for_items') &&
+            count($session->get('system-list_restricted_folders_for_items')) > 0
         ) {
-            $listRestrictedFoldersForItemsKeys = is_array($_SESSION['list_restricted_folders_for_items']) === true ? array_keys($_SESSION['list_restricted_folders_for_items']) : [];
+            $listRestrictedFoldersForItemsKeys = array_keys($session->get('system-list_restricted_folders_for_items'));
         } else {
             $listRestrictedFoldersForItemsKeys = array();
         }
-
+        
         //Build tree
         $tree->rebuild();
         $folders = $tree->getDescendants();
-        $inc = 0;
-
         foreach ($folders as $folder) {
             // Be sure that user can only see folders he/she is allowed to
             if (
-                in_array($folder->id, $_SESSION['forbiden_pfs']) === false
-                || in_array($folder->id, $_SESSION['groupes_visibles']) === true
+                in_array($folder->id, $session->get('user-forbiden_personal_folders')) === false
+                || in_array($folder->id, $session->get('user-accessible_folders')) === true
                 || in_array($folder->id, $listFoldersLimitedKeys) === true
                 || in_array($folder->id, $listRestrictedFoldersForItemsKeys) === true
             ) {
@@ -6373,7 +6323,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                 foreach ($nodeDescendants as $node) {
                     // manage tree counters
                     if (
-                        in_array($node, array_merge($_SESSION['groupes_visibles'], $_SESSION['list_restricted_folders_for_items'])) === true
+                        in_array($node, array_merge($session->get('user-accessible_folders'), $session->get('system-list_restricted_folders_for_items'))) === true
                         || (is_array($listFoldersLimitedKeys) === true && in_array($node, $listFoldersLimitedKeys) === true)
                         || (is_array($listRestrictedFoldersForItemsKeys) === true && in_array($node, $listRestrictedFoldersForItemsKeys) === true)
                     ) {
@@ -6384,69 +6334,46 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
 
                 if ($displayThisNode === true) {
                     // ALL FOLDERS
-                    // Is this folder disabled?
-                    $disabled = 0;
-                    if (
-                        in_array($folder->id, $_SESSION['groupes_visibles']) === false
-                        || in_array($folder->id, $_SESSION['read_only_folders']) === true
-                        //|| ((int) $_SESSION['user_read_only'] === 1 && in_array($folder->id, $_SESSION['personal_visible_groups']) === false)
-                    ) {
-                        $disabled = 1;
-                    }
-
                     // Build path
                     $arbo = $tree->getPath($folder->id, false);
-                    $arr_data['folders'][$inc]['path'] = '';
+                    $path = '';
                     foreach ($arbo as $elem) {
-                        if (empty($arr_data['folders'][$inc]['path']) === true) {
-                            $arr_data['folders'][$inc]['path'] = htmlspecialchars(stripslashes(htmlspecialchars_decode($elem->title, ENT_QUOTES)), ENT_QUOTES);
-                        } else {
-                            $arr_data['folders'][$inc]['path'] .= ' / ' . htmlspecialchars(stripslashes(htmlspecialchars_decode($elem->title, ENT_QUOTES)), ENT_QUOTES);
-                        }
+                        $path = (empty($path) ? '' : $path . ' / ') . htmlspecialchars(stripslashes(htmlspecialchars_decode($elem->title, ENT_QUOTES)), ENT_QUOTES);
                     }
 
                     // Build array
-                    $arr_data['folders'][$inc]['id'] = (int) $folder->id;
-                    $arr_data['folders'][$inc]['level'] = (int) $folder->nlevel;
-                    $arr_data['folders'][$inc]['title'] = ((int) $folder->title === (int) $_SESSION['user_id'] && (int) $folder->nlevel === 1) ? htmlspecialchars_decode($_SESSION['login']) : htmlspecialchars_decode($folder->title, ENT_QUOTES);
-                    $arr_data['folders'][$inc]['disabled'] = $disabled;
-                    $arr_data['folders'][$inc]['parent_id'] = (int) $folder->parent_id;
-                    $arr_data['folders'][$inc]['perso'] = (int) $folder->personal_folder;
-                    //array_push($arr_folders, (int) $folder->id);
-
-                    // Is this folder an active folders? (where user can do something)
-                    $is_visible_active = 0;
-                    if (
-                        isset($_SESSION['read_only_folders']) === true
-                        && in_array($folder->id, $_SESSION['read_only_folders']) === true
-                    ) {
-                        $is_visible_active = 1;
-                    }
-                    $arr_data['folders'][$inc]['is_visible_active'] = $is_visible_active;
-
-                    ++$inc;
+                    array_push($arrayFolders, [
+                        'id' => (int) $folder->id,
+                        'level' => (int) $folder->nlevel,
+                        'title' => ((int) $folder->title === (int) $session->get('user-id') && (int) $folder->nlevel === 1) ? htmlspecialchars_decode($session->get('user-login')) : htmlspecialchars_decode($folder->title, ENT_QUOTES),
+                        'disabled' => (
+                            in_array($folder->id, $session->get('user-accessible_folders')) === false
+                            || in_array($folder->id, $session->get('user-read_only_folders')) === true
+                            //|| ((int) $session->get('user-read_only') === 1 && in_array($folder->id, $session->get('user-personal_visible_folders')) === false)
+                        ) ? 1 : 0,
+                        'parent_id' => (int) $folder->parent_id,
+                        'perso' => (int) $folder->personal_folder,
+                        'path' => $path,
+                        'is_visible_active' => (null !== $session->get('user-read_only_folders') && in_array($folder->id, $session->get('user-read_only_folders'))) ? 1 : 0,
+                    ]);
                 }
             }
         }
-        /*
-        if (isset($arr_data['folders']) === true) {
-            // save to cache_tree
+        if (empty($arrayFolders) === false) {
+            // store array to return
+            $arr_data['folders'] = $arrayFolders;
+
+            // update session
+            $session->set('user-folders_list', $arr_data['folders']);
+
+            // update cache
             cacheTreeUserHandler(
-                (int) $_SESSION['user_id'],
+                (int) $session->get('user-id'),
                 json_encode($arr_data['folders']),
                 $SETTINGS,
                 'visible_folders',
             );
-
-            // save to cache_tree
-            cacheTreeUserHandler(
-                (int) $_SESSION['user_id'],
-                json_encode($arr_folders),
-                $SETTINGS,
-                'folders',
-            );
         }
-        */
 
         // send data
         echo (string) prepareExchangedData(
@@ -6465,7 +6392,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
     */
     case 'refresh_folders_other_info':
         // Check KEY
-        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
+        if ($inputData['key'] !== $session->get('key')) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -6512,7 +6439,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
     */
     case 'load_item_history':
         // Check KEY
-        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
+        if ($inputData['key'] !== $session->get('key')) {
             echo (string) prepareExchangedData(
                 array('error' => 'ERR_KEY_NOT_CORRECT'),
                 'encode'
@@ -6661,7 +6588,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
 
     case 'suggest_item_change':
         // Check KEY
-        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
+        if ($inputData['key'] !== $session->get('key')) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => 'key_not_conform',
@@ -6707,7 +6634,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                 'description' => '',
                 'comment' => $comment,
                 'folder_id' => $folder,
-                'user_id' => (int) $_SESSION['user_id'],
+                'user_id' => (int) $session->get('user-id'),
                 'timestamp' => time(),
             )
         );
@@ -6726,7 +6653,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
         // get some info to add to the notification email
         $resp_user = DB::queryfirstrow(
             'SELECT login FROM ' . prefixTable('users') . ' WHERE id = %i',
-            $_SESSION['user_id']
+            $session->get('user-id')
         );
         $resp_folder = DB::queryfirstrow(
             'SELECT title FROM ' . prefixTable('nested_tree') . ' WHERE id = %i',
@@ -6759,7 +6686,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
 
     case 'build_list_of_users':
         // Check KEY
-        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
+        if ($inputData['key'] !== $session->get('key')) {
             echo '[ { "error" : "key_not_conform" } ]';
             break;
         }
@@ -6791,7 +6718,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
 
     case 'send_request_access':
         // Check KEY
-        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
+        if ($inputData['key'] !== $session->get('key')) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => 'key_not_conform',
@@ -6818,58 +6745,15 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
             WHERE id = %i',
             $inputData['itemId']
         );
-        /*
-        $dataItemLog = DB::queryfirstrow(
-            'SELECT id_user
-            FROM ' . prefixTable('log_items') . '
-            WHERE id_item = %i AND action = %s',
-            $inputData['itemId'],
-            'at_creation'
-        );
-        $dataAuthor = DB::queryfirstrow(
-            'SELECT email, login
-            FROM ' . prefixTable('users') . '
-            WHERE id = %i',
-            $dataItemLog['id_user']
-        );
-
-        // Get path
-        $path = geItemReadablePath(
-            $dataItem['id_tree'],
-            $dataItem['label'],
-            $SETTINGS
-        );
-        */
-
-        /*$ret = sendEmail(
-            $lang->get('email_request_access_subject'),
-            str_replace(
-                array(
-                    '#tp_item_author#',
-                    '#tp_user#',
-                    '#tp_item#',
-                    '#tp_reason#',
-                ),
-                array(
-                    ' '.addslashes($dataAuthor['login']),
-                    addslashes($_SESSION['login']),
-                    $path,
-                    nl2br(addslashes($post_email_body)),
-                ),
-                $lang->get('email_request_access_mail')
-            ),
-            $dataAuthor['email'],
-            $SETTINGS
-        );*/
 
         // Do log
         logItems(
             $SETTINGS,
             (int) $inputData['itemId'],
             $dataItem['label'],
-            $_SESSION['user_id'],
+            $session->get('user-id'),
             'at_access',
-            $_SESSION['login']
+            $session->get('user-login')
         );
 
         // Return
@@ -6889,7 +6773,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
     */
     case 'save_notification_status':
         // Check KEY
-        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
+        if ($inputData['key'] !== $session->get('key')) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => 'key_not_conform',
@@ -6914,7 +6798,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
             FROM ' . prefixTable('notification') . '
             WHERE item_id = %i AND user_id = %i',
             $inputData['itemId'],
-            $_SESSION['user_id']
+            $session->get('user-id')
         );
         if (DB::count() > 0) {
             // Notification is set for this user on this item
@@ -6924,7 +6808,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                     prefixTable('notification'),
                     'item_id = %i AND user_id = %i',
                     $inputData['itemId'],
-                    $_SESSION['user_id']
+                    $session->get('user-id')
                 );
             }
         } else {
@@ -6935,7 +6819,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                     prefixTable('notification'),
                     array(
                         'item_id' => $inputData['itemId'],
-                        'user_id' => (int) $_SESSION['user_id'],
+                        'user_id' => (int) $session->get('user-id'),
                     )
                 );
             }
@@ -6960,7 +6844,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
     */
     case 'delete_uploaded_files_but_not_saved':
         // Check KEY
-        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
+        if ($inputData['key'] !== $session->get('key')) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => 'key_not_conform',
@@ -7005,7 +6889,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
                 FROM ' . prefixTable('log_items') . '
                 WHERE id_item = %i AND id_user = %i AND action = %s AND raison LIKE "at_add_file :%"',
                 $inputData['itemId'],
-                $_SESSION['user_id'],
+                $session->get('user-id'),
                 'at_modification'
             );
             foreach ($logFile as $log) {
@@ -7039,7 +6923,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
     */
     case 'confirm_attachments':
         // Check KEY
-        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
+        if ($inputData['key'] !== $session->get('key')) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => 'key_not_conform',
@@ -7096,7 +6980,7 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
     */
     case 'check_current_access_rights':
         // Check KEY
-        if ($inputData['key'] !== $superGlobal->get('key', 'SESSION')) {
+        if ($inputData['key'] !== $session->get('key')) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => 'key_not_conform',
@@ -7126,13 +7010,31 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
         $arr = json_decode($data['visible_folders'], true);
         $ids = is_null($arr) === true ? [] : array_column($arr, 'id');
 
+        // Is folder in Read Only list for this user?
+        if (in_array($inputData['treeId'], $session->get('user-read_only_folders')) === true) {
+            $data = array(
+                'error' => false,
+                'access' => true,
+                'edit' => false,
+                'delete' => false,
+            );
+
+            // send data
+            echo (string) prepareExchangedData(
+                $data,
+                'encode'
+            );
+            break;
+        }
+
+
         // Check rights of this role on this folder
         // Is there no edit or no delete defined
         $data = DB::queryFirstColumn(
             'SELECT type
             FROM ' . prefixTable('roles_values') . '
             WHERE role_id IN %ls AND folder_id = %i',
-            array_column($superGlobal->get('arr_roles', 'SESSION'), 'id'),
+            array_column($session->get('system-array_roles'), 'id'),
             $inputData['treeId'],
         );
         $edit = $delete = true;        
@@ -7142,6 +7044,9 @@ $SETTINGS['cpassman_dir'],$returnValues, 'encode');
             } elseif ($access === 'NE') {
                 $edit = false;
             } elseif ($access === 'NDNE') {
+                $edit = false;
+                $delete = false;
+            } elseif ($access === 'R') {
                 $edit = false;
                 $delete = false;
             }

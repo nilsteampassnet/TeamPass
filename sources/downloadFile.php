@@ -26,7 +26,8 @@ declare(strict_types=1);
 
 use voku\helper\AntiXSS;
 use TeampassClasses\NestedTree\NestedTree;
-use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
+use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
@@ -36,10 +37,11 @@ require_once 'main.functions.php';
 
 // init
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
+
+    $request = Request::createFromGlobals();
+$session = SessionManager::getSession();
+$request = Request::createFromGlobals();
 $lang = new Language(); 
-session_name('teampass_session');
-session_start();
 
 // Load config if $SETTINGS not defined
 try {
@@ -53,16 +55,15 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+            'type' => $request->request->get('type', '') !== '' ? htmlspecialchars($request->request->get('type')) : '',
         ],
         [
             'type' => 'trim|escape',
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
-        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
     ]
 );
 // Handle the case
@@ -72,7 +73,7 @@ if (
     $checkUserAccess->checkSession() === false
 ) {
     // Not allowed page
-    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+    $session->set('system-error_code', ERR_NOT_ALLOWED);
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -88,19 +89,17 @@ set_time_limit(0);
 
 // --------------------------------- //
 
-$superGlobal = new SuperGlobal();
-$lang = new Language(); 
 // Prepare GET variables
-$get_filename = $superGlobal->get('name', 'GET');
-$get_fileid = $superGlobal->get('fileid', 'GET');
-$get_pathIsFiles = $superGlobal->get('pathIsFiles', 'GET');
+$get_filename = $request->query->get('name');
+$get_fileid = $request->query->get('fileid');
+$get_pathIsFiles = $request->query->get('pathIsFiles');
 
 // prepare Encryption class calls
 header('Content-disposition: attachment; filename=' . rawurldecode(basename($get_filename)));
 header('Content-Type: application/octet-stream');
 header('Cache-Control: must-revalidate, no-cache, no-store');
 header('Expires: 0');
-if (isset($_GET['pathIsFiles']) && (int) $get_pathIsFiles === 1) {
+if (null !== $request->query->get('pathIsFiles') && (int) $get_pathIsFiles === 1) {
     readfile($SETTINGS['path_to_files_folder'] . '/' . basename($get_filename));
 } else {
     // get file key
@@ -110,14 +109,14 @@ if (isset($_GET['pathIsFiles']) && (int) $get_pathIsFiles === 1) {
         FROM ' . prefixTable('files') . ' AS f
         INNER JOIN ' . prefixTable('sharekeys_files') . ' AS s ON (f.id = s.object_id)
         WHERE s.user_id = %i AND s.object_id = %i',
-        $_SESSION['user_id'],
+        $session->get('user-id'),
         $get_fileid
     );
     // Decrypt the file
     $fileContent = decryptFile(
         $file_info['file'],
         $SETTINGS['path_to_upload_folder'],
-        decryptUserObjectKey($file_info['share_key'], $_SESSION['user']['private_key'])
+        decryptUserObjectKey($file_info['share_key'], $session->get('user-private_key'))
     );
     // Set the filename of the download
     $filename = base64_decode(basename($file_info['name'], '.'.$file_info['extension']));

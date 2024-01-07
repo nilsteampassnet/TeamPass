@@ -20,7 +20,8 @@ declare(strict_types=1);
  */
 
 use TeampassClasses\NestedTree\NestedTree;
-use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
+use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
@@ -28,13 +29,14 @@ use TeampassClasses\PerformChecks\PerformChecks;
 
 // Load functions
 require_once 'main.functions.php';
+$session = SessionManager::getSession();
+
 
 // init
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
+$session = SessionManager::getSession();
+$request = Request::createFromGlobals();
 $lang = new Language(); 
-session_name('teampass_session');
-session_start();
 
 // Load config if $SETTINGS not defined
 try {
@@ -48,16 +50,15 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+            'type' => $request->request->get('type', '') !== '' ? htmlspecialchars($request->request->get('type')) : '',
         ],
         [
             'type' => 'trim|escape',
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
-        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
     ]
 );
 // Handle the case
@@ -67,7 +68,7 @@ if (
     $checkUserAccess->checkSession() === false
 ) {
     // Not allowed page
-    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+    $session->set('system-error_code', ERR_NOT_ALLOWED);
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -100,7 +101,7 @@ if (null !== $post_type) {
             //CASE adding a new function
         case 'onthefly_backup':
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -109,7 +110,7 @@ if (null !== $post_type) {
                     'encode'
                 );
                 break;
-            } elseif ($_SESSION['is_admin'] === false) {
+            } elseif ($session->get('user-admin') === 0) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -215,15 +216,15 @@ if (null !== $post_type) {
                 }
 
                 //generate 2d key
-                $_SESSION['key_tmp'] = GenerateCryptKey(20, false, true, true, false, true, $SETTINGS);
+                $session->set('user-key_tmp', GenerateCryptKey(16, false, true, true, false, true, $SETTINGS));
 
                 //update LOG
                 logEvents(
                     $SETTINGS,
                     'admin_action',
                     'dataBase backup',
-                    (string) $_SESSION['user_id'],
-                    $_SESSION['login']
+                    (string) $session->get('user-id'),
+                    $session->get('user-login')
                 );
 
                 echo prepareExchangedData(
@@ -231,8 +232,8 @@ if (null !== $post_type) {
                         'error' => false,
                         'message' => '',
                         'download' => 'sources/downloadFile.php?name=' . urlencode($filename) .
-                            '&sub=files&file=' . $filename . '&type=sql&key=' . $superGlobal->get('key', 'SESSION') . '&key_tmp=' .
-                            $_SESSION['key_tmp'] . '&pathIsFiles=1',
+                            '&sub=files&file=' . $filename . '&type=sql&key=' . $session->get('key') . '&key_tmp=' .
+                            $session->get('user-key_tmp') . '&pathIsFiles=1',
                     ),
                     'encode'
                 );
@@ -251,7 +252,7 @@ if (null !== $post_type) {
 
         case 'onthefly_restore':
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -260,7 +261,7 @@ if (null !== $post_type) {
                     'encode'
                 );
                 break;
-            } elseif ($_SESSION['is_admin'] === false) {
+            } elseif ($session->get('user-admin') === 0) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,

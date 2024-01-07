@@ -26,20 +26,21 @@ declare(strict_types=1);
 
 use voku\helper\AntiXSS;
 use TeampassClasses\NestedTree\NestedTree;
-use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
+use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
 
 // Load functions
 require_once 'main.functions.php';
+$session = SessionManager::getSession();
+
 
 // init
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
+$request = Request::createFromGlobals();
 $lang = new Language(); 
-session_name('teampass_session');
-session_start();
 
 // Load config if $SETTINGS not defined
 try {
@@ -53,16 +54,15 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+            'type' => $request->request->get('type', '') !== '' ? htmlspecialchars($request->request->get('type')) : '',
         ],
         [
             'type' => 'trim|escape',
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
-        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
     ]
 );
 // Handle the case
@@ -72,7 +72,7 @@ if (
     $checkUserAccess->checkSession() === false
 ) {
     // Not allowed page
-    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+    $session->set('system-error_code', ERR_NOT_ALLOWED);
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -96,28 +96,39 @@ $aSortTypes = ['asc', 'desc'];
 $sWhere = ' WHERE a.del_type = 2';
 $sOrder = $sLimit = '';
 // Is a date sent?
-if (isset($_GET['dateCriteria']) === true && empty($_GET['dateCriteria']) === false) {
-    $sWhere .= ' AND a.del_value < ' . round(filter_var($_GET['dateCriteria'], FILTER_SANITIZE_NUMBER_INT) / 1000, 0);
+$dateCriteria = $request->query->get('dateCriteria');
+if ($dateCriteria !== null && !empty($dateCriteria)) {
+    $sWhere .= ' AND a.del_value < ' . round(filter_var($dateCriteria, FILTER_SANITIZE_NUMBER_INT) / 1000, 0);
 }
 //echo $sWhere;
 /* BUILD QUERY */
 //Paging
 $sLimit = '';
-if (isset($_GET['length']) === true && (int) $_GET['length'] !== -1) {
-    $sLimit = ' LIMIT ' . filter_var($_GET['start'], FILTER_SANITIZE_NUMBER_INT) . ', ' . filter_var($_GET['length'], FILTER_SANITIZE_NUMBER_INT) . '';
+$start = $request->query->getInt('start', 0);
+$length = $request->query->getInt('length', -1);
+if ($length !== -1) {
+    $sLimit = ' LIMIT ' . $start . ', ' . $length;
 }
 
 //Ordering
-if (isset($_GET['order'][0]['dir']) && in_array($_GET['order'][0]['dir'], $aSortTypes)) {
-    $sOrder = 'ORDER BY  ';
-    if (preg_match('#^(asc|desc)$#i', $_GET['order'][0]['column'])) {
-        $sOrder .= '' . $aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)] . ' '
-            . filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_FULL_SPECIAL_CHARS) . ', ';
-    }
+if ($request->query->has('order')) {
+    $order = $request->query->get('order');
 
-    $sOrder = substr_replace($sOrder, '', -2);
-    if ($sOrder === 'ORDER BY') {
-        $sOrder = '';
+    // Vérifiez si la direction 'dir' est définie et est valide
+    if (isset($order[0]['dir']) && in_array($order[0]['dir'], $aSortTypes)) {
+        $sOrder = 'ORDER BY ';
+        $columnIndex = filter_var($order[0]['column'], FILTER_SANITIZE_NUMBER_INT);
+
+        if (array_key_exists($columnIndex, $aColumns)) {
+            $sOrder .= $aColumns[$columnIndex] . ' ' . $order[0]['dir'];
+        }
+
+        // Supprimez la virgule finale si elle existe
+        $sOrder = rtrim($sOrder, ', ');
+
+        if ($sOrder === 'ORDER BY') {
+            $sOrder = '';
+        }
     }
 }
 
@@ -127,20 +138,32 @@ if (isset($_GET['order'][0]['dir']) && in_array($_GET['order'][0]['dir'], $aSort
    * word by word on any field. It's possible to do here, but concerned about efficiency
    * on very large tables, and MySQL's regex functionality is very limited
 */
-if (
-    isset($_GET['letter']) === true
-    && $_GET['letter'] !== ''
-    && $_GET['letter'] !== 'None'
-) {
-    $sWhere .= ' AND ';
-    $sWhere .= $aColumns[1] . " LIKE '" . filter_var($_GET['letter'], FILTER_SANITIZE_FULL_SPECIAL_CHARS) . "%' OR ";
-    $sWhere .= $aColumns[2] . " LIKE '" . filter_var($_GET['letter'], FILTER_SANITIZE_FULL_SPECIAL_CHARS) . "%' OR ";
-    $sWhere .= $aColumns[3] . " LIKE '" . filter_var($_GET['letter'], FILTER_SANITIZE_FULL_SPECIAL_CHARS) . "%' ";
-} elseif (isset($_GET['search']['value']) === true && $_GET['search']['value'] !== '') {
-    $sWhere = ' AND ';
-    $sWhere .= $aColumns[1] . " LIKE '" . filter_var($_GET['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS) . "%' OR ";
-    $sWhere .= $aColumns[2] . " LIKE '" . filter_var($_GET['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS) . "%' OR ";
-    $sWhere .= $aColumns[3] . " LIKE '" . filter_var($_GET['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS) . "%' ";
+// Vérifiez si 'letter' existe dans la requête GET
+if ($request->query->has('letter')) {
+    $letter = $request->query->get('letter');
+    $letter = filter_var($letter, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+
+    if ($letter !== '' && $letter !== 'None') {
+        $sWhere .= ' AND ';
+        $sWhere .= $aColumns[1] . " LIKE '" . $letter . "%' OR ";
+        $sWhere .= $aColumns[2] . " LIKE '" . $letter . "%' OR ";
+        $sWhere .= $aColumns[3] . " LIKE '" . $letter . "%' ";
+    }
+}
+
+// Si 'letter' n'est pas défini ou est vide, vérifiez 'search[value]'
+if (!isset($letter) || $letter === '') {
+    if ($request->query->has('search[value]')) {
+        $searchValue = $request->query->get('search[value]');
+        $searchValue = filter_var($searchValue, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+
+        if ($searchValue !== '') {
+            $sWhere = ' AND ';
+            $sWhere .= $aColumns[1] . " LIKE '" . $searchValue . "%' OR ";
+            $sWhere .= $aColumns[2] . " LIKE '" . $searchValue . "%' OR ";
+            $sWhere .= $aColumns[3] . " LIKE '" . $searchValue . "%' ";
+        }
+    }
 }
 
 $rows = DB::query(

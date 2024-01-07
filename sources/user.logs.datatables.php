@@ -24,7 +24,8 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
+use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
@@ -35,10 +36,9 @@ require_once 'main.functions.php';
 
 // init
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
+$session = SessionManager::getSession();
+$request = Request::createFromGlobals();
 $lang = new Language(); 
-session_name('teampass_session');
-session_start();
 
 // Load config if $SETTINGS not defined
 try {
@@ -52,16 +52,15 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+            'type' => $request->request->get('type', '') !== '' ? htmlspecialchars($request->request->get('type')) : '',
         ],
         [
             'type' => 'trim|escape',
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
-        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
     ]
 );
 // Handle the case
@@ -71,7 +70,7 @@ if (
     $checkUserAccess->checkSession() === false
 ) {
     // Not allowed page
-    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+    $session->set('system-error_code', ERR_NOT_ALLOWED);
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -87,6 +86,8 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 // Load tree
 $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
+$params = $request->query->all();
+
 //Columns name
 $aColumns = ['date', 'label', 'action'];
 $aSortTypes = ['asc', 'desc'];
@@ -95,17 +96,16 @@ $sWhere = $sOrder = $sLimit = '';
 /* BUILD QUERY */
 //Paging
 $sLimit = '';
-if (isset($_GET['length']) === true && (int) $_GET['length'] !== -1) {
-    $sLimit = ' LIMIT '.filter_var($_GET['start'], FILTER_SANITIZE_NUMBER_INT).', '.filter_var($_GET['length'], FILTER_SANITIZE_NUMBER_INT).'';
+if (isset($params['length']) && (int) $params['length'] !== -1) {
+    $sLimit = ' LIMIT '.filter_var($params['start'], FILTER_SANITIZE_NUMBER_INT).', '.filter_var($params['length'], FILTER_SANITIZE_NUMBER_INT);
 }
 
 //Ordering
-if (isset($_GET['order'][0]['dir']) && in_array($_GET['order'][0]['dir'], $aSortTypes)) {
+if (isset($params['order'][0]['dir']) && in_array($params['order'][0]['dir'], $aSortTypes)) {
     $sOrder = ' ORDER BY ';
-    if (preg_match('#^(asc|desc)$#i', $_GET['order'][0]['dir'])
-    ) {
-        $sOrder .= ''.$aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '
-        .filter_var($_GET['order'][0]['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS).', ';
+    if (preg_match('#^(asc|desc)$#i', $params['order'][0]['dir'])) {
+        $sOrder .= ''.$aColumns[filter_var($params['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '
+        .filter_var($params['order'][0]['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS).', ';
     }
 
     $sOrder = substr_replace($sOrder, '', -2);
@@ -118,50 +118,50 @@ if (isset($_GET['order'][0]['dir']) && in_array($_GET['order'][0]['dir'], $aSort
 
 /*
    * Filtering
-   * NOTE this does not match the built-in DataTables filtering which does it
-   * word by word on any field. It's possible to do here, but concerned about efficiency
-   * on very large tables, and MySQL's regex functionality is very limited
 */
 $sWhere = '';
-if (isset($_GET['letter']) === true
-    && $_GET['letter'] !== ''
-    && $_GET['letter'] !== 'None'
-) {
+if (isset($params['letter']) && $params['letter'] !== '' && $params['letter'] !== 'None') {
     $sWhere = ' AND ';
-    $sWhere .= $aColumns[1]." LIKE '".filter_var($_GET['letter'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' OR ";
-    $sWhere .= ' EXISTS ('.$aColumns[2]." LIKE '".filter_var($_GET['letter'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%')";
-} elseif (isset($_GET['search']['value']) === true && $_GET['search']['value'] !== '') {
+    $sWhere .= $aColumns[1]." LIKE '".filter_var($params['letter'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' OR ";
+    $sWhere .= ' EXISTS ('.$aColumns[2]." LIKE '".filter_var($params['letter'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%')";
+} elseif (isset($params['search']['value']) && $params['search']['value'] !== '') {
     $sWhere = ' AND ';
-    $sWhere .= $aColumns[1]." LIKE '".filter_var($_GET['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' OR ";
-    $sWhere .= ' EXISTS ('.$aColumns[2]." LIKE '".filter_var($_GET['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%')";
+    $sWhere .= $aColumns[1]." LIKE '".filter_var($params['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%' OR ";
+    $sWhere .= ' EXISTS ('.$aColumns[2]." LIKE '".filter_var($params['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)."%')";
 }
 
+$userId = filter_var($params['userId'], FILTER_SANITIZE_NUMBER_INT);
+
+// Première requête pour obtenir le total
 $rows = DB::query(
     'SELECT l.date as date, i.label as label, l.action as action
     FROM '.prefixTable('log_items').' as l
     INNER JOIN '.prefixTable('items').' as i ON (l.id_item=i.id)
     INNER JOIN '.prefixTable('users').' as u ON (l.id_user=u.id)
-    WHERE u.id = '.filter_var($_GET['userId'], FILTER_SANITIZE_NUMBER_INT).
+    WHERE u.id = '.$userId.
     ' UNION '.
     'SELECT s.date AS date, s.label AS label, s.field_1 AS field1
     FROM '.prefixTable('log_system').' AS s
-    WHERE s.qui = '.filter_var($_GET['userId'], FILTER_SANITIZE_NUMBER_INT).
-    (string) $sWhere
+    WHERE s.qui = '.$userId.
+    $sWhere
 );
 $iTotal = DB::count();
+
+// Deuxième requête avec ORDER et LIMIT
 $rows = DB::query(
     'SELECT l.date as date, i.label as label, l.action as action, i.id as id
     FROM '.prefixTable('log_items').' as l
     INNER JOIN '.prefixTable('items').' as i ON (l.id_item=i.id)
     INNER JOIN '.prefixTable('users').' as u ON (l.id_user=u.id)
-    WHERE u.id = '.filter_var($_GET['userId'], FILTER_SANITIZE_NUMBER_INT).
+    WHERE u.id = '.$userId.
     ' UNION
     SELECT s.date AS date, s.label AS label, s.field_1 AS field1, s.id as id
     FROM '.prefixTable('log_system').' AS s
-    WHERE s.qui = '.filter_var($_GET['userId'], FILTER_SANITIZE_NUMBER_INT).
-    (string) $sOrder.
-    (string) $sLimit
+    WHERE s.qui = '.$userId.
+    $sOrder.
+    $sLimit
 );
+$iFilteredTotal = DB::count();
 $iFilteredTotal = DB::count();
 $sOutput = '{';
 $sOutput .= '"aaData": ';
@@ -173,7 +173,7 @@ if (DB::count() > 0) {
 
 foreach ($rows as $record) {
     if (empty($record['action']) === true
-        || $record['action'] === filter_var($_GET['userId'], FILTER_SANITIZE_NUMBER_INT)
+        || $record['action'] === $userId
     ) {
         if (strpos($record['label'], 'at_') === 0) {
             if (strpos($record['label'], '#') >= 0) {
@@ -206,6 +206,6 @@ if (count($rows) > 0) {
 }
 
 echo $sOutput.', '.
-    '"sEcho": '.intval($_GET['draw']).', '.
+    '"sEcho": '.(int) $request->query->get('draw').', '.
     '"iTotalRecords": '.$iFilteredTotal.', '.
     '"iTotalDisplayRecords": '.$iTotal.'}';

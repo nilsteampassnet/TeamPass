@@ -4,7 +4,7 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInitf8d0a111ac97059c58e49ca16fe551d0
+class ComposerStaticInit917ba785e18cef2723bd769999d8fa5e
 {
     public static $files = array (
         '0e6d7bf4a5811bfa5cf40c5ccd6fae6a' => __DIR__ . '/..' . '/symfony/polyfill-mbstring/bootstrap.php',
@@ -15,8 +15,8 @@ class ComposerStaticInitf8d0a111ac97059c58e49ca16fe551d0
         'a1105708a18b76903365ca1c4aa61b02' => __DIR__ . '/..' . '/symfony/translation/Resources/functions.php',
         'f598d06aa772fa33d905e87be6398fb1' => __DIR__ . '/..' . '/symfony/polyfill-intl-idn/bootstrap.php',
         '72579e7bd17821bb1321b87411366eae' => __DIR__ . '/..' . '/illuminate/support/helpers.php',
-        '662a729f963d39afe703c9d9b7ab4a8c' => __DIR__ . '/..' . '/symfony/polyfill-php83/bootstrap.php',
         '06a34129a50df3d9257ee706cf3c875b' => __DIR__ . '/..' . '/illuminate/filesystem/functions.php',
+        '662a729f963d39afe703c9d9b7ab4a8c' => __DIR__ . '/..' . '/symfony/polyfill-php83/bootstrap.php',
         'def43f6c87e4f8dfd0c9e1b1bab14fe8' => __DIR__ . '/..' . '/symfony/polyfill-iconv/bootstrap.php',
         '8825ede83f2f289127722d4e842cf7e8' => __DIR__ . '/..' . '/symfony/polyfill-intl-grapheme/bootstrap.php',
         '667aeda72477189d0494fecd327c3641' => __DIR__ . '/..' . '/symfony/var-dumper/Resources/functions/dump.php',
@@ -43,6 +43,7 @@ class ComposerStaticInitf8d0a111ac97059c58e49ca16fe551d0
             'Tightenco\\Collect\\' => 18,
             'TiBeN\\' => 6,
             'TeampassClasses\\SuperGlobal\\' => 28,
+            'TeampassClasses\\SessionManager\\' => 31,
             'TeampassClasses\\PerformChecks\\' => 30,
             'TeampassClasses\\NestedTree\\' => 27,
             'TeampassClasses\\LdapExtra\\' => 26,
@@ -63,6 +64,7 @@ class ComposerStaticInitf8d0a111ac97059c58e49ca16fe551d0
             'Symfony\\Component\\VarDumper\\' => 28,
             'Symfony\\Component\\Translation\\' => 30,
             'Symfony\\Component\\Process\\' => 26,
+            'Symfony\\Component\\PasswordHasher\\' => 33,
             'Symfony\\Component\\Mime\\' => 23,
             'Symfony\\Component\\HttpFoundation\\' => 33,
             'Symfony\\Component\\Finder\\' => 25,
@@ -162,6 +164,10 @@ class ComposerStaticInitf8d0a111ac97059c58e49ca16fe551d0
         array (
             0 => __DIR__ . '/..' . '/teampassclasses/superglobal/src',
         ),
+        'TeampassClasses\\SessionManager\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/teampassclasses/sessionmanager/src',
+        ),
         'TeampassClasses\\PerformChecks\\' => 
         array (
             0 => __DIR__ . '/..' . '/teampassclasses/performchecks/src',
@@ -230,6 +236,10 @@ class ComposerStaticInitf8d0a111ac97059c58e49ca16fe551d0
         array (
             0 => __DIR__ . '/..' . '/symfony/process',
         ),
+        'Symfony\\Component\\PasswordHasher\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/symfony/password-hasher',
+        ),
         'Symfony\\Component\\Mime\\' => 
         array (
             0 => __DIR__ . '/..' . '/symfony/mime',
@@ -296,9 +306,9 @@ class ComposerStaticInitf8d0a111ac97059c58e49ca16fe551d0
         ),
         'Illuminate\\Support\\' => 
         array (
-            0 => __DIR__ . '/..' . '/illuminate/macroable',
+            0 => __DIR__ . '/..' . '/illuminate/collections',
             1 => __DIR__ . '/..' . '/illuminate/conditionable',
-            2 => __DIR__ . '/..' . '/illuminate/collections',
+            2 => __DIR__ . '/..' . '/illuminate/macroable',
             3 => __DIR__ . '/..' . '/illuminate/support',
         ),
         'Illuminate\\Filesystem\\' => 
@@ -1611,6 +1621,24 @@ class ComposerStaticInitf8d0a111ac97059c58e49ca16fe551d0
         'Symfony\\Component\\Mime\\Test\\Constraint\\EmailHtmlBodyContains' => __DIR__ . '/..' . '/symfony/mime/Test/Constraint/EmailHtmlBodyContains.php',
         'Symfony\\Component\\Mime\\Test\\Constraint\\EmailSubjectContains' => __DIR__ . '/..' . '/symfony/mime/Test/Constraint/EmailSubjectContains.php',
         'Symfony\\Component\\Mime\\Test\\Constraint\\EmailTextBodyContains' => __DIR__ . '/..' . '/symfony/mime/Test/Constraint/EmailTextBodyContains.php',
+        'Symfony\\Component\\PasswordHasher\\Command\\UserPasswordHashCommand' => __DIR__ . '/..' . '/symfony/password-hasher/Command/UserPasswordHashCommand.php',
+        'Symfony\\Component\\PasswordHasher\\Exception\\ExceptionInterface' => __DIR__ . '/..' . '/symfony/password-hasher/Exception/ExceptionInterface.php',
+        'Symfony\\Component\\PasswordHasher\\Exception\\InvalidPasswordException' => __DIR__ . '/..' . '/symfony/password-hasher/Exception/InvalidPasswordException.php',
+        'Symfony\\Component\\PasswordHasher\\Exception\\LogicException' => __DIR__ . '/..' . '/symfony/password-hasher/Exception/LogicException.php',
+        'Symfony\\Component\\PasswordHasher\\Hasher\\CheckPasswordLengthTrait' => __DIR__ . '/..' . '/symfony/password-hasher/Hasher/CheckPasswordLengthTrait.php',
+        'Symfony\\Component\\PasswordHasher\\Hasher\\MessageDigestPasswordHasher' => __DIR__ . '/..' . '/symfony/password-hasher/Hasher/MessageDigestPasswordHasher.php',
+        'Symfony\\Component\\PasswordHasher\\Hasher\\MigratingPasswordHasher' => __DIR__ . '/..' . '/symfony/password-hasher/Hasher/MigratingPasswordHasher.php',
+        'Symfony\\Component\\PasswordHasher\\Hasher\\NativePasswordHasher' => __DIR__ . '/..' . '/symfony/password-hasher/Hasher/NativePasswordHasher.php',
+        'Symfony\\Component\\PasswordHasher\\Hasher\\PasswordHasherAwareInterface' => __DIR__ . '/..' . '/symfony/password-hasher/Hasher/PasswordHasherAwareInterface.php',
+        'Symfony\\Component\\PasswordHasher\\Hasher\\PasswordHasherFactory' => __DIR__ . '/..' . '/symfony/password-hasher/Hasher/PasswordHasherFactory.php',
+        'Symfony\\Component\\PasswordHasher\\Hasher\\PasswordHasherFactoryInterface' => __DIR__ . '/..' . '/symfony/password-hasher/Hasher/PasswordHasherFactoryInterface.php',
+        'Symfony\\Component\\PasswordHasher\\Hasher\\Pbkdf2PasswordHasher' => __DIR__ . '/..' . '/symfony/password-hasher/Hasher/Pbkdf2PasswordHasher.php',
+        'Symfony\\Component\\PasswordHasher\\Hasher\\PlaintextPasswordHasher' => __DIR__ . '/..' . '/symfony/password-hasher/Hasher/PlaintextPasswordHasher.php',
+        'Symfony\\Component\\PasswordHasher\\Hasher\\SodiumPasswordHasher' => __DIR__ . '/..' . '/symfony/password-hasher/Hasher/SodiumPasswordHasher.php',
+        'Symfony\\Component\\PasswordHasher\\Hasher\\UserPasswordHasher' => __DIR__ . '/..' . '/symfony/password-hasher/Hasher/UserPasswordHasher.php',
+        'Symfony\\Component\\PasswordHasher\\Hasher\\UserPasswordHasherInterface' => __DIR__ . '/..' . '/symfony/password-hasher/Hasher/UserPasswordHasherInterface.php',
+        'Symfony\\Component\\PasswordHasher\\LegacyPasswordHasherInterface' => __DIR__ . '/..' . '/symfony/password-hasher/LegacyPasswordHasherInterface.php',
+        'Symfony\\Component\\PasswordHasher\\PasswordHasherInterface' => __DIR__ . '/..' . '/symfony/password-hasher/PasswordHasherInterface.php',
         'Symfony\\Component\\Process\\Exception\\ExceptionInterface' => __DIR__ . '/..' . '/symfony/process/Exception/ExceptionInterface.php',
         'Symfony\\Component\\Process\\Exception\\InvalidArgumentException' => __DIR__ . '/..' . '/symfony/process/Exception/InvalidArgumentException.php',
         'Symfony\\Component\\Process\\Exception\\LogicException' => __DIR__ . '/..' . '/symfony/process/Exception/LogicException.php',
@@ -1861,6 +1889,7 @@ class ComposerStaticInitf8d0a111ac97059c58e49ca16fe551d0
         'TeampassClasses\\LdapExtra\\OpenLdapExtra' => __DIR__ . '/..' . '/teampassclasses/ldapextra/src/OpenLdapExtra.php',
         'TeampassClasses\\NestedTree\\NestedTree' => __DIR__ . '/..' . '/teampassclasses/nestedtree/src/NestedTree.php',
         'TeampassClasses\\PerformChecks\\PerformChecks' => __DIR__ . '/..' . '/teampassclasses/performchecks/src/PerformChecks.php',
+        'TeampassClasses\\SessionManager\\SessionManager' => __DIR__ . '/..' . '/teampassclasses/sessionmanager/src/SessionManager.php',
         'TeampassClasses\\SuperGlobal\\SuperGlobal' => __DIR__ . '/..' . '/teampassclasses/superglobal/src/SuperGlobal.php',
         'TiBeN\\CrontabManager\\CrontabAdapter' => __DIR__ . '/..' . '/tiben/crontab-manager/src/CrontabManager/CrontabAdapter.php',
         'TiBeN\\CrontabManager\\CrontabAdapterInterface' => __DIR__ . '/..' . '/tiben/crontab-manager/src/CrontabManager/CrontabAdapterInterface.php',
@@ -1903,10 +1932,10 @@ class ComposerStaticInitf8d0a111ac97059c58e49ca16fe551d0
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixLengthsPsr4 = ComposerStaticInitf8d0a111ac97059c58e49ca16fe551d0::$prefixLengthsPsr4;
-            $loader->prefixDirsPsr4 = ComposerStaticInitf8d0a111ac97059c58e49ca16fe551d0::$prefixDirsPsr4;
-            $loader->prefixesPsr0 = ComposerStaticInitf8d0a111ac97059c58e49ca16fe551d0::$prefixesPsr0;
-            $loader->classMap = ComposerStaticInitf8d0a111ac97059c58e49ca16fe551d0::$classMap;
+            $loader->prefixLengthsPsr4 = ComposerStaticInit917ba785e18cef2723bd769999d8fa5e::$prefixLengthsPsr4;
+            $loader->prefixDirsPsr4 = ComposerStaticInit917ba785e18cef2723bd769999d8fa5e::$prefixDirsPsr4;
+            $loader->prefixesPsr0 = ComposerStaticInit917ba785e18cef2723bd769999d8fa5e::$prefixesPsr0;
+            $loader->classMap = ComposerStaticInit917ba785e18cef2723bd769999d8fa5e::$classMap;
 
         }, null, ClassLoader::class);
     }

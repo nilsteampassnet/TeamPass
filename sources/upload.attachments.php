@@ -19,24 +19,19 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-
-use voku\helper\AntiXSS;
-use TeampassClasses\NestedTree\NestedTree;
-use TeampassClasses\SuperGlobal\SuperGlobal;
+use Symfony\Component\HttpFoundation\Request;
+use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
-use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
 
 
 // Load functions
 require_once 'main.functions.php';
-
+$session = SessionManager::getSession();
+$request = Request::createFromGlobals();
 // init
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
-$lang = new Language(); 
-session_name('teampass_session');
-session_start();
+$lang = new Language();
 
 // Load config if $SETTINGS not defined
 try {
@@ -50,16 +45,15 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+            'type' => $request->request->get('type', '') !== '' ? htmlspecialchars($request->request->get('type')) : '',
         ],
         [
             'type' => 'trim|escape',
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
-        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
     ]
 );
 // Handle the case
@@ -69,7 +63,7 @@ if (
     $checkUserAccess->checkSession() === false
 ) {
     // Not allowed page
-    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+    $session->set('system-error_code', ERR_NOT_ALLOWED);
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -86,26 +80,24 @@ set_time_limit(0);
 // --------------------------------- //
 
 //check for session
-if (null !== filter_input(INPUT_POST, 'PHPSESSID', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
-    //session_id(filter_input(INPUT_POST, 'PHPSESSID', FILTER_SANITIZE_FULL_SPECIAL_CHARS));
-    session_regenerate_id(true);
-} elseif (isset($_GET['PHPSESSID'])) {
-    //session_id(filter_var($_GET['PHPSESSID'], FILTER_SANITIZE_FULL_SPECIAL_CHARS));
-    session_regenerate_id(true);
+if (null !== $request->request->filter('PHPSESSID', null, FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
+    session_id($request->request->filter('PHPSESSID', null, FILTER_SANITIZE_FULL_SPECIAL_CHARS));
+} elseif (null !== $request->query->get('PHPSESSID')) {
+    session_id(filter_var($request->query->get('PHPSESSID'), FILTER_SANITIZE_FULL_SPECIAL_CHARS));
 } else {
     handleAttachmentError('No Session was found.', 100);
 }
 
 // Prepare POST variables
-$post_user_token = filter_input(INPUT_POST, 'user_token', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-$post_type_upload = filter_input(INPUT_POST, 'type_upload', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-$post_itemId = filter_input(INPUT_POST, 'itemId', FILTER_SANITIZE_NUMBER_INT);
-$post_files_number = filter_input(INPUT_POST, 'files_number', FILTER_SANITIZE_NUMBER_INT);
-$post_timezone = filter_input(INPUT_POST, 'timezone', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-$post_isNewItem = filter_input(INPUT_POST, 'isNewItem', FILTER_SANITIZE_NUMBER_INT);
-$post_randomId = filter_input(INPUT_POST, 'randomId', FILTER_SANITIZE_NUMBER_INT);
-$post_isPersonal = filter_input(INPUT_POST, 'isPersonal', FILTER_SANITIZE_NUMBER_INT);
-$post_fileSize= filter_input(INPUT_POST, 'file_size', FILTER_SANITIZE_NUMBER_INT);
+$post_user_token = $request->request->filter('user_upload_token', null, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_type_upload = $request->request->filter('type_upload', null, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_itemId = $request->request->filter('itemId', null, FILTER_SANITIZE_NUMBER_INT);
+$post_files_number = $request->request->filter('files_number', null, FILTER_SANITIZE_NUMBER_INT);
+$post_timezone = $request->request->filter('timezone', null, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_isNewItem = $request->request->filter('isNewItem', null, FILTER_SANITIZE_NUMBER_INT);
+$post_randomId = $request->request->filter('randomId', null, FILTER_SANITIZE_NUMBER_INT);
+$post_isPersonal = $request->request->filter('isPersonal', null, FILTER_SANITIZE_NUMBER_INT);
+$post_fileSize= $request->request->filter('file_size', null, FILTER_SANITIZE_NUMBER_INT);
 
 // Get parameters
 $chunk = isset($_REQUEST['chunk']) ? (int) $_REQUEST['chunk'] : 0;
@@ -121,9 +113,9 @@ if (null === $post_user_token) {
     DB::delete(prefixTable('tokens'), 'end_timestamp < %i', time());
 
     if (
-        isset($_SESSION[$post_user_token])
+        null !== $session->get($post_user_token)
         && ($chunk < $chunks - 1)
-        && $_SESSION[$post_user_token] >= 0
+        && $session->get($post_user_token) >= 0
     ) {
         // increase end_timestamp for token
         DB::update(
@@ -132,18 +124,18 @@ if (null === $post_user_token) {
                 'end_timestamp' => time() + 10,
             ),
             'user_id = %i AND token = %s',
-            $_SESSION['user_id'],
+            $session->get('user-id'),
             $post_user_token
         );
     } else {
         // create a session if several files to upload
         if (
-            isset($_SESSION[$post_user_token]) === false
-            || empty($_SESSION[$post_user_token])
-            || $_SESSION[$post_user_token] === '0'
+            null === $session->get($post_user_token)
+            || empty($session->get($post_user_token)) === true
+            || (int) $session->get($post_user_token) === 0
         ) {
-            $_SESSION[$post_user_token] = $post_files_number;
-        } elseif ($_SESSION[$post_user_token] > 0) {
+            $session->set($post_user_token, $post_files_number);
+        } elseif ((int) $session->get($post_user_token) > 0) {
             // increase end_timestamp for token
             DB::update(
                 prefixTable('tokens'),
@@ -151,14 +143,14 @@ if (null === $post_user_token) {
                     'end_timestamp' => time() + 30,
                 ),
                 'user_id = %i AND token = %s',
-                $_SESSION['user_id'],
+                $session->get('user-id'),
                 $post_user_token
             );
             // decrease counter of files to upload
-            --$_SESSION[$post_user_token];
+            $session->set($post_user_token, $session->get($post_user_token) - 1);
         } else {
             // no more files to upload, kill session
-            unset($_SESSION[$post_user_token]);
+            $session->remove($post_user_token);
             handleAttachmentError('No user token found.', 110);
             die();
         }
@@ -168,23 +160,23 @@ if (null === $post_user_token) {
             'SELECT end_timestamp
             FROM ' . prefixTable('tokens') . '
             WHERE user_id = %i AND token = %s',
-            $_SESSION['user_id'],
+            $session->get('user-id'),
             $post_user_token
         );
         // clear user token
-        if ($_SESSION[$post_user_token] === 0) {
+        if ((int) $session->get($post_user_token) === 0) {
             DB::delete(
                 prefixTable('tokens'),
                 'user_id = %i AND token = %s',
-                $_SESSION['user_id'],
+                $session->get('user-id'),
                 $post_user_token
             );
-            unset($_SESSION[$post_user_token]);
+            $session->remove($post_user_token);
         }
 
         if (time() > $data['end_timestamp']) {
             // too old
-            unset($_SESSION[$post_user_token]);
+            $session->remove($post_user_token);
             handleAttachmentError('User token expired.', 110);
             die();
         }
@@ -439,8 +431,8 @@ if (null !== $post_type_upload && $post_type_upload === 'item_attachments') {
             prefixTable('sharekeys_files'),
             array(
                 'object_id' => (int) $newID,
-                'user_id' => (int) $_SESSION['user_id'],
-                'share_key' => encryptUserObjectKey($newFile['objectKey'], $_SESSION['user']['public_key']),
+                'user_id' => (int) $session->get('user-id'),
+                'share_key' => encryptUserObjectKey($newFile['objectKey'], $session->get('user-public_key')),
             )
         );
     }
@@ -456,7 +448,7 @@ if (null !== $post_type_upload && $post_type_upload === 'item_attachments') {
             array(
                 'id_item' => $post_itemId,
                 'date' => time(),
-                'id_user' => $_SESSION['user_id'],
+                'id_user' => $session->get('user-id'),
                 'action' => 'at_modification',
                 'raison' => 'at_add_file : ' . $fileName . ':' . $newID,
             )

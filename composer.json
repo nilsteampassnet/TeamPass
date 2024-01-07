@@ -10,7 +10,7 @@
             "php": "8.1"
         }
     },
-    "version": "3.1.0",
+    "version": "3.1.1",
     "keywords": ["passwords", "manager", "collaborative", "vault", "security"],
     "homepage": "https://www.teampass.net",
     "license": "GPL-3.0-only",
@@ -36,13 +36,6 @@
         {
             "type": "path",
             "url": "includes/libraries/teampassclasses/nestedtree",
-            "options": {
-                "symlink": false
-            }
-        },
-        {
-            "type": "path",
-            "url": "includes/libraries/teampassclasses/superglobal",
             "options": {
                 "symlink": false
             }
@@ -77,7 +70,21 @@
         },
         {
             "type": "path",
+            "url": "includes/libraries/teampassclasses/sessionmanager",
+            "options": {
+                "symlink": false
+            }
+        },
+        {
+            "type": "path",
             "url": "includes/libraries/teampassclasses/ldapextra",
+            "options": {
+                "symlink": false
+            }
+        },
+        {
+            "type": "path",
+            "url": "includes/libraries/teampassclasses/superglobal",
             "options": {
                 "symlink": false
             }
@@ -92,9 +99,14 @@
         "ext-iconv": "*",
         "ext-xml": "*",
         "ext-gd": "*",
-        "symfony/finder": "^6.3",
-        "symfony/process": "^6.3",
-        "symfony/contracts": "^3.4",
+        "teampassclasses/sessionmanager": "dev-master",  
+        "teampassclasses/superglobal": "dev-master",
+        "teampassclasses/nestedtree": "dev-master",
+        "ezimuel/php-secure-session": "dev-master",
+        "teampassclasses/performchecks": "dev-master",
+        "teampassclasses/encryption": "dev-master",
+        "teampassclasses/language": "dev-master",
+        "teampassclasses/ldapextra": "dev-master",
         "illuminate/contracts": "^10.32",
         "tightenco/collect": "^9.52",
         "nesbot/carbon": "^2.71",
@@ -118,14 +130,12 @@
         "passwordlib/passwordlib": "^1.0.0-alpha2",
         "hackzilla/password-generator": "^1.6",
         "peppeocchi/php-cron-scheduler": "^4.0",
-        "teampassclasses/nestedtree": "dev-master",
-        "teampassclasses/superglobal": "dev-master",
-        "ezimuel/php-secure-session": "dev-master",
-        "teampassclasses/performchecks": "dev-master",
-        "teampassclasses/encryption": "dev-master",
-        "teampassclasses/language": "dev-master",
-        "teampassclasses/ldapextra": "dev-master",
         "duosecurity/duo_universal_php": "^1.0",
-        "spomky-labs/otphp": "^11.2"
+        "spomky-labs/otphp": "^11.2",
+        "symfony/http-foundation": "^6.4",
+        "symfony/password-hasher": "^6.4",
+        "symfony/finder": "^6.3",
+        "symfony/process": "^6.3",
+        "symfony/contracts": "^3.4"
     }
 }

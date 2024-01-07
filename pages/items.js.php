@@ -24,9 +24,9 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-
+use TeampassClasses\SessionManager\SessionManager;
+use Symfony\Component\HttpFoundation\Request as RequestLocal;
 use TeampassClasses\PerformChecks\PerformChecks;
-use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\Language\Language;
 
 // Load functions
@@ -34,10 +34,11 @@ require_once __DIR__.'/../sources/main.functions.php';
 
 // init
 loadClasses();
-$superGlobal = new SuperGlobal();
+$session = SessionManager::getSession();
+$request = RequestLocal::createFromGlobals();
 $lang = new Language(); 
 
-if ($superGlobal->get('key', 'SESSION') === null) {
+if ($session->get('key') === null) {
     die('Hacking attempt...');
 }
 
@@ -52,23 +53,22 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+            'type' => $request->request->get('type', '') !== '' ? htmlspecialchars($request->request->get('type')) : '',
         ],
         [
             'type' => 'trim|escape',
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
-        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
     ]
 );
 // Handle the case
 echo $checkUserAccess->caseHandler();
 if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('items') === false) {
     // Not allowed page
-    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+    $session->set('system-error_code', ERR_NOT_ALLOWED);
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -218,7 +218,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 teampassItem.folderId = selectedFolderId
             }
         );
-console.log('startedItemsListQuery: '+startedItemsListQuery)
+        
         // Prepare list of items
         if (startedItemsListQuery === false) {
             startedItemsListQuery = true;
@@ -384,7 +384,7 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
             $(this).addClass('pwd-shown');
             // Prepare data to show
             // Is data crypted?
-            var data = unCryptData($('#hidden-item-pwd').val(), '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
+            var data = unCryptData($('#hidden-item-pwd').val(), '<?php echo $session->get('key'); ?>');
             if (data !== false && data !== undefined) {
                 $('#hidden-item-pwd').val(
                     data.password
@@ -732,7 +732,7 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
                     format: '<?php echo str_replace(['Y', 'M'], ['yyyy', 'mm'], $SETTINGS['date_format']); ?>',
                     todayHighlight: true,
                     todayBtn: true,
-                    language: '<?php $userLang = $superGlobal->get('user_language_code', 'SESSION'); echo isset($userLang) === null ? $userLang : 'en'; ?>'
+                    language: '<?php $userLang = $session->get('user-language_code'); echo isset($userLang) === null ? $userLang : 'en'; ?>'
                 });
                 
                 // Add track-change class
@@ -1031,11 +1031,11 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
                 $.post(
                     "sources/items.queries.php", {
                         type: 'delete_uploaded_files_but_not_saved',
-                        data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'),
-                        key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                        data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $session->get('key'); ?>'),
+                        key: '<?php echo $session->get('key'); ?>'
                     },
                     function(data) {
-                        data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'items.queries.php', 'delete_uploaded_files_but_not_saved');
+                        data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>', 'items.queries.php', 'delete_uploaded_files_but_not_saved');
                         if (debugJavascript === true) console.log(data);
                     }
                 );
@@ -1142,11 +1142,11 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
         $.post(
             "sources/items.queries.php", {
                 type: 'send_request_access',
-                data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'),
-                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $session->get('key'); ?>'),
+                key: '<?php echo $session->get('key'); ?>'
             },
             function(data) {
-                data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'items.queries.php', 'send_request_access');
+                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>', 'items.queries.php', 'send_request_access');
                 if (debugJavascript === true) console.log(data);
 
                 if (data.error !== false) {
@@ -1225,11 +1225,11 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
         $.post(
             'sources/items.queries.php', {
                 type: 'save_notification_status',
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
-                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                key: '<?php echo $session->get('key'); ?>'
             },
             function(data) {
-                data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'items.queries.php', 'save_notification_status');
+                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>', 'items.queries.php', 'save_notification_status');
 
                 if (data.error !== false) {
                     // Show error
@@ -1300,11 +1300,11 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
         $.post(
             'sources/items.queries.php', {
                 type: 'send_email',
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
-                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                key: '<?php echo $session->get('key'); ?>'
             },
             function(data) {
-                data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'items.queries.php', 'send_email');
+                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>', 'items.queries.php', 'send_email');
 
                 if (data.error !== false) {
                     // Show error
@@ -1374,12 +1374,12 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
         $.post(
             'sources/items.queries.php', {
                 type: 'delete_item',
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
-                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                key: '<?php echo $session->get('key'); ?>'
             },
             function(data) {
                 //decrypt data
-                data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'items.queries.php', 'delete_item');
+                data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>', 'items.queries.php', 'delete_item');
 
                 if (typeof data !== 'undefined' && data.error !== true) {
                     $('.form-item-action, .item-details-card-menu').addClass('hidden');
@@ -1425,7 +1425,7 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
                 type: 'notify_user_on_item_change',
                 id: store.get('teampassItem').id,
                 value: $('#form-item-anyoneCanModify').is(':checked') === true ? 1 : 0,
-                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                key: '<?php echo $session->get('key'); ?>'
             },
             function(data) {
                 if (data[0].error === '') {
@@ -1494,12 +1494,12 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
         $.post(
             'sources/items.queries.php', {
                 type: 'copy_item',
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
-                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                key: '<?php echo $session->get('key'); ?>'
             },
             function(data) {
                 //decrypt data
-                data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
+                data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
 
                 if (typeof data !== 'undefined' && data.error !== true) {
                     // Warn user
@@ -1577,17 +1577,17 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
                 'new_pwd': DOMPurify.sanitize($('#form-item-server-password').val()),
                 'ssh_root': DOMPurify.sanitize($('#form-item-server-login').val()),
                 'ssh_pwd': DOMPurify.sanitize($('#form-item-server-old-password').val()),
-                'user_id': <?php echo $_SESSION['user_id']; ?>,
+                'user_id': <?php echo $session->get('user-id'); ?>,
             }
 
             $.post(
                 "sources/utils.queries.php", {
                     type: "server_auto_update_password",
-                    data: prepareExchangedData(data, "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
-                    key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
+                    data: prepareExchangedData(data, "encode", "<?php echo $session->get('key'); ?>"),
+                    key: "<?php echo $session->get('key'); ?>"
                 },
                 function(data) {
-                    data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
+                    data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
                     if (debugJavascript === true) console.log(data);
                     //check if format error
                     if (data.error === true) {
@@ -1621,7 +1621,7 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
                     type: "server_auto_update_password_frequency",
                     id: store.get('teampassItem').id,
                     freq: $('#form-item-server-cron-frequency').val(),
-                    key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
+                    key: "<?php echo $session->get('key'); ?>"
                 },
                 function(data) {
                     if (data[0].error != "") {
@@ -1695,12 +1695,12 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
         $.post(
             'sources/items.queries.php', {
                 type: 'suggest_item_change',
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
-                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                key: '<?php echo $session->get('key'); ?>'
             },
             function(data) {
                 //decrypt data//decrypt data
-                data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'items.queries.php', 'suggest_item_change');
+                data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>', 'items.queries.php', 'suggest_item_change');
 
                 if (data.error === true) {
                     // ERROR
@@ -1811,12 +1811,12 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
         $.post(
             'sources/folders.queries.php', {
                 type: $('#form-folder-add').data('action') + '_folder',
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
-                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                key: '<?php echo $session->get('key'); ?>'
             },
             function(data) {
                 //decrypt data//decrypt data
-                data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'folders.queries.php', $('#form-folder-add').data('action') + '_folder');
+                data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>', 'folders.queries.php', $('#form-folder-add').data('action') + '_folder');
                 if (debugJavascript === true) {
                     console.log(data);
                 }
@@ -1893,7 +1893,7 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
                 }
             );
             return false;
-        } else if ($('#form-folder-delete-selection option:selected').text() === '<?php echo $_SESSION['login']; ?>') {
+        } else if ($('#form-folder-delete-selection option:selected').text() === '<?php echo $session->get('user-login'); ?>') {
             toastr.remove();
             toastr.error(
                 '<?php echo $lang->get('error_not_allowed_to'); ?>',
@@ -1948,12 +1948,12 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
         $.post(
             'sources/folders.queries.php', {
                 type: 'delete_folders',
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
-                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                key: '<?php echo $session->get('key'); ?>'
             },
             function(data) {
                 //decrypt data
-                data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'folders.queries.php', 'delete_folders');
+                data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>', 'folders.queries.php', 'delete_folders');
 
                 if (data.error === true) {
                     // ERROR
@@ -2032,12 +2032,12 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
         $.post(
             'sources/folders.queries.php', {
                 type: 'copy_folder',
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
-                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                key: '<?php echo $session->get('key'); ?>'
             },
             function(data) {
                 //decrypt data
-                data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'folders.queries.php', 'copy_folder');
+                data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>', 'folders.queries.php', 'copy_folder');
 
                 if (data.error === true) {
                     // ERROR
@@ -2274,7 +2274,7 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
 
             // check if user still has access
             $.when(
-                checkAccess($(this).data('item-key'), selectedFolderId, <?php echo $_SESSION['user_id']; ?>)
+                checkAccess($(this).data('item-key'), selectedFolderId, <?php echo $session->get('user-id'); ?>)
             ).then(function(retData) {
                 // Is the user allowed?
                 if (retData.access === false || retData.delete === false) {
@@ -2393,8 +2393,8 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
 
                 $.post('sources/items.queries.php', {
                         type: 'action_on_quick_icon',
-                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
-                        key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                        key: '<?php echo $session->get('key'); ?>'
                     },
                     function(ret) {
                         //change quick icon
@@ -2452,7 +2452,7 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
         if (mouseStillDown === true) {
             // Prepare data to show
             // Is data crypted?
-            var data = unCryptData($('#hidden-item-pwd').val(), '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
+            var data = unCryptData($('#hidden-item-pwd').val(), '<?php echo $session->get('key'); ?>');
             if (data !== false && data !== undefined) {
                 $('#hidden-item-pwd').val(
                     data.password
@@ -2580,69 +2580,72 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
     /**
      * PLUPLOAD
      */
+    <?php
+    $max_file_size = '';
+    if (strrpos($SETTINGS['upload_maxfilesize'], 'mb') === false) {
+        $max_file_size = $SETTINGS['upload_maxfilesize'] . 'mb';
+    } else {
+        $max_file_size = $SETTINGS['upload_maxfilesize'];
+    }
+
+    $mime_types = [];
+    if (
+        isset($SETTINGS['upload_all_extensions_file']) === false
+        || (isset($SETTINGS['upload_all_extensions_file']) === true
+            && (int) $SETTINGS['upload_all_extensions_file'] === 0)
+    ) {
+        $mime_types = [
+            [
+                'title' => 'Image files',
+                'extensions' => $SETTINGS['upload_imagesext']
+            ],
+            [
+                'title' => 'Package files',
+                'extensions' => $SETTINGS['upload_pkgext']
+            ],
+            [
+                'title' => 'Documents files',
+                'extensions' => $SETTINGS['upload_docext']
+            ],
+            [
+                'title' => 'Other files',
+                'extensions' => $SETTINGS['upload_otherext']
+            ]
+        ];
+    }
+
+    $prevent_empty = isset($SETTINGS['upload_zero_byte_file']) === true && (int) $SETTINGS['upload_zero_byte_file'] === 1 ? false : true;
+
+    $resize = null;
+    if ((int) $SETTINGS['upload_imageresize_options'] === 1) {
+        $resize = [
+            'width' => $SETTINGS['upload_imageresize_width'],
+            'height' => $SETTINGS['upload_imageresize_height'],
+            'quality' => $SETTINGS['upload_imageresize_quality']
+        ];
+    }
+    ?>
+
+    var max_file_size = '<?php echo $max_file_size; ?>';
+    var mime_types = <?php echo json_encode($mime_types); ?>;
+    var prevent_empty = <?php echo json_encode($prevent_empty); ?>;
+    var resize = <?php echo json_encode($resize); ?>;
+
     var uploader_attachments = new plupload.Uploader({
         runtimes: 'html5,flash,silverlight,html4',
         browse_button: 'form-item-attach-pickfiles',
         container: 'form-item-upload-zone',
-        max_file_size: '<?php
-            if (strrpos($SETTINGS['upload_maxfilesize'], 'mb') === false) {
-                echo $SETTINGS['upload_maxfilesize'] . 'mb';
-            } else {
-                echo $SETTINGS['upload_maxfilesize'];
-            }
-            ?>',
+        max_file_size: max_file_size,
         chunk_size: '1mb',
         dragdrop: true,
         url: '<?php echo $SETTINGS['cpassman_url']; ?>/sources/upload.attachments.php',
         flash_swf_url: '<?php echo $SETTINGS['cpassman_url']; ?>/includes/libraries/plupload/js/Moxie.swf',
         silverlight_xap_url: '<?php echo $SETTINGS['cpassman_url']; ?>/includes/libraries/plupload/js/Moxie.xap',
         filters: {
-            mime_types: [
-                <?php
-                if (
-                    isset($SETTINGS['upload_all_extensions_file']) === false
-                    || (isset($SETTINGS['upload_all_extensions_file']) === true
-                        && (int) $SETTINGS['upload_all_extensions_file'] === 0)
-                ) {
-                    ?> {
-                        title: 'Image files',
-                        extensions: '<?php echo $SETTINGS['upload_imagesext']; ?>'
-                    },
-                    {
-                        title: 'Package files',
-                        extensions: '<?php echo $SETTINGS['upload_pkgext']; ?>'
-                    },
-                    {
-                        title: 'Documents files',
-                        extensions: '<?php echo $SETTINGS['upload_docext']; ?>'
-                    },
-                    {
-                        title: 'Other files',
-                        extensions: '<?php echo $SETTINGS['upload_otherext']; ?>'
-                    }
-                <?php
-                }
-                ?>
-            ],
-            <?php
-            if (isset($SETTINGS['upload_zero_byte_file']) === true && (int) $SETTINGS['upload_zero_byte_file'] === 1) {
-                ?>
-                prevent_empty: false
-            <?php
-            }
-            ?>
+            mime_types: mime_types,
+            prevent_empty: prevent_empty
         },
-        <?php
-        if ((int) $SETTINGS['upload_imageresize_options'] === 1) {
-            ?>
-            resize: {
-                width: <?php echo $SETTINGS['upload_imageresize_width']; ?>,
-                height: <?php echo $SETTINGS['upload_imageresize_height']; ?>,
-                quality: <?php echo $SETTINGS['upload_imageresize_quality']; ?>
-            },
-        <?php
-        }
-        ?>
+        resize: resize,
         init: {
             BeforeUpload: function(up, file) {
                 toastr.info(
@@ -2663,13 +2666,13 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
                 }
 
                 up.setOption('multipart_params', {
-                    PHPSESSID: '<?php echo $_SESSION['user_id']; ?>',
+                    PHPSESSID: '<?php echo $session->get('user-id'); ?>',
                     itemId: store.get('teampassItem').id,
                     type_upload: 'item_attachments',
                     isNewItem: store.get('teampassItem').isNewItem,
                     isPersonal: store.get('teampassItem').folderIsPersonal,
                     edit_item: false,
-                    user_token: store.get('teampassApplication').attachmentToken,
+                    user_upload_token: store.get('teampassApplication').attachmentToken,
                     randomId: store.get('teampassApplication').uploadedFileId,
                     files_number: $('#form-item-hidden-pickFilesNumber').val(),
                     file_size: file.size
@@ -2717,7 +2720,7 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
                     ambiguous: true,
                     reason: "item_attachments",
                     duration: 10,
-                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                    key: '<?php echo $session->get('key'); ?>'
                 },
                 function(data) {
                     store.update(
@@ -2924,7 +2927,7 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
                         } else {
                             restriction.push($(this).val());
                             // Is the user part of the restriction option
-                            if ($(this).val() === '<?php echo $_SESSION['user_id']; ?>') {
+                            if ($(this).val() === '<?php echo $session->get('user-id'); ?>') {
                                 userInRestrictionList = true;
                             }
                         }
@@ -2932,7 +2935,7 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
                 });
                 // IF any restriction, then ensure the author is in
                 if (userInRestrictionList === false && restriction.length > 0) {
-                    restriction.push('<?php echo $_SESSION['user_id']; ?>;');
+                    restriction.push('<?php echo $session->get('user-id'); ?>;');
                 }
 
                 // Manage diffusion list
@@ -3017,7 +3020,7 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
                     'to_be_deleted_after_date': purifyRes.arrFields['deleteAfterDate'] !== '' ? purifyRes.arrFields['deleteAfterDate'] : '',
                     'to_be_deleted_after_x_views': parseInt(purifyRes.arrFields['deleteAfterShown']) > 0 ? parseInt(purifyRes.arrFields['deleteAfterShown']) : '',
                     'url': purifyRes.arrFields['url'],
-                    'user_id': parseInt('<?php echo $_SESSION['user_id']; ?>'),
+                    'user_id': parseInt('<?php echo $session->get('user-id'); ?>'),
                     'uploaded_file_id': store.get('teampassApplication').uploadedFileId === undefined ? '' : store.get('teampassApplication').uploadedFileId,
                     'fa_icon': purifyRes.arrFields['icon'],
                     'otp_is_enabled': $('#form-item-otp').is(':checked') ? 1 : 0,
@@ -3047,13 +3050,13 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
                 $.post(
                     "sources/items.queries.php", {
                         type: $('#form-item-button-save').data('action'),
-                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
-                        key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
+                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                        key: "<?php echo $session->get('key'); ?>"
                     },
                     function(data) {
                         //decrypt data
                         try {
-                            data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
+                            data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
                         } catch (e) {
                             // error
                             $("#div_loading").addClass("hidden");
@@ -3098,8 +3101,8 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
                                 $.post(
                                     "sources/items.queries.php", {
                                         type: 'confirm_attachments',
-                                        data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'),
-                                        key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                                        data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $session->get('key'); ?>'),
+                                        key: '<?php echo $session->get('key'); ?>'
                                     }
                                 );
                             } else {
@@ -3142,8 +3145,8 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
             $.post(
                 "sources/items.queries.php", {
                     type: 'confirm_attachments',
-                    data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'),
-                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                    data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $session->get('key'); ?>'),
+                    key: '<?php echo $session->get('key'); ?>'
                 }
             );
 
@@ -3345,7 +3348,7 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
                 search: criteria,
                 start: start,
                 length: 10,
-                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                key: '<?php echo $session->get('key'); ?>'
             },
             function(data) {
                 var pwd_error = '',
@@ -3354,7 +3357,7 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
                     icon_pwd,
                     icon_favorite;
 
-                data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'find.queries.php', type);
+                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>', 'find.queries.php', type);
                 if (debugJavascript === true) console.log(data);
 
                 // Ensure correct div is not hidden
@@ -3414,12 +3417,12 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
         $.post(
             'sources/items.queries.php', {
                 type: 'refresh_visible_folders',
-                data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'),
-                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $session->get('key'); ?>'),
+                key: '<?php echo $session->get('key'); ?>'
             },
             function(data) {
                 //decrypt data
-                data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'items.queries.php', 'refresh_visible_folders');
+                data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>', 'items.queries.php', 'refresh_visible_folders');
                 if (debugJavascript === true) {
                     console.log('TREE');
                     console.log(data);
@@ -3437,7 +3440,6 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
                         $('#jstree').html('<div class="alert alert-warning mt-3 mr-1 ml-1"><i class="fa-solid fa-exclamation-triangle mr-2"></i>' +
                             '<?php echo $lang->get('no_data_to_display'); ?>' +
                             '</div>');
-                        //return false;
                     } else {
                         refreshFoldersInfo(data.html_json.folders, 'clear');
                     }
@@ -3460,7 +3462,7 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
                             '&nbsp;'.repeat(value.level) +
                             value.title + (value.path !== '' ? ' [' + value.path + ']' : '') + '</option>';
                     });
-
+                    
                     // Append new list
                     $('#form-item-folder, #form-item-copy-destination, #form-folder-add-parent,' +
                             '#form-folder-delete-selection, #form-folder-copy-source, #form-folder-copy-destination')
@@ -3512,13 +3514,13 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
             sending = '';
 
         if (null === folders) return false;
-
+        
         if (action === 'clear') {
             sending = JSON.stringify(folders.map(a => parseInt(a.id)));
         } else if (action === 'update') {
             sending = JSON.stringify([folders]);
         }
-
+        console.log(folders);
         if (debugJavascript === true) {
             console.info('INPUTS for refresh_folders_other_info');
             console.log(sending);
@@ -3528,11 +3530,11 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
             'sources/items.queries.php', {
                 type: 'refresh_folders_other_info',
                 data: sending,
-                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                key: '<?php echo $session->get('key'); ?>'
             },
             function(data) {
                 //decrypt data
-                data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'items.queries.php', 'refresh_folders_other_info');
+                data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>', 'items.queries.php', 'refresh_folders_other_info');
                 if (debugJavascript === true) {
                     console.info('RESULTS for refresh_folders_other_info');
                     console.log(data);
@@ -3745,12 +3747,12 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
             //ajax query
             var request = $.post('sources/items.queries.php', {
                     type: 'do_items_list_in_folder',
-                    data: prepareExchangedData(JSON.stringify(dataArray), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'),
-                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>',
+                    data: prepareExchangedData(JSON.stringify(dataArray), 'encode', '<?php echo $session->get('key'); ?>'),
+                    key: '<?php echo $session->get('key'); ?>',
                 },
                 function(retData) {
                     //get data
-                    data = decodeQueryReturn(retData, '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'items.queries.php', 'do_items_list_in_folder');
+                    data = decodeQueryReturn(retData, '<?php echo $session->get('key'); ?>', 'items.queries.php', 'do_items_list_in_folder');
 
                     if (debugJavascript === true) {
                         console.log('LIST ITEMS');
@@ -3864,12 +3866,12 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
                                     async: false,
                                     url: 'sources/items.queries.php',
                                     data: 'type=show_item_password&item_key=' + trigger.getAttribute('data-item-key') +
-                                        '&key=<?php echo $superGlobal->get('key', 'SESSION'); ?>',
+                                        '&key=<?php echo $session->get('key'); ?>',
                                     dataType: "",
                                     success: function(data) {
                                         //decrypt data
                                         try {
-                                            data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
+                                            data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
                                         } catch (e) {
                                             // error
                                             toastr.remove();
@@ -4390,11 +4392,11 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
             $.post(
                 'sources/items.queries.php', {
                     type: 'check_current_access_rights',
-                    data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'),
-                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                    data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $session->get('key'); ?>'),
+                    key: '<?php echo $session->get('key'); ?>'
                 },
                 function(data) {
-                    data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'items.queries.php', 'show_details_item');
+                    data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>', 'items.queries.php', 'show_details_item');
                     requestRunning = true;
                     if (debugJavascript === true) {
                         console.log("DEBUG: checkAccess");
@@ -4446,7 +4448,7 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
 
         // check if user still has access
         $.when(
-            checkAccess(itemId, itemTreeId, <?php echo $_SESSION['user_id']; ?>)
+            checkAccess(itemId, itemTreeId, <?php echo $session->get('user-id'); ?>)
         ).then(function(retData) {
             // Is the user allowed?
             if (retData.access === false
@@ -4532,12 +4534,12 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
             $.post(
                 'sources/items.queries.php', {
                     type: 'show_details_item',
-                    data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'),
-                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                    data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $session->get('key'); ?>'),
+                    key: '<?php echo $session->get('key'); ?>'
                 },
                 function(data) {
                     //decrypt data
-                    data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'items.queries.php', 'show_details_item');
+                    data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>', 'items.queries.php', 'show_details_item');
                     requestRunning = true;
                     if (debugJavascript === true) {
                         console.log("RECEIVED object details");
@@ -5200,14 +5202,14 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
             'sources/items.queries.php', {
                 type: 'showDetailsStep2',
                 id: id,
-                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                key: '<?php echo $session->get('key'); ?>'
             },
             function(data) {
                 //decrypt data
-                data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'items.queries.php', 'showDetailsStep2');
+                data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>', 'items.queries.php', 'showDetailsStep2');
 
                 if (debugJavascript === true) {
-                    console.log('RECEIVED STEP2 - used key: <?php echo $superGlobal->get('key', 'SESSION'); ?>');
+                    console.log('RECEIVED STEP2 - used key: <?php echo $session->get('key'); ?>');
                     console.log(data);
                 }
 
@@ -5246,7 +5248,7 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
 
                             // Show DOWNLOAD icon
                             downloadIcon =
-                                '<a class="text-secondary infotip mr-2" href="sources/downloadFile.php?name=' + encodeURI(value.filename) + '&key=<?php echo $superGlobal->get('key', 'SESSION'); ?>&key_tmp=' + value.key + '&fileid=' + value.id + '" title="<?php echo $lang->get('download'); ?>">' +
+                                '<a class="text-secondary infotip mr-2" href="sources/downloadFile.php?name=' + encodeURI(value.filename) + '&key=<?php echo $session->get('key'); ?>&key_tmp=' + value.key + '&fileid=' + value.id + '" title="<?php echo $lang->get('download'); ?>">' +
                                 '<i class="fa-solid fa-file-download"></i></a>';
                             html += downloadIcon;
 
@@ -5339,7 +5341,7 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
 
                 // Prepare Select2 inputs
                 $('.select2').select2({
-                    language: '<?php echo $userLang = $superGlobal->get('user_language_code', 'SESSION'); echo isset($userLang) === null ? $userLang : 'en'; ?>',
+                    language: '<?php echo $userLang = $session->get('user-language_code'); echo isset($userLang) === null ? $userLang : 'en'; ?>',
                     theme: "bootstrap4",
                 });
 
@@ -5348,7 +5350,7 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
                     format: '<?php echo str_replace(['Y', 'M'], ['yyyy', 'mm'], $SETTINGS['date_format']); ?>',
                     todayHighlight: true,
                     todayBtn: true,
-                    language: '<?php echo $userLang = $superGlobal->get('user_language_code', 'SESSION'); echo isset($userLang) === null ? $userLang : 'en'; ?>'
+                    language: '<?php echo $userLang = $session->get('user-language_code'); echo isset($userLang) === null ? $userLang : 'en'; ?>'
                 });
 
                 // Prepare Date range picker with time picker
@@ -5384,8 +5386,8 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
                 $.post(
                     "sources/items.queries.php", {
                         type: 'delete_uploaded_files_but_not_saved',
-                        data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'),
-                        key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                        data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $session->get('key'); ?>'),
+                        key: '<?php echo $session->get('key'); ?>'
                     },
                     function (data) {
                         /*// add track-change class on item form
@@ -5422,11 +5424,11 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
                 'sources/items.queries.php', {
                     type: 'show_opt_code',
                     id: id,
-                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                    key: '<?php echo $session->get('key'); ?>'
                 },
                 function(data) {
                     //decrypt data
-                    data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'items.queries.php', 'showDetailsStep3');
+                    data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>', 'items.queries.php', 'showDetailsStep3');
 
                     if (data.otp_code !== '' && data.otp_expires_in !== '' && parseInt(data.otp_enabled) === 1) {
                         $('#card-item-opt_code').html(data.otp_code+'</span><i class="fa-regular fa-copy ml-2 text-secondary pointer" id="clipboard_otpcode"></i><span class="ml-2">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span id="countdown_otp" style="position: absolute;right:0px;"></span><span>');   
@@ -5513,11 +5515,11 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
             $.post(
                 "sources/items.queries.php", {
                     type: 'history_entry_add',
-                    data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'),
-                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                    data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $session->get('key'); ?>'),
+                    key: '<?php echo $session->get('key'); ?>'
                 },
                 function(data) {
-                    data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'items.queries.php', 'history_entry_add');
+                    data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>', 'items.queries.php', 'history_entry_add');
                     if (debugJavascript === true) console.log(data);
                     $('.history').val('');
 
@@ -5554,12 +5556,12 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
             $.post(
                 'sources/items.queries.php', {
                     type: 'delete_attached_file',
-                    data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'),
-                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                    data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $session->get('key'); ?>'),
+                    key: '<?php echo $session->get('key'); ?>'
                 },
                 function(data) {
                     //decrypt data
-                    data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'items.queries.php', 'delete_attached_file');
+                    data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>', 'items.queries.php', 'delete_attached_file');
                     if (debugJavascript === true) console.log(data);
 
                     //check if format error
@@ -5630,7 +5632,7 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
                 format: '<?php echo str_replace(['Y', 'M'], ['yyyy', 'mm'], $SETTINGS['date_format']); ?>',
                 todayHighlight: true,
                 todayBtn: true,
-                language: '<?php echo $userLang = $superGlobal->get('user_language_code', 'SESSION'); echo isset($userLang) === null ? $userLang : 'en'; ?>'
+                language: '<?php echo $userLang = $session->get('user-language_code'); echo isset($userLang) === null ? $userLang : 'en'; ?>'
             });
 
             $('#warningModal #add-history-label').focus();
@@ -5664,11 +5666,11 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
                 $.post(
                     "sources/items.queries.php", {
                         type: 'history_entry_add',
-                        data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'),
-                        key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                        data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $session->get('key'); ?>'),
+                        key: '<?php echo $session->get('key'); ?>'
                     },
                     function(data) {
-                        data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'items.queries.php', 'history_entry_add');
+                        data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>', 'items.queries.php', 'history_entry_add');
                         if (debugJavascript === true) console.log(data);
                         $('#warningModal .history').val('');
 
@@ -5709,11 +5711,11 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
             "sources/items.queries.php", {
                 type: "image_preview_preparation",
                 id: fileId,
-                key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
+                key: "<?php echo $session->get('key'); ?>"
             },
             function(data) {
                 //decrypt data
-                data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'items.queries.php', 'image_preview_preparation');
+                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>', 'items.queries.php', 'image_preview_preparation');
                 //if (debugJavascript === true) console.log(data);
 
                 //check if format error
@@ -5781,11 +5783,11 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
             "sources/items.queries.php", {
                 type: "load_item_history",
                 item_id: item_id,
-                key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
+                key: "<?php echo $session->get('key'); ?>"
             },
             function(data) {
                 //decrypt data
-                data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'items.queries.php', 'load_item_history');
+                data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>', 'items.queries.php', 'load_item_history');
                 if (debugJavascript === true) {
                     console.info('History:');
                     console.log(data);
@@ -5854,16 +5856,16 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
         var data = {
             "id": itemId,
             "label": DOMPurify.sanitize(itemLabel),
-            "user_id": "<?php echo $_SESSION['user_id']; ?>",
+            "user_id": "<?php echo $session->get('user-id'); ?>",
             "action": logCase,
-            "login": "<?php echo $_SESSION['login']; ?>"
+            "login": "<?php echo $session->get('user-login'); ?>"
         };
 
         $.post(
             "sources/items.logs.php", {
                 type: "log_action_on_item",
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
-                key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                key: "<?php echo $session->get('key'); ?>"
             }
         );
     }
@@ -5884,8 +5886,8 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
         $.post(
             "sources/items.queries.php", {
                 type: "generate_OTV_url",
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
-                key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                key: "<?php echo $session->get('key'); ?>"
             },
             function(data) {
                 //check if format error
@@ -5929,11 +5931,11 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
         $.post(
             "sources/items.queries.php", {
                 type: "update_OTV_url",
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
-                key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                key: "<?php echo $session->get('key'); ?>"
             },
             function(data) {
-                data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
+                data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
                 // Display new url
                 if (data.new_url !== undefined) {
                     $('#form-item-otv-link').val(data.new_url);
@@ -6008,11 +6010,11 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
                 folder_id: val,
                 context: context,
                 item_id: store.get('teampassItem').id,
-                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                key: '<?php echo $session->get('key'); ?>'
             },
             function(data) {
                 //decrypt data
-                data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'items.queries.php', 'get_complixity_level');
+                data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>', 'items.queries.php', 'get_complixity_level');
 
                 if (debugJavascript === true) {
                     console.info('GET COMPLEXITY LEVEL');
@@ -6057,7 +6059,7 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
 
                     // Prepare Select2
                     $('.select2').select2({
-                        language: '<?php echo $superGlobal->get('user_language_code', 'SESSION'); ?>',
+                        language: '<?php echo $session->get('user-language_code'); ?>',
                         theme: "bootstrap4",
                     });
 
@@ -6123,10 +6125,10 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
                 symbols: $('#pwd-definition-symbols').prop("checked"),
                 secure_pwd: secure_pwd,
                 force: "false",
-                key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
+                key: "<?php echo $session->get('key'); ?>"
             },
             function(data) {
-                data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
+                data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
                 if (debugJavascript === true) console.log(data)
                 if (data.error == "true") {
                     // error
@@ -6255,12 +6257,12 @@ console.log('startedItemsListQuery: '+startedItemsListQuery)
                 $.post(
                     'sources/items.queries.php', {
                         type: 'move_item',
-                        data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'),
-                        key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                        data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $session->get('key'); ?>'),
+                        key: '<?php echo $session->get('key'); ?>'
                     },
                     function(data) {
                         //decrypt data
-                        data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>', 'items.queries.php', 'move_item');
+                        data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>', 'items.queries.php', 'move_item');
 
                         if (debugJavascript === true) console.log(data)
 

@@ -20,9 +20,9 @@ declare(strict_types=1);
  */
 
 
-use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
+use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\Language\Language;
-use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\NestedTree\NestedTree;
 
@@ -31,10 +31,9 @@ require_once 'main.functions.php';
 
 // init
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
-$lang = new Language(); 
-session_name('teampass_session');
-session_start();
+$session = SessionManager::getSession();
+$request = Request::createFromGlobals();
+$lang = new Language();
 
 // Load config if $SETTINGS not defined
 try {
@@ -48,16 +47,15 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+            'type' => null !== $request->request->get('type') ? htmlspecialchars($request->request->get('type')) : '',
         ],
         [
             'type' => 'trim|escape',
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
-        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
     ]
 );
 // Handle the case
@@ -67,7 +65,7 @@ if (
     $checkUserAccess->checkSession() === false
 ) {
     // Not allowed page
-    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+    $session->set('system-error_code', ERR_NOT_ALLOWED);
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -84,27 +82,24 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 // Load tree
 $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
-$superGlobal = new SuperGlobal();
-$lang = new Language(); 
-
 // Prepare sanitization
 $data = [
-    'forbidenPfs' => isset($_SESSION['forbiden_pfs']) === true ? json_encode($_SESSION['forbiden_pfs']) : '{}',
-    'visibleFolders' => isset($_SESSION['groupes_visibles']) === true ? json_encode($_SESSION['groupes_visibles']) : '{}',
-    'userId' => isset($_SESSION['user_id']) === true ? $_SESSION['user_id'] : '',
-    'userLogin' => isset($_SESSION['login']) === true ? $_SESSION['login'] : '',
-    'userReadOnly' => isset($_SESSION['user_read_only']) === true ? $_SESSION['user_read_only'] : '',
-    'limitedFolders' => isset($_SESSION['list_folders_limited']) === true ? json_encode($_SESSION['list_folders_limited']) : '{}',
-    'readOnlyFolders' => isset($_SESSION['read_only_folders']) === true ? json_encode($_SESSION['read_only_folders']) : '{}',
-    'personalVisibleFolders' => isset($_SESSION['personal_visible_groups']) === true ? json_encode($_SESSION['personal_visible_groups']) : '{}',
-    'userTreeLastRefresh' => isset($_SESSION['user_tree_last_refresh_timestamp']) === true ? $_SESSION['user_tree_last_refresh_timestamp'] : '',
-    'forceRefresh' => isset($_GET['force_refresh']) === true ? $_GET['force_refresh'] : '',
-    'nodeId' => isset($_GET['id']) === true ? $_GET['id'] : '',
-    'restrictedFoldersForItems' => isset($_GET['list_restricted_folders_for_items']) === true ? json_encode($_GET['list_restricted_folders_for_items']) : '{}',
-    'noAccessFolders' => isset($_SESSION['no_access_folders']) === true ? json_encode($_SESSION['no_access_folders']) : '{}',
-    'personalFolders' => isset($_SESSION['personal_folders']) === true ? json_encode($_SESSION['personal_folders']) : '{}',
-    'userCanCreateRootFolder' => isset($_SESSION['can_create_root_folder']) === true ? json_encode($_SESSION['can_create_root_folder']) : '{}',
-    'userTreeLoadStrategy' => isset($_SESSION['user']['user_treeloadstrategy']) === true ? $_SESSION['user']['user_treeloadstrategy'] : '',
+    'forbidenPfs' => null !== $session->get('user-forbiden_personal_folders') ? json_encode($session->get('user-forbiden_personal_folders')) : '{}',
+    'visibleFolders' => null !== $session->get('user-accessible_folders') ? json_encode($session->get('user-accessible_folders')) : '{}',
+    'userId' => null !== $session->get('user-id') ? $session->get('user-id') : '',
+    'userLogin' => null !== $session->get('user-login') ? $session->get('user-login') : '',
+    'userReadOnly' => null !== $session->get('user-read_only') ? $session->get('user-read_only') : '',
+    'limitedFolders' => null !== $session->get('user-list_folders_limited') ? json_encode($session->get('user-list_folders_limited')) : '{}',
+    'readOnlyFolders' => null !== $session->get('user-read_only_folders') ? json_encode($session->get('user-read_only_folders')) : '{}',
+    'personalVisibleFolders' => null !== $session->get('user-personal_visible_folders') ? json_encode($session->get('user-personal_visible_folders')) : '{}',
+    'userTreeLastRefresh' => null !== $session->get('user-tree_last_refresh_timestamp') ? $session->get('user-tree_last_refresh_timestamp') : '',
+    'forceRefresh' => null !== $request->query->get('force_refresh') ? $request->query->get('force_refresh') : '',
+    'nodeId' => null !== $request->query->get('id') ? $request->query->get('id') : '',
+    'restrictedFoldersForItems' => null !== $request->query->get('list_restricted_folders_for_items') ? json_encode($request->query->get('list_restricted_folders_for_items')) : '{}',
+    'noAccessFolders' => null !== $session->get('user-no_access_folders') ? json_encode($session->get('user-no_access_folders')) : '{}',
+    'personalFolders' => null !== $session->get('user-personal_folders') ? json_encode($session->get('user-personal_folders')) : '{}',
+    'userCanCreateRootFolder' => null !== $session->get('user-can_create_root_folder') ? json_encode($session->get('user-can_create_root_folder')) : '{}',
+    'userTreeLoadStrategy' => null !== $session->get('user-tree_load_strategy') ? $session->get('user-tree_load_strategy') : '',
 ];
 
 $filters = [
@@ -146,7 +141,7 @@ if (DB::count() === 0) {
 $goTreeRefresh = loadTreeStrategy(
     (int) $lastFolderChange['valeur'],
     (int) $inputData['userTreeLastRefresh'],
-    /** @scrutinizer ignore-type */(array) (is_null($superGlobal->get('user_tree_structure', 'SESSION')) === true || empty($superGlobal->get('user_tree_structure', 'SESSION')) === true) ? [] : $superGlobal->get('user_tree_structure', 'SESSION'),
+    (null === $session->get('user-tree_structure') || empty($session->get('user-tree_structure')) === true) ? [] : $session->get('user-tree_structure'),
     (int) $inputData['userId'],
     (int) $inputData['forceRefresh']
 );
@@ -229,8 +224,8 @@ if ($goTreeRefresh['state'] === true || empty($inputData['nodeId']) === false ||
     }
 
     // Save in SESSION
-    $superGlobal->put('user_tree_structure', $ret_json, 'SESSION');
-    $superGlobal->put('user_tree_last_refresh_timestamp', time(), 'SESSION');
+    $session->set('user-tree_structure', $ret_json);
+    $session->set('user-tree_last_refresh_timestamp', time());
 
     $ret_json = json_encode($ret_json);
 

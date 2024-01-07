@@ -25,7 +25,7 @@ declare(strict_types=1);
  */
 
 
-use TeampassClasses\SuperGlobal\SuperGlobal;
+use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\Language\Language;
 use TeampassClasses\NestedTree\NestedTree;
 
@@ -33,7 +33,8 @@ use TeampassClasses\NestedTree\NestedTree;
 // Load functions
 require_once __DIR__.'/../../sources/main.functions.php';
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
+
+$request = Request::createFromGlobals();
 $lang = new Language(); 
 
 // Load config if $SETTINGS not defined
@@ -56,9 +57,9 @@ $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
             </div>
             <div class="card-body login-card-body">
 <?php
-if (!empty($superGlobal->get('code', 'GET')) === true
-    && !empty($superGlobal->get('stamp', 'GET')) === true
-    && !empty($superGlobal->get('key', 'GET')) === true
+if (empty($request->query->get('code')) === false
+    && empty($request->query->get('stamp')) === false
+    && empty($request->query->get('key')) === false
 ) {
     if (isset($SETTINGS['otv_is_enabled']) === false
         || (int) $SETTINGS['otv_is_enabled'] === 0

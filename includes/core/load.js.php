@@ -24,7 +24,8 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
+use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\Language\Language;
 
 // Is maintenance on-going?
@@ -46,8 +47,9 @@ if (
     </script>
 <?php
 }
-$superGlobal = new SuperGlobal();
-$lang = new Language(); 
+$lang = new Language();
+$session = SessionManager::getSession();
+$request = Request::createFromGlobals();
 ?>
 
 <script type="text/javascript">
@@ -57,7 +59,6 @@ $lang = new Language();
 
 
     $(document).ready(function() {
-        //console.log('-- PAGE LOADED --'+$(location).attr('href').includes('?')+" -- "+store.get('teampassUser'));
         if ($(location).attr('href').includes('?') === true && $(location).attr('href').includes('post_type') === false && (store.get('teampassUser') === undefined || parseInt(store.get('teampassUser').user_id) <= 0)) {
             $(location).attr('href', 'index.php?session=expired');
             return false;
@@ -81,7 +82,7 @@ $lang = new Language();
                 type     : 'increase_session_time',
                 type_category: 'action_user',
                 duration : parseInt(duration, 10) * hourInMinutes,
-                key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
+                key: "<?php echo $session->get('key'); ?>"
             },
             function(data) {
                 if (data[0].new_value !== 'expired') {
@@ -99,7 +100,7 @@ $lang = new Language();
     // Start real time
     // get list of last items
     if (store.get('teampassUser') !== undefined && parseInt(store.get('teampassUser').user_id) > 0
-        && String('<?php echo $superGlobal->get('key', 'SESSION'); ?>') === store.get('teampassUser').sessionKey
+        && String('<?php echo $session->get('key'); ?>') === store.get('teampassUser').sessionKey
         && (Date.now() - store.get('teampassUser').sessionStartTimestamp) < (store.get('teampassUser').sessionDuration * 1000)
     ) {
         $.when(
@@ -120,12 +121,12 @@ $lang = new Language();
                     "sources/main.queries.php", {
                         type: "get_user_info",
                         type_category: 'action_user',
-                        data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'),
-                        key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
+                        data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $session->get('key'); ?>'),
+                        key: "<?php echo $session->get('key'); ?>"
                     },
                     function(data) {
                         //decrypt data
-                        data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
+                        data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>');
                         if (debugJavascript === true) {
                             console.info('Get user info results:');
                             console.log(data);
@@ -223,7 +224,7 @@ $lang = new Language();
                                     "sources/main.queries.php", {
                                         type: "send_waiting_emails",
                                         type_category: 'action_mail',
-                                        key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
+                                        key: "<?php echo $session->get('key'); ?>"
                                     }
                                 )
                             ).then(function() {
@@ -232,7 +233,7 @@ $lang = new Language();
                                     "sources/main.queries.php", {
                                         type: "sending_statistics",
                                         type_category: 'action_system',
-                                        key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
+                                        key: "<?php echo $session->get('key'); ?>"
                                     }
                                 );
                             });
@@ -253,8 +254,8 @@ $lang = new Language();
                         "sources/main.queries.php", {
                             type: 'save_user_location',
                             type_category: 'action_user',
-                            data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'),
-                            key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
+                            data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $session->get('key'); ?>'),
+                            key: "<?php echo $session->get('key'); ?>"
                         },
                         function(data) {
                             // update local storage
@@ -392,11 +393,11 @@ $lang = new Language();
                         "sources/main.queries.php", {
                             'type': "user_psk_reencryption",
                             'type_category': 'action_key',
-                            'data': prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
-                            'key': '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                            'data': prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                            'key': '<?php echo $session->get('key'); ?>'
                         },
                         function(data) {
-                            data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
+                            data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
                             if (debugJavascript === true) console.log(data)
                             if (data.error === true) {
                                 // error
@@ -523,7 +524,7 @@ $lang = new Language();
                 // ----
             } else if ($(this).data('name') === 'logout') {
                 // Logout directly to login form
-                window.location.href = "./includes/core/logout.php?token=<?php echo $superGlobal->get('key', 'SESSION'); ?>";
+                window.location.href = "./includes/core/logout.php?token=<?php echo $session->get('key'); ?>";
 
                 // ----
             } else if ($(this).data('name') === 'generate-new_keys') {
@@ -655,11 +656,11 @@ $lang = new Language();
                                 "sources/main.queries.php", {
                                     type: "user_new_keys_generation",
                                     type_category: 'action_key',
-                                    data: prepareExchangedData(JSON.stringify(parameters), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
-                                    key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
+                                    data: prepareExchangedData(JSON.stringify(parameters), "encode", "<?php echo $session->get('key'); ?>"),
+                                    key: "<?php echo $session->get('key'); ?>"
                                 },
                                 function(data_next1) { 
-                                    data_next1 = prepareExchangedData(data_next1, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
+                                    data_next1 = prepareExchangedData(data_next1, 'decode', '<?php echo $session->get('key'); ?>');
                                     if (debugJavascript === true) console.log(data_next1)
 
                                     if (data_next1.error !== false) {
@@ -778,11 +779,11 @@ $lang = new Language();
                         "sources/main.queries.php", {
                             type: "generate_an_otp",
                             type_category: 'action_utils',
-                            data: prepareExchangedData(JSON.stringify(parameters), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
-                            key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
+                            data: prepareExchangedData(JSON.stringify(parameters), "encode", "<?php echo $session->get('key'); ?>"),
+                            key: "<?php echo $session->get('key'); ?>"
                         },
                         function(data) { 
-                            data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
+                            data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
                             if (debugJavascript === true) console.log(data)
 
                             if (data.error !== false) {
@@ -838,11 +839,11 @@ $lang = new Language();
         $.post(
             "sources/main.queries.php", {
                 type: "store_personal_saltkey",
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
-                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                key: '<?php echo $session->get('key'); ?>'
             },
             function(data) {
-                data = prepareExchangedData(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
+                data = prepareExchangedData(data, '<?php echo $session->get('key'); ?>');
 
                 // Is there an error?
                 if (data.error === true) {
@@ -1022,11 +1023,11 @@ $lang = new Language();
                 'sources/main.queries.php', {
                     type: 'change_user_auth_password',
                     type_category: 'action_password',
-                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
-                    key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
+                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                    key: "<?php echo $session->get('key'); ?>"
                 },
                 function(data) {
-                    data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
+                    data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
                     if (debugJavascript === true) console.log(data);
 
                     if (data.error !== false) {
@@ -1118,11 +1119,11 @@ $lang = new Language();
                 "sources/main.queries.php", {
                     type: "user_new_keys_generation",
                     type_category: 'action_key',
-                    data: prepareExchangedData(JSON.stringify(parameters), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
-                    key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
+                    data: prepareExchangedData(JSON.stringify(parameters), "encode", "<?php echo $session->get('key'); ?>"),
+                    key: "<?php echo $session->get('key'); ?>"
                 },
                 function(data_next1) { 
-                    data_next1 = prepareExchangedData(data_next1, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
+                    data_next1 = prepareExchangedData(data_next1, 'decode', '<?php echo $session->get('key'); ?>');
                     if (debugJavascript === true) console.log(data_next1)
 
                     if (data_next1.error !== false) {
@@ -1198,11 +1199,11 @@ $lang = new Language();
                 'sources/main.queries.php', {
                     type: 'mail_me',
                     type_category: 'action_mail',
-                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
-                    key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                    key: '<?php echo $session->get('key'); ?>'
                 },
                 function(data) {
-                    data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
+                    data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
                     if (debugJavascript === true) console.log(data);
                     if (data.error !== false) {
                         // Show error
@@ -1278,11 +1279,11 @@ $lang = new Language();
             'sources/main.queries.php', {
                 type: 'test_current_user_password_is_correct',
                 type_category: 'action_password',
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
-                key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                key: "<?php echo $session->get('key'); ?>"
             },
             function(data) {
-                data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
+                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
                 if (debugJavascript === true) console.log(data);
 
                 if (data.error !== false) {
@@ -1314,11 +1315,11 @@ $lang = new Language();
                         'sources/main.queries.php', {
                             type: 'change_private_key_encryption_password',
                             type_category: 'action_key',
-                            data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
-                            key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
+                            data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                            key: "<?php echo $session->get('key'); ?>"
                         },
                         function(data) {
-                            data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
+                            data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
                             if (debugJavascript === true) console.log(data);
 
                             if (data.error !== false) {
@@ -1401,11 +1402,11 @@ $lang = new Language();
             'sources/main.queries.php', {
                 type: 'test_current_user_password_is_correct',
                 type_category: 'action_password',
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
-                key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                key: "<?php echo $session->get('key'); ?>"
             },
             function(data) {
-                data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
+                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
                 if (debugJavascript === true) console.log(data);
 
                 if (data.error !== false) {
@@ -1437,11 +1438,11 @@ $lang = new Language();
                         'sources/main.queries.php', {
                             type: 'change_private_key_encryption_password',
                             type_category: 'action_key',
-                            data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
-                            key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
+                            data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                            key: "<?php echo $session->get('key'); ?>"
                         },
                         function(data) {
-                            data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
+                            data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
                             if (debugJavascript === true) console.log(data);
 
                             if (data.error !== false) {
@@ -1529,11 +1530,11 @@ $lang = new Language();
                 'sources/main.queries.php', {
                     type: 'change_user_ldap_auth_password',
                     type_category: 'action_password',
-                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
-                    key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
+                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                    key: "<?php echo $session->get('key'); ?>"
                 },
                 function(data) {
-                    data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
+                    data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
                     if (debugJavascript === true) console.log(data);
 
                     if (data.error !== false) {
@@ -1589,18 +1590,25 @@ $lang = new Language();
 
 
     function loadSettings() {
+        /*if (Number.isInteger(<?php echo $session->get('user-id'); ?>) === false) {
+            return false;
+        }*/
+        console.log('Key appel get_teampass_settings : <?php echo $session->get('key'); ?>');
         return $.post(
             "sources/main.queries.php", {
                 type: "get_teampass_settings",
                 type_category: 'action_system',
-                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                key: '<?php echo $session->get('key'); ?>',
+                xhrFields: {
+                    withCredentials: true
+                }
             },
             function(data) {
                 try {
                     data = prepareExchangedData(
                         data,
                         "decode",
-                        "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
+                        "<?php echo $session->get('key'); ?>"
                     );
                 } catch (e) {
                     // error
@@ -1624,7 +1632,7 @@ $lang = new Language();
                 if (typeof data === 'object') {
                     // Store settings in localstorage
                     // except sensitive data
-                    var sensitiveData = ['ldap_hosts','ldap_username','ldap_password','ldap_bdn', 'email','bck_script_passkey'];
+                    var sensitiveData = ['ldap_hosts','ldap_username','ldap_password','ldap_bdn','email','bck_script_passkey'];
 
                     store.remove("teampassSettings");
 
@@ -1650,18 +1658,18 @@ $lang = new Language();
                     store.update(
                         'teampassUser', {},
                         function(teampassUser) {
-                            teampassUser['user_admin'] = <?php echo returnIfSet($superGlobal->get('admin', 'SESSION'), 0); ?>;
-                            teampassUser['user_id'] = <?php echo returnIfSet($superGlobal->get('user_id', 'SESSION'), 0); ?>;
-                            teampassUser['user_manager'] = <?php echo returnIfSet($superGlobal->get('user_manager', 'SESSION'), 0); ?>;
-                            teampassUser['user_can_manage_all_users'] = <?php echo returnIfSet($superGlobal->get('user_can_manage_all_users', 'SESSION'), 0); ?>;
-                            teampassUser['user_read_only'] = <?php echo returnIfSet($superGlobal->get('user_read_only', 'SESSION'), 0); ?>;
-                            teampassUser['key'] = '<?php echo returnIfSet($superGlobal->get('key', 'SESSION'), 0); ?>';
-                            teampassUser['login'] = "<?php echo returnIfSet($superGlobal->get('login', 'SESSION'), 0); ?>";
-                            teampassUser['lastname'] = "<?php echo returnIfSet($superGlobal->get('lastname', 'SESSION'), 0); ?>";
-                            teampassUser['name'] = "<?php echo returnIfSet($superGlobal->get('name', 'SESSION'), 0); ?>";
-                            teampassUser['pskDefinedInDatabase'] = <?php echo returnIfSet($superGlobal->get('encrypted_psk', 'SESSION', 'user'), 0, 1); ?>;
-                            teampassUser['can_create_root_folder'] = <?php echo returnIfSet($superGlobal->get('can_create_root_folder', 'SESSION'), 0); ?>;
-                            teampassUser['special'] = '<?php echo returnIfSet($superGlobal->get('special', 'SESSION', 'user'), 0); ?>';
+                            teampassUser['user_admin'] = <?php echo returnIfSet($session->get('user-admin'), 0); ?>;
+                            teampassUser['user_id'] = <?php echo returnIfSet($session->get('user-id'), 0); ?>;
+                            teampassUser['user_manager'] = <?php echo returnIfSet($session->get('user-manager'), 0); ?>;
+                            teampassUser['user_can_manage_all_users'] = <?php echo returnIfSet($session->get('user-can_manage_all_users'), 0); ?>;
+                            teampassUser['user_read_only'] = <?php echo returnIfSet($session->get('user-read_only'), 0); ?>;
+                            teampassUser['key'] = '<?php echo returnIfSet($session->get('key'), 0); ?>';
+                            teampassUser['login'] = "<?php echo returnIfSet($session->get('user-login'), 0); ?>";
+                            teampassUser['lastname'] = "<?php echo returnIfSet($session->get('user-lastname'), 0); ?>";
+                            teampassUser['name'] = "<?php echo returnIfSet($session->get('user-name'), 0); ?>";
+                            teampassUser['pskDefinedInDatabase'] = <?php echo returnIfSet($session->get('user-encrypted_psk'), 0, 1); ?>;
+                            teampassUser['can_create_root_folder'] = <?php echo returnIfSet($session->get('user-can_create_root_folder'), 0); ?>;
+                            teampassUser['special'] = '<?php echo returnIfSet($session->get('user-special'), 0); ?>';
                         }
                     );
                 }
@@ -1683,11 +1691,11 @@ $lang = new Language();
             "sources/main.queries.php", {
                 type: 'user_get_session_time',
                 type_category: 'action_user',
-                data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'),
-                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $session->get('key'); ?>'),
+                key: '<?php echo $session->get('key'); ?>'
             },
             function(data) {
-                data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
+                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
                 if (debugJavascript === true) {
                     console.log('debug')
                     console.log(data);
@@ -1789,7 +1797,7 @@ $lang = new Language();
             "sources/main.queries.php", {
                 type: 'refresh_list_items_seen',
                 type_category: 'action_user',
-                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                key: '<?php echo $session->get('key'); ?>'
             },
             function(data) {
                 try {
@@ -1884,11 +1892,11 @@ $lang = new Language();
             "sources/main.queries.php", {
                 type: 'generate_bug_report',
                 type_category: 'action_system',
-                data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'),
-                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $session->get('key'); ?>'),
+                key: '<?php echo $session->get('key'); ?>'
             },
             function(data) {
-                data = prepareExchangedData(data, 'decode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
+                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
 
                 // Show data
                 $('#dialog-bug-report-text').html(data.html);
@@ -1976,12 +1984,12 @@ $lang = new Language();
         $.post(
             "sources/users.queries.php", {
                 type: "get_generate_keys_progress",
-                data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $superGlobal->get('key', 'SESSION'); ?>'),
-                key: "<?php echo $superGlobal->get('key', 'SESSION'); ?>"
+                data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $session->get('key'); ?>'),
+                key: "<?php echo $session->get('key'); ?>"
             },
             function(data) {
                 //decrypt data
-                data = decodeQueryReturn(data, '<?php echo $superGlobal->get('key', 'SESSION'); ?>');
+                data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>');
                 if (debugJavascript === true) {
                     console.info('Process generation keys status:');
                     console.log(data);

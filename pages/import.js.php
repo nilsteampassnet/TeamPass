@@ -26,17 +26,19 @@ declare(strict_types=1);
 
 
 use TeampassClasses\PerformChecks\PerformChecks;
-use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
+use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\Language\Language;
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
 
 // init
 loadClasses();
-$superGlobal = new SuperGlobal();
+$session = SessionManager::getSession();
+$request = Request::createFromGlobals();
 $lang = new Language(); 
 
-if ($superGlobal->get('key', 'SESSION') === null) {
+if ($session->get('key') === null) {
     die('Hacking attempt...');
 }
 
@@ -51,23 +53,22 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+            'type' => $request->request->get('type', '') !== '' ? htmlspecialchars($request->request->get('type')) : '',
         ],
         [
             'type' => 'trim|escape',
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
-        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
     ]
 );
 // Handle the case
 echo $checkUserAccess->caseHandler();
 if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('import') === false) {
     // Not allowed page
-    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+    $session->set('system-error_code', ERR_NOT_ALLOWED);
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -87,7 +88,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     $('.select2')
         .html(store.get('teampassUser').folders)
         .select2({
-            language: '<?php echo $superGlobal->get('user_language_code', 'SESSION'); ?>'
+            language: '<?php echo $session->get('user-language_code'); ?>'
         });
 
 
@@ -124,7 +125,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         ambiguous: true,
                         reason: "import_items_from_csv",
                         duration: 10,
-                        key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                        key: '<?php echo $session->get('key'); ?>'
                     },
                     function(data) {
                         store.update(
@@ -149,7 +150,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 toastr.info('<i class="fa-solid fa-ellipsis fa-2x fa-fade ml-2"></i>');
             },
             FileUploaded: function(upldr, file, object) {
-                var data = prepareExchangedData(object.response, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
+                var data = prepareExchangedData(object.response, "decode", "<?php echo $session->get('key'); ?>");
                 if (debugJavascript === true) {
                     console.log(data)
                 }
@@ -292,10 +293,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 type: "import_file_format_csv",
                 file: store.get('teampassApplication').uploadedFileId,
                 folder_id: $('#import-csv-target-folder').val(),
-                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                key: '<?php echo $session->get('key'); ?>'
             },
             function(data) {
-                data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
+                data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
                 console.log(data)
 
                 // CLear
@@ -423,11 +424,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         $.post(
             "sources/import.queries.php", {
                 type: "import_items",
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
-                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                key: '<?php echo $session->get('key'); ?>'
             },
             function(data) {
-                data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
+                data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
                 console.log(data)
 
                 if (data.error === true) {
@@ -501,7 +502,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         ambiguous: true,
                         reason: "import_items_from_keepass",
                         duration: 10,
-                        key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                        key: '<?php echo $session->get('key'); ?>'
                     },
                     function(data) {
                         store.update(
@@ -526,7 +527,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 up.settings.multipart_params.user_token = store.get('teampassApplication').uploadedFileId;			
             },
             FileUploaded: function(upldr, file, object) {
-                var data = prepareExchangedData(object.response, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
+                var data = prepareExchangedData(object.response, "decode", "<?php echo $session->get('key'); ?>");
                 if (debugJavascript === true) {
                     console.log(data);
                 }
@@ -614,11 +615,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         $.post(
             "sources/import.queries.php", {
                 type: "import_file_format_keepass",
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
-                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                key: '<?php echo $session->get('key'); ?>'
             },
             function(data) {
-                data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
+                data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
                 if (debugJavascript === true) {
                     console.log(data);
                 }
@@ -655,11 +656,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     $.post(
                         "sources/import.queries.php", {
                             type: "keepass_create_folders",
-                            data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
-                            key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                            data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                            key: '<?php echo $session->get('key'); ?>'
                         },
                         function(data) {
-                            data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
+                            data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
                             if (debugJavascript === true) {
                                 console.log(data);
                             }
@@ -718,11 +719,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                         $.post(
                                             "sources/import.queries.php", {
                                                 type: "keepass_create_items",
-                                                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>"),
-                                                key: '<?php echo $superGlobal->get('key', 'SESSION'); ?>'
+                                                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                                                key: '<?php echo $session->get('key'); ?>'
                                             },
                                             function(data) {
-                                                data = prepareExchangedData(data, "decode", "<?php echo $superGlobal->get('key', 'SESSION'); ?>");
+                                                data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
                                                 if (debugJavascript === true) {
                                                     console.log(data);
                                                 }

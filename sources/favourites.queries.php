@@ -21,20 +21,22 @@ declare(strict_types=1);
 
 use voku\helper\AntiXSS;
 use TeampassClasses\NestedTree\NestedTree;
-use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
+use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
 
 // Load functions
 require_once 'main.functions.php';
+$session = SessionManager::getSession();
+
 
 // init
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
+$session = SessionManager::getSession();
+$request = Request::createFromGlobals();
 $lang = new Language(); 
-session_name('teampass_session');
-session_start();
 
 // Load config if $SETTINGS not defined
 try {
@@ -48,16 +50,15 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+            'type' => $request->request->get('type', '') !== '' ? htmlspecialchars($request->request->get('type')) : '',
         ],
         [
             'type' => 'trim|escape',
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
-        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
     ]
 );
 // Handle the case
@@ -67,7 +68,7 @@ if (
     $checkUserAccess->checkSession() === false
 ) {
     // Not allowed page
-    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+    $session->set('system-error_code', ERR_NOT_ALLOWED);
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -93,32 +94,32 @@ if (null !== $post_type) {
         //CASE adding a new function
         case 'del_fav':
             //Get actual favourites
-            $data = DB::queryfirstrow('SELECT favourites FROM '.prefixTable('users').' WHERE id = %i', $_SESSION['user_id']);
+            $data = DB::queryfirstrow('SELECT favourites FROM '.prefixTable('users').' WHERE id = %i', $session->get('user-id'));
             $tmp = explode(';', $data['favourites']);
-            $favs = '';
-            $tab_favs = array();
+            $favorites = '';
+            $arrayFavorites = array();
             //redefine new list of favourites
             foreach ($tmp as $favorite) {
                 if (!empty($favorite) && $favorite != $post_id) {
-                    if (empty($favs)) {
-                        $favs = $favorite;
+                    if (empty($favorites)) {
+                        $favorites = $favorite;
                     } else {
-                        $favs = ';'.$favorite;
+                        $favorites = ';'.$favorite;
                     }
-                    array_push($tab_favs, $favorite);
+                    array_push($arrayFavorites, $favorite);
                 }
             }
             //update user's account
             DB::update(
                 prefixTable('users'),
                 array(
-                    'favourites' => $favs,
+                    'favourites' => $favorites,
                 ),
                 'id = %i',
-                $_SESSION['user_id']
+                $session->get('user-id')
             );
             //update session
-            $_SESSION['favourites'] = $tab_favs;
+            $session->set('user-favorites', $arrayFavorites);
             break;
     }
 }

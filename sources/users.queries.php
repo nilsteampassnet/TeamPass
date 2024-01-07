@@ -21,22 +21,19 @@ declare(strict_types=1);
 
 use LdapRecord\Connection;
 use TeampassClasses\NestedTree\NestedTree;
-use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\SessionManager\SessionManager;
+use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\Language\Language;
-use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
 use PasswordLib\PasswordLib;
-
 
 // Load functions
 require_once 'main.functions.php';
 
 // init
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
-$lang = new Language(); 
-session_name('teampass_session');
-session_start();
+$session = SessionManager::getSession();
+$lang = new Language();
 
 // Load config if $SETTINGS not defined
 try {
@@ -49,23 +46,22 @@ try {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => returnIfSet($superGlobal->get('type', 'POST')),
+            'type' => $request->request->get('type', '') !== '' ? htmlspecialchars($request->request->get('type')) : '',
         ],
         [
             'type' => 'trim|escape',
         ],
     ),
     [
-        'user_id' => returnIfSet($superGlobal->get('user_id', 'SESSION'), null),
-        'user_key' => returnIfSet($superGlobal->get('key', 'SESSION'), null),
-        'CPM' => returnIfSet($superGlobal->get('CPM', 'SESSION'), null),
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
     ]
 );
 // Handle the case
 echo $checkUserAccess->caseHandler();
 if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('profile') === false) {
     // Not allowed page
-    $superGlobal->put('code', ERR_NOT_ALLOWED, 'SESSION', 'error');
+    $session->set('system-error_code', ERR_NOT_ALLOWED);
     include $SETTINGS['cpassman_dir'] . '/error.php';
     exit;
 }
@@ -97,7 +93,7 @@ if (null !== $post_type) {
          */
         case 'add_new_user':
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -106,7 +102,7 @@ if (null !== $post_type) {
                     'encode'
                 );
                 break;
-            } elseif ($_SESSION['user_read_only'] === true) {
+            } elseif ($session->get('user-read_only') === 1) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -165,7 +161,7 @@ if (null !== $post_type) {
 
             if (DB::count() === 0) {
                 // check if admin role is set. If yes then check if originator is allowed
-                if ($dataReceived['admin'] === true && (int) $_SESSION['user_admin'] !== 1) {
+                if ($dataReceived['admin'] === true && (int) $session->get('user-admin') !== 1) {
                     echo prepareExchangedData(
                         array(
                             'error' => true,
@@ -333,8 +329,8 @@ if (null !== $post_type) {
                     $SETTINGS,
                     'user_mngt',
                     'at_user_added',
-                    (string) $_SESSION['user_id'],
-                    $_SESSION['login'],
+                    (string) $session->get('user-id'),
+                    $session->get('user-login'),
                     (string) $new_user_id
                 );
 
@@ -342,7 +338,6 @@ if (null !== $post_type) {
                     array(
                         'error' => false,
                         'user_id' => $new_user_id,
-                        //'user_pwd' => $password,
                         'message' => '',
                     ),
                     'encode'
@@ -363,7 +358,7 @@ if (null !== $post_type) {
          */
         case 'delete_user':
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -372,7 +367,7 @@ if (null !== $post_type) {
                     'encode'
                 );
                 break;
-            } elseif ($_SESSION['user_read_only'] === true) {
+            } elseif ($session->get('user-read_only') === 1) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -401,9 +396,9 @@ if (null !== $post_type) {
 
             // Is this user allowed to do this?
             if (
-                (int) $_SESSION['is_admin'] === 1
-                || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
-                || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $data_user['admin'] !== 1)
+                (int) $session->get('user-admin') === 1
+                || (in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array')))
+                || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $data_user['admin'] !== 1)
             ) {
                 // delete user in database
                 /*DB::delete(
@@ -489,7 +484,7 @@ if (null !== $post_type) {
                 }
                 
                 // update LOG
-                logEvents($SETTINGS, 'user_mngt', 'at_user_deleted', (string) $_SESSION['user_id'], $_SESSION['login'], $post_id);
+                logEvents($SETTINGS, 'user_mngt', 'at_user_deleted', (string) $session->get('user-id'), $session->get('user-login'), $post_id);
 
                 //Send back
                 echo prepareExchangedData(
@@ -516,7 +511,7 @@ if (null !== $post_type) {
          */
         case 'can_create_root_folder':
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($superGlobal->get('key', 'SESSION'), FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($session->get('key'), FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
                 echo prepareExchangedData(array('error' => 'not_allowed', 'error_text' => $lang->get('error_not_allowed_to')), 'encode');
                 break;
             }
@@ -532,9 +527,9 @@ if (null !== $post_type) {
 
             // Is this user allowed to do this?
             if (
-                (int) $_SESSION['is_admin'] === 1
-                || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
-                || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $data_user['admin'] !== 1)
+                (int) $session->get('user-admin') === 1
+                || (in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array')))
+                || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $data_user['admin'] !== 1)
             ) {
                 DB::update(
                     prefixTable('users'),
@@ -555,8 +550,8 @@ if (null !== $post_type) {
         case 'admin':
             // Check KEY
             if (
-                filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($superGlobal->get('key', 'SESSION'), FILTER_SANITIZE_FULL_SPECIAL_CHARS)
-                || $_SESSION['is_admin'] !== '1'
+                filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($session->get('key'), FILTER_SANITIZE_FULL_SPECIAL_CHARS)
+                || $session->get('user-admin') === 0
             ) {
                 echo prepareExchangedData(array('error' => 'not_allowed', 'error_text' => $lang->get('error_not_allowed_to')), 'encode');
                 exit();
@@ -574,9 +569,9 @@ if (null !== $post_type) {
 
             // Is this user allowed to do this?
             if (
-                (int) $_SESSION['is_admin'] === 1
-                || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
-                || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $data_user['admin'] !== 1)
+                (int) $session->get('user-admin') === 1
+                || (in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array')))
+                || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $data_user['admin'] !== 1)
             ) {
                 DB::update(
                     prefixTable('users'),
@@ -599,7 +594,7 @@ if (null !== $post_type) {
          */
         case 'gestionnaire':
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($superGlobal->get('key', 'SESSION'), FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($session->get('key'), FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
                 echo prepareExchangedData(array('error' => 'not_allowed', 'error_text' => $lang->get('error_not_allowed_to')), 'encode');
                 break;
             }
@@ -617,9 +612,9 @@ if (null !== $post_type) {
 
             // Is this user allowed to do this?
             if (
-                (int) $_SESSION['is_admin'] === 1
-                || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
-                || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $data_user['admin'] !== 1)
+                (int) $session->get('user-admin') === 1
+                || (in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array')))
+                || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $data_user['admin'] !== 1)
             ) {
                 DB::update(
                     prefixTable('users'),
@@ -644,7 +639,7 @@ if (null !== $post_type) {
          */
         case 'read_only':
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($superGlobal->get('key', 'SESSION'), FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($session->get('key'), FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
                 echo prepareExchangedData(array('error' => 'not_allowed', 'error_text' => $lang->get('error_not_allowed_to')), 'encode');
                 break;
             }
@@ -661,9 +656,9 @@ if (null !== $post_type) {
 
             // Is this user allowed to do this?
             if (
-                (int) $_SESSION['is_admin'] === 1
-                || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
-                || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $data_user['admin'] !== 1)
+                (int) $session->get('user-admin') === 1
+                || (in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array')))
+                || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $data_user['admin'] !== 1)
             ) {
                 DB::update(
                     prefixTable('users'),
@@ -686,7 +681,7 @@ if (null !== $post_type) {
          */
         case 'can_manage_all_users':
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($superGlobal->get('key', 'SESSION'), FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($session->get('key'), FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
                 echo prepareExchangedData(array('error' => 'not_allowed', 'error_text' => $lang->get('error_not_allowed_to')), 'encode');
                 break;
             }
@@ -704,9 +699,9 @@ if (null !== $post_type) {
 
             // Is this user allowed to do this?
             if (
-                (int) $_SESSION['is_admin'] === 1
-                || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
-                || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $data_user['admin'] !== 1)
+                (int) $session->get('user-admin') === 1
+                || (in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array')))
+                || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $data_user['admin'] !== 1)
             ) {
                 DB::update(
                     prefixTable('users'),
@@ -729,7 +724,7 @@ if (null !== $post_type) {
          */
         case 'personal_folder':
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($superGlobal->get('key', 'SESSION'), FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($session->get('key'), FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
                 echo prepareExchangedData(array('error' => 'not_allowed', 'error_text' => $lang->get('error_not_allowed_to')), 'encode');
                 break;
             }
@@ -747,9 +742,9 @@ if (null !== $post_type) {
 
             // Is this user allowed to do this?
             if (
-                (int) $_SESSION['is_admin'] === 1
-                || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
-                || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $data_user['admin'] !== 1)
+                (int) $session->get('user-admin') === 1
+                || (in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array')))
+                || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $data_user['admin'] !== 1)
             ) {
                 DB::update(
                     prefixTable('users'),
@@ -770,7 +765,7 @@ if (null !== $post_type) {
          */
         case 'unlock_account':
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($superGlobal->get('key', 'SESSION'), FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($session->get('key'), FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
@@ -787,9 +782,9 @@ if (null !== $post_type) {
 
             // Is this user allowed to do this?
             if (
-                (int) $_SESSION['is_admin'] === 1
-                || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
-                || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $data_user['admin'] !== 1)
+                (int) $session->get('user-admin') === 1
+                || (in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array')))
+                || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $data_user['admin'] !== 1)
             ) {
                 DB::update(
                     prefixTable('users'),
@@ -805,8 +800,8 @@ if (null !== $post_type) {
                     $SETTINGS,
                     'user_mngt',
                     'at_user_unlocked',
-                    (string) $_SESSION['user_id'],
-                    $_SESSION['login'],
+                    (string) $session->get('user-id'),
+                    $session->get('user-login'),
                     $post_id
                 );
             }
@@ -987,9 +982,7 @@ if (null !== $post_type) {
             $user_id = htmlspecialchars_decode($data_received['user_id']);
             $salt_user = htmlspecialchars_decode($data_received['salt_user']);
 
-            if (!isset($_SESSION['user']['clear_psk']) || $_SESSION['user']['clear_psk'] == '') {
-                echo '[ { "error" : "no_sk" } ]';
-            } elseif ($salt_user == '') {
+            if ($salt_user == '') {
                 echo '[ { "error" : "no_sk_user" } ]';
             } elseif ($user_id == '') {
                 echo '[ { "error" : "no_user_id" } ]';
@@ -998,7 +991,7 @@ if (null !== $post_type) {
                 $admin_folder = DB::queryFirstRow(
                     'SELECT id FROM ' . prefixTable('nested_tree') . '
                     WHERE title = %i AND personal_folder = %i',
-                    intval($_SESSION['user_id']),
+                    (int) $session->get('user-id'),
                     '1'
                 );
                 
@@ -1040,7 +1033,7 @@ if (null !== $post_type) {
          */
         case 'disconnect_user':
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($superGlobal->get('key', 'SESSION'), FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($session->get('key'), FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
@@ -1057,9 +1050,9 @@ if (null !== $post_type) {
 
             // Is this user allowed to do this?
             if (
-                (int) $_SESSION['is_admin'] === 1
-                || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
-                || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $data_user['admin'] !== 1)
+                (int) $session->get('user-admin') === 1
+                || (in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array')))
+                || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $data_user['admin'] !== 1)
             ) {
                 // Do
                 DB::update(
@@ -1080,7 +1073,7 @@ if (null !== $post_type) {
          */
         case 'disconnect_all_users':
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($superGlobal->get('key', 'SESSION'), FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== filter_var($session->get('key'), FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
@@ -1103,9 +1096,9 @@ if (null !== $post_type) {
 
                 // Is this user allowed to do this?
                 if (
-                    (int) $_SESSION['is_admin'] === 1
-                    || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
-                    || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $data_user['admin'] !== 1)
+                    (int) $session->get('user-admin') === 1
+                    || (in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array')))
+                    || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $data_user['admin'] !== 1)
                 ) {
                     DB::update(
                         prefixTable('users'),
@@ -1125,7 +1118,7 @@ if (null !== $post_type) {
          */
         case 'get_user_info':
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -1134,7 +1127,7 @@ if (null !== $post_type) {
                     'encode'
                 );
                 break;
-            } elseif ($_SESSION['user_read_only'] === true) {
+            } elseif ($session->get('user-read_only') === 1) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -1164,9 +1157,9 @@ if (null !== $post_type) {
 
             // Is this user allowed to do this?
             if (
-                (int) $_SESSION['is_admin'] === 1
-                || (in_array($rowUser['isAdministratedByRole'], $_SESSION['user_roles']) === true)
-                || ((int) $_SESSION['user_can_manage_all_users'] === 1 && $rowUser['admin'] !== '1')
+                (int) $session->get('user-admin') === 1
+                || (in_array($rowUser['isAdministratedByRole'], $session->get('user-roles_array')) === true)
+                || ((int) $session->get('user-can_manage_all_users') === 1 && $rowUser['admin'] !== '1')
             ) {
                 $arrData = array();
                 $arrFunction = array();
@@ -1187,9 +1180,9 @@ if (null !== $post_type) {
                 $rows = DB::query('SELECT id,title,creator_id FROM ' . prefixTable('roles_title'));
                 foreach ($rows as $record) {
                     if (
-                        (int) $_SESSION['is_admin'] === 1
-                        || (((int) $_SESSION['user_manager'] === 1 || (int) $_SESSION['user_can_manage_all_users'] === 1)
-                            //&& (in_array($record['id'], $my_functions) || $record['creator_id'] == $_SESSION['user_id'])
+                        (int) $session->get('user-admin') === 1
+                        || (((int) $session->get('user-manager') === 1 || (int) $session->get('user-can_manage_all_users') === 1)
+                            //&& (in_array($record['id'], $my_functions) || $record['creator_id'] == $session->get('user-id'))
                             )
                     ) {
                         if (in_array($record['id'], $users_functions)) {
@@ -1234,7 +1227,7 @@ if (null !== $post_type) {
                     )
                 );
                 foreach ($rolesList as $fonction) {
-                    if ($_SESSION['is_admin'] || in_array($fonction['id'], $_SESSION['user_roles'])) {
+                    if ($session->get('user-admin') === 1 || in_array($fonction['id'], $session->get('user-roles_array'))) {
                         if ($rowUser['isAdministratedByRole'] == $fonction['id']) {
                             $selected = 'selected';
 
@@ -1275,7 +1268,7 @@ if (null !== $post_type) {
                 $userForbidFolders = explode(';', is_null($rowUser['groupes_interdits']) === true ? '' : $rowUser['groupes_interdits']);
                 $tree_desc = $tree->getDescendants();
                 foreach ($tree_desc as $t) {
-                    if (in_array($t->id, $_SESSION['groupes_visibles']) && !in_array($t->id, $_SESSION['personal_visible_groups'])) {
+                    if (in_array($t->id, $session->get('user-accessible_folders')) && in_array($t->id, $session->get('user-personal_visible_folders')) === false) {
                         $selected = '';
                         if (in_array($t->id, $userForbidFolders)) {
                             $selected = 'selected';
@@ -1305,8 +1298,8 @@ if (null !== $post_type) {
                 $tree_desc = $tree->getDescendants();
                 foreach ($tree_desc as $t) {
                     if (
-                        in_array($t->id, $_SESSION['groupes_visibles']) === true
-                        && in_array($t->id, $_SESSION['personal_visible_groups']) === false
+                        in_array($t->id, $session->get('user-accessible_folders')) === true
+                        && in_array($t->id, $session->get('user-personal_visible_folders')) === false
                     ) {
                         $selected = '';
                         if (in_array($t->id, $userAllowFolders)) {
@@ -1383,7 +1376,7 @@ if (null !== $post_type) {
          */
         case 'store_user_changes':
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -1392,7 +1385,7 @@ if (null !== $post_type) {
                     'encode'
                 );
                 break;
-            } elseif ($_SESSION['user_read_only'] === true) {
+            } elseif ($session->get('user-read_only') === 1) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -1481,9 +1474,9 @@ if (null !== $post_type) {
                 'read_only' => empty($post_is_read_only) === true ? 0 : $post_is_read_only,
                 'personal_folder' => empty($post_has_personal_folder) === true ? 0 : $post_has_personal_folder,
                 'user_language' => $SETTINGS['default_language'],
-                'fonction_id' => is_null($post_groups) === true ? '' : implode(';', $post_groups),
-                'groupes_interdits' => is_null($post_forbidden_flds) === true ? '' : implode(';', $post_forbidden_flds),
-                'groupes_visibles' => is_null($post_allowed_flds) === true ? '' : implode(';', $post_allowed_flds),
+                'fonction_id' => is_null($post_groups) === true ? '' : implode(';', array_unique($post_groups)),
+                'groupes_interdits' => is_null($post_forbidden_flds) === true ? '' : implode(';', array_unique($post_forbidden_flds)),
+                'groupes_visibles' => is_null($post_allowed_flds) === true ? '' : implode(';', array_unique($post_allowed_flds)),
                 'isAdministratedByRole' => $post_is_administrated_by,
                 'can_create_root_folder' => empty($post_root_level) === true ? 0 : $post_root_level,
                 'mfa_enabled' => empty($post_mfa_enabled) === true ? 0 : $post_mfa_enabled,
@@ -1495,7 +1488,7 @@ if (null !== $post_type) {
             if (
                 isset($post_password) === true
                 && $post_password !== $password_do_not_change
-                && $post_id === $_SESSION['user_id']
+                && $post_id === $session->get('user-id')
             ) {
                 // load passwordLib library
                 $pwdlib = new PasswordLib();
@@ -1504,7 +1497,7 @@ if (null !== $post_type) {
                 $changeArray['key_tempo'] = '';
 
                 // We need to adapt the private key with new password
-                $changeArray['private_key'] = encryptPrivateKey($post_password, $_SESSION['user']['private_key']);
+                $session->set('user-private_key', encryptPrivateKey($post_password, $session->get('user-private_key')));
 
                 // TODO
             }
@@ -1542,9 +1535,9 @@ if (null !== $post_type) {
 
             // Is this user allowed to do this?
             if (
-                (int) $_SESSION['is_admin'] === 1
-                || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
-                || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $data_user['admin'] !== 1)
+                (int) $session->get('user-admin') === 1
+                || (in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array')))
+                || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $data_user['admin'] !== 1)
             ) {
                 // delete account
                 // delete user in database
@@ -1586,7 +1579,7 @@ if (null !== $post_type) {
                         $tree->rebuild();
                     }
                     // update LOG
-                    logEvents($SETTINGS, 'user_mngt', 'at_user_deleted', (string) $_SESSION['user_id'], $_SESSION['login'], $post_id);
+                    logEvents($SETTINGS, 'user_mngt', 'at_user_deleted', (string) $session->get('user-id'), $session->get('user-login'), $post_id);
                 } else {
                     // Get old data about user
                     $oldData = DB::queryfirstrow(
@@ -1596,10 +1589,10 @@ if (null !== $post_type) {
                     );
 
                     // update SESSION
-                    if ($_SESSION['user_id'] === $post_id) {
-                        $_SESSION['user_email'] = $post_email;
-                        $_SESSION['name'] = $post_name;
-                        $_SESSION['lastname'] = $post_lastname;
+                    if ($session->get('user-id') === $post_id) {
+                        $session->set('user-lastname', $post_lastname);
+                        $session->set('user-name', $post_name);
+                        $session->set('user-email', $post_email);
                     }
 
                     // Has the groups changed? If yes then ask for a keys regeneration
@@ -1627,7 +1620,7 @@ if (null !== $post_type) {
 
                     // update LOG
                     if ($oldData['email'] !== $post_email) {
-                        logEvents($SETTINGS, 'user_mngt', 'at_user_email_changed:' . $oldData['email'], (string) $_SESSION['user_id'], $_SESSION['login'], $post_id);
+                        logEvents($SETTINGS, 'user_mngt', 'at_user_email_changed:' . $oldData['email'], (string) $session->get('user-id'), $session->get('user-login'), $post_id);
                     }
                 }
                 echo prepareExchangedData(
@@ -1654,7 +1647,7 @@ if (null !== $post_type) {
          */
         case 'user_edit_login':
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -1663,7 +1656,7 @@ if (null !== $post_type) {
                     'encode'
                 );
                 break;
-            } elseif ($_SESSION['user_read_only'] === true) {
+            } elseif ($session->get('user-read_only') === 1) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -1692,9 +1685,9 @@ if (null !== $post_type) {
 
             // Is this user allowed to do this?
             if (
-                (int) $_SESSION['is_admin'] === 1
-                || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
-                || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $data_user['admin'] !== 1)
+                (int) $session->get('user-admin') === 1
+                || (in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array')))
+                || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $data_user['admin'] !== 1)
             ) {
                 DB::update(
                     prefixTable('users'),
@@ -1714,7 +1707,7 @@ if (null !== $post_type) {
          */
         case 'is_login_available':
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -1723,7 +1716,7 @@ if (null !== $post_type) {
                     'encode'
                 );
                 break;
-            } elseif ($_SESSION['user_read_only'] === true) {
+            } elseif ($session->get('user-read_only') === 1) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -1756,7 +1749,7 @@ if (null !== $post_type) {
          */
         case 'user_folders_rights':
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -1765,7 +1758,7 @@ if (null !== $post_type) {
                     'encode'
                 );
                 break;
-            } elseif ($_SESSION['user_read_only'] === true) {
+            } elseif ($session->get('user-read_only') === 1) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -1907,7 +1900,7 @@ if (null !== $post_type) {
          */
         case 'get_list_of_users_for_sharing':
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -1916,7 +1909,7 @@ if (null !== $post_type) {
                     'encode'
                 );
                 break;
-            } elseif ($_SESSION['user_read_only'] === true) {
+            } elseif ($session->get('user-read_only') === 1) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -1929,13 +1922,13 @@ if (null !== $post_type) {
 
             $arrUsers = [];
 
-            if ((int) $_SESSION['is_admin'] === 0 && (int) $_SESSION['user_can_manage_all_users'] === 0) {
+            if ((int) $session->get('user-admin') === 0 && (int) $session->get('user-can_manage_all_users') === 0) {
                 $rows = DB::query(
                     'SELECT *
                     FROM ' . prefixTable('users') . '
                     WHERE admin = %i AND isAdministratedByRole IN %ls',
                     '0',
-                    array_filter($_SESSION['user_roles'])
+                    array_filter($session->get('user-roles_array'))
                 );
             } else {
                 $rows = DB::query(
@@ -2036,7 +2029,7 @@ if (null !== $post_type) {
          */
         case 'update_users_rights_sharing':
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -2045,7 +2038,7 @@ if (null !== $post_type) {
                     'encode'
                 );
                 break;
-            } elseif ($_SESSION['user_read_only'] === true) {
+            } elseif ($session->get('user-read_only') === 1) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -2093,16 +2086,16 @@ if (null !== $post_type) {
 
             // Is this user allowed to do this?
             if (
-                (int) $_SESSION['is_admin'] === 1
-                || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
-                || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $data_user['admin'] !== 1)
+                (int) $session->get('user-admin') === 1
+                || (in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array')))
+                || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $data_user['admin'] !== 1)
             ) {
                 foreach ($post_destination_ids as $dest_user_id) {
                     // Is this user allowed to do this?
                     if (
-                        (int) $_SESSION['is_admin'] === 1
-                        || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
-                        || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $data_user['admin'] !== 1)
+                        (int) $session->get('user-admin') === 1
+                        || (in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array')))
+                        || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $data_user['admin'] !== 1)
                     ) {
                         // update user
                         DB::update(
@@ -2132,7 +2125,7 @@ if (null !== $post_type) {
          */
         case 'user_profile_update':
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -2145,8 +2138,8 @@ if (null !== $post_type) {
 
             // Check user
             if (
-                isset($_SESSION['user_id']) === false
-                || empty($_SESSION['user_id']) === true
+                null === $session->get('user-id')
+                || empty($session->get('user-id')) === true
             ) {
                 echo prepareExchangedData(
                     array(
@@ -2204,17 +2197,18 @@ if (null !== $post_type) {
                         'lastname' => $inputData['lastname'],
                     ),
                     'id = %i',
-                    $_SESSION['user_id']
+                    $session->get('user-id')
                 );
 
                 // Update SETTINGS
-                $_SESSION['user_timezone'] = $inputData['timezone'];
-                $_SESSION['name'] = $inputData['name'];
-                $_SESSION['lastname'] = $inputData['lastname'];
-                $_SESSION['user_email'] = $inputData['email'];
-                $_SESSION['user']['user_treeloadstrategy'] = $inputData['treeloadstrategy'];
-                $_SESSION['user_agsescardid'] = $inputData['agsescardid'];
-                $_SESSION['user']['user_language'] = $inputData['language'];
+                $session->set('user-timezone', $inputData['timezone']);
+                $session->set('user-name', $inputData['name']);
+                $session->set('user-lastname', $inputData['lastname']);
+                $session->set('user-email', $inputData['email']);
+                $session->set('user-tree_load_strategy', $inputData['treeloadstrategy']);
+                //$_SESSION['user_agsescardid'] = $inputData['agsescardid'];
+                $session->set('user-language', $inputData['language']);
+
             } else {
                 // An error appears on JSON format
                 echo prepareExchangedData(
@@ -2231,9 +2225,9 @@ if (null !== $post_type) {
                 array(
                     'error' => false,
                     'message' => '',
-                    'name' => $_SESSION['name'],
-                    'lastname' => $_SESSION['lastname'],
-                    'email' => $_SESSION['user_email'],
+                    'name' => $session->get('user-name'),
+                    'lastname' => $session->get('user-lastname'),
+                    'email' => $session->get('user-email'),
                 ),
                 'encode'
             );
@@ -2242,7 +2236,7 @@ if (null !== $post_type) {
             //CASE where refreshing table
         case 'save_user_change':
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -2251,7 +2245,7 @@ if (null !== $post_type) {
                     'encode'
                 );
                 break;
-            } elseif ($_SESSION['user_read_only'] === true) {
+            } elseif ($session->get('user-read_only') === 1) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -2302,8 +2296,8 @@ if (null !== $post_type) {
 
             // Manage specific case of api key
             if($post_field === 'user_api_key') {
-                $encrypted_key = encryptUserObjectKey(base64_encode($post_new_value), $_SESSION['user']['public_key']);
-                $_SESSION['user']['api-key'] = $post_new_value;
+                $encrypted_key = encryptUserObjectKey(base64_encode($post_new_value), $session->get('user-public_key'));
+                $session->set('user-api_key', $post_new_value);
 
                 DB::update(
                     prefixTable('api'),
@@ -2364,7 +2358,7 @@ if (null !== $post_type) {
         */
         case 'get_list_of_users_in_ldap':
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -2529,7 +2523,7 @@ if (null !== $post_type) {
          */
         case 'add_user_from_ldap':
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -2577,7 +2571,7 @@ if (null !== $post_type) {
 
             if (DB::count() === 0) {
                 // check if admin role is set. If yes then check if originator is allowed
-                if ((int) $_SESSION['user_admin'] !== 1 && (int) $_SESSION['gestionnaire'] !== 1) {
+                if ((int) $session->get('user-admin') !== 1 && (int) $session->get('user-manager') !== 1) {
                     echo prepareExchangedData(
                         array(
                             'error' => true,
@@ -2717,7 +2711,7 @@ if (null !== $post_type) {
         */
         case 'finishing_user_keys_creation':
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -2781,7 +2775,7 @@ if (null !== $post_type) {
          */
         case 'change_user_auth_type':
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -2858,7 +2852,7 @@ if (null !== $post_type) {
          */
         case 'change_user_privkey_with_otc':
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -2935,17 +2929,17 @@ if (null !== $post_type) {
                 $userPrivateKey
             );
             // Save it in session
-            $_SESSION['user']['private_key'] = $userPrivateKey;
+            $session->set('user-private_key', $userPrivateKey);
 
             // Check if this user has some private items.
             // If yes then upgrade needed for them
             // If no then upgrade is now finished
-            if (count($_SESSION['personal_folders']) > 0) {
+            if (count($session->get('user-personal_folders')) > 0) {
                 DB::query(
                     'SELECT id
                     FROM ' . prefixTable('items') . '
                     WHERE id_tree IN %ls',
-                    $_SESSION['personal_folders']
+                    $session->get('user-personal_folders')
                 );
 
                 if (DB::count() === 0) {
@@ -2988,7 +2982,7 @@ if (null !== $post_type) {
          */
         case 'manage_user_disable_status':
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -3045,8 +3039,8 @@ if (null !== $post_type) {
                     $SETTINGS,
                     'user_mngt',
                     $post_user_disabled === 1 ? 'at_user_locked' : 'at_user_unlocked',
-                    (string) $_SESSION['user_id'],
-                    $_SESSION['login'],
+                    (string) $session->get('user-id'),
+                    $session->get('user-login'),
                     $post_id
                 );
             } else {
@@ -3072,7 +3066,7 @@ if (null !== $post_type) {
 
         case "create_new_user_tasks":
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -3104,8 +3098,8 @@ if (null !== $post_type) {
                         'new_user_id' => (int) $post_user_id,
                         'new_user_pwd' => empty($post_user_pwd) === true ? '' : cryption($post_user_pwd, '','encrypt', $SETTINGS)['string'],
                         'new_user_code' => cryption($post_user_code, '','encrypt', $SETTINGS)['string'],
-                        'owner_id' => (int) $_SESSION['user_id'],
-                        'creator_pwd' => cryption($_SESSION['user_pwd'], '','encrypt', $SETTINGS)['string'],
+                        'owner_id' => (int) $session->get('user-id'),
+                        'creator_pwd' => cryption($session->get('user-password'), '','encrypt', $SETTINGS)['string'],
                         'email_body' => $lang->get('email_body_user_config_5'),
                         'send_email' => 1,
                     ]),
@@ -3236,7 +3230,7 @@ if (null !== $post_type) {
          */
         case 'generate_new_otp__preparation':
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -3245,7 +3239,7 @@ if (null !== $post_type) {
                     'encode'
                 );
                 break;
-            } elseif ($_SESSION['user_read_only'] === true) {
+            } elseif ($session->get('user-read_only') === 1) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -3315,7 +3309,7 @@ if (null !== $post_type) {
         */
         case 'get_generate_keys_progress':
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -3324,7 +3318,7 @@ if (null !== $post_type) {
                     'encode'
                 );
                 break;
-            } elseif ($_SESSION['user_read_only'] === true) {
+            } elseif ($session->get('user-read_only') === 1) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -3395,7 +3389,7 @@ if (null !== $post_type) {
          */
         case "get-user-infos":
             // Check KEY
-            if ($post_key !== $superGlobal->get('key', 'SESSION')) {
+            if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -3404,7 +3398,7 @@ if (null !== $post_type) {
                     'encode'
                 );
                 break;
-            } elseif ($_SESSION['user_read_only'] === true) {
+            } elseif ($session->get('user-read_only') === 1) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -3453,10 +3447,10 @@ if (null !== $post_type) {
 
     // Is this user allowed to do this?
     if (
-        (int) $_SESSION['is_admin'] === 1
-        || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
-        || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $data_user['admin'] !== 1)
-        || ($_SESSION['user_id'] === $value[1])
+        (int) $session->get('user-admin') === 1
+        || (in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array')))
+        || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $data_user['admin'] !== 1)
+        || ($session->get('user-id') === $value[1])
     ) {
         if ($value[0] === 'userlanguage') {
             $value[0] = 'user_language';
@@ -3480,25 +3474,25 @@ if (null !== $post_type) {
                 $SETTINGS,
                 'user_mngt',
                 'at_user_new_' . $value[0] . ':' . $value[1],
-                (string) $_SESSION['user_id'],
-                $_SESSION['login'],
+                (string) $session->get('user-id'),
+                $session->get('user-login'),
                 filter_input(INPUT_POST, 'id', FILTER_SANITIZE_FULL_SPECIAL_CHARS)
             );
             // refresh SESSION if requested
             if ($value[0] === 'treeloadstrategy') {
-                $_SESSION['user']['user_treeloadstrategy'] = $post_newValue;
+                $session->set('user-tree_load_strategy', $post_newValue);
             } elseif ($value[0] === 'usertimezone') {
                 // special case for usertimezone where session needs to be updated
-                $_SESSION['user_timezone'] = $post_newValue;
+                $session->set('user-timezone', $post_newValue);
             } elseif ($value[0] === 'userlanguage') {
                 // special case for user_language where session needs to be updated
-                $_SESSION['user']['user_language'] = $post_newValue;
+                $session->set('user-language', $post_newValue);
             } elseif ($value[0] === 'agses-usercardid') {
                 // special case for agsescardid where session needs to be updated
-                $_SESSION['user_agsescardid'] = $post_newValue;
+                //$_SESSION['user_agsescardid'] = $post_newValue;
             } elseif ($value[0] === 'email') {
                 // store email change in session
-                $_SESSION['user_email'] = $post_newValue;
+                $session->set('user-email', $post_newValue);
             }
             // Display info
             echo htmlentities($post_newValue, ENT_QUOTES);
@@ -3517,10 +3511,10 @@ if (null !== $post_type) {
 
     // Is this user allowed to do this?
     if (
-        (int) $_SESSION['is_admin'] === 1
-        || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
-        || ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $data_user['admin'] !== 1)
-        || ($_SESSION['user_id'] === $value[1])
+        (int) $session->get('user-admin') === 1
+        || (in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array')))
+        || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $data_user['admin'] !== 1)
+        || ($session->get('user-id') === $value[1])
     ) {
         DB::update(
             prefixTable('users'),

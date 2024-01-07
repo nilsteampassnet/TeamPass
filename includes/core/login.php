@@ -24,7 +24,7 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-use TeampassClasses\SuperGlobal\SuperGlobal;
+use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\Language\Language;
 
 // Automatic redirection
@@ -36,13 +36,13 @@ if (strpos($server['request_uri'], '?') > 0) {
     );
 }
 
-$superGlobal = new SuperGlobal();
+$request = Request::createFromGlobals();
 $lang = new Language(); 
 $get = [];
-$get['post_type'] = $superGlobal->get('post_type', 'GET');
+$get['post_type'] = $request->query->get('post_type');
 if (isset($SETTINGS['duo']) === true && (int) $SETTINGS['duo'] === 1 && $get['post_type'] === 'duo' ) {
-    $get['duo_state'] = $superGlobal->get('state', 'GET');
-    $get['duo_code'] = $superGlobal->get('duo_code', 'GET');
+    $get['duo_state'] = $request->query->get('state');
+    $get['duo_code'] = $request->query->get('duo_code');
 }
 
 echo '
@@ -77,29 +77,29 @@ echo '
 if (
     isset($SETTINGS['enable_http_request_login']) === true
     && (int) $SETTINGS['enable_http_request_login'] === 1
-    && $superGlobal->get('PHP_AUTH_USER', 'SERVER') !== null
+    && $request->server->get('PHP_AUTH_USER') !== null
     && ! (isset($SETTINGS['maintenance_mode']) === true
         && (int) $SETTINGS['maintenance_mode'] === 1)
 ) {
-    if (strpos($superGlobal->get('PHP_AUTH_USER', 'SERVER'), '@') !== false) {
-        $username = explode('@', $superGlobal->get('PHP_AUTH_USER', 'SERVER'))[0];
-    } elseif (strpos($superGlobal->get('PHP_AUTH_USER', 'SERVER'), '\\') !== false) {
-        $username = explode('\\', $superGlobal->get('PHP_AUTH_USER', 'SERVER'))[1];
+    if (strpos($request->server->get('PHP_AUTH_USER'), '@') !== false) {
+        $username = explode('@', $request->server->get('PHP_AUTH_USER'))[0];
+    } elseif (strpos($request->server->get('PHP_AUTH_USER'), '\\') !== false) {
+        $username = explode('\\', $request->server->get('PHP_AUTH_USER'))[1];
     } else {
-        $username = $superGlobal->get('PHP_AUTH_USER', 'SERVER');
+        $username = $request->server->get('PHP_AUTH_USER');
     }
     echo '
             <input type="text" id="login" class="form-control" placeholder="', filter_var($username, FILTER_SANITIZE_FULL_SPECIAL_CHARS), '" readonly>';
 } else {
     echo '
-            <input type="text" id="login" class="form-control" placeholder="' . $lang->get('index_login') . '" value="'.(null !== $superGlobal->get('login', 'SESSION') && empty($superGlobal->get('login', 'SESSION')) === false ? filter_var($superGlobal->get('login', 'SESSION'), FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '').'">';
+            <input type="text" id="login" class="form-control" placeholder="' . $lang->get('index_login') . '" value="'.(null !== $session->get('user-login') && empty($session->get('user-login')) === false ? filter_var($session->get('user-login'), FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '').'">';
 }
 
 echo '
         </div>';
 if (! (isset($SETTINGS['enable_http_request_login']) === true
     && (int) $SETTINGS['enable_http_request_login'] === 1
-    && $superGlobal->get('PHP_AUTH_USER', 'SERVER') !== null
+    && $request->server->get('PHP_AUTH_USER') !== null
     && ! (isset($SETTINGS['maintenance_mode']) === true
         && (int) $SETTINGS['maintenance_mode'] === 1))) {
     echo '
@@ -178,7 +178,7 @@ if (isset($SETTINGS['google_authentication']) === true && (int) $SETTINGS['googl
 
 if (isset($SETTINGS['enable_http_request_login']) === true
     && (int) $SETTINGS['enable_http_request_login'] === 1
-    && $superGlobal->get('PHP_AUTH_USER', 'SERVER') !== null
+    && $request->server->get('PHP_AUTH_USER') !== null
     && (isset($SETTINGS['maintenance_mode']) === false
     && (int) $SETTINGS['maintenance_mode'] === 1)
 ) {

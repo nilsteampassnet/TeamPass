@@ -67,25 +67,4 @@ class LdapExtra
 
         return $this->connection;
     }
-/*
-    // Méthodes pour effectuer des opérations LDAP
-    public function searchUsers()
-    {
-        return $this->connection->search()->where('objectclass', '=', 'user')->get();
-    }
-
-    public function getUserByDn($dn)
-    {
-        return $this->connection->search()->findByDn($dn);
-    }
-
-    // Ajoutez d'autres méthodes LDAP selon vos besoins
-
-    // ...
-
-    // Fermez la connexion LDAP à la fin de l'utilisation
-    public function closeLdapConnection()
-    {
-        $this->connection->disconnect();
-    }*/
 }
