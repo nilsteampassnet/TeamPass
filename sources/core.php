@@ -27,12 +27,12 @@ declare(strict_types=1);
 
 use voku\helper\AntiXSS;
 use TeampassClasses\SessionManager\SessionManager;
-use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use TeampassClasses\Language\Language;
 
 require_once 'main.functions.php';
 
-$request = Request::createFromGlobals();
+$request = SymfonyRequest::createFromGlobals();
 $lang = new Language(); 
 
 // Load config if $SETTINGS not defined

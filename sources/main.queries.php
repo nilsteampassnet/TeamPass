@@ -21,7 +21,7 @@ declare(strict_types=1);
 
 use PasswordLib\PasswordLib;
 use TeampassClasses\SessionManager\SessionManager;
-use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use TeampassClasses\Language\Language;
 use Hackzilla\PasswordGenerator\Generator\ComputerPasswordGenerator;
 use Hackzilla\PasswordGenerator\RandomGenerator\Php7RandomGenerator;
@@ -32,11 +32,9 @@ use TeampassClasses\PerformChecks\PerformChecks;
 // Load functions
 require_once 'main.functions.php';
 
-$session = SessionManager::getSession();
-$request = Request::createFromGlobals();
 loadClasses('DB');
 $session = SessionManager::getSession();
-$request = Request::createFromGlobals();
+$request = SymfonyRequest::createFromGlobals();
 $lang = new Language(); 
 
 // TODO : ajouter un check sue l'envoi de la key
@@ -123,7 +121,6 @@ function mainQuery(array $SETTINGS)
     include_once __DIR__.'/../sources/main.functions.php';
 
     // Load libraries
-    $session = SessionManager::getSession();
     loadClasses('DB');
 
     // User's language loading

@@ -24,7 +24,7 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use TeampassClasses\Language\Language;
 
 // Automatic redirection
@@ -36,7 +36,7 @@ if (strpos($server['request_uri'], '?') > 0) {
     );
 }
 
-$request = Request::createFromGlobals();
+$request = SymfonyRequest::createFromGlobals();
 $lang = new Language(); 
 $get = [];
 $get['post_type'] = $request->query->get('post_type');

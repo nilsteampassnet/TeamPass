@@ -27,7 +27,7 @@ declare(strict_types=1);
 use voku\helper\AntiXSS;
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\SessionManager\SessionManager;
-use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
@@ -37,11 +37,10 @@ require_once 'main.functions.php';
 
 // init
 loadClasses('DB');
-
-    $request = Request::createFromGlobals();
 $session = SessionManager::getSession();
-$request = Request::createFromGlobals();
-$lang = new Language(); 
+$request = SymfonyRequest::createFromGlobals();
+$lang = new Language();
+$antiXss = new AntiXSS();
 
 // Load config if $SETTINGS not defined
 try {
@@ -90,9 +89,9 @@ set_time_limit(0);
 // --------------------------------- //
 
 // Prepare GET variables
-$get_filename = $request->query->get('name');
-$get_fileid = $request->query->get('fileid');
-$get_pathIsFiles = $request->query->get('pathIsFiles');
+$get_filename = $antiXss->xss_clean($request->query->get('name'));
+$get_fileid = $antiXss->xss_clean($request->query->get('fileid'));
+$get_pathIsFiles = $antiXss->xss_clean($request->query->get('pathIsFiles'));
 
 // prepare Encryption class calls
 header('Content-disposition: attachment; filename=' . rawurldecode(basename($get_filename)));

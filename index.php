@@ -25,7 +25,7 @@ declare(strict_types=1);
  */
 
 use TeampassClasses\SessionManager\SessionManager;
-use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use TeampassClasses\Language\Language;
 
 header('X-XSS-Protection: 1; mode=block');
@@ -83,7 +83,7 @@ require_once __DIR__.'/sources/main.functions.php';
 // init
 loadClasses();
 $session = SessionManager::getSession();
-$request = Request::createFromGlobals();
+$request = SymfonyRequest::createFromGlobals();
 $session->set('key', SessionManager::getCookieValue('PHPSESSID'));
 
 // Quick major version check -> upgrade needed?

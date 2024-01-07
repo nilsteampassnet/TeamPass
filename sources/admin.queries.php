@@ -20,7 +20,7 @@ declare(strict_types=1);
  */
 
 use TeampassClasses\SessionManager\SessionManager;
-use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
@@ -35,7 +35,7 @@ use Defuse\Crypto\Exception as CryptoException;
 // Load functions
 require_once 'main.functions.php';
 $session = SessionManager::getSession();
-$request = Request::createFromGlobals();
+$request = SymfonyRequest::createFromGlobals();
 loadClasses('DB');
 $lang = new Language();
 

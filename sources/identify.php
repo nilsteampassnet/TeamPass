@@ -27,7 +27,7 @@ declare(strict_types=1);
 use voku\helper\AntiXSS;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\SessionManager\SessionManager;
-use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use TeampassClasses\Language\Language;
 use TeampassClasses\PerformChecks\PerformChecks;
 use LdapRecord\Connection;
@@ -48,7 +48,7 @@ require_once 'main.functions.php';
 // init
 loadClasses('DB');
 $session = SessionManager::getSession();
-$request = Request::createFromGlobals();
+$request = SymfonyRequest::createFromGlobals();
 $lang = new Language(); 
 
 
@@ -167,8 +167,8 @@ if ($post_type === 'identify_user') {
                 // Send an error response indicating the waiting period
                 $errorResponse = prepareExchangedData([
                     'value' => 'bruteforce_wait',
-                    'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
-                    'initial_url' => isset($sessionUrl) ? $sessionUrl : '',
+                    'user_admin' => null !== $session->get('user-admin') ? (int) $session->get('user-admin') : 0,
+                    'initial_url' => null !== $session->get('user-initial_url') ? $session->get('user-initial_url') : '',
                     'pwd_attempts' => 0,
                     'error' => true,
                     'message' => $lang->get('error_bad_credentials_more_than_3_times'),
@@ -225,7 +225,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
 {
     $antiXss = new AntiXSS();
     
-    $request = Request::createFromGlobals();
+    $request = SymfonyRequest::createFromGlobals();
     $lang = new Language();
     $session = SessionManager::getSession();
 

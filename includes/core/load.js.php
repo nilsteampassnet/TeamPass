@@ -25,7 +25,7 @@ declare(strict_types=1);
  */
 
 use TeampassClasses\SessionManager\SessionManager;
-use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use TeampassClasses\Language\Language;
 
 // Is maintenance on-going?
@@ -49,7 +49,7 @@ if (
 }
 $lang = new Language();
 $session = SessionManager::getSession();
-$request = Request::createFromGlobals();
+$request = SymfonyRequest::createFromGlobals();
 ?>
 
 <script type="text/javascript">

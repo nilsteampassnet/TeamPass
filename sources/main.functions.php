@@ -31,7 +31,7 @@ use voku\helper\AntiXSS;
 use Hackzilla\PasswordGenerator\Generator\ComputerPasswordGenerator;
 use Hackzilla\PasswordGenerator\RandomGenerator\Php7RandomGenerator;
 use TeampassClasses\SessionManager\SessionManager;
-use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use TeampassClasses\Language\Language;
 use TeampassClasses\NestedTree\NestedTree;
 use Defuse\Crypto\Key;
@@ -4215,7 +4215,7 @@ function loadClasses(string $className = ''): void
 function getCurrectPage($SETTINGS)
 {
     
-    $request = Request::createFromGlobals();
+    $request = SymfonyRequest::createFromGlobals();
 
     // Parse the url
     parse_str(
