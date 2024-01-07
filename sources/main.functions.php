@@ -2511,15 +2511,24 @@ function doDataDecryption(string $data, string $key): string
  */
 function encryptUserObjectKey(string $key, string $publicKey): string
 {
-    //if (WIP === false) {
-        // Load classes
-        $rsa = new Crypt_RSA();
-        $rsa->loadKey(base64_decode($publicKey));
-        // Encrypt
-        return base64_encode($rsa->encrypt(base64_decode($key)));
-    /*} else {
-
-    }*/
+    // Sanitize
+    $antiXss = new AntiXSS();
+    $publicKey = $antiXss->xss_clean($publicKey);
+    // Load classes
+    $rsa = new Crypt_RSA();
+    // Load the public key
+    $decodedPublicKey = base64_decode($publicKey, true);
+    if ($decodedPublicKey === false) {
+        throw new InvalidArgumentException("Error while decoding key.");
+    }
+    $rsa->loadKey($decodedPublicKey);
+    // Encrypt
+    $encrypted = $rsa->encrypt(base64_decode($key));
+    if ($encrypted === false) {
+        throw new RuntimeException("Error while encrypting key.");
+    }
+    // Return
+    return base64_encode($encrypted);
 }
 
 /**
@@ -2532,26 +2541,36 @@ function encryptUserObjectKey(string $key, string $publicKey): string
  */
 function decryptUserObjectKey(string $key, string $privateKey): string
 {
-    //if (WIP === false) {
-        // Load classes
-        $rsa = new Crypt_RSA();
-        $rsa->loadKey(base64_decode($privateKey));
-        // Decrypt
-        try {
-            $tmpValue = $rsa->decrypt(base64_decode($key));
-            if (is_bool($tmpValue) === false) {
-                $ret = base64_encode((string) /** @scrutinizer ignore-type */$tmpValue);
-            } else {
-                $ret = '';
-            }
-        } catch (Exception $e) {
-            return $e;
+    // Sanitize
+    $antiXss = new AntiXSS();
+    $publicKey = $antiXss->xss_clean($privateKey);
+
+    // Load classes
+    $rsa = new Crypt_RSA();
+    // Load the private key
+    $decodedPrivateKey = base64_decode($privateKey, true);
+    if ($decodedPrivateKey === false) {
+        throw new InvalidArgumentException("Error while decoding private key.");
+    }
+
+    $rsa->loadKey($decodedPrivateKey);
+
+    // Decrypt
+    try {
+        $decodedKey = base64_decode($key, true);
+        if ($decodedKey === false) {
+            throw new InvalidArgumentException("Error while decoding key.");
         }
-        /*} else {
 
-        }*/
-
-    return $ret;
+        $tmpValue = $rsa->decrypt($decodedKey);
+        if ($tmpValue !== false) {
+            return base64_encode($tmpValue);
+        } else {
+            return '';
+        }
+    } catch (Exception $e) {
+        return 'Exception: ' . $e->getMessage();
+    }
 }
 
 /**
