@@ -91,7 +91,7 @@ $request = Request::createFromGlobals();
                     $('#date_end_session').val(data[0].new_value);
                     $('#countdown').css('color', 'white');
                 } else {
-                    //$(location).attr('href', 'index.php?session=expired');
+                    $(location).attr('href', 'index.php?session=expired');
                 }
             },
             'json'

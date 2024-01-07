@@ -30,7 +30,6 @@ class SessionManager
         if (null === self::$session) {
             self::$session = new Session();
             if (session_status() === PHP_SESSION_NONE) {
-                error_log('On passe dans session->start() '.session_status() ." --- ". PHP_SESSION_NONE." --- ". PHP_SESSION_ACTIVE);
                 self::$session->start();
             }
         }

@@ -63,7 +63,7 @@ if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir'
     $SETTINGS = [];
     $SETTINGS['cpassman_dir'] = '..';
 }
-error_log('Identify.php: '.print_r($_POST, true));
+//error_log('Identify.php: '.print_r($_POST, true));
 // Do checks
 // Instantiate the class with posted data
 $checkUserAccess = new PerformChecks(
@@ -85,7 +85,6 @@ $checkUserAccess = new PerformChecks(
 // Handle the case
 echo $checkUserAccess->caseHandler();
 if ($checkUserAccess->checkSession() === false) {
-    error_log('Identify.php L89 - REFUS - '.$checkUserAccess->checkSession());
     // Not allowed page
     $session->set('system-error_code', ERR_NOT_ALLOWED);
     include $SETTINGS['cpassman_dir'] . '/error.php';
@@ -151,7 +150,6 @@ if ($post_type === 'identify_user') {
         // Increment the counter of login attempts
         $sessionPwdAttempts = ($sessionPwdAttempts === '') ? 1 : ++$sessionPwdAttempts;
         $session->set('pwd_attempts', $sessionPwdAttempts);
-        error_log('DEBUG DEBUG 1');
 
         // Check for brute force attempts
         if ($sessionPwdAttempts <= 3) {
@@ -464,7 +462,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             $username,
             $SETTINGS,
         );
-        error_log('Identify.php L467 USER authentifié');
+        
         // Save account in SESSION
         $session->set('user-unsuccessfull_login_attempts_list', $attemptsInfos['attemptsList'] === 0 ? true : false);
         $session->set('user-unsuccessfull_login_attempts_shown', $attemptsInfos['attemptsCount'] === 0 ? true : false);
@@ -756,7 +754,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
 
         // Ensure Complexity levels are translated
         defineComplexity();
-error_log('Identify.php L760 retour en des valeurs');
         echo prepareExchangedData(
             [
                 'value' => $return,

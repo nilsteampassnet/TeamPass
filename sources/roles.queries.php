@@ -463,7 +463,6 @@ if (null !== $post_type) {
                             $session->get('user-id')
                         );
                         $session->set('user-roles_array', explode(';', $session->get('user-roles')));
-                        error_log('user-roles_array 3: ' . print_r(explode(';', $session->get('user-roles')), true));
 
                         $return['new_role_id'] = $role_id;
                     }
@@ -736,7 +735,6 @@ if (null !== $post_type) {
             // Check the type of LDAP and perform actions based on that
             if ($groupsData['error']) {
                 // Handle error
-                error_log("Error: " . print_r($groupsData['message'], true));
             } else {
                 // Handle successful retrieval of groups
                 // exists in Teampass

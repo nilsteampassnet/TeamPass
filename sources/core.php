@@ -204,6 +204,7 @@ if ((isset($get['session']) === true
     || (filter_input(INPUT_POST, 'session', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== null
         && filter_input(INPUT_POST, 'session', FILTER_SANITIZE_FULL_SPECIAL_CHARS) === 'expired')
 ) {
+    error_log('EXPIRED SESSION');
     // Clear User tempo key
     if ($session->has('user-id') && null !== $session->get('user-id')) {
         DB::update(
@@ -219,8 +220,7 @@ if ((isset($get['session']) === true
     }
     // CLear PHPSESSID
     $session->invalidate();
-    //session_regenerate_id(true);
-    error_log('DEBUG: Session expired (core.php l210)');
+    
     // REDIRECTION PAGE ERREUR
     echo '
     <script language="javascript" type="text/javascript">
@@ -241,15 +241,6 @@ if (empty($session->get('user-session_duration')) === false) {
 } else {
     $dataSession['key_tempo'] = '';
 }
-
-// get some init
-/*if (null === $session->get('user-id') || (int) $session->get('user-id') === 0) {
-    // Vérifiez si la clé de session 'key' est définie
-    if (!$session->has('key')) {
-        $session->set('key', $superGlobal->get('PHPSESSID', 'COOKIE'));
-        error_log('DEBUG: Création de la nouvelle clé de session: ' . $session->get('key') . " ;; " . $superGlobal->get('PHPSESSID', 'COOKIE') . " -- user ID : " . $session->get('user-id'));
-    }
-}*/
 
 if (
     $session->has('user-id') && null !== $session->get('user-id')

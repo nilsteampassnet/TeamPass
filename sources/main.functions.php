@@ -1212,6 +1212,13 @@ function buildEmail(
         // Set language and SMTPDebug
         $mail->setLanguage('en', $languageDir);
         $mail->SMTPDebug = ($cron || $silent) ? 0 : $SETTINGS['email_debug_level'];
+        
+        // Define custom Debug output function
+        $mail->Debugoutput = function($str, $level) {
+            // Path to your log file
+            $logFilePath = '/var/log/phpmailer.log';
+            file_put_contents($logFilePath, gmdate('Y-m-d H:i:s'). "\t$level\t$str\n", FILE_APPEND | LOCK_EX);
+        };
 
         // Configure SMTP
         $mail->isSMTP();
@@ -1246,11 +1253,11 @@ function buildEmail(
         $mail->Subject = $subject;
         $mail->Body = $text_html;
         $mail->AltBody = is_null($textMailAlt) ? '' : $textMailAlt;
-
+        error_log('Je vais envoyer le mail - error log level: '.$SETTINGS['email_debug_level'].' - Server: '.$SETTINGS['email_smtp_server']);
         // Send email
         $mail->send();
         $mail->smtpClose();
-
+        error_log('Mail envoyé');
         return '';
     } catch (Exception $e) {
         if (!$silent || (int) $SETTINGS['email_debug_level'] !== 0) {
@@ -1261,6 +1268,7 @@ function buildEmail(
         }
         return '';
     }
+    
     /*
     // load PHPMailer
     $mail = new PHPMailer(true);
@@ -1281,18 +1289,13 @@ function buildEmail(
         ],
     ];
     $mail->isSmtp();
-    // send via SMTP
     $mail->Host = $SETTINGS['email_smtp_server'];
-    // SMTP servers
     $mail->SMTPAuth = (int) $SETTINGS['email_smtp_auth'] === 1 ? true : false;
-    // turn on SMTP authentication
     $mail->Username = $SETTINGS['email_auth_username'];
-    // SMTP username
     $mail->Password = $SETTINGS['email_auth_pwd'];
-    // SMTP password
     $mail->From = $SETTINGS['email_from'];
     $mail->FromName = $SETTINGS['email_from_name'];
-    // Prepare for each person
+    // Prepare recipients
     foreach (array_filter(explode(',', $email)) as $dest) {
         $mail->addAddress($dest);
     }
@@ -1469,13 +1472,7 @@ function utf8Converter(array $array): array
 function prepareExchangedData($data, string $type, ?string $key = null)
 {
     $session = SessionManager::getSession();
-    $cookieValue = SessionManager::getCookieValue('PHPSESSID');
-    // get session
-    if ($key !== null || !$session->has('key')) {// || $session->get('key') !== $cookieValue) {
-        //$session->set('key', $cookieValue);
-        //error_log('DEBUG : Réinitialisation de la clé de session ' . $session->get('key'));
-    }
-    error_log(strtoupper($type).' - Valeur de la clé de session ' . $session->get('key')." --- et la valeur du COOKIE : ".$cookieValue);
+    
     // Perform
     if ($type === 'encode' && is_array($data) === true) {
         // Now encode

@@ -6268,7 +6268,6 @@ switch ($inputData['type']) {
 
         // do we have a cache to be used?
         if (isset($dataReceived['force_refresh_cache']) === true && $dataReceived['force_refresh_cache'] === false) {
-            error_log('ici1');
             $goCachedFolders = loadFoldersListByCache('visible_folders', 'folders');
             if ($goCachedFolders['state'] === true) {
                 $arr_data['folders'] = json_decode($goCachedFolders['data'], true);
@@ -6283,7 +6282,6 @@ switch ($inputData['type']) {
                 break;
             }
         }
-        error_log('ici2');
         // Build list of visible folders
         if (
             (int) $session->get('user-admin') === 1

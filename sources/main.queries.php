@@ -39,7 +39,6 @@ $session = SessionManager::getSession();
 $request = Request::createFromGlobals();
 $lang = new Language(); 
 
-error_log('Main.queries.php L51 : '.$session->get('key'));
 // TODO : ajouter un check sue l'envoi de la key
 
 // Load config
