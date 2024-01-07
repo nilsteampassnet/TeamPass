@@ -128,8 +128,5 @@
         "symfony/http-foundation": "^6.4",
         "teampassclasses/sessionmanager": "dev-master",        
         "teampassclasses/ldapextra": "dev-master"
-    },
-    "require-dev": {
-        "phpunit/phpunit": "^10.5"
     }
 }
