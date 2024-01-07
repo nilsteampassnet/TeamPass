@@ -2356,30 +2356,22 @@ function formatSizeUnits(int $bytes): string
  */
 function generateUserKeys(string $userPwd): array
 {
-    //if (WIP === false) {
-        // Load classes
-        $rsa = new Crypt_RSA();
-        $cipher = new Crypt_AES();
-        // Create the private and public key
-        $res = $rsa->createKey(4096);
-        // Encrypt the privatekey
-        $cipher->setPassword($userPwd);
-        $privatekey = $cipher->encrypt($res['privatekey']);
-        return [
-            'private_key' => base64_encode($privatekey),
-            'public_key' => base64_encode($res['publickey']),
-            'private_key_clear' => base64_encode($res['privatekey']),
-        ];
-    /*} else {
-        // Create the keys
-        $keys = RSA::createKey();
-
-        return [
-            'private_key' => base64_encode($keys->withPassword($userPwd)->toString('PKCS8')),
-            'public_key' => base64_encode($keys->getPublicKey()),
-            'private_key_clear' => base64_encode($keys->toString('PKCS8')),
-        ];
-    }*/
+    // Sanitize
+    $antiXss = new AntiXSS();
+    $userPwd = $antiXss->xss_clean($userPwd);
+    // Load classes
+    $rsa = new Crypt_RSA();
+    $cipher = new Crypt_AES();
+    // Create the private and public key
+    $res = $rsa->createKey(4096);
+    // Encrypt the privatekey
+    $cipher->setPassword($userPwd);
+    $privatekey = $cipher->encrypt($res['privatekey']);
+    return [
+        'private_key' => base64_encode($privatekey),
+        'public_key' => base64_encode($res['publickey']),
+        'private_key_clear' => base64_encode($res['privatekey']),
+    ];
 }
 
 /**
@@ -2392,29 +2384,21 @@ function generateUserKeys(string $userPwd): array
  */
 function decryptPrivateKey(string $userPwd, string $userPrivateKey)
 {
+    // Sanitize
+    $antiXss = new AntiXSS();
+    $userPwd = $antiXss->xss_clean($userPwd);
+    $userPrivateKey = $antiXss->xss_clean($userPrivateKey);
+
     if (empty($userPwd) === false) {
-        //if (WIP === false) {
-            // Load classes
-            $cipher = new Crypt_AES();
-            // Encrypt the privatekey
-            $cipher->setPassword($userPwd);
-            try {
-                return base64_encode((string) $cipher->decrypt(base64_decode($userPrivateKey)));
-            } catch (Exception $e) {
-                return $e;
-            }
-        /*} else {
-            //echo $userPrivateKey." ;; ".($userPwd)." ;;";
-            // Load and decrypt the private key
-            try {
-                $privateKey = PublicKeyLoader::loadPrivateKey(base64_decode($userPrivateKey), $userPwd)->withHash('sha1')->withMGFHash('sha1');
-                print_r($privateKey);
-                return base64_encode((string) $$privateKey);
-            } catch (NoKeyLoadedException $e) {
-                print_r($e);
-                return $e;
-            }
-        }*/
+        // Load classes
+        $cipher = new Crypt_AES();
+        // Encrypt the privatekey
+        $cipher->setPassword($userPwd);
+        try {
+            return base64_encode((string) $cipher->decrypt(base64_decode($userPrivateKey)));
+        } catch (Exception $e) {
+            return $e;
+        }
     }
     return '';
 }
@@ -2429,27 +2413,21 @@ function decryptPrivateKey(string $userPwd, string $userPrivateKey)
  */
 function encryptPrivateKey(string $userPwd, string $userPrivateKey): string
 {
-    if (empty($userPwd) === false) {
-        //if (WIP === false) {
-            // Load classes
-            $cipher = new Crypt_AES();
-            // Encrypt the privatekey
-            $cipher->setPassword($userPwd);        
-            try {
-                return base64_encode($cipher->encrypt(base64_decode($userPrivateKey)));
-            } catch (Exception $e) {
-                return $e;
-            }
-        /*} else {
-            // Load the private key
-            $privateKey = PublicKeyLoader::load(base64_decode($userPrivateKey));
+    // Sanitize
+    $antiXss = new AntiXSS();
+    $userPwd = $antiXss->xss_clean($userPwd);
+    $userPrivateKey = $antiXss->xss_clean($userPrivateKey);
 
-            try {
-                return base64_encode($privateKey->withPassword($userPwd));
-            } catch (Exception $e) {
-                return $e;
-            }
-        }*/
+    if (empty($userPwd) === false) {
+        // Load classes
+        $cipher = new Crypt_AES();
+        // Encrypt the privatekey
+        $cipher->setPassword($userPwd);        
+        try {
+            return base64_encode($cipher->encrypt(base64_decode($userPrivateKey)));
+        } catch (Exception $e) {
+            return $e;
+        }
     }
     return '';
 }
@@ -2464,20 +2442,20 @@ function encryptPrivateKey(string $userPwd, string $userPrivateKey): string
  */
 function doDataEncryption(string $data, string $key = NULL): array
 {
-    //if (WIP === false) {
-        // Load classes
-        $cipher = new Crypt_AES(CRYPT_AES_MODE_CBC);
-        // Generate an object key
-        $objectKey = is_null($key) === true ? uniqidReal(KEY_LENGTH) : $key;
-        // Set it as password
-        $cipher->setPassword($objectKey);
-        return [
-            'encrypted' => base64_encode($cipher->encrypt($data)),
-            'objectKey' => base64_encode($objectKey),
-        ];
-    /*} else {
-
-    }*/
+    // Sanitize
+    $antiXss = new AntiXSS();
+    $data = $antiXss->xss_clean($data);
+    
+    // Load classes
+    $cipher = new Crypt_AES(CRYPT_AES_MODE_CBC);
+    // Generate an object key
+    $objectKey = is_null($key) === true ? uniqidReal(KEY_LENGTH) : $antiXss->xss_clean($key);
+    // Set it as password
+    $cipher->setPassword($objectKey);
+    return [
+        'encrypted' => base64_encode($cipher->encrypt($data)),
+        'objectKey' => base64_encode($objectKey),
+    ];
 }
 
 /**
@@ -2490,15 +2468,16 @@ function doDataEncryption(string $data, string $key = NULL): array
  */
 function doDataDecryption(string $data, string $key): string
 {
-    //if (WIP === false) {
-        // Load classes
-        $cipher = new Crypt_AES();
-        // Set the object key
-        $cipher->setPassword(base64_decode($key));
-        return base64_encode((string) $cipher->decrypt(base64_decode($data)));
-    /*} else {
+    // Sanitize
+    $antiXss = new AntiXSS();
+    $data = $antiXss->xss_clean($data);
+    $key = $antiXss->xss_clean($key);
 
-    }*/
+    // Load classes
+    $cipher = new Crypt_AES();
+    // Set the object key
+    $cipher->setPassword(base64_decode($key));
+    return base64_encode((string) $cipher->decrypt(base64_decode($data)));
 }
 
 /**
@@ -2543,7 +2522,7 @@ function decryptUserObjectKey(string $key, string $privateKey): string
 {
     // Sanitize
     $antiXss = new AntiXSS();
-    $publicKey = $antiXss->xss_clean($privateKey);
+    $privateKey = $antiXss->xss_clean($privateKey);
 
     // Load classes
     $rsa = new Crypt_RSA();
@@ -2586,34 +2565,33 @@ function encryptFile(string $fileInName, string $fileInPath): array
     if (defined('FILE_BUFFER_SIZE') === false) {
         define('FILE_BUFFER_SIZE', 128 * 1024);
     }
-    //if (WIP === false) {
-        // Load classes
-        $cipher = new Crypt_AES();
-        // Generate an object key
-        $objectKey = uniqidReal(32);
-        // Set it as password
-        $cipher->setPassword($objectKey);
-        // Prevent against out of memory
-        $cipher->enableContinuousBuffer();
-        //$cipher->disablePadding();
 
-        // Encrypt the file content
-        $plaintext = file_get_contents(
-            filter_var($fileInPath . '/' . $fileInName, FILTER_SANITIZE_URL)
-        );
-        $ciphertext = $cipher->encrypt($plaintext);
-        // Save new file
-        $hash = md5($plaintext);
-        $fileOut = $fileInPath . '/' . TP_FILE_PREFIX . $hash;
-        file_put_contents($fileOut, $ciphertext);
-        unlink($fileInPath . '/' . $fileInName);
-        return [
-            'fileHash' => base64_encode($hash),
-            'objectKey' => base64_encode($objectKey),
-        ];
-    /*} else {
+    // Load classes
+    $cipher = new Crypt_AES();
+    $antiXSS = new AntiXSS();
 
-    }*/
+    // Generate an object key
+    $objectKey = uniqidReal(32);
+    // Set it as password
+    $cipher->setPassword($objectKey);
+    // Prevent against out of memory
+    $cipher->enableContinuousBuffer();
+
+    // Encrypt the file content
+    $filePath = filter_var($fileInPath . '/' . $fileInName, FILTER_SANITIZE_URL);
+    $fileContent = file_get_contents($filePath);
+    $plaintext = $antiXSS->xss_clean($fileContent);
+    $ciphertext = $cipher->encrypt($plaintext);
+
+    // Save new file
+    $hash = md5($plaintext);
+    $fileOut = $fileInPath . '/' . TP_FILE_PREFIX . $hash;
+    file_put_contents($fileOut, $ciphertext);
+    unlink($fileInPath . '/' . $fileInName);
+    return [
+        'fileHash' => base64_encode($hash),
+        'objectKey' => base64_encode($objectKey),
+    ];
 }
 
 /**
@@ -2631,24 +2609,24 @@ function decryptFile(string $fileName, string $filePath, string $key): string
         define('FILE_BUFFER_SIZE', 128 * 1024);
     }
     
+    // Load classes
+    $cipher = new Crypt_AES();
+    $antiXSS = new AntiXSS();
+    
     // Get file name
-    $fileName = base64_decode($fileName);
+    $safeFileName = $antiXSS->xss_clean(base64_decode($fileName));
 
-    //if (WIP === false) {
-        // Load classes
-        $cipher = new Crypt_AES();
-        // Set the object key
-        $cipher->setPassword(base64_decode($key));
-        // Prevent against out of memory
-        $cipher->enableContinuousBuffer();
-        $cipher->disablePadding();
-        // Get file content
-        $ciphertext = file_get_contents($filePath . '/' . TP_FILE_PREFIX . $fileName);
-        // Decrypt file content and return
-        return base64_encode($cipher->decrypt($ciphertext));
-    /*} else {
-        
-    }*/
+    // Set the object key
+    $cipher->setPassword(base64_decode($key));
+    // Prevent against out of memory
+    $cipher->enableContinuousBuffer();
+    $cipher->disablePadding();
+    // Get file content
+    $safeFilePath = $filePath . '/' . TP_FILE_PREFIX . $safeFileName;
+    $ciphertext = file_get_contents(filter_var($safeFilePath, FILTER_SANITIZE_URL));
+
+    // Decrypt file content and return
+    return base64_encode($cipher->decrypt($ciphertext));
 }
 
 /**

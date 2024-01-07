@@ -32,7 +32,6 @@ ini_set('session.use_only_cookies', 1);
 ini_set('session.cookie_secure', 0);
 
 require_once './libs/SecureHandler.php';
-session_name('teampass_session');
 session_start();
 //Session teampass tag
 $_SESSION['CPM'] = 1;
