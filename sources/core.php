@@ -70,9 +70,9 @@ function teampassRedirect($url)
 
 // Prepare GET variables
 $server = [];
-$server['https'] = $request->server->get('HTTPS');
-$server['request_uri'] = $request->server->get('REQUEST_URI');
-$server['http_host'] = $request->server->get('HTTP_HOST');
+$server['https'] = $request->isSecure();
+$server['request_uri'] = $request->getRequestUri();
+$server['http_host'] = $request->getHttpHost();
 $server['ssl_server_cert'] = $request->server->get('ssl_server_cert');
 $server['remote_addr'] = $request->server->get('remote_addr');
 $server['http_user_agent'] = $request->server->get('http_user_agent');
@@ -204,7 +204,6 @@ if ((isset($get['session']) === true
     || (filter_input(INPUT_POST, 'session', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== null
         && filter_input(INPUT_POST, 'session', FILTER_SANITIZE_FULL_SPECIAL_CHARS) === 'expired')
 ) {
-    error_log('EXPIRED SESSION');
     // Clear User tempo key
     if ($session->has('user-id') && null !== $session->get('user-id')) {
         DB::update(
@@ -374,7 +373,7 @@ if (
         }
     }
     if (isset($cert_name) === true && empty($cert_name) === false && $cert_name !== $cert_issuer) {
-        if (isset($server['HTTPS'])) {
+        if (isset($server['https'])) {
             header('Strict-Transport-Security: max-age=500');
             $session->set('system-error_sts', 0);
         }

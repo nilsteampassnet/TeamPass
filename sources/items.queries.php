@@ -2220,6 +2220,7 @@ switch ($inputData['type']) {
                 // Check if file still exists
                 if (file_exists($SETTINGS['path_to_upload_folder'] . DIRECTORY_SEPARATOR . TP_FILE_PREFIX . base64_decode($record['file'])) === true) {
                     // Step1 - decrypt the file
+                    // deepcode ignore PT: path is sanitized inside decryptFile()
                     $fileContent = decryptFile(
                         $record['file'],
                         $SETTINGS['path_to_upload_folder'],

@@ -77,16 +77,16 @@ echo '
 if (
     isset($SETTINGS['enable_http_request_login']) === true
     && (int) $SETTINGS['enable_http_request_login'] === 1
-    && $request->server->get('PHP_AUTH_USER') !== null
+    && $request->getUser() !== null
     && ! (isset($SETTINGS['maintenance_mode']) === true
         && (int) $SETTINGS['maintenance_mode'] === 1)
 ) {
-    if (strpos($request->server->get('PHP_AUTH_USER'), '@') !== false) {
-        $username = explode('@', $request->server->get('PHP_AUTH_USER'))[0];
-    } elseif (strpos($request->server->get('PHP_AUTH_USER'), '\\') !== false) {
-        $username = explode('\\', $request->server->get('PHP_AUTH_USER'))[1];
+    if (strpos($request->getUser(), '@') !== false) {
+        $username = explode('@', $request->getUser())[0];
+    } elseif (strpos($request->getUser(), '\\') !== false) {
+        $username = explode('\\', $request->getUser())[1];
     } else {
-        $username = $request->server->get('PHP_AUTH_USER');
+        $username = $request->getUser();
     }
     echo '
             <input type="text" id="login" class="form-control" placeholder="', filter_var($username, FILTER_SANITIZE_FULL_SPECIAL_CHARS), '" readonly>';
@@ -99,7 +99,7 @@ echo '
         </div>';
 if (! (isset($SETTINGS['enable_http_request_login']) === true
     && (int) $SETTINGS['enable_http_request_login'] === 1
-    && $request->server->get('PHP_AUTH_USER') !== null
+    && $request->getUser() !== null
     && ! (isset($SETTINGS['maintenance_mode']) === true
         && (int) $SETTINGS['maintenance_mode'] === 1))) {
     echo '
@@ -178,7 +178,7 @@ if (isset($SETTINGS['google_authentication']) === true && (int) $SETTINGS['googl
 
 if (isset($SETTINGS['enable_http_request_login']) === true
     && (int) $SETTINGS['enable_http_request_login'] === 1
-    && $request->server->get('PHP_AUTH_USER') !== null
+    && $request->getUser() !== null
     && (isset($SETTINGS['maintenance_mode']) === false
     && (int) $SETTINGS['maintenance_mode'] === 1)
 ) {

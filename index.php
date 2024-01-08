@@ -24,6 +24,7 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
+use voku\helper\AntiXSS;
 use TeampassClasses\SessionManager\SessionManager;
 use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use TeampassClasses\Language\Language;
@@ -85,6 +86,7 @@ loadClasses();
 $session = SessionManager::getSession();
 $request = SymfonyRequest::createFromGlobals();
 $session->set('key', SessionManager::getCookieValue('PHPSESSID'));
+$antiXss = new AntiXSS();
 
 // Quick major version check -> upgrade needed?
 if (isset($SETTINGS['teampass_version']) === true && version_compare(TP_VERSION, $SETTINGS['teampass_version']) > 0) {
@@ -99,8 +101,10 @@ if (isset($SETTINGS['teampass_version']) === true && version_compare(TP_VERSION,
 }
 
 if (isset($SETTINGS['cpassman_url']) === false || $SETTINGS['cpassman_url'] === '') {
-    $SETTINGS['cpassman_url'] = $request->server->get('REQUEST_URI');
+    $SETTINGS['cpassman_url'] = $request->getRequestUri();
 }
+
+$SETTINGS = $antiXss->xss_clean($SETTINGS);
 
 // Load Core library
 require_once $SETTINGS['cpassman_dir'] . '/sources/core.php';
@@ -117,12 +121,12 @@ $session_nb_users_online = $session->get('nb_users_online');
 $session_auth_type = $session->get('user-auth_type');
 
 $server = [];
-$server['request_uri'] = (string) $request->server->get('REQUEST_URI');
+$server['request_uri'] = (string) $request->getRequestUri();
 $server['request_time'] = (int) $request->server->get('REQUEST_TIME');
 
 $get = [];
-$get['page'] = $request->query->get('page') === null ? '' : $request->query->get('page');
-$get['otv'] = $request->query->get('otv') === null ? '' : $request->query->get('otv');
+$get['page'] = $request->query->get('page') === null ? '' : $antiXss->xss_clean($request->query->get('page'));
+$get['otv'] = $request->query->get('otv') === null ? '' : $antiXss->xss_clean($request->query->get('otv'));
 
 /* DEFINE WHAT LANGUAGE TO USE */
 if (null === $session->get('user-validite_pw') && $post_language === null && $session_user_language === null) {
@@ -948,13 +952,11 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                     } elseif (in_array($get['page'], array_keys($mngPages)) === true) {
                         // Define if user is allowed to see management pages
                         if ($session_user_admin === 1) {
-                            include $SETTINGS['cpassman_dir'] . '/pages/' . $mngPages[$get['page']];
+                            // deepcode ignore FileInclusion: $get['page'] is secured through usage of array_keys test bellow
+                            include $SETTINGS['cpassman_dir'] . '/pages/' . basename($mngPages[$get['page']]);
                         } elseif ($session_user_manager === 1 || $session_user_human_resources === 1) {
-                            if ($get['page'] !== 'manage_main'
-                                && $get['page'] !== 'manage_settings'
+                            if ($get['page'] === 'manage_main' || $get['page'] === 'manage_settings'
                             ) {
-                                //include $SETTINGS['cpassman_dir'] . '/pages/' . $mngPages[$_GET['page']];
-                            } else {
                                 $session->set('system-error_code', ERR_NOT_ALLOWED);
                                 //not allowed page
                                 include $SETTINGS['cpassman_dir'] . '/error.php';
@@ -964,8 +966,9 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                             //not allowed page
                             include $SETTINGS['cpassman_dir'] . '/error.php';
                         }
-                    } elseif (empty($get['page']) === false) {
-                        include $SETTINGS['cpassman_dir'] . '/pages/' . $get['page'] . '.php';
+                    } elseif (empty($get['page']) === false && file_exists($SETTINGS['cpassman_dir'] . '/pages/' . $get['page'] . '.php') === true) {
+                        // deepcode ignore FileInclusion: $get['page'] is tested against file_exists just below
+                        include $SETTINGS['cpassman_dir'] . '/pages/' . basename($get['page'] . '.php');
                     } else {
                         $session->set('system-array_roles', ERR_NOT_EXIST);
                         //page doesn't exist
@@ -1147,8 +1150,8 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
     <script type="text/javascript" src="plugins/DOMPurify/purify.min.js"></script>
 
     <?php
-    $get = [];
-    $get['page'] = $request->query->get('page') === null ? '' : $request->query->get('page');
+    //$get = [];
+    //$get['page'] = $request->query->get('page') === null ? '' : $request->query->get('page');
     if ($menuAdmin === true) {
         ?>
         <link rel="stylesheet" href="./plugins/toggles/css/toggles.css" />
@@ -1279,8 +1282,8 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
 
 
 <?php
-$get = [];
-$get['page'] = $request->query->get('page') === null ? '' : $request->query->get('page');
+//$get = [];
+//$get['page'] = $request->query->get('page') === null ? '' : $request->query->get('page');
 
 // Load links, css and javascripts
 if (isset($SETTINGS['cpassman_dir']) === true) {

@@ -3358,7 +3358,10 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     icon_favorite;
 
                 data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>', 'find.queries.php', type);
-                if (debugJavascript === true) console.log(data);
+                if (debugJavascript === true) {
+                    console.log('CE que nous avons trouvé');
+                    console.log(data);
+                }
 
                 // Ensure correct div is not hidden
                 $('#info_teampass_items_list').addClass('hidden');

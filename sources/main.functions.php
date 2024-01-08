@@ -4220,8 +4220,8 @@ function getCurrectPage($SETTINGS)
     // Parse the url
     parse_str(
         substr(
-            (string) $request->server->get('REQUEST_URI'),
-            strpos((string) $request->server->get('REQUEST_URI'), '?') + 1
+            (string) $request->getRequestUri(),
+            strpos((string) $request->getRequestUri(), '?') + 1
         ),
         $result
     );

@@ -234,8 +234,8 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     $sessionPwdAttempts = $session->get('pwd_attempts');
     $sessionUrl = $session->get('user-initial_url');
     $server = [];
-    $server['PHP_AUTH_USER'] =  $request->server->get('PHP_AUTH_USER');
-    $server['PHP_AUTH_PW'] = $request->server->get('PHP_AUTH_PW');
+    $server['PHP_AUTH_USER'] =  $request->getUser();
+    $server['PHP_AUTH_PW'] = $request->getPassword();
     
     // decrypt and retreive data in JSON format
     if ($session->get('key') === null) {
