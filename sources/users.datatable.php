@@ -184,7 +184,7 @@ $rows = DB::query(
 
 // Output
 $sOutput = '{';
-$sOutput .= '"sEcho": '.(int) $request->query->get('draw').', ';
+$sOutput .= '"sEcho": '.(int) $query->filter('draw', FILTER_SANITIZE_NUMBER_INT)('draw').', ';
 $sOutput .= '"iTotalRecords": '.$iTotal.', ';
 $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
 $sOutput .= '"aaData": ';
@@ -331,4 +331,4 @@ if (count($rows) > 0) {
     $sOutput .= '[]';
 }
 
-echo $sOutput.'}';
+echo ($sOutput).'}';

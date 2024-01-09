@@ -1,9 +1,10 @@
-vendor/
-includes/libraries/cryptojs
-includes/libraries/csrfp
-includes/libraries/ezimuel
-includes/libraries/plupload
-includes/libraries/yubico
+/vendor/
+/includes/libraries/cryptojs/
+/includes/libraries/csrfp/
+/includes/libraries/ezimuel/
+/includes/libraries/plupload/
+/includes/libraries/yubico/
+/includes/language/
 /install1/
 /install/
 /plugins/

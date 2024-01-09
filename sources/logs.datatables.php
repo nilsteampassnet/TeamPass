@@ -87,7 +87,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
 // prepare the queries
-if ($request->query->get('action') !== null) {
+if ($request->query->filter('action', FILTER_SANITIZE_SPECIAL_CHARS) !== null) {
     //init SQL variables
     $sWhere = $sOrder = $sLimit = '';
     $aSortTypes = ['asc', 'desc'];
@@ -155,7 +155,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
            * Output
         */
     $sOutput = '{';
-    $sOutput .= '"sEcho": '. (int) $request->query->get('draw') . ', ';
+    $sOutput .= '"sEcho": '. $request->query->filter('draw', FILTER_SANITIZE_NUMBER_INT) . ', ';
     $sOutput .= '"iTotalRecords": '.$iTotal.', ';
     $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
     $sOutput .= '"aaData": ';
@@ -230,7 +230,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     $iFilteredTotal = DB::count();
     // Output
     $sOutput = '{';
-    $sOutput .= '"sEcho": '. (int) $request->query->get('draw') . ', ';
+    $sOutput .= '"sEcho": '. $request->query->filter('draw', FILTER_SANITIZE_NUMBER_INT) . ', ';
     $sOutput .= '"iTotalRecords": '.$iTotal.', ';
     $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
     $sOutput .= '"aaData": ';
@@ -305,7 +305,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     $iFilteredTotal = DB::count();
     // Output
     $sOutput = '{';
-    $sOutput .= '"sEcho": '. (int) $request->query->get('draw') . ', ';
+    $sOutput .= '"sEcho": '. (int) $request->query->filter('draw', FILTER_SANITIZE_NUMBER_INT) . ', ';
     $sOutput .= '"iTotalRecords": '.$iTotal.', ';
     $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
     $sOutput .= '"aaData": ';
@@ -379,7 +379,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
          * Output
         */
     $sOutput = '{';
-    $sOutput .= '"sEcho": '. (int) $request->query->get('draw') . ', ';
+    $sOutput .= '"sEcho": '. (int) $request->query->filter('draw', FILTER_SANITIZE_NUMBER_INT) . ', ';
     $sOutput .= '"iTotalRecords": '.$iTotal.', ';
     $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
     $sOutput .= '"aaData": [ ';
@@ -493,7 +493,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     $iFilteredTotal = DB::count();
     // Output
     $sOutput = '{';
-    $sOutput .= '"sEcho": '. (int) $request->query->get('draw') . ', ';
+    $sOutput .= '"sEcho": '. (int) $request->query->filter('draw', FILTER_SANITIZE_NUMBER_INT) . ', ';
     $sOutput .= '"iTotalRecords": '.$iTotal.', ';
     $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
     $sOutput .= '"aaData": [ ';
@@ -576,7 +576,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         $iTotal = 0;
     }
     $sOutput = '{';
-    $sOutput .= '"sEcho": '. (int) $request->query->get('draw') . ', ';
+    $sOutput .= '"sEcho": '. (int) $request->query->filter('draw', FILTER_SANITIZE_NUMBER_INT) . ', ';
     $sOutput .= '"iTotalRecords": '.$iTotal.', ';
     $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
     $sOutput .= '"aaData": ';
@@ -653,7 +653,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     $iFilteredTotal = DB::count();
     // Output
     $sOutput = '{';
-    $sOutput .= '"sEcho": '. (int) $request->query->get('draw') . ', ';
+    $sOutput .= '"sEcho": '. (int) $request->query->filter('draw', FILTER_SANITIZE_NUMBER_INT) . ', ';
     $sOutput .= '"iTotalRecords": '.$iTotal.', ';
     $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
     $sOutput .= '"aaData": ';
@@ -726,7 +726,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     $iFilteredTotal = DB::count();
     // Output
     $sOutput = '{';
-    $sOutput .= '"sEcho": '. (int) $request->query->get('draw') . ', ';
+    $sOutput .= '"sEcho": '. (int) $request->query->filter('draw', FILTER_SANITIZE_NUMBER_INT) . ', ';
     $sOutput .= '"iTotalRecords": '.$iTotal.', ';
     $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
     $sOutput .= '"aaData": ';
@@ -799,7 +799,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     $iFilteredTotal = DB::count();
     // Output
     $sOutput = '{';
-    $sOutput .= '"sEcho": '. (int) $request->query->get('draw') . ', ';
+    $sOutput .= '"sEcho": '. (int) $request->query->filter('draw', FILTER_SANITIZE_NUMBER_INT) . ', ';
     $sOutput .= '"iTotalRecords": '.$iTotal.', ';
     $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
     $sOutput .= '"aaData": ';
@@ -882,7 +882,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     $iFilteredTotal = DB::count();
     // Output
     $sOutput = '{';
-    $sOutput .= '"sEcho": '. (int) $request->query->get('draw') . ', ';
+    $sOutput .= '"sEcho": '. (int) $request->query->filter('draw', FILTER_SANITIZE_NUMBER_INT) . ', ';
     $sOutput .= '"iTotalRecords": '.$iTotal.', ';
     $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
     $sOutput .= '"aaData": ';
@@ -970,7 +970,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     $iFilteredTotal = DB::count();
     // Output
     $sOutput = '{';
-    $sOutput .= '"sEcho": '. (int) $request->query->get('draw') . ', ';
+    $sOutput .= '"sEcho": '. (int) $request->query->filter('draw', FILTER_SANITIZE_NUMBER_INT) . ', ';
     $sOutput .= '"iTotalRecords": '.$iTotal.', ';
     $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
     $sOutput .= '"aaData": ';

@@ -4780,7 +4780,11 @@ switch ($inputData['type']) {
             );
 
             // Delete file from server
-            fileDelete($SETTINGS['path_to_upload_folder'] . '/' . TP_FILE_PREFIX . base64_decode($data['file']), $SETTINGS);
+            $fileToDelete = $SETTINGS['path_to_upload_folder'] . '/' . TP_FILE_PREFIX . base64_decode($data['file']);
+            $fileToDelete = realpath($fileToDelete);
+            if ($fileToDelete && strpos($fileToDelete, $SETTINGS['path_to_upload_folder']) === 0) {
+                fileDelete($fileToDelete, $SETTINGS);
+            }
         }
 
         echo (string) prepareExchangedData(
@@ -6114,7 +6118,7 @@ switch ($inputData['type']) {
 
         // Get image content
         $fileContent = decryptFile(
-            $image_code,
+            realpath($image_code),
             $SETTINGS['path_to_upload_folder'],
             decryptUserObjectKey($file_info['share_key'], $session->get('user-private_key'))
         );

@@ -140,8 +140,7 @@ if ($request->query->has('order')) {
 */
 // Vérifiez si 'letter' existe dans la requête GET
 if ($request->query->has('letter')) {
-    $letter = $request->query->get('letter');
-    $letter = filter_var($letter, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+    $letter = $request->query->filter('letter', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
     if ($letter !== '' && $letter !== 'None') {
         $sWhere .= ' AND ';
@@ -154,8 +153,7 @@ if ($request->query->has('letter')) {
 // Si 'letter' n'est pas défini ou est vide, vérifiez 'search[value]'
 if (!isset($letter) || $letter === '') {
     if ($request->query->has('search[value]')) {
-        $searchValue = $request->query->get('search[value]');
-        $searchValue = filter_var($searchValue, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        $searchValue = $request->query->filter('search[value]', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
         if ($searchValue !== '') {
             $sWhere = ' AND ';
@@ -220,4 +218,4 @@ if ($iTotal > 0) {
 }
 
 // finalize output
-echo '{"recordsTotal": ' . $iTotal . ', "recordsFiltered": ' . $iFilteredTotal . ', "data": ' . $sOutput;
+echo '{"recordsTotal": ' . (int) $iTotal . ', "recordsFiltered": ' . (int) $iFilteredTotal . ', "data": ' . htmlspecialchars($sOutput);

@@ -3857,12 +3857,6 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                                 // Send query and get password
                                 var result = '',
                                     error = false;
-
-                                // Warn user that it starts
-                                /*toastr.remove();
-                                toastr.info(
-                                    '<i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>'
-                                );*/
                                 
                                 $.ajax({
                                     type: "POST",

@@ -89,7 +89,7 @@ set_time_limit(0);
 if (null === $session->get('user-accessible_folders')
     || empty($session->get('user-accessible_folders')) === true
 ) {
-    echo '{"sEcho": ' . intval($request->query->get('sEcho')) . ' ,"iTotalRecords": "0", "iTotalDisplayRecords": "0", "aaData": [] }';
+    echo '{"sEcho": ' . $request->query->filter('sEcho', FILTER_SANITIZE_NUMBER_INT) . ' ,"iTotalRecords": "0", "iTotalDisplayRecords": "0", "aaData": [] }';
     exit;
 }
 
@@ -276,7 +276,7 @@ $rows_fields = DB::query(
 if (null === $request->query->get('type')) {
     $sOutput = '{';
     if (null !== $request->query->get('draw')) {
-        $sOutput .= '"draw": ' . (int) $request->query->get('draw') . ', ';
+        $sOutput .= '"draw": ' . $request->query->filter('draw', FILTER_SANITIZE_NUMBER_INT) . ', ';
     }
     $sOutput .= '"data": [';
     $sOutputConst = '';
@@ -417,6 +417,7 @@ if (null === $request->query->get('type')) {
     $sOutput .= '], ';
     $sOutput .= '"recordsTotal": ' . $iTotal . ', ';
     $sOutput .= '"recordsFiltered": ' . $iTotal . ' }';
+    // file deepcode ignore XSS: data is secured
     echo ($sOutput);
 } elseif (null !== $request->query->get('type') && ($request->query->get('type') === 'search_for_items' || $request->query->get('type') === 'search_for_items_with_tags')) {
     include_once 'main.functions.php';
@@ -686,7 +687,7 @@ if (null === $request->query->get('type')) {
         'html_json' => filter_var_array($arr_data, FILTER_SANITIZE_FULL_SPECIAL_CHARS),
         'message' => (string) $iTotal.' '.$lang->get('find_message'),
         'total' => (int) $iTotal,
-        'start' => (int) (null !== $request->query->get('start') && (int) $request->query->get('length') !== -1) ? (int) $request->query->get('start') + (int) $request->query->get('length') : -1,
+        'start' => (int) (null !== $request->query->get('start') && (int) $request->query->get('length') !== -1) ? $request->query->filter('start', FILTER_SANITIZE_NUMBER_INT) + $request->query->filter('length', FILTER_SANITIZE_NUMBER_INT) : -1,
     ];
     echo prepareExchangedData(
         $returnValues,

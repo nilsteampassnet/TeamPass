@@ -333,8 +333,8 @@ if (isset($SETTINGS['maintenance_mode']) === true && (int) $SETTINGS['maintenanc
             'Unlog user: ' . date('Y/m/d H:i:s') . " {$server['remote_addr']} ({$server['http_user_agent']})"
         );
         // erase session table
-        $_SESSION = [];
-        setcookie('pma_end_session');
+        $session->invalidate();
+
         // REDIRECTION PAGE ERREUR
         echo '
         <script language="javascript" type="text/javascript">
@@ -392,9 +392,7 @@ if ($session->has('user-timezone') && null !== $session->get('user-id') && empty
     //Check if user has been deleted or unlogged
     if (empty($data) === true) {
         // erase session table
-        $_SESSION = [];
-        // Kill session
-        session_destroy();
+        $session->invalidate();
         //redirection to index
         echo '
         <script language="javascript" type="text/javascript">

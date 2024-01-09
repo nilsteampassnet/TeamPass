@@ -205,7 +205,7 @@ if (count($rows) > 0) {
     $sOutput .= '[]';
 }
 
-echo $sOutput.', '.
-    '"sEcho": '.(int) $request->query->get('draw').', '.
-    '"iTotalRecords": '.$iFilteredTotal.', '.
-    '"iTotalDisplayRecords": '.$iTotal.'}';
+echo ($sOutput).', '.
+    '"sEcho": '.(int) $request->query->filter('draw', FILTER_SANITIZE_NUMBER_INT).', '.
+    '"iTotalRecords": '.(int) $iFilteredTotal.', '.
+    '"iTotalDisplayRecords": '.(int) $iTotal.'}';

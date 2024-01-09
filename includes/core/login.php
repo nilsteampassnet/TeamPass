@@ -39,7 +39,7 @@ if (strpos($server['request_uri'], '?') > 0) {
 $request = SymfonyRequest::createFromGlobals();
 $lang = new Language(); 
 $get = [];
-$get['post_type'] = $request->query->get('post_type');
+$get['post_type'] = $request->query->get('post_type', '', FILTER_SANITIZE_SPECIAL_CHARS);
 if (isset($SETTINGS['duo']) === true && (int) $SETTINGS['duo'] === 1 && $get['post_type'] === 'duo' ) {
     $get['duo_state'] = $request->query->get('state');
     $get['duo_code'] = $request->query->get('duo_code');
@@ -121,32 +121,31 @@ echo '
             value="', isset($SETTINGS['default_session_expiration_time']) === true ? $SETTINGS['default_session_expiration_time'] : '', '">
         </div>';
 // 2FA auth selector
-echo '
-        <input type="hidden" id="2fa_user_selection" value="', (isset($get['post_type']) === true && $get['post_type'] === 'duo') ? 'duo' : '', '">
-        <input type="hidden" id="duo_code" value="', isset($get['duo_code']) === true && is_null($get['duo_code']) === false ? $get['duo_code'] : '', '">
-        <input type="hidden" id="duo_state" value="', isset($get['duo_state']) === true && is_null($get['duo_state']) === false ? $get['duo_state'] : '', '">
+$mfaHtmlPart = '
+        <input type="hidden" id="2fa_user_selection" value="'.htmlspecialchars((isset($get['post_type']) === true && $get['post_type'] === 'duo') ? 'duo' : ''). '">
+        <input type="hidden" id="duo_code" value="'.htmlspecialchars(isset($get['duo_code']) === true && is_null($get['duo_code']) === false ? $get['duo_code'] : ''). '">
+        <input type="hidden" id="duo_state" value="'.htmlspecialchars(isset($get['duo_state']) === true && is_null($get['duo_state']) === false ? $get['duo_state'] : ''). '">
         <div class="row mb-3 hidden" id="2fa_methods_selector">
             <div class="col-12">
                 <h8 class="login-box-msg">' . $lang->get('2fa_authentication_selector') . '</h8>
-                <div class="2fa-methods text-center mt-2">',
-    isset($SETTINGS['google_authentication']) === true && (int) $SETTINGS['google_authentication'] === 1 ?
+                <div class="2fa-methods text-center mt-2">'.
+                htmlspecialchars(isset($SETTINGS['google_authentication']) === true && (int) $SETTINGS['google_authentication'] === 1 ?
         '
                     <label for="select2fa-otp">Google</label>
-                    <input type="radio" class="2fa_selector_select" name="2fa_selector_select" id="select2fa-otp" data-mfa="google" data-button-color="lightblue">' : '',
-    '',
-    isset($SETTINGS['duo']) === true && (int) $SETTINGS['duo'] === 1 ?
+                    <input type="radio" class="2fa_selector_select" name="2fa_selector_select" id="select2fa-otp" data-mfa="google" data-button-color="lightblue">' : '').
+                    htmlspecialchars(isset($SETTINGS['duo']) === true && (int) $SETTINGS['duo'] === 1 ?
         '
                     <label for="select2fa-duo">Duo Security</label>
-                    <input type="radio" class="2fa_selector_select" name="2fa_selector_select" id="select2fa-duo" data-mfa="duo" data-button-color="lightblue">' : '',
-    '',
-    isset($SETTINGS['yubico_authentication']) === true && (int) $SETTINGS['yubico_authentication'] === 1 ?
+                    <input type="radio" class="2fa_selector_select" name="2fa_selector_select" id="select2fa-duo" data-mfa="duo" data-button-color="lightblue">' : '').
+                    htmlspecialchars(isset($SETTINGS['yubico_authentication']) === true && (int) $SETTINGS['yubico_authentication'] === 1 ?
         '
                     <label for="select2fa-yubico">Yubico</label>
-                    <input type="radio" class="2fa_selector_select" name="2fa_selector_select" id="select2fa-yubico" data-mfa="yubico" data-button-color="lightblue">' : '',
+                    <input type="radio" class="2fa_selector_select" name="2fa_selector_select" id="select2fa-yubico" data-mfa="yubico" data-button-color="lightblue">' : '').
     '
                 </div>
             </div>
         </div>';
+echo $mfaHtmlPart;
 
 // DUO box
 if (isset($SETTINGS['duo']) === true && (int) $SETTINGS['duo'] === 1) {
