@@ -2568,7 +2568,6 @@ function encryptFile(string $fileInName, string $fileInPath): array
 
     // Load classes
     $cipher = new Crypt_AES();
-    $antiXSS = new AntiXSS();
 
     // Generate an object key
     $objectKey = uniqidReal(32);
@@ -2580,7 +2579,7 @@ function encryptFile(string $fileInName, string $fileInPath): array
     // Encrypt the file content
     $filePath = filter_var($fileInPath . '/' . $fileInName, FILTER_SANITIZE_URL);
     $fileContent = file_get_contents($filePath);
-    $plaintext = $antiXSS->xss_clean($fileContent);
+    $plaintext = $fileContent;
     $ciphertext = $cipher->encrypt($plaintext);
 
     // Save new file
@@ -2624,6 +2623,8 @@ function decryptFile(string $fileName, string $filePath, string $key): string
     // Get file content
     $safeFilePath = $filePath . '/' . TP_FILE_PREFIX . $safeFileName;
     $ciphertext = file_get_contents(filter_var($safeFilePath, FILTER_SANITIZE_URL));
+
+    if (WIP) error_log('DEBUG: File image url -> '.filter_var($safeFilePath, FILTER_SANITIZE_URL));
 
     // Decrypt file content and return
     return base64_encode($cipher->decrypt($ciphertext));

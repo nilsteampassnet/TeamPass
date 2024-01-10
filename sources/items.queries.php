@@ -3117,16 +3117,20 @@ switch ($inputData['type']) {
                 $inputData['id']
             );
             foreach ($rows as $record) {
+                $filename = basename($record['name'], '.' . $record['extension']);
+                $filename = isBase64($filename) === true ? base64_decode($filename) : $filename;
+
                 array_push(
                     $attachments,
                     array(
                         'icon' => fileFormatImage(strtolower($record['extension'])),
-                        'filename' => basename($record['name'], '.' . $record['extension']),
+                        'filename' => $filename,
                         'extension' => $record['extension'],
                         'size' => formatSizeUnits((int) $record['size']),
                         'is_image' => in_array(strtolower($record['extension']), TP_IMAGE_FILE_EXT) === true ? 1 : 0,
                         'id' => $record['id'],
                         'key' => $session->get('user-key_tmp'),
+                        'internalFilename' => basename($record['name'], '.' . $record['extension']),
                     )
                 );
             }
@@ -6111,14 +6115,11 @@ switch ($inputData['type']) {
 
         // prepare image info
         $post_title = basename($file_info['name'], '.' . $file_info['extension']);
-        $post_title = isBase64($post_title) === true ?
-            base64_decode($post_title) : $post_title;
-        $image_code = $file_info['file'];
-        //$extension = $file_info['extension'];
-
+        $post_title = isBase64($post_title) === true ? base64_decode($post_title) : $post_title;
+        
         // Get image content
         $fileContent = decryptFile(
-            $image_code,
+            $file_info['file'],
             $SETTINGS['path_to_upload_folder'],
             decryptUserObjectKey($file_info['share_key'], $session->get('user-private_key'))
         );

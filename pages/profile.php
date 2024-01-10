@@ -283,7 +283,7 @@ foreach ($session->get('user-roles_array') as $role) {
                                     <li class="list-group-item">
                                         <b><i class="fas fa-stream fa-fw fa-lg mr-2"></i><?php echo $lang->get('tree_load_strategy'); ?></b>
                                         <a class="float-right">
-                                            <span id="profile-plupload-runtime"><?php echo null !== $session->get('user-tree_load_strategy') ? $session->get('user-tree_load_strategy') : ''; ?></span>
+                                            <?php echo null !== $session->get('user-tree_load_strategy') ? $session->get('user-tree_load_strategy') : ''; ?>
                                         </a>
                                     </li>
                                     <?php

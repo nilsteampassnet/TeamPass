@@ -1150,8 +1150,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
     <script type="text/javascript" src="plugins/DOMPurify/purify.min.js"></script>
 
     <?php
-    //$get = [];
-    //$get['page'] = $request->query->get('page') === null ? '' : $request->query->get('page');
+    $get['page'] = $request->query->filter('page', null, FILTER_SANITIZE_SPECIAL_CHARS);
     if ($menuAdmin === true) {
         ?>
         <link rel="stylesheet" href="./plugins/toggles/css/toggles.css" />

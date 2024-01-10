@@ -5714,6 +5714,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 //decrypt data
                 data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>', 'items.queries.php', 'image_preview_preparation');
                 if (debugJavascript === true) {
+                    console.log('DEBUG : image preview');
                     console.log(data);
                 }
 
