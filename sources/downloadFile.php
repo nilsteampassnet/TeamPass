@@ -118,7 +118,15 @@ if (null !== $request->query->get('pathIsFiles') && (int) $get_pathIsFiles === 1
         decryptUserObjectKey($file_info['share_key'], $session->get('user-private_key'))
     );
     // Set the filename of the download
-    $filename = base64_decode(basename($file_info['name'], '.'.$file_info['extension']));
+    //$filename = base64_decode(basename($file_info['name'], '.'.$file_info['extension']));
+    // Décoder si les valeurs sont encodées en base64
+    $decoded_name = isBase64Encoded($file_info['name']) ? base64_decode($file_info['name']) : $file_info['name'];
+    $decoded_extension = isBase64Encoded($file_info['extension']) ? base64_decode($file_info['extension']) : $file_info['extension'];
+
+    // Utilisation de basename pour retirer l'extension du nom de fichier décodé
+    $filename = basename($decoded_name, '.'.$decoded_extension);
+
+
     // Output CSV-specific headers
     header('Pragma: public');
     header('Expires: 0');

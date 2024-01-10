@@ -6118,7 +6118,7 @@ switch ($inputData['type']) {
 
         // Get image content
         $fileContent = decryptFile(
-            realpath($image_code),
+            $image_code,
             $SETTINGS['path_to_upload_folder'],
             decryptUserObjectKey($file_info['share_key'], $session->get('user-private_key'))
         );

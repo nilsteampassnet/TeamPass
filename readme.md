@@ -14,7 +14,7 @@
 [![Build Status](https://scrutinizer-ci.com/g/nilsteampassnet/TeamPass/badges/build.png?b=master)](https://scrutinizer-ci.com/g/nilsteampassnet/TeamPass/build-status/master)
 [![Code Intelligence Status](https://scrutinizer-ci.com/g/nilsteampassnet/TeamPass/badges/code-intelligence.svg?b=master)](https://scrutinizer-ci.com/code-intelligence)
 
-Teampass is a Collaborative Passwords Manager solution installed On-Promise.
+Teampass is a Collaborative Passwords Manager solution installed On-Premise.
 
 > Copyright © 2009-2023, [Nils Laumaillé](Nils@Teampass.net)
 
