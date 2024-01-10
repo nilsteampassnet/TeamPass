@@ -98,11 +98,9 @@ $post_isNewItem = $request->request->filter('isNewItem', null, FILTER_SANITIZE_N
 $post_randomId = $request->request->filter('randomId', null, FILTER_SANITIZE_NUMBER_INT);
 $post_isPersonal = $request->request->filter('isPersonal', null, FILTER_SANITIZE_NUMBER_INT);
 $post_fileSize= $request->request->filter('file_size', null, FILTER_SANITIZE_NUMBER_INT);
-
-// Get parameters
-$chunk = isset($_REQUEST['chunk']) ? (int) $_REQUEST['chunk'] : 0;
-$chunks = isset($_REQUEST['chunks']) ? (int) $_REQUEST['chunks'] : 0;
-$fileName = isset($_REQUEST['name']) ? $_REQUEST['name'] : '';
+$chunk = $request->request->filter('chunk', 0, FILTER_SANITIZE_NUMBER_INT);
+$chunks = $request->request->filter('chunks', 0, FILTER_SANITIZE_NUMBER_INT);
+$fileName = $request->request->filter('name', '', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
 // token check
 if (null === $post_user_token) {

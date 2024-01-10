@@ -119,8 +119,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             quality: '90'
         },
         url: '<?php echo $SETTINGS['cpassman_url']; ?>/sources/upload.files.php',
-        flash_swf_url: '<?php echo $SETTINGS['cpassman_url']; ?>/includes/libraries/plupload/js/Moxie.swf',
-        silverlight_xap_url: '<?php echo $SETTINGS['cpassman_url']; ?>/includes/libraries/plupload/js/Moxie.xap',
+        flash_swf_url: '<?php echo $SETTINGS['cpassman_url']; ?>/plugins/plupload/js/Moxie.swf',
+        silverlight_xap_url: '<?php echo $SETTINGS['cpassman_url']; ?>/plugins/plupload/js/Moxie.xap',
         init: {
             FilesAdded: function(up, files) {
                 // generate and save token

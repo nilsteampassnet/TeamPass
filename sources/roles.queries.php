@@ -725,9 +725,10 @@ if (null !== $post_type) {
                         throw new Exception("Unsupported LDAP type: " . $SETTINGS['ldap_type']);
                 }
             } catch (Exception $e) {
+                error_log('TEAMPASS Error - ldap - '.$e->getMessage());
                 echo prepareExchangedData(array(
                     'error' => true,
-                    'message' => $e->getMessage(),
+                    'message' => 'An error occurred.',
                 ), 'encode');
                 exit;
             }

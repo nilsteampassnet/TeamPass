@@ -2548,7 +2548,8 @@ function decryptUserObjectKey(string $key, string $privateKey): string
             return '';
         }
     } catch (Exception $e) {
-        return 'Exception: ' . $e->getMessage();
+        error_log('TEAMPASS Error - ldap - '.$e->getMessage());
+        return 'Exception: could not decrypt object';
     }
 }
 
@@ -4242,20 +4243,4 @@ function returnIfSet($value, $retFalse = '', $retTrue = null): mixed
 {
 
     return isset($value) === true ? ($retTrue === null ? $value : $retTrue) : $retFalse;
-}
-
-function isBase64Encoded($string) {
-    // Vérifier si la chaîne est vide
-    if ($string === '') return false;
-
-    // Vérifier si la chaîne contient des caractères non compatibles avec base64
-    if (!preg_match('/^[a-zA-Z0-9\/\r\n+]*={0,2}$/', $string)) {
-        return false;
-    }
-
-    // Décoder la chaîne
-    $decoded = base64_decode($string, true);
-
-    // Vérifier si le décodage a réussi et si le texte encodé est identique après l'encodage
-    return $decoded !== false && base64_encode($decoded) === $string;
 }

@@ -29,11 +29,16 @@ use TeampassClasses\SessionManager\SessionManager;
 use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use TeampassClasses\Language\Language;
 
+// Security Headers
 header('X-XSS-Protection: 1; mode=block');
+// deepcode ignore TooPermissiveXFrameOptions: Not the case as sameorigin is used
 header('X-Frame-Options: SameOrigin');
+
+// Cache Headers
 header("Cache-Control: no-cache, no-store, must-revalidate");
 header("Pragma: no-cache");
 header("Expires: 0");
+
 // **PREVENTING SESSION HIJACKING**
 // Prevents javascript XSS attacks aimed to steal the session ID
 //ini_set('session.cookie_httponly', 1);
@@ -1161,7 +1166,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
         <!-- Sortable -->
         <!--<script src="./plugins/sortable/jquery.sortable.js"></script>-->
         <!-- PLUPLOAD -->
-        <script type="text/javascript" src="includes/libraries/plupload/js/plupload.full.min.js"></script>
+        <script type="text/javascript" src="plugins/plupload/js/plupload.full.min.js"></script>
         <!-- DataTables -->
         <link rel="stylesheet" src="./plugins/datatables/css/jquery.dataTables.min.css">
         <link rel="stylesheet" src="./plugins/datatables/css/dataTables.bootstrap4.min.css">
@@ -1191,7 +1196,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
             <link rel="stylesheet" href="./plugins/timepicker/bootstrap-timepicker.min.css">
             <script src="./plugins/timepicker/bootstrap-timepicker.min.js"></script>
             <!-- PLUPLOAD -->
-            <script type="text/javascript" src="includes/libraries/plupload/js/plupload.full.min.js"></script>
+            <script type="text/javascript" src="plugins/plupload/js/plupload.full.min.js"></script>
             <!-- VALIDATE -->
             <script type="text/javascript" src="plugins/jquery-validation/jquery.validate.js"></script>
             <!-- PWSTRENGHT -->
@@ -1232,7 +1237,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
             <!-- FILESAVER -->
             <script type="text/javascript" src="plugins/downloadjs/download.js"></script>
             <!-- PLUPLOAD -->
-            <script type="text/javascript" src="includes/libraries/plupload/js/plupload.full.min.js"></script>
+            <script type="text/javascript" src="plugins/plupload/js/plupload.full.min.js"></script>
         <?php
         } elseif ($get['page'] === 'export') {
             ?>

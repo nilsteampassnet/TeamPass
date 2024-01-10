@@ -148,7 +148,9 @@ try {
     }
 }
 catch (Exception $e) {
-    echo $e->getMessage();
+    error_log('TEAMPASS Error - tasks page - '.$e->getMessage());
+    // deepcode ignore ServerLeak: no critical information is provided
+    echo "An error occurred.";
 }?>
                                     </div>
 

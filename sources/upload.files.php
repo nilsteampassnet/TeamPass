@@ -80,19 +80,25 @@ date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['tim
 header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, no-store, must-revalidate');
 error_reporting(E_ERROR);
-//set_time_limit(0);
 
 // --------------------------------- //
 
-// Prepare POST variables
-$post_user_token = filter_input(INPUT_POST, 'user_upload_token', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-$post_type_upload = filter_input(INPUT_POST, 'type_upload', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-$post_timezone = filter_input(INPUT_POST, 'timezone', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+//check for session
+if (null !== $request->request->filter('PHPSESSID', null, FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
+    session_id($request->request->filter('PHPSESSID', null, FILTER_SANITIZE_FULL_SPECIAL_CHARS));
+} elseif (null !== $request->query->get('PHPSESSID')) {
+    session_id(filter_var($request->query->get('PHPSESSID'), FILTER_SANITIZE_FULL_SPECIAL_CHARS));
+} else {
+    handleAttachmentError('No Session was found.', 100);
+}
 
-// Get parameters
-$chunk = isset($_REQUEST['chunk']) ? intval($_REQUEST['chunk']) : 0;
-$chunks = isset($_REQUEST['chunks']) ? intval($_REQUEST['chunks']) : 0;
-$fileName = isset($_REQUEST['name']) ? filter_var($_REQUEST['name'], FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '';
+// Prepare POST variables
+$post_user_token = $request->request->filter('user_upload_token', null, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_type_upload = $request->request->filter('type_upload', null, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_timezone = $request->request->filter('timezone', null, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$chunk = $request->request->filter('chunk', 0, FILTER_SANITIZE_NUMBER_INT);
+$chunks = $request->request->filter('chunks', 0, FILTER_SANITIZE_NUMBER_INT);
+$fileName = $request->request->filter('name', '', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
 // token check
 if (null === $post_user_token) {
@@ -101,7 +107,7 @@ if (null === $post_user_token) {
 } else {
     // delete expired tokens
     DB::delete(prefixTable('tokens'), 'end_timestamp < %i', time());
-
+    
     if ($chunk < ($chunks - 1)) {
         // increase end_timestamp for token
         DB::update(
@@ -145,9 +151,9 @@ header('Cache-Control: no-store, no-cache, must-revalidate');
 header('Cache-Control: post-check=0, pre-check=0', false);
 
 if (null !== $post_type_upload && $post_type_upload === 'upload_profile_photo') {
-    $targetDir = $SETTINGS['cpassman_dir'] . '/includes/avatars';
+    $targetDir = realpath($SETTINGS['cpassman_dir'] . '/includes/avatars');
 } else {
-    $targetDir = $SETTINGS['path_to_files_folder'];
+    $targetDir = realpath($SETTINGS['path_to_files_folder']);
 }
 
 $cleanupTargetDir = true; // Remove old files
@@ -306,7 +312,7 @@ if (isset($_SERVER['CONTENT_TYPE'])) {
 
 // Handle non multipart uploads older WebKit versions didn't support multipart in HTML5
 if (strpos($contentType, 'multipart') !== false) {
-    if (isset($_FILES['file']['tmp_name']) && is_uploaded_file($_FILES['file']['tmp_name'])) {
+    if (isset($_FILES['file']['tmp_name']) && is_uploaded_file($_FILES['file']['tmp_name'])) {        
         // Open temp file
         $out = fopen("{$filePath}.part", $chunk == 0 ? 'wb' : 'ab');
         if ($out !== false) {

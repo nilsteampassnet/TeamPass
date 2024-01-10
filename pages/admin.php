@@ -209,7 +209,7 @@ try {
                             </div>
         <?php
     } else {
-        $job = (array) $results[0];//print_r($job);
+        $job = (array) $results[0];
         ?>
                             <div>
                                 <i class="fa-solid fa-circle-check text-success mr-2"></i><?php echo $lang->get('tasks_cron_running'); ?>
@@ -221,7 +221,9 @@ try {
     }
 }
 catch (Exception $e) {
-    echo $e->getMessage();
+    error_log('TEAMPASS Error - admin page - '.$e->getMessage());
+    // deepcode ignore ServerLeak: no critical information is provided
+    echo 'An error occurred.';
 }
 ?>
                         </div>

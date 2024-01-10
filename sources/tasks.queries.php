@@ -313,7 +313,8 @@ function performTask(string $task, string $phpBinaryPath, string $datetimeFormat
             $error = false;
         } catch (ProcessFailedException $exception) {
             $error = true;
-            $output = $exception->getMessage();
+            error_log('TEAMPASS Error - ldap - '.$exception->getMessage());
+            $output = 'An error occurred.';
         }
 
         return prepareExchangedData(

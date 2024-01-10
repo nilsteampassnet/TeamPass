@@ -1994,10 +1994,11 @@ switch ($post_type) {
                 $SETTINGS['cpassman_url'].'/'.DUO_CALLBACK
             );
         } catch (DuoException $e) {
+            error_log('TEAMPASS Error - duo config - '.$e->getMessage());
             echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => $lang->get('duo_config_error') . "<br/>Duo: " . $e->getMessage(),
+                        'message' => $lang->get('duo_config_error'),
                     ),
                     'encode'
             );
@@ -2017,11 +2018,11 @@ switch ($post_type) {
                 $duo_error = $lang->get('duo_error_secure');
                 $data["duo_check"] = "failed";
             }*/
-            $duo_error = $lang->get('duo_error_check_config') . "<br/>Duo: " . $e->getMessage();
+            error_log('TEAMPASS Error - duo config - '.$e->getMessage());
             echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => $duo_error,
+                        'message' => $lang->get('duo_error_check_config'),
                     ),
                     'encode'
             );

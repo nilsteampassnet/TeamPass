@@ -106,8 +106,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         multi_selection: false,
         max_file_count: 1,
         url: "<?php echo $SETTINGS['cpassman_url']; ?>/sources/upload.files.php",
-        flash_swf_url: '<?php echo $SETTINGS['cpassman_url']; ?>/includes/libraries/plupload/js/Moxie.swf',
-        silverlight_xap_url: '<?php echo $SETTINGS['cpassman_url']; ?>/includes/libraries/plupload/js/Moxie.xap',
+        flash_swf_url: '<?php echo $SETTINGS['cpassman_url']; ?>/plugins/plupload/js/Moxie.swf',
+        silverlight_xap_url: '<?php echo $SETTINGS['cpassman_url']; ?>/plugins/plupload/js/Moxie.xap',
         filters: [{
             title: "CSV files",
             extensions: "csv"
@@ -135,9 +135,24 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             }
                         );
 
-                        up.settings.multipart_params.PHPSESSID = "<?php echo session_id(); ?>";
+                        up.setOption('multipart_params', {
+                            PHPSESSID: '<?php echo $session->get('key'); ?>',
+                            type_upload: "import_items_from_csv",
+                            user_token: data[0].token
+                            /*itemId: store.get('teampassItem').id,
+                            type_upload: 'item_attachments',
+                            isNewItem: store.get('teampassItem').isNewItem,
+                            isPersonal: store.get('teampassItem').folderIsPersonal,
+                            edit_item: false,
+                            user_upload_token: store.get('teampassApplication').attachmentToken,
+                            randomId: store.get('teampassApplication').uploadedFileId,
+                            files_number: $('#form-item-hidden-pickFilesNumber').val(),
+                            file_size: file.size*/
+                        });
+
+                        /*up.settings.multipart_params.PHPSESSID = "<?php echo session_id(); ?>";
                         up.settings.multipart_params.type_upload = "import_items_from_csv";
-                        up.settings.multipart_params.user_token = data[0].token;
+                        up.settings.multipart_params.user_token = data[0].token;*/
 
                         up.start();
                     },
@@ -286,6 +301,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         // Show spinner
         toastr.remove();
         toastr.info('<?php echo $lang->get('reading_file'); ?><i class="fa-solid fa-ellipsis fa-2x fa-fade ml-2"></i>');
+
+        console.log("file: "+store.get('teampassApplication').uploadedFileId+" -- Folder id: "+$('#import-csv-target-folder').val())
 
         // Perform query
         $.post(
@@ -483,8 +500,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         multi_selection: false,
         max_file_count: 1,
         url: "<?php echo $SETTINGS['cpassman_url']; ?>/sources/upload.files.php",
-        flash_swf_url: '<?php echo $SETTINGS['cpassman_url']; ?>/includes/libraries/plupload/js/Moxie.swf',
-        silverlight_xap_url: '<?php echo $SETTINGS['cpassman_url']; ?>/includes/libraries/plupload/js/Moxie.xap',
+        flash_swf_url: '<?php echo $SETTINGS['cpassman_url']; ?>/plugins/plupload/js/Moxie.swf',
+        silverlight_xap_url: '<?php echo $SETTINGS['cpassman_url']; ?>/plugins/plupload/js/Moxie.xap',
         filters: [{
             title: "KEEPASS files",
             extensions: "xml"
