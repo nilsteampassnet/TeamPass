@@ -90,6 +90,7 @@ $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
 // Build FUNCTIONS list
 $params = $request->query->all();
+//error_log(print_r($params, true));
 $rolesList = [];
 $titles = DB::query('SELECT id,title FROM '.prefixTable('roles_title').' ORDER BY title ASC');
 foreach ($titles as $title) {
@@ -184,7 +185,7 @@ $rows = DB::query(
 
 // Output
 $sOutput = '{';
-$sOutput .= '"sEcho": '.(int) $query->filter('draw', FILTER_SANITIZE_NUMBER_INT)('draw').', ';
+$sOutput .= '"sEcho": '.(int) $request->query->filter('draw', FILTER_SANITIZE_NUMBER_INT).', ';
 $sOutput .= '"iTotalRecords": '.$iTotal.', ';
 $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
 $sOutput .= '"aaData": ';

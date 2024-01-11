@@ -209,6 +209,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         }*/
     });
 
+    oTable.on( 'xhr', function () {
+        console.log( 'Table redrawn' );
+        //Table.ajax.reload( null, false )
+    } );
+    
 
 
     $('#form-email').change(function() {
@@ -1231,69 +1236,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
             $('#admin_change_user_encryption_code_target_user').val($(this).data('id'));
             // ---
-        } else if ($(this).data('action') === 'logs') {
-            $('#row-list, #row-folders').addClass('hidden');
-            $('#row-logs').removeClass('hidden');
-            $('#row-logs-title').text(
-                $(this).data('fullname')
-            )
-            var userID = $(this).data('id');
-
-            //Launch the datatables pluggin
-            var oTableLogs = $('#table-logs').DataTable({
-                'destroy': true,
-                'paging': true,
-                'searching': true,
-                'order': [
-                    [1, 'asc']
-                ],
-                'info': true,
-                'processing': false,
-                'serverSide': true,
-                'responsive': true,
-                'select': true,
-                'stateSave': false,
-                'retrieve': false,
-                'autoWidth': true,
-                'ajax': {
-                    url: '<?php echo $SETTINGS['cpassman_url']; ?>/sources/user.logs.datatables.php',
-                    data: function(d) {
-                        d.userId = userID;
-                    }
-                },
-                'language': {
-                    'url': '<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $session->get('user-language'); ?>.txt'
-                },
-                'columns': [{
-                        className: 'dt-body-left'
-                    },
-                    {
-                        className: 'dt-body-left'
-                    },
-                    {
-                        className: 'dt-body-left'
-                    }
-                ],
-                'preDrawCallback': function() {
-                    toastr.remove();
-                    toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
-                },
-                'drawCallback': function() {
-                    // Tooltips
-                    $('.infotip').tooltip();
-
-                    // Inform user
-                    toastr.remove();
-                    toastr.success(
-                        '<?php echo $lang->get('done'); ?>',
-                        '', {
-                            timeOut: 1000
-                        }
-                    );
-                },
-            });
-
-
+            
         } else if ($(this).data('action') === 'access-rights') {
             $('#row-list, #row-logs').addClass('hidden');
             $('#row-folders').removeClass('hidden');

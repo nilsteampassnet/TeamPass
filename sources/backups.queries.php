@@ -165,13 +165,9 @@ if (null !== $post_type) {
                         while ($row = $result->fetch_row()) {
                             $return .= 'INSERT INTO ' . $table . ' VALUES(';
                             for ($j = 0; $j < $numFields; ++$j) {
-                                $row[$j] = is_null($row[$j]) === false ? addslashes($row[$j]) : '';
-                                $row[$j] = preg_replace("/\n/", '\\n', $row[$j]);
-                                if (isset($row[$j])) {
-                                    $return .= '"' . $row[$j] . '"';
-                                } else {
-                                    $return .= 'NULL';
-                                }
+                                // Gestion des valeurs NULL
+                                $value = $row[$j] === null ? 'NULL' : '"' . addslashes(preg_replace("/\n/", '\\n', $row[$j])) . '"';                    
+                                $return .= $value;
                                 if ($j < ($numFields - 1)) {
                                     $return .= ',';
                                 }
@@ -281,78 +277,128 @@ if (null !== $post_type) {
             // Prepare variables
             $post_key = filter_var($dataReceived['encryptionKey'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $post_backupFile = filter_var($dataReceived['backupFile'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_clearFilename = filter_var($dataReceived['clearFilename'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_offset = (int) filter_var($dataReceived['offset'], FILTER_SANITIZE_NUMBER_INT);
+            $post_totalSize = (int) filter_var($dataReceived['post_totalSize'], FILTER_SANITIZE_NUMBER_INT);
+            $batchSize = 500;
+
+            if (WIP === true) error_log('DEBUG: Offset -> '.$post_offset.' | File -> '.$post_clearFilename.' | key -> '.$post_key);
 
             include_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
 
-            // Get filename from database
-            $data = DB::queryFirstRow(
-                'SELECT valeur
-                FROM ' . prefixTable('misc') . '
-                WHERE increment_id = %i',
-                $post_backupFile
-            );
-
-            // Delete operation id
-            DB::delete(
-                prefixTable('misc'),
-                'increment_id = %i',
-                $post_backupFile
-            );
-
-            $post_backupFile = $data['valeur'];
-
-            // Uncrypt the file
-            if (empty($post_key) === false) {
-                // Decrypt the file
-                $ret = prepareFileWithDefuse(
-                    'decrypt',
-                    $SETTINGS['path_to_files_folder'] . '/' . $post_backupFile,
-                    $SETTINGS['path_to_files_folder'] . '/defuse_temp_' . $post_backupFile,
-                    $SETTINGS,
-                    $post_key
+            if (empty($post_clearFilename) === true) {
+                // Get filename from database
+                $data = DB::queryFirstRow(
+                    'SELECT valeur
+                    FROM ' . prefixTable('misc') . '
+                    WHERE increment_id = %i',
+                    $post_backupFile
                 );
 
-                if (empty($ret) === false) {
-                    echo prepareExchangedData(
-                        array(
-                            'error' => true,
-                            'message' => 'Error: '.$ret,
-                        ),
-                        'encode'
-                    );
-                    break;
-                }
+                // Delete operation id
+                DB::delete(
+                    prefixTable('misc'),
+                    'increment_id = %i',
+                    $post_backupFile
+                );
 
-                // Do clean
-                fileDelete($SETTINGS['path_to_files_folder'] . '/' . $post_backupFile, $SETTINGS);
-                $post_backupFile = $SETTINGS['path_to_files_folder'] . '/defuse_temp_' . $post_backupFile;
+                $post_backupFile = $data['valeur'];
+
+                // Uncrypt the file
+                if (empty($post_key) === false) {
+                    // Decrypt the file
+                    $ret = prepareFileWithDefuse(
+                        'decrypt',
+                        $SETTINGS['path_to_files_folder'] . '/' . $post_backupFile,
+                        $SETTINGS['path_to_files_folder'] . '/defuse_temp_' . $post_backupFile,
+                        $SETTINGS,
+                        $post_key
+                    );
+
+                    if (empty($ret) === false) {
+                        echo prepareExchangedData(
+                            array(
+                                'error' => true,
+                                'message' => 'An error occurred.',
+                            ),
+                            'encode'
+                        );
+                        break;
+                    }
+
+                    // Do clean
+                    fileDelete($SETTINGS['path_to_files_folder'] . '/' . $post_backupFile, $SETTINGS);
+                    $post_backupFile = $SETTINGS['path_to_files_folder'] . '/defuse_temp_' . $post_backupFile;
+                } else {
+                    $post_backupFile = $SETTINGS['path_to_files_folder'] . '/' . $post_backupFile;
+                }
             } else {
-                $post_backupFile = $SETTINGS['path_to_files_folder'] . '/' . $post_backupFile;
+                $post_backupFile = $post_clearFilename;
             }
 
             //read sql file
             $handle = fopen($post_backupFile, 'r');
-            $query = '';
-            while (!feof($handle)) {
-                $query .= fgets($handle, 4096);
-                if (substr(rtrim($query), -1) == ';') {
-                    //launch query
-                    DB::queryRaw($query);
-                    $query = '';
-                }
+
+            // get total file size
+            if ((int) $post_totalSize === 0) {
+                $post_totalSize = filesize($post_backupFile);
             }
-            fclose($handle);
 
-            //delete file
-            unlink($post_backupFile);
+            if ($handle) {
+                // Déplacer le pointeur de fichier à l'offset actuel
+                fseek($handle, $post_offset);
 
-            echo prepareExchangedData(
-                array(
-                    'error' => false,
-                    'message' => '',
-                ),
-                'encode'
-            );
+                $query = '';
+                $executedQueries = 0;
+                while (!feof($handle) && $executedQueries < $batchSize) {
+                    $line = fgets($handle);
+                    // Check if not false
+                    if ($line !== false) {
+                        // Vérifier si la ligne est une partie d'une instruction SQL
+                        if (substr(trim($line), -1) != ';') {
+                            $query .= $line;
+                        } else {
+                            // Exécuter l'instruction SQL complète
+                            $query .= $line;
+                            DB::queryRaw($query);
+                            $query = '';
+                            $executedQueries++;
+                        }
+                    }
+                }
+
+                // Calculer le nouvel offset
+                $newOffset = ftell($handle);
+
+                // Vérifier si la fin du fichier a été atteinte
+                $isEndOfFile = feof($handle);
+                fclose($handle);
+
+                // Répondre avec le nouvel offset
+                echo prepareExchangedData(
+                    array(
+                        'error' => false,
+                        'newOffset' => $newOffset,
+                        'totalSize' => $post_totalSize,
+                        'clearFilename' => $post_backupFile,
+                    ),
+                    'encode'
+                );
+
+                // Vérifier si la fin du fichier a été atteinte pour supprimer le fichier
+                if ($isEndOfFile) {
+                    unlink($post_backupFile);
+                }
+            } else {
+                // Gérer l'erreur d'ouverture du fichier
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => 'Unable to open backup file.',
+                    ),
+                    'encode'
+                );
+            }
             break;
     }
 }

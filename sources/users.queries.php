@@ -2401,11 +2401,11 @@ if (null !== $post_type) {
             
             } catch (\LdapRecord\Auth\BindException $e) {
                 $error = $e->getDetailedError();
-
+                error_log('TEAMPASS Error - Users - '.$error->getErrorCode()." - ".$error->getErrorMessage(). " - ".$error->getDiagnosticMessage());
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => "Error : ".$error->getErrorCode()." - ".$error->getErrorMessage(). "<br>".$error->getDiagnosticMessage(),
+                        'message' => "An error occurred.",
                     ),
                     'encode'
                 );
@@ -2428,11 +2428,11 @@ if (null !== $post_type) {
                     ->paginate(100);
             } catch (\LdapRecord\Auth\BindException $e) {
                 $error = $e->getDetailedError();
-
+                error_log('TEAMPASS Error - Users - '.$error->getErrorCode()." - ".$error->getErrorMessage(). " - ".$error->getDiagnosticMessage());
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => "Error : ".$error->getErrorCode()." - ".$error->getErrorMessage(). "<br>".$error->getDiagnosticMessage(),
+                        'message' => "An error occurred.",
                     ),
                     'encode'
                 );

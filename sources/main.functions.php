@@ -1304,16 +1304,6 @@ function emailBody(string $textMail): string
 }
 
 /**
- * Generate a Key.
- * 
- * @return string
- */
-function generateKey(): string
-{
-    return substr(md5(rand() . rand()), 0, 15);
-}
-
-/**
  * Convert date to timestamp.
  *
  * @param string $date        The date
@@ -2584,6 +2574,7 @@ function encryptFile(string $fileInName, string $fileInPath): array
     $ciphertext = $cipher->encrypt($plaintext);
 
     // Save new file
+    // deepcode ignore InsecureHash: is simply used to get a unique name
     $hash = md5($plaintext);
     $fileOut = $fileInPath . '/' . TP_FILE_PREFIX . $hash;
     file_put_contents($fileOut, $ciphertext);

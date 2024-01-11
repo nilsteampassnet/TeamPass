@@ -128,7 +128,7 @@ class SuperGlobal
         } elseif ($type === 'SERVER') {
             unset($_GET[$key]);
         } elseif ($type === 'COOKIE') {
-            setcookie($_COOKIE[$key], "", time() - 3600);
+            setcookie($_COOKIE[$key], "", time() - 3600, "/", "", true, true);
         }
     }
 }

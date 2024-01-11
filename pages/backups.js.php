@@ -101,7 +101,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     });
 
     $(document).on('click', '.btn-choose-file', function() {
-        $('#onthefly-restore-progress, #onthefly-backup-progress')
+        $('#onthefly-restore-finished, #onthefly-backup-progress')
             .addClass('hidden')
             .html('');
     });
@@ -213,25 +213,61 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 toastr.remove();
                 toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
-                // Prepare data
-                var data = {
-                    'encryptionKey': simplePurifier($('#onthefly-restore-key').val()),
-                    'backupFile': $('#onthefly-restore-file').data('operation-id')
-                };
-                console.log(data);
-                //send query
-                $.post(
-                    "sources/backups.queries.php", {
-                        type: "onthefly_restore",
-                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
-                        key: "<?php echo $session->get('key'); ?>"
-                    },
-                    function(data) {
-                        //decrypt data
-                        data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>');
-                        console.log(data);
+                $('#onthefly-restore-progress').removeClass('hidden');
 
-                        if (data.error === true) {
+                function restoreDatabase(offset, clearFilename, totalSize) {
+                    var data = {
+                        encryptionKey: simplePurifier($('#onthefly-restore-key').val()),
+                        backupFile: $('#onthefly-restore-file').data('operation-id'),
+                        offset: offset,
+                        clearFilename: clearFilename,
+                        totalSize: totalSize
+                    };
+
+                    $.post(
+                        "sources/backups.queries.php", 
+                        {
+                            type: "onthefly_restore",
+                            data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                            key: "<?php echo $session->get('key'); ?>"
+                        },
+                        function(response) {
+                        data = decodeQueryReturn(response, '<?php echo $session->get('key'); ?>');
+                        if (!data.error) {
+                            if (data.newOffset !== offset) {
+                                // block time counter
+                                ProcessInProgress = true;
+                                
+                                // Continue with new offset
+                                updateProgressBar(data.newOffset, data.totalSize); // Update progress
+                                restoreDatabase(data.newOffset, data.clearFilename, data.totalSize);
+                            } else {
+                                // SHOW LINK
+                                $('#onthefly-restore-finished')
+                                    .removeClass('hidden')
+                                    .html('<div class="alert alert-success alert-dismissible ml-2">' +
+                                        '<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>' +
+                                        '<h5><i class="icon fa fa-check mr-2"></i><?php echo $lang->get('done'); ?></h5>' +
+                                        '<?php echo $lang->get('restore_done_now_logout'); ?>' +
+                                        '</div>');
+
+                                // Clean progress info
+                                $('#onthefly-restore-progress').addClass('hidden');
+                                $('#onthefly-restore-progress-text').html('0');                                    
+
+                                // Inform user
+                                toastr.remove();
+                                toastr.success(
+                                    '<?php echo $lang->get('done'); ?>',
+                                    '', {
+                                        timeOut: 1000
+                                    }
+                                );
+
+                                // restart time expiration counter
+                                ProcessInProgress = false; 
+                            }
+                        } else {
                             // ERROR
                             toastr.remove();
                             toastr.error(
@@ -241,27 +277,27 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                     progressBar: true
                                 }
                             );
-                        } else {
-                            // SHOW LINK
-                            $('#onthefly-restore-progress')
-                                .removeClass('hidden')
-                                .html('<div class="alert alert-success alert-dismissible ml-2">' +
-                                    '<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>' +
-                                    '<h5><i class="icon fa fa-check mr-2"></i><?php echo $lang->get('done'); ?></h5>' +
-                                    '<?php echo $lang->get('restore_done_now_logout'); ?>' +
-                                    '</div>');
 
-                            // Inform user
-                            toastr.remove();
-                            toastr.success(
-                                '<?php echo $lang->get('done'); ?>',
-                                '', {
-                                    timeOut: 1000
-                                }
-                            );
+                            // Clean progress info
+                            $('#onthefly-restore-progress').addClass('hidden');
+                            $('#onthefly-restore-progress-text').html('0');
+
+                            // restart time expiration counter
+                            ProcessInProgress = false; 
                         }
-                    }
-                );
+                    });
+                }
+
+                function updateProgressBar(offset, totalSize) {
+                    // Show progress to user
+                    var percentage = Math.round((offset / totalSize) * 100);
+                    //var message = '<i class="mr-2 fa-solid fa-rocket fa-beat"></i><?php echo $lang->get('restore_in_progress');?> <b>' + percentage  + '%</b>';
+                    //console.log(message)
+                    $('#onthefly-restore-progress-text').text(percentage);
+                }
+
+                // Start restoration
+                restoreDatabase(0, '', 0);
             }
         }
     });

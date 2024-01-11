@@ -1383,6 +1383,7 @@ if (null !== $post_type) {
                                 );
 
                                 // Step2 - create file
+                                // deepcode ignore InsecureHash: Is not a password, just a random string for a file name
                                 $newFileName = md5(time() . '_' . $file['id']) . '.' . $file['extension'];
 
                                 $outstream = fopen($SETTINGS['path_to_upload_folder'] . DIRECTORY_SEPARATOR . $newFileName, 'ab');

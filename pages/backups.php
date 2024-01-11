@@ -143,9 +143,7 @@ $localEncryptionKey = isset($SETTINGS['bck_script_passkey']) === true ?
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div class="row mt-3 hidden" id="onthefly-backup-progress">
-
-                                            </div>
+                                            <div class="row mt-3 hidden" id="onthefly-backup-progress"></div>
                                             <div class="row mt-3">
                                                 <button class="btn btn-info ml-1 start btn-choose-file" data-action="onthefly-backup"><?php echo $lang->get('perform_backup'); ?></button>
                                             </div>
@@ -178,9 +176,11 @@ $localEncryptionKey = isset($SETTINGS['bck_script_passkey']) === true ?
                                                     <span class="ml-2" id="onthefly-restore-file-text"></span>
                                                 </div>
                                             </div>
-                                            <div class="row mt-3 hidden" id="onthefly-restore-progress">
-
+                                            <div class="alert alert-info ml-2 mt-3 mr-2 hidden" id="onthefly-restore-progress">
+                                                <h5><i class="icon fa fa-info mr-2"></i><?php echo $lang->get('in_progress'); ?></h5>
+                                                <i class="mr-2 fa-solid fa-rocket fa-beat"></i><?php echo $lang->get('restore_in_progress');?> <b><span id="onthefly-restore-progress-text">0</span>%</b>
                                             </div>
+                                            <div class="row mt-3 hidden" id="onthefly-restore-finished"></div>
                                             <div class="row mt-3">
                                                 <button class="btn btn-info ml-1 start" data-action="onthefly-restore"><?php echo $lang->get('perform_restore'); ?></button>
                                             </div>

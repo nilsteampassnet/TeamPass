@@ -110,8 +110,17 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         'responsive': false,
         'stateSave': true,
         'autoWidth': true,
-        'ajax': {
-            url: '<?php echo $SETTINGS['cpassman_url']; ?>/sources/logs.datatables.php?action=tasks_in_progress',
+        'ajax': function (data, callback, settings) {
+            data.search.column = $("select", "#table-items_filter").val();
+            $.ajax({
+                url: '<?php echo $SETTINGS['cpassman_url']; ?>/sources/logs.datatables.php?action=tasks_in_progress',
+                method: 'POST',
+                data: data,
+                success: function (encryptedResponse) {
+                    var decryptedData = prepareExchangedData(encryptedResponse, 'decode', '<?php echo $session->get('key'); ?>');
+                    callback(JSON.parse(decryptedData.data));
+                }
+            });
         },
         'language': {
             'url': '<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $session->get('user-language'); ?>.txt'
@@ -183,8 +192,17 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             'responsive': true,
             'stateSave': true,
             'autoWidth': true,
-            'ajax': {
-                url: '<?php echo $SETTINGS['cpassman_url']; ?>/sources/logs.datatables.php?action=tasks_finished',
+            'ajax': function (data, callback, settings) {
+            data.search.column = $("select", "#table-items_filter").val();
+                $.ajax({
+                    url: '<?php echo $SETTINGS['cpassman_url']; ?>/sources/logs.datatables.php?action=tasks_finished',
+                    method: 'POST',
+                    data: data,
+                    success: function (encryptedResponse) {
+                        var decryptedData = prepareExchangedData(encryptedResponse, 'decode', '<?php echo $session->get('key'); ?>');
+                        callback(JSON.parse(decryptedData.data));
+                    }
+                });
             },
             'language': {
                 'url': '<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $session->get('user-language'); ?>.txt'

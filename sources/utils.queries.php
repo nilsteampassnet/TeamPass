@@ -341,6 +341,7 @@ if (null !== $post_type) {
             }
 
             // finished
+            // deepcode ignore XSS: shared data is encrypted to avoid XSS
             echo prepareExchangedData(
                 array(
                     'error' => false,
