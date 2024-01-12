@@ -89,7 +89,8 @@ if (null !== $request->request->filter('PHPSESSID', null, FILTER_SANITIZE_FULL_S
 } elseif (null !== $request->query->get('PHPSESSID')) {
     session_id(filter_var($request->query->get('PHPSESSID'), FILTER_SANITIZE_FULL_SPECIAL_CHARS));
 } else {
-    handleAttachmentError('No Session was found.', 100);
+    echo handleUploadError('No Session was found.');
+    return false;
 }
 
 // Prepare POST variables
@@ -102,8 +103,8 @@ $fileName = $request->request->filter('name', '', FILTER_SANITIZE_FULL_SPECIAL_C
 
 // token check
 if (null === $post_user_token) {
-    handleUploadError('No user token found.');
-    exit();
+    echo handleUploadError('No user token found.');
+    return false;
 } else {
     // delete expired tokens
     DB::delete(prefixTable('tokens'), 'end_timestamp < %i', time());
@@ -158,7 +159,6 @@ if (null !== $post_type_upload && $post_type_upload === 'upload_profile_photo') 
 
 $cleanupTargetDir = true; // Remove old files
 $maxFileAge = 5 * 3600; // Temp file age in seconds
-$valid_chars_regex = 'A-Za-z0-9_.'; //accept only those characters
 $MAX_FILENAME_LENGTH = 260;
 $max_file_size_in_bytes = 2147483647; //2Go
 
@@ -171,18 +171,18 @@ $POST_MAX_SIZE = ini_get('post_max_size');
 $unit = strtoupper(substr($POST_MAX_SIZE, -1));
 $multiplier = ($unit == 'M' ? 1048576 : ($unit == 'K' ? 1024 : ($unit == 'G' ? 1073741824 : 1)));
 if ((int) $_SERVER['CONTENT_LENGTH'] > $multiplier * (int) $POST_MAX_SIZE && $POST_MAX_SIZE) {
-    handleUploadError('POST exceeded maximum allowed size.');
+    echo handleUploadError('POST exceeded maximum allowed size.');
     return false;
 }
 
 // Validate the file size (Warning: the largest files supported by this code is 2GB)
 $file_size = @filesize($_FILES['file']['tmp_name']);
 if ($file_size === false || $file_size > $max_file_size_in_bytes) {
-    handleUploadError('File exceeds the maximum allowed size');
+    echo handleUploadError('File exceeds the maximum allowed size');
     return false;
 }
 if ($file_size <= 0) {
-    handleUploadError('File size outside allowed lower bound');
+    echo handleUploadError('File size outside allowed lower bound');
     return false;
 }
 
@@ -191,36 +191,29 @@ set_time_limit(5 * 60);
 
 // Validate the upload
 if (isset($_FILES['file']) === false) {
-    handleUploadError('No upload found in $_FILES for Filedata');
+    echo handleUploadError('No upload found in $_FILES for Filedata');
     return false;
 } elseif (
     isset($_FILES['file']['error']) === true
     && $_FILES['file']['error'] != 0
 ) {
-    handleUploadError($uploadErrors[$_FILES['Filedata']['error']]);
+    echo handleUploadError($uploadErrors[$_FILES['Filedata']['error']]);
     return false;
 } elseif (
     isset($_FILES['file']['tmp_name']) === false
     || @is_uploaded_file($_FILES['file']['tmp_name']) === false
 ) {
-    handleUploadError('Upload failed is_uploaded_file test.');
+    echo handleUploadError('Upload failed is_uploaded_file test.');
     return false;
 } elseif (isset($_FILES['file']['name']) === false) {
-    handleUploadError('File has no name.');
+    echo handleUploadError('File has no name.');
     return false;
 }
 
 // Validate file name (for our purposes we'll just remove invalid characters)
-$file_name = preg_replace(
-    '/[^' . $valid_chars_regex . '\.]/',
-    '',
-    filter_var(
-        strtolower(basename($_FILES['file']['name'])),
-        FILTER_SANITIZE_FULL_SPECIAL_CHARS
-    )
-);
+$file_name = preg_replace('/[^a-zA-Z0-9-_\.]/', '', strtolower(basename($_FILES['file']['name'])));
 if (strlen($file_name) == 0 || strlen($file_name) > $MAX_FILENAME_LENGTH) {
-    handleUploadError('Invalid file name: ' . $file_name . '.');
+    echo handleUploadError('Invalid file name: ' . $file_name . '.');
     return false;
 }
 
@@ -242,20 +235,20 @@ if (
     && $post_type_upload !== 'import_items_from_keepass'
     && $post_type_upload !== 'import_items_from_csv'
     && $post_type_upload !== 'restore_db'
+    && $post_type_upload !== 'upload_profile_photo'
 ) {
-    handleUploadError('Invalid file extension.');
-    die();
+    echo handleUploadError('Invalid file extension.');
+    return false;
 }
 
 // is destination folder writable
 if (is_writable($SETTINGS['path_to_files_folder']) === false) {
-    handleUploadError('Not enough permissions on folder ' . $SETTINGS['path_to_files_folder'] . '.');
+    echo handleUploadError('Not enough permissions on folder ' . $SETTINGS['path_to_files_folder'] . '.');
     return false;
 }
 
 // Clean the fileName for security reasons
-$fileName = preg_replace('/[^\w\.]+/', '_', $fileName);
-$fileName = preg_replace('/[^' . $valid_chars_regex . '\.]/', '', strtolower(basename($fileName)));
+$fileName = preg_replace('/[^a-zA-Z0-9-_\.]/', '', strtolower(basename($fileName)));
 
 // Make sure the fileName is unique but only if chunking is disabled
 if ($chunks < 2 && file_exists($targetDir . DIRECTORY_SEPARATOR . $fileName)) {
@@ -298,7 +291,8 @@ if ($cleanupTargetDir && is_dir($targetDir) && ($dir = opendir($targetDir))) {
 
     closedir($dir);
 } else {
-    die('{"jsonrpc" : "2.0", "error" : {"code": 100, "message": "Failed to open temp directory."}, "id" : "id"}');
+    echo handleUploadError('Not enough permissions on folder ' . $SETTINGS['path_to_files_folder'] . '.');
+    return false;
 }
 
 // Look for the content type header
@@ -314,7 +308,9 @@ if (isset($_SERVER['CONTENT_TYPE'])) {
 if (strpos($contentType, 'multipart') !== false) {
     if (isset($_FILES['file']['tmp_name']) && is_uploaded_file($_FILES['file']['tmp_name'])) {        
         // Open temp file
+        // deepcode ignore PT: $filePath is escaped and secured previously
         $out = fopen("{$filePath}.part", $chunk == 0 ? 'wb' : 'ab');
+        error_log($_FILES['file']['tmp_name']);
         if ($out !== false) {
             // Read binary input stream and append it to temp file
             $in = fopen($_FILES['file']['tmp_name'], 'rb');
@@ -324,23 +320,23 @@ if (strpos($contentType, 'multipart') !== false) {
                     fwrite($out, $buff);
                 }
             } else {
-                die('{"jsonrpc" : "2.0",
-                    "error" : {"code": 101, "message": "Failed to open input stream."},
-                    "id" : "id"}');
+                echo handleUploadError('Failed to open input stream ' . $SETTINGS['path_to_files_folder'] . '.');
+                return false;
             }
             fclose($in);
             fclose($out);
             fileDelete($_FILES['file']['tmp_name'], $SETTINGS);
         } else {
-            die('{"jsonrpc" : "2.0",
-                "error" : {"code": 102, "message": "Failed to open output stream."},
-                "id" : "id"}');
+            echo handleUploadError('Failed to open output stream ' . $SETTINGS['path_to_files_folder'] . '.');
+            return false;
         }
     } else {
-        die('{"jsonrpc" : "2.0", "error" : {"code": 103, "message": "Failed to move uploaded file."}, "id" : "id"}');
+        echo handleUploadError('Failed to move uploaded file to ' . $SETTINGS['path_to_files_folder'] . '.');
+        return false;
     }
 } else {
     // Open temp file
+    // deepcode ignore PT: $filePath is escaped and secured previously
     $out = fopen("{$filePath}.part", $chunk == 0 ? 'wb' : 'ab');
     if ($out !== false) {
         // Read binary input stream and append it to temp file
@@ -351,19 +347,22 @@ if (strpos($contentType, 'multipart') !== false) {
                 fwrite($out, $buff);
             }
         } else {
-            die('{"jsonrpc" : "2.0", "error" : {"code": 101, "message": "Failed to open input stream."}, "id" : "id"}');
+            echo handleUploadError('Failed to open input stream ' . $SETTINGS['path_to_files_folder'] . '.');
+            return false;
         }
 
         fclose($in);
         fclose($out);
     } else {
-        die('{"jsonrpc" : "2.0", "error" : {"code": 102, "message": "Failed to open output stream."}, "id" : "id"}');
+        echo handleUploadError('Failed to open output stream ' . $SETTINGS['path_to_files_folder'] . '.');
+        return false;
     }
 }
 
 // Check if file has been uploaded
 if (!$chunks || $chunk == $chunks - 1) {
     // Strip the temp .part suffix off
+    // deepcode ignore PT: $filePath is escaped and secured previously
     rename("{$filePath}.part", $filePath);
 } else {
     // continue uploading other chunks

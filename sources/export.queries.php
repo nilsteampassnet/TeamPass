@@ -281,8 +281,8 @@ if (null !== $post_type) {
             foreach ($full_listing as $value) {
                 $tmp .= array2csv($value);
             }
-
-            //echo '[{"content":"' . urlencode($tmp) . '"}]';
+            
+            // deepcode ignore XSS: Data is encrypted before being sent to the client
             echo prepareExchangedData(
                 array(
                     'error' => false,

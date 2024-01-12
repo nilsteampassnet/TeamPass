@@ -2677,8 +2677,6 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     files_number: $('#form-item-hidden-pickFilesNumber').val(),
                     file_size: file.size
                 });
-                console.log('DEBUG IMAGE - BeforeUpload')
-                console.log(up);
             }
         }
     });

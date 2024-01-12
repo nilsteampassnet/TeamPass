@@ -134,32 +134,48 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         numeric: true,
                         symbols: true,
                         lowercase: true,
+                        unique_names: false,
                         reason: 'avatar_profile_upload',
                         duration: 10,
                         key: '<?php echo $session->get('key'); ?>'
                     },
                     function(data) {
                         $('#profile-user-token').val(data[0].token);
+
+                        up.setOption('multipart_params', {
+                            PHPSESSID: '<?php echo $session->get('key'); ?>',
+                            type_upload: "upload_profile_photo",
+                            user_token: data[0].token
+                        });
+
                         up.start();
                     },
                     'json'
                 );
             },
             BeforeUpload: function(up, file) {
-                var tmp = Math.random().toString(36).substring(7);
-
-                up.settings.multipart_params = {
-                    'PHPSESSID': '<?php echo $session->get('user-id'); ?>',
-                    'type_upload': 'upload_profile_photo',
-                    'user_upload_token': $('#profile-user-token').val()
-                };
+                // Show spinner
+                toastr.remove();
+                toastr.info('<i class="fa-solid fa-ellipsis fa-2x fa-fade ml-2"></i>');
             },
             FileUploaded: function(upldr, file, object) {
+                console.log('BeforeUpload', 'File: ', object.response)
                 // Decode returned data
                 var myData = prepareExchangedData(object.response, 'decode', '<?php echo $session->get('key'); ?>');
                 // update form
-                $('#profile-user-avatar').attr('src', 'includes/avatars/' + myData.filename);
-                $('#profile-avatar-file-list').html('').addClass('hidden');
+                if (myData.error === false) {
+                    $('#profile-user-avatar').attr('src', 'includes/avatars/' + myData.filename);
+                    $('#profile-avatar-file-list').html('').addClass('hidden');
+                } else {
+                    toastr.remove();
+                    toastr.error(
+                        'An error occurred.<br />Returned data:<br />' + myData.message,
+                        '', {
+                            closeButton: true
+                        }
+                    );
+                    return false;
+                }
             }
         }
     });

@@ -112,6 +112,7 @@ if (null !== $request->query->get('pathIsFiles') && (int) $get_pathIsFiles === 1
         $get_fileid
     );
     // Decrypt the file
+    // deepcode ignore PT: File and path are secured directly inside the function decryptFile()
     $fileContent = decryptFile(
         $file_info['file'],
         $SETTINGS['path_to_upload_folder'],

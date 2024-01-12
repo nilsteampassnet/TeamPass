@@ -330,6 +330,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         (int) $sessionPwdAttempts
     );
     if ($userLdap['error'] === true) {
+        // deepcode ignore ServerLeak: File and path are secured directly inside the function decryptFile()
         echo prepareExchangedData(
             $userLdap['array'],
             'encode'

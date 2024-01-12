@@ -194,7 +194,6 @@ $targetDir = $SETTINGS['path_to_upload_folder'];
 
 $cleanupTargetDir = true; // Remove old files
 $maxFileAge = 5 * 3600; // Temp file age in seconds
-$valid_chars_regex = 'A-Za-z0-9'; //accept only those characters
 $MAX_FILENAME_LENGTH = 260;
 $max_file_size_in_bytes = 2147483647; //2Go
 
@@ -231,7 +230,7 @@ if (!isset($_FILES['file'])) {
 }
 
 // Validate file name (for our purposes we'll just remove invalid characters)
-$file_name = preg_replace('[^' . $valid_chars_regex . ']', '', strtolower(basename($_FILES['file']['name'])));
+$file_name = preg_replace('[^A-Za-z0-9]', '', strtolower(basename($_FILES['file']['name'])));
 if (strlen($file_name) == 0 || strlen($file_name) > $MAX_FILENAME_LENGTH) {
     handleAttachmentError('Invalid file name: ' . $file_name . '.', 114);
 }

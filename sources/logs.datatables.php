@@ -30,6 +30,7 @@ use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\NestedTree\NestedTree;
+use voku\helper\AntiXSS;
 
 // Load functions
 require_once 'main.functions.php';
@@ -39,6 +40,7 @@ loadClasses('DB');
 $session = SessionManager::getSession();
 $request = Request::createFromGlobals();
 $lang = new Language(); 
+$antiXss = new AntiXSS();
 
 // Load config if $SETTINGS not defined
 try {
@@ -83,6 +85,11 @@ header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, no-store, must-revalidate');
 
 // --------------------------------- //
+
+// Configure AntiXSS to keep double-quotes
+$antiXss->removeEvilAttributes(['style', 'onclick', 'onmouseover', 'onmouseout', 'onmousedown', 'onmouseup', 'onmousemove', 'onkeydown', 'onkeyup', 'onkeypress', 'onchange', 'onblur', 'onfocus', 'onabort', 'onerror', 'onscroll']);
+$antiXss->removeEvilHtmlTags(['script', 'iframe', 'embed', 'object', 'applet', 'link', 'style']);
+
 // Load tree
 $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
@@ -1052,4 +1059,4 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     }
 }
 
-echo $sOutput;
+echo $antiXss->xss_clean($sOutput);

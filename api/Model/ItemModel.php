@@ -77,6 +77,7 @@ class ItemModel extends Database
                 );
             } catch (Exception $e) {
                 // Password is not encrypted
+                // deepcode ignore ServerLeak: No important data
                 echo "ERROR";
             }
             

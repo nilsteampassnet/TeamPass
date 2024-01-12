@@ -1828,6 +1828,7 @@ switch ($inputData['type']) {
                     );
                 }
                 // DESCRIPTION
+                // deepcode ignore InsecureHash: md5 is used just to perform a string encrypted comparison
                 if (strcmp(md5(strip_tags($data['description'])), md5(strip_tags($post_description))) !== 0) {
                     // Store updates performed
                     array_push(
@@ -2228,6 +2229,7 @@ switch ($inputData['type']) {
                     );
 
                     // Step2 - create file
+                    // deepcode ignore InsecureHash: md5 is used jonly for file name in order to get a hashed value in database
                     $newFileName = md5(time() . '_' . $record['id']) . '.' . $record['extension'];
                     $outstream = fopen($SETTINGS['path_to_upload_folder'] . DIRECTORY_SEPARATOR . $newFileName, 'ab');
                     if ($outstream === false) {
@@ -3290,6 +3292,7 @@ switch ($inputData['type']) {
 
             $session->set('system-show_step2', false);
             
+            // deepcode ignore ServerLeak: Data is encrypted before being sent
             echo (string) prepareExchangedData(
                 $returnArray,
                 'encode'
@@ -3481,6 +3484,7 @@ switch ($inputData['type']) {
             $otpExpiresIn = '';
         }
         
+        // deepcode ignore ServerLeak: Data is encrypted before being sent
         echo (string) prepareExchangedData(
             array(
                 'error' => false,
@@ -3811,11 +3815,7 @@ switch ($inputData['type']) {
                 'httponly' => true,
                 'samesite' => 'Lax' // None || Lax  || Strict
             );
-            setcookie(
-                'jstree_select',
-                $inputData['id'],
-                $arr_cookie_options
-            );
+            setcookie('jstree_select', $inputData['id'], $arr_cookie_options, "/", "", true, true);
 
             // CHeck if roles have 'allow_pw_change' set to true
             $forceItemEditPrivilege = false;
@@ -6118,6 +6118,7 @@ switch ($inputData['type']) {
         $post_title = isBase64($post_title) === true ? base64_decode($post_title) : $post_title;
         
         // Get image content
+        // deepcode ignore PT: File and path are secured directly inside the function decryptFile()
         $fileContent = decryptFile(
             $file_info['file'],
             $SETTINGS['path_to_upload_folder'],
@@ -6580,6 +6581,7 @@ switch ($inputData['type']) {
         array_multisort($key_values, /** @scrutinizer ignore-type */SORT_DESC, $previous_passwords);
 
         // send data
+        // deepcode ignore ServerLeak: Data is encrypted before being sent
         echo (string) prepareExchangedData(
             [
                 'error' => '',

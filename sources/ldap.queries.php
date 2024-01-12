@@ -150,6 +150,7 @@ switch ($post_type) {
             }
         } catch (Exception $e) {
             error_log('TEAMPASS Error - ldap - '.$e->getMessage());
+            // deepcode ignore ServerLeak: No important data is sent and is encrypted before being sent
             echo  prepareExchangedData(
                 array(
                 'error' => true,
@@ -182,10 +183,12 @@ switch ($post_type) {
     
         } catch (\LdapRecord\Query\ObjectNotFoundException $e) {
             $error = $e->getDetailedError();
+            error_log('TEAMPASS Error - LDAP - '.$error->getErrorCode()." - ".$error->getErrorMessage(). " - ".$error->getDiagnosticMessage());
+            // deepcode ignore ServerLeak: No important data is sent and is encrypted before being sent
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => $lang->get('error')." - ".(isset($error) === true ? $error->getErrorCode()." - ".$error->getErrorMessage(). "<br>".$error->getDiagnosticMessage() : $e),
+                    'message' => 'An error occurred.',
                 ),
                 'encode'
             );
@@ -216,10 +219,12 @@ switch ($post_type) {
             }
         } catch (\LdapRecord\Query\ObjectNotFoundException $e) {
             $error = $e->getDetailedError();
+            error_log('TEAMPASS Error - LDAP - '.$error->getErrorCode()." - ".$error->getErrorMessage(). " - ".$error->getDiagnosticMessage());
+            // deepcode ignore ServerLeak: No important data is sent and is encrypted before being sent
             echo prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => $lang->get('error')." - ".(isset($error) === true ? $error->getErrorCode()." - ".$error->getErrorMessage(). "<br>".$error->getDiagnosticMessage() : $e),
+                    'message' => 'An error occurred.',
                 ),
                 'encode'
             );

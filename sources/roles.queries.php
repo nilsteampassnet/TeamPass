@@ -726,6 +726,7 @@ if (null !== $post_type) {
                 }
             } catch (Exception $e) {
                 error_log('TEAMPASS Error - ldap - '.$e->getMessage());
+                // deepcode ignore ServerLeak: No important data is sent and it is encrypted before sending
                 echo prepareExchangedData(array(
                     'error' => true,
                     'message' => 'An error occurred.',

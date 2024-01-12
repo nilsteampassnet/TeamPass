@@ -2402,6 +2402,7 @@ if (null !== $post_type) {
             } catch (\LdapRecord\Auth\BindException $e) {
                 $error = $e->getDetailedError();
                 error_log('TEAMPASS Error - Users - '.$error->getErrorCode()." - ".$error->getErrorMessage(). " - ".$error->getDiagnosticMessage());
+                // deepcode ignore ServerLeak: No important data is sent and it is encrypted before sending
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -2429,6 +2430,7 @@ if (null !== $post_type) {
             } catch (\LdapRecord\Auth\BindException $e) {
                 $error = $e->getDetailedError();
                 error_log('TEAMPASS Error - Users - '.$error->getErrorCode()." - ".$error->getErrorMessage(). " - ".$error->getDiagnosticMessage());
+                // deepcode ignore ServerLeak: No important data is sent and it is encrypted before sending
                 echo prepareExchangedData(
                     array(
                         'error' => true,

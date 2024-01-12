@@ -2019,7 +2019,7 @@ function prepareFileWithDefuse(
     }
 
     // return error
-    return $err === true ? '' : $err;
+    return $err === true ? $err : '';
 }
 
 /**
@@ -2613,7 +2613,7 @@ function decryptFile(string $fileName, string $filePath, string $key): string
     $cipher->enableContinuousBuffer();
     $cipher->disablePadding();
     // Get file content
-    $safeFilePath = $filePath . '/' . TP_FILE_PREFIX . $safeFileName;
+    $safeFilePath = realpath($filePath . '/' . TP_FILE_PREFIX . $safeFileName);
     $ciphertext = file_get_contents(filter_var($safeFilePath, FILTER_SANITIZE_URL));
 
     if (WIP) error_log('DEBUG: File image url -> '.filter_var($safeFilePath, FILTER_SANITIZE_URL));
@@ -2856,7 +2856,9 @@ function ldapCheckUserPassword(string $login, string $password, array $SETTINGS)
         $connection->connect();
     } catch (\LdapRecord\Auth\BindException $e) {
         $error = $e->getDetailedError();
-        echo 'Error : '.$error->getErrorCode().' - '.$error->getErrorMessage(). '<br>'.$error->getDiagnosticMessage();
+        error_log('TEAMPASS Error - Auth - '.$error->getErrorCode()." - ".$error->getErrorMessage(). " - ".$error->getDiagnosticMessage());
+        // deepcode ignore ServerLeak: No important data is sent
+        echo 'An error occurred.';
         return false;
     }
 
@@ -2869,7 +2871,9 @@ function ldapCheckUserPassword(string $login, string $password, array $SETTINGS)
         }
     } catch (\LdapRecord\Auth\BindException $e) {
         $error = $e->getDetailedError();
-        echo 'Error : '.$error->getErrorCode().' - '.$error->getErrorMessage(). '<br>'.$error->getDiagnosticMessage();
+        error_log('TEAMPASS Error - Auth - '.$error->getErrorCode()." - ".$error->getErrorMessage(). " - ".$error->getDiagnosticMessage());
+        // deepcode ignore ServerLeak: No important data is sent
+        echo 'An error occurred.';
         return false;
     }
 

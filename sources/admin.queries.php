@@ -22,15 +22,10 @@ declare(strict_types=1);
 use TeampassClasses\SessionManager\SessionManager;
 use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use TeampassClasses\Language\Language;
-use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\NestedTree\NestedTree;
-use TeampassClasses\Encryption\Encryption;
 use Duo\DuoUniversal\Client;
 use Duo\DuoUniversal\DuoException;
-use Defuse\Crypto\Crypto;
-use Defuse\Crypto\Key;
-use Defuse\Crypto\Exception as CryptoException;
 
 // Load functions
 require_once 'main.functions.php';
@@ -102,66 +97,8 @@ $post_counter = filter_input(INPUT_POST, 'counter', FILTER_SANITIZE_NUMBER_INT);
 $post_list = filter_input(INPUT_POST, 'list', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
 switch ($post_type) {
-        //CASE for getting informations about the tool
-    case 'cpm_status':
-        $text = '<ul>';
-        $error = '';
-        if (TP_ADMIN_NO_INFO === false) {
-            if (isset($SETTINGS['get_tp_info']) && (int) $SETTINGS['get_tp_info'] === 1) {
-                // Get info about Teampass
-                if (
-                    isset($SETTINGS['proxy_ip']) === true && empty($SETTINGS['proxy_ip']) === false &&
-                    isset($SETTINGS['proxy_port']) === true && empty($SETTINGS['proxy_port']) === false
-                ) {
-                    $context = stream_context_create(
-                        array(
-                            'http' => array(
-                                'ignore_errors' => true,
-                                'proxy' => $SETTINGS['proxy_ip'] . ':' . $SETTINGS['proxy_port'],
-                            ),
-                        )
-                    );
-                } else {
-                    $context = stream_context_create(
-                        array(
-                            'http' => array(
-                                'ignore_errors' => true,
-                            ),
-                        )
-                    );
-                }
-
-                $json = @file_get_contents('https://teampass.net/utils/teampass_info.json', false, $context);
-                if ($json !== false) {
-                    $json_array = json_decode($json, true);
-
-                    // About version
-                    $text .= '<li><u>' . $LANG['your_version'] . '</u> : ' . TP_VERSION;
-                    if (floatval(TP_VERSION) < floatval($json_array['info']['version'])) {
-                        $text .= '&nbsp;&nbsp;<b>' . $LANG['please_update'] . '</b>';
-                    }
-                    $text .= '</li>';
-
-                    // Libraries
-                    $text .= '<li><u>Libraries</u> :</li>';
-                    foreach ($json_array['libraries'] as $key => $val) {
-                        $text .= "<li>&nbsp;<span class='fa fa-caret-right'></span>&nbsp;" . $key . " (<a href='" . $val . "' target='_blank'>" . $val . '</a>)</li>';
-                    }
-                }
-            } else {
-                $error = 'conf_block';
-            }
-        } else {
-            $error = 'conf_block';
-        }
-        $text .= '</ul>';
-
-        echo '[{"error":"' . $error . '" , "output":"' . str_replace(array("\n", "\t", "\r"), '', $text) . '"}]';
-        break;
-        
-
-        //##########################################################
-        //CASE for creating a DB backup
+    //##########################################################
+    //CASE for creating a DB backup
     case 'admin_action_db_backup':
         // Check KEY
         if ($post_key !== $session->get('key')) {
@@ -341,7 +278,8 @@ switch ($post_type) {
             );
 
             if (empty($ret) === false) {
-                echo '[{"result":"db_restore" , "message":"' . $ret . '"}]';
+                // deepcode ignore ServerLeak: $ret can only be an error string, so no important data here to be sent to client
+                echo '[{"result":"db_restore" , "message":"An error occurred ('.$ret.')"}]';
                 break;
             }
 
@@ -1900,6 +1838,7 @@ switch ($post_type) {
             );
         } catch (DuoException $e) {
             error_log('TEAMPASS Error - duo config - '.$e->getMessage());
+            // deepcode ignore ServerLeak: Data is encrypted before being sent
             echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -1924,6 +1863,7 @@ switch ($post_type) {
                 $data["duo_check"] = "failed";
             }*/
             error_log('TEAMPASS Error - duo config - '.$e->getMessage());
+            // deepcode ignore ServerLeak: Data is encrypted before being sent
             echo prepareExchangedData(
                     array(
                         'error' => true,
