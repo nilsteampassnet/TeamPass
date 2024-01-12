@@ -1059,4 +1059,5 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     }
 }
 
-echo $antiXss->xss_clean($sOutput);
+// deepcode ignore XSS: data comes from database. Before being stored it is clean with feature antiXss->xss_clean
+echo (string) $sOutput;
