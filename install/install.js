@@ -8,11 +8,9 @@
  * @project   Teampass
  * @version   
  * @file      install.js
- * ---
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2023 Teampass.net
- * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
- * ---
+ * @copyright 2009-2024 Teampass.net
+ * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
 
