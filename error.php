@@ -34,7 +34,7 @@ require_once __DIR__.'/sources/main.functions.php';
 // init
 loadClasses('DB');
 $session = SessionManager::getSession();
-$lang = new Language(); 
+$lang = new Language();
 
 // Load config if $SETTINGS not defined
 try {

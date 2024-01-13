@@ -46,7 +46,7 @@ require_once 'main.functions.php';
 loadClasses('DB');
 $session = SessionManager::getSession();
 $request = SymfonyRequest::createFromGlobals();
-$lang = new Language(); 
+$lang = new Language();
 
 // Load config if $SETTINGS not defined
 try {
@@ -5984,13 +5984,14 @@ switch ($inputData['type']) {
             'encrypt',
             $SETTINGS
         );
+        $timestampReference = time();
 
         DB::insert(
             prefixTable('otv'),
             array(
                 'id' => null,
                 'item_id' => $dataReceived['id'],
-                'timestamp' => time(),
+                'timestamp' => $timestampReference,
                 'originator' => intval($session->get('user-id')),
                 'code' => $otv_code,
                 'encrypted' => $passwd['string'],
@@ -6003,15 +6004,16 @@ switch ($inputData['type']) {
 
         // Prepare URL content
         $otv_session = array(
+            'otv' => true,
             'code' => $otv_code,
             'key' => $otv_key_encoded,
-            'stamp' => time(),
+            'stamp' => $timestampReference,
         );
 
         if (isset($SETTINGS['otv_expiration_period']) === false) {
             $SETTINGS['otv_expiration_period'] = 7;
         }
-        $url = $SETTINGS['cpassman_url'] . '/index.php?otv=true&' . http_build_query($otv_session);
+        $url = $SETTINGS['cpassman_url'] . '/index.php?' . http_build_query($otv_session);
 
         echo json_encode(
             array(
@@ -6039,12 +6041,20 @@ switch ($inputData['type']) {
             'decode'
         );
 
-        $days = (int) $dataReceived['days'] > (int) $SETTINGS['otv_expiration_period'] ? (int) $SETTINGS['otv_expiration_period'] : (int) $dataReceived['days'];
+        // get parameters from original link
+        $url = $dataReceived['original_link'];
+        $parts = parse_url($url);
+        if(isset($parts['query'])){
+            parse_str($parts['query'], $orignal_link_parameters);
+        } else {
+            $orignal_link_parameters = array();
+        }
 
+        // update database
         DB::update(
             prefixTable('otv'),
             array(
-                'time_limit' => $days * (int) TP_ONE_DAY_SECONDS + time(),
+                'time_limit' => (int) $dataReceived['days'] * (int) TP_ONE_DAY_SECONDS + time(),
                 'max_views' => (int) $dataReceived['views'],
                 'shared_globaly' => (int) $dataReceived['shared_globaly'] === 1 ? 1 : 0,
             ),
@@ -6052,10 +6062,13 @@ switch ($inputData['type']) {
             $dataReceived['otv_id']
         );
 
-        $data = DB::queryFirstRow(
-            'SELECT * FROM ' . prefixTable('otv') . ' WHERE id = %i',
-            $dataReceived['otv_id']
-        );
+        // Prepare URL content
+        $otv_session = [
+            'otv' => true,
+            'code' => $orignal_link_parameters['code'],
+            'key' => $orignal_link_parameters['key'],
+            'stamp' => $orignal_link_parameters['stamp'],
+        ];
 
         if ((int) $dataReceived['shared_globaly'] === 1 && isset($SETTINGS['otv_subdomain']) === true && empty($SETTINGS['otv_subdomain']) === false) {
             // Inject subdomain in URL by convering www. to subdomain.
@@ -6066,9 +6079,9 @@ switch ($inputData['type']) {
             } else {
                 $domain_host = (string) $SETTINGS['otv_subdomain'] . '.' . $domain_host;
             }
-            $url = $domain_scheme.'://'.$domain_host . '/index.php?otv=true&code=' . $data['code'] . '&key=' . $data['encrypted'] . '&stamp=' . $data['time_limit'];
+            $url = $domain_scheme.'://'.$domain_host . '/index.php?'.http_build_query($otv_session);
         } else {
-            $url = $SETTINGS['cpassman_url'] . '/index.php?otv=true&code=' . $data['code'] . '&key=' . $data['encrypted'] . '&stamp=' . $data['time_limit'];
+            $url = $SETTINGS['cpassman_url'] . '/index.php?'.http_build_query($otv_session);
         }
 
         echo (string) prepareExchangedData(

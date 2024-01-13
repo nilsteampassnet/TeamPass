@@ -37,7 +37,7 @@ $request = SymfonyRequest::createFromGlobals();
 loadClasses('DB');
 $session = SessionManager::getSession();
 $request = SymfonyRequest::createFromGlobals();
-$lang = new Language(); 
+$lang = new Language();
 
 // Load config if $SETTINGS not defined
 try {
@@ -472,7 +472,8 @@ foreach ($rows as $reccord) {
                                     <?php
                                         $session_item_fields = $session->get('system-item_fields');//print_r($session_item_fields);
                                         if (isset($session_item_fields) === true) {
-                                            foreach ($session_item_fields as $category) {print_r($category);
+                                            foreach ($session_item_fields as $category) {
+                                                //print_r($category);
                                                 echo '
                                             <div class="callout callout-info form-item-category hidden" id="form-item-category-' . $category['id'] . '">
                                                 <h5>' . $category['title'] . '</h5>

@@ -41,7 +41,7 @@ require_once __DIR__.'/../sources/main.functions.php';
 loadClasses();
 $session = SessionManager::getSession();
 $request = RequestLocal::createFromGlobals();
-$lang = new Language(); 
+$lang = new Language();
 
 if ($session->get('key') === null) {
     die('Hacking attempt...');
@@ -5929,6 +5929,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             "days": $('#form-item-otv-days').val(),
             "views": $('#form-item-otv-views').val(),
             "shared_globaly": $('#form-item-otv-subdomain').is(":checked") === true ? 1 : 0,
+            "original_link": $('#form-item-otv-link').val(),
         };
 
         $.post(

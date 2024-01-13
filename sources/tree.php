@@ -505,7 +505,7 @@ function prepareNodeJson(
 ): array
 {
     // Load user's language
-    $lang = new Language(); 
+    $lang = new Language();
 
     // prepare json return for current node
     $parent = $currentNode->parent_id === '0' ? '#' : 'li_' . $currentNode->parent_id;
@@ -610,7 +610,7 @@ function prepareNodeData(
 ): array
 {
     // Load user's language
-    $lang = new Language(); 
+    $lang = new Language();
 
     if (in_array($nodeId, $session_groupes_visibles) === true) {
         // special case for READ-ONLY folder

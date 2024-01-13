@@ -1150,7 +1150,7 @@ function sendEmail(
     $silent = true,
     $cron = false
 ) {
-    $lang = new Language(); 
+    $lang = new Language();
 
     // CAse where email not defined
     if ($email === 'none' || empty($email) === true) {
@@ -1704,7 +1704,7 @@ function logItems(
 function notifyChangesToSubscribers(int $item_id, string $label, array $changes, array $SETTINGS): void
 {
     $session = SessionManager::getSession();
-    $lang = new Language(); 
+    $lang = new Language();
     $globalsUserId = $session->get('user-id');
     $globalsLastname = $session->get('user-lastname');
     $globalsName = $session->get('user-name');
@@ -3239,7 +3239,7 @@ function isValueSetEmpty($value, $boolean = true) : bool
 function defineComplexity() : void
 {
     // Load user's language
-    $lang = new Language(); 
+    $lang = new Language();
     
     if (defined('TP_PW_COMPLEXITY') === false) {
         define(
@@ -3648,7 +3648,7 @@ function handleUserKeys(
 ): string
 {
     $session = SessionManager::getSession();
-    $lang = new Language(); 
+    $lang = new Language();
 
     // prepapre background tasks for item keys generation        
     $userTP = DB::queryFirstRow(

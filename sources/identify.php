@@ -54,7 +54,7 @@ require_once 'main.functions.php';
 loadClasses('DB');
 $session = SessionManager::getSession();
 $request = SymfonyRequest::createFromGlobals();
-$lang = new Language(); 
+$lang = new Language();
 
 
 // Load config if $SETTINGS not defined
@@ -1150,7 +1150,7 @@ function checkUserPasswordValidity($userInfo, $numDaysBeforePwExpiration, $lastP
  */
 function authenticateThroughAD(string $username, array $userInfo, string $passwordClear, array $SETTINGS): array
 {
-    $lang = new Language(); 
+    $lang = new Language();
 
     // 1- Connect to LDAP
     try {
@@ -1435,7 +1435,7 @@ function finalizeAuthentication(
 function yubicoMFACheck($dataReceived, string $userInfo, array $SETTINGS): array
 {
     $session = SessionManager::getSession();
-    $lang = new Language(); 
+    $lang = new Language();
     $sessionAdmin = $session->get('user-admin');
     $sessionUrl = $session->get('user-initial_url');
     $sessionPwdAttempts = $session->get('pwd_attempts');
@@ -1595,7 +1595,7 @@ function ldapCreateUser(string $login, string $passwordClear, string $userEmail,
 function googleMFACheck(string $username, array $userInfo, $dataReceived, array $SETTINGS): array
 {
     $session = SessionManager::getSession();    
-    $lang = new Language(); 
+    $lang = new Language();
 
     if (
         isset($dataReceived['GACode']) === true
@@ -1694,7 +1694,7 @@ function duoMFACheck(
 ): array
 {
     $session = SessionManager::getSession();
-    $lang = new Language(); 
+    $lang = new Language();
 
     $sessionPwdAttempts = $session->get('pwd_attempts');
     $saved_state = null !== $session->get('user-duo_state') ? $session->get('user-duo_state') : '';
@@ -1759,7 +1759,7 @@ function duoMFAPerform(
 ): array
 {
     $session = SessionManager::getSession();
-    $lang = new Language(); 
+    $lang = new Language();
 
     try {
         $duo_client = new Client(
@@ -2148,7 +2148,7 @@ function identifyDoInitialChecks(
     $session = SessionManager::getSession();
     $checks = new initialChecks();
     $enable_ad_user_auto_creation = isset($SETTINGS['enable_ad_user_auto_creation']) === true && (int) $SETTINGS['enable_ad_user_auto_creation'] === 1 ? true : false;
-    $lang = new Language(); 
+    $lang = new Language();
     
     // Brute force management
     try {
@@ -2332,7 +2332,7 @@ function identifyDoMFAChecks(
 ): array
 {    
     $session = SessionManager::getSession();
-    $lang = new Language(); 
+    $lang = new Language();
     
     switch ($userInitialData['user_mfa_mode']) {
         case 'google':

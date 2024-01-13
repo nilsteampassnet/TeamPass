@@ -37,7 +37,7 @@ require_once __DIR__.'/../sources/main.functions.php';
 loadClasses('DB');
 $session = SessionManager::getSession();
 $request = Request::createFromGlobals();
-$lang = new Language(); 
+$lang = new Language();
 
 // Load config if $SETTINGS not defined
 try {
@@ -76,7 +76,7 @@ date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['tim
 // Set header properties
 header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, no-store, must-revalidate');
-$lang = new Language(); 
+$lang = new Language();
 
 // --------------------------------- //
 

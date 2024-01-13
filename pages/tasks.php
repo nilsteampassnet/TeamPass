@@ -42,7 +42,7 @@ try {
 loadClasses();
 $session = SessionManager::getSession();
 $request = Request::createFromGlobals();
-$lang = new Language(); 
+$lang = new Language();
 
 // Do checks
 $checkUserAccess = new PerformChecks(

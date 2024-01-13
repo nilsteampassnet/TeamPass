@@ -38,7 +38,7 @@ require_once __DIR__.'/../sources/main.functions.php';
 loadClasses();
 $session = SessionManager::getSession();
 $request = Request::createFromGlobals();
-$lang = new Language(); 
+$lang = new Language();
 
 if ($session->get('key') === null) {
     die('Hacking attempt...');
