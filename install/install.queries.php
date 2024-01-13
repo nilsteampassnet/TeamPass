@@ -1322,7 +1322,7 @@ $SETTINGS = array (';
                         $mysqli_result = mysqli_query(
                             $dbTmp,
                             "CREATE TABLE IF NOT EXISTS `" . $var['tbl_prefix'] . "items_otp` (
-                            `increment_id` int(12) NOT NULL,
+                            `increment_id` int(12) NOT NULL AUTO_INCREMENT,
                             `item_id` int(12) NOT NULL,
                             `secret` text NOT NULL,
                             `timestamp` varchar(100) NOT NULL,

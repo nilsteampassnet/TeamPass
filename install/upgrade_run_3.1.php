@@ -111,7 +111,7 @@ if (intval($tmp) === 0) {
 mysqli_query(
     $db_link,
     'CREATE TABLE IF NOT EXISTS `' . $pre . 'items_otp` (
-    `increment_id` int(12) NOT NULL,
+    `increment_id` int(12) NOT NULL AUTO_INCREMENT,
     `item_id` int(12) NOT NULL,
     `secret` text NOT NULL,
     `timestamp` varchar(100) NOT NULL,
@@ -120,6 +120,12 @@ mysqli_query(
     PRIMARY KEY (`increment_id`),
     KEY `ITEM` (`item_id`)
     ) CHARSET=utf8;'
+);
+
+// Alter table items_otp (see #4006)
+mysqli_query(
+    $db_link,
+    'ALTER TABLE `' . $pre . 'items_otp` CHANGE `increment_id` `increment_id` INT(12) NOT NULL AUTO_INCREMENT;'
 );
 
 // Alter table TOKENS

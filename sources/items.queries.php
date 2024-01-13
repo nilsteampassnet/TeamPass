@@ -3825,7 +3825,7 @@ switch ($inputData['type']) {
                 'httponly' => true,
                 'samesite' => 'Lax' // None || Lax  || Strict
             );
-            // deepcode ignore WebCookieSecureDisabledByDefault: <please specify a reason of ignoring this>
+            // deepcode ignore WebCookieSecureDisabledByDefault: defined in $arr_cookie_options, deepcode ignore WebCookieHttpOnlyDisabledByDefault: defined in $arr_cookie_options
             setcookie('jstree_select', $inputData['id'], $arr_cookie_options);
 
             // CHeck if roles have 'allow_pw_change' set to true
