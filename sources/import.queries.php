@@ -382,7 +382,6 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
                 (int) $post_folder,
                 (int) $newId,
                 $cryptedStuff['objectKey'],
-                $SETTINGS
             );
 
             //if asked, anyone in role can modify
@@ -759,7 +758,6 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
                 (int) $post_folders[$item['parentFolderId']]['id'],
                 (int) $newId,
                 $cryptedStuff['objectKey'],
-                $SETTINGS
             );
 
             //if asked, anyone in role can modify

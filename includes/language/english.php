@@ -28,6 +28,7 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'error_item_currently_being_updated' => 'Item is currently being updated and cannot be edited',
     'restore_in_progress' => 'Restore process is at',
     'settings_ldap_group_objectclasses_attibute' => 'AD Group ObjectClasses attribute',
     'settings_ldap_group_objectclasses_attibute_tip' => 'The objectClasses to use when searching for groups. Several objectClasses are separated by a comma (,). Example: groupOfNames,group or top,posixGroup',

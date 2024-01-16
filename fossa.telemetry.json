@@ -1,0 +1,153 @@
+{
+  "cliCIEnvironment": null,
+  "cliCommandArgs": [
+    "fossa",
+    "analyze",
+    "--debug"
+  ],
+  "cliEnvironment": "prod",
+  "cliExitedFatally": false,
+  "cliResolvedConfig": {
+    "cmdConfig": {
+      "baseDir": {
+        "unBaseDir": "/var/www/html/TeamPass/"
+      },
+      "customFossaDepsFile": null,
+      "experimental": {
+        "allowedGradleConfigs": null,
+        "resolvePathDependencies": false,
+        "useV3GoResolver": "GoModulesBasedTactic"
+      },
+      "filterSet": {
+        "excludeFilters": {
+          "_combinedPaths": [],
+          "_combinedTargets": []
+        },
+        "includeFilters": {
+          "_combinedPaths": [],
+          "_combinedTargets": []
+        }
+      },
+      "firstPartyScansFlag": "FirstPartyScansUseDefault",
+      "grepOptions": {
+        "configFilePath": null,
+        "customLicenseSearch": [],
+        "keywordSearch": [],
+        "orgWideCustomLicenseScanConfigPolicy": "Use"
+      },
+      "includeAllDeps": {
+        "getFlag": false
+      },
+      "jsonOutput": {
+        "getFlag": false
+      },
+      "mavenScopeFilterSet": {
+        "contents": {
+          "scopes": []
+        },
+        "tag": "MavenScopeIncludeFilters"
+      },
+      "noDiscoveryExclusion": {
+        "getFlag": false
+      },
+      "overrideDynamicAnalysis": {
+        "unOverrideDynamicAnalysisBinary": []
+      },
+      "projectRevision": {
+        "projectBranch": "master",
+        "projectName": "https://nilsteampassnet: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@github.com/nilsteampassnet/TeamPass.git",
+        "projectRevision": "b85c6b9f65723313ef59c3efdc8aa38625d33869"
+      },
+      "scanDestination": {
+        "contents": [
+          {
+            "apiKey": "<REDACTED>",
+            "uri": "Nothing"
+          },
+          {
+            "projectJiraKey": null,
+            "projectLabel": [],
+            "projectLink": null,
+            "projectPolicy": null,
+            "projectReleaseGroup": null,
+            "projectTeam": null,
+            "projectTitle": null,
+            "projectUrl": null
+          }
+        ],
+        "tag": "UploadScan"
+      },
+      "severity": "debug",
+      "unpackArchives": {
+        "getFlag": false
+      },
+      "vendoredDeps": {
+        "forceRescans": false,
+        "licenseScanMethod": null,
+        "licenseScanPathFilters": null
+      },
+      "vsiOptions": {
+        "binaryDiscoveryEnabled": {
+          "getFlag": false
+        },
+        "dynamicLinkingTarget": {
+          "unDynamicLinkInspect": null
+        },
+        "iatAssertion": {
+          "unIATAssertion": null
+        },
+        "vsiAnalysisEnabled": {
+          "getFlag": false
+        },
+        "vsiSkipSet": {
+          "unVSISkipResolution": []
+        }
+      }
+    },
+    "cmdName": "analyze"
+  },
+  "cliStartedAt": "2024-01-13T12:04:47.533088719Z",
+  "cliSystemInfo": {
+    "systemCapabilities": 8,
+    "systemDistroInfo": "Ubuntu 22.04.3 LTS",
+    "systemInfoArch": "x86_64",
+    "systemInfoOs": "linux",
+    "systemLddVersion": {
+      "Right": "ldd (Ubuntu GLIBC 2.35-0ubuntu3.6) 2.35\nCopyright (C) 2022 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\nWritten by Roland McGrath and Ulrich Drepper.\n"
+    },
+    "systemProcessors": 8,
+    "systemUname": {
+      "Right": "Linux 5.15.137.3-microsoft-standard-WSL2 #1 SMP Mon Nov 6 23:32:38 UTC 2023 x86_64\n"
+    }
+  },
+  "cliTelLogs": [
+    {
+      "message": "----------\nFailed\n\n>>> Relevant errors\n\n  Error\n\n    Error parsing file: /var/www/html/TeamPass/package-lock.json.\n\n        Error in $: not enough input\n\n    If you believe this to be a defect, please report a bug to FOSSA support at https://support.fossa.com, with a copy of:\n      /var/www/html/TeamPass/package-lock.json\n\n    Traceback:\n      - Parsing JSON file '/var/www/html/TeamPass/package-lock.json'\n      - Parsing package-lock.json\n      - Analyzing Npm Lockfile\n      - Project Analysis: NpmProjectType\n\n>>> Possibly-related warnings\n\n  Warning\n\n    >>> Relevant errors\n\n      Error\n\n        Error parsing file: /var/www/html/TeamPass/package-lock.json.\n\n            Error in $: not enough input\n\n        If you believe this to be a defect, please report a bug to FOSSA support at https://support.fossa.com, with a copy of:\n          /var/www/html/TeamPass/package-lock.json\n\n        Traceback:\n          - Parsing JSON file '/var/www/html/TeamPass/package-lock.json'\n          - Project Analysis: NpmProjectType\n\n\n\n",
+      "severity": "error",
+      "ts": "2024-01-13T12:04:51.105910711Z"
+    },
+    {
+      "message": "----------\nAn Issue Occurred\n\nWarning\n\n  Could not analyze edges between dependencies.\n\n  Could not analyze deep dependencies.\n\n  >>> Details\n\n    We could not perform lockfile analysis for your nodejs project.\n\n      Ensure valid lockfile exist and is readable prior to running fossa.\n        For yarn package manager, you can perform: `yarn install` to install dependencies and generate lockfile.\n        For node package manager, you can perform: `npm install` to install dependencies and generate lockfile.\n\n    Refer to:\n      - https://github.com/fossas/fossa-cli/blob/v3.8.30/docs/references/strategies/languages/nodejs/nodejs.md\n      - https://docs.npmjs.com/cli/v8/configuring-npm/package-lock-json\n      - https://classic.yarnpkg.com/lang/en/docs/yarn-lock/\n      - https://yarnpkg.com/getting-started/qa#should-lockfiles-be-committed-to-the-repository\n\n  >>> Relevant errors\n\n    Error\n\n      Lock files - yarn.lock or package-lock.json were not discovered.\n\n      Traceback:\n        - Project Analysis: NpmProjectType\n\n\n",
+      "severity": "warn",
+      "ts": "2024-01-13T12:04:51.131227211Z"
+    }
+  ],
+  "cliTelemetryId": "fe1ad5da-617a-438b-81aa-3ee1796f7207",
+  "cliTimedDurations": [
+    {
+      "computationName": "NpmProjectType",
+      "durationInSeconds": 6.983e-4
+    },
+    {
+      "computationName": "NpmProjectType",
+      "durationInSeconds": 2.045e-4
+    },
+    {
+      "computationName": "ComposerProjectType",
+      "durationInSeconds": 1.31962e-2
+    }
+  ],
+  "cliTotalDurationInSec": 5.820301687,
+  "cliUsageCounter": {},
+  "cliVersion": "v3.8.30"
+}

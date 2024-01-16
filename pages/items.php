@@ -149,7 +149,7 @@ foreach ($rows as $reccord) {
             <div class="card text-center">
                 <div class="card-header">
                     <div class="card-tools-left">
-                        <button type="button" class="btn btn-gray but-back">
+                        <button type="button" class="btn btn-gray but-back" id="but_back_top_left">
                             <i class="fa-solid fa-arrow-left"></i>
                         </button>
                     </div>
@@ -157,7 +157,7 @@ foreach ($rows as $reccord) {
                     <h5 id="form-item-title" class="clear-me-html" style="min-height:23px;"></h5>
 
                     <div class="card-tools">
-                        <button type="button" class="btn btn-tool btn-sm but-back">
+                        <button type="button" class="btn btn-tool btn-sm but-back" id="but_back_top_right">
                             <i class="fa-solid fa-times"></i>
                         </button>
                     </div>

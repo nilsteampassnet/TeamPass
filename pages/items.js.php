@@ -656,9 +656,23 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
             // Get some info
             $.when(
-                retPrivileges = getPrivilegesOnItem(store.get('teampassApplication').itemsListFolderId, 0)
-            ).then(function() {
-                if (retPrivileges === false) {
+                getPrivilegesOnItem(store.get('teampassApplication').itemsListFolderId, 0)
+            ).then(function(retData) {
+                if (debugJavascript === true) {
+                    console.log('getPrivilegesOnItem 1')
+                    console.log(retData)
+                }
+                if (retData.error === true) {
+                    requestRunning = false;
+                    toastr.remove();
+                    toastr.error(
+                        retData.message,
+                        '<?php echo $lang->get('error'); ?>', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
+                    // Finished
                     return false;
                 }
                 // If previous item was seen then clean session
@@ -778,7 +792,25 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
             $.when(
                 getPrivilegesOnItem(selectedFolderId, 1)
-            ).then(function() {
+            ).then(function(retData) {
+                console.log('getPrivilegesOnItem 2')
+                console.log(retData)
+                if (retData.error === true) {
+                    toastr.remove();
+                    toastr.error(
+                        retData.message,
+                        '', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
+
+                    requestRunning = false;
+
+                    // Finished
+                    return false;
+                }
+
                 // Is user allowed
                 if (store.get('teampassItem').item_rights < 20) {
                     toastr.remove();
@@ -1027,23 +1059,38 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         userDidAChange = false;
         if ($(this).hasClass('but-back-to-item') === false) {
             // Is this form the edition one?
-            if ($(this).hasClass('item-edit') === true && userUploadedFile === true) {
-                // Do some operation such as cancel file upload
-                var data = {
+            if ($(this).hasClass('item-edit') === true) {
+                // release existing edition lock
+                data = {
                     'item_id': store.get('teampassItem').id,
+                    'action': 'release_lock',
                 }
-
                 $.post(
-                    "sources/items.queries.php", {
-                        type: 'delete_uploaded_files_but_not_saved',
-                        data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $session->get('key'); ?>'),
+                    'sources/items.queries.php', {
+                        type: 'handle_item_edition_lock',
+                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
                         key: '<?php echo $session->get('key'); ?>'
-                    },
-                    function(data) {
-                        data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>', 'items.queries.php', 'delete_uploaded_files_but_not_saved');
-                        if (debugJavascript === true) console.log(data);
                     }
                 );
+
+                if (userUploadedFile === true) {
+                    // Do some operation such as cancel file upload
+                    var data = {
+                        'item_id': store.get('teampassItem').id,
+                    }
+
+                    $.post(
+                        "sources/items.queries.php", {
+                            type: 'delete_uploaded_files_but_not_saved',
+                            data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $session->get('key'); ?>'),
+                            key: '<?php echo $session->get('key'); ?>'
+                        },
+                        function(data) {
+                            data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>', 'items.queries.php', 'delete_uploaded_files_but_not_saved');
+                            if (debugJavascript === true) console.log(data);
+                        }
+                    );
+                }
             }
 
             // Clear pickfiles div
@@ -1389,6 +1436,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 if (typeof data !== 'undefined' && data.error !== true) {
                     $('.form-item-action, .item-details-card-menu').addClass('hidden');
                     // Warn user
+                    toastr.remove();
                     toastr.success(
                         '<?php echo $lang->get('success'); ?>',
                         '', {
@@ -1404,6 +1452,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     if (closeItemCard === true) {
                         closeItemDetailsCard();
                     }
+                    requestRunning = false;
                 } else {
                     // ERROR
                     toastr.remove();
@@ -2255,6 +2304,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             toastr.remove();
             toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
 
+            // show top back buttons
+            $('#but_back_top_left, #but_back_top_right').removeClass('hidden');
+
             // Load item info
             Details($(this).closest('tr'), 'show');
         })
@@ -2265,6 +2317,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             if (debugJavascript === true) console.log('EDIT ME');
             // Set type of action
             $('#form-item-button-save').data('action', 'update_item');
+
+            // Hide top back buttons
+            $('#but_back_top_left, #but_back_top_right').addClass('hidden');
             
             // Load item info
             Details($(this).closest('tr'), 'edit');
@@ -2278,8 +2333,10 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             startedItemsListQuery = false;
 
             // check if user still has access
+            var itemKeyToDelete = $(this).data('item-key');
+
             $.when(
-                checkAccess($(this).data('item-key'), selectedFolderId, <?php echo $session->get('user-id'); ?>)
+                checkAccess($(this).data('item-key'), selectedFolderId, <?php echo $session->get('user-id'); ?>, 'delete')
             ).then(function(retData) {
                 // Is the user allowed?
                 if (retData.access === false || retData.delete === false) {
@@ -2309,13 +2366,14 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     false,
                     false
                 );
-
+                
                 // Launch deletion
                 $(document).on('click', '#warningModalButtonAction', {itemKey:$(this).data('item-key')}, function(event2) {
                     event2.preventDefault();
+                    
                     goDeleteItem(
                         '',
-                        event2.data.itemKey,
+                        itemKeyToDelete,
                         selectedFolderId,
                         '',
                         false
@@ -3262,6 +3320,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         } else {
             $('#card-item-visibility').html(store.get('teampassItem').itemVisibility);
             $('#card-item-minimum-complexity').html(store.get('teampassItem').itemMinimumComplexity);
+
+            // show top back buttons
+            $('#but_back_top_left, #but_back_top_right').addClass('hidden');
 
             // Show edition form
             $('.form-item, #form-item-attachments-zone')
@@ -4377,11 +4438,12 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
     }
 
 
-    function checkAccess(itemId, treeId, userId) {
+    function checkAccess(itemId, treeId, userId, actionType) {
         var data = {
             'itemId': parseInt(itemId),
             'treeId': parseInt(treeId),
             'userId': parseInt(userId),
+            'actionType': actionType,
         };
         if (debugJavascript === true) {
             console.log(data);
@@ -4448,8 +4510,38 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
         // check if user still has access
         $.when(
-            checkAccess(itemId, itemTreeId, <?php echo $session->get('user-id'); ?>)
+            checkAccess(itemId, itemTreeId, <?php echo $session->get('user-id'); ?>, actionType)
         ).then(function(retData) {
+            // is there an error?
+            if (retData.error === true) {
+                toastr.remove();
+                toastr.error(
+                    retData.message,
+                    '', {
+                        timeOut: 5000,
+                        progressBar: true
+                    }
+                );
+                // Finished
+                requestRunning = false;
+                return false;
+            }
+
+            // if edition and retData.edition_locked === true then show message
+            if (actionType === 'edit' && retData.edition_locked === true) {
+                toastr.remove();
+                toastr.error(
+                    '<?php echo $lang->get('error_item_currently_being_updated'); ?>',
+                    '', {
+                        timeOut: 5000,
+                        progressBar: true
+                    }
+                );
+                // Finished
+                requestRunning = false;
+                return false;
+            }
+            
             // Is the user allowed?
             if (retData.access === false
                 || (actionType === 'edit' && retData.edit === false)
@@ -5333,10 +5425,27 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 if (actionType === 'show') {
                     loadItemHistory(store.get('teampassItem').id);
                 } else if (actionType === 'edit') {
-                    getPrivilegesOnItem(
-                        selectedFolderId,
-                        0
-                    );
+                    $.when(
+                        getPrivilegesOnItem(selectedFolderId, 0)
+                    ).then(function(retData) {
+                        console.log('getPrivilegesOnItem 3')
+                        console.log(retData)
+                        if (retData.error === true) {
+                            toastr.remove();
+                            toastr.error(
+                                retData.message,
+                                '', {
+                                    timeOut: 5000,
+                                    progressBar: true
+                                }
+                            );
+
+                            requestRunning = false;
+
+                            // Finished
+                            return false;
+                        }
+                    });
                 }
 
                 // Prepare Select2 inputs
@@ -5992,115 +6101,125 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         if (val === false) {
             val = selectedFolderId;
         }
-        if (debugJavascript === true) console.log('Get privilege for folder ' + val);
-            
-        if (val === "" || typeof val === "undefined" || val === false) {
-            toastr.remove();
-            toastr.error(
-                '',
-                '<?php echo $lang->get('please_select_a_folder'); ?>',
-                {
-                    timeOut: 5000,
-                    positionClass: 'toast-top-right',
-                    progressBar: true
+        if (debugJavascript === true) console.log('Get privilege for folder ' + val);        
+
+        return new Promise(function(resolve, reject) {
+            if (val === "" || typeof val === "undefined" || val === false) {
+                /*toastr.remove();
+                toastr.error(
+                    '',
+                    '<?php echo $lang->get('please_select_a_folder'); ?>',
+                    {
+                        timeOut: 5000,
+                        positionClass: 'toast-top-right',
+                        progressBar: true
+                    }
+                );*/
+                resolve({
+                    "error": true,
+                    "message": '<?php echo $lang->get('please_select_a_folder'); ?>',
+                });
+
+                return false;
+            }
+
+            $.post(
+                "sources/items.queries.php", {
+                    type: "get_complixity_level",
+                    folder_id: val,
+                    context: context,
+                    item_id: store.get('teampassItem').id,
+                    key: '<?php echo $session->get('key'); ?>'
+                },
+                function(data) {
+                    //decrypt data
+                    data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>', 'items.queries.php', 'get_complixity_level');
+
+                    if (debugJavascript === true) {
+                        console.info('GET COMPLEXITY LEVEL');
+                        console.log(data);
+                    }
+                    var executionStatus = true;
+
+                    if (data.error === false) {
+                        // Do some prepartion
+
+                        // Prepare list of users where needed
+                        $('#form-item-restrictedto, #form-item-anounce').empty().change(); //.val('')
+                        // Users restriction list
+                        var html_restrictions = '';
+
+                        $(data.usersList).each(function(index, value) {
+                            // Prepare list for FORM
+                            $("#form-item-restrictedto")
+                                .append('<option value="' + value.id + '" class="restriction_is_user">' + value.name + '</option>');
+
+                            // Prepare list of emailers
+                            $('#form-item-anounce').append('<option value="' + value.email + '">' + value.name + '</option>');
+                        });
+                        if (data.setting_restricted_to_roles === 1) {
+                            //add optgroup
+                            var optgroup = $('<optgroup label="<?php echo $lang->get('users'); ?>">');
+                            $(".restriction_is_user").wrapAll(optgroup);
+
+                            // Now add the roles to the list
+                            $(data.rolesList).each(function(index, value) {
+                                $("#form-item-restrictedto")
+                                    .append('<option value="role_' + value.id + '" class="restriction_is_role">' +
+                                        value.title + '</option>');
+                            });
+                            /// Add a group label for Groups
+                            $('.restriction_is_role').wrapAll($('<optgroup label="<?php echo $lang->get('roles'); ?>">'));
+                        }
+
+
+                        //
+                        $('#card-item-visibility').html(data.visibility);
+
+                        // Prepare Select2
+                        $('.select2').select2({
+                            language: '<?php echo $session->get('user-language_code'); ?>',
+                            theme: "bootstrap4",
+                        });
+
+                        // Show selected restricted inputs
+                        $('#form-item-restrictedto')
+                            .val(data.usersList.concat(
+                                data.rolesList.map(i => 'role_' + i)))
+                            .change();
+
+                        // If restricted to Users then select them
+                        if (store.get('teampassItem').id_restricted_to !== undefined) {
+                            $('#form-item-restrictedto')
+                                .val(store.get('teampassItem').id_restricted_to)
+                                .trigger('change');
+                        }
+                    }
+
+                    store.update(
+                        'teampassItem',
+                        function(teampassItem) {
+                            teampassItem.folderId = val,
+                                teampassItem.error = data.error === undefined ? '' : data.error,
+                                teampassItem.message = data.message === undefined ? '' : data.message,
+                                teampassItem.folderComplexity = data.val === undefined ? '' : parseInt(data.val),
+                                teampassItem.folderIsPersonal = data.personal === undefined ? '' : parseInt(data.personal),
+                                teampassItem.itemMinimumComplexity = data.complexity === undefined ? '' : data.complexity,
+                                teampassItem.itemVisibility = data.visibility === undefined ? '' : data.visibility,
+                                teampassItem.id_restricted_to = data.usersList === undefined ? '' : data.usersList,
+                                teampassItem.id_restricted_to_roles = data.rolesList === undefined ? '' : data.rolesList,
+                                teampassItem.item_rights = data.itemAccessRight === undefined ? '' : data.itemAccessRight
+                        }
+                    );
+                    //if (debugJavascript === true) console.log('Content of teampassItem;')
+                    //if (debugJavascript === true) console.log(store.get('teampassItem'))
+                    resolve({
+                        "error": data.error === undefined ? '' : data.error,
+                        "message": data.message === undefined ? '' : data.message,
+                    });
                 }
             );
-            return false;
-        }
-
-        return $.post(
-            "sources/items.queries.php", {
-                type: "get_complixity_level",
-                folder_id: val,
-                context: context,
-                item_id: store.get('teampassItem').id,
-                key: '<?php echo $session->get('key'); ?>'
-            },
-            function(data) {
-                //decrypt data
-                data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>', 'items.queries.php', 'get_complixity_level');
-
-                if (debugJavascript === true) {
-                    console.info('GET COMPLEXITY LEVEL');
-                    console.log(data);
-                }
-                var executionStatus = true;
-
-                if (data.error === false) {
-                    // Do some prepartion
-
-                    // Prepare list of users where needed
-                    $('#form-item-restrictedto, #form-item-anounce').empty().change(); //.val('')
-                    // Users restriction list
-                    var html_restrictions = '';
-
-                    $(data.usersList).each(function(index, value) {
-                        // Prepare list for FORM
-                        $("#form-item-restrictedto")
-                            .append('<option value="' + value.id + '" class="restriction_is_user">' + value.name + '</option>');
-
-                        // Prepare list of emailers
-                        $('#form-item-anounce').append('<option value="' + value.email + '">' + value.name + '</option>');
-                    });
-                    if (data.setting_restricted_to_roles === 1) {
-                        //add optgroup
-                        var optgroup = $('<optgroup label="<?php echo $lang->get('users'); ?>">');
-                        $(".restriction_is_user").wrapAll(optgroup);
-
-                        // Now add the roles to the list
-                        $(data.rolesList).each(function(index, value) {
-                            $("#form-item-restrictedto")
-                                .append('<option value="role_' + value.id + '" class="restriction_is_role">' +
-                                    value.title + '</option>');
-                        });
-                        /// Add a group label for Groups
-                        $('.restriction_is_role').wrapAll($('<optgroup label="<?php echo $lang->get('roles'); ?>">'));
-                    }
-
-
-                    //
-                    $('#card-item-visibility').html(data.visibility);
-
-                    // Prepare Select2
-                    $('.select2').select2({
-                        language: '<?php echo $session->get('user-language_code'); ?>',
-                        theme: "bootstrap4",
-                    });
-
-                    // Show selected restricted inputs
-                    $('#form-item-restrictedto')
-                        .val(data.usersList.concat(
-                            data.rolesList.map(i => 'role_' + i)))
-                        .change();
-
-                    // If restricted to Users then select them
-                    if (store.get('teampassItem').id_restricted_to !== undefined) {
-                        $('#form-item-restrictedto')
-                            .val(store.get('teampassItem').id_restricted_to)
-                            .trigger('change');
-                    }
-
-                }
-
-                store.update(
-                    'teampassItem',
-                    function(teampassItem) {
-                        teampassItem.folderId = val,
-                            teampassItem.error = data.error === undefined ? '' : data.error,
-                            teampassItem.message = data.message === undefined ? '' : data.message,
-                            teampassItem.folderComplexity = data.val === undefined ? '' : parseInt(data.val),
-                            teampassItem.folderIsPersonal = data.personal === undefined ? '' : parseInt(data.personal),
-                            teampassItem.itemMinimumComplexity = data.complexity === undefined ? '' : data.complexity,
-                            teampassItem.itemVisibility = data.visibility === undefined ? '' : data.visibility,
-                            teampassItem.id_restricted_to = data.usersList === undefined ? '' : data.usersList,
-                            teampassItem.id_restricted_to_roles = data.rolesList === undefined ? '' : data.rolesList,
-                            teampassItem.item_rights = data.itemAccessRight === undefined ? '' : data.itemAccessRight
-                    }
-                );
-                //if (debugJavascript === true) console.log('Content of teampassItem;')
-                //if (debugJavascript === true) console.log(store.get('teampassItem'))
-            }
-        );
+        });
     }
 
     $('.password-generate').click(function() {

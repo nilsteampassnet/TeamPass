@@ -1304,7 +1304,6 @@ if (null !== $post_type) {
                             (int) $newFolderId,
                             (int) $newItemId,
                             $cryptedStuff['objectKey'],
-                            $SETTINGS
                         );
 
                         // Generate the query to update the new record with the previous values
@@ -1363,7 +1362,6 @@ if (null !== $post_type) {
                                     (int) $newFolderId,
                                     (int) $newFieldId,
                                     $cryptedStuff['objectKey'],
-                                    $SETTINGS
                                 );
                             }
                         }
@@ -1438,7 +1436,6 @@ if (null !== $post_type) {
                                     (int) $newFolderId,
                                     (int) $newFileId,
                                     $newFile['objectKey'],
-                                    $SETTINGS
                                 );
                             }
                         }

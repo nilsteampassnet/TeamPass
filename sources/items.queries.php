@@ -481,7 +481,6 @@ switch ($inputData['type']) {
                     (int) $inputData['folderId'],
                     (int) $newID,
                     $objectKey['pwd'],
-                    $SETTINGS,
                     true,   // only for the item creator
                     false,  // no delete all
                 );
@@ -535,7 +534,6 @@ switch ($inputData['type']) {
                                     (int) $inputData['folderId'],
                                     (int) $newObjectId,
                                     $cryptedStuff['objectKey'],
-                                    $SETTINGS,
                                     true,   // only for the item creator
                                     false,  // no delete all
                                 );
@@ -862,455 +860,573 @@ switch ($inputData['type']) {
             'decode'
         );
 
-        if (is_array($dataReceived) === true && count($dataReceived) > 0) {
-            // Prepare variables
-            $itemInfos = array();
-            $inputData['label'] = isset($dataReceived['label']) && is_string($dataReceived['label']) ? filter_var($dataReceived['label'], FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '';
-            $post_url = isset($dataReceived['url'])=== true ? filter_var(htmlspecialchars_decode($dataReceived['url']), FILTER_SANITIZE_URL) : '';
-            $post_password = $original_pw = isset($dataReceived['pw']) && is_string($dataReceived['pw']) ? htmlspecialchars_decode($dataReceived['pw']) : '';
-            $post_login = isset($dataReceived['login']) && is_string($dataReceived['login']) ? filter_var(htmlspecialchars_decode($dataReceived['login']), FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '';
-            $post_tags = isset($dataReceived['tags'])=== true ? htmlspecialchars_decode($dataReceived['tags']) : '';
-            $post_email = isset($dataReceived['email'])=== true ? filter_var(htmlspecialchars_decode($dataReceived['email']), FILTER_SANITIZE_EMAIL) : '';
-            $post_template_id = (int) filter_var($dataReceived['template_id'], FILTER_SANITIZE_NUMBER_INT);
-            $inputData['itemId'] = (int) filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT);
-            $post_anyone_can_modify = (int) filter_var($dataReceived['anyone_can_modify'], FILTER_SANITIZE_NUMBER_INT);
-            $post_complexity_level = (int) filter_var($dataReceived['complexity_level'], FILTER_SANITIZE_NUMBER_INT);
-            $inputData['folderId'] = (int) filter_var($dataReceived['folder'], FILTER_SANITIZE_NUMBER_INT);
-            $post_folder_is_personal = (int) filter_var($dataReceived['folder_is_personal'], FILTER_SANITIZE_NUMBER_INT);
-            $post_restricted_to = filter_var_array(
-                $dataReceived['restricted_to'],
+        // Error if not expected data
+        if (is_array($dataReceived) === false || count($dataReceived) === 0) {
+            echo (string) prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('json_error_format'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        // Prepare variables
+        $itemInfos = array();
+        $inputData['label'] = isset($dataReceived['label']) && is_string($dataReceived['label']) ? filter_var($dataReceived['label'], FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '';
+        $post_url = isset($dataReceived['url'])=== true ? filter_var(htmlspecialchars_decode($dataReceived['url']), FILTER_SANITIZE_URL) : '';
+        $post_password = $original_pw = isset($dataReceived['pw']) && is_string($dataReceived['pw']) ? htmlspecialchars_decode($dataReceived['pw']) : '';
+        $post_login = isset($dataReceived['login']) && is_string($dataReceived['login']) ? filter_var(htmlspecialchars_decode($dataReceived['login']), FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '';
+        $post_tags = isset($dataReceived['tags'])=== true ? htmlspecialchars_decode($dataReceived['tags']) : '';
+        $post_email = isset($dataReceived['email'])=== true ? filter_var(htmlspecialchars_decode($dataReceived['email']), FILTER_SANITIZE_EMAIL) : '';
+        $post_template_id = (int) filter_var($dataReceived['template_id'], FILTER_SANITIZE_NUMBER_INT);
+        $inputData['itemId'] = (int) filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT);
+        $post_anyone_can_modify = (int) filter_var($dataReceived['anyone_can_modify'], FILTER_SANITIZE_NUMBER_INT);
+        $post_complexity_level = (int) filter_var($dataReceived['complexity_level'], FILTER_SANITIZE_NUMBER_INT);
+        $inputData['folderId'] = (int) filter_var($dataReceived['folder'], FILTER_SANITIZE_NUMBER_INT);
+        $post_folder_is_personal = (int) filter_var($dataReceived['folder_is_personal'], FILTER_SANITIZE_NUMBER_INT);
+        $post_restricted_to = filter_var_array(
+            $dataReceived['restricted_to'],
+            FILTER_SANITIZE_FULL_SPECIAL_CHARS
+        );
+        $post_restricted_to_roles = filter_var_array(
+            $dataReceived['restricted_to_roles'],
+            FILTER_SANITIZE_FULL_SPECIAL_CHARS
+        );
+        $post_diffusion_list = filter_var_array(
+            $dataReceived['diffusion_list'],
+            FILTER_SANITIZE_FULL_SPECIAL_CHARS
+        );
+        $post_diffusion_list_names = filter_var_array(
+            $dataReceived['diffusion_list_names'],
+            FILTER_SANITIZE_FULL_SPECIAL_CHARS
+        );
+        //$post_diffusion_list_names = $post_diffusion_list_names !== false ? json_decode($post_diffusion_list_names) : '';
+        $post_to_be_deleted_after_x_views = filter_var(
+            $dataReceived['to_be_deleted_after_x_views'],
+            FILTER_SANITIZE_NUMBER_INT
+        );
+        $post_to_be_deleted_after_date = isset($dataReceived['to_be_deleted_after_date']) === true ? filter_var(
+                $dataReceived['to_be_deleted_after_date'],
                 FILTER_SANITIZE_FULL_SPECIAL_CHARS
+            ) :
+            '';
+        $post_fields = (filter_var_array(
+            $dataReceived['fields'],
+            FILTER_SANITIZE_FULL_SPECIAL_CHARS
+        ));
+        $post_description = $antiXss->xss_clean($dataReceived['description']);
+        $post_fa_icon = isset($dataReceived['fa_icon']) === true ? filter_var(($dataReceived['fa_icon']), FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '';
+        $post_otp_is_enabled = (int) filter_var($dataReceived['otp_is_enabled'], FILTER_SANITIZE_NUMBER_INT);
+        $post_otp_phone_number = (int) filter_var($dataReceived['otp_phone_number'], FILTER_SANITIZE_NUMBER_INT);
+        $post_otp_secret = isset($dataReceived['otp_secret']) === true ? filter_var(($dataReceived['otp_secret']), FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '';
+
+        //-> DO A SET OF CHECKS
+        // Perform a check in case of Read-Only user creating an item in his PF
+        if (
+            $session->get('user-read_only') === 1
+            && (in_array($inputData['folderId'], $session->get('user-personal_folders')) === false
+                || $post_folder_is_personal !== 1)
+        ) {
+            echo (string) prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to_access_this_folder'),
+                ),
+                'encode'
             );
-            $post_restricted_to_roles = filter_var_array(
-                $dataReceived['restricted_to_roles'],
-                FILTER_SANITIZE_FULL_SPECIAL_CHARS
+            break;
+        }
+
+        $dataCheck = validateDataFields(prefixTable('items'), $dataReceived);
+        if ($dataCheck['state'] !== true) {
+            echo (string) prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_data_not_valid').' - '.$lang->get('field').' '.strtoupper($dataCheck['field']).' '.$lang->get('exceeds_maximum_length_of').' '.$dataCheck['maxLength'].' ('.$dataCheck['currentLength'].')',
+                ),
+                'encode'
             );
-            $post_diffusion_list = filter_var_array(
-                $dataReceived['diffusion_list'],
-                FILTER_SANITIZE_FULL_SPECIAL_CHARS
+            break;
+        }
+
+        // Check PWD EMPTY
+        if (
+            empty($pw) === true
+            && $session->has('user-create_item_without_password') && $session->has('user-create_item_without_password') && null !== $session->get('user-create_item_without_password')
+            && (int) $session->get('user-create_item_without_password') !== 1
+        ) {
+            echo (string) prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_pw'),
+                ),
+                'encode'
             );
-            $post_diffusion_list_names = filter_var_array(
-                $dataReceived['diffusion_list_names'],
-                FILTER_SANITIZE_FULL_SPECIAL_CHARS
+            break;
+        }
+
+        // Need info in DB
+        // About special settings
+        $dataFolderSettings = DB::queryFirstRow(
+            'SELECT bloquer_creation, bloquer_modification, personal_folder, title
+            FROM ' . prefixTable('nested_tree') . ' 
+            WHERE id = %i',
+            $inputData['folderId']
+        );
+        $itemInfos['personal_folder'] = (int) $dataFolderSettings['personal_folder'];
+        if ((int) $itemInfos['personal_folder'] === 1) {
+            $itemInfos['no_complex_check_on_modification'] = 1;
+            $itemInfos['no_complex_check_on_creation'] = 1;
+        } else {
+            $itemInfos['no_complex_check_on_modification'] = (int) $dataFolderSettings['bloquer_modification'];
+            $itemInfos['no_complex_check_on_creation'] = (int) $dataFolderSettings['bloquer_creation'];
+        }
+
+        // Get folder complexity
+        $folderComplexity = DB::queryfirstrow(
+            'SELECT valeur
+            FROM ' . prefixTable('misc') . '
+            WHERE type = %s AND intitule = %i',
+            'complex',
+            $inputData['folderId']
+        );
+        $itemInfos['requested_folder_complexity'] = is_null($folderComplexity) === false ? (int) $folderComplexity['valeur'] : 0;
+        // Check COMPLEXITY
+        if ($post_complexity_level < $itemInfos['requested_folder_complexity'] && $itemInfos['no_complex_check_on_modification'] === 0) {
+            echo (string) prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_security_level_not_reached'),
+                ),
+                'encode'
             );
-            //$post_diffusion_list_names = $post_diffusion_list_names !== false ? json_decode($post_diffusion_list_names) : '';
-            $post_to_be_deleted_after_x_views = filter_var(
-                $dataReceived['to_be_deleted_after_x_views'],
-                FILTER_SANITIZE_NUMBER_INT
+            break;
+        }
+
+        // Check password length
+        if (strlen($post_password) > $SETTINGS['pwd_maximum_length']) {
+            echo (string) prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_pw_too_long'),
+                ),
+                'encode'
             );
-            $post_to_be_deleted_after_date = isset($dataReceived['to_be_deleted_after_date']) === true ? filter_var(
-                    $dataReceived['to_be_deleted_after_date'],
-                    FILTER_SANITIZE_FULL_SPECIAL_CHARS
-                ) :
-                '';
-            $post_fields = (filter_var_array(
-                $dataReceived['fields'],
-                FILTER_SANITIZE_FULL_SPECIAL_CHARS
-            ));
-            $post_description = $antiXss->xss_clean($dataReceived['description']);
-            $post_fa_icon = isset($dataReceived['fa_icon']) === true ? filter_var(($dataReceived['fa_icon']), FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '';
-            $post_otp_is_enabled = (int) filter_var($dataReceived['otp_is_enabled'], FILTER_SANITIZE_NUMBER_INT);
-            $post_otp_phone_number = (int) filter_var($dataReceived['otp_phone_number'], FILTER_SANITIZE_NUMBER_INT);
-            $post_otp_secret = isset($dataReceived['otp_secret']) === true ? filter_var(($dataReceived['otp_secret']), FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '';
+            break;
+        }
 
-            //-> DO A SET OF CHECKS
-            // Perform a check in case of Read-Only user creating an item in his PF
-            if (
-                $session->get('user-read_only') === 1
-                && (in_array($inputData['folderId'], $session->get('user-personal_folders')) === false
-                    || $post_folder_is_personal !== 1)
-            ) {
-                echo (string) prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => $lang->get('error_not_allowed_to_access_this_folder'),
-                    ),
-                    'encode'
-                );
-                break;
-            }
+        // ./ END
 
-            $dataCheck = validateDataFields(prefixTable('items'), $dataReceived);
-            if ($dataCheck['state'] !== true) {
-                echo (string) prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => $lang->get('error_data_not_valid').' - '.$lang->get('field').' '.strtoupper($dataCheck['field']).' '.$lang->get('exceeds_maximum_length_of').' '.$dataCheck['maxLength'].' ('.$dataCheck['currentLength'].')',
-                    ),
-                    'encode'
-                );
-                break;
-            }
+        // Init
+        $arrayOfChanges = array();
+        $encryptionTaskIsRequested = false;
 
-            // Check PWD EMPTY
-            if (
-                empty($pw) === true
-                && $session->has('user-create_item_without_password') && $session->has('user-create_item_without_password') && null !== $session->get('user-create_item_without_password')
-                && (int) $session->get('user-create_item_without_password') !== 1
-            ) {
-                echo (string) prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => $lang->get('error_pw'),
-                    ),
-                    'encode'
-                );
-                break;
-            }
+        // Get all informations for this item
+        $dataItem = DB::queryfirstrow(
+            'SELECT *
+            FROM ' . prefixTable('items') . ' as i
+            INNER JOIN ' . prefixTable('log_items') . ' as l ON (l.id_item = i.id)
+            WHERE i.id=%i AND l.action = %s',
+            $inputData['itemId'],
+            'at_creation'
+        );
 
-            // Need info in DB
-            // About special settings
-            $dataFolderSettings = DB::queryFirstRow(
-                'SELECT bloquer_creation, bloquer_modification, personal_folder, title
-                FROM ' . prefixTable('nested_tree') . ' 
-                WHERE id = %i',
-                $inputData['folderId']
+        // Does the user has the sharekey
+        //db::debugmode(true);
+        DB::query(
+            'SELECT *
+            FROM ' . prefixTable('sharekeys_items') . '
+            WHERE object_id = %i AND user_id = %s',
+            $inputData['itemId'],
+            $session->get('user-id')
+        );
+        if (DB::count() === 0) {
+            echo (string) prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to'),
+                ),
+                'encode'
             );
-            $itemInfos['personal_folder'] = (int) $dataFolderSettings['personal_folder'];
-            if ((int) $itemInfos['personal_folder'] === 1) {
-                $itemInfos['no_complex_check_on_modification'] = 1;
-                $itemInfos['no_complex_check_on_creation'] = 1;
-            } else {
-                $itemInfos['no_complex_check_on_modification'] = (int) $dataFolderSettings['bloquer_modification'];
-                $itemInfos['no_complex_check_on_creation'] = (int) $dataFolderSettings['bloquer_creation'];
-            }
+            break;
+        }
 
-            // Get folder complexity
-            $folderComplexity = DB::queryfirstrow(
-                'SELECT valeur
-                FROM ' . prefixTable('misc') . '
-                WHERE type = %s AND intitule = %i',
-                'complex',
-                $inputData['folderId']
-            );
-            $itemInfos['requested_folder_complexity'] = is_null($folderComplexity) === false ? (int) $folderComplexity['valeur'] : 0;
-            // Check COMPLEXITY
-            if ($post_complexity_level < $itemInfos['requested_folder_complexity'] && $itemInfos['no_complex_check_on_modification'] === 0) {
-                echo (string) prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => $lang->get('error_security_level_not_reached'),
-                    ),
-                    'encode'
-                );
-                break;
-            }
+        // check that actual user can access this item
+        $restrictionActive = true;
+        $restrictedTo = is_null($dataItem['restricted_to']) === false ? array_filter(explode(';', $dataItem['restricted_to'])) : [];
+        if (in_array($session->get('user-id'), $restrictedTo) === true) {
+            $restrictionActive = false;
+        }
+        if (empty($dataItem['restricted_to']) === true) {
+            $restrictionActive = false;
+        }
 
-            // Check length
-            if (strlen($post_password) > $SETTINGS['pwd_maximum_length']) {
-                echo (string) prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => $lang->get('error_pw_too_long'),
-                    ),
-                    'encode'
-                );
-                break;
-            }
-
-            // ./ END
-
-            // Init
-            $arrayOfChanges = array();
-
-            // Get all informations for this item
-            $dataItem = DB::queryfirstrow(
-                'SELECT *
+        $session__list_restricted_folders_for_items = $session->get('system-list_restricted_folders_for_items') ?? [];
+        if ((in_array($dataItem['id_tree'], $session->get('user-accessible_folders')) === true
+                && ((int) $dataItem['perso'] === 0
+                    || ((int) $dataItem['perso'] === 1
+                        //&& (int) $session->get('user-id') === (int) $dataItem['id_user']))
+                    ))
+                && $restrictionActive === false)
+            || (isset($SETTINGS['anyone_can_modify']) === true
+                && (int) $SETTINGS['anyone_can_modify'] === 1
+                && (int) $dataItem['anyone_can_modify'] === 1
+                && (in_array($dataItem['id_tree'], $session->get('user-accessible_folders')) === true
+                    || (int) $session->get('user-admin') === 1)
+                && $restrictionActive === false)
+            || (null !== $inputData['folderId']
+                && count($session__list_restricted_folders_for_items) > 0
+                && in_array($inputData['id'], $session__list_restricted_folders_for_items[$inputData['folderId']]) === true
+                && $restrictionActive === false)
+        ) {
+            // Get existing values
+            $data = DB::queryfirstrow(
+                'SELECT i.id as id, i.label as label, i.description as description, i.pw as pw, i.url as url, i.id_tree as id_tree, i.perso as perso, i.login as login, 
+                i.inactif as inactif, i.restricted_to as restricted_to, i.anyone_can_modify as anyone_can_modify, i.email as email, i.notification as notification,
+                u.login as user_login, u.email as user_email
                 FROM ' . prefixTable('items') . ' as i
-                INNER JOIN ' . prefixTable('log_items') . ' as l ON (l.id_item = i.id)
-                WHERE i.id=%i AND l.action = %s',
-                $inputData['itemId'],
-                'at_creation'
+                INNER JOIN ' . prefixTable('log_items') . ' as l ON (i.id=l.id_item)
+                INNER JOIN ' . prefixTable('users') . ' as u ON (u.id=l.id_user)
+                WHERE i.id=%i',
+                $inputData['itemId']
             );
 
-            // Does the user has the sharekey
-            //db::debugmode(true);
-            DB::query(
-                'SELECT *
+            // Should we log a password change?
+            $userKey = DB::queryFirstRow(
+                'SELECT share_key
                 FROM ' . prefixTable('sharekeys_items') . '
-                WHERE object_id = %i AND user_id = %s',
-                $inputData['itemId'],
-                $session->get('user-id')
+                WHERE user_id = %i AND object_id = %i',
+                $session->get('user-id'),
+                $inputData['itemId']
             );
-            if (DB::count() === 0) {
-                echo (string) prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => $lang->get('error_not_allowed_to'),
-                    ),
-                    'encode'
-                );
-                break;
+            if (DB::count() === 0 || empty($data['pw']) === true) {
+                // No share key found
+                $pw = '';
+            } else {
+                $pw = base64_decode(doDataDecryption(
+                    $data['pw'],
+                    decryptUserObjectKey(
+                        $userKey['share_key'],
+                        $session->get('user-private_key')
+                    )
+                ));
             }
 
-            // check that actual user can access this item
-            $restrictionActive = true;
-            $restrictedTo = is_null($dataItem['restricted_to']) === false ? array_filter(explode(';', $dataItem['restricted_to'])) : [];
-            if (in_array($session->get('user-id'), $restrictedTo) === true) {
-                $restrictionActive = false;
-            }
-            if (empty($dataItem['restricted_to']) === true) {
-                $restrictionActive = false;
-            }
-
-            $session__list_restricted_folders_for_items = $session->get('system-list_restricted_folders_for_items') ?? [];
-            if ((in_array($dataItem['id_tree'], $session->get('user-accessible_folders')) === true
-                    && ((int) $dataItem['perso'] === 0
-                        || ((int) $dataItem['perso'] === 1
-                            //&& (int) $session->get('user-id') === (int) $dataItem['id_user']))
-                        ))
-                    && $restrictionActive === false)
-                || (isset($SETTINGS['anyone_can_modify']) === true
-                    && (int) $SETTINGS['anyone_can_modify'] === 1
-                    && (int) $dataItem['anyone_can_modify'] === 1
-                    && (in_array($dataItem['id_tree'], $session->get('user-accessible_folders')) === true
-                        || (int) $session->get('user-admin') === 1)
-                    && $restrictionActive === false)
-                || (null !== $inputData['folderId']
-                    && count($session__list_restricted_folders_for_items) > 0
-                    && in_array($inputData['id'], $session__list_restricted_folders_for_items[$inputData['folderId']]) === true
-                    && $restrictionActive === false)
-            ) {
-                // Get existing values
-                $data = DB::queryfirstrow(
-                    'SELECT i.id as id, i.label as label, i.description as description, i.pw as pw, i.url as url, i.id_tree as id_tree, i.perso as perso, i.login as login, 
-                    i.inactif as inactif, i.restricted_to as restricted_to, i.anyone_can_modify as anyone_can_modify, i.email as email, i.notification as notification,
-                    u.login as user_login, u.email as user_email
-                    FROM ' . prefixTable('items') . ' as i
-                    INNER JOIN ' . prefixTable('log_items') . ' as l ON (i.id=l.id_item)
-                    INNER JOIN ' . prefixTable('users') . ' as u ON (u.id=l.id_user)
-                    WHERE i.id=%i',
-                    $inputData['itemId']
+            if ($post_password !== $pw) {
+                // Encrypt previous pw
+                $previousValue = cryption(
+                    $pw,
+                    '',
+                    'encrypt'
                 );
 
-                // Should we log a password change?
-                $userKey = DB::queryFirstRow(
-                    'SELECT share_key
-                    FROM ' . prefixTable('sharekeys_items') . '
-                    WHERE user_id = %i AND object_id = %i',
+                // log the change of PW
+                logItems(
+                    $SETTINGS,
+                    (int) $inputData['itemId'],
+                    $inputData['label'],
                     $session->get('user-id'),
-                    $inputData['itemId']
+                    'at_modification',
+                    $session->get('user-login'),
+                    'at_pw',
+                    TP_ENCRYPTION_NAME,
+                    NULL,
+                    isset($previousValue['string']) === true ? $previousValue['string'] : '',
                 );
-                if (DB::count() === 0 || empty($data['pw']) === true) {
-                    // No share key found
-                    $pw = '';
-                } else {
-                    $pw = base64_decode(doDataDecryption(
-                        $data['pw'],
-                        decryptUserObjectKey(
-                            $userKey['share_key'],
-                            $session->get('user-private_key')
-                        )
-                    ));
-                }
+            }
 
-                if ($post_password !== $pw) {
-                    // Encrypt previous pw
-                    $previousValue = cryption(
-                        $pw,
-                        '',
-                        'encrypt'
-                    );
+            // encrypt PW on if it has changed, or if it is empty
+            if ((($session->has('user-create_item_without_password') && $session->has('user-create_item_without_password') && null !== $session->get('user-create_item_without_password')
+                    && (int) $session->get('user-create_item_without_password') !== 1)
+                || empty($post_password) === false)
+                && $post_password !== $pw
+            ) {
+                //-----
+                // NEW ENCRYPTION
+                $cryptedStuff = doDataEncryption($post_password);
+                $encrypted_password = $cryptedStuff['encrypted'];
 
-                    // log the change of PW
-                    logItems(
-                        $SETTINGS,
+                // Create sharekeys for users
+                storeUsersShareKey(
+                    prefixTable('sharekeys_items'),
+                    (int) $post_folder_is_personal,
+                    (int) $inputData['folderId'],
+                    (int) $inputData['itemId'],
+                    $cryptedStuff['objectKey'],
+                    WIP === true ? true : false,   // only for the item creator
+                    WIP === true ? true : false,   // delete all
+                );
+
+                // Create a task to create sharekeys for users
+                if (WIP === true) {
+                    error_log('createTaskForItemUpdate - new password for this item - '.$post_password ." -- ". $pw);
+                    createTaskForItemUpdate(
+                        'item_password',
                         (int) $inputData['itemId'],
-                        $inputData['label'],
-                        $session->get('user-id'),
-                        'at_modification',
-                        $session->get('user-login'),
-                        'at_pw',
-                        TP_ENCRYPTION_NAME,
-                        NULL,
-                        isset($previousValue['string']) === true ? $previousValue['string'] : '',
-                    );
-                }
-
-                // encrypt PW
-                if (($session->has('user-create_item_without_password') && $session->has('user-create_item_without_password') && null !== $session->get('user-create_item_without_password')
-                        && (int) $session->get('user-create_item_without_password') !== 1)
-                    || empty($post_password) === false
-                ) {
-                    //-----
-                    // NEW ENCRYPTION
-                    $cryptedStuff = doDataEncryption($post_password);
-                    $encrypted_password = $cryptedStuff['encrypted'];
-
-                    // Create sharekeys for users
-                    storeUsersShareKey(
-                        prefixTable('sharekeys_items'),
-                        (int) $post_folder_is_personal,
-                        (int) $inputData['folderId'],
-                        (int) $inputData['itemId'],
+                        (int) $session->get('user-id'),
                         $cryptedStuff['objectKey'],
-                        $SETTINGS
+                        (int) $inputData['itemId'],
                     );
-                } else {
-                    $encrypted_password = '';
+                    $encryptionTaskIsRequested = true;
                 }
+            } else {
+                $encrypted_password = $data['pw'];
+            }
 
-                // ---Manage tags
-                // Get list of tags
-                $itemTags = DB::queryFirstColumn(
-                    'SELECT tag
-                    FROM ' . prefixTable('tags') . '
-                    WHERE item_id = %i',
-                    $inputData['itemId']
-                );
+            // ---Manage tags
+            // Get list of tags
+            $itemTags = DB::queryFirstColumn(
+                'SELECT tag
+                FROM ' . prefixTable('tags') . '
+                WHERE item_id = %i',
+                $inputData['itemId']
+            );
 
-                // deleting existing tags for this item
-                DB::delete(
-                    prefixTable('tags'),
-                    'item_id = %i',
-                    $inputData['itemId']
-                );
+            // deleting existing tags for this item
+            DB::delete(
+                prefixTable('tags'),
+                'item_id = %i',
+                $inputData['itemId']
+            );
 
-                // Add new tags
-                $postArrayTags = [];
-                if (empty($post_tags) === false) {
-                    $postArrayTags = explode(' ', $post_tags);
-                    foreach ($postArrayTags as $tag) {
-                        if (empty($tag) === false) {
-                        // save in DB
-                            DB::insert(
-                                prefixTable('tags'),
-                                array(
-                                    'item_id' => $inputData['itemId'],
-                                    'tag' => strtolower($tag),
-                                )
-                            );
-                        }
+            // Add new tags
+            $postArrayTags = [];
+            if (empty($post_tags) === false) {
+                $postArrayTags = explode(' ', $post_tags);
+                foreach ($postArrayTags as $tag) {
+                    if (empty($tag) === false) {
+                    // save in DB
+                        DB::insert(
+                            prefixTable('tags'),
+                            array(
+                                'item_id' => $inputData['itemId'],
+                                'tag' => strtolower($tag),
+                            )
+                        );
                     }
                 }
+            }
 
-                // Store LOG
-                if (count(array_diff($postArrayTags, $itemTags)) > 0) {
-                    // Store updates performed
-                    array_push(
-                        $arrayOfChanges,
-                        'tags'
-                    );
-
-                    // update LOG
-                    logItems(
-                        $SETTINGS,
-                        (int) $inputData['itemId'],
-                        $inputData['label'],
-                        $session->get('user-id'),
-                        'at_modification',
-                        $session->get('user-login'),
-                        'at_tag : ' . implode(' ', $itemTags) . ' => ' . $post_tags
-                    );
-                }
-
-                // update item
-                DB::update(
-                    prefixTable('items'),
-                    array(
-                        'label' => $inputData['label'],
-                        'description' => $post_description,
-                        'pw' => $encrypted_password,
-                        'email' => $post_email,
-                        'login' => $post_login,
-                        'url' => $post_url,
-                        'id_tree' => $inputData['folderId'],
-                        'restricted_to' => empty($post_restricted_to) === true || count($post_restricted_to) === 0 ? '' : implode(';', $post_restricted_to),
-                        'anyone_can_modify' => (int) $post_anyone_can_modify,
-                        'complexity_level' => (int) $post_complexity_level,
-                        'encryption_type' => TP_ENCRYPTION_NAME,
-                        'perso' => in_array($inputData['folderId'], $session->get('user-personal_folders')) === true ? 1 : 0,
-                        'fa_icon' => $post_fa_icon,
-                        'updated_at' => time(),
-                    ),
-                    'id=%i',
-                    $inputData['itemId']
+            // Store LOG
+            if (count(array_diff($postArrayTags, $itemTags)) > 0) {
+                // Store updates performed
+                array_push(
+                    $arrayOfChanges,
+                    'tags'
                 );
 
-                // update fields
-                if (
-                    isset($SETTINGS['item_extra_fields']) === true
-                    && (int) $SETTINGS['item_extra_fields'] === 1
-                    && empty($post_fields) === false
-                ) {
-                    foreach ($post_fields as $field) {
-                        if (empty($field['value']) === false) {
+                // update LOG
+                logItems(
+                    $SETTINGS,
+                    (int) $inputData['itemId'],
+                    $inputData['label'],
+                    $session->get('user-id'),
+                    'at_modification',
+                    $session->get('user-login'),
+                    'at_tag : ' . implode(' ', $itemTags) . ' => ' . $post_tags
+                );
+            }
+
+            // update item
+            DB::update(
+                prefixTable('items'),
+                array(
+                    'label' => $inputData['label'],
+                    'description' => $post_description,
+                    'pw' => $encrypted_password,
+                    'email' => $post_email,
+                    'login' => $post_login,
+                    'url' => $post_url,
+                    'id_tree' => $inputData['folderId'],
+                    'restricted_to' => empty($post_restricted_to) === true || count($post_restricted_to) === 0 ? '' : implode(';', $post_restricted_to),
+                    'anyone_can_modify' => (int) $post_anyone_can_modify,
+                    'complexity_level' => (int) $post_complexity_level,
+                    'encryption_type' => TP_ENCRYPTION_NAME,
+                    'perso' => in_array($inputData['folderId'], $session->get('user-personal_folders')) === true ? 1 : 0,
+                    'fa_icon' => $post_fa_icon,
+                    'updated_at' => time(),
+                ),
+                'id=%i',
+                $inputData['itemId']
+            );
+
+            // update fields
+            if (
+                isset($SETTINGS['item_extra_fields']) === true
+                && (int) $SETTINGS['item_extra_fields'] === 1
+                && empty($post_fields) === false
+            ) {
+                foreach ($post_fields as $field) {
+                    if (empty($field['value']) === false) {
+                        $dataTmpCat = DB::queryFirstRow(
+                            'SELECT c.id AS id, c.title AS title, i.data AS data, i.data_iv AS data_iv,
+                            i.encryption_type AS encryption_type, c.encrypted_data AS encrypted_data,
+                            c.masked AS masked, i.id AS field_item_id
+                            FROM ' . prefixTable('categories_items') . ' AS i
+                            INNER JOIN ' . prefixTable('categories') . ' AS c ON (i.field_id=c.id)
+                            WHERE i.field_id = %i AND i.item_id = %i',
+                            $field['id'],
+                            $inputData['itemId']
+                        );
+                        $cryptedStuff = [];
+                        $encryptedFieldIsChanged = false;
+
+                        // store Field text in DB
+                        if (DB::count() === 0) {
+                            // The data for this foeld doesn't exist
+                            // It has to be added
+
+                            // Perform new query
                             $dataTmpCat = DB::queryFirstRow(
-                                'SELECT c.id AS id, c.title AS title, i.data AS data, i.data_iv AS data_iv,
-                                i.encryption_type AS encryption_type, c.encrypted_data AS encrypted_data,
-                                c.masked AS masked, i.id AS field_item_id
-                                FROM ' . prefixTable('categories_items') . ' AS i
-                                INNER JOIN ' . prefixTable('categories') . ' AS c ON (i.field_id=c.id)
-                                WHERE i.field_id = %i AND i.item_id = %i',
-                                $field['id'],
-                                $inputData['itemId']
+                                'SELECT id, title, encrypted_data, masked
+                                FROM ' . prefixTable('categories') . '
+                                WHERE id = %i',
+                                $field['id']
                             );
 
-                            // store Field text in DB
-                            if (DB::count() === 0) {
-                                // The data for this foeld doesn't exist
-                                // It has to be added
+                            // store field text
+                            DB::insert(
+                                prefixTable('categories_items'),
+                                array(
+                                    'item_id' => $inputData['itemId'],
+                                    'field_id' => $field['id'],
+                                    'data' => $field['value'],
+                                    'data_iv' => '',
+                                    'encryption_type' => 'not_set',
+                                )
+                            );
 
-                                // Perform new query
-                                $dataTmpCat = DB::queryFirstRow(
-                                    'SELECT id, title, encrypted_data, masked
-                                    FROM ' . prefixTable('categories') . '
-                                    WHERE id = %i',
-                                    $field['id']
+                            $newId = DB::insertId();
+                            $dataTmpCat['field_item_id'] = $newId;
+
+                            // Should we encrypt the data
+                            if ((int) $dataTmpCat['encrypted_data'] === 1) {
+                                $cryptedStuff = doDataEncryption($field['value']);
+
+                                // Create sharekeys for users
+                                storeUsersShareKey(
+                                    prefixTable('sharekeys_fields'),
+                                    (int) $post_folder_is_personal,
+                                    (int) $inputData['folderId'],
+                                    (int) $newId,
+                                    $cryptedStuff['objectKey'],
+                                    WIP === true ? true : false,   // only for the item creator
+                                    WIP === true ? true : false,   // delete all
                                 );
 
-                                // store field text
-                                DB::insert(
+                                // update value
+                                DB::update(
                                     prefixTable('categories_items'),
                                     array(
-                                        'item_id' => $inputData['itemId'],
-                                        'field_id' => $field['id'],
+                                        'data' => $cryptedStuff['encrypted'],
+                                        'data_iv' => '',
+                                        'encryption_type' => TP_ENCRYPTION_NAME,
+                                    ),
+                                    'id = %i',
+                                    $newId
+                                );
+
+                                $encryptedFieldIsChanged = true;
+                            } else {
+                                // update value
+                                DB::update(
+                                    prefixTable('categories_items'),
+                                    array(
                                         'data' => $field['value'],
                                         'data_iv' => '',
                                         'encryption_type' => 'not_set',
-                                    )
+                                    ),
+                                    'id = %i',
+                                    $newId
+                                );
+                            }
+
+                            // Store updates performed
+                            array_push(
+                                $arrayOfChanges,
+                                $dataTmpCat['title']
+                            );
+
+                            // update LOG
+                            logItems(
+                                $SETTINGS,
+                                (int) $inputData['itemId'],
+                                $inputData['label'],
+                                $session->get('user-id'),
+                                'at_modification',
+                                $session->get('user-login'),
+                                'at_field : ' . $dataTmpCat['title'] . ' : ' . $field['value']
+                            );
+                        } else {
+                            // compare the old and new value
+                            if ($dataTmpCat['encryption_type'] !== 'not_set') {
+                                // Get user sharekey for this field
+                                $userKey = DB::queryFirstRow(
+                                    'SELECT share_key
+                                    FROM ' . prefixTable('sharekeys_fields') . '
+                                    WHERE user_id = %i AND object_id = %i',
+                                    $session->get('user-id'),
+                                    $dataTmpCat['field_item_id']
                                 );
 
-                                $newId = DB::insertId();
+                                // Decrypt the current value
+                                if (DB::count() > 0) {
+                                    $oldVal = base64_decode(doDataDecryption(
+                                        $dataTmpCat['data'],
+                                        decryptUserObjectKey(
+                                            $userKey['share_key'],
+                                            $session->get('user-private_key')
+                                        )
+                                    ));
+                                } else {
+                                    $oldVal = '';
+                                }
+                            } else {
+                                $oldVal = $dataTmpCat['data'];
+                            }
 
+                            // Compare both values to see if any change was done
+                            if ($field['value'] !== $oldVal) {
+                                // The strings are different
+                                $encrypt = [];
+                                
                                 // Should we encrypt the data
                                 if ((int) $dataTmpCat['encrypted_data'] === 1) {
                                     $cryptedStuff = doDataEncryption($field['value']);
+                                    $encrypt['string'] = $cryptedStuff['encrypted'];
+                                    $encrypt['type'] = TP_ENCRYPTION_NAME;
 
                                     // Create sharekeys for users
                                     storeUsersShareKey(
                                         prefixTable('sharekeys_fields'),
                                         (int) $post_folder_is_personal,
                                         (int) $inputData['folderId'],
-                                        (int) $newId,
+                                        (int) $dataTmpCat['field_item_id'],
                                         $cryptedStuff['objectKey'],
-                                        $SETTINGS
+                                        WIP === true ? true : false,   // only for the item creator
+                                        WIP === true ? true : false,   // delete all
                                     );
 
-                                    // update value
-                                    DB::update(
-                                        prefixTable('categories_items'),
-                                        array(
-                                            'data' => $cryptedStuff['encrypted'],
-                                            'data_iv' => '',
-                                            'encryption_type' => TP_ENCRYPTION_NAME,
-                                        ),
-                                        'id = %i',
-                                        $newId
-                                    );
+                                    $encryptedFieldIsChanged = true;
                                 } else {
-                                    // update value
-                                    DB::update(
-                                        prefixTable('categories_items'),
-                                        array(
-                                            'data' => $field['value'],
-                                            'data_iv' => '',
-                                            'encryption_type' => 'not_set',
-                                        ),
-                                        'id = %i',
-                                        $newId
-                                    );
+                                    $encrypt['string'] = $field['value'];
+                                    $encrypt['type'] = 'not_set';
                                 }
+
+                                // update value
+                                DB::update(
+                                    prefixTable('categories_items'),
+                                    array(
+                                        'data' => $encrypt['string'],
+                                        'data_iv' => '',
+                                        'encryption_type' => $encrypt['type'],
+                                    ),
+                                    'item_id = %i AND field_id = %i',
+                                    $inputData['itemId'],
+                                    $field['id']
+                                );
 
                                 // Store updates performed
                                 array_push(
@@ -1326,662 +1442,598 @@ switch ($inputData['type']) {
                                     $session->get('user-id'),
                                     'at_modification',
                                     $session->get('user-login'),
-                                    'at_field : ' . $dataTmpCat['title'] . ' : ' . $field['value']
-                                );
-                            } else {
-                                // compare the old and new value
-                                if ($dataTmpCat['encryption_type'] !== 'not_set') {
-                                    // Get user sharekey for this field
-                                    $userKey = DB::queryFirstRow(
-                                        'SELECT share_key
-                                        FROM ' . prefixTable('sharekeys_fields') . '
-                                        WHERE user_id = %i AND object_id = %i',
-                                        $session->get('user-id'),
-                                        $dataTmpCat['field_item_id']
-                                    );
-
-                                    // Decrypt the current value
-                                    if (DB::count() > 0) {
-                                        $oldVal = base64_decode(doDataDecryption(
-                                            $dataTmpCat['data'],
-                                            decryptUserObjectKey(
-                                                $userKey['share_key'],
-                                                $session->get('user-private_key')
-                                            )
-                                        ));
-                                    } else {
-                                        $oldVal = '';
-                                    }
-                                } else {
-                                    $oldVal = $dataTmpCat['data'];
-                                }
-
-                                // Compare both values to see if any change was done
-                                if ($field['value'] !== $oldVal) {
-                                    // The strings are different
-                                    $encrypt = [];
-
-                                    // Should we encrypt the data
-                                    if ((int) $dataTmpCat['encrypted_data'] === 1) {
-                                        $cryptedStuff = doDataEncryption($field['value']);
-                                        $encrypt['string'] = $cryptedStuff['encrypted'];
-                                        $encrypt['type'] = TP_ENCRYPTION_NAME;
-
-                                        // Create sharekeys for users
-                                        storeUsersShareKey(
-                                            prefixTable('sharekeys_fields'),
-                                            (int) $post_folder_is_personal,
-                                            (int) $inputData['folderId'],
-                                            (int) $dataTmpCat['field_item_id'],
-                                            $cryptedStuff['objectKey'],
-                                            $SETTINGS
-                                        );
-                                    } else {
-                                        $encrypt['string'] = $field['value'];
-                                        $encrypt['type'] = 'not_set';
-                                    }
-
-                                    // update value
-                                    DB::update(
-                                        prefixTable('categories_items'),
-                                        array(
-                                            'data' => $encrypt['string'],
-                                            'data_iv' => '',
-                                            'encryption_type' => $encrypt['type'],
-                                        ),
-                                        'item_id = %i AND field_id = %i',
-                                        $inputData['itemId'],
-                                        $field['id']
-                                    );
-
-                                    // Store updates performed
-                                    array_push(
-                                        $arrayOfChanges,
-                                        $dataTmpCat['title']
-                                    );
-
-                                    // update LOG
-                                    logItems(
-                                        $SETTINGS,
-                                        (int) $inputData['itemId'],
-                                        $inputData['label'],
-                                        $session->get('user-id'),
-                                        'at_modification',
-                                        $session->get('user-login'),
-                                        'at_field : ' . $dataTmpCat['title'] . ' => ' . $oldVal
-                                    );
-                                }
-                            }
-                        } else {
-                            if (empty($field_data[1]) === true) {
-                                DB::delete(
-                                    prefixTable('categories_items'),
-                                    'item_id = %i AND field_id = %s',
-                                    $inputData['itemId'],
-                                    $field['id']
+                                    'at_field : ' . $dataTmpCat['title'] . ' => ' . $oldVal
                                 );
                             }
                         }
+
+                        // Create a task to create sharekeys for this field for users
+                        // If this field is encrypted
+                        if (WIP === true && (int) $dataTmpCat['encrypted_data'] === 1 && $encryptedFieldIsChanged === true) {
+                            error_log('createTaskForItemUpdate - new field encryption for this item');
+                            createTaskForItemUpdate(
+                                'item_field',
+                                (int) $dataTmpCat['field_item_id'],
+                                (int) $session->get('user-id'),
+                                $cryptedStuff['objectKey'],
+                                $inputData['itemId']
+                            );
+                            $encryptionTaskIsRequested = true;
+                        }
+                    } else {
+                        if (empty($field_data[1]) === true) {
+                            DB::delete(
+                                prefixTable('categories_items'),
+                                'item_id = %i AND field_id = %s',
+                                $inputData['itemId'],
+                                $field['id']
+                            );
+                        }
                     }
                 }
+            }
 
-                // If template enable, is there a main one selected?
-                if (
-                    isset($SETTINGS['item_creation_templates']) === true
-                    && (int) $SETTINGS['item_creation_templates'] === 1
-                    && isset($post_template_id) === true
-                ) {
-                    DB::queryFirstRow(
-                        'SELECT *
-                        FROM ' . prefixTable('templates') . '
-                        WHERE item_id = %i',
-                        $inputData['itemId']
+            // If template enable, is there a main one selected?
+            if (
+                isset($SETTINGS['item_creation_templates']) === true
+                && (int) $SETTINGS['item_creation_templates'] === 1
+                && isset($post_template_id) === true
+            ) {
+                DB::queryFirstRow(
+                    'SELECT *
+                    FROM ' . prefixTable('templates') . '
+                    WHERE item_id = %i',
+                    $inputData['itemId']
+                );
+                if (DB::count() === 0 && empty($post_template_id) === false) {
+                    // store field text
+                    DB::insert(
+                        prefixTable('templates'),
+                        array(
+                            'item_id' => $inputData['itemId'],
+                            'category_id' => $post_template_id,
+                        )
                     );
-                    if (DB::count() === 0 && empty($post_template_id) === false) {
-                        // store field text
-                        DB::insert(
+                } else {
+                    // Delete if empty
+                    if (empty($post_template_id) === true) {
+                        DB::delete(
+                            prefixTable('templates'),
+                            'item_id = %i',
+                            $inputData['itemId']
+                        );
+                    } else {
+                        // Update value
+                        DB::update(
                             prefixTable('templates'),
                             array(
-                                'item_id' => $inputData['itemId'],
                                 'category_id' => $post_template_id,
-                            )
-                        );
-                    } else {
-                        // Delete if empty
-                        if (empty($post_template_id) === true) {
-                            DB::delete(
-                                prefixTable('templates'),
-                                'item_id = %i',
-                                $inputData['itemId']
-                            );
-                        } else {
-                            // Update value
-                            DB::update(
-                                prefixTable('templates'),
-                                array(
-                                    'category_id' => $post_template_id,
-                                ),
-                                'item_id = %i',
-                                $inputData['itemId']
-                            );
-                        }
-                    }
-                }
-
-                // Update automatic deletion - Only by the creator of the Item
-                if (
-                    isset($SETTINGS['enable_delete_after_consultation']) === true
-                    && (int) $SETTINGS['enable_delete_after_consultation'] === 1
-                ) {
-                    // check if elem exists in Table. If not add it or update it.
-                    DB::query(
-                        'SELECT *
-                        FROM ' . prefixTable('automatic_del') . '
-                        WHERE item_id = %i',
-                        $inputData['itemId']
-                    );
-
-                    if (DB::count() === 0) {
-                        // No automatic deletion for this item
-                        if (
-                            empty($post_to_be_deleted_after_date) === false
-                            || (int) $post_to_be_deleted_after_x_views > 0
-                        ) {
-                            // Automatic deletion to be added
-                            DB::insert(
-                                prefixTable('automatic_del'),
-                                array(
-                                    'item_id' => $inputData['itemId'],
-                                    'del_enabled' => 1,
-                                    'del_type' => empty($post_to_be_deleted_after_x_views) === false ?
-                                        1 : 2, //1 = numeric : 2 = date
-                                    'del_value' => empty($post_to_be_deleted_after_x_views) === false ?
-                                        (int) $post_to_be_deleted_after_x_views : dateToStamp($post_to_be_deleted_after_date, $SETTINGS['date_format']),
-                                )
-                            );
-
-                            // Store updates performed
-                            array_push(
-                                $arrayOfChanges,
-                                $lang->get('automatic_deletion_engaged') . ': ' . $lang->get('enabled')
-                            );
-
-                            // update LOG
-                            logItems(
-                                $SETTINGS,
-                                (int) $inputData['itemId'],
-                                $inputData['label'],
-                                $session->get('user-id'),
-                                'at_modification',
-                                $session->get('user-login'),
-                                'at_automatic_del : enabled'
-                            );
-                        }
-                    } else {
-                        // Automatic deletion exists for this item
-                        if (
-                            empty($post_to_be_deleted_after_date) === false
-                            || (int) $post_to_be_deleted_after_x_views > 0
-                        ) {
-                            // Update automatic deletion
-                            DB::update(
-                                prefixTable('automatic_del'),
-                                array(
-                                    'del_type' => empty($post_to_be_deleted_after_x_views) === false ?
-                                        1 : 2, //1 = numeric : 2 = date
-                                    'del_value' => empty($post_to_be_deleted_after_x_views) === false ?
-                                        $post_to_be_deleted_after_x_views : dateToStamp($post_to_be_deleted_after_date, $SETTINGS['date_format']),
-                                ),
-                                'item_id = %i',
-                                $inputData['itemId']
-                            );
-                        } else {
-                            // delete automatic deleteion for this item
-                            DB::delete(
-                                prefixTable('automatic_del'),
-                                'item_id = %i',
-                                $inputData['itemId']
-                            );
-
-                            // Store updates performed
-                            array_push(
-                                $arrayOfChanges,
-                                $lang->get('automatic_deletion_engaged') . ': ' . $lang->get('disabled')
-                            );
-
-                            // update LOG
-                            logItems(
-                                $SETTINGS,
-                                (int) $inputData['itemId'],
-                                $inputData['label'],
-                                $session->get('user-id'),
-                                'at_modification',
-                                $session->get('user-login'),
-                                'at_automatic_del : disabled'
-                            );
-                        }
-                    }
-                }
-
-                // get readable list of restriction
-                $listOfRestricted = $oldRestrictionList = '';
-                $arrayOfUsersRestriction = array();
-                $arrayOfUsersIdRestriction = array();
-                $diffUsersRestiction = array();
-                $diffRolesRestiction = array();
-                if (
-                    is_array($post_restricted_to) === true
-                    && count($post_restricted_to) > 0
-                    && isset($SETTINGS['restricted_to']) === true
-                    && (int) $SETTINGS['restricted_to'] === 1
-                ) {
-                    foreach ($post_restricted_to as $userId) {
-                        if (empty($userId) === false) {
-                            $dataTmp = DB::queryfirstrow(
-                                'SELECT id, name, lastname
-                                FROM ' . prefixTable('users') . '
-                                WHERE id= %i',
-                                $userId
-                            );
-
-                            // Add to array
-                            array_push(
-                                $arrayOfUsersRestriction,
-                                $dataTmp['name'] . ' ' . $dataTmp['lastname']
-                            );
-                            array_push(
-                                $arrayOfUsersIdRestriction,
-                                $dataTmp['id']
-                            );
-                        }
-                    }
-                }
-                if ((int) $SETTINGS['restricted_to'] === 1) {
-                    $diffUsersRestiction = array_diff(
-                        empty($data['restricted_to']) === false ?
-                            explode(';', $data['restricted_to']) : array(),
-                        $arrayOfUsersIdRestriction
-                    );
-                }
-
-                // Manage retriction_to_roles
-                if (
-                    is_array($post_restricted_to_roles) === true
-                    && count($post_restricted_to_roles) > 0
-                    && isset($SETTINGS['restricted_to_roles']) === true
-                    && (int) $SETTINGS['restricted_to_roles'] === 1
-                ) {
-                    // Init
-                    $arrayOfRestrictionRolesOld = array();
-                    $arrayOfRestrictionRoles = array();
-
-                    // get values before deleting them
-                    $rows = DB::query(
-                        'SELECT t.title, t.id AS id
-                        FROM ' . prefixTable('roles_title') . ' as t
-                        INNER JOIN ' . prefixTable('restriction_to_roles') . ' as r ON (t.id=r.role_id)
-                        WHERE r.item_id = %i
-                        ORDER BY t.title ASC',
-                        $inputData['itemId']
-                    );
-                    foreach ($rows as $record) {
-                        // Add to array
-                        array_push(
-                            $arrayOfRestrictionRolesOld,
-                            $record['title']
+                            ),
+                            'item_id = %i',
+                            $inputData['itemId']
                         );
                     }
-                    // delete previous values
-                    DB::delete(
-                        prefixTable('restriction_to_roles'),
-                        'item_id = %i',
-                        $inputData['itemId']
-                    );
-
-                    // add roles for item
-                    if (
-                        is_array($post_restricted_to_roles) === true
-                        && count($post_restricted_to_roles) > 0
-                    ) {
-                        foreach ($post_restricted_to_roles as $role) {
-                            DB::insert(
-                                prefixTable('restriction_to_roles'),
-                                array(
-                                    'role_id' => $role,
-                                    'item_id' => $inputData['itemId'],
-                                )
-                            );
-                            $dataTmp = DB::queryfirstrow(
-                                'SELECT title
-                                FROM ' . prefixTable('roles_title') . '
-                                WHERE id = %i',
-                                $role
-                            );
-
-                            // Add to array
-                            array_push(
-                                $arrayOfRestrictionRoles,
-                                $dataTmp['title']
-                            );
-                        }
-
-                        if ((int) $SETTINGS['restricted_to'] === 1) {
-                            $diffRolesRestiction = array_diff(
-                                $arrayOfRestrictionRoles,
-                                $arrayOfRestrictionRolesOld
-                            );
-                        }
-                    }
                 }
-                // Update CACHE table
-                updateCacheTable('update_value', (int) $inputData['itemId']);
+            }
 
-
-                // Manage OTP status
-                // Get current status
-                $otpStatus = DB::queryFirstRow(
-                    'SELECT enabled as otp_is_enabled
-                    FROM ' . prefixTable('items_otp') . '
+            // Update automatic deletion - Only by the creator of the Item
+            if (
+                isset($SETTINGS['enable_delete_after_consultation']) === true
+                && (int) $SETTINGS['enable_delete_after_consultation'] === 1
+            ) {
+                // check if elem exists in Table. If not add it or update it.
+                DB::query(
+                    'SELECT *
+                    FROM ' . prefixTable('automatic_del') . '
                     WHERE item_id = %i',
                     $inputData['itemId']
                 );
 
-                // Check if status has changed
-                if (DB::count() > 0 && (int) $otpStatus['otp_is_enabled'] !== (int) $post_otp_is_enabled) {
-                    // Update status
-                    DB::update(
-                        prefixTable('items_otp'),
-                        array(
-                            'enabled' => (int) $post_otp_is_enabled,
-                        ),
-                        'item_id = %i',
-                        $inputData['itemId']
-                    );
+                if (DB::count() === 0) {
+                    // No automatic deletion for this item
+                    if (
+                        empty($post_to_be_deleted_after_date) === false
+                        || (int) $post_to_be_deleted_after_x_views > 0
+                    ) {
+                        // Automatic deletion to be added
+                        DB::insert(
+                            prefixTable('automatic_del'),
+                            array(
+                                'item_id' => $inputData['itemId'],
+                                'del_enabled' => 1,
+                                'del_type' => empty($post_to_be_deleted_after_x_views) === false ?
+                                    1 : 2, //1 = numeric : 2 = date
+                                'del_value' => empty($post_to_be_deleted_after_x_views) === false ?
+                                    (int) $post_to_be_deleted_after_x_views : dateToStamp($post_to_be_deleted_after_date, $SETTINGS['date_format']),
+                            )
+                        );
 
-                    // Store updates performed
-                    array_push(
-                        $arrayOfChanges,
-                        $lang->get('otp_status')
-                    );
+                        // Store updates performed
+                        array_push(
+                            $arrayOfChanges,
+                            $lang->get('automatic_deletion_engaged') . ': ' . $lang->get('enabled')
+                        );
 
-                    // update LOG
-                    logItems(
-                        $SETTINGS,
-                        (int) $inputData['itemId'],
-                        $inputData['label'],
-                        $session->get('user-id'),
-                        'at_modification',
-                        $session->get('user-login'),
-                        'at_otp_status:' . ((int) $post_otp_is_enabled === 0 ? 'disabled' : 'enabled')
-                    );
-                } elseif (DB::count() === 0 && empty($post_otp_secret) === false) {
-                    // Create the entry in items_otp table
-                    // OTP doesn't exist then create it
+                        // update LOG
+                        logItems(
+                            $SETTINGS,
+                            (int) $inputData['itemId'],
+                            $inputData['label'],
+                            $session->get('user-id'),
+                            'at_modification',
+                            $session->get('user-login'),
+                            'at_automatic_del : enabled'
+                        );
+                    }
+                } else {
+                    // Automatic deletion exists for this item
+                    if (
+                        empty($post_to_be_deleted_after_date) === false
+                        || (int) $post_to_be_deleted_after_x_views > 0
+                    ) {
+                        // Update automatic deletion
+                        DB::update(
+                            prefixTable('automatic_del'),
+                            array(
+                                'del_type' => empty($post_to_be_deleted_after_x_views) === false ?
+                                    1 : 2, //1 = numeric : 2 = date
+                                'del_value' => empty($post_to_be_deleted_after_x_views) === false ?
+                                    $post_to_be_deleted_after_x_views : dateToStamp($post_to_be_deleted_after_date, $SETTINGS['date_format']),
+                            ),
+                            'item_id = %i',
+                            $inputData['itemId']
+                        );
+                    } else {
+                        // delete automatic deleteion for this item
+                        DB::delete(
+                            prefixTable('automatic_del'),
+                            'item_id = %i',
+                            $inputData['itemId']
+                        );
 
-                    // Encrypt secret
-                    $encryptedSecret = cryption(
-                        $post_otp_secret,
-                        '',
-                        'encrypt'
-                    );
-                    
-                    // insert in table
-                    DB::insert(
-                        prefixTable('items_otp'),
-                        array(
-                            'item_id' => $inputData['itemId'],
-                            'secret' => $encryptedSecret['string'],
-                            'phone_number' => $post_otp_phone_number,
-                            'timestamp' => time(),
-                            'enabled' => 1,
-                        )
-                    );
+                        // Store updates performed
+                        array_push(
+                            $arrayOfChanges,
+                            $lang->get('automatic_deletion_engaged') . ': ' . $lang->get('disabled')
+                        );
+
+                        // update LOG
+                        logItems(
+                            $SETTINGS,
+                            (int) $inputData['itemId'],
+                            $inputData['label'],
+                            $session->get('user-id'),
+                            'at_modification',
+                            $session->get('user-login'),
+                            'at_automatic_del : disabled'
+                        );
+                    }
                 }
+            }
 
-                //---- Log all modifications done ----
+            // get readable list of restriction
+            $listOfRestricted = $oldRestrictionList = '';
+            $arrayOfUsersRestriction = array();
+            $arrayOfUsersIdRestriction = array();
+            $diffUsersRestiction = array();
+            $diffRolesRestiction = array();
+            if (
+                is_array($post_restricted_to) === true
+                && count($post_restricted_to) > 0
+                && isset($SETTINGS['restricted_to']) === true
+                && (int) $SETTINGS['restricted_to'] === 1
+            ) {
+                foreach ($post_restricted_to as $userId) {
+                    if (empty($userId) === false) {
+                        $dataTmp = DB::queryfirstrow(
+                            'SELECT id, name, lastname
+                            FROM ' . prefixTable('users') . '
+                            WHERE id= %i',
+                            $userId
+                        );
 
-                // RESTRICTIONS
-                if (count($diffRolesRestiction) > 0 || count($diffUsersRestiction) > 0) {
-                    // Store updates performed
-                    array_push(
-                        $arrayOfChanges,
-                        $lang->get('at_restriction')
-                    );
-
-                    // Log
-                    logItems(
-                        $SETTINGS,
-                        (int) $inputData['itemId'],
-                        $inputData['label'],
-                        $session->get('user-id'),
-                        'at_modification',
-                        $session->get('user-login'),
-                        'at_restriction : ' . (count($diffUsersRestiction) > 0 ?
-                            implode(', ', $arrayOfUsersRestriction) . (count($diffRolesRestiction) > 0 ? ', ' : '') : '') . (count($diffRolesRestiction) > 0 ? implode(', ', $arrayOfRestrictionRoles) : '')
-                    );
+                        // Add to array
+                        array_push(
+                            $arrayOfUsersRestriction,
+                            $dataTmp['name'] . ' ' . $dataTmp['lastname']
+                        );
+                        array_push(
+                            $arrayOfUsersIdRestriction,
+                            $dataTmp['id']
+                        );
+                    }
                 }
-
-                // LABEL
-                if ($data['label'] !== $inputData['label']) {
-                    // Store updates performed
-                    array_push(
-                        $arrayOfChanges,
-                        $lang->get('at_label')
-                    );
-
-                    // Log
-                    logItems(
-                        $SETTINGS,
-                        (int) $inputData['itemId'],
-                        $inputData['label'],
-                        $session->get('user-id'),
-                        'at_modification',
-                        $session->get('user-login'),
-                        'at_label : ' . $data['label'] . ' => ' . $inputData['label']
-                    );
-                }
-                // LOGIN
-                if ($data['login'] !== $post_login) {
-                    // Store updates performed
-                    array_push(
-                        $arrayOfChanges,
-                        $lang->get('at_login')
-                    );
-
-                    // Log
-                    logItems(
-                        $SETTINGS,
-                        (int) $inputData['itemId'],
-                        $inputData['label'],
-                        $session->get('user-id'),
-                        'at_modification',
-                        $session->get('user-login'),
-                        'at_login : ' . $data['login'] . ' => ' . $post_login
-                    );
-                }
-                // EMAIL
-                if ($post_email !== null && $data['email'] !== null && strcmp($data['email'], $post_email) !== 0) {
-                    // Store updates performed
-                    array_push(
-                        $arrayOfChanges,
-                        $lang->get('at_email')
-                    );
-
-                    // Log
-                    logItems(
-                        $SETTINGS,
-                        (int) $inputData['itemId'],
-                        $inputData['label'],
-                        $session->get('user-id'),
-                        'at_modification',
-                        $session->get('user-login'),
-                        'at_email : ' . $data['email'] . ' => ' . $post_email
-                    );
-                }
-                // URL
-                if ($data['url'] !== $post_url && $post_url !== 'http://') {
-                    // Store updates performed
-                    array_push(
-                        $arrayOfChanges,
-                        $lang->get('at_url')
-                    );
-
-                    // Log
-                    logItems(
-                        $SETTINGS,
-                        (int) $inputData['itemId'],
-                        $inputData['label'],
-                        $session->get('user-id'),
-                        'at_modification',
-                        $session->get('user-login'),
-                        'at_url : ' . $data['url'] . ' => ' . $post_url
-                    );
-                }
-                // DESCRIPTION
-                // deepcode ignore InsecureHash: md5 is used just to perform a string encrypted comparison
-                if (strcmp(md5(strip_tags($data['description'])), md5(strip_tags($post_description))) !== 0) {
-                    // Store updates performed
-                    array_push(
-                        $arrayOfChanges,
-                        $lang->get('at_description')
-                    );
-
-                    // Log
-                    logItems(
-                        $SETTINGS,
-                        (int) $inputData['itemId'],
-                        $inputData['label'],
-                        $session->get('user-id'),
-                        'at_modification',
-                        $session->get('user-login'),
-                        'at_description'
-                    );
-                }
-                // FOLDER
-                if ((int) $data['id_tree'] !== (int) $inputData['folderId']) {
-                    // Get name of folders
-                    $dataTmp = DB::query('SELECT title FROM ' . prefixTable('nested_tree') . ' WHERE id IN %li', array($data['id_tree'], $inputData['folderId']));
-
-                    // Store updates performed
-                    array_push(
-                        $arrayOfChanges,
-                        $lang->get('at_category')
-                    );
-
-                    // Log
-                    logItems(
-                        $SETTINGS,
-                        (int) $inputData['itemId'],
-                        $inputData['label'],
-                        $session->get('user-id'),
-                        'at_modification',
-                        $session->get('user-login'),
-                        'at_category : ' . $dataTmp[0]['title'] . ' => ' . $dataTmp[1]['title']
-                    );
-                }
-                // ANYONE_CAN_MODIFY
-                if ((int) $post_anyone_can_modify !== (int) $data['anyone_can_modify']) {
-                    // Store updates performed
-                    array_push(
-                        $arrayOfChanges,
-                        $lang->get('at_anyoneconmodify') . ': ' . ((int) $post_anyone_can_modify === 0 ? $lang->get('disabled') : $lang->get('enabled'))
-                    );
-
-                    // Log
-                    logItems(
-                        $SETTINGS,
-                        (int) $inputData['itemId'],
-                        $inputData['label'],
-                        $session->get('user-id'),
-                        'at_modification',
-                        $session->get('user-login'),
-                        'at_anyoneconmodify : ' . ((int) $post_anyone_can_modify === 0 ? 'disabled' : 'enabled')
-                    );
-                }
-
-                // Reload new values
-                $dataItem = DB::queryfirstrow(
-                    'SELECT *
-                    FROM ' . prefixTable('items') . ' as i
-                    INNER JOIN ' . prefixTable('log_items') . ' as l ON (l.id_item = i.id)
-                    WHERE i.id = %i AND l.action = %s',
-                    $inputData['itemId'],
-                    'at_creation'
+            }
+            if ((int) $SETTINGS['restricted_to'] === 1) {
+                $diffUsersRestiction = array_diff(
+                    empty($data['restricted_to']) === false ?
+                        explode(';', $data['restricted_to']) : array(),
+                    $arrayOfUsersIdRestriction
                 );
-                // Reload History
-                $history = '';
+            }
+
+            // Manage retriction_to_roles
+            if (
+                is_array($post_restricted_to_roles) === true
+                && count($post_restricted_to_roles) > 0
+                && isset($SETTINGS['restricted_to_roles']) === true
+                && (int) $SETTINGS['restricted_to_roles'] === 1
+            ) {
+                // Init
+                $arrayOfRestrictionRolesOld = array();
+                $arrayOfRestrictionRoles = array();
+
+                // get values before deleting them
                 $rows = DB::query(
-                    'SELECT l.date as date, l.action as action, l.raison as raison, u.login as login
-                    FROM ' . prefixTable('log_items') . ' as l
-                    LEFT JOIN ' . prefixTable('users') . ' as u ON (l.id_user=u.id)
-                    WHERE l.action <> %s AND id_item=%s',
-                    'at_shown',
+                    'SELECT t.title, t.id AS id
+                    FROM ' . prefixTable('roles_title') . ' as t
+                    INNER JOIN ' . prefixTable('restriction_to_roles') . ' as r ON (t.id=r.role_id)
+                    WHERE r.item_id = %i
+                    ORDER BY t.title ASC',
                     $inputData['itemId']
                 );
                 foreach ($rows as $record) {
-                    if ($record['raison'] === NULL) continue;
-                    $reason = explode(':', $record['raison']);
-                    if (count($reason) > 0) {
-                        $sentence = date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['date']) . ' - '
-                            . $record['login'] . ' - ' . $lang->get($record['action']) . ' - '
-                            . (empty($record['raison']) === false ? (count($reason) > 1 ? $lang->get(trim($reason[0])) . ' : ' . $reason[1]
-                                : $lang->get(trim($reason[0]))) : '');
-                        if (empty($history)) {
-                            $history = $sentence;
-                        } else {
-                            $history .= '<br />' . $sentence;
-                        }
+                    // Add to array
+                    array_push(
+                        $arrayOfRestrictionRolesOld,
+                        $record['title']
+                    );
+                }
+                // delete previous values
+                DB::delete(
+                    prefixTable('restriction_to_roles'),
+                    'item_id = %i',
+                    $inputData['itemId']
+                );
+
+                // add roles for item
+                if (
+                    is_array($post_restricted_to_roles) === true
+                    && count($post_restricted_to_roles) > 0
+                ) {
+                    foreach ($post_restricted_to_roles as $role) {
+                        DB::insert(
+                            prefixTable('restriction_to_roles'),
+                            array(
+                                'role_id' => $role,
+                                'item_id' => $inputData['itemId'],
+                            )
+                        );
+                        $dataTmp = DB::queryfirstrow(
+                            'SELECT title
+                            FROM ' . prefixTable('roles_title') . '
+                            WHERE id = %i',
+                            $role
+                        );
+
+                        // Add to array
+                        array_push(
+                            $arrayOfRestrictionRoles,
+                            $dataTmp['title']
+                        );
+                    }
+
+                    if ((int) $SETTINGS['restricted_to'] === 1) {
+                        $diffRolesRestiction = array_diff(
+                            $arrayOfRestrictionRoles,
+                            $arrayOfRestrictionRolesOld
+                        );
                     }
                 }
-
-                // generate 2d key
-                $session->set('user-key_tmp', bin2hex(GenerateCryptKey(16, false, true, true, false, true, $SETTINGS)));
-
-                // Send email
-                if (is_array($post_diffusion_list) === true && count($post_diffusion_list) > 0) {
-                    $cpt = 0;
-                    foreach ($post_diffusion_list as $emailAddress) {
-                        if (empty($emailAddress) === false) {
-                            prepareSendingEmail(
-                                $lang->get('email_subject_item_updated'),
-                                str_replace(
-                                    array('#item_label#', '#item_category#', '#item_id#', '#url#', '#name#', '#lastname#', '#folder_name#'),
-                                    array($inputData['label'], $inputData['folderId'], $inputData['itemId'], $SETTINGS['cpassman_url'], $session->get('user-name'), $session->get('user-lastname'), $dataFolderSettings['title']),
-                                    $lang->get('email_body_item_updated')
-                                ),
-                                $emailAddress,
-                                $post_diffusion_list_names[$cpt]
-                            );
-                            $cpt++;
-                        }
-                    }
-                }
-
-                // Notifiy changes to the users
-                notifyChangesToSubscribers($inputData['itemId'], $inputData['label'], $arrayOfChanges, $SETTINGS);
-
-                // Prepare some stuff to return
-                $arrData = array(
-                    'error' => false,
-                    'message' => '',
-                );
-            } else {
-                echo (string) prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => $lang->get('error_not_allowed_to_edit_item'),
-                    ),
-                    'encode'
-                );
-                break;
             }
-        } else {
-            // an error appears on JSON format
-            $arrData = array(
-                'error' => true,
-                'message' => 'ERR_JSON_FORMAT',
+            // Update CACHE table
+            updateCacheTable('update_value', (int) $inputData['itemId']);
+
+
+            // Manage OTP status
+            // Get current status
+            $otpStatus = DB::queryFirstRow(
+                'SELECT enabled as otp_is_enabled
+                FROM ' . prefixTable('items_otp') . '
+                WHERE item_id = %i',
+                $inputData['itemId']
             );
+
+            // Check if status has changed
+            if (DB::count() > 0 && (int) $otpStatus['otp_is_enabled'] !== (int) $post_otp_is_enabled) {
+                // Update status
+                DB::update(
+                    prefixTable('items_otp'),
+                    array(
+                        'enabled' => (int) $post_otp_is_enabled,
+                    ),
+                    'item_id = %i',
+                    $inputData['itemId']
+                );
+
+                // Store updates performed
+                array_push(
+                    $arrayOfChanges,
+                    $lang->get('otp_status')
+                );
+
+                // update LOG
+                logItems(
+                    $SETTINGS,
+                    (int) $inputData['itemId'],
+                    $inputData['label'],
+                    $session->get('user-id'),
+                    'at_modification',
+                    $session->get('user-login'),
+                    'at_otp_status:' . ((int) $post_otp_is_enabled === 0 ? 'disabled' : 'enabled')
+                );
+            } elseif (DB::count() === 0 && empty($post_otp_secret) === false) {
+                // Create the entry in items_otp table
+                // OTP doesn't exist then create it
+
+                // Encrypt secret
+                $encryptedSecret = cryption(
+                    $post_otp_secret,
+                    '',
+                    'encrypt'
+                );
+                
+                // insert in table
+                DB::insert(
+                    prefixTable('items_otp'),
+                    array(
+                        'item_id' => $inputData['itemId'],
+                        'secret' => $encryptedSecret['string'],
+                        'phone_number' => $post_otp_phone_number,
+                        'timestamp' => time(),
+                        'enabled' => 1,
+                    )
+                );
+            }
+
+            //---- Log all modifications done ----
+
+            // RESTRICTIONS
+            if (count($diffRolesRestiction) > 0 || count($diffUsersRestiction) > 0) {
+                // Store updates performed
+                array_push(
+                    $arrayOfChanges,
+                    $lang->get('at_restriction')
+                );
+
+                // Log
+                logItems(
+                    $SETTINGS,
+                    (int) $inputData['itemId'],
+                    $inputData['label'],
+                    $session->get('user-id'),
+                    'at_modification',
+                    $session->get('user-login'),
+                    'at_restriction : ' . (count($diffUsersRestiction) > 0 ?
+                        implode(', ', $arrayOfUsersRestriction) . (count($diffRolesRestiction) > 0 ? ', ' : '') : '') . (count($diffRolesRestiction) > 0 ? implode(', ', $arrayOfRestrictionRoles) : '')
+                );
+            }
+
+            // LABEL
+            if ($data['label'] !== $inputData['label']) {
+                // Store updates performed
+                array_push(
+                    $arrayOfChanges,
+                    $lang->get('at_label')
+                );
+
+                // Log
+                logItems(
+                    $SETTINGS,
+                    (int) $inputData['itemId'],
+                    $inputData['label'],
+                    $session->get('user-id'),
+                    'at_modification',
+                    $session->get('user-login'),
+                    'at_label : ' . $data['label'] . ' => ' . $inputData['label']
+                );
+            }
+            // LOGIN
+            if ($data['login'] !== $post_login) {
+                // Store updates performed
+                array_push(
+                    $arrayOfChanges,
+                    $lang->get('at_login')
+                );
+
+                // Log
+                logItems(
+                    $SETTINGS,
+                    (int) $inputData['itemId'],
+                    $inputData['label'],
+                    $session->get('user-id'),
+                    'at_modification',
+                    $session->get('user-login'),
+                    'at_login : ' . $data['login'] . ' => ' . $post_login
+                );
+            }
+            // EMAIL
+            if ($post_email !== null && $data['email'] !== null && strcmp($data['email'], $post_email) !== 0) {
+                // Store updates performed
+                array_push(
+                    $arrayOfChanges,
+                    $lang->get('at_email')
+                );
+
+                // Log
+                logItems(
+                    $SETTINGS,
+                    (int) $inputData['itemId'],
+                    $inputData['label'],
+                    $session->get('user-id'),
+                    'at_modification',
+                    $session->get('user-login'),
+                    'at_email : ' . $data['email'] . ' => ' . $post_email
+                );
+            }
+            // URL
+            if ($data['url'] !== $post_url && $post_url !== 'http://') {
+                // Store updates performed
+                array_push(
+                    $arrayOfChanges,
+                    $lang->get('at_url')
+                );
+
+                // Log
+                logItems(
+                    $SETTINGS,
+                    (int) $inputData['itemId'],
+                    $inputData['label'],
+                    $session->get('user-id'),
+                    'at_modification',
+                    $session->get('user-login'),
+                    'at_url : ' . $data['url'] . ' => ' . $post_url
+                );
+            }
+            // DESCRIPTION
+            // deepcode ignore InsecureHash: md5 is used just to perform a string encrypted comparison
+            if (strcmp(md5(strip_tags($data['description'])), md5(strip_tags($post_description))) !== 0) {
+                // Store updates performed
+                array_push(
+                    $arrayOfChanges,
+                    $lang->get('at_description')
+                );
+
+                // Log
+                logItems(
+                    $SETTINGS,
+                    (int) $inputData['itemId'],
+                    $inputData['label'],
+                    $session->get('user-id'),
+                    'at_modification',
+                    $session->get('user-login'),
+                    'at_description'
+                );
+            }
+            // FOLDER
+            if ((int) $data['id_tree'] !== (int) $inputData['folderId']) {
+                // Get name of folders
+                $dataTmp = DB::query('SELECT title FROM ' . prefixTable('nested_tree') . ' WHERE id IN %li', array($data['id_tree'], $inputData['folderId']));
+
+                // Store updates performed
+                array_push(
+                    $arrayOfChanges,
+                    $lang->get('at_category')
+                );
+
+                // Log
+                logItems(
+                    $SETTINGS,
+                    (int) $inputData['itemId'],
+                    $inputData['label'],
+                    $session->get('user-id'),
+                    'at_modification',
+                    $session->get('user-login'),
+                    'at_category : ' . $dataTmp[0]['title'] . ' => ' . $dataTmp[1]['title']
+                );
+            }
+            // ANYONE_CAN_MODIFY
+            if ((int) $post_anyone_can_modify !== (int) $data['anyone_can_modify']) {
+                // Store updates performed
+                array_push(
+                    $arrayOfChanges,
+                    $lang->get('at_anyoneconmodify') . ': ' . ((int) $post_anyone_can_modify === 0 ? $lang->get('disabled') : $lang->get('enabled'))
+                );
+
+                // Log
+                logItems(
+                    $SETTINGS,
+                    (int) $inputData['itemId'],
+                    $inputData['label'],
+                    $session->get('user-id'),
+                    'at_modification',
+                    $session->get('user-login'),
+                    'at_anyoneconmodify : ' . ((int) $post_anyone_can_modify === 0 ? 'disabled' : 'enabled')
+                );
+            }
+
+            // Reload new values
+            $dataItem = DB::queryfirstrow(
+                'SELECT *
+                FROM ' . prefixTable('items') . ' as i
+                INNER JOIN ' . prefixTable('log_items') . ' as l ON (l.id_item = i.id)
+                WHERE i.id = %i AND l.action = %s',
+                $inputData['itemId'],
+                'at_creation'
+            );
+            // Reload History
+            $history = '';
+            $rows = DB::query(
+                'SELECT l.date as date, l.action as action, l.raison as raison, u.login as login
+                FROM ' . prefixTable('log_items') . ' as l
+                LEFT JOIN ' . prefixTable('users') . ' as u ON (l.id_user=u.id)
+                WHERE l.action <> %s AND id_item=%s',
+                'at_shown',
+                $inputData['itemId']
+            );
+            foreach ($rows as $record) {
+                if ($record['raison'] === NULL) continue;
+                $reason = explode(':', $record['raison']);
+                if (count($reason) > 0) {
+                    $sentence = date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['date']) . ' - '
+                        . $record['login'] . ' - ' . $lang->get($record['action']) . ' - '
+                        . (empty($record['raison']) === false ? (count($reason) > 1 ? $lang->get(trim($reason[0])) . ' : ' . $reason[1]
+                            : $lang->get(trim($reason[0]))) : '');
+                    if (empty($history)) {
+                        $history = $sentence;
+                    } else {
+                        $history .= '<br />' . $sentence;
+                    }
+                }
+            }
+
+            // generate 2d key
+            $session->set('user-key_tmp', bin2hex(GenerateCryptKey(16, false, true, true, false, true, $SETTINGS)));
+
+            // Send email
+            if (is_array($post_diffusion_list) === true && count($post_diffusion_list) > 0) {
+                $cpt = 0;
+                foreach ($post_diffusion_list as $emailAddress) {
+                    if (empty($emailAddress) === false) {
+                        prepareSendingEmail(
+                            $lang->get('email_subject_item_updated'),
+                            str_replace(
+                                array('#item_label#', '#item_category#', '#item_id#', '#url#', '#name#', '#lastname#', '#folder_name#'),
+                                array($inputData['label'], $inputData['folderId'], $inputData['itemId'], $SETTINGS['cpassman_url'], $session->get('user-name'), $session->get('user-lastname'), $dataFolderSettings['title']),
+                                $lang->get('email_body_item_updated')
+                            ),
+                            $emailAddress,
+                            $post_diffusion_list_names[$cpt]
+                        );
+                        $cpt++;
+                    }
+                }
+            }
+
+            // Remove the edition lock if no  encryption steps are needed
+            if ($encryptionTaskIsRequested === false) {
+                DB::delete(
+                    prefixTable('items_edition'), 
+                    'item_id = %i AND user_id = %i', 
+                    $inputData['itemId'],
+                    $session->get('user-id')
+                );
+            }
+
+            // Notifiy changes to the users
+            notifyChangesToSubscribers($inputData['itemId'], $inputData['label'], $arrayOfChanges, $SETTINGS);
+
+            // Prepare some stuff to return
+            $arrData = array(
+                'error' => false,
+                'message' => '',
+            );
+        } else {
+            echo (string) prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to_edit_item'),
+                ),
+                'encode'
+            );
+            break;
         }
+        
         // return data
         echo (string) prepareExchangedData(
             $arrData,
@@ -2155,7 +2207,6 @@ switch ($inputData['type']) {
                 (int) $post_dest_id,
                 (int) $newItemId,
                 $objectKey['pwd'],
-                $SETTINGS,
                 true
             );
 
@@ -2207,7 +2258,6 @@ switch ($inputData['type']) {
                         (int) $post_dest_id,
                         (int) $newFieldId,
                         $cryptedStuff['objectKey'],
-                        $SETTINGS,
                         true
                     );
                 }
@@ -2292,7 +2342,6 @@ switch ($inputData['type']) {
                         (int) $post_dest_id,
                         (int) $newFileId,
                         $newFile['objectKey'],
-                        $SETTINGS,
                         true
                     );
                 }
@@ -2588,6 +2637,7 @@ switch ($inputData['type']) {
                 $pw = '';
             }
         } else {
+            //error_log('userKey: ' . print_r($userKey, true));
             $decryptedObject = decryptUserObjectKey($userKey['share_key'], $session->get('user-private_key'));
             // if null then we have an error.
             // suspecting bad password
@@ -4468,63 +4518,117 @@ switch ($inputData['type']) {
     case 'get_complixity_level':
         // get some info about ITEM
         if (null !== $inputData['itemId'] && empty($inputData['itemId']) === false) {
-            $dataItem = DB::queryfirstrow(
-                'SELECT perso, anyone_can_modify
-                FROM ' . prefixTable('items') . '
-                WHERE id=%i',
+            // get if existing edition lock
+            $dataItemEditionLocks = DB::query(
+                'SELECT timestamp, user_id
+                FROM ' . prefixTable('items_edition') . '
+                WHERE item_id = %i 
+                ORDER BY increment_id DESC',
                 $inputData['itemId']
             );
+            
+            if (WIP === true) error_log('Existing edition locks: '.DB::count());
 
-            // Lock Item (if already locked), go back and warn
-            $dataTmp = DB::queryFirstRow('SELECT timestamp, user_id FROM ' . prefixTable('items_edition') . ' WHERE item_id = %i', $inputData['itemId']);
+            // Check if item has no edition lock
+            if ((int) DB::count() > 0 ) {
+                // get last edition lock
+                $dataLastItemEditionLock = $dataItemEditionLocks[0];
 
-            // If token is taken for this Item and delay is passed then delete it.
-            if (
-                isset($SETTINGS['delay_item_edition']) &&
-                $SETTINGS['delay_item_edition'] > 0 && empty($dataTmp['timestamp']) === false &&
-                round(abs(time() - $dataTmp['timestamp']) / 60, 2) > $SETTINGS['delay_item_edition']
-            ) {
-                DB::delete(prefixTable('items_edition'), 'item_id = %i', $inputData['itemId']);
-                //reload the previous data
-                $dataTmp = DB::queryFirstRow(
-                    'SELECT timestamp, user_id FROM ' . prefixTable('items_edition') . ' WHERE item_id = %i',
-                    $inputData['itemId']
-                );
+                // Calculate the edition grace delay
+                if (isset($SETTINGS['delay_item_edition']) && $SETTINGS['delay_item_edition'] > 0 && empty($dataTmp['timestamp']) === false) {
+                    $delay = $SETTINGS['delay_item_edition'];
+                } else {
+                    $delay = EDITION_LOCK_PERIOD; // One day delay
+                }
+                if (WIP === true) error_log('delay: ' . $delay);
+
+                // We remove old edition locks if delay is expired meaning more than 1 day long
+                if (round(abs(time() - $dataTmp['timestamp']) / 60, 2) > $delay) {
+                    // Case where time is expired
+                    // In this case, delete edition lock and possible ongoing processes
+                    // and continue editing this time
+                    // We coonsidere if the most recent item is still locked then all other locks can be removed
+                    if (WIP === true)  error_log('Delay is expired, removing old locks');
+                    foreach ($dataItemEditionLocks as $itemEditionLock) {
+                        // delete lock
+                        DB::delete(
+                            prefixTable('items_edition'), 
+                            'item_id = %i', 
+                            $inputData['itemId']
+                        );
+
+                        // Get process Id
+                        $processDetail = DB::queryFirstRow(
+                            'SELECT increment_id
+                            FROM ' . prefixTable('processes') . '
+                            WHERE item_id = %i AND finished_at = ""',
+                            $inputData['itemId']
+                        );
+
+                        // Delete related Task Process
+                        if (DB::count() > 0) {
+                            deleteProcessAndRelatedTasks($processDetail['increment_id']);
+                        }
+                    }
+                }
+
+                // check if user is currently the one that is editing
+                if ((int) $dataItemEditionLock['user_id'] === (int) $session->get('user-id')) {
+                    // CASE where no encryption process is pending
+                    // get if existing process ongoing for this item
+                    $dataItemProcessOngoing = DB::queryFirstRow(
+                        'SELECT JSON_EXTRACT(arguments, "$.all_users_except_id") AS all_users_except_id
+                        FROM ' . prefixTable('processes') . '
+                        WHERE item_id = %i AND finished_at = ""
+                        ORDER BY increment_id DESC',
+                        $inputData['itemId']
+                    );
+
+                    if ((int) DB::count() === 0) {
+                        // Delete the existing edition lock and let the user edit
+                        DB::delete(
+                            prefixTable('items_edition'), 
+                            'item_id = %i AND user_id = %i', 
+                            $inputData['itemId'],
+                            $session->get('user-id')
+                        );
+                    } else {
+                        // Case where encryption process is pending
+                        // Then no edition is possible
+                        $returnValues = array(
+                            'error' => true,
+                            'message' => $lang->get('error_no_edition_possible_locked'),
+                        );
+                        echo (string) prepareExchangedData(
+                            $returnValues,
+                            'encode'
+                        );
+                        break;
+                    }
+                } else {
+                    // Case where edition lock is already taken by another user
+                    // Then no edition is possible
+                    $returnValues = array(
+                        'error' => true,
+                        'message' => $lang->get('error_no_edition_possible_locked'),
+                    );
+                    echo (string) prepareExchangedData(
+                        $returnValues,
+                        'encode'
+                    );
+                    break;
+                }
             }
 
-            // If edition by same user (and token not freed before for any reason, then update timestamp)
-            if (empty($dataTmp['timestamp']) === false && $dataTmp['user_id'] === $session->get('user-id')) {
-                DB::update(
-                    prefixTable('items_edition'),
-                    array(
-                        'timestamp' => time(),
-                    ),
-                    'user_id = %i AND item_id = %i',
-                    $session->get('user-id'),
-                    $inputData['itemId']
-                );
-                // If no token for this Item, then initialize one
-            } elseif (empty($dataTmp[0])) {
-                DB::insert(
-                    prefixTable('items_edition'),
-                    array(
-                        'timestamp' => time(),
-                        'item_id' => $inputData['itemId'],
-                        'user_id' => (int) $session->get('user-id'),
-                    )
-                );
-                // Edition not possible
-            } else {
-                $returnValues = array(
-                    'error' => true,
-                    'message' => $lang->get('error_no_edition_possible_locked'),
-                );
-                echo (string) prepareExchangedData(
-                    $returnValues,
-                    'encode'
-                );
-                break;
-            }
+            // create edition lock on this item for this user
+            DB::insert(
+                prefixTable('items_edition'),
+                array(
+                    'timestamp' => time(),
+                    'item_id' => $inputData['itemId'],
+                    'user_id' => (int) $session->get('user-id'),
+                )
+            );
         }
 
         // do query on this folder
@@ -4717,6 +4821,38 @@ switch ($inputData['type']) {
             $returnValues,
             'encode'
         );
+        break;
+
+    case 'handle_item_edition_lock':
+        // Check KEY
+        if ($inputData['key'] !== $session->get('key')) {
+            echo (string) prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        // decrypt and retreive data in JSON format
+        $dataReceived = prepareExchangedData(
+            $inputData['data'],
+            'decode'
+        );
+        $itemId = filter_var($dataReceived['item_id'], FILTER_SANITIZE_NUMBER_INT);
+        $action = filter_var($dataReceived['action'], FILTER_SANITIZE_SPECIAL_CHARS);
+
+        if ($action === 'release_lock') {
+            DB::delete(
+                prefixTable('items_edition'), 
+                'item_id = %i AND user_id = %i', 
+                $itemId,
+                $session->get('user-id')
+            );
+        }
+        
         break;
 
         /*
@@ -6678,7 +6814,6 @@ switch ($inputData['type']) {
             (int) $folder,
             (int) $newID,
             $cryptedStuff['objectKey'],
-            $SETTINGS
         );
 
         // get some info to add to the notification email
@@ -7021,6 +7156,11 @@ switch ($inputData['type']) {
             );
             break;
         }
+
+        // Initi
+        $edit = $delete = true; 
+        $editionLock = false;
+
         // decrypt and retrieve data in JSON format
         $dataReceived = prepareExchangedData(
             $inputData['data'],
@@ -7031,6 +7171,77 @@ switch ($inputData['type']) {
         $inputData['userId'] = (int) filter_var($dataReceived['userId'], FILTER_SANITIZE_NUMBER_INT);
         $inputData['itemId'] = (int) filter_var($dataReceived['itemId'], FILTER_SANITIZE_NUMBER_INT);
         $inputData['treeId'] = (int) filter_var($dataReceived['treeId'], FILTER_SANITIZE_NUMBER_INT);
+        
+        // Lock Item (if already locked), go back and warn
+        $dataTmp = DB::queryFirstRow(
+            'SELECT timestamp, user_id 
+            FROM ' . prefixTable('items_edition') . ' 
+            WHERE item_id = %i',
+            $inputData['itemId']
+        );
+        
+        // if token already exists for this item then no edition is possible
+        if (DB::count() > 0) {
+            // CASE where no encryption process is pending
+            // get if existing process ongoing for this item
+            $dataItemProcessOngoing = DB::queryFirstRow(
+                'SELECT JSON_EXTRACT(p.arguments, "$.all_users_except_id") AS all_users_except_id
+                FROM ' . prefixTable('processes') . ' AS p
+                INNER JOIN ' . prefixTable('items_edition') . ' AS i ON (i.item_id = p.item_id)
+                WHERE p.item_id = %i AND p.finished_at = ""
+                ORDER BY p.increment_id DESC',
+                $inputData['itemId']
+            );
+            
+            if ((int) DB::count() === 0) {
+                // CASE where no encryption process is pending
+
+                if ($session->get('user-id') === $dataTmp['user_id']) {
+                    // CASE where user is the one who locked the item
+                    // Delete the existing edition lock and let the user edit
+                    DB::delete(
+                        prefixTable('items_edition'), 
+                        'item_id = %i AND user_id = %i', 
+                        $inputData['itemId'],
+                        $session->get('user-id')
+                    );
+
+                    /*$data = array(
+                        'error' => false,
+                        'access' => true,
+                        'edit' => true,
+                        'delete' => false,
+                        'edition_locked' => false,
+                    );*/
+                } else {
+                    // CASE where user is not the one who locked the item
+                    /*$data = array(
+                        'error' => false,
+                        'access' => true,
+                        'edit' => false,
+                        'delete' => false,
+                        'edition_locked' => true,
+                    );*/
+                    $editionLock = true;
+                }
+            } else {
+                /*$data = array(
+                    'error' => false,
+                    'access' => true,
+                    'edit' => false,
+                    'delete' => false,
+                    'edition_locked' => true,
+                );*/
+                $editionLock = true;
+            }
+
+            // send data
+            /*echo (string) prepareExchangedData(
+                $data,
+                'encode'
+            );
+            break;*/
+        }
 
         $data = DB::queryFirstRow(
             'SELECT visible_folders
@@ -7048,6 +7259,7 @@ switch ($inputData['type']) {
                 'access' => true,
                 'edit' => false,
                 'delete' => false,
+                'edition_locked' => false,
             );
 
             // send data
@@ -7067,8 +7279,7 @@ switch ($inputData['type']) {
             WHERE role_id IN %ls AND folder_id = %i',
             array_column($session->get('system-array_roles'), 'id'),
             $inputData['treeId'],
-        );
-        $edit = $delete = true;        
+        );       
         foreach ($data as $access) {
             if ($access === 'ND') {
                 $delete = false;
@@ -7081,6 +7292,7 @@ switch ($inputData['type']) {
                 $edit = false;
                 $delete = false;
             }
+            error_log('access: ' . $access . ' - edit: ' . $edit . ' - delete: ' . $delete);
         }
 
         $data = array(
@@ -7088,6 +7300,7 @@ switch ($inputData['type']) {
             'access' => isset($inputData['treeId']) === true && in_array($inputData['treeId'], $ids) === true ? true : false,
             'edit' => $edit,
             'delete' => $delete,
+            'edition_locked' => $editionLock,
         );
 
         // send data

@@ -78,7 +78,7 @@ DB::debugmode(false);
 $process_to_perform = DB::queryfirstrow(
     'SELECT *
     FROM ' . prefixTable('processes') . '
-    WHERE is_in_progress = %i AND process_type IN ("item_copy", "new_item", "update_item")
+    WHERE is_in_progress = %i AND process_type IN ("item_copy", "new_item", "update_item", "item_update_create_keys")
     ORDER BY increment_id ASC',
     1
 );
@@ -95,7 +95,7 @@ if (DB::count() > 0) {
     $process_to_perform = DB::queryfirstrow(
         'SELECT *
         FROM ' . prefixTable('processes') . '
-        WHERE is_in_progress = %i AND finished_at = "" AND process_type IN ("item_copy", "new_item", "update_item")
+        WHERE is_in_progress = %i AND finished_at = "" AND process_type IN ("item_copy", "new_item", "update_item", "item_update_create_keys")
         ORDER BY increment_id ASC',
         0
     );
@@ -116,6 +116,7 @@ if (DB::count() > 0) {
             $process_to_perform['increment_id'],
             json_decode($process_to_perform['arguments'], true),
             $SETTINGS,
+            $process_to_perform['item_id']
         );
     } else {
 
@@ -129,8 +130,8 @@ doLog('end', '', (isset($SETTINGS['enable_tasks_log']) === true ? (int) $SETTING
 $process_to_perform = DB::queryfirstrow(
     'SELECT *
     FROM ' . prefixTable('processes') . '
-    WHERE is_in_progress = %i AND process_type IN ("item_copy", "new_item", "update_item")
-    ORDER BY increment_id ASC',
+    WHERE is_in_progress = %i AND process_type IN ("item_copy", "new_item", "update_item", "item_update_create_keys")
+    ORDER BY increment_id DESC',
     1
 );
 if (DB::count() > 0) {
@@ -148,7 +149,7 @@ if (DB::count() > 0) {
  *
  * @return bool
  */
-function handleTask(int $processId, array $ProcessArguments, array $SETTINGS): bool
+function handleTask(int $processId, array $ProcessArguments, array $SETTINGS, int $itemId = null): bool
 {
     provideLog('[PROCESS][#'. $processId.'][START]', $SETTINGS);
     $task_to_perform = DB::queryfirstrow(
@@ -213,10 +214,11 @@ function handleTask(int $processId, array $ProcessArguments, array $SETTINGS): b
                     -1,
                     (int) $ProcessArguments['item_id'],
                     '',
-                    $SETTINGS,
                     false,
                     false,
-                    $processObject['files']
+                    $processObject['files'],
+                    array_key_exists('all_users_except_id', $ProcessArguments) === true ? $ProcessArguments['all_users_except_id'] : -1,
+                    (int) in_array('parent_id', $ProcessArguments) === true ? $ProcessArguments['parent_id'] : -1
                 );
             } elseif ($args['step'] === 'create_users_fields_key') {
                 storeUsersShareKey(
@@ -224,22 +226,25 @@ function handleTask(int $processId, array $ProcessArguments, array $SETTINGS): b
                     0,
                     -1,
                     (int) $ProcessArguments['item_id'],
-                    '',
-                    $SETTINGS,
+                    (string) $ProcessArguments['pwd'],
                     false,
                     false,
-                    $processObject['fields']
+                    [],
+                    array_key_exists('all_users_except_id', $ProcessArguments) === true ? $ProcessArguments['all_users_except_id'] : -1,
+                    (int) in_array('parent_id', $ProcessArguments) === true ? $ProcessArguments['parent_id'] : -1
                 );
             } elseif ($args['step'] === 'create_users_pwd_key') {
+                //error_log('create_users_pwd_key - '. print_r($ProcessArguments, true)." - inArray: ".array_key_exists('all_users_except_id', $ProcessArguments));
                 storeUsersShareKey(
                     prefixTable('sharekeys_items'),
                     0,
                     -1,
                     (int) $ProcessArguments['item_id'],
-                    (string) $processObject['pwd'],
-                    $SETTINGS,
+                    (string) $ProcessArguments['pwd'],
                     false,
-                    false
+                    false,
+                    [],
+                    array_key_exists('all_users_except_id', $ProcessArguments) === true ? $ProcessArguments['all_users_except_id'] : -1
                 );
             }
 
@@ -259,9 +264,15 @@ function handleTask(int $processId, array $ProcessArguments, array $SETTINGS): b
 
             provideLog('[TASK]['.$args['step'].'] starting at '.$args['index'].' is done.', $SETTINGS);
 
-            // If step concerns files then all steps are now finished
-            // so we can flag the process as finished
-            if ($args['step'] === 'create_users_files_key') {
+            // are all tasks done?
+            $tasks = DB::query(
+                'SELECT *
+                FROM ' . prefixTable('processes_tasks') . '
+                WHERE process_id = %i AND finished_at IS NULL',
+                $processId
+            );
+            if (DB::count() === 0) {
+                // all tasks are done
                 provideLog('[PROCESS]['.$processId.'][FINISHED]', $SETTINGS);
                 DB::debugmode(false);
                 DB::update(
@@ -276,6 +287,11 @@ function handleTask(int $processId, array $ProcessArguments, array $SETTINGS): b
                     'increment_id = %i',
                     $processId
                 );
+
+                // if item was being updated then remove the edition lock
+                if (is_null($itemId) === false) {
+                    DB::delete(prefixTable('items_edition'), 'item_id = %i', $itemId);
+                }
             }
             return false;
 
@@ -283,6 +299,26 @@ function handleTask(int $processId, array $ProcessArguments, array $SETTINGS): b
             // Task is currently being in progress by another server process
             provideLog('[TASK][#'. $task_to_perform['increment_id'].'][WARNING] Similar task already being processes', $SETTINGS);
             return false;
+        }
+    } else {
+        // no more task to perform
+        provideLog('[PROCESS]['.$processId.'][FINISHED]', $SETTINGS);
+        DB::update(
+            prefixTable('processes'),
+            array(
+                'finished_at' => time(),
+                'is_in_progress' => -1,
+                'arguments' => json_encode([
+                    'item_id' => isset($ProcessArguments['item_id']) === true ? $ProcessArguments['item_id'] : '',
+                ])
+            ),
+            'increment_id = %i',
+            $processId
+        );
+
+        // if item was being updated then remove the edition lock
+        if (is_null($itemId) === false) {
+            DB::delete(prefixTable('items_edition'), 'item_id = %i', $itemId);
         }
     }
     return false;

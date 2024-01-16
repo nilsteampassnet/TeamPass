@@ -2677,10 +2677,10 @@ function storeUsersShareKey(
     int $post_folder_id,
     int $post_object_id,
     string $objectKey,
-    array $SETTINGS,
     bool $onlyForUser = false,
     bool $deleteAll = true,
-    array $objectKeyArray = []
+    array $objectKeyArray = [],
+    int $all_users_except_id = -1
 ): void {
     
     $session = SessionManager::getSession();
@@ -2735,19 +2735,21 @@ function storeUsersShareKey(
         }
     } else {
         // Create sharekey for each user
+        //error_log('Building QUERY - all_users_except_id: '. $all_users_except_id);
         //DB::debugmode(true);
         $users = DB::query(
             'SELECT id, public_key
             FROM ' . prefixTable('users') . '
             WHERE ' . ($onlyForUser === true ? 
                 'id IN ("' . TP_USER_ID . '","' . $session->get('user-id') . '") ' : 
-                'id NOT IN ("' . OTV_USER_ID . '","' . SSH_USER_ID . '","' . API_USER_ID . '") ') . '
+                'id NOT IN ("' . OTV_USER_ID . '","' . SSH_USER_ID . '","' . API_USER_ID . '"'.($all_users_except_id === -1 ? '' : ', "'.$all_users_except_id.'"').') ') . '
             AND public_key != ""'
         );
         //DB::debugmode(false);
         foreach ($users as $user) {
             // Insert in DB the new object key for this item by user
             if (count($objectKeyArray) === 0) {
+                //error_log('TEAMPASS Error - storeUsersShareKey - ' . $object_name . ' - ' . $post_object_id . ' - ' . $user['id'] . ' - ' . $objectKey);
                 DB::insert(
                     $object_name,
                     [
@@ -4012,6 +4014,99 @@ function storeTask(
             )
         );
     }
+}
+
+
+function createTaskForItemUpdate(
+    string $taskName,
+    int $itemId,
+    int $userId,
+    string $objectKey,
+    int $parentId = -1
+)
+{
+    // 1- Create main process
+    // ---
+    
+    // Create process
+    DB::insert(
+        prefixTable('processes'),
+        array(
+            'created_at' => time(),
+            'process_type' => 'item_update_create_keys',
+            'arguments' => json_encode([
+                'all_users_except_id' => (int) $userId,
+                'item_id' => (int) $itemId,
+                'pwd' => $objectKey,
+                'author' => (int) $userId,
+            ]),
+            'updated_at' => '',
+            'finished_at' => '',
+            'output' => '',
+            'item_id' => (int) $parentId !== -1 ?  $parentId : null,
+        )
+    );
+    $processId = DB::insertId();
+
+    // 2- Create expected tasks
+    // ---
+    switch ($taskName) {
+        case 'item_password':
+            
+            DB::insert(
+                prefixTable('processes_tasks'),
+                array(
+                    'process_id' => $processId,
+                    'created_at' => time(),
+                    'task' => json_encode([
+                        'step' => 'create_users_pwd_key',
+                        'index' => 0,
+                    ]),
+                )
+            );
+
+            break;
+        case 'item_field':
+            
+            DB::insert(
+                prefixTable('processes_tasks'),
+                array(
+                    'process_id' => $processId,
+                    'created_at' => time(),
+                    'task' => json_encode([
+                        'step' => 'create_users_fields_key',
+                        'index' => 0,
+                    ]),
+                )
+            );
+
+            break;
+        case 'item_file':
+            # code...
+            break;
+        default:
+            # code...
+            break;
+    }
+}
+
+
+function deleteProcessAndRelatedTasks(int $processId)
+{
+    // Delete process
+    DB::delete(
+        prefixTable('processes'),
+        'id=%i',
+        $processId
+    );
+
+    // Delete tasks
+    DB::delete(
+        prefixTable('processes_tasks'),
+        'process_id=%i',
+        $processId
+    );
+
 }
 
 /**

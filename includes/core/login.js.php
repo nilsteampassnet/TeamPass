@@ -551,7 +551,7 @@ declare(strict_types=1);
                     toastr.error(
                         '<?php echo $lang->get('alert_session_not_consistent'); ?>',
                         '<?php echo $lang->get('caution'); ?>', {
-                            timeOut: 5000,
+                            timeOut: 2500,
                             progressBar: true
                         }
                     );
