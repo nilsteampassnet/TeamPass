@@ -204,54 +204,8 @@ function handleTask(int $processId, array $ProcessArguments, array $SETTINGS, in
                 $task_to_perform['increment_id']
             );
 
-            // perform the task step "create_users_files_key"
-            if ($args['step'] === 'create_users_files_key') {
-                // Loop on all files for this item
-                // and encrypt them for each user
-                if (WIP === true) provideLog('[DEBUG] '.print_r($args['files_keys'], true), $SETTINGS);
-                foreach($args['files_keys'] as $file) {
-                    storeUsersShareKey(
-                        prefixTable('sharekeys_items'),
-                        0,
-                        -1,
-                        (int) $file['object_id'],
-                        (string) $file['object_key'],
-                        false,
-                        false,
-                        [],
-                        array_key_exists('all_users_except_id', $ProcessArguments) === true ? $ProcessArguments['all_users_except_id'] : -1,
-                    );
-                }
-            } elseif ($args['step'] === 'create_users_fields_key') {
-                // Loop on all encrypted fields for this item
-                // and encrypt them for each user
-                if (WIP === true) provideLog('[DEBUG] '.print_r($args, true), $SETTINGS);
-                foreach($args['fields_keys'] as $field) {
-                    storeUsersShareKey(
-                        prefixTable('sharekeys_fields'),
-                        0,
-                        -1,
-                        (int) $field['object_id'],
-                        (string) $field['object_key'],
-                        false,
-                        false,
-                        [],
-                        array_key_exists('all_users_except_id', $ProcessArguments) === true ? $ProcessArguments['all_users_except_id'] : -1,
-                    );
-                }
-            } elseif ($args['step'] === 'create_users_pwd_key') {
-                storeUsersShareKey(
-                    prefixTable('sharekeys_items'),
-                    0,
-                    -1,
-                    (int) $ProcessArguments['item_id'],
-                    (string) array_key_exists('pwd', $ProcessArguments) === true ? $ProcessArguments['pwd'] : (array_key_exists('object_key', $ProcessArguments) === true ? $ProcessArguments['object_key'] : ''),
-                    false,
-                    false,
-                    [],
-                    array_key_exists('all_users_except_id', $ProcessArguments) === true ? $ProcessArguments['all_users_except_id'] : -1
-                );
-            }
+            // handle the task step
+            handleTaskStep($args, $ProcessArguments, $SETTINGS);
 
             // update the task status
             DB::update(
@@ -327,4 +281,69 @@ function handleTask(int $processId, array $ProcessArguments, array $SETTINGS, in
         }
     }
     return false;
+}
+
+/**
+ * Handle the task step
+ *
+ * @param array $args
+ * @param array $ProcessArguments
+ * @param array $SETTINGS
+ *
+ * @return void
+ */
+function handleTaskStep(
+    array $args,
+    array $ProcessArguments,
+    array $SETTINGS
+)
+{
+    // perform the task step "create_users_files_key"
+    if ($args['step'] === 'create_users_files_key') {
+        // Loop on all files for this item
+        // and encrypt them for each user
+        if (WIP === true) provideLog('[DEBUG] '.print_r($args['files_keys'], true), $SETTINGS);
+        foreach($args['files_keys'] as $file) {
+            storeUsersShareKey(
+                prefixTable('sharekeys_items'),
+                0,
+                -1,
+                (int) $file['object_id'],
+                (string) $file['object_key'],
+                false,
+                false,
+                [],
+                array_key_exists('all_users_except_id', $ProcessArguments) === true ? $ProcessArguments['all_users_except_id'] : -1,
+            );
+        }
+    } elseif ($args['step'] === 'create_users_fields_key') {
+        // Loop on all encrypted fields for this item
+        // and encrypt them for each user
+        if (WIP === true) provideLog('[DEBUG] '.print_r($args, true), $SETTINGS);
+        foreach($args['fields_keys'] as $field) {
+            storeUsersShareKey(
+                prefixTable('sharekeys_fields'),
+                0,
+                -1,
+                (int) $field['object_id'],
+                (string) $field['object_key'],
+                false,
+                false,
+                [],
+                array_key_exists('all_users_except_id', $ProcessArguments) === true ? $ProcessArguments['all_users_except_id'] : -1,
+            );
+        }
+    } elseif ($args['step'] === 'create_users_pwd_key') {
+        storeUsersShareKey(
+            prefixTable('sharekeys_items'),
+            0,
+            -1,
+            (int) $ProcessArguments['item_id'],
+            (string) array_key_exists('pwd', $ProcessArguments) === true ? $ProcessArguments['pwd'] : (array_key_exists('object_key', $ProcessArguments) === true ? $ProcessArguments['object_key'] : ''),
+            false,
+            false,
+            [],
+            array_key_exists('all_users_except_id', $ProcessArguments) === true ? $ProcessArguments['all_users_except_id'] : -1
+        );
+    }
 }
