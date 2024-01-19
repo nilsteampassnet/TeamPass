@@ -208,7 +208,7 @@ function handleTask(int $processId, array $ProcessArguments, array $SETTINGS, in
             if ($args['step'] === 'create_users_files_key') {
                 // Loop on all files for this item
                 // and encrypt them for each user
-                provideLog('[DEBUG] '.print_r($args['files_keys'], true), $SETTINGS);
+                if (WIP === true) provideLog('[DEBUG] '.print_r($args['files_keys'], true), $SETTINGS);
                 foreach($args['files_keys'] as $file) {
                     storeUsersShareKey(
                         prefixTable('sharekeys_items'),
@@ -225,7 +225,7 @@ function handleTask(int $processId, array $ProcessArguments, array $SETTINGS, in
             } elseif ($args['step'] === 'create_users_fields_key') {
                 // Loop on all encrypted fields for this item
                 // and encrypt them for each user
-                provideLog('[DEBUG] '.print_r($args, true), $SETTINGS);
+                if (WIP === true) provideLog('[DEBUG] '.print_r($args, true), $SETTINGS);
                 foreach($args['fields_keys'] as $field) {
                     storeUsersShareKey(
                         prefixTable('sharekeys_fields'),

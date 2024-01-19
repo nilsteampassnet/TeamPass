@@ -252,6 +252,7 @@ if (!isset($_GET['step']) && !isset($post_step)) {
                             <span>PHP extension "mcrypt" is loaded</span><br />
                             <span>PHP version is greater or equal to '.MIN_PHP_VERSION.'</span><br />
                             <span>SQL version is greater or equal to MySQL '.MIN_MYSQL_VERSION.' or MariaDB '.MIN_MARIADB_VERSION.'</span><br />
+                            <span>Tasks manager has no tasks behind</span><br />
                             </div>
                         
                         </div>

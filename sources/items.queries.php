@@ -7231,7 +7231,7 @@ switch ($inputData['type']) {
         $inputData['itemId'] = (int) filter_var($dataReceived['itemId'], FILTER_SANITIZE_NUMBER_INT);
         $inputData['treeId'] = (int) filter_var($dataReceived['treeId'], FILTER_SANITIZE_NUMBER_INT);
         
-        // Lock Item (if already locked), go back and warn
+        // Locked Item (if already locked), go back and warn
         $dataTmp = DB::queryFirstRow(
             'SELECT timestamp, user_id 
             FROM ' . prefixTable('items_edition') . ' 
@@ -7241,8 +7241,17 @@ switch ($inputData['type']) {
         
         // if token already exists for this item then no edition is possible
         if (DB::count() > 0) {
-            // CASE where no encryption process is pending
-            // get if existing process ongoing for this item
+            // Get if current user is one who locked the item
+            $userLockedItemQueryResults = DB::queryFirstRow(
+                'SELECT user_id 
+                FROM ' . prefixTable('items_edition') . ' 
+                WHERE item_id = %i AND user_id = %i',
+                $inputData['itemId'],
+                $session->get('user-id')
+            );
+            $userLockedItem = (DB::count() > 0) ? true : false;
+
+            // Get if existing process ongoing for this item
             $dataItemProcessOngoing = DB::queryFirstRow(
                 'SELECT JSON_EXTRACT(p.arguments, "$.all_users_except_id") AS all_users_except_id
                 FROM ' . prefixTable('processes') . ' AS p
@@ -7254,8 +7263,7 @@ switch ($inputData['type']) {
             
             if ((int) DB::count() === 0) {
                 // CASE where no encryption process is pending
-
-                if ($session->get('user-id') === $dataTmp['user_id']) {
+                if ($session->get('user-id') === $dataTmp['user_id'] || $userLockedItem === true) {
                     // CASE where user is the one who locked the item
                     // Delete the existing edition lock and let the user edit
                     DB::delete(
@@ -7264,42 +7272,15 @@ switch ($inputData['type']) {
                         $inputData['itemId'],
                         $session->get('user-id')
                     );
-
-                    /*$data = array(
-                        'error' => false,
-                        'access' => true,
-                        'edit' => true,
-                        'delete' => false,
-                        'edition_locked' => false,
-                    );*/
                 } else {
                     // CASE where user is not the one who locked the item
-                    /*$data = array(
-                        'error' => false,
-                        'access' => true,
-                        'edit' => false,
-                        'delete' => false,
-                        'edition_locked' => true,
-                    );*/
                     $editionLock = true;
                 }
             } else {
-                /*$data = array(
-                    'error' => false,
-                    'access' => true,
-                    'edit' => false,
-                    'delete' => false,
-                    'edition_locked' => true,
-                );*/
+                // Case where encryption process is pending
+                // Block any user to edit the item
                 $editionLock = true;
             }
-
-            // send data
-            /*echo (string) prepareExchangedData(
-                $data,
-                'encode'
-            );
-            break;*/
         }
 
         $data = DB::queryFirstRow(

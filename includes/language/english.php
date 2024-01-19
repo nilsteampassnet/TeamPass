@@ -750,7 +750,7 @@ return array(
     'user_login' => 'Login',
     'role' => 'Role',
     'error_role_exist' => 'This role already exists!',
-    'error_no_edition_possible_locked' => 'Editing disabled - item locked by another user',
+    'error_no_edition_possible_locked' => 'Editing disabled - item is currently locked due to encryption process ongoing',
     'error_mcrypt_not_loaded' => 'Required PHP extension mcrypt is not loaded. Please inform your administrator if you see this message.',
     'at_user_added' => 'User #user_login# added',
     'at_user_deleted' => 'User #user_login# deleted',

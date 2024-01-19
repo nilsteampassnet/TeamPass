@@ -373,6 +373,7 @@ if (isset($post_type)) {
             }
             $okWritable = true;
             $okExtensions = true;
+$okTasksManager = true;
             $txt = '';
             $var_x = 1;
             $tab = array(
@@ -542,11 +543,35 @@ if (isset($post_type)) {
                 $nextStep = 1;
             }
 
+            // Is tasks manager empty?
+            @mysqli_query(
+                $db_link,
+                "SELECT * FROM `" . $pre . "processes`
+                WHERE finished_at = ''"
+            );
+            if (@mysqli_affected_rows($db_link) > 0) {
+                $txt .= '<span>Tasks manager is not empty. Please empty it before starting next step.&nbsp;&nbsp;' .
+                        '<img src=\"images/minus-circle.png\"></span><br />';
+                $okTasksManager = false;
+            } else {
+                $okTasksManager = true;
+                $txt .= '<span>Tasks manager is empty<i class=\"fa-solid fa-circle-check text-success ml-2\"></i>' .
+                    '</span><br />';
+            }
+
+            if ($okWritable === true && $okExtensions === true && $okEncryptKey === true && $okTasksManager === true) {
+                $error = "";
+                $nextStep = 2;
+            } else {
+                $error = "Something went wrong. Please check messages.";
+                $nextStep = 1;
+            }
+
             echo '[{'.
                 '"error" : "' . $error . '",'.
                 '"info" : "' . $txt . '",'.
                 '"index" : "'.($error === "" ? "" : $nextStep).'",'.
-                '"infos" : "' . $okWritable." ; ".$okExtensions." ; ".$okEncryptKey." ; " . '"'.
+                '"infos" : "' . $okWritable." ; ".$okExtensions." ; ".$okEncryptKey." ; ".$okTasksManager." ; " . '"'.
             '}]';
             break;
 

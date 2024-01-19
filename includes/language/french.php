@@ -549,7 +549,7 @@ return array(
     'user_login' => 'Identifiant',
     'role' => 'Rôle',
     'error_role_exist' => 'Ce Rôle existe déjà !',
-    'error_no_edition_possible_locked' => 'Édition impossible. Cet élément est déjà en cours d&apos;édition !',
+    'error_no_edition_possible_locked' => 'Édition impossible. Cet élément est verrouillé par le gestionnaire de tâches',
     'select' => 'Parcourir…',
     'items' => 'Éléments',
     'enable_personal_saltkey_cookie' => 'La clé personnelle de salage est sauvegardée dans un cookie',

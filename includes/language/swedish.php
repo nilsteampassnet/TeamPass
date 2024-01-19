@@ -549,7 +549,7 @@ return array(
     'user_login' => 'Login',
     'role' => 'Role',
     'error_role_exist' => 'This role already exists!',
-    'error_no_edition_possible_locked' => 'Editing disabled - item locked by another user',
+    'error_no_edition_possible_locked' => 'Editing disabled - item is currently locked due to encryption process ongoing',
     'select' => 'select',
     'items' => 'Items',
     'enable_personal_saltkey_cookie' => 'Store personal salt key in a browser cookie',
