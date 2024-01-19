@@ -174,6 +174,7 @@ function mainQuery(array $SETTINGS)
             break;
 
         case 'action_key':
+            // deepcode ignore ServerLeak: All cases handled by keyHandler return an encrypted string that is sent back to the client
             echo keyHandler($post_type, $dataReceived, $SETTINGS);
             break;
 
@@ -484,8 +485,7 @@ function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived,
         */
         case 'generate_temporary_encryption_key'://action_key
             return generateOneTimeCode(
-                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
-                $SETTINGS
+                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT)
             );
         
         /*
@@ -534,16 +534,6 @@ function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived,
                 (string) filter_var($dataReceived['action_type'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 $SETTINGS
             );
-
-        /*
-        * Generates a KEY with CRYPT
-        */
-        case 'generate_new_key'://action_key
-            // load passwordLib library
-            $pwdlib = new PasswordLib();
-            // generate key
-            $key = $pwdlib->getRandomToken(filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT));
-            return '[{"key" : "' . htmlentities($key, ENT_QUOTES) . '"}]';
 
         /*
         * Launch user keys change on his demand
@@ -1902,8 +1892,7 @@ function sendMailToUser(
 }
 
 function generateOneTimeCode(
-    int $post_user_id,
-    array $SETTINGS
+    int $post_user_id
 ): string
 {
     // Load user's language
