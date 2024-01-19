@@ -307,7 +307,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             Details(itemIdToShow, 'show', true)
         ).then(function() {
             //requestRunning = false;
-            console.log('Item detail affiché')
+            //console.log('Item detail affiché')
             // Force previous view to Tree folders
             store.update(
                 'teampassUser',
@@ -986,6 +986,20 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             //
             // > END <
             //
+        } else if ($(this).data('item-action') === 'reload') {            
+            if (debugJavascript === true) console.info('RELOAD ITEM');
+            toastr.remove();
+            toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+
+            $.when(
+                Details(store.get('teampassItem').id, 'show', true)
+            ).then(function() {
+                // Nothing
+            });
+
+            //
+            // > END <
+            //
         } else if ($(this).data('item-action') === 'server') {
             if (debugJavascript === true) console.info('SHOW SERVER UPDATE ITEM');
             toastr.remove();
@@ -1543,6 +1557,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             'dest_id': $('#form-item-copy-destination').val(),
             'new_label': DOMPurify.sanitize($('#form-item-copy-new-label').val()),
         }
+        
+        console.log("COPY ITEM data:");
+        console.log(data);
 
         // Launch action
         $.post(
@@ -2747,13 +2764,14 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
     // Uploader options
     uploader_attachments.bind('UploadProgress', function(up, file) {
         //console.log('uploader_attachments.bind')
-        $('#upload-file_' + file.id).html('<i class="fa-solid fa-file fa-sm mr-2"></i>' + htmlEncode(file.name) + '<span id="fileStatus_'+file.id+'">- ' + file.percent + '%</span>');
-        if (file.percent === 100) {
-            $('#fileStatus_'+file.id).html('<i class="fa-solid fa-circle-check text-success ml-2 fa-1x"></i>');
-            userUploadedFile = true;
-            userDidAChange = true;
-            toastr.remove();
-        }
+        $('#upload-file_' + file.id).html('<i class="fa-solid fa-file fa-sm mr-2"></i>' + htmlEncode(file.name) + '<span id="fileStatus_'+file.id+'"><i class="fa-solid fa-circle-notch fa-spin  ml-2"></i></span>');
+    });
+    uploader_attachments.bind('FileUploaded', function(up, file) {
+        //console.log('File '+file.name+' uploaded');
+        $('#fileStatus_'+file.id).html('<i class="fa-solid fa-circle-check text-success ml-2 fa-1x"></i>');
+        userUploadedFile = true;
+        userDidAChange = true;
+        toastr.remove();
     });
     uploader_attachments.bind('Error', function(up, err) {
         toastr.remove();
@@ -5156,6 +5174,10 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                         $('#card-item-pwd-button').removeClass('hidden');
                     } else {
                         $('#card-item-pwd-button').addClass('hidden');
+                        // Case where pw is not ready (encryption on going)
+                        if (data.pw_decrypt_info === 'error_no_sharekey_yet') {
+                            $('#card-item-label').after('<i class="fa-solid fa-bell fa-shake fa-lg infotip ml-4 text-warning delete-after-usage" title="<?php echo $lang->get('sharekey_not_ready'); ?>"></i>');
+                        }
                         $('#card-item-pwd').after('<i class="fa-solid fa-ban text-teal ml-3 delete-after-usage"></i>');
                     }
 

@@ -161,17 +161,15 @@ function handleTask(int $processId, array $ProcessArguments, array $SETTINGS, in
     );
 
     // get the process object
-    $processObject = json_decode($ProcessArguments['object_key'], true);
+    //$processObject = json_decode($ProcessArguments['object_key'], true);
     
     if (DB::count() > 0) {
         // check if a linux process is not currently on going
         // if sub_task_in_progress === 1 then exit
         if ((int) $task_to_perform['sub_task_in_progress'] === 0) {
-            provideLog('[TASK][#'. $task_to_perform['increment_id'].'][START]', $SETTINGS);
-
             // handle next task
             $args = json_decode($task_to_perform['task'], true);
-            //print_r($args);return false;
+            provideLog('[TASK][#'. $task_to_perform['increment_id'].'][START]Task '.$args['step'], $SETTINGS);
 
             // flag as in progress
             DB::update(
@@ -208,39 +206,46 @@ function handleTask(int $processId, array $ProcessArguments, array $SETTINGS, in
 
             // perform the task step "create_users_files_key"
             if ($args['step'] === 'create_users_files_key') {
-                storeUsersShareKey(
-                    prefixTable('sharekeys_files'),
-                    0,
-                    -1,
-                    (int) $ProcessArguments['item_id'],
-                    '',
-                    false,
-                    false,
-                    $processObject['files'],
-                    array_key_exists('all_users_except_id', $ProcessArguments) === true ? $ProcessArguments['all_users_except_id'] : -1,
-                    (int) in_array('parent_id', $ProcessArguments) === true ? $ProcessArguments['parent_id'] : -1
-                );
+                // Loop on all files for this item
+                // and encrypt them for each user
+                provideLog('[DEBUG] '.print_r($args['files_keys'], true), $SETTINGS);
+                foreach($args['files_keys'] as $file) {
+                    storeUsersShareKey(
+                        prefixTable('sharekeys_items'),
+                        0,
+                        -1,
+                        (int) $file['object_id'],
+                        (string) $file['object_key'],
+                        false,
+                        false,
+                        [],
+                        array_key_exists('all_users_except_id', $ProcessArguments) === true ? $ProcessArguments['all_users_except_id'] : -1,
+                    );
+                }
             } elseif ($args['step'] === 'create_users_fields_key') {
-                storeUsersShareKey(
-                    prefixTable('sharekeys_fields'),
-                    0,
-                    -1,
-                    (int) $ProcessArguments['item_id'],
-                    (string) $ProcessArguments['pwd'],
-                    false,
-                    false,
-                    [],
-                    array_key_exists('all_users_except_id', $ProcessArguments) === true ? $ProcessArguments['all_users_except_id'] : -1,
-                    (int) in_array('parent_id', $ProcessArguments) === true ? $ProcessArguments['parent_id'] : -1
-                );
+                // Loop on all encrypted fields for this item
+                // and encrypt them for each user
+                provideLog('[DEBUG] '.print_r($args, true), $SETTINGS);
+                foreach($args['fields_keys'] as $field) {
+                    storeUsersShareKey(
+                        prefixTable('sharekeys_fields'),
+                        0,
+                        -1,
+                        (int) $field['object_id'],
+                        (string) $field['object_key'],
+                        false,
+                        false,
+                        [],
+                        array_key_exists('all_users_except_id', $ProcessArguments) === true ? $ProcessArguments['all_users_except_id'] : -1,
+                    );
+                }
             } elseif ($args['step'] === 'create_users_pwd_key') {
-                //error_log('create_users_pwd_key - '. print_r($ProcessArguments, true)." - inArray: ".array_key_exists('all_users_except_id', $ProcessArguments));
                 storeUsersShareKey(
                     prefixTable('sharekeys_items'),
                     0,
                     -1,
                     (int) $ProcessArguments['item_id'],
-                    (string) $ProcessArguments['pwd'],
+                    (string) array_key_exists('pwd', $ProcessArguments) === true ? $ProcessArguments['pwd'] : (array_key_exists('object_key', $ProcessArguments) === true ? $ProcessArguments['object_key'] : ''),
                     false,
                     false,
                     [],
@@ -265,7 +270,7 @@ function handleTask(int $processId, array $ProcessArguments, array $SETTINGS, in
             provideLog('[TASK]['.$args['step'].'] starting at '.$args['index'].' is done.', $SETTINGS);
 
             // are all tasks done?
-            $tasks = DB::query(
+            DB::query(
                 'SELECT *
                 FROM ' . prefixTable('processes_tasks') . '
                 WHERE process_id = %i AND finished_at IS NULL',

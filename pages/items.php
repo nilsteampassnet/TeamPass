@@ -616,6 +616,9 @@ foreach ($rows as $reccord) {
                                 <?php
                                 }
                                 ?>
+                                <li class="nav-item">
+                                    <a class="text-navy tp-action ml-3" href="#" data-item-action="reload"><i class="fa-solid fa-rotate mr-1"></i><small><?php echo $lang->get('refresh'); ?></small></a>
+                                </li>
                             </ul>
                         </div>
                     </nav>

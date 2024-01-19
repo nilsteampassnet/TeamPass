@@ -366,7 +366,7 @@ if (null !== $post_type) {
             $post_folders = filter_var_array($dataReceived['folders'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $post_items = filter_var_array($dataReceived['items'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
-            // Folders restore
+            // Folders to delete
             foreach ($post_folders as $folderId) {
                 $data = DB::queryfirstrow(
                     'SELECT valeur
@@ -447,7 +447,51 @@ if (null !== $post_type) {
                     prefixTable('log_items'),
                     'id_item = %i',
                     $itemId
+                );     
+                
+                // Delete all fields
+                DB::delete(
+                    prefixTable('categories_items'),
+                    'item_id = %i',
+                    $itemId
                 );
+
+                // Delete all sharekey
+                DB::delete(
+                    prefixTable('sharekeys_items'),
+                    'object_id = %i',
+                    $itemId
+                );
+
+                // Delete sharekey fields
+                $itemFields = DB::query(
+                    'SELECT id
+                    FROM ' . prefixTable('categories_items') . '
+                    WHERE item_id = %i',
+                    $itemId
+                );
+                foreach ($itemFields as $field) {
+                    DB::delete(
+                        prefixTable('sharekeys_fields'),
+                        'object_id = %i',
+                        $field
+                    );
+                }
+
+                // Delete sharekey files
+                $itemFiles = DB::query(
+                    'SELECT id
+                    FROM ' . prefixTable('files') . '
+                    WHERE id_item = %i',
+                    $itemId
+                );
+                foreach ($itemFiles as $file) {
+                    DB::delete(
+                        prefixTable('sharekeys_files'),
+                        'object_id = %i',
+                        $field
+                    );
+                }
             }
 
             updateCacheTable('reload', NULL);

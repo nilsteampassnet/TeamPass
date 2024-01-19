@@ -462,6 +462,7 @@ if (
     );
 
     if (empty($ret) === false) {
+        // deepcode ignore XSS: $ret contains only an error message without any information, or false if error during thumbnail creation
         echo $ret;
     
         exit();

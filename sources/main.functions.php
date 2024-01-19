@@ -2749,7 +2749,7 @@ function storeUsersShareKey(
         foreach ($users as $user) {
             // Insert in DB the new object key for this item by user
             if (count($objectKeyArray) === 0) {
-                //error_log('TEAMPASS Error - storeUsersShareKey - ' . $object_name . ' - ' . $post_object_id . ' - ' . $user['id'] . ' - ' . $objectKey);
+                if (WIP === true) error_log('TEAMPASS Debug - storeUsersShareKey case1 - ' . $object_name . ' - ' . $post_object_id . ' - ' . $user['id'] . ' - ' . $objectKey);
                 DB::insert(
                     $object_name,
                     [
@@ -2763,6 +2763,7 @@ function storeUsersShareKey(
                 );
             } else {
                 foreach ($objectKeyArray as $object) {
+                    if (WIP === true) error_log('TEAMPASS Debug - storeUsersShareKey case2 - ' . $object_name . ' - ' . $object['objectId'] . ' - ' . $user['id'] . ' - ' . $object['objectKey']);
                     DB::insert(
                         $object_name,
                         [
@@ -3952,7 +3953,9 @@ function storeTask(
     int $is_personal_folder,
     int $folder_destination_id,
     int $item_id,
-    string $object_keys
+    string $object_keys,
+    array $fields_keys = [],
+    array $files_keys = []
 )
 {
     if (in_array($taskName, ['item_copy', 'new_item', 'update_item'])) {
@@ -3997,6 +4000,7 @@ function storeTask(
                 'task' => json_encode([
                     'step' => 'create_users_fields_key',
                     'index' => 0,
+                    'fields_keys' => $fields_keys,
                 ]),
             )
         );
@@ -4010,19 +4014,25 @@ function storeTask(
                 'task' => json_encode([
                     'step' => 'create_users_files_key',
                     'index' => 0,
+                    'files_keys' => $files_keys,
                 ]),
             )
         );
     }
 }
 
-
-function createTaskForItemUpdate(
-    string $taskName,
+/**
+ * 
+ */
+function createTaskForItem(
+    string $processType,
+    string|array $taskName,
     int $itemId,
     int $userId,
     string $objectKey,
-    int $parentId = -1
+    int $parentId = -1,
+    array $fields_keys = [],
+    array $files_keys = []
 )
 {
     // 1- Create main process
@@ -4033,11 +4043,11 @@ function createTaskForItemUpdate(
         prefixTable('processes'),
         array(
             'created_at' => time(),
-            'process_type' => 'item_update_create_keys',
+            'process_type' => $processType,
             'arguments' => json_encode([
                 'all_users_except_id' => (int) $userId,
                 'item_id' => (int) $itemId,
-                'pwd' => $objectKey,
+                'object_key' => $objectKey,
                 'author' => (int) $userId,
             ]),
             'updated_at' => '',
@@ -4050,43 +4060,62 @@ function createTaskForItemUpdate(
 
     // 2- Create expected tasks
     // ---
-    switch ($taskName) {
-        case 'item_password':
-            
-            DB::insert(
-                prefixTable('processes_tasks'),
-                array(
-                    'process_id' => $processId,
-                    'created_at' => time(),
-                    'task' => json_encode([
-                        'step' => 'create_users_pwd_key',
-                        'index' => 0,
-                    ]),
-                )
-            );
+    if (is_array($taskName) === false) {
+        $taskName = [$taskName];
+    }
+    foreach($taskName as $task) {
+        error_log('createTaskForItem - task: '.$task);
+        switch ($task) {
+            case 'item_password':
+                
+                DB::insert(
+                    prefixTable('processes_tasks'),
+                    array(
+                        'process_id' => $processId,
+                        'created_at' => time(),
+                        'task' => json_encode([
+                            'step' => 'create_users_pwd_key',
+                            'index' => 0,
+                        ]),
+                    )
+                );
 
-            break;
-        case 'item_field':
-            
-            DB::insert(
-                prefixTable('processes_tasks'),
-                array(
-                    'process_id' => $processId,
-                    'created_at' => time(),
-                    'task' => json_encode([
-                        'step' => 'create_users_fields_key',
-                        'index' => 0,
-                    ]),
-                )
-            );
+                break;
+            case 'item_field':
+                
+                DB::insert(
+                    prefixTable('processes_tasks'),
+                    array(
+                        'process_id' => $processId,
+                        'created_at' => time(),
+                        'task' => json_encode([
+                            'step' => 'create_users_fields_key',
+                            'index' => 0,
+                            'fields_keys' => $fields_keys,
+                        ]),
+                    )
+                );
 
-            break;
-        case 'item_file':
-            # code...
-            break;
-        default:
-            # code...
-            break;
+                break;
+            case 'item_file':
+
+                DB::insert(
+                    prefixTable('processes_tasks'),
+                    array(
+                        'process_id' => $processId,
+                        'created_at' => time(),
+                        'task' => json_encode([
+                            'step' => 'create_users_files_key',
+                            'index' => 0,
+                            'fields_keys' => $files_keys,
+                        ]),
+                    )
+                );
+                break;
+            default:
+                # code...
+                break;
+        }
     }
 }
 
