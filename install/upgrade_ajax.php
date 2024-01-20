@@ -33,7 +33,7 @@ use Hackzilla\PasswordGenerator\Generator\ComputerPasswordGenerator;
 use Hackzilla\PasswordGenerator\RandomGenerator\Php7RandomGenerator;
 use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\Language\Language;
-use PasswordLib\PasswordLib;
+use TeampassClasses\PasswordManager\PasswordManager;
 
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
@@ -315,7 +315,7 @@ if (isset($post_type)) {
             }
 
             $_SESSION['settings']['cpassman_dir'] = '..';
-            $pwdlib = new PasswordLib();
+            $passwordManager = new PasswordManager();
 
             // Connect to db and check user is granted
             $user_info = mysqli_fetch_array(
@@ -333,7 +333,7 @@ if (isset($post_type)) {
                 '}]';
                 $superGlobal->put('user_granted', false, 'SESSION');
             } else {
-                if ($pwdlib->verifyPasswordHash(Encryption\Crypt\aesctr::decrypt(base64_decode($post_pwd), 'cpm', 128), $user_info['pw']) === true && $user_info['admin'] === '1') {
+                if ($passwordManager->verifyPassword($user_info['pw'], Encryption\Crypt\aesctr::decrypt(base64_decode($post_pwd), 'cpm', 128)) === true && $user_info['admin'] === '1') {
                     $superGlobal->put('user_granted', true, 'SESSION');
                     $superGlobal->put('user_login', mysqli_escape_string($db_link, stripslashes($post_login)), 'SESSION');
                     $superGlobal->put('user_password', Encryption\Crypt\aesctr::decrypt(base64_decode($post_pwd), 'cpm', 128), 'SESSION');

@@ -39,7 +39,7 @@ use LdapRecord\Connection;
 use LdapRecord\Container;
 use LdapRecord\Auth\Events\Failed;
 use TeampassClasses\NestedTree\NestedTree;
-use PasswordLib\PasswordLib;
+use TeampassClasses\PasswordManager\PasswordManager;
 use Duo\DuoUniversal\Client;
 use Duo\DuoUniversal\DuoException;
 use RobThree\Auth\TwoFactorAuth;
@@ -365,7 +365,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     }
 
     // Check user and password
-    if ($userLdap['userPasswordVerified'] === false && (int) checkCredentials($passwordClear, $userInfo, $dataReceived, $username, $SETTINGS) !== 1) {
+    if ($userLdap['userPasswordVerified'] === false && (int) checkCredentials($passwordClear, $userInfo) !== 1) {
         echo prepareExchangedData(
             [
                 'value' => '',
@@ -1383,32 +1383,28 @@ function finalizeAuthentication(
     array $SETTINGS
 ): void
 {
-    // load passwordLib library
-    $pwdlib = new PasswordLib();
-    $hashedPassword = $pwdlib->createPasswordHash($passwordClear);
+    $passwordManager = new PasswordManager();
 
-    //If user has never been connected then erase current pwd with the ldap's one
-    if (empty($userInfo['pw']) === true) {
-        // Password are similar in Teampass and AD
+    // Migrate password if needed
+    $hashedPassword = $passwordManager->migratePassword(
+        $userInfo['pw'],
+        $passwordClear,
+        $userInfo['id']
+    );
+    
+    if (empty($userInfo['pw']) === true || $userInfo['special'] === 'user_added_from_ldap') {
+        // 2 cases are managed here:
+        // Case where user has never been connected then erase current pwd with the ldap's one
+        // Case where user has been added from LDAP and never being connected to TP
         DB::update(
             prefixTable('users'),
             [
-                'pw' => $hashedPassword,
+                'pw' => $passwordManager->hashPassword($passwordClear),
             ],
             'id = %i',
             $userInfo['id']
         );
-    } elseif ($userInfo['special'] === 'user_added_from_ldap') {
-        // Case where user has been added from LDAP and never being connected to TP
-        DB::update(
-            prefixTable('users'),
-            array(
-                'pw' => $hashedPassword,
-            ),
-            'id = %i',
-            $userInfo['id']
-        );
-    } elseif ($pwdlib->verifyPasswordHash($passwordClear, $userInfo['pw']) === false) {
+    } elseif ($passwordManager->verifyPassword($userInfo['pw'], $passwordClear) === false) {
         // Case where user is auth by LDAP but his password in Teampass is not synchronized
         // For example when user has changed his password in AD.
         // So we need to update it in Teampass and ask for private key re-encryption
@@ -1421,6 +1417,7 @@ function finalizeAuthentication(
             $userInfo['id']
         );
     }
+    error_log("finalizeAuthentication - hashedPassword: " . $hashedPassword. " | ".$passwordManager->verifyPassword($userInfo['pw'], $passwordClear));
 }
 
 /**
@@ -1511,9 +1508,9 @@ function ldapCreateUser(string $login, string $passwordClear, string $userEmail,
     // Generate user keys pair
     $userKeys = generateUserKeys($passwordClear);
 
-    // load passwordLib library
-    $pwdlib = new PasswordLib();
-    $hashedPassword = $pwdlib->createPasswordHash($passwordClear);
+    // Create password hash
+    $passwordManager = new PasswordManager();
+    $hashedPassword = $passwordManager->hashPassword($passwordClear);
 
     // Insert user in DB
     DB::insert(
@@ -1909,69 +1906,26 @@ function duoMFAPerform(
  *
  * @param string                $passwordClear Password in clear
  * @param array|string          $userInfo      Array of user data
- * @param array|string|resource $dataReceived  Received data
- * @param string                $username      User name
- * @param array                 $SETTINGS      Teampass settings
  *
  * @return bool
  */
-function checkCredentials($passwordClear, $userInfo, $dataReceived, $username, $SETTINGS)
+function checkCredentials($passwordClear, $userInfo)
 {
-    // Set to false
-    $userPasswordVerified = false;
-    // load passwordLib library
-    $pwdlib = new PasswordLib();
-    // Check if old encryption used
-    if (
-        crypt($passwordClear, $userInfo['pw']) === $userInfo['pw']
-        && empty($userInfo['pw']) === false
-    ) {
-        $userPasswordVerified = true;
-        //update user's password
-        $userInfo['pw'] = $pwdlib->createPasswordHash($passwordClear);
-        DB::update(
-            prefixTable('users'),
-            [
-                'pw' => $userInfo['pw'],
-            ],
-            'id=%i',
-            $userInfo['id']
-        );
-    }
-    //echo $passwordClear." - ".$userInfo['pw']." - ".$pwdlib->verifyPasswordHash($passwordClear, $userInfo['pw'])." ;; ";
-    // check the given password
-    if ($userPasswordVerified !== true) {
-        if ($pwdlib->verifyPasswordHash($passwordClear, $userInfo['pw']) === true) {
-            $userPasswordVerified = true;
-        } else {
-            // 2.1.27.24 - manage passwords
-            if ($pwdlib->verifyPasswordHash(htmlspecialchars_decode($dataReceived['pw']), $userInfo['pw']) === true) {
-                // then the auth is correct but needs to be adapted in DB since change of encoding
-                $userInfo['pw'] = $pwdlib->createPasswordHash($passwordClear);
-                DB::update(
-                    prefixTable('users'),
-                    [
-                        'pw' => $userInfo['pw'],
-                    ],
-                    'id=%i',
-                    $userInfo['id']
-                );
-                $userPasswordVerified = true;
-            } else {
-                $userPasswordVerified = false;
-                logEvents(
-                    $SETTINGS,
-                    'failed_auth',
-                    'password_is_not_correct',
-                    '',
-                    '',
-                    stripslashes($username)
-                );
-            }
-        }
+    $passwordManager = new PasswordManager();
+    // Migrate password if needed
+    $passwordManager->migratePassword(
+        $userInfo['pw'],
+        $passwordClear,
+        (int) $userInfo['id']
+    );
+    if (WIP === true) error_log("checkCredentials - User ".$userInfo['id']." | verify pwd: ".$passwordManager->verifyPassword($userInfo['pw'], $passwordClear));
+
+    if ($passwordManager->verifyPassword($userInfo['pw'], $passwordClear) === false) {
+        // password is not correct
+        return false;
     }
 
-    return $userPasswordVerified;
+    return true;
 }
 
 /**

@@ -35,7 +35,7 @@ use TeampassClasses\SessionManager\SessionManager;
 use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use TeampassClasses\Language\Language;
 use TeampassClasses\PerformChecks\PerformChecks;
-use PasswordLib\PasswordLib;
+use TeampassClasses\PasswordManager\PasswordManager;
 
 // Load functions
 require_once 'main.functions.php';
@@ -189,11 +189,11 @@ if (null !== $post_type) {
                 // GEnerate new keys
                 $userKeys = generateUserKeys($password);
 
-                // load passwordLib library
-                $pwdlib = new PasswordLib();
+                // load password library
+                $passwordManager = new PasswordManager();
 
                 // Prepare variables
-                $hashedPassword = $pwdlib->createPasswordHash($password);
+                $hashedPassword = $passwordManager->hashPassword($password);
                 if ($pwdlib->verifyPasswordHash($password, $hashedPassword) === false) {
                     echo prepareExchangedData(
                         array(
@@ -1501,10 +1501,10 @@ if (null !== $post_type) {
                 && $post_password !== $password_do_not_change
                 && $post_id === $session->get('user-id')
             ) {
-                // load passwordLib library
-                $pwdlib = new PasswordLib();
+                // load password library
+                $passwordManager = new PasswordManager();
 
-                $changeArray['pw'] = $pwdlib->createPasswordHash($post_password);
+                $changeArray['pw'] = $passwordManager->hashPassword($post_password);
                 $changeArray['key_tempo'] = '';
 
                 // We need to adapt the private key with new password
@@ -2595,13 +2595,13 @@ if (null !== $post_type) {
                     break;
                 }
 
-                // load passwordLib library
-                $pwdlib = new PasswordLib();
+                // load password library
+                $passwordManager = new PasswordManager();
 
                 // Prepare variables
                 $password = generateQuickPassword(12, true);
-                $hashedPassword = $pwdlib->createPasswordHash($password);
-                if ($pwdlib->verifyPasswordHash($password, $hashedPassword) === false) {
+                $hashedPassword = $passwordManager->hashPassword($password);
+                if ($passwordManager->verifyPassword($hashedPassword, $password) === false) {
                     echo prepareExchangedData(
                         array(
                             'error' => true,

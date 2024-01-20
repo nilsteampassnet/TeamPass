@@ -29,7 +29,7 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-use PasswordLib\PasswordLib;
+use TeampassClasses\PasswordManager\PasswordManager;
 use TeampassClasses\SessionManager\SessionManager;
 use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use TeampassClasses\Language\Language;
@@ -853,11 +853,10 @@ function changePassword(
 ): string
 {
     $session = SessionManager::getSession();
-    // load passwordLib library
-    $pwdlib = new PasswordLib();
-
-    // Prepare variables
-    $post_new_password_hashed = $pwdlib->createPasswordHash($post_new_password);
+    
+    // Create password hash
+    $passwordManager = new PasswordManager();
+    $post_new_password_hashed = $passwordManager->hashPassword($post_new_password);
 
     // Load user's language
     $lang = new Language();
@@ -938,7 +937,7 @@ function changePassword(
         $session->set('user-validite_pw', 1);
 
         // BEfore updating, check that the pwd is correct
-        if ($pwdlib->verifyPasswordHash($post_new_password, $post_new_password_hashed) === true && empty($dataUser['private_key']) === false) {
+        if ($passwordManager->verifyPassword($post_new_password_hashed, $post_new_password) === true && empty($dataUser['private_key']) === false) {
             $special_action = 'none';
             if ($post_change_request === 'reset_user_password_expected') {
                 $session->set('user-private_key', decryptPrivateKey($post_current_password, $dataUser['private_key']));
@@ -1049,11 +1048,10 @@ function generateQRCode(
         );
     }
 
-    // load passwordLib library
-    $pwdlib = new PasswordLib();
+    $passwordManager = new PasswordManager();
     if (
         isSetArrayOfValues([$post_pwd, $dataUser['pw']]) === true
-        && $pwdlib->verifyPasswordHash($post_pwd, $dataUser['pw']) === false
+        && $passwordManager->verifyPassword($dataUser['pw'], $post_pwd) === false
         && $post_demand_origin !== 'users_management_list'
     ) {
         // checked the given password
@@ -1644,10 +1642,9 @@ function isUserPasswordCorrect(
             }
 
             // use the password check
-            // load passwordLib library
-            $pwdlib = new PasswordLib();
+            $passwordManager = new PasswordManager();
             
-            if ($pwdlib->verifyPasswordHash(htmlspecialchars_decode($post_user_password), $userInfo['pw']) === true) {
+            if ($passwordManager->verifyPassword($userInfo['pw'], htmlspecialchars_decode($post_user_password)) === true) {
                 // GOOD password
                 return prepareExchangedData(
                     array(
@@ -1791,18 +1788,16 @@ function initializeUserPassword(
 
             if ($continue === true) {
                 // Only change if email is successfull
+                $passwordManager = new PasswordManager();
                 // GEnerate new keys
                 $userKeys = generateUserKeys($post_user_password);
-
-                // load passwordLib library
-                $pwdlib = new PasswordLib();
 
                 // Update user account
                 DB::update(
                     prefixTable('users'),
                     array(
                         'special' => $post_special,
-                        'pw' => $pwdlib->createPasswordHash($post_user_password),
+                        'pw' => $passwordManager->hashPassword($post_user_password),
                         'public_key' => $userKeys['public_key'],
                         'private_key' => $userKeys['private_key'],
                         'last_pw_change' => time(),
@@ -2980,11 +2975,10 @@ function changeUserAuthenticationPassword(
                 $hashedPrivateKey = encryptPrivateKey($post_new_pwd, $privateKey);
 
                 // Generate new hash for auth password
-                // load passwordLib library
-                $pwdlib = new PasswordLib();
+                $passwordManager = new PasswordManager();
 
                 // Prepare variables
-                $newPw = $pwdlib->createPasswordHash($post_new_pwd);
+                $newPw = $passwordManager->hashPassword($post_new_pwd);
 
                 // Update user account
                 DB::update(

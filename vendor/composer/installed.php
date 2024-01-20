@@ -646,6 +646,15 @@
             'reference' => 'df438ae79e64ad8e6a1d67717bbd14fe63466a63',
             'dev_requirement' => false,
         ),
+        'teampassclasses/passwordmanager' => array(
+            'pretty_version' => 'dev-master',
+            'version' => 'dev-master',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../teampassclasses/passwordmanager',
+            'aliases' => array(),
+            'reference' => 'ab1f30f97ba362f4f3b393937ceb29fec5f1303b',
+            'dev_requirement' => false,
+        ),
         'teampassclasses/performchecks' => array(
             'pretty_version' => 'dev-master',
             'version' => 'dev-master',

@@ -4198,6 +4198,44 @@
             "install-path": "../teampassclasses/nestedtree"
         },
         {
+            "name": "teampassclasses/passwordmanager",
+            "version": "dev-master",
+            "version_normalized": "dev-master",
+            "dist": {
+                "type": "path",
+                "url": "includes/libraries/teampassclasses/passwordmanager",
+                "reference": "ab1f30f97ba362f4f3b393937ceb29fec5f1303b"
+            },
+            "require": {
+                "php": "^8.0"
+            },
+            "type": "library",
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "TeampassClasses\\PasswordManager\\": "src/"
+                }
+            },
+            "license": [
+                "GPL-3.0-only"
+            ],
+            "authors": [
+                {
+                    "name": "Nils Laumaillé"
+                }
+            ],
+            "description": "Manage user password with component Password from Symfony.",
+            "keywords": [
+                "password",
+                "user"
+            ],
+            "transport-options": {
+                "symlink": false,
+                "relative": true
+            },
+            "install-path": "../teampassclasses/passwordmanager"
+        },
+        {
             "name": "teampassclasses/performchecks",
             "version": "dev-master",
             "version_normalized": "dev-master",

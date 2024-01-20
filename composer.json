@@ -88,6 +88,13 @@
             "options": {
                 "symlink": false
             }
+        },
+        {
+            "type": "path",
+            "url": "includes/libraries/teampassclasses/passwordmanager",
+            "options": {
+                "symlink": false
+            }
         }
     ],
     "require": {
@@ -107,6 +114,7 @@
         "teampassclasses/encryption": "dev-master",
         "teampassclasses/language": "dev-master",
         "teampassclasses/ldapextra": "dev-master",
+        "teampassclasses/passwordmanager": "dev-master",  
         "illuminate/contracts": "^10.32",
         "tightenco/collect": "^9.52",
         "nesbot/carbon": "^2.71",

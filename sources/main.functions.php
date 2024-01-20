@@ -46,7 +46,7 @@ use Defuse\Crypto\File as CryptoFile;
 use Defuse\Crypto\Exception as CryptoException;
 use Elegant\Sanitizer\Filters\Uppercase;
 use PHPMailer\PHPMailer\PHPMailer;
-use PasswordLib\PasswordLib;
+use TeampassClasses\PasswordManager\PasswordManager;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Process;
 use Symfony\Component\Process\PhpExecutableFinder;
@@ -2172,6 +2172,7 @@ function recursiveChmod(
     int  $dirPerm = 0755
 ) {
     // Check if the path exists
+    $path = basename($path);
     if (! file_exists($path)) {
         return false;
     }
@@ -3676,10 +3677,10 @@ function handleUserKeys(
         $passwordClear = GenerateCryptKey(20, false, true, true, false, true);
     }
 
-    // Hash the password
-    $pwdlib = new PasswordLib();
-    $hashedPassword = $pwdlib->createPasswordHash($passwordClear);
-    if ($pwdlib->verifyPasswordHash($passwordClear, $hashedPassword) === false) {
+    // Create password hash
+    $passwordManager = new PasswordManager();
+    $hashedPassword = $passwordManager->hashPassword($passwordClear);
+    if ($passwordManager->verifyPassword($hashedPassword, $passwordClear) === false) {
         return prepareExchangedData(
             array(
                 'error' => true,

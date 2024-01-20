@@ -15,8 +15,8 @@ class ComposerStaticInit917ba785e18cef2723bd769999d8fa5e
         'a1105708a18b76903365ca1c4aa61b02' => __DIR__ . '/..' . '/symfony/translation/Resources/functions.php',
         'f598d06aa772fa33d905e87be6398fb1' => __DIR__ . '/..' . '/symfony/polyfill-intl-idn/bootstrap.php',
         '72579e7bd17821bb1321b87411366eae' => __DIR__ . '/..' . '/illuminate/support/helpers.php',
-        '662a729f963d39afe703c9d9b7ab4a8c' => __DIR__ . '/..' . '/symfony/polyfill-php83/bootstrap.php',
         '06a34129a50df3d9257ee706cf3c875b' => __DIR__ . '/..' . '/illuminate/filesystem/functions.php',
+        '662a729f963d39afe703c9d9b7ab4a8c' => __DIR__ . '/..' . '/symfony/polyfill-php83/bootstrap.php',
         'def43f6c87e4f8dfd0c9e1b1bab14fe8' => __DIR__ . '/..' . '/symfony/polyfill-iconv/bootstrap.php',
         '8825ede83f2f289127722d4e842cf7e8' => __DIR__ . '/..' . '/symfony/polyfill-intl-grapheme/bootstrap.php',
         '667aeda72477189d0494fecd327c3641' => __DIR__ . '/..' . '/symfony/var-dumper/Resources/functions/dump.php',
@@ -45,6 +45,7 @@ class ComposerStaticInit917ba785e18cef2723bd769999d8fa5e
             'TeampassClasses\\SuperGlobal\\' => 28,
             'TeampassClasses\\SessionManager\\' => 31,
             'TeampassClasses\\PerformChecks\\' => 30,
+            'TeampassClasses\\PasswordManager\\' => 32,
             'TeampassClasses\\NestedTree\\' => 27,
             'TeampassClasses\\LdapExtra\\' => 26,
             'TeampassClasses\\Language\\' => 25,
@@ -171,6 +172,10 @@ class ComposerStaticInit917ba785e18cef2723bd769999d8fa5e
         'TeampassClasses\\PerformChecks\\' => 
         array (
             0 => __DIR__ . '/..' . '/teampassclasses/performchecks/src',
+        ),
+        'TeampassClasses\\PasswordManager\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/teampassclasses/passwordmanager/src',
         ),
         'TeampassClasses\\NestedTree\\' => 
         array (
@@ -306,9 +311,9 @@ class ComposerStaticInit917ba785e18cef2723bd769999d8fa5e
         ),
         'Illuminate\\Support\\' => 
         array (
-            0 => __DIR__ . '/..' . '/illuminate/macroable',
+            0 => __DIR__ . '/..' . '/illuminate/collections',
             1 => __DIR__ . '/..' . '/illuminate/conditionable',
-            2 => __DIR__ . '/..' . '/illuminate/collections',
+            2 => __DIR__ . '/..' . '/illuminate/macroable',
             3 => __DIR__ . '/..' . '/illuminate/support',
         ),
         'Illuminate\\Filesystem\\' => 
@@ -1888,6 +1893,7 @@ class ComposerStaticInit917ba785e18cef2723bd769999d8fa5e
         'TeampassClasses\\LdapExtra\\LdapExtra' => __DIR__ . '/..' . '/teampassclasses/ldapextra/src/LdapExtra.php',
         'TeampassClasses\\LdapExtra\\OpenLdapExtra' => __DIR__ . '/..' . '/teampassclasses/ldapextra/src/OpenLdapExtra.php',
         'TeampassClasses\\NestedTree\\NestedTree' => __DIR__ . '/..' . '/teampassclasses/nestedtree/src/NestedTree.php',
+        'TeampassClasses\\PasswordManager\\PasswordManager' => __DIR__ . '/..' . '/teampassclasses/passwordmanager/src/PasswordManager.php',
         'TeampassClasses\\PerformChecks\\PerformChecks' => __DIR__ . '/..' . '/teampassclasses/performchecks/src/PerformChecks.php',
         'TeampassClasses\\SessionManager\\SessionManager' => __DIR__ . '/..' . '/teampassclasses/sessionmanager/src/SessionManager.php',
         'TeampassClasses\\SuperGlobal\\SuperGlobal' => __DIR__ . '/..' . '/teampassclasses/superglobal/src/SuperGlobal.php',

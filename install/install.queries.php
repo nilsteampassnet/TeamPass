@@ -84,7 +84,6 @@ $lang = new Language();
  */
 function generateRandomKey()
 {
-    // load passwordLib library
     $generator = new ComputerPasswordGenerator();
     $generator->setRandomGenerator(new Php7RandomGenerator());
     $generator->setLength(40);

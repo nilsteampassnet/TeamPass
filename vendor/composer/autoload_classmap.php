@@ -1452,6 +1452,7 @@ return array(
     'TeampassClasses\\LdapExtra\\LdapExtra' => $vendorDir . '/teampassclasses/ldapextra/src/LdapExtra.php',
     'TeampassClasses\\LdapExtra\\OpenLdapExtra' => $vendorDir . '/teampassclasses/ldapextra/src/OpenLdapExtra.php',
     'TeampassClasses\\NestedTree\\NestedTree' => $vendorDir . '/teampassclasses/nestedtree/src/NestedTree.php',
+    'TeampassClasses\\PasswordManager\\PasswordManager' => $vendorDir . '/teampassclasses/passwordmanager/src/PasswordManager.php',
     'TeampassClasses\\PerformChecks\\PerformChecks' => $vendorDir . '/teampassclasses/performchecks/src/PerformChecks.php',
     'TeampassClasses\\SessionManager\\SessionManager' => $vendorDir . '/teampassclasses/sessionmanager/src/SessionManager.php',
     'TeampassClasses\\SuperGlobal\\SuperGlobal' => $vendorDir . '/teampassclasses/superglobal/src/SuperGlobal.php',

@@ -29,7 +29,6 @@
 use EZimuel\PHPSecureSession;
 use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\Language\Language;
-use PasswordLib\PasswordLib;
 
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';

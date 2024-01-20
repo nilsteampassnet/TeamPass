@@ -1,0 +1,23 @@
+{
+    "name": "teampassclasses/passwordmanager",
+    "description": "Manage user password with component Password from Symfony.",
+    "type": "library",
+    "license": "GPL-3.0-only",
+    "keywords": [
+        "user",
+        "password"
+    ],
+    "authors": [
+        {
+            "name": "Nils Laumaillé"
+        }
+    ],
+    "require": {
+        "php": "^8.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "TeampassClasses\\PasswordManager\\": "src/"
+        }
+    }
+}

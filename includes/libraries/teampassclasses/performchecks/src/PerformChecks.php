@@ -30,6 +30,7 @@ Use DB;
  * @see       https://www.teampass.net
  */
 
+use TeampassClasses\SessionManager\SessionManager;
 
 class PerformChecks
 {
@@ -67,9 +68,6 @@ class PerformChecks
             if (isset($this->sessionVar['user_key']) === true && (is_null($this->sessionVar['user_key']) === true || empty($this->sessionVar['user_key']) === true)) {
                 return false;
             }
-            if (isset($this->sessionVar['CPM']) === true && (is_null($this->sessionVar['CPM']) === true || $this->sessionVar['CPM'] !== 1)) {
-                return false;
-            }
         }
 
         return true;
@@ -96,11 +94,10 @@ class PerformChecks
      */
     function checkUserSessionExists(): string
     {
-        // Case permit to check if SESSION is still valid
-        session_name('teampass_session');
-        session_start();
+        // Case permit to check if SESSION is still valid        
+        $session = SessionManager::getSession();
 
-        if (isset($_SESSION['CPM']) === true) {
+        if (null !== $session->get('key')) {
             return json_encode([
                 'status' => true,
             ]);
@@ -203,7 +200,7 @@ class PerformChecks
         ) {
             return true;
         }
-
+        
         return false;
     }
 

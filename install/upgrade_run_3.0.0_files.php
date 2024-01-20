@@ -29,7 +29,6 @@
 use EZimuel\PHPSecureSession;
 use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\Language\Language;
-use PasswordLib\PasswordLib;
 use Defuse\Crypto\File;
 use Defuse\Crypto\Key;
 use Defuse\Crypto\Exception as CryptoException;

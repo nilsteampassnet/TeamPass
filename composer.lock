@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "8c743c61e4b8161c6ed1f1bc03b69600",
+    "content-hash": "ba31a0c63ef9a5e002544f4724cfb2ef",
     "packages": [
         {
             "name": "brick/math",
@@ -4015,6 +4015,41 @@
             }
         },
         {
+            "name": "teampassclasses/passwordmanager",
+            "version": "dev-master",
+            "dist": {
+                "type": "path",
+                "url": "includes/libraries/teampassclasses/passwordmanager",
+                "reference": "ab1f30f97ba362f4f3b393937ceb29fec5f1303b"
+            },
+            "require": {
+                "php": "^8.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "TeampassClasses\\PasswordManager\\": "src/"
+                }
+            },
+            "license": [
+                "GPL-3.0-only"
+            ],
+            "authors": [
+                {
+                    "name": "Nils Laumaillé"
+                }
+            ],
+            "description": "Manage user password with component Password from Symfony.",
+            "keywords": [
+                "password",
+                "user"
+            ],
+            "transport-options": {
+                "symlink": false,
+                "relative": true
+            }
+        },
+        {
             "name": "teampassclasses/performchecks",
             "version": "dev-master",
             "dist": {
@@ -4623,6 +4658,7 @@
         "teampassclasses/encryption": 20,
         "teampassclasses/language": 20,
         "teampassclasses/ldapextra": 20,
+        "teampassclasses/passwordmanager": 20,
         "passwordlib/passwordlib": 15
     },
     "prefer-stable": true,
