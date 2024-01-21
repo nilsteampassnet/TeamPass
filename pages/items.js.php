@@ -5448,7 +5448,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     loadItemHistory(store.get('teampassItem').id);
                 } else if (actionType === 'edit') {
                     $.when(
-                        getPrivilegesOnItem(selectedFolderId, 0)
+                        getPrivilegesOnItem(selectedFolderId, 1)
                     ).then(function(retData) {
                         console.log('getPrivilegesOnItem 3')
                         console.log(retData)

@@ -4602,7 +4602,7 @@ switch ($inputData['type']) {
                 if (WIP === true) error_log('delay: ' . $delay);
 
                 // We remove old edition locks if delay is expired meaning more than 1 day long
-                if (round(abs(time() - $dataTmp['timestamp']) / 60, 2) > $delay) {
+                if (round(abs(time() - $dataTmp['timestamp']),0) > $delay) {
                     // Case where time is expired
                     // In this case, delete edition lock and possible ongoing processes
                     // and continue editing this time
@@ -4664,7 +4664,7 @@ switch ($inputData['type']) {
                         );
                         break;
                     }
-                } else {
+                } elseif (round(abs(time() - $dataTmp['timestamp']),0) <= $delay) {
                     // Case where edition lock is already taken by another user
                     // Then no edition is possible
                     $returnValues = array(
@@ -7260,10 +7260,17 @@ switch ($inputData['type']) {
                 ORDER BY p.increment_id DESC',
                 $inputData['itemId']
             );
+
+            // Get delay period
+            if (isset($SETTINGS['delay_item_edition']) && $SETTINGS['delay_item_edition'] > 0 && empty($dataTmp['timestamp']) === false) {
+                $delay = $SETTINGS['delay_item_edition'];
+            } else {
+                $delay = EDITION_LOCK_PERIOD; // One day delay
+            }
             
             if ((int) DB::count() === 0) {
                 // CASE where no encryption process is pending
-                if ($session->get('user-id') === $dataTmp['user_id'] || $userLockedItem === true) {
+                if ($session->get('user-id') === $dataTmp['user_id'] || $userLockedItem === true || round(abs(time() - $dataTmp['timestamp']), 0) > $delay) {
                     // CASE where user is the one who locked the item
                     // Delete the existing edition lock and let the user edit
                     DB::delete(
