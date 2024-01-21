@@ -891,7 +891,7 @@ function createFolder($folderTitle, $parentId, $folderLevel, $startPathLevel, $l
         }
 
         //Add this new folder to the list of visible folders for the user.
-        $session->set('user-accessible_folders', $id);
+        $session->set('user-accessible_folders', array_unique(array_merge($session->get('user-accessible_folders'), [$id]), SORT_NUMERIC));
 
         return $id;
     }

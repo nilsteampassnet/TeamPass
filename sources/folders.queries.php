@@ -697,7 +697,7 @@ if (null !== $post_type) {
                 );
 
                 // add new folder id in SESSION
-                $session->set('user-accessible_folders', $newId);
+                $session->set('user-accessible_folders', array_unique(array_merge($session->get('user-accessible_folders'), [$newId]), SORT_NUMERIC));
                 if ((int) $isPersonal === 1) {
                     SessionManager::addRemoveFromSessionArray('user-personal_folders', [$newId], 'add');
                 }
@@ -1138,7 +1138,7 @@ if (null !== $post_type) {
                 );
 
                 // add new folder id in SESSION
-                $session->set('user-accessible_folders', $newFolderId);
+                $session->set('user-accessible_folders', array_unique(array_merge($session->get('user-accessible_folders'), [$newFolderId]), SORT_NUMERIC));
                 if ((int) $nodeInfo->personal_folder === 1) {
                     SessionManager::addRemoveFromSessionArray('user-personal_folders', [$newFolderId], 'add');
                     SessionManager::addRemoveFromSessionArray('user-personal_visible_folders', [$newFolderId], 'add');
@@ -1534,6 +1534,7 @@ if (null !== $post_type) {
 
             // Get through each subfolder
             $folders = $tree->getDescendants(0, false);
+            error_log('user-accessible_folders: ' . print_r($session->get('user-accessible_folders'), true));
             foreach ($folders as $folder) {
                 if (
                     in_array($folder->id, $session->get('user-accessible_folders')) === true

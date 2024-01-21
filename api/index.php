@@ -68,7 +68,7 @@ if ($uri[0] === 'authorize') {
     // define the position of controller in $uri
     $controller = $uri[0];
     $action = $uri[1];
-
+error_log("controller: ".$controller." | action: ".$action." || ".print_r($userData, true));
     if ($userData['error'] === true) {
         // Error management
         errorHdl(
