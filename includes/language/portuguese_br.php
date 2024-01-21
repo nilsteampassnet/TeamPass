@@ -1162,5 +1162,6 @@ return array(
     'otp_secret' => 'Chave secreta OTP',
     'settings_ldap_group_objectclasses_attibute' => 'AD Group ObjectClasses attribute',
     'settings_ldap_group_objectclasses_attibute_tip' => 'The objectClasses to use when searching for groups. Several objectClasses are separated by a comma (,). Example: groupOfNames,group or top,posixGroup',
+    'display_warning_icons' => 'Display warning icons',
 
 );

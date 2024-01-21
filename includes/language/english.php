@@ -28,6 +28,7 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'display_warning_icons' => 'Display warning icons',
     'error_item_currently_being_updated' => 'Item is currently being updated and cannot be edited',
     'restore_in_progress' => 'Restore process is at',
     'settings_ldap_group_objectclasses_attibute' => 'AD Group ObjectClasses attribute',

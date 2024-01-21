@@ -131,6 +131,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         'autoWidth': true,
         'ajax': {
             url: '<?php echo $SETTINGS['cpassman_url']; ?>/sources/users.datatable.php',
+            data: function(d) {
+                d.display_warnings = $('#warnings_display').is(':checked');
+            }
         },
         'language': {
             'url': '<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $session->get('user-language'); ?>.txt'
@@ -212,8 +215,20 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     oTable.on( 'xhr', function () {
         console.log( 'Table redrawn' );
         //Table.ajax.reload( null, false )
-    } );
-    
+    } );   
+     
+
+    // Prepare iCheck format for checkboxes
+    $('input[type="checkbox"]').iCheck({
+        checkboxClass: 'icheckbox_flat-blue',
+        radioClass: 'iradio_flat-blue'
+    });
+    $("#warnings_display").on("ifChanged", function() {
+        $('.form').addClass('hidden');
+        $('#users-list').removeClass('hidden');
+        toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+        oTable.ajax.reload();
+    });
 
 
     $('#form-email').change(function() {

@@ -183,13 +183,18 @@ if ((int) $session->get('user-admin') === 0
 
 db::debugmode(false);
 $rows = DB::query(
-    'SELECT * FROM '.prefixTable('users').
-    $sWhere.
-    (string) $sOrder
+    'SELECT *
+    FROM '.prefixTable('users').
+    $sWhere
 );
 $iTotal = DB::count();
 $rows = DB::query(
-    'SELECT * FROM '.prefixTable('users').
+    'SELECT *,
+        CASE
+            WHEN pw LIKE "$2y$10$%" THEN 1
+            ELSE 0
+        END AS pw_passwordlib
+    FROM '.prefixTable('users').
     $sWhere.
     $sLimit
 );
@@ -263,11 +268,15 @@ foreach ($rows as $record) {
             ((in_array($record['id'], [OTV_USER_ID, TP_USER_ID, SSH_USER_ID, API_USER_ID]) === false && (int) $record['admin'] !== 1 && ((int) $SETTINGS['duo'] === 1 || (int) $SETTINGS['google_authentication'] === 1)) ?
                 ((int) $record['mfa_enabled'] === 1 ? '' : '<i class=\"fa-solid fa-fingerprint infotip ml-1\" style=\"color:Tomato\" title=\"'.$lang->get('mfa_disabled_for_user').'\"></i>') :
                 ''
-            ).
-            ((in_array($record['id'], [OTV_USER_ID, TP_USER_ID, SSH_USER_ID, API_USER_ID]) === false && (int) $record['admin'] !== 1 && is_null($record['keys_recovery_time']) === true) ? 
-                '<i class=\"fa-solid fa-download infotip ml-1\" style=\"color:Tomato\" title=\"'.$lang->get('recovery_keys_not_downloaded').'\"></i>' :
-                ''
-            );
+                );
+        if ($request->query->filter('display_warnings', '', FILTER_VALIDATE_BOOLEAN) === true) {
+            $userDisplayInfos .= '<br>'.
+                ((in_array($record['id'], [OTV_USER_ID, TP_USER_ID, SSH_USER_ID, API_USER_ID]) === false && (int) $record['admin'] !== 1 && is_null($record['keys_recovery_time']) === true) ? 
+                    '<i class=\"fa-solid fa-download infotip ml-1\" style=\"color:Tomato\" title=\"'.$lang->get('recovery_keys_not_downloaded').'\"></i>' :
+                    ''
+                ).
+                ((in_array($record['id'], [OTV_USER_ID, TP_USER_ID, SSH_USER_ID, API_USER_ID]) === false && (int) $record['pw_passwordlib'] === 1) ? '<i class=\"fa-solid fa-person-walking-luggage infotip ml-1\" style=\"color:Tomato\" title=\"Old password encryption. Shall login to initialize.\"></i>' : '');
+        }
         
         $sOutput .= '["<span data-id=\"'.$record['id'].'\" data-fullname=\"'.
             addslashes(str_replace("'", '&lsquo;', empty($record['name']) === false ? $record['name'] : '')).' '.

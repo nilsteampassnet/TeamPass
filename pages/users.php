@@ -166,6 +166,7 @@ foreach ($treeDesc as $t) {
 
                 <!-- /.card-header -->
                 <div class="card-body form" id="users-list">
+                    <label><input type="checkbox" id="warnings_display" class="tp-action pointer" data-action="refresh"><?php echo $lang->get('display_warning_icons');?></label>
                     <table id="table-users" class="table table-striped nowrap table-responsive-sm">
                         <thead>
                             <tr>

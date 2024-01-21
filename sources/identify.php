@@ -1384,12 +1384,12 @@ function finalizeAuthentication(
 ): void
 {
     $passwordManager = new PasswordManager();
-
+    
     // Migrate password if needed
     $hashedPassword = $passwordManager->migratePassword(
         $userInfo['pw'],
         $passwordClear,
-        $userInfo['id']
+        (int) $userInfo['id']
     );
     
     if (empty($userInfo['pw']) === true || $userInfo['special'] === 'user_added_from_ldap') {
@@ -1417,7 +1417,7 @@ function finalizeAuthentication(
             $userInfo['id']
         );
     }
-    error_log("finalizeAuthentication - hashedPassword: " . $hashedPassword. " | ".$passwordManager->verifyPassword($userInfo['pw'], $passwordClear));
+    if (WIP === true) error_log("finalizeAuthentication - hashedPassword: " . $hashedPassword. " | ".$passwordManager->verifyPassword($userInfo['pw'], $passwordClear));
 }
 
 /**
