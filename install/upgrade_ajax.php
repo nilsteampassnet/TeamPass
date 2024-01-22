@@ -567,8 +567,10 @@ if (isset($post_type)) {
                 WHERE pw LIKE '$2y$10$%'"
             );
             if (@mysqli_affected_rows($db_link) > 0) {
-                $txt .= '<span>Users password not encrypted with new library. Is a blocker to upgrade to 3.1.3&nbsp;&nbsp;' .
-                '<i class=\"fa-solid fa-circle-minus text-danger ml-2\"></i></span><br />';
+                $txt .= '<span>Users password not encrypted with new library. Is a blocker to upgrade to 3.1.3' .
+                '&nbsp;<a target=\"_blank\" href=\"https://github.com/nilsteampassnet/TeamPass/discussions/4020\">[Read more]</a>'.
+                '&nbsp;&nbsp;<i class=\"fa-solid fa-triangle-exclamation text-warning ml-2\"></i>'.
+                '</span><br />';
                 if (TP_VERSION === '3.1.3') $okTUsersPasswordsSymfony = false;
             }
 
