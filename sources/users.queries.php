@@ -194,7 +194,7 @@ if (null !== $post_type) {
 
                 // Prepare variables
                 $hashedPassword = $passwordManager->hashPassword($password);
-                if ($pwdlib->verifyPasswordHash($password, $hashedPassword) === false) {
+                if ($passwordManager->verifyPassword($hashedPassword, $password) === false) {
                     echo prepareExchangedData(
                         array(
                             'error' => true,
