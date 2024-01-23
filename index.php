@@ -789,13 +789,19 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                                 <div class="form-control mt-3 font-weight-light grey" id="dialog-admin-change-user-password-progress">
                                     <?php echo $lang->get('provide_current_psk_and_click_launch'); ?>
                                 </div>
+                                <div class="mt-3">                                    
+                                    <label>
+                                        <span class="mr-2 pointer fw-normal"><i class="fa-solid fa-eye mr-2 text-orange"></i><?php echo $lang->get('show_user_password');?></span>
+                                        <input type="checkbox" id="dialog-admin-change-user-password-do-show-password" class="pointer">
+                                    </label>
+                                </div>
                             </div>
                         </div>
                         <input type="hidden" id="admin_change_user_password_target_user" value="">
                         <input type="hidden" id="admin_change_user_encryption_code_target_user" value="">
                     </div>
                     <div class="card-footer">
-                        <button class="btn btn-primary" id="dialog-admin-change-user-password-do"><?php echo $lang->get('launch'); ?></button>
+                        <button class="btn btn-primary mr-3" id="dialog-admin-change-user-password-do"><?php echo $lang->get('launch'); ?></button>
                         <button class="btn btn-default float-right" id="dialog-admin-change-user-password-close"><?php echo $lang->get('close'); ?></button>
                     </div>
                 </div>

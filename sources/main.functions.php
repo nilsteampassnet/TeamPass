@@ -3774,6 +3774,7 @@ function handleUserKeys(
         array(
             'error' => false,
             'message' => '',
+            'user_password' => $generate_user_new_password === true ? $passwordClear : '',
         ),
         'encode'
     );

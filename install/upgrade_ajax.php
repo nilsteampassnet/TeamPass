@@ -527,6 +527,7 @@ if (isset($post_type)) {
                     $txt .= '<span>Encryption Key (SALT) ' .
                         ' could not be recovered from ' . $defuse_file . '&nbsp;&nbsp;' .
                         '<img src=\"images/minus-circle.png\"></span><br />';
+                        $okEncryptKey = false;
                 } else {
                     $okEncryptKey = true;
                     $txt .= '<span>Encryption Key (SALT) is available<i class=\"fa-solid fa-circle-check text-success ml-2\"></i>' .
@@ -545,19 +546,31 @@ if (isset($post_type)) {
             }
 
             // Is tasks manager empty?
-            @mysqli_query(
+            $tableProcessesExists = mysqli_query(
                 $db_link,
-                "SELECT * FROM `" . $pre . "processes`
-                WHERE finished_at = ''"
+                "SELECT * FROM information_schema.tables
+                WHERE table_schema = '$database'
+                AND table_name = '" . $pre . "processes'"
             );
-            if (@mysqli_affected_rows($db_link) > 0) {
-                $txt .= '<span>Tasks manager is not empty. Please empty it before starting next step.&nbsp;&nbsp;' .
-                        '<img src=\"images/minus-circle.png\"></span><br />';
-                $okTasksManager = false;
+            if ($tableProcessesExists === true) {
+                @mysqli_query(
+                    $db_link,
+                    "SELECT * FROM `" . $pre . "processes`
+                    WHERE finished_at = ''"
+                );
+                if (@mysqli_affected_rows($db_link) > 0) {
+                    $txt .= '<span>Tasks manager is not empty. Please empty it before starting next step.&nbsp;&nbsp;' .
+                            '<img src=\"images/minus-circle.png\"></span><br />';
+                    $okTasksManager = false;
+                } else {
+                    $okTasksManager = true;
+                    $txt .= '<span>Tasks manager is empty<i class=\"fa-solid fa-circle-check text-success ml-2\"></i>' .
+                        '</span><br />';
+                }
             } else {
                 $okTasksManager = true;
                 $txt .= '<span>Tasks manager is empty<i class=\"fa-solid fa-circle-check text-success ml-2\"></i>' .
-                    '</span><br />';
+                        '</span><br />';
             }
 
             // are users passwords encrypted with new Symfony library?

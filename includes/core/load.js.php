@@ -1146,7 +1146,22 @@ $request = SymfonyRequest::createFromGlobals();
                         if (typeof oTable !== 'undefined') {
                             oTable.ajax.reload();
                         }
-                        
+
+                        // Show user password to admin
+                        if ($('#dialog-admin-change-user-password-do-show-password').is(':checked') === true && data_next1.user_password !== '') {
+                            showModalDialogBox(
+                                '#warningModal',
+                                '<i class="fas fa-user-shield fa-lg warning mr-2"></i><?php echo $lang->get('caution'); ?>',
+                                '<?php echo $lang->get('user_password'); ?>&nbsp;<code class="ml-2">'+data_next1.user_password+'</code>',
+                                '',
+                                '<?php echo $lang->get('close'); ?>',
+                                false,
+                                false,
+                                false
+                            );
+                        }
+
+                        $('#dialog-admin-change-user-password-do-show-password').iCheck('uncheck');                        
                         $("#dialog-admin-change-user-password-progress").html('<?php echo $lang->get('generate_new_keys_end'); ?>');
                         // Show warning
                         // Enable buttons

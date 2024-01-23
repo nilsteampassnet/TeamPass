@@ -134,6 +134,9 @@ class ActiveDirectoryExtra extends BaseGroup
         try {
             Container::addConnection($connection);
             $user = User::find($userDN);
+            if (!$user) {
+                return false;
+            }
             $isEnabled = $user->isEnabled();
         } catch (\LdapRecord\Auth\BindException $e) {
             // Do nothing
