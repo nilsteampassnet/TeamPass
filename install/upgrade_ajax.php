@@ -512,27 +512,41 @@ if (isset($post_type)) {
             
 
             // check if 2.1.27 already installed
+            // Test non necessaire si on a deja fait l'upgrade
             if (defined(SECUREPATH) === true) {
-                $okEncryptKey = false;
-                $defuse_file = SECUREPATH . '/teampass-seckey.txt';
-                if (file_exists($defuse_file)) {
+                // Check if we are in version 3
+                if (@mysqli_fetch_row(
+                    mysqli_query(
+                        $db_link,
+                        'SELECT valeur FROM ' . $pre . "misc
+                        WHERE type='admin' AND intitule = 'enable_tasks_manager'"
+                    )
+                )) {
                     $okEncryptKey = true;
-                    $superGlobal->put('tp_defuse_installed', true, 'SESSION');
-                    $txt .= '<span>Defuse encryption key is defined<i class=\"fa-solid fa-circle-check text-success ml-2\"></i>' .
-                        '</span><br />';
-                }
-
-                if ($okEncryptKey === false) {
-                    $superGlobal->put('tp_defuse_installed', false, 'SESSION');
-                    $txt .= '<span>Encryption Key (SALT) ' .
-                        ' could not be recovered from ' . $defuse_file . '&nbsp;&nbsp;' .
-                        '<img src=\"images/minus-circle.png\"></span><br />';
-                        $okEncryptKey = false;
                 } else {
-                    $okEncryptKey = true;
-                    $txt .= '<span>Encryption Key (SALT) is available<i class=\"fa-solid fa-circle-check text-success ml-2\"></i>' .
-                        '</span><br />';
-                }
+                    // We are not in version 3
+                    $okEncryptKey = false;
+                    $defuse_file = SECUREPATH . '/teampass-seckey.txt';
+                    if (file_exists($defuse_file)) {
+                        $okEncryptKey = true;
+                        $superGlobal->put('tp_defuse_installed', true, 'SESSION');
+                        $txt .= '<span>Defuse encryption key is defined<i class=\"fa-solid fa-circle-check text-success ml-2\"></i>' .
+                            '</span><br />';
+                    }
+
+                    if ($okEncryptKey === false) {
+                        $superGlobal->put('tp_defuse_installed', false, 'SESSION');
+                        $txt .= '<span>Encryption Key (SALT) ' .
+                            ' could not be recovered from ' . $defuse_file . '&nbsp;&nbsp;' .
+                            '<img src=\"images/minus-circle.png\"></span><br />';
+                            $okEncryptKey = false;
+                    } else {
+                        $okEncryptKey = true;
+                        $txt .= '<span>Encryption Key (SALT) is available<i class=\"fa-solid fa-circle-check text-success ml-2\"></i>' .
+                            '</span><br />';
+                    }
+                }                
+                
             } else {
                 $okEncryptKey = true;
             }

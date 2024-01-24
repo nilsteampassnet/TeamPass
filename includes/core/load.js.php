@@ -121,7 +121,10 @@ $request = SymfonyRequest::createFromGlobals();
                     'user_id': store.get('teampassUser').user_id,
                     'fields' : 'special, auth_type, is_ready_for_usage, ongoing_process_id, otp_provided, keys_recovery_time',
                 }
-                console.log(data);
+                if (debugJavascript === true) {
+                    console.info('Sending request for:');
+                    console.log(data);
+                }
                 $.post(
                     "sources/main.queries.php", {
                         type: "get_user_info",
@@ -220,7 +223,9 @@ $request = SymfonyRequest::createFromGlobals();
                 );
             }).then(function() {
                 if (store.get('teampassSettings') === undefined || parseInt(store.get('teampassSettings').enable_tasks_manager) === 0) {
-                    console.log('Now sending emails')
+                    if (debugJavascript === true) {
+                        console.log('Now sending emails');
+                    }
                     setTimeout(
                         function() {
                             $.when(
@@ -313,7 +318,7 @@ $request = SymfonyRequest::createFromGlobals();
         store.get('teampassUser').special === 'ldap_password_has_changed_do_reencryption'
     ) {
         // Now we need to perform re-encryption due to LDAP password change
-        console.log('show password change')
+        if (debugJavascript === true) console.log('show password change');
         // HIde
         $('.content-header, .content, #button_do_sharekeys_reencryption').addClass('hidden');
         $('#warning-text-reencryption').html('<i class="icon fa-solid fa-info mr-2"></i><?php echo $lang->get('ldap_password_change_warning'); ?>');
@@ -458,9 +463,7 @@ $request = SymfonyRequest::createFromGlobals();
             if ($(this).data('name') === 'increase_session') {
                 showExtendSession();
             } else if ($(this).data('name') === 'sync-new-ldap-password') {
-                // This case permits to handle a case where user has changed his password in LDAP
-                console.log('show sync-new-ldap-password')
-                
+                // This case permits to handle a case where user has changed his password in LDAP                
                 if (debugJavascript === true) console.log('LDAP user password has to change his auth password')
                 // HIde
                 $('.content-header, .content').addClass('hidden');
@@ -534,7 +537,7 @@ $request = SymfonyRequest::createFromGlobals();
                 // ----
             } else if ($(this).data('name') === 'generate-new_keys') {
                 // User wants to generate new keys
-                console.log('show new keys generation');
+                if (debugJavascript === true) console.log('show new keys generation');
                 $('#warningModalButtonAction').attr('data-button-confirm', 'false');
 
                 // SHow modal
@@ -1002,7 +1005,7 @@ $request = SymfonyRequest::createFromGlobals();
         }
         if ($('#profile-current-password').val() !== "" && $('#profile-password').val() !== "" && $('#profile-password-confirm').val() !== "") {
             // Case where a user is changing his authentication password
-            console.log('Reencryption based upon user decision to change his auth password');
+            if (debugJavascript === true) console.log('Reencryption based upon user decision to change his auth password');
 
             // Show progress
             $('#dialog-user-change-password-progress').html('<b><?php echo $lang->get('please_wait'); ?></b><i class="fa-solid fa-spinner fa-pulse ml-3 text-primary"></i>');
@@ -1093,7 +1096,7 @@ $request = SymfonyRequest::createFromGlobals();
      */
     $(document).on('click', '#dialog-admin-change-user-password-do', function() {
         // When an admin changes the user auth password
-        console.log('Reencryption based upon admin decision to change user auth password');
+        if (debugJavascript === true) console.log('Reencryption based upon admin decision to change user auth password');
 
         // Show progress
         $('#dialog-admin-change-user-password-progress').html('<b><?php echo $lang->get('please_wait'); ?></b><i class="fa-solid fa-spinner fa-pulse ml-3 text-primary"></i>');
@@ -1195,7 +1198,7 @@ $request = SymfonyRequest::createFromGlobals();
             );
         } else if ($(this).data('action') === "send-user-pwd") {
             // Send email
-            console.log('Preparing for email sending');
+            if (debugJavascript === true) console.log('Preparing for email sending');
             
             // Prepare data
             var data = {
@@ -1274,7 +1277,7 @@ $request = SymfonyRequest::createFromGlobals();
      */
     $(document).on('click', '#dialog-user-temporary-code-do', function() {
         // Perform a renecryption based upon a temporary code
-        console.log('Reencryption based upon users temporary code');
+        if (debugJavascript === true) console.log('Reencryption based upon users temporary code');
 
         // Show progress
         $('#dialog-user-temporary-code-progress').html('<b><?php echo $lang->get('please_wait'); ?></b><i class="fa-solid fa-spinner fa-pulse ml-3 text-primary"></i>');
@@ -1396,7 +1399,7 @@ $request = SymfonyRequest::createFromGlobals();
             return false;
         }
         // Perform a renecryption based upon a temporary code
-        console.log('Building items keys database for new LDAP user');
+        if (debugJavascript === true) console.log('Building items keys database for new LDAP user');
 
         // Show progress
         $('#dialog-ldap-user-build-keys-database-progress').html('<b><?php echo $lang->get('please_wait'); ?></b><i class="fa-solid fa-spinner fa-pulse ml-3 text-primary"></i>');
@@ -1524,7 +1527,7 @@ $request = SymfonyRequest::createFromGlobals();
         // Start by changing the user password and send it by email
         if ($('#dialog-ldap-user-change-password-old').val() !== "" && $('#dialog-ldap-user-change-password-current').val() !== "") {
             // Case where a user is changing his authentication password
-            console.log('Reencryption based upon user auth password changed in LDAP');
+            if (debugJavascript === true) console.log('Reencryption based upon user auth password changed in LDAP');
 
             // Show progress
             $('#dialog-ldap-user-change-password-progress').html('<b><?php echo $lang->get('please_wait'); ?></b><i class="fa-solid fa-spinner fa-pulse ml-3 text-primary"></i>');
@@ -1613,7 +1616,10 @@ $request = SymfonyRequest::createFromGlobals();
         /*if (Number.isInteger(<?php echo $session->get('user-id'); ?>) === false) {
             return false;
         }*/
-        console.log('Key appel get_teampass_settings : <?php echo $session->get('key'); ?>');
+        if (debugJavascript === true) {
+            console.log('Key appel get_teampass_settings : <?php echo $session->get('key'); ?>');
+        }
+
         return $.post(
             "sources/main.queries.php", {
                 type: "get_teampass_settings",

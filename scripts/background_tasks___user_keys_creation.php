@@ -2,23 +2,27 @@
 /**
  * Teampass - a collaborative passwords manager.
  * ---
- * This library is distributed in the hope that it will be useful,
+ * This file is part of the TeamPass project.
+ * 
+ * TeamPass is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ * 
+ * TeamPass is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ * 
+ * Certain components of this file may be under different licenses. For
+ * details, see the `licenses` directory or individual file headers.
  * ---
- *
- * @project   Teampass
- * @version   
  * @file      background_tasks___user_keys_creation.php
- * ---
- *
  * @author    Nils Laumaillé (nils@teampass.net)
- *
  * @copyright 2009-2024 Teampass.net
- *
- * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
- * ---
- *
+ * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
 
@@ -80,6 +84,7 @@ $process_to_perform = DB::queryfirstrow(
 if (DB::count() > 0) {
     // handle tasks inside this process
     //echo "Handle task<br>";
+    if (WIP === true) error_log("Process in progress: ".$process_to_perform['increment_id']);
     handleTask(
         $process_to_perform['increment_id'],
         json_decode($process_to_perform['arguments'], true),
@@ -98,6 +103,7 @@ if (DB::count() > 0) {
     );
     //print_r($process_to_perform);
     if (DB::count() > 0) {
+        if (WIP === true) error_log("New process ta start: ".$process_to_perform['increment_id']);
         // update DB - started_at
         DB::update(
             prefixTable('processes'),
@@ -122,17 +128,58 @@ doLog('end', '', (isset($SETTINGS['enable_tasks_log']) === true ? (int) $SETTING
 
 // launch a new iterative process
 $process_to_perform = DB::queryfirstrow(
-    'SELECT *
+    'SELECT increment_id
     FROM ' . prefixTable('processes') . '
     WHERE is_in_progress = %i AND process_type = %s
     ORDER BY increment_id ASC',
     1,
     'create_user_keys'
 );
+if (WIP === true) error_log("Process to continue: ".$process_to_perform['increment_id']);
 if (DB::count() > 0) {
-    $process = new Symfony\Component\Process\Process([$phpBinaryPath, __FILE__]);
-    $process->start();
-    $process->wait();
+    if (WIP === true) {
+        // Do we have a server process ongoing (launched by Symfony)
+        $symfonyProcess = DB::queryfirstrow(
+            'SELECT increment_id
+            FROM ' . prefixTable('processes_server') . '
+            WHERE process_id = %i AND end_timestamp != ""',
+            $process_to_perform['increment_id']
+        );
+        error_log("Is Symfony process ongoing: ".DB::count());
+        $process = new Symfony\Component\Process\Process([$phpBinaryPath, __FILE__]);
+        $process->start();
+
+        DB::insert(
+            prefixTable('processes_server'),
+            array(
+                'end_timestamp' => '',
+                'pid' => $process->getPid(),
+                'start_timestamp' => time(),
+                'process_id' => $process_to_perform['increment_id'],
+                'starter'=> 'create_user_keys',
+            )
+        );
+        $newId = DB::insertId();
+
+        error_log("Continue process ".$process_to_perform['increment_id']." launched with Symfony process: ".$process->getPid());
+
+        $process->wait();
+
+        DB::update(
+            prefixTable('processes_server'),
+            array(
+                'end_timestamp' => time(),
+            ),
+            'increment_id = %i',
+            $newId
+        );
+    } else {
+        if (DB::count() === 0) {
+            $process = new Symfony\Component\Process\Process([$phpBinaryPath, __FILE__]);
+            $process->start();
+            $process->wait();
+        }
+    }
 }
 
 

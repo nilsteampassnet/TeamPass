@@ -194,7 +194,7 @@ if (null !== $post_type) {
                     $arrayColumns['path'] = $arrayPath;
                     $arrayColumns['parents'] = $arrayParents;
 
-                    if (isset(TP_PW_COMPLEXITY[$node_data['valeur']][1]) === true) {
+                    if (is_null($node_data) === false && isset(TP_PW_COMPLEXITY[$node_data['valeur']][1]) === true) {
                         $arrayColumns['folderComplexity'] = array(
                             'text' => TP_PW_COMPLEXITY[$node_data['valeur']][1],
                             'value' => TP_PW_COMPLEXITY[$node_data['valeur']][0],
@@ -204,7 +204,7 @@ if (null !== $post_type) {
                         $arrayColumns['folderComplexity'] = '';
                     }
 
-                    $arrayColumns['renewalPeriod'] = (int) $node_data['renewal_period'];
+                    $arrayColumns['renewalPeriod'] = (int) is_null($node_data) === false ? $node_data['renewal_period'] : 0;
 
                     //col7
                     $data7 = DB::queryFirstRow(
@@ -215,8 +215,8 @@ if (null !== $post_type) {
                     );
                     $arrayColumns['add_is_blocked'] = (int) $data7['bloquer_creation'];
                     $arrayColumns['edit_is_blocked'] = (int) $data7['bloquer_modification'];
-                    $arrayColumns['icon'] = (string) $node_data['fa_icon'];
-                    $arrayColumns['iconSelected'] = (string) $node_data['fa_icon_selected'];
+                    $arrayColumns['icon'] = (string) is_null($node_data) === false ? $node_data['fa_icon'] : '';
+                    $arrayColumns['iconSelected'] = (string) is_null($node_data) === false ? $node_data['fa_icon_selected'] : '';
 
                     array_push($arrData, $arrayColumns);
                 }
