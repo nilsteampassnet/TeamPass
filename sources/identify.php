@@ -1187,7 +1187,6 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
 
         // Is user enabled? Only ActiveDirectory
         if ($SETTINGS['ldap_type'] === 'ActiveDirectory' && isset($activeDirectoryExtra) === true && $activeDirectoryExtra instanceof ActiveDirectoryExtra) {
-            //require_once 'ldap.activedirectory.php';
             if ($activeDirectoryExtra->userIsEnabled((string) $userADInfos['dn'], $ldapConnection) === false) {
                 return [
                     'error' => true,

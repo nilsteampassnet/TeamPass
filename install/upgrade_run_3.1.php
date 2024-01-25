@@ -150,6 +150,13 @@ if (intval($tmp) === 0) {
     );
 }
 
+
+// Alter table users to ensure a start at 1000000
+mysqli_query(
+    $db_link,
+    'ALTER TABLE `' . $pre . 'users` AUTO_INCREMENT = 1000000;'
+);
+
 //---<END 3.1.1
 
 //---------------------------------------------------------------------

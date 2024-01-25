@@ -37,9 +37,7 @@ require_once __DIR__.'/../sources/main.functions.php';
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
-$lang = new Language(); 
-session_name('teampass_session');
-session_start();
+$lang = new Language();
 error_reporting(E_ERROR | E_PARSE);
 set_time_limit(600);
 $_SESSION['CPM'] = 1;

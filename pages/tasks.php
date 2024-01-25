@@ -300,7 +300,7 @@ catch (Exception $e) {
                                             <?php
                                             $task = isset($SETTINGS['rebuild_config_file_task']) === true ? explode(";", $SETTINGS['rebuild_config_file_task']) : [];
                                             ?>
-                                            <input type='text' disabled class='form-control form-control-sm' id='rebuild_config_file_task_parameter' value='<?php echo isset($task[0]) === true && empty($task[0]) === false ? $lang->get($task[0])." ".(isset($task[2]) === true ? strtolower($lang->get('day')).' '.$task[2].' ' : '').$lang->get('at')." ".$task[1] : $lang->get('not_defined') ?>'>
+                                            <input type='text' disabled class='form-control form-control-sm' id='rebuild_config_file_task_parameter' value='<?php echo (isset($task[0]) === true && empty($task[0]) === false && count($task) === 3) ? $lang->get($task[0])." ".(isset($task[2]) === true ? strtolower($lang->get('day')).' '.$task[2].' ' : '').$lang->get('at')." ".$task[1] : $lang->get('not_defined') ?>'>
                                             <input type='hidden' disabled class='form-control form-control-sm' id='rebuild_config_file_task_parameter_value' value='<?php echo isset($task[0]) === true ? $task[0].";".$task[1].(isset($task[2]) === true ? ';'.$task[2] : '') : ''; ?>'>
                                         </div>
                                         <div class='col-2'>
