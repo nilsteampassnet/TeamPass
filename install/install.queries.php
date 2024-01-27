@@ -696,6 +696,7 @@ $SETTINGS = array (';
                             array('admin', 'items_ops_job_frequency', '1'),
                             array('admin', 'enable_refresh_task_last_execution', '1'),
                             array('admin', 'ldap_group_objectclasses_attibute', 'top,groupofuniquenames'),
+                            array('admin', 'pwd_default_length', '14'),
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting

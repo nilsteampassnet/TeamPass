@@ -1163,5 +1163,6 @@ return array(
     'settings_ldap_group_objectclasses_attibute' => 'AD Group ObjectClasses attribute',
     'settings_ldap_group_objectclasses_attibute_tip' => 'Les objectClasses à utiliser pour rechercher les groupes. Plusieurs objectClasses sont séparés par une virgule(,). Exemples : groupOfNames,group outop,posixGroup',
     'display_warning_icons' => 'Display warning icons',
+    'password_length_by_default' => 'By default password length',
 
 );

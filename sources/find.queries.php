@@ -181,8 +181,8 @@ if (isset($orderParam) && is_array($orderParam)) {
 $search_criteria = '';
 $searchParam = $request->query->all()['search'] ?? null;
 if (isset($searchParam)) {
-    if (empty($searchParam) === false) {
-        $search_criteria = filter_var($searchParam, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+    if (empty($searchParam['value']) === false) {
+        $search_criteria = filter_var($searchParam['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
     }
 }
 

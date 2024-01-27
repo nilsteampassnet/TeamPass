@@ -116,13 +116,29 @@ if (null !== $request->query->get('pathIsFiles') && (int) $get_pathIsFiles === 1
         $session->get('user-id'),
         $get_fileid
     );
-    // Decrypt the file
-    // deepcode ignore PT: File and path are secured directly inside the function decryptFile()
-    $fileContent = decryptFile(
-        $file_info['file'],
-        $SETTINGS['path_to_upload_folder'],
-        decryptUserObjectKey($file_info['share_key'], $session->get('user-private_key'))
-    );
+    
+    // if encrypted
+    if (DB::count() > 0) {
+        // Decrypt the file
+        // deepcode ignore PT: File and path are secured directly inside the function decryptFile()
+        $fileContent = decryptFile(
+            $file_info['file'],
+            $SETTINGS['path_to_upload_folder'],
+            decryptUserObjectKey($file_info['share_key'], $session->get('user-private_key'))
+        );
+    } else {
+        // if not encrypted
+        $file_info = DB::queryfirstrow(
+            'SELECT f.id AS id, f.file AS file, f.name AS name, f.status AS status, f.extension AS extension
+            FROM ' . prefixTable('files') . ' AS f
+            WHERE f.id = %i',
+            $get_fileid
+        );
+        $safeFilePath = realpath($SETTINGS['path_to_upload_folder'] . '/' . $file_info['file']);
+        // deepcode ignore PT: The file is secured directly inside the function file_get_contents()
+        $fileContent = file_get_contents(filter_var($safeFilePath, FILTER_SANITIZE_URL));
+    }
+
     // Set the filename of the download
     $filename = basename($file_info['name'], '.' . $file_info['extension']);
     $filename = isBase64($filename) === true ? base64_decode($filename) : $filename;

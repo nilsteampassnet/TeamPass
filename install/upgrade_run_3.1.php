@@ -157,6 +157,16 @@ mysqli_query(
     'ALTER TABLE `' . $pre . 'users` AUTO_INCREMENT = 1000000;'
 );
 
+// Add new setting 'pwd_default_length'
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'pwd_default_length'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'pwd_default_length', '14')"
+    );
+}
+
+
 //---<END 3.1.1
 
 //---------------------------------------------------------------------

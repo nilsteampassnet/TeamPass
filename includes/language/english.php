@@ -28,6 +28,7 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'password_length_by_default' => 'By default password length',
     'display_warning_icons' => 'Display warning icons',
     'error_item_currently_being_updated' => 'Item is currently being updated and cannot be edited',
     'restore_in_progress' => 'Restore process is at',

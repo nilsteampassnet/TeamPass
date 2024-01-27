@@ -2679,6 +2679,7 @@ switch ($inputData['type']) {
         );
         if (DB::count() === 0 || empty($dataItem['pw']) === true) {
             // No share key found
+            $pwIsEmptyNormally = false;
             // Is this a personal and defuse password?
             if ((int) $dataItem['perso'] === 1 && substr($dataItem['pw'], 0, 3) === 'def') {
                 // Yes, then ask for decryption with old personal salt key
@@ -2696,6 +2697,7 @@ switch ($inputData['type']) {
                 $pw = '';
             }
         } else {
+            $pwIsEmptyNormal == true;
             //error_log('userKey: ' . print_r($userKey, true));
             $decryptedObject = decryptUserObjectKey($userKey['share_key'], $session->get('user-private_key'));
             // if null then we have an error.
@@ -2825,7 +2827,7 @@ switch ($inputData['type']) {
 
             $arrData['label'] = $dataItem['label'] === '' ? '' : htmlspecialchars_decode($dataItem['label'], ENT_QUOTES);
             $arrData['pw'] = $pw;
-            $arrData['pw_decrypt_info'] = empty($pw) === true ? 'error_no_sharekey_yet' : '';
+            $arrData['pw_decrypt_info'] = empty($pw) === true && $pwIsEmptyNormal === false ? 'error_no_sharekey_yet' : '';
             $arrData['email'] = empty($dataItem['email']) === true || $dataItem['email'] === null ? '' : $dataItem['email'];
             $arrData['url'] = empty($dataItem['url']) === true ? '' : '<a href="'.$dataItem['url'].'" target="_blank">'.$dataItem['url'].'</a>';
             $arrData['folder'] = $dataItem['id_tree'];
@@ -3207,23 +3209,8 @@ switch ($inputData['type']) {
                 $returnArray,
                 'encode'
             );
-        // Check if actual USER can see this ITEM
-        } elseif ((
-                (in_array($dataItem['id_tree'], $session->get('user-accessible_folders')) === true || (int) $session->get('user-admin') === 1)
-                && ((int) $dataItem['perso'] === 0 || ((int) $dataItem['perso'] === 1 && in_array($dataItem['id_tree'], $session->get('user-personal_folders')) === true))
-                && $restrictionActive === false) === true
-            || (isset($SETTINGS['anyone_can_modify']) === true && (int) $SETTINGS['anyone_can_modify'] === 1
-                && (int) (int) $dataItem['anyone_can_modify'] === 1
-                && (in_array($dataItem['id_tree'], $session->get('user-accessible_folders')) || (int) $session->get('user-admin') === 1)
-                && $restrictionActive === false) === true
-            || (null !== $inputData['folderId']
-                && isset($session__list_restricted_folders_for_items[$inputData['folderId']]) === true
-                && in_array($inputData['id'], $session__list_restricted_folders_for_items[$inputData['folderId']]) === true
-                && (int) $post_restricted === 1
-                && $user_in_restricted_list_of_item === true) === true
-            || (isset($SETTINGS['restricted_to_roles']) === true && (int) $SETTINGS['restricted_to_roles'] === 1
-                && $restrictionActive === false) === true
-        ) {
+        // Get all expected data about this ITEM
+        } else {
             // generate 2d key
             $session->set('user-key_tmp', bin2hex(GenerateCryptKey(16, false, true, true, false, true, $SETTINGS)));
 
@@ -3412,11 +3399,6 @@ switch ($inputData['type']) {
             $session->set('system-show_step2', false);
             
             // deepcode ignore ServerLeak: Data is encrypted before being sent
-            echo (string) prepareExchangedData(
-                $returnArray,
-                'encode'
-            );
-        } else {
             echo (string) prepareExchangedData(
                 $returnArray,
                 'encode'
@@ -7339,7 +7321,7 @@ switch ($inputData['type']) {
                 $edit = false;
                 $delete = false;
             }
-            error_log('access: ' . $access . ' - edit: ' . $edit . ' - delete: ' . $delete);
+            if (LOG_TO_SERVER === true) error_log('access: ' . $access . ' - edit: ' . $edit . ' - delete: ' . $delete);
         }
 
         $data = array(

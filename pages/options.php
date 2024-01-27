@@ -292,6 +292,15 @@ $zones = timezone_list();
                             </div>
                         </div>
 
+                        <div class='row mb-2 option' data-keywords="user ui setting login length password">
+                            <div class='col-10'>
+                                <?php echo $lang->get('password_length_by_default'); ?>
+                            </div>
+                            <div class='col-2'>
+                                <input type='number' class='form-control form-control-sm' id='pwd_default_length' value='<?php echo $SETTINGS['pwd_default_length'] ?? '14'; ?>'>
+                            </div>
+                        </div>
+
                         <div class='row mb-2 option' data-keywords="user ui setting time date">
                             <div class='col-4'>
                                 <?php echo $lang->get('timezone_selection'); ?>

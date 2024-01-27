@@ -26,14 +26,11 @@
  * @see       https://www.teampass.net
  */
 
-use voku\helper\AntiXSS;
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\SessionManager\SessionManager;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Process\Process;
 use TeampassClasses\Language\Language;
-use EZimuel\PHPSecureSession;
-use TeampassClasses\PerformChecks\PerformChecks;
-
 
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
@@ -141,11 +138,11 @@ $process_to_perform = DB::queryfirstrow(
     1
 );
 error_log("Process to continue: ".print_r($process_to_perform, true));
-if (DB::count() > 0) {
-    $process = new Symfony\Component\Process\Process([$phpBinaryPath, __FILE__]);
-    $process->start();
+    if (DB::count() > 0) {
+        $process = new Symfony\Component\Process\Process([$phpBinaryPath, __FILE__]);
+        $process->start();
 
-    if (WIP === true) {
+        if (WIP === true) {
         DB::insert(
             prefixTable('processes_server'),
             array(
@@ -155,12 +152,13 @@ if (DB::count() > 0) {
                 'process_id' => '',
             )
         );
-
+        
         error_log("Continue process ".$process_to_perform['increment_id']." launched with Symfony process: ".$process->getPid());
     }
     
     $process->wait();
 }
+
 
 /**
  * Handle the task

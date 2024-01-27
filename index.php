@@ -127,7 +127,7 @@ $session_name = $session->get('user-name');
 $session_lastname = $session->get('user-lastname');
 $session_user_manager = $session->get('user-manager');
 $session_initial_url = $session->get('user-initial_url');
-$session_nb_users_online = $session->get('nb_users_online');
+$session_nb_users_online = $session->get('system-nb_users_online');
 $session_auth_type = $session->get('user-auth_type');
 
 $server = [];
@@ -332,10 +332,12 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                                     <i class="fa-solid fa-spray-can-sparkles fa-fw mr-2"></i><?php echo $lang->get('generate_new_keys'); ?>
                                 </a>
 
+                                <!--
                                 <div class="dropdown-divider"></div>
                                 <a class="dropdown-item user-menu" href="#" data-name="generate-an-otp">
                                     <i class="fa-solid fa-qrcode fa-fw mr-2"></i><?php echo $lang->get('generate_an_otp'); ?>
                                 </a>
+                                -->
 
                                 <div class="dropdown-divider"></div>
                                 <a class="dropdown-item user-menu" href="#" data-name="logout">
