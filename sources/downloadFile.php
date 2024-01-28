@@ -134,6 +134,7 @@ if (null !== $request->query->get('pathIsFiles') && (int) $get_pathIsFiles === 1
             WHERE f.id = %i',
             $get_fileid
         );
+        $fileContent = '';
     }
 
     // Set the filename of the download
@@ -141,7 +142,11 @@ if (null !== $request->query->get('pathIsFiles') && (int) $get_pathIsFiles === 1
     $filename = isBase64($filename) === true ? base64_decode($filename) : $filename;
     $filename = $filename . '.' . $file_info['extension'];
     // Get the full path to the file to be downloaded
-    $filePath = $SETTINGS['path_to_upload_folder'] . '/' . TP_FILE_PREFIX . base64_decode($file_info['file']);
+    if (file_exists($SETTINGS['path_to_upload_folder'] . '/' .TP_FILE_PREFIX . $file_info['file'])) {
+        $filePath = $SETTINGS['path_to_upload_folder'] . '/' . TP_FILE_PREFIX . $file_info['file'];
+    } else {
+        $filePath = $SETTINGS['path_to_upload_folder'] . '/' . TP_FILE_PREFIX . base64_decode($file_info['file']);
+    }
     $filePath = realpath($filePath);
 
     if (WIP === true) error_log('downloadFile.php: filePath: ' . $filePath." - ");
@@ -155,8 +160,12 @@ if (null !== $request->query->get('pathIsFiles') && (int) $get_pathIsFiles === 1
         header('Pragma: public');
         header('Content-Length: ' . filesize($filePath));
         flush(); // Clear system output buffer
-        // deepcode ignore PT: File and path are secured directly inside the function decryptFile()
-        readfile($filePath); // Read the file from disk
+        if (empty($fileContent) === true) {
+            // deepcode ignore PT: File and path are secured directly inside the function decryptFile()
+            readfile($filePath); // Read the file from disk
+        } else {
+            exit(base64_decode($fileContent));
+        }
         exit;
     } else {
         echo 'ERROR_No_file_found';
