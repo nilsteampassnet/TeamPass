@@ -134,24 +134,32 @@ if (null !== $request->query->get('pathIsFiles') && (int) $get_pathIsFiles === 1
             WHERE f.id = %i',
             $get_fileid
         );
-        $safeFilePath = realpath($SETTINGS['path_to_upload_folder'] . '/' . $file_info['file']);
-        // deepcode ignore PT: The file is secured directly inside the function file_get_contents()
-        $fileContent = file_get_contents(filter_var($safeFilePath, FILTER_SANITIZE_URL));
     }
 
     // Set the filename of the download
-    $filename = basename($file_info['name'], '.' . $file_info['extension']);
+    $filename = basename($file_info['name'], '.'.$file_info['extension']);
     $filename = isBase64($filename) === true ? base64_decode($filename) : $filename;
+    $filename = $filename . '.' . $file_info['extension'];
+    // Get the full path to the file to be downloaded
+    $filePath = $SETTINGS['path_to_upload_folder'] . '/' . TP_FILE_PREFIX . base64_decode($file_info['file']);
+    $filePath = realpath($filePath);
 
+    if (WIP === true) error_log('downloadFile.php: filePath: ' . $filePath." - ");
 
-    // Output CSV-specific headers
-    header('Pragma: public');
-    header('Expires: 0');
-    header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
-    header('Cache-Control: private', false);
-    header('Content-Type: application/octet-stream');
-    header('Content-Disposition: attachment; filename="' . $filename . '.' . $file_info['extension'] . '";');
-    header('Content-Transfer-Encoding: binary');
-    // Stream the CSV data
-    exit(base64_decode($fileContent));
+    if ($filePath && is_readable($filePath) && strpos($filePath, realpath($SETTINGS['path_to_upload_folder'])) === 0) {
+        header('Content-Description: File Transfer');
+        header('Content-Type: application/octet-stream');
+        header('Content-Disposition: attachment; filename="' . basename($filename) . '"');
+        header('Expires: 0');
+        header('Cache-Control: must-revalidate');
+        header('Pragma: public');
+        header('Content-Length: ' . filesize($filePath));
+        flush(); // Clear system output buffer
+        // deepcode ignore PT: File and path are secured directly inside the function decryptFile()
+        readfile($filePath); // Read the file from disk
+        exit;
+    } else {
+        echo 'ERROR_No_file_found';
+        exit;
+    }
 }
