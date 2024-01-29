@@ -183,7 +183,10 @@ $searchParam = $request->query->all()['search'] ?? null;
 if (isset($searchParam)) {
     if (empty($searchParam['value']) === false) {
         $search_criteria = filter_var($searchParam['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+    } elseif (empty($searchParam) === false) {
+        $search_criteria = $searchParam;
     }
+
 }
 
 /*

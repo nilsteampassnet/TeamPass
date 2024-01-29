@@ -56,7 +56,7 @@ set_time_limit($SETTINGS['task_maximum_run_time']);
 
 $subtask = DB::queryfirstrow(
     'SELECT *
-    FROM ' . prefixTable('processes_tasks') . '
+    FROM ' . prefixTable('background_subtasks') . '
     WHERE process_id = %i AND finished_at IS NULL
     ORDER BY increment_id ASC',
     (int) $request->request->get('subTask')
@@ -64,7 +64,7 @@ $subtask = DB::queryfirstrow(
 
 list($taskArguments) = DB::queryFirstField(
     'SELECT arguments
-    FROM ' . prefixTable('processes') . '
+    FROM ' . prefixTable('background_tasks') . '
     WHERE increment_id = %i',
     $subtask['process_id']
 );

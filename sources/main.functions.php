@@ -1267,6 +1267,7 @@ function buildEmail(
         
         return '';
     } catch (Exception $e) {
+        error_log('Error sending email: ' . $e->getMessage());
         if (!$silent || (int) $SETTINGS['email_debug_level'] !== 0) {
             return json_encode([
                 'error' => true,
