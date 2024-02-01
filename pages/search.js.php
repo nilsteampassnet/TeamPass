@@ -250,7 +250,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                         (data.description === '' ? '' : '<div class="form-group">' + data.description + '</div>') +
                         '<div class="form-group">' +
                         '<label class="form-group-label"><?php echo $lang->get('pw'); ?>' +
-                        '<button type="button" class="btn btn-gray ml-2" id="btn-copy-pwd" data-id="' + data.id + '" data-label="' + data.label + '"><i class="fas fa-copy"></i></button>' +
+                        '<button type="button" class="btn btn-gray ml-2" id="btn-copy-pwd" data-id="' + data.item_key + '" data-label="' + data.label + '"><i class="fas fa-copy"></i></button>' +
                         '<button type="button" class="btn btn-gray btn-show-pwd ml-2" data-id="' + data.id + '"><i class="fas fa-eye pwd-show-spinner"></i></button>' +
                         '</label>' +
                         '<span id="pwd-show_' + data.id + '" class="unhide_masked_data ml-2" style="height: 20px;"><?php echo $var['hidden_asterisk']; ?></span>' +
@@ -310,7 +310,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                                 type: "POST",
                                 async: false,
                                 url: 'sources/items.queries.php',
-                                data: 'type=show_item_password&item_id=' + $('#btn-copy-pwd').data('id') +
+                                data: 'type=show_item_password&item_key=' + $('#btn-copy-pwd').data('id') +
                                     '&key=<?php echo $session->get('key'); ?>',
                                 dataType: "",
                                 success: function(data) {
@@ -325,6 +325,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                                         );
                                         return false;
                                     }
+                                    console.log(data)
                                     if (data.error === true) {
                                         error = true;
                                     } else {

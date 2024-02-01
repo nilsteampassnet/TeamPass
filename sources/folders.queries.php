@@ -1133,7 +1133,7 @@ if (null !== $post_type) {
                     array(
                         'type' => 'complex',
                         'intitule' => $newFolderId,
-                        'valeur' => $nodeComplexity['valeur'],
+                        'valeur' => is_null($nodeComplexity['valeur']) === false ? $nodeComplexity['valeur'] : 0,
                     )
                 );
 

@@ -85,6 +85,7 @@ if (DB::count() > 0) {
 function handleTask2($taskId) {
     // Récupérer les sous-tâches de la tâche
     $subTasks = getSubTasks($taskId);
+    
     foreach ($subTasks as $subTask) {
         error_log('DEBUT: '.print_r($subTask, true));
         // Continue tant que la sous-tâche n'est pas terminée
@@ -92,9 +93,9 @@ function handleTask2($taskId) {
             // Vérifie si le nombre de processus en cours est inférieur à 5
             if (countActiveSymfonyProcesses() < 5) {
                 // Paramètres de la sous-tâche
-                $taskParams = json_decode($subTask['task'], true);
+                $subTaskParams = json_decode($subTask['task'], true);
 
-                error_log('Subtask in progress: '.$subTask['increment_id']." - ".print_r($taskParams,true));
+                error_log('Subtask in progress: '.$subTask['increment_id']." - ".print_r($subTaskParams,true));
                 
                 // Lance la sous-tâche avec les paramètres actuels
                 $process = new Process(['php', __DIR__.'background_tasks___items_handler_subtask.php1', $subTask['increment_id']]);
@@ -105,8 +106,9 @@ function handleTask2($taskId) {
                 $process->wait();
 
                 // Mise à jour pour la prochaine itération
-                $taskParams['index'] += $taskParams['nb'];
-                updateSubTask($subTask['id'], $taskParams);
+                $subTaskParams['index'] += $subTaskParams['nb'];
+                updateSubTask($subTask['id'], $subTaskParams);
+                updateTask($taskId);
 
                 // Recharger les informations de la sous-tâche pour vérifier si elle est terminée
                 $subTask = reloadSubTask($subTask['increment_id']);
@@ -205,6 +207,13 @@ function reloadSubTask($subTaskId) {
     return $subTask;
 }
 
+function updateTask($taskId) {
+    // Mettre à jour la tâche dans la base de données
+    DB::update(prefixTable('background_tasks'), [
+        'updated_at' => time(), // Mettre à jour la date de dernière modification
+        'is_in_progress' => 1, // Mettre à jour le statut de la tâche
+    ], 'increment_id=%i', $taskId);
+}
 
 /**
  * Marquer une sous-tâche comme terminée

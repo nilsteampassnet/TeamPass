@@ -4792,7 +4792,14 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
                     // Uncrypt the pwd
                     if (data.pw !== undefined) {
-                        data.pw = atob(data.pw).utf8Decode();
+                        data.pw = atob(data.pw)
+                            .replace(/&lt;/g, '<')
+                            .replace(/&gt;/g, '>')
+                            .replace(/&#35;/g, '#')
+                            .replace(/&amp;/g, '&')
+                            .replace(/&quot;/g, '"')
+                            .replace(/&apos;/g, "'")
+                            .utf8Decode();
                     }
 
                     // Update hidden variables

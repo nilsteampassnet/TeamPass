@@ -4515,7 +4515,7 @@ switch ($inputData['type']) {
             $session->get('user-id'),
             $inputData['itemKey']
         );
-
+error_log("dataItem: ".$inputData['itemKey']);
         // Uncrypt PW
         if (DB::count() === 0) {
             // No share key found
