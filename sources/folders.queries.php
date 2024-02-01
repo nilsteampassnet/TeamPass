@@ -957,17 +957,26 @@ if (null !== $post_type) {
                                 );
                                 if (DB::count()>0) {
                                     // remove id from folders
-                                    $a_folders = json_decode($cache_tree['folders'], true);
-                                    $key = array_search($item['id'], $a_folders, true);
-                                    if ($key !== false) {
-                                        unset($a_folders[$key]);
-                                    }
-                                    // remove id from visible_folders
-                                    $a_visible_folders = json_decode($cache_tree['visible_folders'], true);
-                                    foreach ($a_visible_folders as $i => $v) {
-                                        if ($v['id'] == $item['id']) {
-                                            unset($a_visible_folders[$i]);
+                                    if (empty($cache_tree['folders']) === false && is_null($cache_tree['folders']) === false) {
+                                        $a_folders = json_decode($cache_tree['folders'], true);
+                                        $key = array_search($item['id'], $a_folders, true);
+                                        if ($key !== false) {
+                                            unset($a_folders[$key]);
                                         }
+                                    } else {
+                                        $a_folders = [];
+                                    }
+
+                                    // remove id from visible_folders
+                                    if (empty($cache_tree['visible_folders']) === false && is_null($cache_tree['visible_folders']) === false) {
+                                        $a_visible_folders = json_decode($cache_tree['visible_folders'], true);
+                                        foreach ($a_visible_folders as $i => $v) {
+                                            if ($v['id'] == $item['id']) {
+                                                unset($a_visible_folders[$i]);
+                                            }
+                                        }
+                                    } else {
+                                        $a_visible_folders = [];
                                     }
 
                                     DB::update(

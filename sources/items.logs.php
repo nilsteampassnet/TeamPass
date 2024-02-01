@@ -125,8 +125,8 @@ if (null !== $post_type) {
                 $post_data,
                 'decode'
             );
-
-            if (is_array($dataReceived) === true && array_key_exists('id', $dataReceived) === true && null !== filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT)) {
+            
+            if (is_array($dataReceived) === true && count($dataReceived) > 0 && array_key_exists('id', $dataReceived) === true && null !== filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT)) {
                 logItems(
                     $SETTINGS,
                     (int) filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT),
