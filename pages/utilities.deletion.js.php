@@ -81,6 +81,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
 <script type='text/javascript'>
     //<![CDATA[
+    var debugJavascript = false;
 
 
     // Prepare tooltips
@@ -325,8 +326,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             'folders': folders,
             'items': items,
         }
-        console.log("Selection action: "+ action)
-        console.log(data);
+        if (debugJavascript === true) {
+            console.log("Selection action: " + action);
+            console.log(data);
+        }
         // Launch action
         $.post(
             'sources/utilities.queries.php', {
@@ -337,7 +340,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             function(data) {
                 //decrypt data
                 data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>');
-
+                if (debugJavascript === true) console.log(data);
                 if (data.error === true) {
                     // ERROR
                     toastr.remove();

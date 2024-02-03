@@ -376,30 +376,8 @@ if (null !== $post_type) {
                     'f' . $folderId
                 );
                 if ((int) $data['valeur'] !== 0) {
-                    $folderData = explode(', ', $data['valeur']);
-                    //insert deleted folder
-                    DB::insert(
-                        prefixTable('nested_tree'),
-                        array(
-                            'id' => $folderData[0],
-                            'parent_id' => $folderData[1],
-                            'title' => $folderData[2],
-                            'nleft' => $folderData[3],
-                            'nright' => $folderData[4],
-                            'nlevel' => $folderData[5],
-                            'bloquer_creation' => $folderData[6],
-                            'bloquer_modification' => $folderData[7],
-                            'personal_folder' => $folderData[8],
-                            'renewal_period' => $folderData[9],
-                            'categories' => '',
-                        )
-                    );
-                    // Delete folder
-                    DB::delete(
-                        prefixTable('nested_tree'),
-                        'id = %s',
-                        $folderData[0]
-                    );
+                    $exploded = explode(',', $data['valeur']);
+                    $folderData = array_map('trim', $exploded);
 
                     //delete log
                     DB::delete(
@@ -427,16 +405,64 @@ if (null !== $post_type) {
 
                     // log
                     foreach ($items as $item) {
+                        // delete logs
                         DB::delete(
                             prefixTable('log_items'),
                             'id_item = %i',
+                            $item['id']
+                        );
+
+                        // Delete all fields
+                        $fields = DB::query(
+                            'SELECT id
+                            FROM ' . prefixTable('categories_items') . '
+                            WHERE item_id = %i',
+                            $folderData[0]
+                        );
+                        foreach ($fields as $field) {
+                            DB::delete(
+                                prefixTable('sharekeys_fields'),
+                                'object_id = %i',
+                                $field['id']
+                            );
+                        }
+                        DB::delete(
+                            prefixTable('categories_items'),
+                            'item_id = %i',
+                            $item['id']
+                        );
+                        
+                        // Delete all files
+                        $files = DB::query(
+                            'SELECT id
+                            FROM ' . prefixTable('files') . '
+                            WHERE id_item = %i',
+                            $folderData[0]
+                        );
+                        foreach ($files as $file) {
+                            DB::delete(
+                                prefixTable('sharekeys_files'),
+                                'object_id = %i',
+                                $file['id']
+                            );
+                        }
+                        DB::delete(
+                            prefixTable('files'),
+                            'id_item = %i',
+                            $item['id']
+                        );
+
+                        // delete all sharekeys
+                        DB::delete(
+                            prefixTable('sharekeys_items'),
+                            'object_id = %i',
                             $item['id']
                         );
                     }
                 }
             }
 
-            //restore ITEMS
+            //delete ITEMS
             foreach ($post_items as $itemId) {
                 DB::delete(
                     prefixTable('items'),
@@ -492,6 +518,11 @@ if (null !== $post_type) {
                         $field
                     );
                 }
+                DB::delete(
+                    prefixTable('files'),
+                    'id_item = %i',
+                    $itemId
+                );
             }
 
             updateCacheTable('reload', NULL);
