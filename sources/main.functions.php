@@ -1680,7 +1680,7 @@ function logItems(
             'action=' . str_replace('at_', '', $action) .
                 ' attribute=' . str_replace('at_', '', $attribute[0]) .
                 ' itemno=' . $item_id .
-                ' user=' . is_null($login) === true ? '' : addslashes((string) $login) .
+                ' user=' . (is_null($login) === true ? '' : addslashes((string) $login)) .
                 ' itemname="' . addslashes($item_label) . '"',
             $SETTINGS['syslog_host'],
             $SETTINGS['syslog_port'],
