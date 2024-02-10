@@ -471,7 +471,7 @@ if (null !== $post_type) {
                 // Delete any process related to user
                 $processes = DB::query(
                     'SELECT increment_id
-                    FROM ' . prefixTable('processes') . '
+                    FROM ' . prefixTable('background_tasks') . '
                     WHERE JSON_EXTRACT(arguments, "$.new_user_id") = %i',
                     $post_id
                 );
@@ -479,8 +479,8 @@ if (null !== $post_type) {
                 foreach ($processes as $process) {
                     // Delete task
                     DB::delete(
-                        prefixTable('processes_tasks'),
-                        'process_id = %i',
+                        prefixTable('background_tasks'),
+                        'task_id = %i',
                         $process['increment_id']
                     );
                     $process_id = $process['increment_id'];
@@ -488,7 +488,7 @@ if (null !== $post_type) {
                 // Delete main process
                 if ($process_id > -1) {
                     DB::delete(
-                        prefixTable('processes'),
+                        prefixTable('background_tasks'),
                         'increment_id = %i',
                         $process_id
                     );
@@ -3103,7 +3103,7 @@ if (null !== $post_type) {
 
             // Create process
             DB::insert(
-                prefixTable('processes'),
+                prefixTable('background_tasks'),
                 array(
                     'created_at' => time(),
                     'process_type' => 'create_user_keys',
@@ -3125,9 +3125,9 @@ if (null !== $post_type) {
 
             // Create tasks
             DB::insert(
-                prefixTable('processes_tasks'),
+                prefixTable('background_subtasks'),
                 array(
-                    'process_id' => $processId,
+                    'task_id' => $processId,
                     'created_at' => time(),
                     'task' => json_encode([
                         'step' => 'step0',
@@ -3138,9 +3138,9 @@ if (null !== $post_type) {
             );
 
             DB::insert(
-                prefixTable('processes_tasks'),
+                prefixTable('background_subtasks'),
                 array(
-                    'process_id' => $processId,
+                    'task_id' => $processId,
                     'created_at' => time(),
                     'task' => json_encode([
                         'step' => 'step10',
@@ -3151,9 +3151,9 @@ if (null !== $post_type) {
             );
 
             DB::insert(
-                prefixTable('processes_tasks'),
+                prefixTable('background_subtasks'),
                 array(
-                    'process_id' => $processId,
+                    'task_id' => $processId,
                     'created_at' => time(),
                     'task' => json_encode([
                         'step' => 'step20',
@@ -3164,9 +3164,9 @@ if (null !== $post_type) {
             );
 
             DB::insert(
-                prefixTable('processes_tasks'),
+                prefixTable('background_subtasks'),
                 array(
-                    'process_id' => $processId,
+                    'task_id' => $processId,
                     'created_at' => time(),
                     'task' => json_encode([
                         'step' => 'step30',
@@ -3177,9 +3177,9 @@ if (null !== $post_type) {
             );
 
             DB::insert(
-                prefixTable('processes_tasks'),
+                prefixTable('background_subtasks'),
                 array(
-                    'process_id' => $processId,
+                    'task_id' => $processId,
                     'created_at' => time(),
                     'task' => json_encode([
                         'step' => 'step40',
@@ -3190,9 +3190,9 @@ if (null !== $post_type) {
             );
 
             DB::insert(
-                prefixTable('processes_tasks'),
+                prefixTable('background_subtasks'),
                 array(
-                    'process_id' => $processId,
+                    'task_id' => $processId,
                     'created_at' => time(),
                     'task' => json_encode([
                         'step' => 'step50',
@@ -3203,9 +3203,9 @@ if (null !== $post_type) {
             );
 
             DB::insert(
-                prefixTable('processes_tasks'),
+                prefixTable('background_subtasks'),
                 array(
-                    'process_id' => $processId,
+                    'task_id' => $processId,
                     'created_at' => time(),
                     'task' => json_encode([
                         'step' => 'step60',
@@ -3369,7 +3369,7 @@ if (null !== $post_type) {
             $processesProgress = DB::query(
                 'SELECT u.ongoing_process_id, pt.task, pt.updated_at, pt.finished_at, pt.is_in_progress
                 FROM ' . prefixTable('users') . ' AS u
-                INNER JOIN ' . prefixTable('processes_tasks') . ' AS pt ON (pt.process_id = u.ongoing_process_id)
+                INNER JOIN ' . prefixTable('background_subtasks') . ' AS pt ON (pt.task_id = u.ongoing_process_id)
                 WHERE u.id = %i',
                 $user_id
             );

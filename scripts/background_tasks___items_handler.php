@@ -78,7 +78,7 @@ $logID = doLog('start', 'item_keys', (isset($SETTINGS['enable_tasks_log']) === t
 DB::debugmode(false);
 $process_to_perform = DB::queryfirstrow(
     'SELECT *
-    FROM ' . prefixTable('processes') . '
+    FROM ' . prefixTable('background_tasks') . '
     WHERE is_in_progress = %i AND process_type IN ("item_copy", "new_item", "update_item", "item_update_create_keys")
     ORDER BY increment_id ASC',
     1
@@ -96,7 +96,7 @@ if (DB::count() > 0) {
     // search for next process to handle
     $process_to_perform = DB::queryfirstrow(
         'SELECT *
-        FROM ' . prefixTable('processes') . '
+        FROM ' . prefixTable('background_tasks') . '
         WHERE is_in_progress = %i AND finished_at = "" AND process_type IN ("item_copy", "new_item", "update_item", "item_update_create_keys")
         ORDER BY increment_id ASC',
         0
@@ -106,7 +106,7 @@ if (DB::count() > 0) {
         if (WIP === true) error_log("New process ta start: ".$process_to_perform['increment_id']);
         // update DB - started_at
         DB::update(
-            prefixTable('processes'),
+            prefixTable('background_tasks'),
             array(
                 'started_at' => time(),
             ),
@@ -132,7 +132,7 @@ doLog('end', '', (isset($SETTINGS['enable_tasks_log']) === true ? (int) $SETTING
 // launch a new iterative process
 $process_to_perform = DB::queryfirstrow(
     'SELECT *
-    FROM ' . prefixTable('processes') . '
+    FROM ' . prefixTable('background_tasks') . '
     WHERE is_in_progress = %i AND process_type IN ("item_copy", "new_item", "update_item", "item_update_create_keys")
     ORDER BY increment_id DESC',
     1
@@ -174,8 +174,8 @@ function handleTask(int $processId, array $ProcessArguments, array $SETTINGS, in
     provideLog('[PROCESS][#'. $processId.'][START]', $SETTINGS);
     $task_to_perform = DB::queryfirstrow(
         'SELECT *
-        FROM ' . prefixTable('processes_tasks') . '
-        WHERE process_id = %i AND finished_at IS NULL
+        FROM ' . prefixTable('background_subtasks') . '
+        WHERE task_id = %i AND finished_at IS NULL
         ORDER BY increment_id ASC',
         $processId
     );
@@ -193,7 +193,7 @@ function handleTask(int $processId, array $ProcessArguments, array $SETTINGS, in
 
             // flag as in progress
             DB::update(
-                prefixTable('processes'),
+                prefixTable('background_tasks'),
                 array(
                     'updated_at' => time(),
                     'is_in_progress' => 1,
@@ -205,7 +205,7 @@ function handleTask(int $processId, array $ProcessArguments, array $SETTINGS, in
             // flag task as on going
             if ((int) $args['index'] === 0) {
                 DB::update(
-                    prefixTable('processes_tasks'),
+                    prefixTable('background_subtasks'),
                     array(
                         'is_in_progress' => 1,
                     ),
@@ -216,7 +216,7 @@ function handleTask(int $processId, array $ProcessArguments, array $SETTINGS, in
 
             // flag sub task in progress as on going
             DB::update(
-                prefixTable('processes_tasks'),
+                prefixTable('background_subtasks'),
                 array(
                     'sub_task_in_progress' => 1,
                 ),
@@ -229,7 +229,7 @@ function handleTask(int $processId, array $ProcessArguments, array $SETTINGS, in
 
             // update the task status
             DB::update(
-                prefixTable('processes_tasks'),
+                prefixTable('background_subtasks'),
                 array(
                     'sub_task_in_progress' => 0,    // flag sub task is no more in prgoress
                     'task' => json_encode(["status" => "Done"]),
@@ -246,8 +246,8 @@ function handleTask(int $processId, array $ProcessArguments, array $SETTINGS, in
             // are all tasks done?
             DB::query(
                 'SELECT *
-                FROM ' . prefixTable('processes_tasks') . '
-                WHERE process_id = %i AND finished_at IS NULL',
+                FROM ' . prefixTable('background_subtasks') . '
+                WHERE task_id = %i AND finished_at IS NULL',
                 $processId
             );
             if (DB::count() === 0) {
@@ -255,7 +255,7 @@ function handleTask(int $processId, array $ProcessArguments, array $SETTINGS, in
                 provideLog('[PROCESS]['.$processId.'][FINISHED]', $SETTINGS);
                 DB::debugmode(false);
                 DB::update(
-                    prefixTable('processes'),
+                    prefixTable('background_tasks'),
                     array(
                         'finished_at' => time(),
                         'is_in_progress' => -1,
@@ -283,7 +283,7 @@ function handleTask(int $processId, array $ProcessArguments, array $SETTINGS, in
         // no more task to perform
         provideLog('[PROCESS]['.$processId.'][FINISHED]', $SETTINGS);
         DB::update(
-            prefixTable('processes'),
+            prefixTable('background_tasks'),
             array(
                 'finished_at' => time(),
                 'is_in_progress' => -1,

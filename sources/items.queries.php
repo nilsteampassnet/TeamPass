@@ -2990,7 +2990,7 @@ switch ($inputData['type']) {
             // Evaluate if item is ready for all users
             $rows_tmp = DB::queryfirstrow(
                 'SELECT finished_at
-                FROM ' . prefixTable('processes') . '
+                FROM ' . prefixTable('background_tasks') . '
                 WHERE item_id = %i',
                 $inputData['id']
             );
@@ -4601,7 +4601,7 @@ switch ($inputData['type']) {
                         // Get process Id
                         $processDetail = DB::queryFirstRow(
                             'SELECT increment_id
-                            FROM ' . prefixTable('processes') . '
+                            FROM ' . prefixTable('background_tasks') . '
                             WHERE item_id = %i AND finished_at = ""',
                             $inputData['itemId']
                         );
@@ -4619,7 +4619,7 @@ switch ($inputData['type']) {
                     // get if existing process ongoing for this item
                     $dataItemProcessOngoing = DB::queryFirstRow(
                         'SELECT JSON_EXTRACT(arguments, "$.all_users_except_id") AS all_users_except_id
-                        FROM ' . prefixTable('processes') . '
+                        FROM ' . prefixTable('background_tasks') . '
                         WHERE item_id = %i AND finished_at = ""
                         ORDER BY increment_id DESC',
                         $inputData['itemId']
@@ -7236,7 +7236,7 @@ switch ($inputData['type']) {
             // Get if existing process ongoing for this item
             $dataItemProcessOngoing = DB::queryFirstRow(
                 'SELECT JSON_EXTRACT(p.arguments, "$.all_users_except_id") AS all_users_except_id
-                FROM ' . prefixTable('processes') . ' AS p
+                FROM ' . prefixTable('background_tasks') . ' AS p
                 INNER JOIN ' . prefixTable('items_edition') . ' AS i ON (i.item_id = p.item_id)
                 WHERE p.item_id = %i AND p.finished_at = ""
                 ORDER BY p.increment_id DESC',

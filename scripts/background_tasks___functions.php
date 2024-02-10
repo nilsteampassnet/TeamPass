@@ -49,12 +49,14 @@ header('Cache-Control: no-cache, must-revalidate');
  */
 function doLog(string $status, string $job, int $enable_tasks_log = 0, int $id = null, int $treated_objects = null): int
 {
+    clearTasksLog();
+
     // is log enabled?
     if ((int) $enable_tasks_log === 1) {
         // is log start?
         if (is_null($id) === true) {
             DB::insert(
-                prefixTable('processes_logs'),
+                prefixTable('background_tasks_logs'),
                 array(
                     'created_at' => time(),
                     'job' => $job,
@@ -64,15 +66,9 @@ function doLog(string $status, string $job, int $enable_tasks_log = 0, int $id =
             return DB::insertId();
         }
 
-        // Read start_time
-        /*$start_time = DB::queryFirstField(
-            'SELECT created_at FROM '.prefixTable('processes_logs').' WHERE increment_id = %i',
-            $id
-        );*/
-        
         // Case is an update
         DB::update(
-            prefixTable('processes_logs'),
+            prefixTable('background_tasks_logs'),
             array(
                 'status' => $status,
                 'finished_at' => time(),
@@ -84,6 +80,18 @@ function doLog(string $status, string $job, int $enable_tasks_log = 0, int $id =
     }
     
     return -1;
+}
+
+function clearTasksLog()
+{
+    global $SETTINGS;
+    $retentionDays = isset($SETTINGS['tasks_log_retention_delay']) === true ? $SETTINGS['tasks_log_retention_delay'] : 30;
+    $timestamp = strtotime('-'.$retentionDays.' days');
+    DB::delete(
+        prefixTable('background_tasks_logs'),
+        'created_at < %s',
+        $timestamp
+    );
 }
 
 /**
@@ -153,4 +161,23 @@ function performVisibleFoldersHtmlUpdate (int $user_id)
         'increment_id = %i',
         (int) $cache_tree['increment_id']
     );
+}
+
+
+function subTaskStatus($taskId)
+{
+    $subTasks = DB::query(
+        'SELECT * FROM ' . prefixTable('background_subtasks') . ' WHERE task_id = %i',
+        $taskId
+    );
+
+    $status = 0;
+    foreach ($subTasks as $subTask) {
+        if ($subTask['is_in_progress'] === 1) {
+            $status = 1;
+            break;
+        }
+    }
+
+    return $status;
 }

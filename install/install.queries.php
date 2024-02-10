@@ -697,6 +697,7 @@ $SETTINGS = array (';
                             array('admin', 'enable_refresh_task_last_execution', '1'),
                             array('admin', 'ldap_group_objectclasses_attibute', 'top,groupofuniquenames'),
                             array('admin', 'pwd_default_length', '14'),
+                            array('admin', 'tasks_log_retention_delay', '30'),
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting
@@ -1253,17 +1254,17 @@ $SETTINGS = array (';
                             PRIMARY KEY (`increment_id`)
                             ) CHARSET=utf8;"
                         );
-                    } else if ($task === 'processes_tasks') {
+                    } else if ($task === 'background_subtasks') {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
-                            "CREATE TABLE IF NOT EXISTS `" . $var['tbl_prefix'] . "processes_tasks` (
+                            "CREATE TABLE IF NOT EXISTS `" . $var['tbl_prefix'] . "background_subtasks` (
                             `increment_id` int(12) NOT NULL AUTO_INCREMENT,
-                            `process_id` int(12) NOT NULL,
+                            `task_id` int(12) NOT NULL,
                             `created_at` varchar(50) NOT NULL,
                             `updated_at` varchar(50) DEFAULT NULL,
                             `finished_at` varchar(50) DEFAULT NULL,
                             `task` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`task`)),
-                            `system_process_id` int(12) DEFAULT NULL,
+                            `process_id` varchar(100) NULL DEFAULT NULL,
                             `is_in_progress` tinyint(1) NOT NULL DEFAULT 0,
                             `sub_task_in_progress` tinyint(1) NOT NULL DEFAULT 0,
                             PRIMARY KEY (`increment_id`)
@@ -1272,12 +1273,12 @@ $SETTINGS = array (';
                         $mysqli_result = mysqli_query(
                             $dbTmp,
                             'ALTER TABLE `' . $var['tbl_prefix'] . 'processes_tasks`
-                                ADD KEY `process_id_idx` (`process_id`);'
+                                ADD KEY `task_id_idx` (`task_id`);'
                         );
-                    } else if ($task === 'processes') {
+                    } else if ($task === 'background_tasks') {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
-                            "CREATE TABLE IF NOT EXISTS `" . $var['tbl_prefix'] . "processes` (
+                            "CREATE TABLE IF NOT EXISTS `" . $var['tbl_prefix'] . "background_tasks` (
                             `increment_id` int(12) NOT NULL AUTO_INCREMENT,
                             `created_at` varchar(50) NOT NULL,
                             `started_at` varchar(50) DEFAULT NULL,
@@ -1292,10 +1293,10 @@ $SETTINGS = array (';
                             PRIMARY KEY (`increment_id`)
                             ) CHARSET=utf8;"
                         );
-                    } else if ($task === 'processes_logs') {
+                    } else if ($task === 'background_tasks_logs') {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
-                            "CREATE TABLE IF NOT EXISTS `" . $var['tbl_prefix'] . "processes_logs` (
+                            "CREATE TABLE IF NOT EXISTS `" . $var['tbl_prefix'] . "background_tasks_logs` (
                             `increment_id` int(12) NOT NULL AUTO_INCREMENT,
                             `created_at` varchar(20) NOT NULL,
                             `job` varchar(50) NOT NULL,

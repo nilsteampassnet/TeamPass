@@ -28,6 +28,9 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'tasks_log_retention_delay_in_days' => 'Tasks log retention delay (in days)',
+    'tasks_log_table_size' => 'Tasks log table size',
+    'progress' => 'Progress',
     'password_length_by_default' => 'By default password length',
     'display_warning_icons' => 'Display warning icons',
     'error_item_currently_being_updated' => 'Item is currently being updated and cannot be edited',

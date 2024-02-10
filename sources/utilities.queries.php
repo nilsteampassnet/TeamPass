@@ -721,126 +721,6 @@ if (null !== $post_type) {
 
             break;
 
-        //CASE show process detail
-        case 'show_process_detail':
-            // Check KEY
-            if ($post_key !== $session->get('key')) {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => $lang->get('key_is_not_correct'),
-                    ),
-                    'encode'
-                );
-                break;
-            } elseif ($session->get('user-read_only') === 1) {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => $lang->get('error_not_allowed_to'),
-                    ),
-                    'encode'
-                );
-                break;
-            }
-
-            $post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
-
-            $tasks = DB::query(
-                'SELECT *
-                FROM ' . prefixTable('processes_tasks') . '
-                WHERE process_id = %i',
-                $post_id
-            );
-
-            // Get some values
-            DB::query(
-                'SELECT id
-                FROM ' . prefixTable('items') . '
-                WHERE perso = 0'
-            );
-            $items_number = DB::count();
-
-            DB::query(
-                'SELECT increment_id
-                FROM ' . prefixTable('log_items') . '
-                WHERE raison LIKE "at_pw :%" AND encryption_type = "teampass_aes"'
-            );
-            $logs_number = DB::count();
-
-            DB::query(
-                'SELECT id
-                FROM ' . prefixTable('categories_items') . '
-                WHERE encryption_type = "teampass_aes"'
-            );
-            $items_categories= DB::count();
-
-            DB::query(
-                'SELECT id
-                FROM ' . prefixTable('suggestion')
-            );
-            $items_suggestions= DB::count();
-
-            DB::query(
-                'SELECT id
-                FROM ' . prefixTable('files') . '
-                WHERE status = "' . TP_ENCRYPTION_NAME . '"'
-            );
-            $items_files= DB::count();
-
-
-            // get list
-            $ret = [];
-            $i = 0;
-            foreach ($tasks as $task) {
-                // get task detail
-                $detail = json_decode($task['task'], true);
-
-                // prepare progress information
-                if (isset($detail['step']) === true) {
-                    if ($detail['step'] === 'step0' || (int) $detail['index'] === 0) {
-                        $task_progress = '0%';
-                    } elseif ($detail['step'] === 'step10') {
-                        $task_progress = pourcentage($detail['index'], 1, 100) .'%';
-                    } elseif ($detail['step'] === 'step20') {
-                        $task_progress = pourcentage($detail['index'], $items_number, 100) .'%';
-                    } elseif ($detail['step'] === 'step30') {
-                        $task_progress = pourcentage($detail['index'], $logs_number, 100) .'%';
-                    } elseif ($detail['step'] === 'step40') {
-                        $task_progress = pourcentage($detail['index'], $items_categories, 100) .'%';
-                    } elseif ($detail['step'] === 'step50') {
-                        $task_progress = pourcentage($detail['index'], $items_suggestions, 100) .'%';
-                    } elseif ($detail['step'] === 'step60') {
-                        $task_progress = pourcentage($detail['index'], $items_files, 100) .'%';
-                    }
-                }
-
-                array_push(
-                    $ret,
-                    [
-                        'created_at' => date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $task['created_at']),
-                        'updated_at' => is_null($task['updated_at']) === false ? date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $task['updated_at']) : '',
-                        'finished_at' => is_null($task['finished_at']) === false ? date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $task['finished_at']) : '',
-                        'progress' => $task['finished_at'] !== null ? '100%' : $task_progress,
-                        'is_in_progress' => (int) $task['is_in_progress'],
-                        'step' => 'step'.$i,
-                    ]
-                );
-
-                $i++;
-            }
-
-            // send data
-            echo prepareExchangedData(
-                array(
-                    'error' => false,
-                    'message' => '',
-                    'tasks' => $ret,
-                ),
-                'encode'
-            );
-            break;
-
         //CASE delete a task
         case 'task_delete':
             // Check KEY
@@ -869,19 +749,19 @@ if (null !== $post_type) {
             // Get info about task
             $taskInfo = DB::queryfirstrow(
                 'SELECT p.process_type as process_type
-                FROM ' . prefixTable('processes') . ' as p
+                FROM ' . prefixTable('background_tasks') . ' as p
                 WHERE p.increment_id = %i',
                 $post_id
             );
             if ($taskInfo !== null) {
                 // delete task
                 DB::query(
-                    'DELETE FROM ' . prefixTable('processes_tasks') . '
-                    WHERE process_id = %i',
+                    'DELETE FROM ' . prefixTable('background_subtasks') . '
+                    WHERE task_id = %i',
                     $post_id
                 );
                 DB::query(
-                    'DELETE FROM ' . prefixTable('processes') . '
+                    'DELETE FROM ' . prefixTable('background_tasks') . '
                     WHERE increment_id = %i',
                     $post_id
                 );

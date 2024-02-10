@@ -19,14 +19,13 @@
  * Certain components of this file may be under different licenses. For
  * details, see the `licenses` directory or individual file headers.
  * ---
- * @file      background_tasks___user_keys_creation.php
+ * @file      background_tasks___userKeysCreation_subtaskHdl.php
  * @author    Nils Laumaillé (nils@teampass.net)
  * @copyright 2009-2024 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
 
-use TeampassClasses\SessionManager\SessionManager;
 use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\Language\Language;
 
@@ -35,9 +34,7 @@ require_once __DIR__.'/../sources/main.functions.php';
 
 // init
 loadClasses('DB');
-$session = SessionManager::getSession();
 $request = Request::createFromGlobals();
-$lang = new Language();
 
 // Load config if $SETTINGS not defined
 try {
@@ -58,264 +55,84 @@ set_time_limit($SETTINGS['task_maximum_run_time']);
 
 // --------------------------------- //
 
-require_once __DIR__.'/background_tasks___functions.php';
+// This subtask is used to create the user keys
+// It is called by the main task
+// Once all items are processed, the subtask is marked as FINISHED
 
-// Get PHP binary
-$phpBinaryPath = getPHPBinary();
-
-// log start
-$logID = doLog('start', 'user_keys', (isset($SETTINGS['enable_tasks_log']) === true ? (int) $SETTINGS['enable_tasks_log'] : 0));
+$arguments = $_SERVER['argv'];
+array_shift($arguments);
 
 
-// Manage the tasks in queue.
-// Task to treat selection is:
-// 1- take first is_in_progress === 1
-// 2- take first is_in_progress === 0 and finished_at === null
-DB::debugmode(false);
-$process_to_perform = DB::queryfirstrow(
-    'SELECT *
-    FROM ' . prefixTable('background_tasks') . '
-    WHERE is_in_progress = %i AND process_type = %s
-    ORDER BY increment_id ASC',
-    1,
-    'create_user_keys'
+$data = [
+    'subTaskId' => $_SERVER['argv'][1],
+    'index' => $_SERVER['argv'][2],
+    'nb' => $_SERVER['argv'][3],
+    'step' => $_SERVER['argv'][4],
+    'taskArguments' => $_SERVER['argv'][5],
+    'taskId' => $_SERVER['argv'][6],
+];
+
+$filters = [
+    'subTaskId' => 'trim|escape',
+    'index' => 'trim|escape',
+    'nb' => 'trim|escape',
+    'step' => 'trim|escape',
+    'taskArguments' => 'trim|strip_tags',
+    'taskId' => 'trim|escape',
+];
+
+$inputData = dataSanitizer(
+    $data,
+    $filters
 );
 
-if (DB::count() > 0) {
-    // handle tasks inside this process
-    //echo "Handle task<br>";
-    if (WIP === true) error_log("Process in progress: ".$process_to_perform['increment_id']);
-    handleTask(
-        $process_to_perform['increment_id'],
-        json_decode($process_to_perform['arguments'], true),
-        $SETTINGS,
-    );
 
-} else {
-    // search for next process to handle
-    $process_to_perform = DB::queryfirstrow(
-        'SELECT *
-        FROM ' . prefixTable('background_tasks') . '
-        WHERE is_in_progress = %i AND finished_at = "" AND process_type = %s
-        ORDER BY increment_id ASC',
-        0,
-        'create_user_keys'
-    );
-    //print_r($process_to_perform);
-    if (DB::count() > 0) {
-        if (WIP === true) error_log("New process ta start: ".$process_to_perform['increment_id']);
-        // update DB - started_at
-        DB::update(
-            prefixTable('background_tasks'),
-            array(
-                'started_at' => time(),
-            ),
-            'increment_id = %i',
-            $process_to_perform['increment_id']
-        );
-
-        provideLog('[PROCESS][#'. $process_to_perform['increment_id'].'][START]', $SETTINGS);
-        handleTask(
-            $process_to_perform['increment_id'],
-            json_decode($process_to_perform['arguments'], true),
-            $SETTINGS,
-        );
-    }
-}
-
-// log end
-doLog('end', '', (isset($SETTINGS['enable_tasks_log']) === true ? (int) $SETTINGS['enable_tasks_log'] : 0), $logID);
-
-// launch a new iterative process
-$process_to_perform = DB::queryfirstrow(
-    'SELECT increment_id
-    FROM ' . prefixTable('background_tasks') . '
-    WHERE is_in_progress = %i AND process_type = %s
-    ORDER BY increment_id ASC',
-    1,
-    'create_user_keys'
-);
-if (WIP === true) error_log("Process to continue: ".$process_to_perform['increment_id']);
-if (DB::count() > 0) {
-    if (WIP === true) {
-        // Do we have a server process ongoing (launched by Symfony)
-        $symfonyProcess = DB::queryfirstrow(
-            'SELECT increment_id
-            FROM ' . prefixTable('processes_server') . '
-            WHERE process_id = %i AND end_timestamp != ""',
-            $process_to_perform['increment_id']
-        );
-        error_log("Is Symfony process ongoing: ".DB::count());
-        $process = new Symfony\Component\Process\Process([$phpBinaryPath, __FILE__]);
-        $process->start();
-
-        DB::insert(
-            prefixTable('processes_server'),
-            array(
-                'end_timestamp' => '',
-                'pid' => $process->getPid(),
-                'start_timestamp' => time(),
-                'process_id' => $process_to_perform['increment_id'],
-                'starter'=> 'create_user_keys',
-            )
-        );
-        $newId = DB::insertId();
-
-        error_log("Continue process ".$process_to_perform['increment_id']." launched with Symfony process: ".$process->getPid());
-
-        $process->wait();
-
-        DB::update(
-            prefixTable('processes_server'),
-            array(
-                'end_timestamp' => time(),
-            ),
-            'increment_id = %i',
-            $newId
-        );
-    } else {
-        if (DB::count() === 0) {
-            $process = new Symfony\Component\Process\Process([$phpBinaryPath, __FILE__]);
-            $process->start();
-            $process->wait();
-        }
-    }
-}
-
-
-
-/**
- * Undocumented function
- *
- * @param integer $processId
- * @param array $ProcessArguments
- * @param array $SETTINGS
- * @return bool
- */
-function handleTask(int $processId, array $ProcessArguments, array $SETTINGS): bool
-{
-    provideLog('[PROCESS][#'. $processId.'][START]', $SETTINGS);
-    //DB::debugmode(false);
-    $task_to_perform = DB::queryfirstrow(
-        'SELECT *
-        FROM ' . prefixTable('background_subtasks') . '
-        WHERE task_id = %i AND finished_at IS NULL
-        ORDER BY increment_id ASC',
-        $processId
-    );
+$taskArgs = json_decode($inputData['taskArguments'], true);
 /*
-    print_r($ProcessArguments);
-    echo " ;; ".cryption($ProcessArguments['new_user_pwd'], '','decrypt', $SETTINGS)['string']." ;; ".cryption($ProcessArguments['new_user_code'], '','decrypt', $SETTINGS)['string']." ;; ";
-    return false;
+$fichier = fopen(__DIR__.'/log.txt', 'a');
+fwrite($fichier, 'taskArgs: '.print_r($inputData, true)."\n");
+fclose($fichier);
 */
-    
-    if (DB::count() > 0) {
-        // check if a linux process is not currently on going
-        // if sub_task_in_progress === 1 then exit
-        if ((int) $task_to_perform['sub_task_in_progress'] === 0) {
-            provideLog('[TASK][#'. $task_to_perform['increment_id'].'][START]', $SETTINGS);
 
-            // handle next task
-            $args = json_decode($task_to_perform['task'], true);
-            //print_r($args);return false;
-
-            // flag as in progress
-            DB::update(
-                prefixTable('background_tasks'),
-                array(
-                    'updated_at' => time(),
-                    'is_in_progress' => 1,
-                ),
-                'increment_id = %i',
-                $processId
-            );
-
-            // flag task as on going
-            if ((int) $args['index'] === 0) {
-                DB::update(
-                    prefixTable('background_subtasks'),
-                    array(
-                        'is_in_progress' => 1,
-                    ),
-                    'increment_id = %i',
-                    $task_to_perform['increment_id']
-                );
-            }
-
-            // flag sub task in progress as on going
-            DB::update(
-                prefixTable('background_subtasks'),
-                array(
-                    'sub_task_in_progress' => 1,
-                ),
-                'increment_id = %i',
-                $task_to_perform['increment_id']
-            );
-
-            $taskStatus = performUserCreationKeys(
-                (int) $ProcessArguments['new_user_id'],
-                (bool) false,
-                (string) $args['step'],
-                (int) $args['index'],
-                (int) isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : $args['nb'],
-                $SETTINGS,
-                $ProcessArguments
-            );
-
-            // update the task status
-            DB::update(
-                prefixTable('background_subtasks'),
-                array(
-                    'sub_task_in_progress' => 0,    // flag sub task is no more in prgoress
-                    'task' => $taskStatus['new_action'] !== $args['step'] ? 
-                    json_encode(["status" => "Done"]) :
-                    json_encode([
-                        "step" => $taskStatus['new_action'],
-                        "index" => $taskStatus['new_index'],
-                        "nb" => isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : $args['nb'],
-                    ]),
-                    'is_in_progress' => $taskStatus['new_action'] !== $args['step'] ? -1 : 1,
-                    'finished_at' => $taskStatus['new_action'] !== $args['step'] ? time() : NULL,
-                    'updated_at' => time(),
-                ),
-                'increment_id = %i',
-                $task_to_perform['increment_id']
-            );
-
-            provideLog('[TASK]['.$args['step'].'] starting at '.$args['index'].' is done.', $SETTINGS);
-
-            if ($args['step'] === 'step60') {
-                // all done
-                provideLog('[PROCESS]['.$processId.'][FINISHED]', $SETTINGS);
-                DB::debugmode(false);
-                DB::update(
-                    prefixTable('background_tasks'),
-                    array(
-                        'finished_at' => time(),
-                        'is_in_progress' => -1,
-                        'arguments' => json_encode([
-                            'new_user_id' => $ProcessArguments['new_user_id'],
-                        ])
-                    ),
-                    'increment_id = %i',
-                    $processId
-                );
-            }
-            return false;
-
-        } else {
-            // Task is currently being in progress by another server process
-            provideLog('[TASK][#'. $task_to_perform['increment_id'].'][WARNING] Similar task already being processes', $SETTINGS);
-            return false;
-        }
-    }
-    return true;
+// update DB - started_at
+if ((int) $inputData['index'] === 0) {
+    DB::update(
+        prefixTable('background_tasks'),
+        array(
+            'started_at' => time(),
+        ),
+        'increment_id = %i',
+        $inputData['taskId']
+    );
 }
+
+$taskStatus = performUserCreationKeys(
+    (bool) false,
+    (string) $inputData['step'],
+    (int) $inputData['index'],
+    (int) $inputData['nb'],
+    $SETTINGS,
+    $taskArgs,
+    $inputData['taskId']
+);
+
+// update the subtask status
+DB::update(
+    prefixTable('background_subtasks'),
+    array(
+        'sub_task_in_progress' => 0,    // flag sub task is no more in prgoress
+        'is_in_progress' => 0,
+        'finished_at' => time(),
+        'updated_at' => time(),
+    ),
+    'increment_id = %i',
+    $inputData['subTaskId']
+);
+
 
 /**
  * Permits to encrypt user's keys
  *
- * @param integer $post_user_id
  * @param boolean $post_self_change
  * @param string $post_action
  * @param integer $post_start
@@ -325,15 +142,17 @@ function handleTask(int $processId, array $ProcessArguments, array $SETTINGS): b
  * @return array
  */
 function performUserCreationKeys(
-    int     $post_user_id,
     bool    $post_self_change,
     string  $post_action,
     int     $post_start,
     int     $post_length,
     array   $SETTINGS,
-    array   $extra_arguments
+    array   $extra_arguments,
+    int     $taskId
 ): array
 {
+    $post_user_id = $extra_arguments['new_user_id'];
+
     if (isUserIdValid($post_user_id) === true) {
         // Check if user exists
         $userInfo = DB::queryFirstRow(
@@ -348,7 +167,6 @@ function performUserCreationKeys(
 
             // WHAT STEP TO PERFORM?
             if ($post_action === 'step0') {
-                //echo '<br>Start STEP0<br>';
                 // CLear old sharekeys
                 if ($post_self_change === false) {
                     deleteUserObjetsKeys($post_user_id, $SETTINGS);
@@ -356,24 +174,19 @@ function performUserCreationKeys(
 
                 $return['new_action'] = 'step10';
                 $return['new_index'] = 0;
-                provideLog('[STEP][0][FINISHED]', $SETTINGS);
             }
             
             // STEP 10 - EMAIL
             elseif ($post_action === 'step10') {
-                provideLog('[STEP][10][START][INDEX]['.$post_start.']', $SETTINGS);
                 $return = cronContinueReEncryptingUserSharekeysStep10(
                     $post_user_id,
                     $SETTINGS,
                     $extra_arguments
                 );
-                provideLog('[STEP][10][FINISHED]', $SETTINGS);
             }
             
             // STEP 20 - ITEMS
             elseif ($post_action === 'step20') {
-                provideLog('[STEP][20][START][INDEX]['.$post_start.']', $SETTINGS);
-                $logID = doLog('start', 'user_keys-ITEMS', (isset($SETTINGS['enable_tasks_log']) === true ? (int) $SETTINGS['enable_tasks_log'] : 0));
                 $return = cronContinueReEncryptingUserSharekeysStep20(
                     $post_user_id,
                     $post_start,
@@ -382,13 +195,10 @@ function performUserCreationKeys(
                     $SETTINGS,
                     $extra_arguments
                 );
-                doLog('end', '', (isset($SETTINGS['enable_tasks_log']) === true ? (int) $SETTINGS['enable_tasks_log'] : 0), $logID, $return['treated_items']);
-                provideLog('[STEP][20][FINISHED]', $SETTINGS);
             }
 
             // STEP 30 - LOGS
             elseif ($post_action === 'step30') {
-                provideLog('[STEP][30][START][INDEX]['.$post_start.']', $SETTINGS);
                 $return = cronContinueReEncryptingUserSharekeysStep30(
                     $post_user_id,
                     $post_self_change,
@@ -398,12 +208,10 @@ function performUserCreationKeys(
                     $SETTINGS,
                     $extra_arguments
                 );
-                provideLog('[STEP][30][FINISHED]', $SETTINGS);
             }
 
             // STEP 40 - FIELDS
             elseif ($post_action === 'step40') {
-                provideLog('[STEP][40][START][INDEX]['.$post_start.']', $SETTINGS);
                 $return = cronContinueReEncryptingUserSharekeysStep40(
                     $post_user_id,
                     $post_self_change,
@@ -413,12 +221,10 @@ function performUserCreationKeys(
                     $SETTINGS,
                     $extra_arguments
                 );
-                provideLog('[STEP][40][FINISHED]', $SETTINGS);
             }
             
             // STEP 50 - SUGGESTIONS
             elseif ($post_action === 'step50') {
-                provideLog('[STEP][50][START][INDEX]['.$post_start.']', $SETTINGS);
                 $return = cronContinueReEncryptingUserSharekeysStep50(
                     $post_user_id,
                     $post_self_change,
@@ -428,12 +234,10 @@ function performUserCreationKeys(
                     $SETTINGS,
                     $extra_arguments
                 );
-                provideLog('[STEP][50][FINISHED]', $SETTINGS);
             }
             
             // STEP 60 - FILES
             elseif ($post_action === 'step60') {
-                provideLog('[STEP][60][START][INDEX]['.$post_start.']', $SETTINGS);
                 $return = cronContinueReEncryptingUserSharekeysStep60(
                     $post_user_id,
                     $post_start,
@@ -442,7 +246,6 @@ function performUserCreationKeys(
                     $SETTINGS,
                     $extra_arguments
                 );
-                provideLog('[STEP][60][FINISHED]', $SETTINGS);
             }
             
             // Continu with next step
@@ -450,13 +253,13 @@ function performUserCreationKeys(
         }
         
         // Nothing to do
-        provideLog('[USER][ERROR] No user public key', $SETTINGS);
+        //provideLog('[USER][ERROR] No user public key', $SETTINGS);
         return [
             'error' => true,
             'new_action' => 'finished',
         ];
     }
-    provideLog('[USER][ERROR] No user found', $SETTINGS);
+
     return [
         'error' => true,
         'new_action' => 'finished',
@@ -474,8 +277,6 @@ function getOwnerInfo(int $owner_id, string $owner_pwd, array $SETTINGS): array
     
     // decrypt owner password
     $pwd = cryption($owner_pwd, '','decrypt', $SETTINGS)['string'];
-    provideLog('[USER][INFO] ID:'.$owner_id, $SETTINGS);
-    //provideLog('[DEBUG] '.$pwd." -- ", $SETTINGS);
     // decrypt private key and send back
     return [
         'private_key' => decryptPrivateKey($pwd, $userInfo['private_key']),
@@ -985,37 +786,6 @@ function cronContinueReEncryptingUserSharekeysStep60(
                 )
             );
         }
-        /*if ($post_self_change === false) {
-            DB::insert(
-                prefixTable('sharekeys_files'),
-                array(
-                    'object_id' => (int) $record['id'],
-                    'user_id' => (int) $post_user_id,
-                    'share_key' => $share_key_for_item,
-                )
-            );
-        } else {
-            // Get itemIncrement from selected user
-            if ((int) $post_user_id !== (int) $extra_arguments['owner_id']) {
-                $currentUserKey = DB::queryFirstRow(
-                    'SELECT increment_id
-                    FROM ' . prefixTable('sharekeys_files') . '
-                    WHERE object_id = %i AND user_id = %i',
-                    $record['id'],
-                    $post_user_id
-                );
-            }
-
-            // NOw update
-            DB::update(
-                prefixTable('sharekeys_files'),
-                array(
-                    'share_key' => $share_key_for_item,
-                ),
-                'increment_id = %i',
-                $currentUserKey['increment_id']
-            );
-        }*/
     }
 
     // SHould we change step? Finished ?

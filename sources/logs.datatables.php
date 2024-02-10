@@ -866,7 +866,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     }
 
     // Where clause
-    $sWhere = ' WHERE ((p.finished_at = "")';
+    $sWhere = ' WHERE ((p.finished_at = "" OR p.finished_at IS NULL)';
     $searchValue = $params['search']['value'] ?? '';
     if ($searchValue !== '') {
         $sWhere .= ' AND (';
@@ -879,13 +879,13 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     DB::debugmode(false);
     $iTotal = DB::queryFirstField(
     'SELECT COUNT(p.increment_id)
-        FROM '.prefixTable('processes').' AS p 
+        FROM '.prefixTable('background_tasks').' AS p 
         LEFT JOIN '.prefixTable('users').' AS u ON u.id = json_extract(p.arguments, "$[0]")'.
         $sWhere
     );
     $rows = DB::query(
         'SELECT p.*
-            FROM '.prefixTable('processes').' AS p 
+            FROM '.prefixTable('background_tasks').' AS p 
             LEFT JOIN '.prefixTable('users').' AS u ON u.id = json_extract(p.arguments, "$[0]")'.
             $sWhere.
             $sOrder.
@@ -902,15 +902,20 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         $sOutput .= '[';
     }
     foreach ($rows as $record) {
+        // Get subtask progress
+        $subtaskProgress = getSubtaskProgress($record['increment_id']);        
+
         $sOutput .= '[';
         //col1
         $sOutput .= '"<span data-done=\"'.$record['is_in_progress'].'\" data-type=\"'.$record['process_type'].'\" data-process-id=\"'.$record['increment_id'].'\"></span>", ';
         //col2
         $sOutput .= '"'.date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['created_at']).'", ';
         //col3
-        $sOutput .= '"'.($record['updated_at'] === '' ? '-' : date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['updated_at'])).'", ';
+        //$sOutput .= '"'.($record['updated_at'] === '' ? '-' : date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['updated_at'])).'", ';
+        $sOutput .= '"<div class=\"progress mt-2\"><div class=\"progress-bar\" style=\"width: '.$subtaskProgress.'\">'.$subtaskProgress.'</div></div>", ';
         //col4
         $sOutput .= '"'.$record['process_type'].'", ';
+
         // col5
         if (in_array($record['process_type'], array('create_user_keys', 'item_copy')) === true) {
             $data_user = DB::queryfirstrow(
@@ -966,14 +971,14 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     DB::debugmode(false);
     $iTotal = DB::queryFirstField(
         'SELECT COUNT(p.increment_id)
-            FROM '.prefixTable('processes').' AS p 
+            FROM '.prefixTable('background_tasks').' AS p 
             LEFT JOIN '.prefixTable('users').' AS u ON u.id = json_extract(p.arguments, "$[0]")'.
             $sWhere
     );
 
     $rows = DB::query(
         'SELECT p.*
-            FROM '.prefixTable('processes').' AS p 
+            FROM '.prefixTable('background_tasks').' AS p 
             LEFT JOIN '.prefixTable('users').' AS u ON u.id = json_extract(p.arguments, "$[0]")'.
             $sWhere.
             $sOrder.
@@ -1066,3 +1071,28 @@ if (isset($params['action']) && $params['action'] === 'connections') {
 
 // deepcode ignore XSS: data comes from database. Before being stored it is clean with feature antiXss->xss_clean
 echo (string) $sOutput;
+
+
+
+function getSubtaskProgress($id)
+{
+    $subtasks = DB::query(
+        'SELECT *
+        FROM ' . prefixTable('background_subtasks') . '
+        WHERE task_id = %i',
+        $id
+    );
+
+    $i = 0;
+    $nb = count($subtasks);
+    $finished_nb = 0;
+    foreach ($subtasks as $task) {
+        if (is_null($task['finished_at']) === false) {
+            $finished_nb++;
+        }
+
+        $i++;
+    }
+
+    return ($finished_nb !== 0 ? pourcentage($finished_nb, $nb, 100) : 0) .'%';
+}

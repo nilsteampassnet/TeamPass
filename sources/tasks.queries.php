@@ -163,7 +163,7 @@ function loadLastTasksExec(string $datetimeFormat, int $showTaskExecution): stri
     // get exec from processes table
     $rows = DB::query(
         'SELECT max(finished_at), process_type
-        FROM ' . prefixTable('processes') . '
+        FROM ' . prefixTable('background_tasks') . '
         GROUP BY process_type'
     );
     foreach ($rows as $row) {
@@ -176,10 +176,10 @@ function loadLastTasksExec(string $datetimeFormat, int $showTaskExecution): stri
         );
     }
 
-    // get exec from processes_log table
+    // get exec from background_tasks_log table
     $rows = DB::query(
         'SELECT MAX(finished_at) AS max_finished_at, job AS process_type 
-        FROM ' . prefixTable('processes_logs') . '
+        FROM ' . prefixTable('background_tasks_logs') . '
         WHERE finished_at >= UNIX_TIMESTAMP(DATE_SUB(NOW(), INTERVAL 7 DAY))
         GROUP BY process_type'
     );
@@ -193,11 +193,23 @@ function loadLastTasksExec(string $datetimeFormat, int $showTaskExecution): stri
         );
     }
 
+    // Get table log size in MB
+    $logSize = DB::queryFirstField(
+        'SELECT ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) AS "Size (MB)" 
+        FROM information_schema.tables 
+        WHERE table_schema = %s 
+        AND table_name = %s',
+        DB_NAME,
+        prefixTable('background_tasks_logs')
+    );
+
+
     return prepareExchangedData(
         array(
             'error' => false,
             'task' => json_encode($lastExec),
             'enabled' => true,
+            'logSize' => $logSize,
         ),
         'encode'
     );
@@ -311,12 +323,8 @@ function performTask(string $task, string $phpBinaryPath, string $datetimeFormat
     // execute the process
     if (isset($process) === true) {
         try {
+            $process->setTimeout(60);
             $process->start();
-
-            while ($process->isRunning()) {
-                // waiting for process to finish
-            }
-
             $process->wait();
         
             $output = $process->getOutput();

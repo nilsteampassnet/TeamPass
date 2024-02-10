@@ -710,7 +710,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             $session->set('user-cache_tree', '');
             // Prepare new task
             DB::insert(
-                prefixTable('processes'),
+                prefixTable('background_tasks'),
                 array(
                     'created_at' => time(),
                     'process_type' => 'user_build_cache_tree',

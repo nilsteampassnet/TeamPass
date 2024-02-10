@@ -154,9 +154,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 'render': function(data, type, row, meta) {
                     if ($(data).data('type') === 'create_user_keys') {
                         if (parseInt($(data).data('done')) === 1) {
-                            return '<i class="fa-solid fa-play text-warning"></i><i class="fa-solid fa-eye pointer action ml-2" data-id="' + $(data).data('process-id') + '" data-type="task-detail"></i><i class="fa-solid fa-trash pointer confirm ml-2 text-danger" data-id="' + $(data).data('process-id') + '" data-type="task-delete"></i>';
+                            return '<i class="fa-solid fa-play text-warning"></i><i class="fa-solid fa-trash pointer confirm ml-2 text-danger" data-id="' + $(data).data('process-id') + '" data-type="task-delete"></i>';
                         } else {
-                            return '<i class="fars fa-hand-papper text-info"></i><i class="fa-solid fa-eye pointer action ml-2" data-id="' + $(data).data('process-id') + '" data-type="task-detail"></i><i class="fa-solid fa-trash pointer confirm ml-2 text-danger" data-id="' + $(data).data('process-id') + '" data-type="task-delete"></i>';
+                            return '<i class="fars fa-hand-papper text-info"></i><i class="fa-solid fa-trash pointer confirm ml-2 text-danger" data-id="' + $(data).data('process-id') + '" data-type="task-delete"></i>';
                         }
                     } else if ($(data).data('type') === 'item_copy') {
                         return '<i class="fa-solid fa-trash pointer confirm ml-2 text-danger" data-id="' + $(data).data('process-id') + '" data-type="task-delete"></i>';
@@ -243,73 +243,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         toastr.remove();
         toastr.info('<?php echo $lang->get('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
-        if ($(this).data('type') === "task-detail") {
-            $.post(
-                "sources/utilities.queries.php", {
-                    type: "show_process_detail",
-                    id: $(this).data('id'),
-                    key: "<?php echo $session->get('key'); ?>"
-                },
-                function(data) {
-                    data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
-                    console.log(data)
-
-                    // Inform user
-                    toastr.remove();
-                    toastr.success(
-                        '<?php echo $lang->get('done'); ?>',
-                        '', {
-                            timeOut: 1000
-                        }
-                    );
-
-                    // Prepare display
-                    var html = '<div class="row">',
-                        type = '',
-                        icon = '',
-                        dates = '';
-                    $.each(data.tasks, function(i, task) {
-                        if (task.is_in_progress === -1) {
-                            type = 'success';
-                            icon = 'thumbs-up';
-                            dates = '<span class="badge badge-primary ml-2">' + task.created_at + '</span>' +
-                                    '<span class="badge badge-secondary">' + task.finished_at + '</span>';
-                        } else if (task.is_in_progress === 1) {
-                            type = 'warning';
-                            icon = 'play';
-                            dates = '<span class="badge badge-primary ml-2">' + task.created_at + '</span>' +
-                                    '<span class="badge badge-info">' + task.updated_at + '</span>';
-                        } else if (task.is_in_progress === 0) {
-                            type = 'info';
-                            icon = 'pause';
-                            dates = '<span class="badge badge-primary ml-2">' + task.created_at + '</span>';
-                        }
-                        html += '<div class="col-md-3 col-sm-6 col-12">' +
-                            '<div class="alert alert-' + type + '">' +
-                                '<h5><i class="fas fa-' + icon + ' mr-2"></i>' +task.step+ '</h5>' +
-                                '<div>' + dates + '</div>' +
-                                '<div class="progress mt-2">' +
-                                    '<div class="progress-bar" style="width: ' + task.progress +'"></div>' +
-                                '</div>' +
-                            '</div>' +
-                            '</div>';
-                    });
-                    html += '</div>';
-
-                    // display tasks
-                    showModalDialogBox(
-                        '#warningModal',
-                        '<i class="fas fa-tasks fa-lg mr-2"></i><?php echo $lang->get('process_details'); ?>',
-                        '<div class="form-group">'+
-                        html+
-                        '</div>',
-                        '',
-                        '<?php echo $lang->get('close'); ?>'
-                    );
-
-                }
-            );
-        } else if ($(this).data('type') === "add-new-job") {
+        if ($(this).data('type') === "add-new-job") {
             console.log('add new job')
             $.post(
                 "sources/utilities.queries.php", {
@@ -592,13 +526,23 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                 progressBar: true
                             }
                         );
+
+                        $('#'+launchedTask+'_badge').text(data.datetime);
+                        $('#'+launchedTask+'_spinner').remove();
+                        launchedButton.prop('disabled', false);
+                        requestRunning = false;
+                        manuelTaskIsRunning = false;
+                        $('#warningModal').modal('hide');
+                    } else {
+                        toastr.remove();
+                        toastr.error(
+                            '<?php echo $lang->get('error'); ?>',
+                            data.output, {
+                                closeButton: true,
+                                positionClass: 'toastr-top-right'
+                            }
+                        );
                     }
-                    $('#'+launchedTask+'_badge').text(data.datetime);
-                    $('#'+launchedTask+'_spinner').remove();
-                    launchedButton.prop('disabled', false);
-                    requestRunning = false;
-                    manuelTaskIsRunning = false;
-                    $('#warningModal').modal('hide');
                 }
             );
         });        
@@ -632,6 +576,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     );
                     return false;
                 }
+
+                $('#tasks_log_table_size').text(data.logSize);
                 
                 if (data.enabled === true){
                     let tasks = JSON.parse(data.task);

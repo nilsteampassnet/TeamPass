@@ -358,6 +358,18 @@ catch (Exception $e) {
 
                                     <div class='row mb-3 option'>
                                         <div class='col-10'>
+                                            <h5><i class="fa-solid fa-clock-rotate-left mr-2"></i><?php echo $lang->get('tasks_log_retention_delay_in_days'); ?></h5>
+                                            <small class='form-text text-muted'>
+                                                <i class="fa-solid fa-database mr-2"></i><?php echo $lang->get('tasks_log_table_size'); ?>:<span id="tasks_log_table_size" class="ml-2"></span> MB
+                                            </small>
+                                        </div>
+                                        <div class='col-2'>
+                                            <input type='number' class='form-control form-control-sm' id='tasks_log_retention_delay' value='<?php echo isset($SETTINGS['tasks_log_retention_delay']) === true ? $SETTINGS['tasks_log_retention_delay'] : 3650; ?>'>
+                                        </div>
+                                    </div>
+
+                                    <div class='row mb-3 option'>
+                                        <div class='col-10'>
                                         <h5><i class="fa-solid fa-hourglass-start mr-2"></i><?php echo $lang->get('maximum_time_script_allowed_to_run'); ?></h5>
                                             <small id='passwordHelpBlock' class='form-text text-muted'>
                                                 <?php echo $lang->get('maximum_time_script_allowed_to_run_tip'); ?>
@@ -401,7 +413,7 @@ catch (Exception $e) {
                                         <tr>
                                             <th></th>
                                             <th><?php echo $lang->get('created_at'); ?></th>
-                                            <th><?php echo $lang->get('updated_at'); ?></th>
+                                            <th><?php echo $lang->get('progress'); ?></th>
                                             <th><?php echo $lang->get('type'); ?></th>
                                             <th><?php echo $lang->get('user'); ?></th>
                                         </tr>

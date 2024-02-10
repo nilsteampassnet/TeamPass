@@ -1112,7 +1112,7 @@ function prepareSendingEmail(
 ): void 
 {
     DB::insert(
-        prefixTable('processes'),
+        prefixTable('background_tasks'),
         array(
             'created_at' => time(),
             'process_type' => 'send_email',
@@ -1122,9 +1122,6 @@ function prepareSendingEmail(
                 'body' => $body,
                 'receiver_name' => $receiverName,
             ], JSON_HEX_QUOT | JSON_HEX_TAG),
-            'updated_at' => '',
-            'finished_at' => '',
-            'output' => '',
         )
     );
 }
@@ -3726,7 +3723,7 @@ function handleUserKeys(
 
     // Create process
     DB::insert(
-        prefixTable('processes'),
+        prefixTable('background_tasks'),
         array(
             'created_at' => time(),
             'process_type' => 'create_user_keys',
@@ -3741,9 +3738,6 @@ function handleUserKeys(
                 'email_body' => empty($emailBody) === true ? '' : $lang->get($emailBody),
                 'user_self_change' => $user_self_change === true ? 1 : 0,
             ]),
-            'updated_at' => '',
-            'finished_at' => '',
-            'output' => '',
         )
     );
     $processId = DB::insertId();
@@ -3792,9 +3786,9 @@ function handleUserKeys(
 function createUserTasks($processId, $nbItemsToTreat): void
 {
     DB::insert(
-        prefixTable('processes_tasks'),
+        prefixTable('background_subtasks'),
         array(
-            'process_id' => $processId,
+            'task_id' => $processId,
             'created_at' => time(),
             'task' => json_encode([
                 'step' => 'step0',
@@ -3805,9 +3799,9 @@ function createUserTasks($processId, $nbItemsToTreat): void
     );
 
     DB::insert(
-        prefixTable('processes_tasks'),
+        prefixTable('background_subtasks'),
         array(
-            'process_id' => $processId,
+            'task_id' => $processId,
             'created_at' => time(),
             'task' => json_encode([
                 'step' => 'step10',
@@ -3818,9 +3812,9 @@ function createUserTasks($processId, $nbItemsToTreat): void
     );
 
     DB::insert(
-        prefixTable('processes_tasks'),
+        prefixTable('background_subtasks'),
         array(
-            'process_id' => $processId,
+            'task_id' => $processId,
             'created_at' => time(),
             'task' => json_encode([
                 'step' => 'step20',
@@ -3831,9 +3825,9 @@ function createUserTasks($processId, $nbItemsToTreat): void
     );
 
     DB::insert(
-        prefixTable('processes_tasks'),
+        prefixTable('background_subtasks'),
         array(
-            'process_id' => $processId,
+            'task_id' => $processId,
             'created_at' => time(),
             'task' => json_encode([
                 'step' => 'step30',
@@ -3844,9 +3838,9 @@ function createUserTasks($processId, $nbItemsToTreat): void
     );
 
     DB::insert(
-        prefixTable('processes_tasks'),
+        prefixTable('background_subtasks'),
         array(
-            'process_id' => $processId,
+            'task_id' => $processId,
             'created_at' => time(),
             'task' => json_encode([
                 'step' => 'step40',
@@ -3857,9 +3851,9 @@ function createUserTasks($processId, $nbItemsToTreat): void
     );
 
     DB::insert(
-        prefixTable('processes_tasks'),
+        prefixTable('background_subtasks'),
         array(
-            'process_id' => $processId,
+            'task_id' => $processId,
             'created_at' => time(),
             'task' => json_encode([
                 'step' => 'step50',
@@ -3870,9 +3864,9 @@ function createUserTasks($processId, $nbItemsToTreat): void
     );
 
     DB::insert(
-        prefixTable('processes_tasks'),
+        prefixTable('background_subtasks'),
         array(
-            'process_id' => $processId,
+            'task_id' => $processId,
             'created_at' => time(),
             'task' => json_encode([
                 'step' => 'step60',
@@ -3964,7 +3958,7 @@ function storeTask(
     if (in_array($taskName, ['item_copy', 'new_item', 'update_item'])) {
         // Create process
         DB::insert(
-            prefixTable('processes'),
+            prefixTable('background_tasks'),
             array(
                 'created_at' => time(),
                 'process_type' => $taskName,
@@ -3972,9 +3966,6 @@ function storeTask(
                     'item_id' => $item_id,
                     'object_key' => $object_keys,
                 ]),
-                'updated_at' => '',
-                'finished_at' => '',
-                'output' => '',
                 'item_id' => $item_id,
             )
         );
@@ -3983,9 +3974,9 @@ function storeTask(
         // Create tasks
         // 1- Create password sharekeys for users of this new ITEM
         DB::insert(
-            prefixTable('processes_tasks'),
+            prefixTable('background_subtasks'),
             array(
-                'process_id' => $processId,
+                'task_id' => $processId,
                 'created_at' => time(),
                 'task' => json_encode([
                     'step' => 'create_users_pwd_key',
@@ -3996,9 +3987,9 @@ function storeTask(
 
         // 2- Create fields sharekeys for users of this new ITEM
         DB::insert(
-            prefixTable('processes_tasks'),
+            prefixTable('background_subtasks'),
             array(
-                'process_id' => $processId,
+                'task_id' => $processId,
                 'created_at' => time(),
                 'task' => json_encode([
                     'step' => 'create_users_fields_key',
@@ -4010,9 +4001,9 @@ function storeTask(
 
         // 3- Create files sharekeys for users of this new ITEM
         DB::insert(
-            prefixTable('processes_tasks'),
+            prefixTable('background_subtasks'),
             array(
-                'process_id' => $processId,
+                'task_id' => $processId,
                 'created_at' => time(),
                 'task' => json_encode([
                     'step' => 'create_users_files_key',
@@ -4043,7 +4034,7 @@ function createTaskForItem(
     
     // Create process
     DB::insert(
-        prefixTable('processes'),
+        prefixTable('background_tasks'),
         array(
             'created_at' => time(),
             'process_type' => $processType,
@@ -4053,9 +4044,6 @@ function createTaskForItem(
                 'object_key' => $objectKey,
                 'author' => (int) $userId,
             ]),
-            'updated_at' => '',
-            'finished_at' => '',
-            'output' => '',
             'item_id' => (int) $parentId !== -1 ?  $parentId : null,
         )
     );
@@ -4072,9 +4060,9 @@ function createTaskForItem(
             case 'item_password':
                 
                 DB::insert(
-                    prefixTable('processes_tasks'),
+                    prefixTable('background_subtasks'),
                     array(
-                        'process_id' => $processId,
+                        'task_id' => $processId,
                         'created_at' => time(),
                         'task' => json_encode([
                             'step' => 'create_users_pwd_key',
@@ -4087,9 +4075,9 @@ function createTaskForItem(
             case 'item_field':
                 
                 DB::insert(
-                    prefixTable('processes_tasks'),
+                    prefixTable('background_subtasks'),
                     array(
-                        'process_id' => $processId,
+                        'task_id' => $processId,
                         'created_at' => time(),
                         'task' => json_encode([
                             'step' => 'create_users_fields_key',
@@ -4103,9 +4091,9 @@ function createTaskForItem(
             case 'item_file':
 
                 DB::insert(
-                    prefixTable('processes_tasks'),
+                    prefixTable('background_subtasks'),
                     array(
-                        'process_id' => $processId,
+                        'task_id' => $processId,
                         'created_at' => time(),
                         'task' => json_encode([
                             'step' => 'create_users_files_key',
@@ -4127,15 +4115,15 @@ function deleteProcessAndRelatedTasks(int $processId)
 {
     // Delete process
     DB::delete(
-        prefixTable('processes'),
+        prefixTable('background_tasks'),
         'id=%i',
         $processId
     );
 
     // Delete tasks
     DB::delete(
-        prefixTable('processes_tasks'),
-        'process_id=%i',
+        prefixTable('background_subtasks'),
+        'task_id=%i',
         $processId
     );
 

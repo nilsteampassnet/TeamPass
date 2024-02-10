@@ -237,7 +237,7 @@ if ($goTreeRefresh['state'] === true || empty($inputData['nodeId']) === false ||
 
     // Add new process
     DB::insert(
-        prefixTable('processes'),
+        prefixTable('background_tasks'),
         array(
             'created_at' => time(),
             'process_type' => 'user_build_cache_tree',

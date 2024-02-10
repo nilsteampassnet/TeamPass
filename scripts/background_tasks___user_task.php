@@ -70,7 +70,7 @@ $logID = doLog('start', 'user_task', (isset($SETTINGS['enable_tasks_log']) === t
 DB::debugmode(false);
 $rows = DB::query(
     'SELECT *
-    FROM ' . prefixTable('processes') . '
+    FROM ' . prefixTable('background_tasks') . '
     WHERE is_in_progress = %i AND process_type = %s
     ORDER BY increment_id ASC LIMIT 0,10',
     0,
@@ -82,7 +82,7 @@ foreach ($rows as $record) {
 
     // update DB - started_at
     DB::update(
-        prefixTable('processes'),
+        prefixTable('background_tasks'),
         array(
             'started_at' => time(),
         ),
@@ -95,7 +95,7 @@ foreach ($rows as $record) {
 
     // update DB
     DB::update(
-        prefixTable('processes'),
+        prefixTable('background_tasks'),
         array(
             'updated_at' => time(),
             'finished_at' => time(),

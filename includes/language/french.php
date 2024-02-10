@@ -1164,5 +1164,8 @@ return array(
     'settings_ldap_group_objectclasses_attibute_tip' => 'The objectClasses to use when searching for groups. Several objectClasses are separated by a comma (,). Example: groupOfNames,group or top,posixGroup',
     'display_warning_icons' => 'Afficher les icones d&apos;attention',
     'password_length_by_default' => 'Longueur du mot de passe par défaut',
+    'progress' => 'Avancement',
+    'tasks_log_retention_delay_in_days' => 'Durée de rétention (en jours) des logs d&apos;exécution des tâches',
+    'tasks_log_table_size' => 'Taille de la table des logs',
 
 );

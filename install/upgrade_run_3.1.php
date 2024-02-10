@@ -36,8 +36,6 @@ require_once __DIR__.'/../sources/main.functions.php';
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
 $lang = new Language(); 
-session_name('teampass_session');
-session_start();
 error_reporting(E_ERROR | E_PARSE);
 set_time_limit(600);
 $_SESSION['CPM'] = 1;
@@ -166,6 +164,62 @@ if (intval($tmp) === 0) {
     );
 }
 
+// Rename table 'processes' to 'background_tasks'
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SHOW TABLES LIKE '" . $pre . "background_tasks'"));
+if (intval($tmp) === 0) {
+    $tmp = mysqli_num_rows(mysqli_query($db_link, "SHOW TABLES LIKE '" . $pre . "processes'"));
+    if (intval($tmp) > 0) {
+        mysqli_query(
+            $db_link,
+            'RENAME TABLE `' . $pre . 'processes` TO `' . $pre . 'background_tasks`;'
+        );
+    }
+}
+
+// Rename table 'processes_tasks' to 'background_subtasks'
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SHOW TABLES LIKE '" . $pre . "background_subtasks'"));
+if (intval($tmp) === 0) {
+    $tmp = mysqli_num_rows(mysqli_query($db_link, "SHOW TABLES LIKE '" . $pre . "processes_tasks'"));
+    if (intval($tmp) > 0) {
+        mysqli_query(
+            $db_link,
+            'RENAME TABLE `' . $pre . 'processes_tasks` TO `' . $pre . 'background_subtasks`;'
+        );
+    }
+}
+
+// Alter table background_subtasks
+mysqli_query(
+    $db_link,
+    'ALTER TABLE `' . $pre . 'background_subtasks` CHANGE `process_id` `task_id` INT(12) NOT NULL;'
+);
+
+// Alter table background_subtasks
+mysqli_query(
+    $db_link,
+    'ALTER TABLE `' . $pre . 'background_subtasks` CHANGE `system_process_id` `process_id` varchar(100) NULL DEFAULT NULL;'
+);
+
+// Rename table 'processes_logs' to 'background_tasks_logs'
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SHOW TABLES LIKE '" . $pre . "background_tasks_logs'"));
+if (intval($tmp) === 0) {
+    $tmp = mysqli_num_rows(mysqli_query($db_link, "SHOW TABLES LIKE '" . $pre . "processes_logs'"));
+    if (intval($tmp) > 0) {
+        mysqli_query(
+            $db_link,
+            'RENAME TABLE `' . $pre . 'processes_logs` TO `' . $pre . 'background_tasks_logs`;'
+        );
+    }
+}
+
+// Add new setting 'tasks_log_retention_delay'
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'tasks_log_retention_delay'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'tasks_log_retention_delay', '3650')"
+    );
+}
 
 //---<END 3.1.1
 
