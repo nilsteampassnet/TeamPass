@@ -3574,12 +3574,19 @@ switch ($inputData['type']) {
                 'decrypt'
             )['string'];
         }
-
+        
         // Generate OTP code
         if (empty($secret) === false) {
-            $otp = TOTP::createFromSecret($secret);
-            $otpCode = $otp->now();
-            $otpExpiresIn = $otp->expiresIn();
+            try {
+                $otp = TOTP::createFromSecret($secret);
+                $otpCode = $otp->now();
+                $otpExpiresIn = $otp->expiresIn();
+            } catch (RuntimeException $e) {
+                $error = true;
+                $otpCode = '';
+                $otpExpiresIn = '';
+                $message = $e->getMessage();
+            }
         } else {
             $otpCode = '';
             $otpExpiresIn = '';
@@ -3588,8 +3595,8 @@ switch ($inputData['type']) {
         // deepcode ignore ServerLeak: Data is encrypted before being sent
         echo (string) prepareExchangedData(
             array(
-                'error' => false,
-                'message' => '',
+                'error' => isset($error) === true ? $error : false,
+                'message' => isset($message) === true ? $message : '',
                 'otp_code' => $otpCode,
                 'otp_expires_in' => $otpExpiresIn,
                 'otp_enabled' => $dataItem['enabled'],
@@ -7321,7 +7328,7 @@ switch ($inputData['type']) {
                 $edit = false;
                 $delete = false;
             }
-            if (LOG_TO_SERVER === true) error_log('access: ' . $access . ' - edit: ' . $edit . ' - delete: ' . $delete);
+            if (LOG_TO_SERVER === true) error_log('TEAMPASS - access: ' . $access . ' - edit: ' . $edit . ' - delete: ' . $delete);
         }
 
         $data = array(

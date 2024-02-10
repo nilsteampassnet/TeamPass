@@ -5568,7 +5568,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     //decrypt data
                     data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>', 'items.queries.php', 'showDetailsStep3');
 
-                    if (data.otp_code !== '' && data.otp_expires_in !== '' && parseInt(data.otp_enabled) === 1) {
+                    if (data.otp_code !== '' && data.otp_expires_in !== '' && parseInt(data.otp_enabled) === 1 && data.message === '') {
                         $('#card-item-opt_code').html(data.otp_code+'</span><i class="fa-regular fa-copy ml-2 text-secondary pointer" id="clipboard_otpcode"></i><span class="ml-2">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span id="countdown_otp" style="position: absolute;right:0px;"></span><span>');   
                         
                         // show countdown
@@ -5603,6 +5603,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                             e.clearSelection();
                         });
 
+                        console.log("-------------");
+                        console.log(data);
+
                         // Prepare recursive call to get new OTP code
                         var replayDelayInMilliseconds = data.otp_expires_in*1000;
                         intervalId = setTimeout(function() {
@@ -5611,7 +5614,14 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
                         resolve(replayDelayInMilliseconds);
                     } else {
-                        $('#card-item-opt_code').html('<?php echo $lang->get('none'); ?>');
+                        console.log("-------------");
+                        console.log(data);
+                        if (data.error === false) {
+                            $('#card-item-opt_code').html('<?php echo $lang->get('none'); ?>');
+                        } else {
+                            $('#card-item-opt_code_error').html('<span class="text-warning pointer infotip" title="'+data.message+'"><i class="fa-solid fa-triangle-exclamation mr-1"></i><?php echo $lang->get('error'); ?></span>');
+                            $('.infotip').tooltip();
+                        }
                     }
 
                     resolve(false);

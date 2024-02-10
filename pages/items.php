@@ -690,6 +690,7 @@ foreach ($rows as $reccord) {
                         <li class="list-group-item">
                             <b><?php echo $lang->get('otp_code'); ?></b>
                             <a id="card-item-opt_code" class="float-right ml-1"></a>
+                            <span id="card-item-opt_code_error" class="float-right"></span>
                         </li>
                         <li class="list-group-item" id="card-item-misc">
                         </li>
