@@ -102,7 +102,7 @@ Teampass is currently available in the following languages:
 * UKRAINIAN
 * VIETNAMESE
 
-Languages strings are managed at [POEditor.com](https://poeditor.com/join/project?hash=0vptzClQrM).
+Languages strings are managed at [POEditor.com](https://poeditor.com/projects/view?id=433631).
 
 ## Licence Agreement
 
