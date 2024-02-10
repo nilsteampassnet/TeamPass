@@ -118,6 +118,9 @@ if (
     exit();
 }
 
+// Includes
+include_once __DIR__.'/../sources/main.functions.php';
+
 /**
  * Undocumented function.
  */
@@ -126,9 +129,6 @@ function mainQuery(array $SETTINGS)
     header('Content-type: text/html; charset=utf-8');
     header('Cache-Control: no-cache');
     error_reporting(E_ERROR);
-
-    // Includes
-    include_once __DIR__.'/../sources/main.functions.php';
 
     // Load libraries
     loadClasses('DB');
@@ -438,7 +438,7 @@ function mailHandler(string $post_type, /*php8 array|null|string */$dataReceived
                     $dataReceived['pre_replace'],
                     FILTER_SANITIZE_FULL_SPECIAL_CHARS
                 ),
-                $SETTINGS
+                true
             );
         
         /*
@@ -1845,42 +1845,6 @@ function initializeUserPassword(
             'error' => true,
             'message' => $lang->get('error_no_user'),
             'debug' => '',
-        ),
-        'encode'
-    );
-}
-
-function sendMailToUser(
-    string $post_receipt,
-    string $post_body,
-    string $post_subject,
-    array $post_replace,
-    array $SETTINGS
-): string
-{
-    if (count($post_replace) > 0) {
-        $post_body = str_replace(
-            array_keys($post_replace),
-            array_values($post_replace),
-            $post_body
-        );
-    }
-    
-    $ret = sendEmail(
-        $post_subject,
-        $post_body,
-        $post_receipt,
-        $SETTINGS,
-        '',
-        false
-    );
-
-    $ret = json_decode($ret, true);
-
-    return prepareExchangedData(
-        array(
-            'error' => empty($ret['error']) === true ? false : true,
-            'message' => $ret['message'],
         ),
         'encode'
     );

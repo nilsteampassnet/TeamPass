@@ -4359,3 +4359,62 @@ function returnIfSet($value, $retFalse = '', $retTrue = null): mixed
 
     return isset($value) === true ? ($retTrue === null ? $value : $retTrue) : $retFalse;
 }
+
+
+/**
+ * SEnd email to user
+ *
+ * @param string $post_receipt
+ * @param string $post_body
+ * @param string $post_subject
+ * @param array $post_replace
+ * @param boolean $immediate_email
+ * @return string
+ */
+function sendMailToUser(
+    string $post_receipt,
+    string $post_body,
+    string $post_subject,
+    array $post_replace,
+    bool $immediate_email = false
+): ?string {
+    global $SETTINGS;
+    if (count($post_replace) > 0 && is_null($post_replace) === false) {
+        $post_body = str_replace(
+            array_keys($post_replace),
+            array_values($post_replace),
+            $post_body
+        );
+    }
+
+    if ($immediate_email === true) {
+        $ret = sendEmail(
+            $post_subject,
+            $post_body,
+            $post_receipt,
+            $SETTINGS,
+            '',
+            false
+        );
+    
+        $ret = json_decode($ret, true);
+    
+        return prepareExchangedData(
+            array(
+                'error' => empty($ret['error']) === true ? false : true,
+                'message' => $ret['message'],
+            ),
+            'encode'
+        );
+    } else {
+        // Send through task handler
+        prepareSendingEmail(
+            $post_subject,
+            $post_body,
+            $post_receipt,
+            ""
+        );
+    }
+
+    return null;
+}

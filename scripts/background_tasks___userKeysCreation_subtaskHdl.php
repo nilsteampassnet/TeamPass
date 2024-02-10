@@ -112,8 +112,7 @@ $taskStatus = performUserCreationKeys(
     (int) $inputData['index'],
     (int) $inputData['nb'],
     $SETTINGS,
-    $taskArgs,
-    $inputData['taskId']
+    $taskArgs
 );
 
 // update the subtask status
@@ -147,8 +146,7 @@ function performUserCreationKeys(
     int     $post_start,
     int     $post_length,
     array   $SETTINGS,
-    array   $extra_arguments,
-    int     $taskId
+    array   $extra_arguments
 ): array
 {
     $post_user_id = $extra_arguments['new_user_id'];
@@ -900,37 +898,4 @@ function cronContinueReEncryptingUserSharekeysStep10(
         'new_index' => 0,
         'new_action' => 'step20',
     ];
-}
-
-
-/**
- * SEnd email to user
- *
- * @param string $post_receipt
- * @param string $post_body
- * @param string $post_subject
- * @param array $post_replace
- * @return void
- */
-function sendMailToUser(
-    string $post_receipt,
-    string $post_body,
-    string $post_subject,
-    array $post_replace
-): void
-{
-    if (count($post_replace) > 0 && is_null($post_replace) === false) {
-        $post_body = str_replace(
-            array_keys($post_replace),
-            array_values($post_replace),
-            $post_body
-        );
-    }
-
-    prepareSendingEmail(
-        $post_subject,
-        $post_body,
-        $post_receipt,
-        ""
-    );
 }
