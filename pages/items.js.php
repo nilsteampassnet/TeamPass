@@ -5614,12 +5614,10 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
                         resolve(replayDelayInMilliseconds);
                     } else {
-                        console.log("-------------");
-                        console.log(data);
                         if (data.error === false) {
                             $('#card-item-opt_code').html('<?php echo $lang->get('none'); ?>');
                         } else {
-                            $('#card-item-opt_code_error').html('<span class="text-warning pointer infotip" title="'+data.message+'"><i class="fa-solid fa-triangle-exclamation mr-1"></i><?php echo $lang->get('error'); ?></span>');
+                            $('#card-item-opt_code_error').html('<span class="text-warning pointer infotip" title="<?php echo $lang->get('error_otp_secret'); ?>"><i class="fa-solid fa-triangle-exclamation mr-1"></i><?php echo $lang->get('error'); ?></span>');
                             $('.infotip').tooltip();
                         }
                     }

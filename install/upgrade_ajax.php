@@ -28,12 +28,175 @@
 use TiBeN\CrontabManager\CrontabJob;
 use TiBeN\CrontabManager\CrontabAdapter;
 use TiBeN\CrontabManager\CrontabRepository;
-use EZimuel\PHPSecureSession;
-use Hackzilla\PasswordGenerator\Generator\ComputerPasswordGenerator;
-use Hackzilla\PasswordGenerator\RandomGenerator\Php7RandomGenerator;
 use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\Language\Language;
 use TeampassClasses\PasswordManager\PasswordManager;
+
+
+$_SESSION = [];
+
+function settingsConsistencyCheck(): array
+{
+    $settingsFile = __DIR__.'/../includes/config/settings.php';
+    require_once $settingsFile;
+    require_once 'tp.functions.php';
+
+    if (defined('DB_PASSWD') === false && isset($pass) === true) {
+        // We need to convert settings.php file from V2 to V3 format
+        
+        //Do a copy of the existing file
+        if (!copy(
+            $settingsFile,
+            $settingsFile . '.' . date(
+                'Y_m_d_H_i_s',
+                mktime((int) date('H'), (int) date('i'), (int) date('s'), (int) date('m'), (int) date('d'), (int) date('y'))
+            )
+        )) {
+            $error = error_get_last();
+            $errorMessage = isset($error['message']) ? $error['message'] : 'Unknown error.';
+            return [
+                'error' => '[{
+                    "error" : "Error: '.$errorMessage.'. Please do it by yourself and click on button Launch.",
+                    "index" : ""
+                }]',
+                'value' => false
+            ];
+        }
+
+
+        // Handle teampass-seckey.txt file
+        if (file_exists(SECUREPATH.'/teampass-seckey.txt')) {
+            // do a copy
+            if (!copy(
+                SECUREPATH.'/teampass-seckey.txt',
+                SECUREPATH.'/teampass-seckey.txt' . '.' . date(
+                    'Y_m_d_H_i_s',
+                    mktime((int) date('H'), (int) date('i'), (int) date('s'), (int) date('m'), (int) date('d'), (int) date('y'))
+                )
+            )) {
+                $error = error_get_last();
+                $errorMessage = isset($error['message']) ? $error['message'] : 'Unknown error.';
+                return [
+                    'error' => '[{
+                        "error" : "Error: '.$errorMessage.'. Please do it by yourself and click on button Launch.",
+                        "index" : ""
+                    }]',
+                    'value' => false
+                ];
+            }
+
+            // prepare new file
+            $filesecure = generateRandomKey();
+            define('SECUREFILE', $filesecure);
+        } else {
+            return [
+                'error' => '[{
+                    "error" : "'.SECUREPATH.'/teampass-seckey.txt file does not exist. Please recover it and click on button Launch.",
+                    "index" : ""
+                }]',
+                'value' => false
+            ];
+        }
+
+
+        // Ensure DB is read as UTF8
+        if (defined('DB_ENCODING') === false) {
+            define('DB_ENCODING', "utf8");
+        }
+
+        // Delete olf file
+        unlink($settingsFile);
+        // Now create new file
+        $file_handled = fopen($settingsFile, 'w');
+        
+        $settingsTxt = '<?php
+// DATABASE connexion parameters
+define("DB_HOST", "' . trim($server) . '");
+define("DB_USER", "' . trim($user) . '");
+define("DB_PASSWD", "' . trim($pass) . '");
+define("DB_NAME", "' . trim($database) . '");
+define("DB_PREFIX", "' . trim($pre) . '");
+define("DB_PORT", "' . trim($port) . '");
+define("DB_ENCODING", "' . trim($encoding) . '");
+define("DB_SSL", false); // if DB over SSL then comment this line
+// if DB over SSL then uncomment the following lines
+//define("DB_SSL", array(
+//    "key" => "",
+//    "cert" => "",
+//    "ca_cert" => "",
+//    "ca_path" => "",
+//    "cipher" => ""
+//));
+define("DB_CONNECT_OPTIONS", array(
+    MYSQLI_OPT_CONNECT_TIMEOUT => 10
+));
+define("SECUREPATH", "' . str_replace("\\", "\\\\", SECUREPATH) . '");
+define("SECUREFILE", "' . SECUREFILE. '");';
+
+		if (defined('IKEY') === true) $settingsTxt .= '
+define("IKEY", "' . IKEY . '");';
+		else $settingsTxt .= '
+define("IKEY", "");';
+		if (defined('SKEY') === true) $settingsTxt .= '
+define("SKEY", "' . SKEY . '");';
+		else $settingsTxt .= '
+define("SKEY", "");';
+		if (defined('HOST') === true) $settingsTxt .= '
+define("HOST", "' . HOST . '");';
+		else $settingsTxt .= '
+define("HOST", "");';
+
+
+        $settingsTxt .= '
+
+if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
+    date_default_timezone_set($_SESSION[\'settings\'][\'timezone\']);
+}
+';
+
+        $fileCreation = fwrite(
+            $file_handled,
+            utf8_encode($settingsTxt)
+        );
+
+        fclose($file_handled);
+        if ($fileCreation === false) {
+            return [
+                'error' => '[{
+                    "error" : "Setting.php file could not be created in /includes/config/ folder. Please check the path and the rights.",
+                    "index" : ""
+                }]',
+                'value' => false
+            ];
+        }
+        
+        define("DB_HOST", "' . $server . '");
+        define("DB_USER", "' . $user . '");
+        define("DB_PASSWD", "' . $pass . '");
+        define("DB_NAME", "' . $database . '");
+        define("DB_PREFIX", "' . $pre . '");
+        define("DB_PORT", "' . $port . '");
+        define("DB_SSL", "false");
+        define("DB_CONNECT_OPTIONS", array(
+            MYSQLI_OPT_CONNECT_TIMEOUT => 10
+        ));
+
+        return [
+            'error' => '',
+            'value' => true
+        ];
+    }
+
+    // No need to create new settings.php file
+    return [
+        'error' => '',
+        'value' => false
+    ];
+}
+
+// Check and build if necessary the new settings.php file
+$check = settingsConsistencyCheck();
+$settingsFileNewlyCreated = $check['value'];
 
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
@@ -73,179 +236,6 @@ $post_sk_path = filter_input(INPUT_POST, 'sk_path', FILTER_SANITIZE_FULL_SPECIAL
 $post_url_path = filter_input(INPUT_POST, 'url_path', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
 
-// Do we need to rewrite the settings.php file?
-if (defined("DB_PASSWD") === false) {
-	$settingsFile = '../includes/config/settings.php';
-    if (null !== SECUREPATH) { //3.0.0.23
-        //Do a copy of the existing file
-        if (!copy(
-            $settingsFile,
-            $settingsFile . '.' . date(
-                'Y_m_d_H_i_s',
-                mktime((int) date('H'), (int) date('i'), (int) date('s'), (int) date('m'), (int) date('d'), (int) date('y'))
-            )
-        )) {
-            echo '[{
-                "error" : "Setting.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.",
-                "index" : ""
-            }]';
-            exit;
-        } else {
-            unlink($settingsFile);
-        }
-        
-        // CHeck if old sk.php exists.
-        // If yes then get keys to database and delete it
-        if (empty($post_sk_path) === false || defined('SECUREPATH') === true) {
-            $filename = (empty($post_sk_path) === false ? $post_sk_path : SECUREPATH) . '/sk.php';
-            if (file_exists($filename)) {
-                include_once $filename;
-                unlink($filename);
-
-                // Using the new Duo Web SDK akey is deprecated, not keeping track of it.
-                // SKEY
-                $tmp = mysqli_query(
-                    $db_link,
-                    "SELECT INTO `" . $pre . "misc`
-                    WHERE type = 'admin' AND intitule = 'duo_skey'"
-                );
-                if ($tmp) {
-                    mysqli_query(
-                        $db_link,
-                        "UPDATE `" . $pre . "misc`
-                        set valeur = '" . SKEY . "', type = 'admin', intitule = 'duo_skey'"
-                    );
-                } else {
-                    mysqli_query(
-                        $db_link,
-                        "INSERT INTO `" . $pre . "misc`
-                        (`valeur`, `type`, `intitule`)
-                        VALUES ('" . SKEY . "', 'admin', 'duo_skey')"
-                    );
-                }
-
-                // IKEY
-                $tmp = mysqli_query(
-                    $db_link,
-                    "SELECT INTO `" . $pre . "misc`
-                    WHERE type = 'admin' AND intitule = 'duo_ikey'"
-                );
-                if ($tmp) {
-                    mysqli_query(
-                        $db_link,
-                        "UPDATE `" . $pre . "misc`
-                        set valeur = '" . IKEY . "', type = 'admin', intitule = 'duo_ikey'"
-                    );
-                } else {
-                    mysqli_query(
-                        $db_link,
-                        "INSERT INTO `" . $pre . "misc`
-                        (`valeur`, `type`, `intitule`)
-                        VALUES ('" . IKEY . "', 'admin', 'duo_ikey')"
-                    );
-                }
-
-                // HOST
-                $tmp = mysqli_query(
-                    $db_link,
-                    "SELECT INTO `" . $pre . "misc`
-                    WHERE type = 'admin' AND intitule = 'duo_host'"
-                );
-                if ($tmp) {
-                    mysqli_query(
-                        $db_link,
-                        "UPDATE `" . $pre . "misc`
-                        set valeur = '" . HOST . "', type = 'admin', intitule = 'duo_host'"
-                    );
-                } else {
-                    mysqli_query(
-                        $db_link,
-                        "INSERT INTO `" . $pre . "misc`
-                        (`valeur`, `type`, `intitule`)
-                        VALUES ('" . HOST . "', 'admin', 'duo_host')"
-                    );
-                }
-            }
-        }
-
-        // Ensure DB is read as UTF8
-        if (defined('DB_ENCODING') === false) {
-            define('DB_ENCODING', "utf8");
-        }
-
-        // Now create new file
-        $file_handled = fopen($settingsFile, 'w');
-        
-        $settingsTxt = '<?php
-// DATABASE connexion parameters
-define("DB_HOST", "' . $server . '");
-define("DB_USER", "' . $user . '");
-define("DB_PASSWD", "' . $pass . '");
-define("DB_NAME", "' . $database . '");
-define("DB_PREFIX", "' . $pre . '");
-define("DB_PORT", "' . $port . '");
-define("DB_ENCODING", "' . $encoding . '");
-define("DB_SSL", false); // if DB over SSL then comment this line
-// if DB over SSL then uncomment the following lines
-//define("DB_SSL", array(
-//    "key" => "",
-//    "cert" => "",
-//    "ca_cert" => "",
-//    "ca_path" => "",
-//    "cipher" => ""
-//));
-define("DB_CONNECT_OPTIONS", array(
-    MYSQLI_OPT_CONNECT_TIMEOUT => 10
-));
-define("SECUREPATH", "' . str_replace('\\', '\\\\', SECUREPATH) . '");';
-define("SECUREFILE", "' . SECUREFILE. '");
-
-		if (defined('IKEY') === true) $settingsTxt .= '
-define("IKEY", "' . IKEY . '");';
-		else $settingsTxt .= '
-define("IKEY", "");';
-		if (defined('SKEY') === true) $settingsTxt .= '
-define("SKEY", "' . SKEY . '");';
-		else $settingsTxt .= '
-define("SKEY", "");';
-		if (defined('HOST') === true) $settingsTxt .= '
-define("HOST", "' . HOST . '");';
-		else $settingsTxt .= '
-define("HOST", "");';
-
-
-        $settingsTxt .= '
-
-if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
-    date_default_timezone_set($_SESSION[\'settings\'][\'timezone\']);
-}
-';
-
-        $fileCreation = fwrite(
-            $file_handled,
-            utf8_encode($settingsTxt)
-        );
-
-        fclose($file_handled);
-        if ($fileCreation === false) {
-            echo '[{
-                "error" : "Setting.php file could not be created in /includes/config/ folder. Please check the path and the rights.",
-                "index" : ""
-            }]';
-            exit;
-        }
-        
-        define("DB_HOST", "' . $server . '");
-        define("DB_USER", "' . $user . '");
-        define("DB_PASSWD", "' . $pass . '");
-        define("DB_NAME", "' . $database . '");
-        define("DB_PREFIX", "' . $pre . '");
-        define("DB_PORT", "' . $port . '");
-        define("DB_ENCODING", "' . $encoding . '");
-    }
-}
-
-
 // Test DB connexion
 $pass = defuse_return_decrypted(DB_PASSWD);
 $server = DB_HOST;
@@ -271,7 +261,7 @@ try {
     }]';
     exit;
 }
-
+error_log('ici');
 // Set Session
 $superGlobal->put('CPM', 1, 'SESSION');
 $superGlobal->put('db_encoding', 'utf8', 'SESSION');
@@ -295,7 +285,7 @@ if (isset($post_type)) {
             session_destroy();
 
             require_once 'libs/aesctr.php';
-
+            error_log('ici');
             // check if path in settings.php are consistent
             if (defined(SECUREPATH) === true) {
                 if (!is_dir(SECUREPATH)) {
@@ -313,7 +303,7 @@ if (isset($post_type)) {
                     break;
                 }
             }
-
+            error_log('ici');
             $_SESSION['settings']['cpassman_dir'] = '..';
             $passwordManager = new PasswordManager();
 
@@ -325,7 +315,7 @@ if (isset($post_type)) {
                     WHERE login='" . mysqli_escape_string($db_link, stripslashes($post_login)) . "'"
                 )
             );
-
+error_log('ici');
             if (empty($user_info['pw']) || $user_info['pw'] === null) {
                 echo '[{'.
                     '"error" : "User is not allowed",'.
@@ -767,6 +757,9 @@ if (isset($post_type)) {
                     if (file_exists($filename)) {
                         include_once $filename;
                         unlink($filename);
+
+                        $filesecure = generateRandomKey();
+                        define('SECUREFILE', $filesecure);
 
                         // Using the new Duo Web SDK akey is deprecated, not keeping track of it.
                         // SKEY

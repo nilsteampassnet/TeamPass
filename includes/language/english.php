@@ -28,6 +28,7 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'error_otp_secret' => 'Enable to decode the OTP secret, is the secret correct?',
     'tasks_log_retention_delay_in_days' => 'Tasks log retention delay (in days)',
     'tasks_log_table_size' => 'Tasks log table size',
     'progress' => 'Progress',

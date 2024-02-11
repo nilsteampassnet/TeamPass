@@ -62,6 +62,8 @@ declare(strict_types=1);
             // Set previous values
             $("#pw").val(store.get('teampassUser').pwd);
             $("#login").val(store.get('teampassUser').login);
+            $("#select2fa-otp").prop('checked', store.get('teampassUser').mfaSelector);
+            $("#ga_code").val(store.get('teampassUser').mfaCode);
 
             // Update session
             store.update(
@@ -583,6 +585,8 @@ declare(strict_types=1);
                         function(teampassUser) {
                             teampassUser.pwd = $("#pw").val();
                             teampassUser.login = $("#login").val();
+                            teampassUser.mfaSelector = $("#select2fa-otp").is(":checked");
+                            teampassUser.mfaCode = $("#ga_code").val();
                             teampassUser.page_reload = 1;
                         }
                     );
@@ -830,6 +834,8 @@ declare(strict_types=1);
                             teampassUser.special = data.special;
                             teampassUser.auth_type = '';
                             teampassUser.location_stored = 0;
+                            teampassUser.mfaSelector = false;
+                            teampassUser.mfaCode = '';
                             teampassUser.page_reload = 0;
                         }
                     );

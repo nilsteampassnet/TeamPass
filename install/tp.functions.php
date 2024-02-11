@@ -1,7 +1,5 @@
 <?php
 
-use Hackzilla\PasswordGenerator\Generator\ComputerPasswordGenerator;
-use Hackzilla\PasswordGenerator\RandomGenerator\Php7RandomGenerator;
 use Defuse\Crypto\Key;
 use Defuse\Crypto\Crypto;
 use Defuse\Crypto\Exception as CryptoException;
@@ -330,17 +328,16 @@ function cleanFields($txt)
  */
 function generateRandomKey()
 {
-    $generator = new ComputerPasswordGenerator();
-
-    $generator->setLength(40);
-    $generator->setSymbols(false);
-    $generator->setLowercase(true);
-    $generator->setUppercase(true);
-    $generator->setNumbers(true);
-
-    $key = $generator->generatePasswords();
-
-    return $key[0];
+    $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    $randomString = '';
+    $n = 40;
+ 
+    for ($i = 0; $i < $n; $i++) {
+        $index = rand(0, strlen($characters) - 1);
+        $randomString .= $characters[$index];
+    }
+ 
+    return $randomString;
 }
 
 /**
