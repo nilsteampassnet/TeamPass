@@ -57,7 +57,9 @@ require_once __DIR__.'/../sources/main.functions.php';
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
 $lang = new Language(); 
-session_start();
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
 
 // Load config if $SETTINGS not defined
 try {
