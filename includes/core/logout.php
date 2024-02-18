@@ -88,7 +88,7 @@ if (empty($user_id) === false) {
 
 // erase session table
 $session->invalidate();
-//session_regenerate_id(true);
+$session->set('key', SessionManager::getCookieValue('PHPSESSID'));
 
 echo '
     <script type="text/javascript" src="../../plugins/store.js/dist/store.everything.min.js"></script>

@@ -25,7 +25,7 @@
 
 header("Access-Control-Allow-Origin: ".$_SERVER['HTTP_HOST']);
 header("Content-Type: application/json; charset=UTF-8");
-header("Access-Control-Allow-Methods: POST");
+header("Access-Control-Allow-Methods: POST, GET");
 header("Access-Control-Max-Age: 3600");
 header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
 require __DIR__ . "/inc/bootstrap.php";
@@ -46,6 +46,7 @@ if (defined('DB_PASSWD_CLEAR') === false) {
 $apiStatus = json_decode(apiIsEnabled(), true);
 $jwtStatus = json_decode(verifyAuth(), true);
 
+file_put_contents(__DIR__ . '/api.log', date("Y-m-d H:i:s")." - ".print_r($jwtStatus, true), FILE_APPEND | LOCK_EX);
 // Authorization handler
 if ($uri[0] === 'authorize') {
     // Is API enabled in Teampass settings
@@ -68,7 +69,7 @@ if ($uri[0] === 'authorize') {
     // define the position of controller in $uri
     $controller = $uri[0];
     $action = $uri[1];
-error_log("controller: ".$controller." | action: ".$action." || ".print_r($userData, true));
+    error_log("API - controller: ".$controller." | action: ".$action." || ".print_r($userData, true));
     if ($userData['error'] === true) {
         // Error management
         errorHdl(
