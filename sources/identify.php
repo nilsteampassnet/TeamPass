@@ -468,6 +468,22 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             $username,
             $SETTINGS,
         );
+        $lifetime = time() + ($dataReceived['duree_session'] * 60);
+
+        //--- Handle the session duration and ID
+        //$cookieParams = session_get_cookie_params();
+        //error_log('DEBUG: '.session_name()."=".session_id()."; lifetime=".$lifetime."; cookieParams=".print_r($cookieParams, true));
+        /*setcookie(
+            session_name(),
+            session_id(),
+            $lifetime,
+            $cookieParams['path'],
+            $cookieParams['domain'],
+            $cookieParams['secure'],
+            $cookieParams['httponly']
+        );*/
+        //---
+
         
         // Save account in SESSION
         $session->set('user-unsuccessfull_login_attempts_list', $attemptsInfos['attemptsList'] === 0 ? true : false);
@@ -500,6 +516,9 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         $session->set('user-language', $userInfo['user_language']);
         $session->set('user-timezone', $userInfo['usertimezone']);
         $session->set('user-keys_recovery_time', $userInfo['keys_recovery_time']);
+        
+        // manage session expiration
+        $session->set('user-session_duration', (int) $lifetime);
 
         // User signature keys
         $returnKeys = prepareUserEncryptionKeys($userInfo, $passwordClear);  
@@ -514,8 +533,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         
         $session->set('user-special', $userInfo['special']);
         $session->set('user-auth_type', $userInfo['auth_type']);
-        // manage session expiration
-        $session->set('user-session_duration', (int) (time() + ($dataReceived['duree_session'] * 60)));
 
         // check feedback regarding user password validity
         $return = checkUserPasswordValidity(

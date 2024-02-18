@@ -70,7 +70,6 @@ if (file_exists(__DIR__.'/includes/config/settings.php') === false) {
 // initialise CSRFGuard library
 require_once __DIR__.'/includes/libraries/csrfp/libs/csrf/csrfprotector.php';
 csrfProtector::init();
-//session_id();
 
 // Load config
 try {

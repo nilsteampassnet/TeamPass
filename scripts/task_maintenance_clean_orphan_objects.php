@@ -126,6 +126,70 @@ function cleanOrphanObjects(): void
         }
     }
 
+    // Delete all item keys for which no user exist
+    DB::query(
+        'DELETE k FROM ' . prefixTable('sharekeys_items') . ' k
+        LEFT JOIN ' . prefixTable('users') . ' u ON k.user_id = u.id
+        WHERE u.id IS NULL OR u.deleted_at IS NOT NULL'
+    );
+
+    // Delete all files keys for which no user exist
+    DB::query(
+        'DELETE k FROM ' . prefixTable('sharekeys_files') . ' k
+        LEFT JOIN ' . prefixTable('users') . ' u ON k.user_id = u.id
+        WHERE u.id IS NULL OR u.deleted_at IS NOT NULL'
+    );
+
+    // Delete all fields keys for which no user exist
+    DB::query(
+        'DELETE k FROM ' . prefixTable('sharekeys_fields') . ' k
+        LEFT JOIN ' . prefixTable('users') . ' u ON k.user_id = u.id
+        WHERE u.id IS NULL OR u.deleted_at IS NOT NULL'
+    );
+
+    // Delete all item logs for which no user exist
+    DB::query(
+        'DELETE l FROM ' . prefixTable('log_items') . ' l
+        LEFT JOIN ' . prefixTable('users') . ' u ON l.id_user = u.id
+        WHERE u.id IS NULL OR u.deleted_at IS NOT NULL'
+    );
+
+    // Delete all system logs for which no user exist
+    DB::query(
+        'DELETE l FROM ' . prefixTable('log_system') . ' l
+        LEFT JOIN ' . prefixTable('users') . ' u ON l.qui = u.id
+        WHERE i.id IS NULL OR u.deleted_at IS NOT NULL'
+    );
+
+    // Delete all item keys for which no object exist
+    DB::query(
+        'DELETE k FROM ' . prefixTable('sharekeys_items') . ' k
+        LEFT JOIN ' . prefixTable('items') . ' i ON k.object_id = i.id
+        WHERE i.id IS NULL'
+    );
+
+    // Delete all files keys for which no object exist
+    DB::query(
+        'DELETE k FROM ' . prefixTable('sharekeys_files') . ' k
+        LEFT JOIN ' . prefixTable('items') . ' i ON k.object_id = i.id
+        WHERE i.id IS NULL'
+    );
+
+    // Delete all fields keys for which no object exist
+    DB::query(
+        'DELETE k FROM ' . prefixTable('sharekeys_fields') . ' k
+        LEFT JOIN ' . prefixTable('items') . ' i ON k.object_id = i.id
+        WHERE i.id IS NULL'
+    );
+
+    // Delete all item logs for which no object exist
+    DB::query(
+        'DELETE l FROM ' . prefixTable('log_items') . ' l
+        LEFT JOIN ' . prefixTable('items') . ' i ON k.id_item = i.id
+        WHERE i.id IS NULL'
+    );
+
+
     // Update CACHE table
     updateCacheTable('reload', null);
 }

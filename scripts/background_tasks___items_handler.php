@@ -137,12 +137,11 @@ $process_to_perform = DB::queryfirstrow(
     ORDER BY increment_id DESC',
     1
 );
-error_log("Process to continue: ".print_r($process_to_perform, true));
-    if (DB::count() > 0) {
-        $process = new Symfony\Component\Process\Process([$phpBinaryPath, __FILE__]);
-        $process->start();
+if (DB::count() > 0) {
+    $process = new Symfony\Component\Process\Process([$phpBinaryPath, __FILE__]);
+    $process->start();
 
-        if (WIP === true) {
+    if (WIP === true) {
         DB::insert(
             prefixTable('processes_server'),
             array(

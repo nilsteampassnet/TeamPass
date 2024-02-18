@@ -29,17 +29,28 @@ namespace TeampassClasses\SessionManager;
  */
 
 use Symfony\Component\HttpFoundation\Session\Session;
+use Symfony\Component\HttpFoundation\Session\Storage\NativeSessionStorage;
 use Symfony\Component\HttpFoundation\Request;
 
 class SessionManager
 {
-    private static $session;
+    private static $session = null;
 
     public static function getSession()
     {
         if (null === self::$session) {
             self::$session = new Session();
             if (session_status() === PHP_SESSION_NONE) {
+                $request = Request::createFromGlobals();
+                $isSecure = $request->isSecure();
+
+                session_set_cookie_params([
+                    'lifetime' => 86400, // 1 day cookie - this to bypass session.gc_maxlifetime short value in php.ini 
+                    'path' => '/',
+                    'secure' => $isSecure,
+                    'httponly' => true,
+                    'samesite' => 'Lax' // None || Lax  || Strict
+                ]);
                 self::$session->start();
             }
         }
@@ -120,5 +131,11 @@ class SessionManager
         }
 
         return null;
+    }
+
+    private static function determineBasePath(Request $request) {
+        // Utilise l'objet Request pour obtenir le chemin de base
+        $basePath = $request->getBasePath();
+        return $basePath !== '' ? $basePath : '/';
     }
 }
