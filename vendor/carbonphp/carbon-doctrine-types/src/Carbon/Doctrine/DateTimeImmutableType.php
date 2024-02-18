@@ -17,7 +17,7 @@ class DateTimeImmutableType extends VarDateTimeImmutableType implements CarbonDo
     /**
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-    public function convertToPHPValue(mixed $value, AbstractPlatform $platform): ?DateTimeImmutable
+    public function convertToPHPValue(mixed $value, AbstractPlatform $platform): ?CarbonImmutable
     {
         return $this->doConvertToPHPValue($value);
     }

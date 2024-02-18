@@ -42,7 +42,10 @@ if (file_exists('../includes/config/settings.php') === false) {
     $settings_sample = 'includes/config/settings.sample.php';
     $settings = 'includes/config/settings.php';
     if (copy('../'.$settings_sample, '../'.$settings) === false) {
-        echo '[{"error" : "File <i>' . $settings . '</i> could not be copied from <i>'.$settings_sample.'</i>.<br>Please do it on your own or change folder rights, and click START button!", "index" : "99", "multiple" : "' . $post_multiple . '"}]';
+        echo '[{"error" : "File <i>' . $settings . '</i> could not be copied from <i>'.$settings_sample.'</i>. You have 2 possible actions:<br>'.
+            '1- Manually perform a copy of file <i>' . $settings_sample . '</i> and rename it as <i>'.$settings.'</i>.<br>'.
+            'or 2- Change the user rights to 0755 on <i>includes/config/</i> and its content.<br>'.
+            'Then click START button.", "index" : "99", "multiple" : "' . $post_multiple . '"}]';
         exit();
     }
 }
@@ -54,14 +57,13 @@ require_once __DIR__.'/../sources/main.functions.php';
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
 $lang = new Language(); 
-session_name('teampass_session');
 session_start();
 
 // Load config if $SETTINGS not defined
 try {
     include_once __DIR__.'/../includes/config/tp.config.php';
 } catch (Exception $e) {
-    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+    $SETTINGS = [];
 }
 
 // Define Timezone

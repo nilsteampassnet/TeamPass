@@ -984,6 +984,7 @@ return array(
     'RobThree\\Auth\\Providers\\Time\\TimeException' => $vendorDir . '/robthree/twofactorauth/lib/Providers/Time/TimeException.php',
     'RobThree\\Auth\\TwoFactorAuth' => $vendorDir . '/robthree/twofactorauth/lib/TwoFactorAuth.php',
     'RobThree\\Auth\\TwoFactorAuthException' => $vendorDir . '/robthree/twofactorauth/lib/TwoFactorAuthException.php',
+    'SQLite3Exception' => $vendorDir . '/symfony/polyfill-php83/Resources/stubs/SQLite3Exception.php',
     'Stringable' => $vendorDir . '/symfony/polyfill-php80/Resources/stubs/Stringable.php',
     'Symfony\\Component\\Finder\\Comparator\\Comparator' => $vendorDir . '/symfony/finder/Comparator/Comparator.php',
     'Symfony\\Component\\Finder\\Comparator\\DateComparator' => $vendorDir . '/symfony/finder/Comparator/DateComparator.php',

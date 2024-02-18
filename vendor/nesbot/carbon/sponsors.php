@@ -26,6 +26,15 @@ function getMaxHistoryMonthsByAmount($amount): int
     return 2;
 }
 
+function getHtmlAttribute($rawValue): string
+{
+    return str_replace(
+        ['​', "\r"],
+        '',
+        trim(htmlspecialchars((string) $rawValue), "  \n\r\t\v\0"),
+    );
+}
+
 function getOpenCollectiveSponsors(): string
 {
     $customSponsorImages = [
@@ -99,11 +108,11 @@ function getOpenCollectiveSponsors(): string
         [$x, $y] = @getimagesize($src) ?: [0, 0];
         $validImage = ($x && $y);
         $src = $validImage ? htmlspecialchars($src) : 'https://opencollective.com/static/images/default-guest-logo.svg';
-        $height = $member['status'] === 'sponsor' ? 64 : 48;
-        $width = min(128, $validImage ? round($x * $height / $y) : $height);
+        $height = $member['status'] === 'sponsor' ? 64 : 42;
+        $width = min($height * 2, $validImage ? round($x * $height / $y) : $height);
         $href .= (strpos($href, '?') === false ? '?' : '&amp;').'utm_source=opencollective&amp;utm_medium=github&amp;utm_campaign=Carbon';
-        $title = htmlspecialchars(($member['description'] ?? null) ?: $member['name']);
-        $alt = htmlspecialchars($member['name']);
+        $title = getHtmlAttribute(($member['description'] ?? null) ?: $member['name']);
+        $alt = getHtmlAttribute($member['name']);
 
         return "\n".'<a title="'.$title.'" href="'.$href.'" target="_blank">'.
             '<img alt="'.$alt.'" src="'.$src.'" width="'.$width.'" height="'.$height.'">'.

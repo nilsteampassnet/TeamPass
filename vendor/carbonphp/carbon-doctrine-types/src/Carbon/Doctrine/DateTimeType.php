@@ -17,7 +17,7 @@ class DateTimeType extends VarDateTimeType implements CarbonDoctrineType
     /**
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-    public function convertToPHPValue(mixed $value, AbstractPlatform $platform): ?DateTime
+    public function convertToPHPValue(mixed $value, AbstractPlatform $platform): ?Carbon
     {
         return $this->doConvertToPHPValue($value);
     }
