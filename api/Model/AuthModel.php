@@ -22,7 +22,7 @@
  *
  * @see       https://www.teampass.net
  */
-use PasswordLib\PasswordLib;
+use TeampassClasses\PasswordManager\PasswordManager;
 use TeampassClasses\NestedTree\NestedTree;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
@@ -60,7 +60,7 @@ class AuthModel extends Database
             API_ROOT_PATH . '/..'
         );
         if (empty($inputData['login']) === true || empty($inputData['apikey']) === true) {
-            return ["error" => "Login failed0.", "info" => "Empty entry"];
+            return ["error" => "Login failed.", "info" => "Empty entry"];
         }
         
         // Check apikey
@@ -68,38 +68,50 @@ class AuthModel extends Database
             // case where it is a generic key
             $apiInfo = $this->select("SELECT count(*) FROM " . prefixTable('api') . " WHERE value='".$inputData['apikey']."' AND label='".$inputData['login']."'");
             if ((int) $apiInfo[0]['count(*)'] === 0) {
-                return ["error" => "Login failed1.", "info" => "apikey : Not valid"];
+                return ["error" => "Login failed.", "info" => "apikey : Not valid"];
             }
 
-            return ["error" => "Login failed2.", "info" => "Not managed."];
+            return ["error" => "Login failed.", "info" => "Not managed."];
         } else {
             // case where it is a user api key
             // Check if user exists
             $userInfoRes = $this->select(
-                "SELECT u.id, u.pw, u.public_key, u.private_key, u.personal_folder, u.fonction_id, u.groupes_visibles, u.groupes_interdits, a.value AS user_api_key
+                "SELECT u.id, u.pw, u.login, u.public_key, u.private_key, u.personal_folder, u.fonction_id, u.groupes_visibles, u.groupes_interdits, a.value AS user_api_key
                 FROM " . prefixTable('users') . " AS u
                 INNER JOIN " . prefixTable('api') . " AS a ON (a.user_id=u.id)
                 WHERE login='".$inputData['login']."'");
             if (count($userInfoRes) === 0) {
-                return ["error" => "Login failed3.", "info" => "apikey : Not valid"];
+                return ["error" => "Login failed.", "info" => "apikey : Not valid"];
             }
             $userInfoRes[0]['special'] = '';
             $userInfo = $userInfoRes[0];
             
             // Check password
-            $pwdlib = new PasswordLib();
-            if ($pwdlib->verifyPasswordHash($inputData['password'], $userInfo['pw']) === true) {
+            $passwordManager = new PasswordManager();
+            if ($passwordManager->verifyPassword($userInfo['pw'], $inputData['password']) === true) {
                 // Correct credentials
                 // get user keys
                 $privateKeyClear = decryptPrivateKey($inputData['password'], (string) $userInfo['private_key']);
 
                 // check API key
                 if ($inputData['apikey'] !== base64_decode(decryptUserObjectKey($userInfo['user_api_key'], $privateKeyClear))) {
-                    return ["error" => "Login failed4.", "apikey" => "Not valid"];
+                    return ["error" => "Login failed.", "apikey" => "Not valid"];
                 }
 
+                // Update user's key_tempo
+                $keyTempo = bin2hex(random_bytes(16));
+                $this->update(
+                    "UPDATE " . prefixTable('users') . "
+                    SET key_tempo='".$keyTempo."'
+                    WHERE id=".$userInfo['id']
+                );
+                
                 // get user folders list
                 $ret = $this->buildUserFoldersList($userInfo);
+
+                // Log user
+                include API_ROOT_PATH . '/../includes/config/tp.config.php';
+                logEvents($SETTINGS, 'api', 'user_connection', (string) $userInfo['id'], stripslashes($userInfo['login']));
 
                 // create JWT
                 return $this->createUserJWT(
@@ -109,10 +121,11 @@ class AuthModel extends Database
                     $userInfo['public_key'],
                     $privateKeyClear,
                     implode(",", $ret['folders']),
-                    implode(",", $ret['items'])
+                    implode(",", $ret['items']),
+                    $keyTempo
                 );
             } else {
-                return ["error" => "Login failed5.", "info" => "password : Not valid"];
+                return ["error" => "Login failed.", "info" => "password : Not valid"];
             }
         }
     }
@@ -127,9 +140,10 @@ class AuthModel extends Database
      * @param string $pubkey
      * @param string $privkey
      * @param string $folders
+     * @param string $keyTempo
      * @return array
      */
-    private function createUserJWT(int $id, string $login, int $pf_enabled, string $pubkey, string $privkey, string $folders, string $items): array
+    private function createUserJWT(int $id, string $login, int $pf_enabled, string $pubkey, string $privkey, string $folders, string $items, string $keyTempo): array
     {
         include API_ROOT_PATH . '/../includes/config/tp.config.php';
         
@@ -142,8 +156,9 @@ class AuthModel extends Database
             'pf_enabled' => $pf_enabled,
             'folders_list' => $folders,
             'restricted_items_list' => $items,
+            'key_tempo' => $keyTempo,
         ];
-
+        
         return ['token' => JWT::encode($payload, DB_PASSWD, 'HS256')];
     }
 

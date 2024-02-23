@@ -46,7 +46,6 @@ if (defined('DB_PASSWD_CLEAR') === false) {
 $apiStatus = json_decode(apiIsEnabled(), true);
 $jwtStatus = json_decode(verifyAuth(), true);
 
-file_put_contents(__DIR__ . '/api.log', date("Y-m-d H:i:s")." - ".print_r($jwtStatus, true), FILE_APPEND | LOCK_EX);
 // Authorization handler
 if ($uri[0] === 'authorize') {
     // Is API enabled in Teampass settings

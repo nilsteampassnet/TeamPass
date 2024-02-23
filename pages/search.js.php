@@ -457,9 +457,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
             $('#pwd-show_' + itemId).html(
                 '<span style="cursor:none;">' +
-                $('#pwd-hidden_' + itemId).val()
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;') +
+                $('#pwd-hidden_' + simplePurifier(itemId).val(), false, false, false, false) +
                 '</span>'
             );
 
@@ -505,9 +503,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             $('#pwd-show_' + itemId)
                 .html(
                     '<span style="cursor:none;">' +
-                    $('#pwd-hidden_' + itemId).val()
-                    .replace(/</g, '&lt;')
-                    .replace(/>/g, '&gt;') +
+                    simplePurifier($('#pwd-hidden_' + itemId).val(), false, false, false, false) +
                     '</span>'
                 );
 

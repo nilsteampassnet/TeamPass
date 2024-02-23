@@ -1298,6 +1298,10 @@ class Str
      */
     public static function apa($value)
     {
+        if ($value === '') {
+            return $value;
+        }
+
         $minorWords = [
             'and', 'as', 'but', 'for', 'if', 'nor', 'or', 'so', 'yet', 'a', 'an',
             'the', 'at', 'by', 'for', 'in', 'of', 'off', 'on', 'per', 'to', 'up', 'via',
@@ -1551,7 +1555,7 @@ class Str
      *
      * @param  string  $string
      * @param  bool  $strict
-     * @return void
+     * @return string|false
      */
     public static function fromBase64($string, $strict = false)
     {

@@ -392,27 +392,33 @@ function simplePurifier(
     text,
     bHtml = false,
     bSvg = false,
-    bSvgFilters = false
+    bSvgFilters = false,
+    bSanitize = true
 ) 
 {
+    var textCleaned = String(text)
+    .replaceAll('&lt;', '<')
+    .replaceAll('&#x3C;', '<')
+    .replaceAll('&#x3c;', '<')
+    .replaceAll('&#60;', '<')
+    .replaceAll('&gt;', '>')
+    .replaceAll('&#x3E;', '>')
+    .replaceAll('&#x3e;', '>')
+    .replaceAll('&#62;', '>')
+    .replaceAll('&amp;', '&')
+    .replaceAll('&#38;', '&')
+    .replaceAll('&#x26;', '&')
+    .replaceAll('&quot;', '"')
+    .replaceAll('&#34;;', '"')
+    .replaceAll('&#x22;', '"')
+    .replaceAll('&#39;', "'");
+
+    if (bSanitize === false) {
+        return textCleaned;
+    }
     return sanitizeDom(
         DOMPurify.sanitize(
-            String(text)
-                .replaceAll('&lt;', '<')
-                .replaceAll('&#x3C;', '<')
-                .replaceAll('&#x3c;', '<')
-                .replaceAll('&#60;', '<')
-                .replaceAll('&gt;', '>')
-                .replaceAll('&#x3E;', '>')
-                .replaceAll('&#x3e;', '>')
-                .replaceAll('&#62;', '>')
-                .replaceAll('&amp;', '&')
-                .replaceAll('&#38;', '&')
-                .replaceAll('&#x26;', '&')
-                .replaceAll('&quot;', '"')
-                .replaceAll('&#34;;', '"')
-                .replaceAll('&#x22;', '"')
-                .replaceAll('&#39;', "'"),
+            textCleaned,
             {USE_PROFILES: {html:bHtml, svg:bSvg, svgFilters: bSvgFilters}}
         )
     );

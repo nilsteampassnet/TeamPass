@@ -2542,9 +2542,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             $('#card-item-pwd')
                 .html(
                     '<span style="cursor:none;">' +
-                    $('#hidden-item-pwd').val()
-                    .replace(/</g, '&lt;')
-                    .replace(/>/g, '&gt;') +
+                    simplePurifier($('#hidden-item-pwd').val(), false, false, false, false) +
                     '</span>'
                 );
 
@@ -3965,7 +3963,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                                             if (data.password_error !== '') {
                                                 error = true;
                                             } else {
-                                                result = atob(data.password).utf8Decode();
+                                                result = simplePurifier(atob(data.password), false, false, false, false).utf8Decode();
                                             }
                                             if (result === '') {
                                                 toastr.info(
@@ -4792,14 +4790,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
                     // Uncrypt the pwd
                     if (data.pw !== undefined) {
-                        data.pw = atob(data.pw)
-                            .replace(/&lt;/g, '<')
-                            .replace(/&gt;/g, '>')
-                            .replace(/&#35;/g, '#')
-                            .replace(/&amp;/g, '&')
-                            .replace(/&quot;/g, '"')
-                            .replace(/&apos;/g, "'")
-                            .utf8Decode();
+                        data.pw = simplePurifier(atob(data.pw), false, false, false, false).utf8Decode();
                     }
 
                     // Update hidden variables

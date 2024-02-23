@@ -74,7 +74,8 @@ class PasswordManager
                 // Return new hashed password
                 return $newHashedPassword;
             } else {
-                throw new \Exception("Password is not correct");
+                //throw new \Exception("Password is not correct");
+                return false;
             }
         }
 

@@ -73,5 +73,52 @@ class FolderController extends BaseController
             );
         }
     }
-    //end listInFoldersAction() 
+    //end listInFoldersAction()
+
+    /**
+     * create new folder
+     *
+     * @return void
+     */
+    public function createNewFolderAction(array $userData)
+    {
+        $superGlobal = new SuperGlobal();
+        $strErrorDesc = $responseData = $strErrorHeader = '';
+        $requestMethod = $superGlobal->get('REQUEST_METHOD', 'SERVER');
+
+        // get parameters
+        //$arrQueryStringParams = $this->getQueryStringParams();
+
+        if (strtoupper($requestMethod) === 'POST') {
+            if (empty($userData['folders_list'])) {
+                $this->sendOutput("", ['HTTP/1.1 204 No Content']);
+            } else {
+                try {
+                    $folderModel = new FolderModel();
+                    $arrFolders = $folderModel->getFoldersInfo(explode(",", $userData['folders_list']));
+                    $responseData = json_encode($arrFolders);
+                } catch (Error $e) {
+                    $strErrorDesc = $e->getMessage() . ' Something went wrong! Please contact support.';
+                    $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
+                }
+            }
+        } else {
+            $strErrorDesc = 'Method not supported';
+            $strErrorHeader = 'HTTP/1.1 422 Unprocessable Entity';
+        }
+
+        // send output
+        if (empty($strErrorDesc) === true) {
+            $this->sendOutput(
+                $responseData,
+                ['Content-Type: application/json', 'HTTP/1.1 200 OK']
+            );
+        } else {
+            $this->sendOutput(
+                json_encode(['error' => $strErrorDesc]),
+                ['Content-Type: application/json', $strErrorHeader]
+            );
+        }
+    }
+    //end createNewFolderAction() 
 }
