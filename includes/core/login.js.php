@@ -707,7 +707,6 @@ declare(strict_types=1);
                 },
             },
             function(receivedData) {
-                console.log('ICI la KEY est : <?php echo $session->get('key'); ?>')
                 try {
                     var data = prepareExchangedData(
                         receivedData,

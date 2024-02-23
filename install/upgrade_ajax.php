@@ -261,7 +261,7 @@ try {
     }]';
     exit;
 }
-error_log('ici');
+
 // Set Session
 $superGlobal->put('CPM', 1, 'SESSION');
 $superGlobal->put('db_encoding', 'utf8', 'SESSION');
@@ -285,7 +285,7 @@ if (isset($post_type)) {
             session_destroy();
 
             require_once 'libs/aesctr.php';
-            error_log('ici');
+            
             // check if path in settings.php are consistent
             if (defined(SECUREPATH) === true) {
                 if (!is_dir(SECUREPATH)) {
@@ -303,7 +303,7 @@ if (isset($post_type)) {
                     break;
                 }
             }
-            error_log('ici');
+            
             $_SESSION['settings']['cpassman_dir'] = '..';
             $passwordManager = new PasswordManager();
 
@@ -315,7 +315,7 @@ if (isset($post_type)) {
                     WHERE login='" . mysqli_escape_string($db_link, stripslashes($post_login)) . "'"
                 )
             );
-error_log('ici');
+            
             if (empty($user_info['pw']) || $user_info['pw'] === null) {
                 echo '[{'.
                     '"error" : "User is not allowed",'.

@@ -516,14 +516,6 @@ if (!isset($_GET['step']) && !isset($post_step)) {
             <i class="far fa-lightbulb text-warning mr-2 fa-lg"></i>It is recommended to clean the cache of your Web Browser before trying to log in.
         </div>';
 
-    if (version_compare($post_actual_cpm_version, '2.1.27', '<=')) {
-        echo '
-        <div class="alert alert-warning mt-4">
-            <i class="fas fa-exclamation-circle text-danger mr-2 fa-lg"></i>This upgrade was a heavy one. Indeed we have changed the encryption of your data to make them safer now as they don\'t rely anymore on a key.<br>
-            This forced us to encode your users data with a One-Time-Code that they did receive by email. For any reason, they did not received it, you as an admin, can change it from the users management page.
-        </div>';
-    }
-
     echo '
         <div class="mt-5">
         <a href="#" class="btn btn-primary" onclick="javascript:window.location.href=\'', (isset($_SERVER['HTTPS']) && ($_SERVER['HTTPS'] == 'on' || $_SERVER['HTTPS'] == 1) || isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https') ? 'https' : 'http', '://'.$_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'], 0, strrpos($_SERVER['PHP_SELF'], '/') - 8).'/index.php\';"><b>Open TeamPass</b></a>

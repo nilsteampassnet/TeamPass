@@ -189,16 +189,29 @@ if (intval($tmp) === 0) {
 }
 
 // Alter table background_subtasks
-mysqli_query(
-    $db_link,
-    'ALTER TABLE `' . $pre . 'background_subtasks` CHANGE `process_id` `task_id` INT(12) NOT NULL;'
-);
+// If column task_id not exists, then
+$query = "SELECT EXISTS (
+    SELECT 1 
+    FROM INFORMATION_SCHEMA.COLUMNS 
+    WHERE 
+      TABLE_SCHEMA = '" . $database . "' AND 
+      TABLE_NAME = '" . $pre . "background_subtasks' AND 
+      COLUMN_NAME = 'task_id'
+  ) AS `Exists`";
+$result = mysqli_query($db_link, $query);
+if ($result === false) {
+    // Change process_id to task_id
+    mysqli_query(
+        $db_link,
+        'ALTER TABLE `' . $pre . 'background_subtasks` CHANGE `process_id` `task_id` INT(12) NOT NULL;'
+    );
 
-// Alter table background_subtasks
-mysqli_query(
-    $db_link,
-    'ALTER TABLE `' . $pre . 'background_subtasks` CHANGE `system_process_id` `process_id` varchar(100) NULL DEFAULT NULL;'
-);
+    // Change system_process_id to process_id
+    mysqli_query(
+        $db_link,
+        'ALTER TABLE `' . $pre . 'background_subtasks` CHANGE `system_process_id` `process_id` varchar(100) NULL DEFAULT NULL;'
+    );
+}
 
 // Rename table 'processes_logs' to 'background_tasks_logs'
 $tmp = mysqli_num_rows(mysqli_query($db_link, "SHOW TABLES LIKE '" . $pre . "background_tasks_logs'"));

@@ -134,15 +134,15 @@ $mfaHtmlPart = '
             <div class="col-12">
                 <h8 class="login-box-msg">' . $lang->get('2fa_authentication_selector') . '</h8>
                 <div class="2fa-methods text-center mt-2">'.
-                htmlspecialchars(isset($SETTINGS['google_authentication']) === true && (int) $SETTINGS['google_authentication'] === 1 ?
+                (isset($SETTINGS['google_authentication']) === true && (int) $SETTINGS['google_authentication'] === 1 ?
         '
                     <label for="select2fa-otp">Google</label>
                     <input type="radio" class="2fa_selector_select" name="2fa_selector_select" id="select2fa-otp" data-mfa="google" data-button-color="lightblue">' : '').
-                    htmlspecialchars(isset($SETTINGS['duo']) === true && (int) $SETTINGS['duo'] === 1 ?
+                    (isset($SETTINGS['duo']) === true && (int) $SETTINGS['duo'] === 1 ?
         '
                     <label for="select2fa-duo">Duo Security</label>
                     <input type="radio" class="2fa_selector_select" name="2fa_selector_select" id="select2fa-duo" data-mfa="duo" data-button-color="lightblue">' : '').
-                    htmlspecialchars(isset($SETTINGS['yubico_authentication']) === true && (int) $SETTINGS['yubico_authentication'] === 1 ?
+                    (isset($SETTINGS['yubico_authentication']) === true && (int) $SETTINGS['yubico_authentication'] === 1 ?
         '
                     <label for="select2fa-yubico">Yubico</label>
                     <input type="radio" class="2fa_selector_select" name="2fa_selector_select" id="select2fa-yubico" data-mfa="yubico" data-button-color="lightblue">' : '').
