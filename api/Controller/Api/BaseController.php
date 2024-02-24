@@ -24,7 +24,7 @@
  */
 
 
-use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Request AS symfonyRequest;
 
 class BaseController
 {
@@ -43,7 +43,7 @@ class BaseController
      */
     public function getUriSegments()
     {
-        $request = Request::createFromGlobals();
+        $request = symfonyRequest::createFromGlobals();
         $requestUri = $request->getRequestUri();
 
         $uri = parse_url($requestUri, PHP_URL_PATH);
@@ -58,7 +58,7 @@ class BaseController
      */
     public function getQueryStringParams()
     {
-        $request = Request::createFromGlobals();
+        $request = symfonyRequest::createFromGlobals();
         $queryString = $request->getQueryString();
         parse_str(html_entity_decode($queryString), $query);
         return $this->sanitizeUrl($query);

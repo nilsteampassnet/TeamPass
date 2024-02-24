@@ -23,7 +23,7 @@
  * @see       https://www.teampass.net
  */
 
-use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Request AS symfonyRequest;
 
 class UserController extends BaseController
 {
@@ -32,7 +32,7 @@ class UserController extends BaseController
      */
     public function listAction()
     {
-        $request = Request::createFromGlobals();
+        $request = symfonyRequest::createFromGlobals();
         $requestMethod = $request->getMethod();
         $strErrorDesc = $responseData = $strErrorHeader = '';
         $arrQueryStringParams = $this->getQueryStringParams();

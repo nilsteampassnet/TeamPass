@@ -23,7 +23,7 @@
  * @see       https://www.teampass.net
  */
 
-use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Request AS symfonyRequest;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 use Firebase\JWT\SignatureInvalidException;
@@ -84,7 +84,7 @@ function base64url_encode($data) {
 
 function get_authorization_header()
 {
-	$request = Request::createFromGlobals();
+	$request = symfonyRequest::createFromGlobals();
 	$authorizationHeader = $request->headers->get('Authorization');
 	$headers = null;
 	

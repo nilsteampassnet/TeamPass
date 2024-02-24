@@ -56,8 +56,7 @@ class AuthModel extends Database
                 'login' => 'trim|escape',
                 'password' => 'trim|escape',
                 'apikey' => 'trim|escape',
-            ],
-            API_ROOT_PATH . '/..'
+            ]
         );
         if (empty($inputData['login']) === true || empty($inputData['apikey']) === true) {
             return ["error" => "Login failed.", "info" => "Empty entry"];

@@ -23,7 +23,7 @@
  * @see       https://www.teampass.net
  */
 
-use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Request AS symfonyRequest;
 
 class FolderController extends BaseController
 {
@@ -35,7 +35,7 @@ class FolderController extends BaseController
      */
     public function listFoldersAction(array $userData)
     {
-        $request = Request::createFromGlobals();
+        $request = symfonyRequest::createFromGlobals();
         $requestMethod = $request->getMethod();
         $strErrorDesc = $responseData = $strErrorHeader = '';
 
@@ -79,7 +79,7 @@ class FolderController extends BaseController
      */
     public function createAction(array $userData)
     {
-        $request = Request::createFromGlobals();
+        $request = symfonyRequest::createFromGlobals();
         $requestMethod = $request->getMethod();
         //$superGlobal = new SuperGlobal();
         $strErrorDesc = $responseData = $strErrorHeader = '';

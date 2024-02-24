@@ -23,7 +23,7 @@
  * @see       https://www.teampass.net
  */
 
-use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Request AS symfonyRequest;
 
 class ItemController extends BaseController
 {
@@ -36,7 +36,7 @@ class ItemController extends BaseController
      */
     public function inFoldersAction(array $userData): void
     {
-        $request = Request::createFromGlobals();
+        $request = symfonyRequest::createFromGlobals();
         $requestMethod = $request->getMethod();
         $strErrorDesc = $responseData = $strErrorHeader = '';
 
@@ -127,7 +127,7 @@ class ItemController extends BaseController
      */
     public function addAction(array $userData)
     {
-        $request = Request::createFromGlobals();
+        $request = symfonyRequest::createFromGlobals();
         $requestMethod = $request->getMethod();
         $strErrorDesc = $strErrorHeader = '';
 
@@ -185,7 +185,7 @@ class ItemController extends BaseController
     public function getAction(array $userData): void
     {
         
-        $request = Request::createFromGlobals();
+        $request = symfonyRequest::createFromGlobals();
         $requestMethod = $request->getMethod();
         $strErrorDesc = '';
         $sqlExtra = '';
