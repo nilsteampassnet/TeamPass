@@ -1135,16 +1135,18 @@ $SETTINGS = array (';
                     } elseif ($task === 'api') {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
-                            'CREATE TABLE IF NOT EXISTS `' . $var['tbl_prefix'] . 'api` (
+                            "CREATE TABLE IF NOT EXISTS `" . $var['tbl_prefix'] . "api` (
                             `increment_id` int(20) NOT NULL AUTO_INCREMENT,
                             `type` varchar(15) NOT NULL,
                             `label` varchar(255) DEFAULT NULL,
                             `value` text DEFAULT NULL,
                             `timestamp` varchar(50) NOT NULL,
                             `user_id` int(13) DEFAULT NULL,
+                            `read_only` int(1) NOT NULL DEFAULT '1',
+                            `allowed_folders` text NOT NULL,
                             PRIMARY KEY (`increment_id`),
                             KEY `USER` (`user_id`)
-                            ) CHARSET=utf8;'
+                            ) CHARSET=utf8;"
                         );
                     } elseif ($task === 'otv') {
                         $mysqli_result = mysqli_query(

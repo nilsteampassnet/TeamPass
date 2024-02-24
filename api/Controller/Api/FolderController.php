@@ -89,34 +89,41 @@ class FolderController extends BaseController
             if (empty($userData['folders_list'])) {
                 $this->sendOutput("", ['HTTP/1.1 204 No Content']);
             } else {
-                // get parameters
-                $arrQueryStringParams = $this->getQueryStringParams();
+                // Is user allowed to create a folder
+                // We check if read_only is false
+                if ((int) $userData['read_only'] === 1) {
+                    $strErrorDesc = 'User is not allowed to create a folder';
+                    $strErrorHeader = 'HTTP/1.1 401 Unauthorized';
+                } else {
+                    // get parameters
+                    $arrQueryStringParams = $this->getQueryStringParams();
 
-                try {
-                    $folderModel = new FolderModel();
-                    $arrFolder = $folderModel->createFolder(
-                        (string) $arrQueryStringParams['title'],
-                        (int) $arrQueryStringParams['parent_id'],
-                        (int) $arrQueryStringParams['complexity'],
-                        (int) $arrQueryStringParams['duration'],
-                        (int) $arrQueryStringParams['create_auth_without'],
-                        (int) $arrQueryStringParams['edit_auth_without'],
-                        (string) $arrQueryStringParams['icon'],
-                        (string) $arrQueryStringParams['icon_selected'],
-                        (string) $arrQueryStringParams['access_rights'],
-                        (int) $userData['is_admin'],
-                        (array) explode(',', $userData['folders_list']),
-                        (int) $userData['is_manager'],
-                        (int) $userData['user_can_create_root_folder'],
-                        (int) $userData['user_can_manage_all_users'],
-                        (int) $userData['id'],
-                        (string) $userData['roles'],
-                    );
-                    
-                    $responseData = json_encode($arrFolder);
-                } catch (Error $e) {
-                    $strErrorDesc = $e->getMessage() . ' Something went wrong! Please contact support.1';
-                    $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
+                    try {
+                        $folderModel = new FolderModel();
+                        $arrFolder = $folderModel->createFolder(
+                            (string) $arrQueryStringParams['title'],
+                            (int) $arrQueryStringParams['parent_id'],
+                            (int) $arrQueryStringParams['complexity'],
+                            (int) $arrQueryStringParams['duration'],
+                            (int) $arrQueryStringParams['create_auth_without'],
+                            (int) $arrQueryStringParams['edit_auth_without'],
+                            (string) $arrQueryStringParams['icon'],
+                            (string) $arrQueryStringParams['icon_selected'],
+                            (string) $arrQueryStringParams['access_rights'],
+                            (int) $userData['is_admin'],
+                            (array) explode(',', $userData['folders_list']),
+                            (int) $userData['is_manager'],
+                            (int) $userData['user_can_create_root_folder'],
+                            (int) $userData['user_can_manage_all_users'],
+                            (int) $userData['id'],
+                            (string) $userData['roles'],
+                        );
+                        
+                        $responseData = json_encode($arrFolder);
+                    } catch (Error $e) {
+                        $strErrorDesc = $e->getMessage() . ' Something went wrong! Please contact support.1';
+                        $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
+                    }
                 }
             }
         } else {

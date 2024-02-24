@@ -1164,9 +1164,10 @@ return array(
     'settings_ldap_group_objectclasses_attibute_tip' => 'ObjectClasses do użycia podczas wyszukiwania grup. Kilka objectClasses jest oddzielonych przecinkiem (,). Przykład: groupOfNames,group lub top,posixGroup',
     'display_warning_icons' => 'Wyświetlanie ikon ostrzeżeń',
     'password_length_by_default' => 'Domyślna długość hasła',
-    'progress' => 'Progress',
-    'tasks_log_retention_delay_in_days' => 'Tasks log retention delay (in days)',
-    'tasks_log_table_size' => 'Tasks log table size',
-    'error_otp_secret' => 'Enable to decode the OTP secret, is the secret correct?',
+    'progress' => 'Postęp',
+    'tasks_log_retention_delay_in_days' => 'Opóźnienie przechowywania dziennika zadań (w dniach)',
+    'tasks_log_table_size' => 'Rozmiar tabeli dziennika zadań',
+    'error_otp_secret' => 'Umożliwić odszyfrowanie hasła OTP, czy hasło jest prawidłowe?',
+    'users_api_access_info' => 'Users can access the API with same access rights as in Teampass.',
 
 );

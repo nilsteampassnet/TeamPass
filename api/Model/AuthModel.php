@@ -75,7 +75,7 @@ class AuthModel extends Database
             // case where it is a user api key
             // Check if user exists
             $userInfoRes = $this->select(
-                "SELECT u.id, u.pw, u.login, u.admin, u.gestionnaire, u.can_manage_all_users, u.fonction_id, u.can_create_root_folder, u.public_key, u.private_key, u.personal_folder, u.fonction_id, u.groupes_visibles, u.groupes_interdits, a.value AS user_api_key
+                "SELECT u.id, u.pw, u.login, u.admin, u.gestionnaire, u.can_manage_all_users, u.fonction_id, u.can_create_root_folder, u.public_key, u.private_key, u.personal_folder, u.fonction_id, u.groupes_visibles, u.groupes_interdits, a.value AS user_api_key, a.read_only as user_api_read_only, a.allowed_folders as user_api_allowed_folders
                 FROM " . prefixTable('users') . " AS u
                 INNER JOIN " . prefixTable('api') . " AS a ON (a.user_id=u.id)
                 WHERE login='".$inputData['login']."'");
@@ -127,6 +127,8 @@ class AuthModel extends Database
                     $userInfo['can_create_root_folder'],
                     $userInfo['can_manage_all_users'],
                     $userInfo['fonction_id'],
+                    $userInfo['user_api_read_only'],
+                    $userInfo['user_api_allowed_folders']
                 );
             } else {
                 return ["error" => "Login failed.", "info" => "password : Not valid"];
@@ -150,6 +152,8 @@ class AuthModel extends Database
      * @param integer $can_create_root_folder
      * @param integer $can_manage_all_users
      * @param string $roles
+     * @param integer $read_only
+     * @param string $allowed_folders
      * @return array
      */
     private function createUserJWT(
@@ -165,7 +169,9 @@ class AuthModel extends Database
         int $manager,
         int $can_create_root_folder,
         int $can_manage_all_users,
-        string $roles
+        string $roles,
+        int $read_only,
+        string $allowed_folders,
     ): array
     {
         include API_ROOT_PATH . '/../includes/config/tp.config.php';
@@ -185,6 +191,8 @@ class AuthModel extends Database
             'user_can_create_root_folder' => $can_create_root_folder,
             'user_can_manage_all_users' => $can_manage_all_users,
             'roles' => $roles,
+            'read_only' => $read_only,
+            'allowed_folders' => $allowed_folders,
         ];
         
         return ['token' => JWT::encode($payload, DB_PASSWD, 'HS256')];

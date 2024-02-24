@@ -2412,4 +2412,62 @@ switch ($post_type) {
         );
 
         break;
+
+    case 'save_user_change':
+        // Check KEY and rights
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        // decrypt and retrieve data in JSON format
+        $dataReceived = prepareExchangedData(
+            $post_data,
+            'decode'
+        );
+
+        $post_increment_id = isset($dataReceived['increment_id']) === true ? filter_var($dataReceived['increment_id'], FILTER_SANITIZE_NUMBER_INT) : '';
+        $post_field = filter_var($dataReceived['field'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        $post_value = filter_var($dataReceived['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+
+        if (is_numeric($post_increment_id) === false) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('no_user'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        
+        //update.
+        DB::debugMode(false);
+        DB::update(
+            prefixTable('api'),
+            array(
+                $post_field => $post_value,
+            ),
+            'increment_id = %i',
+            (int) $post_increment_id
+        );
+        DB::debugMode(false);
+        //log
+        logEvents($SETTINGS, 'system', 'api_user_readonly', (string) $session->get('user-id'), $session->get('user-login'));
+
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => '',
+            ),
+            'encode'
+        );
+
+        break;
 }

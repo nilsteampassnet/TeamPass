@@ -127,6 +127,6 @@ Warning:
 | Criteria | folder/create |
 | Type | POST |
 | URL | `<Teampass url>/api/index.php/folder/create?title=Folder created from API 1&parent_id=934&complexity=0&duration&create_auth_without&edit_auth_without&icon=fa-cubes&icon_selected&access_rights=NDNE` |
-| PARAMETERS | title=is a string<br>parent_id=is the parent folder id<br>complexity=<0, 20 38, 48, 60><br>duration=is the expiration delay in minutes<br>create_auth_without=item can be created even if password strengh not enougth<br>edit_auth_without=item can be updated even if password strengh not enougth<br>icon=fontawesome icon code<br>icon_selected=fontawesome icon code on folder selection<br>access_rights=<R, W, ND, NE, NDNE> |
+| PARAMETERS | 'title'=is a string<br>'parent_id'=is the parent folder id<br>'complexity'=<0, 20 38, 48, 60><br>'duration'=is the expiration delay in minutes<br>'create_auth_without'=item can be created even if password strengh not enougth<br>'edit_auth_without'=item can be updated even if password strengh not enougth<br>'icon'=fontawesome icon code<br>'icon_selected'=fontawesome icon code on folder selection<br>'access_rights'=<R, W, ND, NE, NDNE> |
 | HEADER | {<br>&nbsp;&nbsp;&nbsp;&nbsp;"Authorization": "Bearer _token received from authorize step_"<br>} |
 | Return | An array of item attributes in json format.<br>Example:<br>[{<br>&nbsp;&nbsp;&nbsp;&nbsp;"error": false,<br>&nbsp;&nbsp;&nbsp;&nbsp;"message": "",<br>&nbsp;&nbsp;&nbsp;&nbsp;"newId": "148"<br>&nbsp;&nbsp;&nbsp;&nbsp;}<br>&nbsp;&nbsp;&nbsp;] |

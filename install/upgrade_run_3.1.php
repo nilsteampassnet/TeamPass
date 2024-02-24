@@ -236,6 +236,37 @@ if (intval($tmp) === 0) {
 
 //---<END 3.1.1
 
+
+
+//--->BEGIN 3.1.2
+
+// Add field can_create to api table
+$res = addColumnIfNotExist(
+    $pre . 'api',
+    'read_only',
+    "INT(1) NOT NULL DEFAULT '1';"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field can_create to table api! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// Add field allowed_folders to api table
+$res = addColumnIfNotExist(
+    $pre . 'api',
+    'allowed_folders',
+    "TEXT NOT NULL;"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field allowed_folders to table api! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+//---<END 3.1.2
+
+
 //---------------------------------------------------------------------
 
 

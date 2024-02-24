@@ -72,7 +72,6 @@ function createNewFolder(
     }
 
     // Init
-    $error = false;
     $newId = '';
 
     // check if title is numeric

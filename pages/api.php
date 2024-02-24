@@ -141,8 +141,11 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                             <li class="nav-item">
                                 <a class="nav-link active" data-toggle="tab" href="#keys" role="tab" aria-controls="keys"><?php echo $lang->get('settings_api_keys_list'); ?></a>
                             </li>
-                            <li class="nav-item">
+                            <!--<li class="nav-item">
                                 <a class="nav-link" data-toggle="tab" href="#ips" role="tab" aria-controls="ips"><?php echo $lang->get('api_whitelist_ips'); ?></a>
+                            </li>-->
+                            <li class="nav-item">
+                                <a class="nav-link" data-toggle="tab" href="#users" role="tab" aria-controls="users"><?php echo $lang->get('users'); ?></a>
                             </li>
                         </ul>
 
@@ -154,7 +157,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                 <div class="mt-4">
                                     <?php
                                     $rowsKeys = DB::query(
-                                        'SELECT increment_id, label, timestamp, user_id, value 
+                                        'SELECT increment_id, label, timestamp, user_id, value, read_only, allowed_folders
                                         FROM ' . prefixTable('api') . '
                                         WHERE type = %s
                                         ORDER BY timestamp ASC',
@@ -167,6 +170,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                                 <th width="50px"></th>
                                                 <th><?php echo $lang->get('label'); ?></th>
                                                 <th><?php echo $lang->get('settings_api_key'); ?></th>
+                                                <th><?php echo $lang->get('read_only'); ?></th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -176,7 +180,8 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                                     <tr data-id="' . $key['increment_id'] . '">
                                                     <td width="50px"><i class="fas fa-trash infotip pointer delete-api-key" title="' . $lang->get('del_button') . '"></i></td>
                                                     <td><span class="edit-api-key pointer">' . $key['label'] . '</span></td>
-                                                    <td>' . $key['value']. '</td>                        
+                                                    <td>' . $key['value']. '</td>   
+                                                    <td><i class="fas '.((int) $key['read_only'] === 1 ? 'fa-toggle-on text-info' : 'fa-toggle-off text-danger').' mr-1 text-center pointer api-readonly" data-increment-id="' . $key['increment_id'] . '"></i></td>                       
                                                 </tr>';
                                             } ?>
                                         </tbody>
@@ -232,7 +237,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                                 <tr data-id="' . $ip['increment_id'] . '">
                                                     <td width="50px"><i class="fas fa-trash infotip pointer delete-api-ip" title="' . $lang->get('del_button') . '"></i></td>
                                                     <td><span class="edit-api-ip pointer" data-field="label">' . $ip['label'] . '</span></td>
-                                                    <td><span class="edit-api-ip pointer" data-field="value">' . $ip['value'] . '</span></td>                        
+                                                    <td><span class="edit-api-ip pointer" data-field="value">' . $ip['value'] . '</span></td>
                                                 </tr>';
                                             } ?>
                                         </tbody>
@@ -258,6 +263,47 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                     </div>
                                 </div>
 
+                            </div>
+                            
+                            <div class="tab-pane fade show" id="users" role="tabpanel" aria-labelledby="keys-tab">
+                                <small class="form-text text-muted mt-4">
+                                    <?php echo $lang->get('users_api_access_info'); ?>
+                                </small>
+                                <div class="mt-4">
+                                    <?php
+                                    $rowsKeys = DB::query(
+                                        'SELECT a.increment_id, a.user_id, a.read_only, a.allowed_folders, u.name, u.lastname, u.login
+                                        FROM ' . prefixTable('api') . ' AS a
+                                        INNER JOIN ' . prefixTable('users') . ' AS u ON a.user_id = u.id
+                                        WHERE a.type = %s
+                                        ORDER BY u.login ASC',
+                                        'user'
+                                    );
+                                    ?>
+                                    <table class="table table-hover table-striped<?php echo DB::count() > 0 ? '' : ' hidden'; ?> table-responsive" style="width:100%" id="table-api-keys">
+                                        <thead>
+                                            <tr>
+                                                <th><?php echo $lang->get('user'); ?></th>
+                                                <th><?php echo $lang->get('read_only'); ?></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php
+                                            foreach ($rowsKeys as $key) {
+                                                echo '
+                                                    <tr data-id="' . $key['increment_id'] . '">
+                                                    <td><span class="user-api-readonly pointer">' . $key['name'] . ' ' . $key['lastname'] . ' (<i>'.$key['login'].'</i>)</span></td>
+                                                    <td><i class="fas '.((int) $key['read_only'] === 1 ? 'fa-toggle-on text-info' : 'fa-toggle-off text-danger').' mr-1 text-center pointer api-readonly" data-increment-id="' . $key['increment_id'] . '"></i></td>                        
+                                                </tr>';
+                                            } ?>
+                                        </tbody>
+                                    </table>
+
+                                    <div class="mt-2<?php echo DB::count() > 0 ? ' hidden' : ''; ?>" id="api-no-keys">
+                                        <i class="fas fa-info mr-2 text-warning"></i><?php echo $lang->get('no_data_defined'); ?>
+                                    </div>
+
+                                </div>
                             </div>
                         </div>
 

@@ -1168,5 +1168,6 @@ return array(
     'tasks_log_retention_delay_in_days' => 'Tasks log retention delay (in days)',
     'tasks_log_table_size' => 'Tasks log table size',
     'error_otp_secret' => 'Enable to decode the OTP secret, is the secret correct?',
+    'users_api_access_info' => 'Users can access the API with same access rights as in Teampass.',
 
 );

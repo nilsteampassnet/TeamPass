@@ -86,6 +86,70 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     $('[data-mask]').inputmask();
 
     /**
+     * TOGGLE API STATUS (ENABLED/DISABLED)
+     */
+    $(document).on('click', '.api-readonly', function() {
+        toastr.remove();
+        toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+
+        // prepare data
+        var data = {
+            'increment_id': $(this).data('increment-id'),
+            'field': 'read_only',
+            'value': $(this).hasClass('fa-toggle-off') === true ? 1 : 0,
+        },
+        selectedIcon = $(this);
+
+        $.post(
+            'sources/admin.queries.php', {
+                type: 'save_user_change',
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                key: "<?php echo $session->get('key'); ?>"
+            },
+            function(data) {
+                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+                if (debugJavascript === true) console.log(data);
+
+                if (data.error !== false) {
+                    // Show error
+                    toastr.remove();
+                    toastr.error(
+                        data.message,
+                        '<?php echo $lang->get('caution'); ?>', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
+                } else {
+                    // CHange icon format
+                    if (selectedIcon.hasClass('fa-toggle-off') === true) {
+                        selectedIcon
+                            .removeClass('fa-toggle-off text-danger')
+                            .addClass('fa-toggle-on text-info')
+                            .prop('data-user-auth-type', 'ldap');
+                    } else {
+                        selectedIcon
+                            .removeClass('fa-toggle-on text-info')
+                            .addClass('fa-toggle-off text-danger')
+                            .prop('data-user-auth-type', 'local');
+                    }
+
+                    $('.infotip').tooltip();
+
+                    // Inform user
+                    toastr.remove();
+                    toastr.success(
+                        '<?php echo $lang->get('done'); ?>',
+                        '', {
+                            timeOut: 1000
+                        }
+                    );
+                }
+            }
+        );
+    });
+
+    /**
      * Adding a new KEY
      */
     $(document).on('click', '#button-new-api-key', function() {
