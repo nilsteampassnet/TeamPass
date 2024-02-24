@@ -23,7 +23,7 @@
  * @see       https://www.teampass.net
  */
 
-use TeampassClasses\SuperGlobal\SuperGlobal;
+use Symfony\Component\HttpFoundation\Request;
 
 class FolderController extends BaseController
 {
@@ -35,12 +35,9 @@ class FolderController extends BaseController
      */
     public function listFoldersAction(array $userData)
     {
-        $superGlobal = new SuperGlobal();
+        $request = Request::createFromGlobals();
+        $requestMethod = $request->getMethod();
         $strErrorDesc = $responseData = $strErrorHeader = '';
-        $requestMethod = $superGlobal->get('REQUEST_METHOD', 'SERVER');
-
-        // get parameters
-        //$arrQueryStringParams = $this->getQueryStringParams();
 
         if (strtoupper($requestMethod) === 'GET') {
             if (empty($userData['folders_list'])) {
@@ -51,7 +48,7 @@ class FolderController extends BaseController
                     $arrFolders = $folderModel->getFoldersInfo(explode(",", $userData['folders_list']));
                     $responseData = json_encode($arrFolders);
                 } catch (Error $e) {
-                    $strErrorDesc = $e->getMessage() . ' Something went wrong! Please contact support.';
+                    $strErrorDesc = $e->getMessage() . ' Something went wrong! Please contact support.3';
                     $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
                 }
             }
@@ -80,25 +77,45 @@ class FolderController extends BaseController
      *
      * @return void
      */
-    public function createNewFolderAction(array $userData)
+    public function createAction(array $userData)
     {
-        $superGlobal = new SuperGlobal();
+        $request = Request::createFromGlobals();
+        $requestMethod = $request->getMethod();
+        //$superGlobal = new SuperGlobal();
         $strErrorDesc = $responseData = $strErrorHeader = '';
-        $requestMethod = $superGlobal->get('REQUEST_METHOD', 'SERVER');
-
-        // get parameters
-        //$arrQueryStringParams = $this->getQueryStringParams();
+        //$requestMethod = $superGlobal->get('REQUEST_METHOD', 'SERVER');
 
         if (strtoupper($requestMethod) === 'POST') {
             if (empty($userData['folders_list'])) {
                 $this->sendOutput("", ['HTTP/1.1 204 No Content']);
             } else {
+                // get parameters
+                $arrQueryStringParams = $this->getQueryStringParams();
+
                 try {
                     $folderModel = new FolderModel();
-                    $arrFolders = $folderModel->getFoldersInfo(explode(",", $userData['folders_list']));
-                    $responseData = json_encode($arrFolders);
+                    $arrFolder = $folderModel->createFolder(
+                        (string) $arrQueryStringParams['title'],
+                        (int) $arrQueryStringParams['parent_id'],
+                        (int) $arrQueryStringParams['complexity'],
+                        (int) $arrQueryStringParams['duration'],
+                        (int) $arrQueryStringParams['create_auth_without'],
+                        (int) $arrQueryStringParams['edit_auth_without'],
+                        (string) $arrQueryStringParams['icon'],
+                        (string) $arrQueryStringParams['icon_selected'],
+                        (string) $arrQueryStringParams['access_rights'],
+                        (int) $userData['is_admin'],
+                        (array) explode(',', $userData['folders_list']),
+                        (int) $userData['is_manager'],
+                        (int) $userData['user_can_create_root_folder'],
+                        (int) $userData['user_can_manage_all_users'],
+                        (int) $userData['id'],
+                        (string) $userData['roles'],
+                    );
+                    
+                    $responseData = json_encode($arrFolder);
                 } catch (Error $e) {
-                    $strErrorDesc = $e->getMessage() . ' Something went wrong! Please contact support.';
+                    $strErrorDesc = $e->getMessage() . ' Something went wrong! Please contact support.1';
                     $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
                 }
             }
@@ -120,5 +137,5 @@ class FolderController extends BaseController
             );
         }
     }
-    //end createNewFolderAction() 
+    //end createFolderAction() 
 }

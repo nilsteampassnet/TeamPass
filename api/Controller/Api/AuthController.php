@@ -23,7 +23,7 @@
  * @see       https://www.teampass.net
  */
 
-use TeampassClasses\SuperGlobal\SuperGlobal;
+use Symfony\Component\HttpFoundation\Request;
 
 class AuthController extends BaseController
 {
@@ -32,9 +32,9 @@ class AuthController extends BaseController
      */
     public function authorizeAction()
     {
-        $superGlobal = new SuperGlobal();
+        $request = Request::createFromGlobals();
+        $requestMethod = $request->getMethod();
         $strErrorDesc = $responseData = $strErrorHeader = '';
-        $requestMethod = $superGlobal->get('REQUEST_METHOD', 'SERVER');
         $arrQueryStringParams = $this->getQueryStringParams();
 
         if (strtoupper($requestMethod) === 'POST') {
@@ -53,7 +53,7 @@ class AuthController extends BaseController
                     $strErrorHeader = 'HTTP/1.1 401 Unauthorized';
                 }
             } catch (Error $e) {
-                $strErrorDesc = $e->getMessage().' Something went wrong! Please contact support.';
+                $strErrorDesc = $e->getMessage().' Something went wrong! Please contact support.2';
                 $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
             }
             

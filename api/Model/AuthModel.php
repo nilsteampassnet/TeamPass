@@ -76,7 +76,7 @@ class AuthModel extends Database
             // case where it is a user api key
             // Check if user exists
             $userInfoRes = $this->select(
-                "SELECT u.id, u.pw, u.login, u.public_key, u.private_key, u.personal_folder, u.fonction_id, u.groupes_visibles, u.groupes_interdits, a.value AS user_api_key
+                "SELECT u.id, u.pw, u.login, u.admin, u.gestionnaire, u.can_manage_all_users, u.fonction_id, u.can_create_root_folder, u.public_key, u.private_key, u.personal_folder, u.fonction_id, u.groupes_visibles, u.groupes_interdits, a.value AS user_api_key
                 FROM " . prefixTable('users') . " AS u
                 INNER JOIN " . prefixTable('api') . " AS a ON (a.user_id=u.id)
                 WHERE login='".$inputData['login']."'");
@@ -122,7 +122,12 @@ class AuthModel extends Database
                     $privateKeyClear,
                     implode(",", $ret['folders']),
                     implode(",", $ret['items']),
-                    $keyTempo
+                    $keyTempo,
+                    $userInfo['admin'],
+                    $userInfo['gestionnaire'],
+                    $userInfo['can_create_root_folder'],
+                    $userInfo['can_manage_all_users'],
+                    $userInfo['fonction_id'],
                 );
             } else {
                 return ["error" => "Login failed.", "info" => "password : Not valid"];
@@ -141,9 +146,28 @@ class AuthModel extends Database
      * @param string $privkey
      * @param string $folders
      * @param string $keyTempo
+     * @param integer $admin
+     * @param integer $manager
+     * @param integer $can_create_root_folder
+     * @param integer $can_manage_all_users
+     * @param string $roles
      * @return array
      */
-    private function createUserJWT(int $id, string $login, int $pf_enabled, string $pubkey, string $privkey, string $folders, string $items, string $keyTempo): array
+    private function createUserJWT(
+        int $id,
+        string $login,
+        int $pf_enabled,
+        string $pubkey,
+        string $privkey,
+        string $folders,
+        string $items,
+        string $keyTempo,
+        int $admin,
+        int $manager,
+        int $can_create_root_folder,
+        int $can_manage_all_users,
+        string $roles
+    ): array
     {
         include API_ROOT_PATH . '/../includes/config/tp.config.php';
         
@@ -157,6 +181,11 @@ class AuthModel extends Database
             'folders_list' => $folders,
             'restricted_items_list' => $items,
             'key_tempo' => $keyTempo,
+            'is_admin' => $admin,
+            'is_manager' => $manager,
+            'user_can_create_root_folder' => $can_create_root_folder,
+            'user_can_manage_all_users' => $can_manage_all_users,
+            'roles' => $roles,
         ];
         
         return ['token' => JWT::encode($payload, DB_PASSWD, 'HS256')];
@@ -177,7 +206,7 @@ class AuthModel extends Database
         $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
         
         // Start by adding the manually added folders
-        $allowedFolders = explode(";", $userInfo['groupes_visibles']);
+        $allowedFolders = array_map('intval', explode(";", $userInfo['groupes_visibles']));
         $readOnlyFolders = [];
         $allowedFoldersByRoles = [];
         $restrictedFoldersForItems = [];

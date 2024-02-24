@@ -23,7 +23,7 @@
  * @see       https://www.teampass.net
  */
 
-use TeampassClasses\SuperGlobal\SuperGlobal;
+use Symfony\Component\HttpFoundation\Request;
 
 class ItemController extends BaseController
 {
@@ -36,9 +36,9 @@ class ItemController extends BaseController
      */
     public function inFoldersAction(array $userData): void
     {
-        $superGlobal = new SuperGlobal();
+        $request = Request::createFromGlobals();
+        $requestMethod = $request->getMethod();
         $strErrorDesc = $responseData = $strErrorHeader = '';
-        $requestMethod = $superGlobal->get('REQUEST_METHOD', 'SERVER');
 
         // get parameters
         $arrQueryStringParams = $this->getQueryStringParams();
@@ -97,7 +97,7 @@ class ItemController extends BaseController
                     $strErrorHeader = 'HTTP/1.1 204 No Content';
                 }
             } catch (Error $e) {
-                $strErrorDesc = $e->getMessage().'. Something went wrong! Please contact support.';
+                $strErrorDesc = $e->getMessage().'. Something went wrong! Please contact support.4';
                 $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
             }
         } else {
@@ -127,9 +127,9 @@ class ItemController extends BaseController
      */
     public function addAction(array $userData)
     {
-        $superGlobal = new SuperGlobal();
+        $request = Request::createFromGlobals();
+        $requestMethod = $request->getMethod();
         $strErrorDesc = $strErrorHeader = '';
-        $requestMethod = $superGlobal->get('REQUEST_METHOD', 'SERVER');
 
         if (strtoupper($requestMethod) === 'POST') {
             if (empty($userData['folders_list']) === false) {
@@ -147,7 +147,7 @@ class ItemController extends BaseController
 
                     $itemModel->addItem($data->folderId, $data->userName, $data->hostname, $data->password);
                 } catch (Error $e) {
-                    $strErrorDesc = $e->getMessage().'. Something went wrong! Please contact support.';
+                    $strErrorDesc = $e->getMessage().'. Something went wrong! Please contact support.5';
                     $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
                 }
             } else {
@@ -184,12 +184,13 @@ class ItemController extends BaseController
      */
     public function getAction(array $userData): void
     {
-        $superGlobal = new SuperGlobal();
+        
+        $request = Request::createFromGlobals();
+        $requestMethod = $request->getMethod();
         $strErrorDesc = '';
         $sqlExtra = '';
         $responseData = '';
         $strErrorHeader = '';
-        $requestMethod = $superGlobal->get('REQUEST_METHOD', 'SERVER');
         $sql_constraint = ' AND (i.id_tree IN ('.$userData['folders_list'].') OR i.id IN ('.$userData['restricted_items_list'].'))';
 
         // get parameters
@@ -221,7 +222,7 @@ class ItemController extends BaseController
                 $arrItems = $itemModel->getItems($sqlExtra, 0, $userData['private_key'], $userData['id']);
                 $responseData = json_encode($arrItems);
             } catch (Error $e) {
-                $strErrorDesc = $e->getMessage().'. Something went wrong! Please contact support.';
+                $strErrorDesc = $e->getMessage().'. Something went wrong! Please contact support.6';
                 $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
             }
         } else {

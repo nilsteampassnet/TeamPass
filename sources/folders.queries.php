@@ -321,7 +321,7 @@ if (null !== $post_type) {
             // prepare variables
             $post_title = filter_var($dataReceived['title'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $post_parent_id = filter_var($dataReceived['parentId'], FILTER_SANITIZE_NUMBER_INT);
-            $post_complexicity = filter_var($dataReceived['complexity'], FILTER_SANITIZE_NUMBER_INT);
+            $post_complexity = filter_var($dataReceived['complexity'], FILTER_SANITIZE_NUMBER_INT);
             $post_folder_id = filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT);
             $post_renewal_period = isset($dataReceived['renewalPeriod']) === true ? filter_var($dataReceived['renewalPeriod'], FILTER_SANITIZE_NUMBER_INT) : -1;
             $post_add_restriction = isset($dataReceived['addRestriction']) === true ? filter_var($dataReceived['addRestriction'], FILTER_SANITIZE_NUMBER_INT) : -1;
@@ -419,7 +419,7 @@ if (null !== $post_type) {
                         'complex'
                     );
 
-                    if (isset($data['valeur']) === true && (int) $post_complexicity < (int) $data['valeur']) {
+                    if (isset($data['valeur']) === true && (int) $post_complexity < (int) $data['valeur']) {
                         echo prepareExchangedData(
                             array(
                                 'error' => true,
@@ -475,7 +475,7 @@ if (null !== $post_type) {
             DB::update(
                 prefixTable('misc'),
                 array(
-                    'valeur' => $post_complexicity,
+                    'valeur' => $post_complexity,
                 ),
                 'intitule = %s AND type = %s',
                 $dataFolder['id'],
@@ -532,325 +532,40 @@ if (null !== $post_type) {
             // prepare variables
             $post_title = filter_var($dataReceived['title'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $post_parent_id = isset($dataReceived['parentId']) === true ? filter_var($dataReceived['parentId'], FILTER_SANITIZE_NUMBER_INT) : 0;
-            $post_complexicity = filter_var($dataReceived['complexity'], FILTER_SANITIZE_NUMBER_INT);
+            $post_complexity = filter_var($dataReceived['complexity'], FILTER_SANITIZE_NUMBER_INT);
             $post_duration = isset($dataReceived['renewalPeriod']) === true ? filter_var($dataReceived['renewalPeriod'], FILTER_SANITIZE_NUMBER_INT) : 0;
             $post_create_auth_without = isset($dataReceived['renewalPeriod']) === true ? filter_var($dataReceived['addRestriction'], FILTER_SANITIZE_NUMBER_INT) : 0;
             $post_edit_auth_without = isset($dataReceived['renewalPeriod']) === true ? filter_var($dataReceived['editRestriction'], FILTER_SANITIZE_NUMBER_INT) : 0;
             $post_icon = filter_var($dataReceived['icon'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $post_icon_selected = filter_var($dataReceived['iconSelected'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_access_rights = isset($dataReceived['accessRight']) === true ? filter_var($dataReceived['accessRight'], FILTER_SANITIZE_FULL_SPECIAL_CHARS) : 'W';
 
-            // Init
-            $error = false;
-            $newId = $errorMessage = '';
-            $access_level_by_role = isset($dataReceived['accessRight']) === true ? filter_var($dataReceived['accessRight'], FILTER_SANITIZE_FULL_SPECIAL_CHARS) : 'W';
+            require_once 'folders.functions.php';
 
-            // check if title is numeric
-            if (is_numeric($post_title) === true) {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => $lang->get('error_only_numbers_in_folder_name'),
-                    ),
-                    'encode'
-                );
-                break;
-            }
-            // Check if parent folder is allowed for this user
-            if (
-                in_array($post_parent_id, $session->get('user-accessible_folders')) === false
-                && (int) $session->get('user-admin') !== 1
-            ) {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => $lang->get('error_not_allowed_to'),
-                    ),
-                    'encode'
-                );
-                break;
-            }
-
-            //Check if duplicate folders name are allowed
-            if (
-                isset($SETTINGS['duplicate_folder']) === true
-                && (int) $SETTINGS['duplicate_folder'] === 0
-            ) {
-                DB::query(
-                    'SELECT *
-                    FROM ' . prefixTable('nested_tree') . '
-                    WHERE title = %s',
-                    $post_title
-                );
-                $counter = DB::count();
-                if ($counter !== 0) {
-                    echo prepareExchangedData(
-                        array(
-                            'error' => true,
-                            'message' => $lang->get('error_group_exist'),
-                        ),
-                        'encode'
-                    );
-                    break;
-                }
-            }
-
-            //check if parent folder is personal
-            $data = DB::queryfirstrow(
-                'SELECT personal_folder, bloquer_creation, bloquer_modification
-                FROM ' . prefixTable('nested_tree') . '
-                WHERE id = %i',
-                $post_parent_id
+            $creationStatus = createNewFolder(
+                (string) $post_title,
+                (int) $post_parent_id,
+                (int) $post_complexity,
+                (int) $post_duration,
+                (int) $post_create_auth_without,
+                (int) $post_edit_auth_without,
+                (string) $post_icon,
+                (string) $post_icon_selected,
+                (string) $post_access_rights,
+                (int) $session->get('user-admin'),
+                (array) $session->get('user-accessible_folders'),
+                (int) $session->get('user-manager'),
+                (int) $session->get('user-can_create_root_folder'),
+                (int) $session->get('user-can_manage_all_users'),
+                (int) $session->get('user-id'),
+                (string) $session->get('user-roles')
             );
-
-            // inherit from parent the specific settings it has
-            if (DB::count() > 0) {
-                $parentBloquerCreation = $data['bloquer_creation'];
-                $parentBloquerModification = $data['bloquer_modification'];
-            } else {
-                $parentBloquerCreation = 0;
-                $parentBloquerModification = 0;
-            }
-
-            if (isset($data) === true && (int) $data['personal_folder'] === 1) {
-                $isPersonal = 1;
-            } else {
-                $isPersonal = 0;
-
-                // check if complexity level is good
-                // if manager or admin don't care
-                if (
-                    $session->get('user-admin') === 0
-                    && ((int) $session->get('user-manager') !== 1
-                        || (int) $session->get('user-can_manage_all_users') !== 1)
-                ) {
-                    // get complexity level for this folder
-                    $data = DB::queryfirstrow(
-                        'SELECT valeur
-                        FROM ' . prefixTable('misc') . '
-                        WHERE intitule = %i AND type = %s',
-                        $post_parent_id,
-                        'complex'
-                    );
-                    if (isset($data['valeur']) === true && intval($post_complexicity) < intval($data['valeur'])) {
-                        echo prepareExchangedData(
-                            array(
-                                'error' => true,
-                                'message' => $lang->get('error_folder_complexity_lower_than_top_folder')
-                                    . ' [<b>' . TP_PW_COMPLEXITY[$data['valeur']][1] . '</b>]',
-                            ),
-                            'encode'
-                        );
-                        break;
-                    }
-                }
-            }
-
-            if (
-                (int) $isPersonal === 1
-                || (int) $session->get('user-admin') === 1
-                || ((int) $session->get('user-manager') === 1 || (int) $session->get('user-can_manage_all_users') === 1)
-                || (isset($SETTINGS['enable_user_can_create_folders']) === true
-                    && (int) $SETTINGS['enable_user_can_create_folders'] == 1)
-                || ($session->has('user-can_create_root_folder') && (int) $session->get('user-can_create_root_folder') && null !== $session->get('user-can_create_root_folder') && (int) $session->get('user-can_create_root_folder') === 1)
-            ) {
-                //create folder
-                DB::insert(
-                    prefixTable('nested_tree'),
-                    array(
-                        'parent_id' => $post_parent_id,
-                        'title' => $post_title,
-                        'personal_folder' => $isPersonal,
-                        'renewal_period' => isset($post_duration) === true && (int) $post_duration !== 0 ? $post_duration : 0,
-                        'bloquer_creation' => isset($post_create_auth_without) === true && (int) $post_create_auth_without === 1 ? '1' : $parentBloquerCreation,
-                        'bloquer_modification' => isset($post_edit_auth_without) === true && (int) $post_edit_auth_without === 1 ? '1' : $parentBloquerModification,
-                        'fa_icon' => empty($post_icon) === true ? TP_DEFAULT_ICON : $post_icon,
-                        'fa_icon_selected' => empty($post_icon_selected) === true ? TP_DEFAULT_ICON_SELECTED : $post_icon_selected,
-                        'categories' => '',
-                    )
-                );
-                $newId = DB::insertId();
-
-                //Add complexity
-                DB::insert(
-                    prefixTable('misc'),
-                    array(
-                        'type' => 'complex',
-                        'intitule' => $newId,
-                        'valeur' => $post_complexicity,
-                    )
-                );
-
-                // ensure categories are set
-                handleFoldersCategories(
-                    [$newId]
-                );
-
-                // Update timestamp
-                DB::update(
-                    prefixTable('misc'),
-                    array(
-                        'valeur' => time(),
-                    ),
-                    'type = %s AND intitule = %s',
-                    'timestamp',
-                    'last_folder_change'
-                );
-
-                // add new folder id in SESSION
-                $session->set('user-accessible_folders', array_unique(array_merge($session->get('user-accessible_folders'), [$newId]), SORT_NUMERIC));
-                if ((int) $isPersonal === 1) {
-                    SessionManager::addRemoveFromSessionArray('user-personal_folders', [$newId], 'add');
-                }
-
-                // rebuild tree
-                $tree->rebuild();
-
-
-                // --> build json tree if not Admin
-                if ($session->get('user-admin') === 0) {
-                    // Get path
-                    $path = '';
-                    $tree_path = $tree->getPath(0, false);
-                    foreach ($tree_path as $fld) {
-                        $path .= empty($path) === true ? $fld->title : '/'.$fld->title;
-                    }
-                    $new_json = [
-                        "path" => $path,
-                        "id" => $newId,
-                        "level" => count($tree_path),
-                        "title" => $post_title,
-                        "disabled" => 0,
-                        "parent_id" => $post_parent_id,
-                        "perso" => $isPersonal,
-                        "is_visible_active" => 0,
-                    ];
-
-                    // update cache_tree
-                    $cache_tree = DB::queryfirstrow(
-                        'SELECT increment_id, folders, visible_folders
-                        FROM ' . prefixTable('cache_tree').' WHERE user_id = %i',
-                        (int) $session->get('user-id')
-                    );
-                    if (empty($cache_tree) === true) {
-                        DB::insert(
-                            prefixTable('cache_tree'),
-                            array(
-                                'user_id' => $session->get('user-id'),
-                                'folders' => json_encode($newId),
-                                'visible_folders' => json_encode($new_json),
-                                'timestamp' => time(),
-                                'data' => '[{}]',
-                            )
-                        );
-                    } else {
-                        $a_folders = is_null($cache_tree['folders']) === true ? [] : json_decode($cache_tree['folders'], true);
-                        array_push($a_folders, $newId);
-                        $a_visible_folders = is_null($cache_tree['visible_folders']) === true || empty($cache_tree['visible_folders']) === true ? [] : json_decode($cache_tree['visible_folders'], true);
-                        array_push($a_visible_folders, $new_json);
-                        DB::update(
-                            prefixTable('cache_tree'),
-                            array(
-                                'folders' => json_encode($a_folders),
-                                'visible_folders' => json_encode($a_visible_folders),
-                                'timestamp' => time(),
-                            ),
-                            'increment_id = %i',
-                            (int) $cache_tree['increment_id']
-                        );
-                    }
-                }
-                // <-- end - build json tree
-
-                /*
-                if ((int) $isPersonal !== 1) {
-                    //add access to this new folder 
-
-                    // 1- create entries based upon default provided right
-                    $rows = DB::query('SELECT id FROM ' . prefixTable('roles_title'));
-                    foreach ($rows as $record) {
-                        DB::insert(
-                            prefixTable('roles_values'),
-                            array(
-                                'role_id' => $record['id'],
-                                'folder_id' => $newId,
-                                'type' => $access_level_by_role,
-                            )
-                        );
-                    }
-                }
-                */
-
-                // Create expected groups access rights based upon option selected
-                if (
-                    isset($SETTINGS['subfolder_rights_as_parent']) === true
-                    && (int) $SETTINGS['subfolder_rights_as_parent'] === 1
-                ) {
-                    //If it is a subfolder, then give access to it for all roles that allows the parent folder
-                    $rows = DB::query('SELECT role_id, type FROM ' . prefixTable('roles_values') . ' WHERE folder_id = %i', $post_parent_id);
-                    foreach ($rows as $record) {
-                        //add access to this subfolder
-                        DB::insert(
-                            prefixTable('roles_values'),
-                            array(
-                                'role_id' => $record['role_id'],
-                                'folder_id' => $newId,
-                                'type' => $record['type'],
-                            )
-                        );
-                    }
-                } elseif ((int) $session->get('user-admin') !== 1) {
-                    // If not admin and no option enabled
-                    // then provide expected rights based upon user's roles
-                    foreach (explode(';', $session->get('user-roles')) as $role) {
-                        if (empty($role) === false) {
-                            DB::insert(
-                                prefixTable('roles_values'),
-                                array(
-                                    'role_id' => $role,
-                                    'folder_id' => $newId,
-                                    'type' => $access_level_by_role,
-                                )
-                            );
-                        }
-                    }
-                }
-
-                // if parent folder has Custom Fields Categories then add to this child one too
-                $rows = DB::query('SELECT id_category FROM ' . prefixTable('categories_folders') . ' WHERE id_folder = %i', $post_parent_id);
-                foreach ($rows as $record) {
-                    //add CF Category to this subfolder
-                    DB::insert(
-                        prefixTable('categories_folders'),
-                        array(
-                            'id_category' => $record['id_category'],
-                            'id_folder' => $newId,
-                        )
-                    );
-                }
-
-                // clear cache cache for each user that have at least one similar role as the current user
-                $usersWithSimilarRoles = empty($session->get('user-roles')) === false  ? getUsersWithRoles(
-                    explode(";", $session->get('user-roles'))
-                ) : [];
-                foreach ($usersWithSimilarRoles as $user) {
-                    // delete cache tree
-                    DB::delete(
-                        prefixTable('cache_tree'),
-                        'user_id = %i',
-                        $user
-                    );
-                }
-
-            } else {
-                $error = true;
-                $errorMessage = $lang->get('error_not_allowed_to');
-            }
 
             echo prepareExchangedData(
                 array(
-                    'error' => $error,
-                    'message' => $errorMessage,
-                    'newId' => $newId,
+                    'error' => $creationStatus['error'],
+                    'message' => $creationStatus['message'],
+                    'newId' => $creationStatus['newId'],
                 ),
                 'encode'
             );
@@ -1543,7 +1258,7 @@ if (null !== $post_type) {
 
             // Get through each subfolder
             $folders = $tree->getDescendants(0, false);
-            error_log('user-accessible_folders: ' . print_r($session->get('user-accessible_folders'), true));
+            
             foreach ($folders as $folder) {
                 if (
                     in_array($folder->id, $session->get('user-accessible_folders')) === true

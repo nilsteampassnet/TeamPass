@@ -24,8 +24,6 @@
  */
 
 
-use TeampassClasses\SuperGlobal\SuperGlobal;
-
 define("API_ROOT_PATH", __DIR__ . "/..");
 
 // include main configuration file
@@ -33,7 +31,6 @@ require API_ROOT_PATH . '/../sources/main.functions.php';
 
 // init
 loadClasses('DB');
-$superGlobal = new SuperGlobal();
 
 // include the base controller file
 require API_ROOT_PATH . "/Controller/Api/BaseController.php";

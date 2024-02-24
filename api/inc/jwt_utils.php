@@ -23,7 +23,7 @@
  * @see       https://www.teampass.net
  */
 
-use TeampassClasses\SuperGlobal\SuperGlobal;
+use Symfony\Component\HttpFoundation\Request;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 use Firebase\JWT\SignatureInvalidException;
@@ -82,14 +82,14 @@ function base64url_encode($data) {
     return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
 }
 
-function get_authorization_header(){
-	$superGlobal = new SuperGlobal();
+function get_authorization_header()
+{
+	$request = Request::createFromGlobals();
+	$authorizationHeader = $request->headers->get('Authorization');
 	$headers = null;
 	
-	if (null !== $superGlobal->get('Authorization', 'SERVER')) {
-		$headers = trim($superGlobal->get('Authorization', 'SERVER'));
-	} else if (null !== $superGlobal->get('HTTP_AUTHORIZATION', 'SERVER')) { //Nginx or fast CGI
-		$headers = trim($superGlobal->get('HTTP_AUTHORIZATION', 'SERVER'));
+	if (null !== $authorizationHeader) {
+		$headers = trim($authorizationHeader);
 	} else if (function_exists('apache_request_headers') === true) {
 		$requestHeaders = (array) apache_request_headers();
 		// Server-side fix for bug in old Android versions (a nice side-effect of this fix means we don't care about capitalization for Authorization)

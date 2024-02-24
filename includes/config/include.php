@@ -28,7 +28,7 @@
 
 define('TP_VERSION', '3.1.2');
 define("UPGRADE_MIN_DATE", "1705123921");
-define('TP_VERSION_MINOR', '3');
+define('TP_VERSION_MINOR', '4');
 define('TP_TOOL_NAME', 'Teampass');
 define('TP_ONE_DAY_SECONDS', 86400);
 define('TP_ONE_WEEK_SECONDS', 604800);
@@ -72,7 +72,7 @@ define('DOCUMENTATION_URL', 'https://documentation.teampass.net/');
 define('HELP_URL', 'https://github.com/nilsteampassnet/TeamPass/discussions');
 define('REDDIT_URL', 'https://www.reddit.com/r/TeamPass/');
 define('TEAMPASS_URL', 'https://teampass.net');
-define("TEAMPASS_ROOT_PATH", __DIR__);
+define("TEAMPASS_ROOT_PATH", __DIR__.'/../../');
 define('GITHUB_COMMIT_URL', 'https://github.com/nilsteampassnet/TeamPass/commit/');
 
 // Fontawesome icons
