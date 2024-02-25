@@ -29,7 +29,6 @@
  */
 
 use TeampassClasses\NestedTree\NestedTree;
-use TeampassClasses\Language\Language;
 use ZxcvbnPhp\Zxcvbn;
 
 require_once API_ROOT_PATH . "/Model/Database.php";
@@ -143,7 +142,7 @@ class ItemModel extends Database
      * @param integer $userId
      * 
      * 
-     * @return boolean
+     * @return array
      */
     public function addItem(
         int $folderId,
@@ -191,13 +190,19 @@ class ItemModel extends Database
             $data,
             $filters
         );
+        if (is_array($inputData) === false) {
+            return [
+                'error' => true,
+                'error_header' => 'HTTP/1.1 422 Unprocessable Entity',
+                'error_message' => 'Data is not valid'
+            ];
+        }
         extract($inputData);
 
-        $lang = new Language();
         include API_ROOT_PATH . '/../includes/config/tp.config.php';
 
         // is pwd empty?
-        if ($this->isPasswordEmptyAllowed($password, $SETTINGS['create_item_without_password'], $lang)) {
+        if ($this->isPasswordEmptyAllowed($password, $SETTINGS['create_item_without_password'])) {
             return [
                 'error' => true,
                 'error_header' => 'HTTP/1.1 422 Unprocessable Entity',
@@ -373,7 +378,7 @@ class ItemModel extends Database
         ];
     }
 
-    private function isPasswordEmptyAllowed($password, $create_item_without_password, $lang)
+    private function isPasswordEmptyAllowed($password, $create_item_without_password)
     {
         if (
             empty($password) === true

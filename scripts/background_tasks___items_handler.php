@@ -101,7 +101,7 @@ if (DB::count() > 0) {
         ORDER BY increment_id ASC',
         0
     );
-    error_log('debug    '.print_r($process_to_perform, true));
+    
     if (DB::count() > 0) {
         if (WIP === true) error_log("New process ta start: ".$process_to_perform['increment_id']);
         // update DB - started_at

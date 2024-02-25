@@ -149,13 +149,13 @@ class ItemController extends BaseController
                     'error' => false,
                 ];
             }
-        } else {
-            return [
-                'error' => true,
-                'strErrorDesc' => 'All fields have to be provided even if empty (refer to documentation).',
-                'strErrorHeader' => 'HTTP/1.1 401 Expected parameters not provided',
-            ];
         }
+
+        return [
+            'error' => true,
+            'strErrorDesc' => 'All fields have to be provided even if empty (refer to documentation).',
+            'strErrorHeader' => 'HTTP/1.1 401 Expected parameters not provided',
+        ];
     }
 
     /**
@@ -167,7 +167,7 @@ class ItemController extends BaseController
     {
         $request = symfonyRequest::createFromGlobals();
         $requestMethod = $request->getMethod();
-        $strErrorDesc = $strErrorHeader = '';
+        $strErrorDesc = $strErrorHeader = $responseData = '';
 
         if (strtoupper($requestMethod) === 'POST') {
             // Is user allowed to create a folder
