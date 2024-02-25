@@ -120,39 +120,92 @@ class ItemController extends BaseController
     }
     //end InFoldersAction()
 
+    private function checkNewItemData(array $arrQueryStringParams, array $userData): array
+    {
+        if (isset($arrQueryStringParams['label']) === true
+            && isset($arrQueryStringParams['folder_id']) === true
+            && isset($arrQueryStringParams['password']) === true
+            && isset($arrQueryStringParams['login']) === true
+            && isset($arrQueryStringParams['email']) === true
+            && isset($arrQueryStringParams['url']) === true
+            && isset($arrQueryStringParams['tags']) === true
+            && isset($arrQueryStringParams['anyone_can_modify']) === true
+        ) {
+            //
+            if (in_array($arrQueryStringParams['folder_id'], $userData['folders_list']) === false) {
+                return [
+                    'error' => true,
+                    'strErrorDesc' => 'User is not allowed in this folder',
+                    'strErrorHeader' => 'HTTP/1.1 401 Unauthorized',
+                ];
+            } else if (empty($arrQueryStringParams['label']) === true) {
+                return [
+                    'error' => true,
+                    'strErrorDesc' => 'Label is mandatory',
+                    'strErrorHeader' => 'HTTP/1.1 401 Expected parameters not provided',
+                ];
+            } else {
+                return [
+                    'error' => false,
+                ];
+            }
+        } else {
+            return [
+                'error' => true,
+                'strErrorDesc' => 'All fields have to be provided even if empty (refer to documentation).',
+                'strErrorHeader' => 'HTTP/1.1 401 Expected parameters not provided',
+            ];
+        }
+    }
+
     /**
      * Manage case Add
      *
      * @param array $userData
      */
-    public function addAction(array $userData)
+    public function createAction(array $userData)
     {
         $request = symfonyRequest::createFromGlobals();
         $requestMethod = $request->getMethod();
         $strErrorDesc = $strErrorHeader = '';
 
         if (strtoupper($requestMethod) === 'POST') {
-            if (empty($userData['folders_list']) === false) {
-                $userData['folders_list'] = explode(',', $userData['folders_list']);
+            // Is user allowed to create a folder
+            // We check if read_only is false
+            if ((int) $userData['read_only'] === 1) {
+                $strErrorDesc = 'User is not allowed to create an item';
+                $strErrorHeader = 'HTTP/1.1 401 Unauthorized';
             } else {
-                $userData['folders_list'] = [];
-            }
-
-            $data = json_decode(file_get_contents("php://input"));
-
-            if (in_array($data->folderId, $userData['folders_list'])) {
-                // send query
-                try {
-                    $itemModel = new ItemModel();
-
-                    $itemModel->addItem($data->folderId, $data->userName, $data->hostname, $data->password);
-                } catch (Error $e) {
-                    $strErrorDesc = $e->getMessage().'. Something went wrong! Please contact support.5';
-                    $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
+                if (empty($userData['folders_list']) === false) {
+                    $userData['folders_list'] = explode(',', $userData['folders_list']);
+                } else {
+                    $userData['folders_list'] = [];
                 }
-            } else {
-                $strErrorDesc = 'Folders are mandatory';
-                $strErrorHeader = 'HTTP/1.1 401 Expected parameters not provided';
+
+                // get parameters
+                $arrQueryStringParams = $this->getQueryStringParams();
+
+                // check parameters
+                $arrCheck = $this->checkNewItemData($arrQueryStringParams, $userData);
+                if ($arrCheck['error'] === true) {
+                    $strErrorDesc = $arrCheck['strErrorDesc'];
+                    $strErrorHeader = $arrCheck['strErrorHeader'];
+                } else {
+                    // launch
+                    $itemModel = new ItemModel();
+                    $ret = $itemModel->addItem(
+                        $arrQueryStringParams['folder_id'],
+                        $arrQueryStringParams['label'],
+                        $arrQueryStringParams['password'],
+                        $arrQueryStringParams['description'],
+                        $arrQueryStringParams['login'],
+                        $arrQueryStringParams['email'],
+                        $arrQueryStringParams['url'],
+                        $arrQueryStringParams['tags'],
+                        $arrQueryStringParams['anyone_can_modify'],
+                    );
+                    $responseData = json_encode($ret);
+                }
             }
         } else {
             $strErrorDesc = 'Method not supported';
@@ -162,11 +215,9 @@ class ItemController extends BaseController
         // send output
         if (empty($strErrorDesc) === true) {
             $this->sendOutput(
-                "",
-                ['Content-Type: application/json', 'HTTP/1.1 201 Created']
+                $responseData,
+                ['Content-Type: application/json', 'HTTP/1.1 200 OK']
             );
-
-            //$this->sendOutput(['HTTP/1.1 201 Created']);
         } else {
             $this->sendOutput(
                 json_encode(['error' => $strErrorDesc]),

@@ -22,9 +22,10 @@
  *
  * @see       https://www.teampass.net
  */
-require_once API_ROOT_PATH . "/Model/Database.php";
+
 use TeampassClasses\Language\Language;
 
+require_once API_ROOT_PATH . "/Model/Database.php";
 class FolderModel extends Database
 {
     public function getFoldersInfo(array $foldersId): array
@@ -100,15 +101,61 @@ class FolderModel extends Database
     ): array
     {
         // Validate inputs
-        $title = filter_var($title, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-        $parent_id = filter_var($parent_id, FILTER_SANITIZE_NUMBER_INT);
-        $complexity = filter_var($complexity, FILTER_SANITIZE_NUMBER_INT);
-        $duration = isset($duration) === true ? filter_var($duration, FILTER_SANITIZE_NUMBER_INT) : 0;
-        $create_auth_without = isset($create_auth_without) === true ? filter_var($create_auth_without, FILTER_SANITIZE_NUMBER_INT) : 0;
-        $edit_auth_without = isset($edit_auth_without) === true ? filter_var($edit_auth_without, FILTER_SANITIZE_NUMBER_INT) : 0;
-        $icon = filter_var($icon, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-        $icon_selected = filter_var($icon_selected, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-        $access_rights = isset($access_rights) === true ? filter_var($access_rights, FILTER_SANITIZE_FULL_SPECIAL_CHARS) : 'W';
+        include_once API_ROOT_PATH . '/../sources/main.functions.php';
+        $data = [
+            'title' => $title,
+            'parent_id' => $parent_id,
+            'complexity' => $complexity,
+            'duration' => $duration,
+            'create_auth_without' => $create_auth_without,
+            'edit_auth_without' => $edit_auth_without,
+            'icon' => $icon,
+            'icon_selected' => $icon_selected,
+            'access_rights' => $access_rights,
+            'is_admin' => $is_admin,
+            'foldersId' => json_encode($foldersId),
+            'is_manager' => $is_manager,
+            'user_can_create_root_folder' => $user_can_create_root_folder,
+            'user_can_manage_all_users' => $user_can_manage_all_users,
+            'user_id' => $user_id,
+            'user_roles' => $user_roles,
+        ];
+        
+        $filters = [
+            'title' => 'trim|escape',
+            'parent_id' => 'cast:integer',
+            'complexity' => 'cast:integer',
+            'duration' => 'cast:integer',
+            'create_auth_without' => 'cast:integer',
+            'edit_auth_without' => 'cast:integer',
+            'icon' => 'trim|escape',
+            'icon_selected' => 'trim|escape',
+            'access_rights' => 'trim|escape',
+            'is_admin' => 'cast:integer',
+            'foldersId' => 'cast:array',
+            'is_manager' => 'cast:integer',
+            'user_can_create_root_folder' => 'cast:integer',
+            'user_can_manage_all_users' => 'cast:integer',
+            'user_id' => 'cast:integer',
+            'user_roles' => 'trim|escape',
+        ];
+        
+        $inputData = dataSanitizer(
+            $data,
+            $filters
+        );
+        
+        // Extract inputs
+        $title = $inputData['title'];
+        $parent_id = $inputData['parent_id'];
+        $complexity = $inputData['complexity'];
+        $duration = isset($inputData['duration']) === true ? $inputData['duration'] : 0;
+        $create_auth_without = isset($inputData['create_auth_without']) === true ? $inputData['create_auth_without'] : 0;
+        $edit_auth_without = isset($inputData['edit_auth_without']) === true ? $inputData['edit_auth_without'] : 0;
+        $icon = $inputData['icon'];
+        $icon_selected = $inputData['icon_selected'];
+        $access_rights = isset($inputData['access_rights']) === true ? $inputData['access_rights'] : 'W';
+        $foldersId = $inputData['foldersId'];
 
         // Do checks
         if (

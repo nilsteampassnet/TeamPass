@@ -81,9 +81,7 @@ class FolderController extends BaseController
     {
         $request = symfonyRequest::createFromGlobals();
         $requestMethod = $request->getMethod();
-        //$superGlobal = new SuperGlobal();
         $strErrorDesc = $responseData = $strErrorHeader = '';
-        //$requestMethod = $superGlobal->get('REQUEST_METHOD', 'SERVER');
 
         if (strtoupper($requestMethod) === 'POST') {
             if (empty($userData['folders_list'])) {
@@ -97,7 +95,6 @@ class FolderController extends BaseController
                 } else {
                     // get parameters
                     $arrQueryStringParams = $this->getQueryStringParams();
-
                     try {
                         $folderModel = new FolderModel();
                         $arrFolder = $folderModel->createFolder(
