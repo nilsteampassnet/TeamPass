@@ -97,11 +97,11 @@ if (DB::count() > 0) {
     $process_to_perform = DB::queryfirstrow(
         'SELECT *
         FROM ' . prefixTable('background_tasks') . '
-        WHERE is_in_progress = %i AND finished_at = "" AND process_type IN ("item_copy", "new_item", "update_item", "item_update_create_keys")
+        WHERE is_in_progress = %i AND (finished_at = "" OR finished_at IS NULL) AND process_type IN ("item_copy", "new_item", "update_item", "item_update_create_keys")
         ORDER BY increment_id ASC',
         0
     );
-    //print_r($process_to_perform);
+    error_log('debug    '.print_r($process_to_perform, true));
     if (DB::count() > 0) {
         if (WIP === true) error_log("New process ta start: ".$process_to_perform['increment_id']);
         // update DB - started_at
@@ -139,22 +139,7 @@ $process_to_perform = DB::queryfirstrow(
 );
 if (DB::count() > 0) {
     $process = new Symfony\Component\Process\Process([$phpBinaryPath, __FILE__]);
-    $process->start();
-
-    if (WIP === true) {
-        DB::insert(
-            prefixTable('processes_server'),
-            array(
-                'end_timestamp' => time(),
-                'pid' => $process->getPid(),
-                'start_timestamp' => '',
-                'process_id' => '',
-            )
-        );
-        
-        error_log("Continue process ".$process_to_perform['increment_id']." launched with Symfony process: ".$process->getPid());
-    }
-    
+    $process->start();  
     $process->wait();
 }
 

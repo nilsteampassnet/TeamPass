@@ -10,6 +10,15 @@
         'dev' => true,
     ),
     'versions' => array(
+        'bjeavons/zxcvbn-php' => array(
+            'pretty_version' => '1.3.1',
+            'version' => '1.3.1.0',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../bjeavons/zxcvbn-php',
+            'aliases' => array(),
+            'reference' => '994928ae5b17ecff8baa2406832d37bdf01116c0',
+            'dev_requirement' => false,
+        ),
         'brick/math' => array(
             'pretty_version' => '0.12.1',
             'version' => '0.12.1.0',

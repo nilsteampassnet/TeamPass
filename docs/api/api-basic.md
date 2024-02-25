@@ -10,6 +10,7 @@
 - [x] Items - get item info
 - [ ] Items - edit an item
 - [x] Folders - create new
+- [x] Items - create new
 
 
 ## Generalities
@@ -130,3 +131,20 @@ Warning:
 | PARAMETERS | 'title'=is a string<br>'parent_id'=is the parent folder id<br>'complexity'=<0, 20 38, 48, 60><br>'duration'=is the expiration delay in minutes<br>'create_auth_without'=item can be created even if password strengh not enougth<br>'edit_auth_without'=item can be updated even if password strengh not enougth<br>'icon'=fontawesome icon code<br>'icon_selected'=fontawesome icon code on folder selection<br>'access_rights'=<R, W, ND, NE, NDNE> |
 | HEADER | {<br>&nbsp;&nbsp;&nbsp;&nbsp;"Authorization": "Bearer _token received from authorize step_"<br>} |
 | Return | An array of item attributes in json format.<br>Example:<br>[{<br>&nbsp;&nbsp;&nbsp;&nbsp;"error": false,<br>&nbsp;&nbsp;&nbsp;&nbsp;"message": "",<br>&nbsp;&nbsp;&nbsp;&nbsp;"newId": "148"<br>&nbsp;&nbsp;&nbsp;&nbsp;}<br>&nbsp;&nbsp;&nbsp;] |
+
+
+### Add a new item
+
+> :memo: **Note:** Creates a new item based upon provided parameters
+
+Warning:
+* All fields are mandaotry
+
+| Info | Description |
+| ---- | ----------- |
+| Criteria | item/create |
+| Type | POST |
+| URL | `<Teampass url>/api/index.php/item/create?label=item created from API 6&folder_id=934&password=$LjPRGBAJa8x8!qqGKc$@pvYtY5NY^k*GES3FHLeW%2o%23&description=Ceci est une déscription simple.&login=monLogin&email=mon@email.fr&url=https://teampass.readthedocs.io/en/latest/api/api-write/&tags=api,test&anyone_can_modify=0&icon=fa-solid fa-start text-orange` |
+| PARAMETERS | 'label'=is a string<br>'folder_id'=is the parent folder id<br>'password'=is a string<br>'description'=is a string<br>'login'=is a string<br>'email'=is a string<br>'url'=is a string<br>'icon'=fontawesome icon code<br>'anyone_can_modify'=is a boolean|
+| HEADER | {<br>&nbsp;&nbsp;&nbsp;&nbsp;"Authorization": "Bearer _token received from authorize step_"<br>} |
+| Return | An array of item attributes in json format.<br>Example:<br>[{<br>&nbsp;&nbsp;&nbsp;&nbsp;"error": false,<br>&nbsp;&nbsp;&nbsp;&nbsp;"message": "Item created successfully",<br>&nbsp;&nbsp;&nbsp;&nbsp;"newId": "658"<br>&nbsp;&nbsp;&nbsp;&nbsp;}<br>&nbsp;&nbsp;&nbsp;] |

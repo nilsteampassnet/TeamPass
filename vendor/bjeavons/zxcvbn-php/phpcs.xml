@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<ruleset>
+    <rule ref="PSR12">
+        <exclude name="Generic.Files.LineLength.TooLong" />
+    </rule>
+
+    <arg name="ignore" value="vendor/"/>
+    <arg name="ignore" value="build/"/>
+</ruleset>
+
+

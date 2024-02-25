@@ -203,6 +203,9 @@ class ItemController extends BaseController
                         $arrQueryStringParams['url'],
                         $arrQueryStringParams['tags'],
                         $arrQueryStringParams['anyone_can_modify'],
+                        $arrQueryStringParams['icon'],
+                        $userData['id'],
+                        $userData['username'],
                     );
                     $responseData = json_encode($ret);
                 }

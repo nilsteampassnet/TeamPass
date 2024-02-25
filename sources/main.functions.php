@@ -2667,6 +2667,8 @@ function generateQuickPassword(int $length = 16, bool $symbolsincluded = true): 
  * @param bool   $onlyForUser                 User ID if needed
  * @param bool   $deleteAll                 User ID if needed
  * @param array  $objectKeyArray                 User ID if needed
+ * @param int    $all_users_except_id                 User ID if needed
+ * @param int   $apiUserId                 User ID if needed
  *
  * @return void
  */
@@ -2679,7 +2681,8 @@ function storeUsersShareKey(
     bool $onlyForUser = false,
     bool $deleteAll = true,
     array $objectKeyArray = [],
-    int $all_users_except_id = -1
+    int $all_users_except_id = -1,
+    int $apiUserId = -1
 ): void {
     
     $session = SessionManager::getSession();
@@ -2701,7 +2704,7 @@ function storeUsersShareKey(
         $user = DB::queryFirstRow(
             'SELECT public_key
             FROM ' . prefixTable('users') . '
-            WHERE id = ' . (int) $session->get('user-id') . '
+            WHERE id = ' . ($apiUserId === -1 ? (int) $session->get('user-id') : $apiUserId) . '
             AND public_key != ""'
         );
 
@@ -2710,7 +2713,7 @@ function storeUsersShareKey(
                 $object_name,
                 [
                     'object_id' => (int) $post_object_id,
-                    'user_id' => (int) $session->get('user-id'),
+                    'user_id' => (int) ($apiUserId === -1 ? (int) $session->get('user-id') : $apiUserId),
                     'share_key' => encryptUserObjectKey(
                         $objectKey,
                         $user['public_key']
@@ -2723,7 +2726,7 @@ function storeUsersShareKey(
                     $object_name,
                     [
                         'object_id' => (int) $object['objectId'],
-                        'user_id' => (int) $session->get('user-id'),
+                        'user_id' => (int) ($apiUserId === -1 ? (int) $session->get('user-id') : $apiUserId),
                         'share_key' => encryptUserObjectKey(
                             $object['objectKey'],
                             $user['public_key']
@@ -2740,7 +2743,7 @@ function storeUsersShareKey(
             'SELECT id, public_key
             FROM ' . prefixTable('users') . '
             WHERE ' . ($onlyForUser === true ? 
-                'id IN ("' . TP_USER_ID . '","' . $session->get('user-id') . '") ' : 
+                'id IN ("' . TP_USER_ID . '","' . ($apiUserId === -1 ? (int) $session->get('user-id') : $apiUserId) . '") ' : 
                 'id NOT IN ("' . OTV_USER_ID . '","' . SSH_USER_ID . '","' . API_USER_ID . '"'.($all_users_except_id === -1 ? '' : ', "'.$all_users_except_id.'"').') ') . '
             AND public_key != ""'
         );
@@ -4417,4 +4420,26 @@ function sendMailToUser(
     }
 
     return null;
+}
+
+/**
+ * Converts a password strengh value to zxcvbn level
+ * 
+ * @param integer $passwordStrength
+ * 
+ * @return integer
+ */
+function convertPasswordStrength($passwordStrength): int
+{
+    if ($passwordStrength < TP_PW_STRENGTH_2) {
+        return 0;
+    } elseif ($passwordStrength < TP_PW_STRENGTH_3) {
+        return 1;
+    } elseif ($passwordStrength < TP_PW_STRENGTH_4) {
+        return 2;
+    } elseif ($passwordStrength < TP_PW_STRENGTH_5) {
+        return 3;
+    } else {
+        return 4;
+    }
 }

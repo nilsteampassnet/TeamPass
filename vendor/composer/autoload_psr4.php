@@ -8,6 +8,7 @@ $baseDir = dirname($vendorDir);
 return array(
     'voku\\helper\\' => array($vendorDir . '/voku/anti-xss/src/voku/helper'),
     'voku\\' => array($vendorDir . '/voku/portable-ascii/src/voku', $vendorDir . '/voku/portable-utf8/src/voku'),
+    'ZxcvbnPhp\\' => array($vendorDir . '/bjeavons/zxcvbn-php/src'),
     'Webmozart\\Assert\\' => array($vendorDir . '/webmozart/assert/src'),
     'Tightenco\\Collect\\' => array($vendorDir . '/tightenco/collect/src/Collect'),
     'TiBeN\\' => array($vendorDir . '/tiben/crontab-manager/src'),
@@ -48,7 +49,7 @@ return array(
     'LdapRecord\\' => array($vendorDir . '/directorytree/ldaprecord/src'),
     'Illuminate\\Validation\\' => array($vendorDir . '/illuminate/validation'),
     'Illuminate\\Translation\\' => array($vendorDir . '/illuminate/translation'),
-    'Illuminate\\Support\\' => array($vendorDir . '/illuminate/macroable', $vendorDir . '/illuminate/conditionable', $vendorDir . '/illuminate/collections', $vendorDir . '/illuminate/support'),
+    'Illuminate\\Support\\' => array($vendorDir . '/illuminate/collections', $vendorDir . '/illuminate/conditionable', $vendorDir . '/illuminate/macroable', $vendorDir . '/illuminate/support'),
     'Illuminate\\Filesystem\\' => array($vendorDir . '/illuminate/filesystem'),
     'Illuminate\\Contracts\\' => array($vendorDir . '/illuminate/contracts'),
     'Illuminate\\Container\\' => array($vendorDir . '/illuminate/container'),

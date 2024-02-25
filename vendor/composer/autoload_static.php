@@ -15,8 +15,8 @@ class ComposerStaticInit917ba785e18cef2723bd769999d8fa5e
         'a1105708a18b76903365ca1c4aa61b02' => __DIR__ . '/..' . '/symfony/translation/Resources/functions.php',
         'f598d06aa772fa33d905e87be6398fb1' => __DIR__ . '/..' . '/symfony/polyfill-intl-idn/bootstrap.php',
         '72579e7bd17821bb1321b87411366eae' => __DIR__ . '/..' . '/illuminate/support/helpers.php',
-        '662a729f963d39afe703c9d9b7ab4a8c' => __DIR__ . '/..' . '/symfony/polyfill-php83/bootstrap.php',
         '06a34129a50df3d9257ee706cf3c875b' => __DIR__ . '/..' . '/illuminate/filesystem/functions.php',
+        '662a729f963d39afe703c9d9b7ab4a8c' => __DIR__ . '/..' . '/symfony/polyfill-php83/bootstrap.php',
         'def43f6c87e4f8dfd0c9e1b1bab14fe8' => __DIR__ . '/..' . '/symfony/polyfill-iconv/bootstrap.php',
         '8825ede83f2f289127722d4e842cf7e8' => __DIR__ . '/..' . '/symfony/polyfill-intl-grapheme/bootstrap.php',
         '667aeda72477189d0494fecd327c3641' => __DIR__ . '/..' . '/symfony/var-dumper/Resources/functions/dump.php',
@@ -33,6 +33,10 @@ class ComposerStaticInit917ba785e18cef2723bd769999d8fa5e
         array (
             'voku\\helper\\' => 12,
             'voku\\' => 5,
+        ),
+        'Z' => 
+        array (
+            'ZxcvbnPhp\\' => 10,
         ),
         'W' => 
         array (
@@ -148,6 +152,10 @@ class ComposerStaticInit917ba785e18cef2723bd769999d8fa5e
         array (
             0 => __DIR__ . '/..' . '/voku/portable-ascii/src/voku',
             1 => __DIR__ . '/..' . '/voku/portable-utf8/src/voku',
+        ),
+        'ZxcvbnPhp\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/bjeavons/zxcvbn-php/src',
         ),
         'Webmozart\\Assert\\' => 
         array (
@@ -311,9 +319,9 @@ class ComposerStaticInit917ba785e18cef2723bd769999d8fa5e
         ),
         'Illuminate\\Support\\' => 
         array (
-            0 => __DIR__ . '/..' . '/illuminate/macroable',
+            0 => __DIR__ . '/..' . '/illuminate/collections',
             1 => __DIR__ . '/..' . '/illuminate/conditionable',
-            2 => __DIR__ . '/..' . '/illuminate/collections',
+            2 => __DIR__ . '/..' . '/illuminate/macroable',
             3 => __DIR__ . '/..' . '/illuminate/support',
         ),
         'Illuminate\\Filesystem\\' => 
@@ -1923,6 +1931,29 @@ class ComposerStaticInit917ba785e18cef2723bd769999d8fa5e
         'Webmozart\\Assert\\InvalidArgumentException' => __DIR__ . '/..' . '/webmozart/assert/src/InvalidArgumentException.php',
         'Webmozart\\Assert\\Mixin' => __DIR__ . '/..' . '/webmozart/assert/src/Mixin.php',
         'WhereClause' => __DIR__ . '/..' . '/sergeytsalkov/meekrodb/db.class.php',
+        'ZxcvbnPhp\\Feedback' => __DIR__ . '/..' . '/bjeavons/zxcvbn-php/src/Feedback.php',
+        'ZxcvbnPhp\\Matcher' => __DIR__ . '/..' . '/bjeavons/zxcvbn-php/src/Matcher.php',
+        'ZxcvbnPhp\\Matchers\\BaseMatch' => __DIR__ . '/..' . '/bjeavons/zxcvbn-php/src/Matchers/BaseMatch.php',
+        'ZxcvbnPhp\\Matchers\\Bruteforce' => __DIR__ . '/..' . '/bjeavons/zxcvbn-php/src/Matchers/Bruteforce.php',
+        'ZxcvbnPhp\\Matchers\\DateMatch' => __DIR__ . '/..' . '/bjeavons/zxcvbn-php/src/Matchers/DateMatch.php',
+        'ZxcvbnPhp\\Matchers\\DictionaryMatch' => __DIR__ . '/..' . '/bjeavons/zxcvbn-php/src/Matchers/DictionaryMatch.php',
+        'ZxcvbnPhp\\Matchers\\L33tMatch' => __DIR__ . '/..' . '/bjeavons/zxcvbn-php/src/Matchers/L33tMatch.php',
+        'ZxcvbnPhp\\Matchers\\MatchInterface' => __DIR__ . '/..' . '/bjeavons/zxcvbn-php/src/Matchers/MatchInterface.php',
+        'ZxcvbnPhp\\Matchers\\RepeatMatch' => __DIR__ . '/..' . '/bjeavons/zxcvbn-php/src/Matchers/RepeatMatch.php',
+        'ZxcvbnPhp\\Matchers\\ReverseDictionaryMatch' => __DIR__ . '/..' . '/bjeavons/zxcvbn-php/src/Matchers/ReverseDictionaryMatch.php',
+        'ZxcvbnPhp\\Matchers\\SequenceMatch' => __DIR__ . '/..' . '/bjeavons/zxcvbn-php/src/Matchers/SequenceMatch.php',
+        'ZxcvbnPhp\\Matchers\\SpatialMatch' => __DIR__ . '/..' . '/bjeavons/zxcvbn-php/src/Matchers/SpatialMatch.php',
+        'ZxcvbnPhp\\Matchers\\YearMatch' => __DIR__ . '/..' . '/bjeavons/zxcvbn-php/src/Matchers/YearMatch.php',
+        'ZxcvbnPhp\\Math\\Binomial' => __DIR__ . '/..' . '/bjeavons/zxcvbn-php/src/Math/Binomial.php',
+        'ZxcvbnPhp\\Math\\BinomialProvider' => __DIR__ . '/..' . '/bjeavons/zxcvbn-php/src/Math/BinomialProvider.php',
+        'ZxcvbnPhp\\Math\\Impl\\AbstractBinomialProvider' => __DIR__ . '/..' . '/bjeavons/zxcvbn-php/src/Math/Impl/AbstractBinomialProvider.php',
+        'ZxcvbnPhp\\Math\\Impl\\AbstractBinomialProviderWithFallback' => __DIR__ . '/..' . '/bjeavons/zxcvbn-php/src/Math/Impl/AbstractBinomialProviderWithFallback.php',
+        'ZxcvbnPhp\\Math\\Impl\\BinomialProviderFloat64' => __DIR__ . '/..' . '/bjeavons/zxcvbn-php/src/Math/Impl/BinomialProviderFloat64.php',
+        'ZxcvbnPhp\\Math\\Impl\\BinomialProviderInt64' => __DIR__ . '/..' . '/bjeavons/zxcvbn-php/src/Math/Impl/BinomialProviderInt64.php',
+        'ZxcvbnPhp\\Math\\Impl\\BinomialProviderPhp73Gmp' => __DIR__ . '/..' . '/bjeavons/zxcvbn-php/src/Math/Impl/BinomialProviderPhp73Gmp.php',
+        'ZxcvbnPhp\\Scorer' => __DIR__ . '/..' . '/bjeavons/zxcvbn-php/src/Scorer.php',
+        'ZxcvbnPhp\\TimeEstimator' => __DIR__ . '/..' . '/bjeavons/zxcvbn-php/src/TimeEstimator.php',
+        'ZxcvbnPhp\\Zxcvbn' => __DIR__ . '/..' . '/bjeavons/zxcvbn-php/src/Zxcvbn.php',
         'alreadyInitializedException' => __DIR__ . '/..' . '/owasp/csrf-protector-php/libs/csrf/csrfprotector.php',
         'configFileNotFoundException' => __DIR__ . '/..' . '/owasp/csrf-protector-php/libs/csrf/csrfprotector.php',
         'csrfProtector' => __DIR__ . '/..' . '/owasp/csrf-protector-php/libs/csrf/csrfprotector.php',

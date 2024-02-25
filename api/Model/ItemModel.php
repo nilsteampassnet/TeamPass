@@ -30,6 +30,7 @@
 
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\Language\Language;
+use ZxcvbnPhp\Zxcvbn;
 
 require_once API_ROOT_PATH . "/Model/Database.php";
 
@@ -138,6 +139,9 @@ class ItemModel extends Database
      * @param string $url
      * @param string $tags
      * @param string $anyone_can_modify
+     * @param string $icon
+     * @param integer $userId
+     * 
      * 
      * @return boolean
      */
@@ -150,7 +154,10 @@ class ItemModel extends Database
         string $email,
         string $url,
         string $tags,
-        string $anyone_can_modify
+        string $anyone_can_modify,
+        string $icon,
+        int $userId,
+        string $username
     ) : array
     {
         include_once API_ROOT_PATH . '/../sources/main.functions.php';
@@ -164,6 +171,7 @@ class ItemModel extends Database
             'tags' => $tags,
             'anyoneCanModify' => $anyone_can_modify,
             'url' => $url,
+            'icon' => $icon,
         ];
         
         $filters = [
@@ -176,6 +184,7 @@ class ItemModel extends Database
             'tags' => 'trim|escape',
             'anyoneCanModify' => 'trim|escape',
             'url' => 'trim|escape',
+            'icon' => 'trim|escape',
         ];
         
         $inputData = dataSanitizer(
@@ -217,8 +226,7 @@ class ItemModel extends Database
         $itemInfos['personal_folder'] = $dataFolderSettings['personal_folder'];
         $itemInfos['no_complex_check_on_modification'] = (int) $itemInfos['personal_folder'] === 1 ? 1 : (int) $dataFolderSettings['bloquer_modification'];
         $itemInfos['no_complex_check_on_creation'] = (int) $itemInfos['personal_folder'] === 1 ? 1 : (int) $dataFolderSettings['bloquer_creation'];
-        error_log('debug: ' . print_r($itemInfos, true));
-/*
+
         // Get folder complexity
         $folderComplexity = DB::queryfirstrow(
             'SELECT valeur
@@ -230,88 +238,75 @@ class ItemModel extends Database
         $itemInfos['requested_folder_complexity'] = $folderComplexity !== null ? (int) $folderComplexity['valeur'] : 0;
 
         // Check COMPLEXITY
-        if ($post_complexity_level < $itemInfos['requested_folder_complexity'] && $itemInfos['no_complex_check_on_creation'] === 0) {
-            echo (string) prepareExchangedData(
-                array(
-                    'error' => true,
-                    'message' => $lang->get('error_security_level_not_reached'),
-                ),
-                'encode'
-            );
-            break;
+        $zxcvbn = new Zxcvbn();
+        $passwordStrength = $zxcvbn->passwordStrength($password);
+        $folderPasswordStrength = convertPasswordStrength($itemInfos['requested_folder_complexity']);
+        if ($passwordStrength['score'] < $folderPasswordStrength && (int) $itemInfos['no_complex_check_on_creation'] === 0) {
+            return [
+                'error' => true,
+                'error_header' => 'HTTP/1.1 422 Unprocessable Entity',
+                'error_message' => 'Password strength is too low'
+            ];
         }
-
-
 
         // check if element doesn't already exist
-        $itemExists = 0;
-        $newID = '';
-        $data = DB::queryfirstrow(
+        DB::queryfirstrow(
             'SELECT * FROM ' . prefixTable('items') . '
             WHERE label = %s AND inactif = %i',
-            $inputData['label'],
+            $label,
             0
         );
-        $counter = DB::count();
-        if ($counter > 0) {
-            $itemExists = 1;
-        } else {
-            $itemExists = 0;
-        }
-
-        // Manage case where item is personal.
-        // In this case, duplication is allowed
         if (
-            isset($SETTINGS['duplicate_item']) === true
-            && (int) $SETTINGS['duplicate_item'] === 0
-            && (int) $post_folder_is_personal === 1
-            && isset($post_folder_is_personal) === true
+            DB::count() > 0
+            && ((isset($SETTINGS['duplicate_item']) === true && (int) $SETTINGS['duplicate_item'] === 0)
+            || (int) $itemInfos['personal_folder'] === 0)
         ) {
-            $itemExists = 0;
+            return [
+                'error' => true,
+                'error_header' => 'HTTP/1.1 422 Unprocessable Entity',
+                'error_message' => 'Similar item already exists. Duplicates are not allowed.'
+            ];
         }
-
-        create_item_without_password
 
         // Handle case where pw is empty
         // if not allowed then warn user
-        if (($session->has('user-create_item_without_password') && $session->has('user-create_item_without_password') && null !== $session->get('user-create_item_without_password')
-                && (int) $session->get('user-create_item_without_password') !== 1) ||
-            empty($post_password) === false
+        if (
+            isset($SETTINGS['create_item_without_password']) === true && (int) $SETTINGS['create_item_without_password'] === 0
+            && empty($password) === true
         ) {
-            // NEW ENCRYPTION
-            $cryptedStuff = doDataEncryption($post_password);
-        } else {
-            $cryptedStuff['encrypted'] = '';
-            $cryptedStuff['objectKey'] = '';
+            return [
+                'error' => true,
+                'error_header' => 'HTTP/1.1 422 Unprocessable Entity',
+                'error_message' => 'Empty password is not allowed.'
+            ];
         }
-
-        $post_password = $cryptedStuff['encrypted'];
-        $post_password_key = $cryptedStuff['objectKey'];
-        $itemFilesForTasks = [];
-        $itemFieldsForTasks = [];
+        if (empty($password) === false) {
+            $cryptedStuff = doDataEncryption($password);
+            $password = $cryptedStuff['encrypted'];
+            $passwordKey = $cryptedStuff['objectKey'];
+        } else {
+            $passwordKey = '';
+        }
         
         // ADD item
         DB::insert(
             prefixTable('items'),
             array(
-                'label' => $inputData['label'],
-                'description' => $post_description,
-                'pw' => $post_password,
+                'label' => $label,
+                'description' => $description,
+                'pw' => $password,
                 'pw_iv' => '',
-                'email' => $post_email,
-                'url' => $post_url,
-                'id_tree' => $inputData['folderId'],
-                'login' => $post_login,
+                'email' => $email,
+                'url' => $url,
+                'id_tree' => $folderId,
+                'login' => $login,
                 'inactif' => 0,
-                'restricted_to' => empty($post_restricted_to) === true ?
-                    '' : (is_array($post_restricted_to) === true ? implode(';', $post_restricted_to) : $post_restricted_to),
-                'perso' => (isset($post_folder_is_personal) === true && (int) $post_folder_is_personal === 1) ?
-                    1 : 0,
-                'anyone_can_modify' => (isset($post_anyone_can_modify) === true
-                    && $post_anyone_can_modify === 'on') ? 1 : 0,
-                'complexity_level' => $post_complexity_level,
+                'restricted_to' => '',
+                'perso' => $itemInfos['personal_folder'],
+                'anyone_can_modify' => $anyoneCanModify,
+                'complexity_level' => $passwordStrength['score'],
                 'encryption_type' => 'teampass_aes',
-                'fa_icon' => $post_fa_icon,
+                'fa_icon' => $icon,
                 'item_key' => uniqidReal(50),
                 'created_at' => time(),
             )
@@ -321,18 +316,60 @@ class ItemModel extends Database
         // Create sharekeys for the user itself
         storeUsersShareKey(
             prefixTable('sharekeys_items'),
-            (int) $post_folder_is_personal,
-            (int) $inputData['folderId'],
+            (int) $itemInfos['personal_folder'],
+            (int) $folderId,
             (int) $newID,
-            $cryptedStuff['objectKey'],
+            $passwordKey,
             true,   // only for the item creator
             false,  // no delete all
+            [],
+            -1,
+            $userId
         );
-        */
+
+        // log
+        logItems(
+            $SETTINGS,
+            (int) $newID,
+            $label,
+            $userId,
+            'at_creation',
+            $username
+        );
+
+        // Create new task for the new item
+        // If it is not a personnal one
+        if ((int) $itemInfos['personal_folder'] === 0) {
+            storeTask(
+                'new_item',
+                $userId,
+                0,
+                (int) $folderId,
+                (int) $newID,
+                $passwordKey,
+                [],
+                [],
+            );
+        }
+
+        // Add tags
+        $tags = explode(',', $tags);
+        foreach ($tags as $tag) {
+            if (empty($tag) === false) {
+                DB::insert(
+                    prefixTable('tags'),
+                    array(
+                        'item_id' => $newID,
+                        'tag' => strtolower($tag),
+                    )
+                );
+            }
+        }
+
         return [
-            'error' => true,
-            'error_header' => 'HTTP/1.1 422 Unprocessable Entity',
-            'error_message' => 'Invalid parameters'
+            'error' => false,
+            'message' => 'Item added successfully',
+            'newId' => $newID,
         ];
     }
 

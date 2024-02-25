@@ -400,7 +400,7 @@ class FolderManager
             }
             return array(
                 'error' => false,
-                'message' => '',
+                'message' => 'Folder added successfully',
                 'newId' => $newId,
             );
     
