@@ -83,8 +83,8 @@ class FolderManager
 
         $parentFolderData = $this->getParentFolderData($parent_id);
 
-        $parentComplexity = $this->checkComplexityLevel($parentFolderData, $complexity, $parent_id, $user_is_admin, $user_is_manager, $user_can_manage_all_users);
-        if (!$parentComplexity) {
+        $parentComplexity = $this->checkComplexityLevel($parentFolderData, $complexity, $parent_id);
+        if (isset($parentComplexity ['error']) && $parentComplexity['error'] === true) {
             return $this->errorResponse($this->lang->get('error_folder_complexity_lower_than_top_folder') . " [<b>{$this->settings['TP_PW_COMPLEXITY'][$parentComplexity['valeur']][1]}</b>]");
         }
 
@@ -185,18 +185,12 @@ class FolderManager
      * @param array $data
      * @param integer $complexity
      * @param integer $parent_id
-     * @param boolean $user_is_admin
-     * @param boolean $user_is_manager
-     * @param boolean $user_can_manage_all_users
      * @return array|boolean
      */
     private function checkComplexityLevel(
         $data,
         $complexity,
-        $parent_id,
-        $user_is_admin,
-        $user_is_manager,
-        $user_can_manage_all_users
+        $parent_id
     )
     {
         if (isset($data) === false || (int) $data['isPersonal'] === 0) {    
@@ -209,7 +203,9 @@ class FolderManager
                 'complex'
             );
             if (isset($data['valeur']) === true && intval($complexity) < intval($data['valeur'])) {
-                return false;
+                return [
+                    'error' => true,
+                ];
             }
         }
 

@@ -16,6 +16,6 @@
 - [Settings](manage/settings.md)
 - [Tasks](manage/tasks.md)
 - **API**
-- [Basic usage](api-basic.md)
+- [Introduction](api/api-basic.md)
 - **Help**
 - [Tips](misc/tips.md)

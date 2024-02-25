@@ -1,4 +1,4 @@
-<!-- docs/api-basic.md -->
+<!-- docs/api/api-basic.md -->
 
 > :warning: **Warning:** API are still in development.
 
