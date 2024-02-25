@@ -88,14 +88,14 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     /**
      * TOGGLE API STATUS (ENABLED/DISABLED)
      */
-    $(document).on('click', '.api-readonly', function() {
+    $(document).on('click', '.api-clickme-action', function() {
         toastr.remove();
         toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
         // prepare data
         var data = {
             'increment_id': $(this).data('increment-id'),
-            'field': 'read_only',
+            'field': $(this).data('field'),
             'value': $(this).hasClass('fa-toggle-off') === true ? 1 : 0,
         },
         selectedIcon = $(this);

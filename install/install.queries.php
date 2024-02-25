@@ -1144,6 +1144,7 @@ $SETTINGS = array (';
                             `user_id` int(13) DEFAULT NULL,
                             `read_only` int(1) NOT NULL DEFAULT '1',
                             `allowed_folders` text NOT NULL,
+                            `enabled` int(1) NOT NULL DEFAULT '0',
                             PRIMARY KEY (`increment_id`),
                             KEY `USER` (`user_id`)
                             ) CHARSET=utf8;"

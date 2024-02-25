@@ -75,7 +75,7 @@ class AuthModel extends Database
             // case where it is a user api key
             // Check if user exists
             $userInfoRes = $this->select(
-                "SELECT u.id, u.pw, u.login, u.admin, u.gestionnaire, u.can_manage_all_users, u.fonction_id, u.can_create_root_folder, u.public_key, u.private_key, u.personal_folder, u.fonction_id, u.groupes_visibles, u.groupes_interdits, a.value AS user_api_key, a.read_only as user_api_read_only, a.allowed_folders as user_api_allowed_folders
+                "SELECT u.id, u.pw, u.login, u.admin, u.gestionnaire, u.can_manage_all_users, u.fonction_id, u.can_create_root_folder, u.public_key, u.private_key, u.personal_folder, u.fonction_id, u.groupes_visibles, u.groupes_interdits, a.value AS user_api_key, a.read_only as user_api_read_only, a.allowed_folders as user_api_allowed_folders, a.enabled
                 FROM " . prefixTable('users') . " AS u
                 INNER JOIN " . prefixTable('api') . " AS a ON (a.user_id=u.id)
                 WHERE login='".$inputData['login']."'");
@@ -84,6 +84,11 @@ class AuthModel extends Database
             }
             $userInfoRes[0]['special'] = '';
             $userInfo = $userInfoRes[0];
+
+            // Check if user is enabled
+            if ((int) $userInfo['enabled'] === 0) {
+                return ["error" => "Login failed.", "info" => "User not allowed to use API"];
+            }
             
             // Check password
             $passwordManager = new PasswordManager();

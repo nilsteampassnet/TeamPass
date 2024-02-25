@@ -1169,5 +1169,6 @@ return array(
     'tasks_log_table_size' => 'Rozmiar tabeli dziennika zadań',
     'error_otp_secret' => 'Umożliwić odszyfrowanie hasła OTP, czy hasło jest prawidłowe?',
     'users_api_access_info' => 'Users can access the API with same access rights as in Teampass.',
+    'error_folder_not_allowed_for_this_user' => 'Folder is not allowed for this user',
 
 );

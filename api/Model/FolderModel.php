@@ -23,6 +23,7 @@
  * @see       https://www.teampass.net
  */
 require_once API_ROOT_PATH . "/Model/Database.php";
+use TeampassClasses\Language\Language;
 
 class FolderModel extends Database
 {
@@ -98,8 +99,6 @@ class FolderModel extends Database
         string $user_roles
     ): array
     {
-        require_once TEAMPASS_ROOT_PATH.'/sources/folders.functions.php';
-
         // Validate inputs
         $title = filter_var($title, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         $parent_id = filter_var($parent_id, FILTER_SANITIZE_NUMBER_INT);
@@ -123,6 +122,8 @@ class FolderModel extends Database
             ];}
 
         // Create folder
+        /*
+        require_once TEAMPASS_ROOT_PATH.'/sources/folders.functions.php';
         $creationStatus = createNewFolder(
             (string) $title,
             (int) $parent_id,
@@ -141,6 +142,30 @@ class FolderModel extends Database
             (int) $user_id,
             (string) $user_roles
         );
+        */
+
+        require_once TEAMPASS_ROOT_PATH.'/sources/folders.class.php';
+        $lang = new Language();
+        $folderManager = new FolderManager($lang);
+        $params = [
+            'title' => (string) $title,
+            'parent_id' => (int) $parent_id,
+            'complexity' => (int) $complexity,
+            'duration' => (int) $duration,
+            'create_auth_without' => (int) $create_auth_without,
+            'edit_auth_without' => (int) $edit_auth_without,
+            'icon' => (string) $icon,
+            'icon_selected' => (string) $icon_selected,
+            'access_rights' => (string) $access_rights,
+            'user_is_admin' => (int) $is_admin,
+            'user_accessible_folders' => (array) $foldersId,
+            'user_is_manager' => (int) $is_manager,
+            'user_can_create_root_folder' => (int) $user_can_create_root_folder,
+            'user_can_manage_all_users' => (int) $user_can_manage_all_users,
+            'user_id' => (int) $user_id,
+            'user_roles' => (string) $user_roles
+        ];
+        $creationStatus = $folderManager->createNewFolder($params);
 
         return $creationStatus;
     }

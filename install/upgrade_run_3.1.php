@@ -264,6 +264,18 @@ if ($res === false) {
     exit();
 }
 
+// Add field enabled to api table
+$res = addColumnIfNotExist(
+    $pre . 'api',
+    'enabled',
+    "INT(1) NOT NULL DEFAULT '0';"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field enabled to table api! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
 //---<END 3.1.2
 
 

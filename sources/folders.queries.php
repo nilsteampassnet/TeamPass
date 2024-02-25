@@ -540,26 +540,28 @@ if (null !== $post_type) {
             $post_icon_selected = filter_var($dataReceived['iconSelected'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $post_access_rights = isset($dataReceived['accessRight']) === true ? filter_var($dataReceived['accessRight'], FILTER_SANITIZE_FULL_SPECIAL_CHARS) : 'W';
 
-            require_once 'folders.functions.php';
-
-            $creationStatus = createNewFolder(
-                (string) $post_title,
-                (int) $post_parent_id,
-                (int) $post_complexity,
-                (int) $post_duration,
-                (int) $post_create_auth_without,
-                (int) $post_edit_auth_without,
-                (string) $post_icon,
-                (string) $post_icon_selected,
-                (string) $post_access_rights,
-                (int) $session->get('user-admin'),
-                (array) $session->get('user-accessible_folders'),
-                (int) $session->get('user-manager'),
-                (int) $session->get('user-can_create_root_folder'),
-                (int) $session->get('user-can_manage_all_users'),
-                (int) $session->get('user-id'),
-                (string) $session->get('user-roles')
-            );
+            // Create folder
+            require_once 'folders.class.php';
+            $folderManager = new FolderManager($lang);
+            $params = [
+                'title' => (string) $post_title,
+                'parent_id' => (int) $post_parent_id,
+                'complexity' => (int) $post_complexity,
+                'duration' => (int) $post_duration,
+                'create_auth_without' => (int) $post_create_auth_without,
+                'edit_auth_without' => (int) $post_edit_auth_without,
+                'icon' => (string) $post_icon,
+                'icon_selected' => (string) $post_icon_selected,
+                'access_rights' => (string) $post_access_rights,
+                'user_is_admin' => (int) $session->get('user-admin'),
+                'user_accessible_folders' => (array) $session->get('user-accessible_folders'),
+                'user_is_manager' => (int) $session->get('user-manager'),
+                'user_can_create_root_folder' => (int) $session->get('user-can_create_root_folder'),
+                'user_can_manage_all_users' => (int) $session->get('user-can_manage_all_users'),
+                'user_id' => (int) $session->get('user-id'),
+                'user_roles' => (string) $session->get('user-roles')
+            ];
+            $creationStatus = $folderManager->createNewFolder($params);
 
             echo prepareExchangedData(
                 array(

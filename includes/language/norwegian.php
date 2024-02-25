@@ -1169,5 +1169,6 @@ return array(
     'tasks_log_table_size' => 'Tasks log table size',
     'error_otp_secret' => 'Enable to decode the OTP secret, is the secret correct?',
     'users_api_access_info' => 'Users can access the API with same access rights as in Teampass.',
+    'error_folder_not_allowed_for_this_user' => 'Folder is not allowed for this user',
 
 );
