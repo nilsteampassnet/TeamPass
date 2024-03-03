@@ -6491,6 +6491,7 @@ switch ($inputData['type']) {
                     [
                         'error' => 'false',
                         'html_json' => ($arr_data),
+                        'extra' => isset($goCachedFolders['extra']) ? $goCachedFolders['extra'] : '',
                     ],
                     'encode'
                 );

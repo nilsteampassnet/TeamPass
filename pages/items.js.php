@@ -3540,9 +3540,10 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     }
 
                     //
-                    /*if (typeof data.html_json.folders === "string" || typeof data.html_json.folders === "object") {
-                        //data.html_json.folders = JSON.parse(data.html_json.folders);
-                    }*/
+                    if (data.extra === "to_be_parsed") {
+                        data.html_json.folders = JSON.parse(data.html_json.folders);
+                    }
+                    console.log(data.html_json.folders);
                     $.each(data.html_json.folders, function(i, value) {
                         // Prepare options lists
                         html_visible += '<option value="' + value.id + '"' +

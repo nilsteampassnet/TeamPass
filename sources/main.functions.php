@@ -3396,6 +3396,16 @@ function loadFoldersListByCache(
         ];
     }
 
+    // Does this user has the tree structure in session?
+    // If yes then use it
+    if (count(null !== $session->get('user-folders_list') ? $session->get('user-folders_list') : []) > 0) {
+        return [
+            'state' => true,
+            'data' => json_encode($session->get('user-folders_list')[0]),
+            'extra' => 'to_be_parsed',
+        ];
+    }
+    
     // Does this user has a tree cache
     $userCacheTree = DB::queryfirstrow(
         'SELECT '.$fieldName.'
@@ -3412,6 +3422,7 @@ function loadFoldersListByCache(
         return [
             'state' => true,
             'data' => $userCacheTree[$fieldName],
+            'extra' => '',
         ];
     }
 
