@@ -124,12 +124,15 @@ $userKey = DB::queryFirstRow(
 );
 $userPw = defuseReturnDecrypted($userKey['pw'], $SETTINGS);
 $userPrivateKey = decryptPrivateKey($userPw, $userKey['private_key']);
+$zxcvbn = new Zxcvbn();
 
 // Update item password length and complexity
 $items = DB::query(
     'SELECT i.id as itemId, i.pw, i.pw_len, i.complexity_level
     FROM '.prefixTable('items').' AS i
-    WHERE (i.pw_len = %i OR i.pw_len IS NULL) OR (i.complexity_level = %i OR i.complexity_level IS NULL) 
+    WHERE i.pw != "" 
+    AND i.perso = 0
+    AND ((i.pw_len = %i OR i.pw_len IS NULL) OR (i.complexity_level = %i OR i.complexity_level IS NULL))
     LIMIT 0, 100',
     0,
     -1
@@ -158,10 +161,15 @@ foreach ($items as $item) {
         )
     ));
 
+
     $passwordLength = strlen($password);
-    $zxcvbn = new Zxcvbn();
-    $passwordStrength = $zxcvbn->passwordStrength($password);
-    $passwordStrengthScore = convertPasswordStrength($passwordStrength['score']);
+    if ($passwordLength > 0 && $passwordLength <= $SETTINGS['pwd_maximum_length']) {
+        $passwordStrength = $zxcvbn->passwordStrength($password);
+        $passwordStrengthScore = convertPasswordStrength($passwordStrength['score']);
+    } else {
+        $passwordStrengthScore = 0;
+    }
+    
     DB::update(
         prefixTable('items'),
         array(
