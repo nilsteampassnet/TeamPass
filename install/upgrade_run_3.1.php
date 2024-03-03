@@ -276,6 +276,30 @@ if ($res === false) {
     exit();
 }
 
+// Add field created_at to misc table
+$res = addColumnIfNotExist(
+    $pre . 'misc',
+    'created_at',
+    "VARCHAR(255) NULL DEFAULT NULL;"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field created_at to table misc! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// Add field updated_at to misc table
+$res = addColumnIfNotExist(
+    $pre . 'misc',
+    'updated_at',
+    "VARCHAR(255) NULL DEFAULT NULL;"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field updated_at to table misc! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
 //---<END 3.1.2
 
 

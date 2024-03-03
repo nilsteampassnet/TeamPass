@@ -502,6 +502,8 @@ if (null !== $post_type) {
                             `type` varchar(50) NOT NULL,
                             `intitule` varchar(100) NOT NULL,
                             `valeur` varchar(500) NOT NULL,
+                            `created_at` varchar(255) NULL DEFAULT NULL,
+                            `updated_at` varchar(255) NULL DEFAULT NULL,
                             PRIMARY KEY (`increment_id`)
                             ) CHARSET=utf8;'
                         );

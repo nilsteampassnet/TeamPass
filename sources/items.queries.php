@@ -2407,7 +2407,7 @@ switch ($inputData['type']) {
             // Create new task for the new item
             // If it is not a personnal one
             if ((int) $dataDestination['personal_folder'] !== 1) {
-                error_log('item_copy' . print_r($itemDataArray, true));
+                //error_log('item_copy' . print_r($itemDataArray, true));
                 storeTask(
                     'item_copy',
                     $session->get('user-id'),
@@ -3710,6 +3710,7 @@ switch ($inputData['type']) {
                 prefixTable('misc'),
                 array(
                     'valeur' => $dataReceived['complexity'],
+                    'updated_at' => time(),
                 ),
                 'intitule = %s AND type = %s',
                 $inputData['folderId'],
@@ -6489,7 +6490,7 @@ switch ($inputData['type']) {
                 echo (string) prepareExchangedData(
                     [
                         'error' => 'false',
-                        'html_json' => $arr_data,
+                        'html_json' => ($arr_data),
                     ],
                     'encode'
                 );

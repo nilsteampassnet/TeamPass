@@ -173,7 +173,7 @@ class FolderManager
         }
 
         return [
-            'isPersonal' => $data['personal_folder'],
+            'isPersonal' => null !== $data['personal_folder'] ? $data['personal_folder'] : 0,
             'parentBloquerCreation' => $parentBloquerCreation,
             'parentBloquerModification' => $parentBloquerModification,
         ];
@@ -225,6 +225,7 @@ class FolderManager
     {
         extract($params);
         extract($parentFolderData);
+        
         if (
             (int) $isPersonal === 1
             || (int) $user_is_admin === 1
@@ -239,7 +240,7 @@ class FolderManager
                 array(
                     'parent_id' => $parent_id,
                     'title' => $title,
-                    'personal_folder' => $isPersonal,
+                    'personal_folder' => null !== $isPersonal ? $isPersonal : 0,
                     'renewal_period' => isset($duration) === true && (int) $duration !== 0 ? $duration : 0,
                     'bloquer_creation' => isset($create_auth_without) === true && (int) $create_auth_without === 1 ? '1' : $parentBloquerCreation,
                     'bloquer_modification' => isset($edit_auth_without) === true && (int) $edit_auth_without === 1 ? '1' : $parentBloquerModification,
@@ -257,6 +258,7 @@ class FolderManager
                     'type' => 'complex',
                     'intitule' => $newId,
                     'valeur' => $complexity,
+                    'created_at' => time(),
                 )
             );
     
@@ -270,6 +272,7 @@ class FolderManager
                 prefixTable('misc'),
                 array(
                     'valeur' => time(),
+                    'updated_at' => time(),
                 ),
                 'type = %s AND intitule = %s',
                 'timestamp',
@@ -359,7 +362,7 @@ class FolderManager
             } elseif ((int) $user_is_admin !== 1) {
                 // If not admin and no option enabled
                 // then provide expected rights based upon user's roles
-                foreach (explode(';', $user_roles) as $role) {
+                foreach (array_unique(explode(';', $user_roles)) as $role) {
                     if (empty($role) === false) {
                         DB::insert(
                             prefixTable('roles_values'),

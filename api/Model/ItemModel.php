@@ -190,14 +190,16 @@ class ItemModel extends Database
             $data,
             $filters
         );
-        if (is_array($inputData) === false) {
+        if (is_string($inputData) === true) {
             return [
                 'error' => true,
                 'error_header' => 'HTTP/1.1 422 Unprocessable Entity',
                 'error_message' => 'Data is not valid'
             ];
+        } else {
+            extract($inputData);
         }
-        extract($inputData);
+        
 
         include API_ROOT_PATH . '/../includes/config/tp.config.php';
 
@@ -245,8 +247,9 @@ class ItemModel extends Database
         // Check COMPLEXITY
         $zxcvbn = new Zxcvbn();
         $passwordStrength = $zxcvbn->passwordStrength($password);
-        $folderPasswordStrength = convertPasswordStrength($itemInfos['requested_folder_complexity']);
-        if ($passwordStrength['score'] < $folderPasswordStrength && (int) $itemInfos['no_complex_check_on_creation'] === 0) {
+        $passwordStrengthScore = convertPasswordStrength($passwordStrength['score']);
+        $folderPasswordStrength = $itemInfos['requested_folder_complexity'];
+        if ($passwordStrengthScore < $folderPasswordStrength && (int) $itemInfos['no_complex_check_on_creation'] === 0) {
             return [
                 'error' => true,
                 'error_header' => 'HTTP/1.1 422 Unprocessable Entity',
@@ -309,7 +312,7 @@ class ItemModel extends Database
                 'restricted_to' => '',
                 'perso' => $itemInfos['personal_folder'],
                 'anyone_can_modify' => $anyoneCanModify,
-                'complexity_level' => $passwordStrength['score'],
+                'complexity_level' => $passwordStrengthScore,
                 'encryption_type' => 'teampass_aes',
                 'fa_icon' => $icon,
                 'item_key' => uniqidReal(50),

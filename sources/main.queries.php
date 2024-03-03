@@ -1226,6 +1226,7 @@ function sendEmailsNotSent(
             prefixTable('misc'),
             array(
                 'valeur' => time(),
+                'updated_at' => time(),
             ),
             'intitule = %s AND type = %s',
             'sending_emails',
@@ -1394,6 +1395,7 @@ function sendingStatistics(
             prefixTable('misc'),
             array(
                 'valeur' => time(),
+                'updated_at' => time(),
             ),
             'type = %s AND intitule = %s',
             'admin',

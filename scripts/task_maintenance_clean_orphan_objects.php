@@ -76,6 +76,7 @@ doLog('end', '', 1, $logID);
  */
 function cleanOrphanObjects(): void
 {
+    /*
     //Libraries call
     $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
@@ -104,7 +105,7 @@ function cleanOrphanObjects(): void
 
         //log
         DB::DELETE(prefixTable('log_items'), 'id_item = %i', $item['id']);
-    }
+    }*/
 
     // delete orphan items
     $rows = DB::query(

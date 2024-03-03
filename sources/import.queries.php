@@ -864,6 +864,7 @@ function createFolder($folderTitle, $parentId, $folderLevel, $startPathLevel, $l
                 'type' => 'complex',
                 'intitule' => $id,
                 'valeur' => $levelPwComplexity,
+                'created_at' => time(),
             )
         );
 
@@ -872,6 +873,7 @@ function createFolder($folderTitle, $parentId, $folderLevel, $startPathLevel, $l
             prefixTable('misc'),
             array(
                 'valeur' => time(),
+                'updated_at' => time(),
             ),
             'type = %s AND intitule = %s',
             'timestamp',

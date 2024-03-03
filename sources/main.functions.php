@@ -1651,6 +1651,7 @@ function logItems(
             prefixTable('misc'),
             [
                 'valeur' => time(),
+                'updated_at' => time(),
             ],
             'type = %s AND intitule = %s',
             'timestamp',
@@ -3395,15 +3396,6 @@ function loadFoldersListByCache(
         ];
     }
 
-    // Does this user has the tree structure in session?
-    // If yes then use it
-    if (count(null !== $session->get('user-folders_list') ? $session->get('user-folders_list') : []) > 0) {
-        return [
-            'state' => true,
-            'data' => json_encode($session->get('user-folders_list')),
-        ];
-    }
-
     // Does this user has a tree cache
     $userCacheTree = DB::queryfirstrow(
         'SELECT '.$fieldName.'
@@ -4431,15 +4423,15 @@ function sendMailToUser(
  */
 function convertPasswordStrength($passwordStrength): int
 {
-    if ($passwordStrength < TP_PW_STRENGTH_2) {
-        return 0;
-    } elseif ($passwordStrength < TP_PW_STRENGTH_3) {
-        return 1;
-    } elseif ($passwordStrength < TP_PW_STRENGTH_4) {
-        return 2;
-    } elseif ($passwordStrength < TP_PW_STRENGTH_5) {
-        return 3;
+    if ($passwordStrength === 0) {
+        return TP_PW_STRENGTH_1;
+    } else if ($passwordStrength === 1) {
+        return TP_PW_STRENGTH_2;
+    } else if ($passwordStrength === 2) {
+        return TP_PW_STRENGTH_3;
+    } else if ($passwordStrength === 3) {
+        return TP_PW_STRENGTH_4;
     } else {
-        return 4;
+        return TP_PW_STRENGTH_5;
     }
 }

@@ -581,6 +581,7 @@ switch ($post_type) {
             prefixTable('misc'),
             array(
                 'valeur' => '1',
+                'updated_at' => time(),
             ),
             'intitule = %s AND type= %s',
             'maintenance_mode',
@@ -1061,6 +1062,7 @@ switch ($post_type) {
             prefixTable('misc'),
             array(
                 'valeur' => '0',
+                'updated_at' => time(),
             ),
             'intitule = %s AND type= %s',
             'maintenance_mode',
@@ -1789,6 +1791,7 @@ switch ($post_type) {
                     'type' => 'admin',
                     'intitule' => 'api',
                     'valeur' => $post_status,
+                    'created_at' => time(),
                 )
             );
         } else {
@@ -1796,6 +1799,7 @@ switch ($post_type) {
                 prefixTable('misc'),
                 array(
                     'valeur' => $post_status,
+                    'updated_at' => time(),
                 ),
                 'type = %s AND intitule = %s',
                 'admin',
@@ -1927,6 +1931,7 @@ switch ($post_type) {
                     'type' => 'admin',
                     'intitule' => 'google_authentication',
                     'valeur' => $tmp,
+                    'created_at' => time(),
                 )
             );
         } else {
@@ -1934,6 +1939,7 @@ switch ($post_type) {
                 prefixTable('misc'),
                 array(
                     'valeur' => $tmp,
+                    'updated_at' => time(),
                 ),
                 'type = %s AND intitule = %s',
                 'admin',
@@ -1953,6 +1959,7 @@ switch ($post_type) {
                         'type' => 'admin',
                         'intitule' => 'ga_website_name',
                         'valeur' => htmlspecialchars_decode($dataReceived['ga_website_name']),
+                        'created_at' => time(),
                     )
                 );
             } else {
@@ -1960,6 +1967,7 @@ switch ($post_type) {
                     prefixTable('misc'),
                     array(
                         'valeur' => htmlspecialchars_decode($dataReceived['ga_website_name']),
+                        'updated_at' => time(),
                     ),
                     'type = %s AND intitule = %s',
                     'admin',
@@ -2007,6 +2015,7 @@ switch ($post_type) {
                         'type' => 'admin',
                         'intitule' => 'agses_hosted_url',
                         'valeur' => htmlspecialchars_decode($dataReceived['agses_hosted_url']),
+                        'created_at' => time(),
                     )
                 );
             } else {
@@ -2014,6 +2023,7 @@ switch ($post_type) {
                     prefixTable('misc'),
                     array(
                         'valeur' => htmlspecialchars_decode($dataReceived['agses_hosted_url']),
+                        'updated_at' => time(),
                     ),
                     'type = %s AND intitule = %s',
                     'admin',
@@ -2036,6 +2046,7 @@ switch ($post_type) {
                         'type' => 'admin',
                         'intitule' => 'agses_hosted_id',
                         'valeur' => htmlspecialchars_decode($dataReceived['agses_hosted_id']),
+                        'created_at' => time(),
                     )
                 );
             } else {
@@ -2043,6 +2054,7 @@ switch ($post_type) {
                     prefixTable('misc'),
                     array(
                         'valeur' => htmlspecialchars_decode($dataReceived['agses_hosted_id']),
+                        'updated_at' => time(),
                     ),
                     'type = %s AND intitule = %s',
                     'admin',
@@ -2065,6 +2077,7 @@ switch ($post_type) {
                         'type' => 'admin',
                         'intitule' => 'agses_hosted_apikey',
                         'valeur' => htmlspecialchars_decode($dataReceived['agses_hosted_apikey']),
+                        'created_at' => time(),
                     )
                 );
             } else {
@@ -2072,6 +2085,7 @@ switch ($post_type) {
                     prefixTable('misc'),
                     array(
                         'valeur' => htmlspecialchars_decode($dataReceived['agses_hosted_apikey']),
+                        'updated_at' => time(),
                     ),
                     'type = %s AND intitule = %s',
                     'admin',
@@ -2137,6 +2151,7 @@ switch ($post_type) {
                     'valeur' => $post_value,
                     'type' => 'admin',
                     'intitule' => $post_field,
+                    'created_at' => time(),
                 )
             );
             // in case of stats enabled, add the actual time
@@ -2147,6 +2162,7 @@ switch ($post_type) {
                         'valeur' => time(),
                         'type' => 'admin',
                         'intitule' => $post_field . '_time',
+                        'updated_at' => time(),
                     )
                 );
             }
@@ -2155,6 +2171,7 @@ switch ($post_type) {
                 prefixTable('misc'),
                 array(
                     'valeur' => $post_value,
+                    'updated_at' => time(),
                 ),
                 'type = %s AND intitule = %s',
                 'admin',
@@ -2177,6 +2194,7 @@ switch ($post_type) {
                             'valeur' => 0,
                             'type' => 'admin',
                             'intitule' => $post_field . '_time',
+                            'created_at' => time(),
                         )
                     );
                 } else {
@@ -2184,6 +2202,7 @@ switch ($post_type) {
                         prefixTable('misc'),
                         array(
                             'valeur' => 0,
+                            'updated_at' => time(),
                         ),
                         'type = %s AND intitule = %s',
                         'admin',
@@ -2209,6 +2228,7 @@ switch ($post_type) {
                 prefixTable('misc'),
                 array(
                     'valeur' => 0,
+                    'updated_at' => time(),
                 ),
                 'type = %s AND intitule = %s',
                 'admin',
@@ -2283,6 +2303,7 @@ switch ($post_type) {
                         'type' => 'admin',
                         'intitule' => 'send_stats',
                         'valeur' => $post_status,
+                        'created_at' => time(),
                     )
                 );
             } else {
@@ -2290,6 +2311,7 @@ switch ($post_type) {
                     prefixTable('misc'),
                     array(
                         'valeur' => $post_status,
+                        'updated_at' => time(),
                     ),
                     'type = %s AND intitule = %s',
                     'admin',
@@ -2315,6 +2337,7 @@ switch ($post_type) {
                         'type' => 'admin',
                         'intitule' => 'send_statistics_items',
                         'valeur' => $post_list,
+                        'created_at' => time(),
                     )
                 );
             } else {
@@ -2322,6 +2345,7 @@ switch ($post_type) {
                     prefixTable('misc'),
                     array(
                         'valeur' => $post_list,
+                        'updated_at' => time(),
                     ),
                     'type = %s AND intitule = %s',
                     'admin',

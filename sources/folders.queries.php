@@ -465,6 +465,7 @@ if (null !== $post_type) {
                 prefixTable('misc'),
                 array(
                     'valeur' => time(),
+                    'updated_at' => time(),
                 ),
                 'type = %s AND intitule = %s',
                 'timestamp',
@@ -476,6 +477,7 @@ if (null !== $post_type) {
                 prefixTable('misc'),
                 array(
                     'valeur' => $post_complexity,
+                    'updated_at' => time(),
                 ),
                 'intitule = %s AND type = %s',
                 $dataFolder['id'],
@@ -563,6 +565,12 @@ if (null !== $post_type) {
             ];
             $creationStatus = $folderManager->createNewFolder($params);
 
+            // User created the folder
+            // Add new ID to list of visible ones
+            if ((int) $session->get('user-admin') === 0 && $creationStatus['error'] === false && $creationStatus['newId'] !== 0) {
+                SessionManager::addRemoveFromSessionArray('user-accessible_folders', [$creationStatus['newId']], 'add');
+            }
+
             echo prepareExchangedData(
                 array(
                     'error' => $creationStatus['error'],
@@ -630,6 +638,7 @@ if (null !== $post_type) {
                                     'valeur' => $thisSubFolders->id . ', ' . $thisSubFolders->parent_id . ', ' .
                                         $thisSubFolders->title . ', ' . $thisSubFolders->nleft . ', ' . $thisSubFolders->nright . ', ' .
                                         $thisSubFolders->nlevel . ', 0, 0, 0, 0',
+                                    'created_at' => time(),
                                 )
                             );
                             //array for delete folder
@@ -735,6 +744,7 @@ if (null !== $post_type) {
                 prefixTable('misc'),
                 array(
                     'valeur' => time(),
+                    'updated_at' => time(),
                 ),
                 'type = %s AND intitule = %s',
                 'timestamp',
@@ -860,6 +870,7 @@ if (null !== $post_type) {
                         'type' => 'complex',
                         'intitule' => $newFolderId,
                         'valeur' => is_null($nodeComplexity['valeur']) === false ? $nodeComplexity['valeur'] : 0,
+                        'created_at' => time(),
                     )
                 );
 
@@ -1201,6 +1212,7 @@ if (null !== $post_type) {
                 prefixTable('misc'),
                 array(
                     'valeur' => time(),
+                    'updated_at' => time(),
                 ),
                 'type = %s AND intitule = %s',
                 'timestamp',

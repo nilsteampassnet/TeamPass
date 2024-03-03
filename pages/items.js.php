@@ -623,6 +623,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             $('.form-folder-delete').removeClass('hidden');
 
             // Prepare some data in the form
+            console.log("> "+store.get('teampassApplication').selectedFolder);
             $('#form-folder-delete-selection').val(store.get('teampassApplication').selectedFolder).change();
             $('#form-folder-confirm-delete').iCheck('uncheck');
 
@@ -1991,7 +1992,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             return false;
         
         // Ensure Root is not selected
-        } else if (parseInt($('#form-folder-delete-selection option:selected').val()) === 0) {
+        } else if (parseInt($('#form-folder-delete-selection option:selected').val()) === 0 || $('#form-folder-delete-selection option:selected').length === 0) {
             toastr.remove();
             toastr.error(
                 '<?php echo $lang->get('please_select_a_folder'); ?>',
@@ -2013,7 +2014,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             data = {
                 'selectedFolders': [$('#form-folder-delete-selection option:selected').val()]
             }
-        if (debugJavascript === true) console.log(data)
+        if (debugJavascript === true) {
+            console.log(data)
+        }
 
         // Launch action
         $.post(
@@ -3537,6 +3540,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     }
 
                     //
+                    /*if (typeof data.html_json.folders === "string" || typeof data.html_json.folders === "object") {
+                        //data.html_json.folders = JSON.parse(data.html_json.folders);
+                    }*/
                     $.each(data.html_json.folders, function(i, value) {
                         // Prepare options lists
                         html_visible += '<option value="' + value.id + '"' +

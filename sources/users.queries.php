@@ -274,6 +274,7 @@ if (null !== $post_type) {
                             'type' => 'complex',
                             'intitule' => $new_folder_id,
                             'valeur' => 50,
+                            'created_at' => time(),
                         )
                     );
                     // Create role

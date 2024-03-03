@@ -144,7 +144,6 @@ $goTreeRefresh = loadTreeStrategy(
     (int) $inputData['userId'],
     (int) $inputData['forceRefresh']
 );
-
 // We don't use the cache if an ID of folder is provided
 if ($goTreeRefresh['state'] === true || empty($inputData['nodeId']) === false || $inputData['userTreeLoadStrategy'] === 'sequential') {
     // Build tree
