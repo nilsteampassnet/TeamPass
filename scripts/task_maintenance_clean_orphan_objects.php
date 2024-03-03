@@ -107,6 +107,7 @@ function cleanOrphanObjects(): void
         DB::DELETE(prefixTable('log_items'), 'id_item = %i', $item['id']);
     }*/
 
+    /*
     // delete orphan items
     $rows = DB::query(
         'SELECT id
@@ -126,6 +127,7 @@ function cleanOrphanObjects(): void
             DB::DELETE(prefixTable('log_items'), 'id_item = %i', $item['id']);
         }
     }
+    */
 
     // Delete all item keys for which no user exist
     DB::query(

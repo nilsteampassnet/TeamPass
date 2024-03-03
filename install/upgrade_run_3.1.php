@@ -212,6 +212,17 @@ if ($result === false) {
         'ALTER TABLE `' . $pre . 'background_subtasks` CHANGE `system_process_id` `process_id` varchar(100) NULL DEFAULT NULL;'
     );
 }
+// Add field can_create to api table
+$res = addColumnIfNotExist(
+    $pre . 'background_subtasks',
+    'task_id',
+    "INT(12) NOT NULL;"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field background_subtasks to table background_subtasks! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
 
 // Rename table 'processes_logs' to 'background_tasks_logs'
 $tmp = mysqli_num_rows(mysqli_query($db_link, "SHOW TABLES LIKE '" . $pre . "background_tasks_logs'"));
