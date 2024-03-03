@@ -26,13 +26,11 @@
  * @see       https://www.teampass.net
  */
 
-use voku\helper\AntiXSS;
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\SessionManager\SessionManager;
 use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\Language\Language;
-use EZimuel\PHPSecureSession;
-use TeampassClasses\PerformChecks\PerformChecks;
+use ZxcvbnPhp\Zxcvbn;
 
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
@@ -114,6 +112,64 @@ foreach ($ret as $folder) {
         ),
         'id = %i',
         $folder['id']
+    );
+}
+
+// Get user key
+$userKey = DB::queryFirstRow(
+    'SELECT pw,private_key
+    FROM '.prefixTable('users')
+    .' WHERE id = %i',
+    TP_USER_ID
+);
+$userPw = defuseReturnDecrypted($userKey['pw'], $SETTINGS);
+$userPrivateKey = decryptPrivateKey($userPw, $userKey['private_key']);
+
+// Update item password length and complexity
+$items = DB::query(
+    'SELECT i.id as itemId, i.pw, i.pw_len, i.complexity_level
+    FROM '.prefixTable('items').' AS i
+    WHERE (i.pw_len = %i OR i.pw_len IS NULL) OR (i.complexity_level = %i OR i.complexity_level IS NULL) 
+    LIMIT 0, 100',
+    0,
+    -1
+);
+foreach ($items as $item) {
+    // Get item key
+    $itemKey = DB::queryFirstRow(
+        'SELECT share_key
+        FROM ' . prefixTable('sharekeys_items') . '
+        WHERE user_id = %i AND object_id = %i',
+        TP_USER_ID,
+        $item['itemId']
+    );
+
+    // if no key, continue
+    if ($itemKey['share_key'] === null) {
+        continue;
+    }
+
+    // decrypt password
+    $password = base64_decode(doDataDecryption(
+        $item['pw'],
+        decryptUserObjectKey(
+            $itemKey['share_key'],
+            $userPrivateKey,
+        )
+    ));
+
+    $passwordLength = strlen($password);
+    $zxcvbn = new Zxcvbn();
+    $passwordStrength = $zxcvbn->passwordStrength($password);
+    $passwordStrengthScore = convertPasswordStrength($passwordStrength['score']);
+    DB::update(
+        prefixTable('items'),
+        array(
+            'pw_len' => $passwordLength,
+            'complexity_level' => $passwordStrengthScore,
+        ),
+        'id = %i',
+        $item['itemId']
     );
 }
 

@@ -338,7 +338,8 @@ switch ($inputData['type']) {
             }
 
             // Check length
-            if (strlen($post_password) > $SETTINGS['pwd_maximum_length']) {
+            $strlen_post_password = strlen($post_password);
+            if ($strlen_post_password > $SETTINGS['pwd_maximum_length']) {
                 echo (string) prepareExchangedData(
                     array(
                         'error' => true,
@@ -450,6 +451,7 @@ switch ($inputData['type']) {
                         'description' => $post_description,
                         'pw' => $post_password,
                         'pw_iv' => '',
+                        'pw_len' => $strlen_post_password,
                         'email' => $post_email,
                         'url' => $post_url,
                         'id_tree' => $inputData['folderId'],
@@ -1003,7 +1005,8 @@ switch ($inputData['type']) {
         }
 
         // Check password length
-        if (strlen($post_password) > $SETTINGS['pwd_maximum_length']) {
+        $strlen_post_password = strlen($post_password);
+        if ($strlen_post_password > $SETTINGS['pwd_maximum_length']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -1240,6 +1243,7 @@ switch ($inputData['type']) {
                     'label' => $inputData['label'],
                     'description' => $post_description,
                     'pw' => $encrypted_password,
+                    'pw_len' => $strlen_post_password,
                     'email' => $post_email,
                     'login' => $post_login,
                     'url' => $post_url,
