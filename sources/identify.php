@@ -1565,6 +1565,9 @@ function ldapCreateUser(string $login, string $passwordClear, string $userEmail,
             'user_id' => $newUserId,
             'value' => encryptUserObjectKey(base64_encode(base64_encode(uniqidReal(39))), $userKeys['public_key']),
             'timestamp' => time(),
+            'read_only' => 1,
+            'allowed_folders' => '',
+            'enabled' => 0,
         )
     );
 
