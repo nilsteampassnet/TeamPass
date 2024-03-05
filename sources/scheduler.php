@@ -105,7 +105,7 @@ function runTask($parameters, $fileName, $scheduler): void
     if (count($parameters) === 2) {
         if ($parameters[0] === 'hourly') {
             $time = explode(':', $parameters[1]);
-            $scheduler->php($fileName)->hourly($time[1]);
+            $scheduler->php($fileName)->hourly(is_numeric($time[0]) ? $time[0] : 0);
         } elseif ($parameters[0] !== '') {
             $param = (string) $parameters[0];
             $scheduler->php($fileName)->$param($parameters[1]);
