@@ -248,4 +248,73 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
             }
         );
     });
+
+    $(document).ready(function() {
+        // Perform DB integrity check
+        setTimeout(
+            performDBIntegrityCheck,
+            2500
+        );
+    });
+
+
+    function performDBIntegrityCheck()
+    {
+        $.post(
+            "sources/admin.queries.php", {
+                type: "tablesIntegrityCheck",
+                key: "<?php echo $session->get('key'); ?>"
+            },
+            function(data) {
+                // Handle server answer
+                try {
+                    data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
+                } catch (e) {
+                    // error
+                    toastr.remove();
+                    toastr.error(
+                        '<?php echo $lang->get('server_answer_error') . '<br />' . $lang->get('server_returned_data') . ':<br />'; ?>' + data.error,
+                        '', {
+                            closeButton: true,
+                            positionClass: 'toastr-top-right'
+                        }
+                    );
+                    return false;
+                }
+                console.log(data)
+                let html = '',
+                    tablesInError = '',
+                    cnt = 0,
+                    tables = JSON.parse(data.tables);
+                if (data.error === false) {
+                    $.each(tables, function(i, value) {
+                        if (cnt < 5) {
+                            tablesInError += '<li>' + value + '</li>';
+                        } else {
+                            tablesInError += '<li>...</li>';
+                            return false;
+                        }
+                        cnt++;
+                    });
+
+                    if (tablesInError === '') {
+                        html = '<i class="fa-solid fa-circle-check text-success mr-2"></i><span class="badge badge-secondary mr-2">Experimental</span>Database integrity check is successfull';
+                    } else {
+                        html = '<i class="fa-solid fa-circle-xmark text-warning mr-2"></i><span class="badge badge-secondary mr-2">Experimental</span>Database integrity check has identified issues with the following tables:'
+                            + '<i class="fa-regular fa-circle-question infotip ml-2 text-info" title="You should consider to run Upgrade process to fix this or perform manual changes on tables"></i>';
+                        html += '<ul class="fs-6">' + tablesInError + '</ul>';
+                    }
+                } else {
+                    html = '<i class="fa-solid fa-circle-xmark text-danger mr-2"></i><span class="badge badge-secondary mr-2">Experimental</span>Database integrity check could not be performed!'
+                        + 'Error returned: ' + data.message;
+                }
+                $('#db-integrity-check-status').html(html);                
+    
+                // Show tooltips
+                $('.infotip').tooltip();
+
+                requestRunning = false;
+            }
+        );
+    }
 </script>

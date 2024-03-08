@@ -235,6 +235,9 @@ catch (Exception $e) {
 <?php                        
                         }
 
+                        // Check DB integrity
+                        echo '<div class="mt-3" id="db-integrity-check-status"><i class="fa-solid fa-circle-notch fa-spin"></i></div>';
+
                         // Status on users passwords migration to new encryption Symfony Password
                         DB::query("SELECT id FROM ".prefixTable('users')." WHERE pw LIKE '$2y$10$%' AND pw NOT LIKE '$2y$13$%'");
                         if (DB::count() > 0) {

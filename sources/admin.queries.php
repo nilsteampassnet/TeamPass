@@ -2494,4 +2494,88 @@ switch ($post_type) {
         );
 
         break;
+    
+    case "tablesIntegrityCheck":
+        // Check KEY and rights
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        $ret = tablesIntegrityCheck();
+        
+        echo prepareExchangedData(
+            array(
+                'error' => $ret['error'],
+                'message' => $ret['message'],
+                'tables' => json_encode($ret['array'], JSON_FORCE_OBJECT),
+            ),
+            'encode'
+        );
+
+        break;
+}
+
+
+/**
+ * Check the integrity of the tables
+ * 
+ * @return array
+ */
+function tablesIntegrityCheck(): array
+{
+    // Get integrity tables file
+    $integrityTablesFile = TEAMPASS_ROOT_PATH . '/includes/tables_integrity.json';
+    if (file_exists($integrityTablesFile) === false) {
+        return [
+            'error' => true,
+            'message' => "Integrity file has not been found."
+        ];
+    }
+    // Convert json to array
+    $integrityTables = json_decode(file_get_contents($integrityTablesFile), true);
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        return [
+            'error' => true,
+            'message' => "Integrity file is corrupted"
+        ];
+    }
+    // Get all tables
+    $tables = [];
+    foreach (DB::queryFirstColumn("SHOW TABLES") as $table) {
+        $tables[] = str_replace(DB_PREFIX, "", $table);;
+    }
+    // Prepare the integrity check
+    $tablesInError = [];
+    // Check if the tables are in the integrity file
+    foreach ($tables as $table) {
+        $tableFound = false;
+        $tableHash = "";
+        foreach ($integrityTables as $integrityTable) {
+            if ($integrityTable["table_name"] === $table) {
+                $tableFound = true;
+                $tableHash = $integrityTable["structure_hash"];
+                break; // Sortir de la boucle si la table est trouvée
+            }
+        }
+
+        if ($tableFound === true) {
+            $createTable = DB::queryfirstrow("SHOW CREATE TABLE ".DB_PREFIX."$table");
+            $currentHash = hash('sha256', $createTable['Create Table']);
+            if ($currentHash !== $tableHash) {
+                $tablesInError[] = DB_PREFIX.$table;
+            }            
+        }
+    }
+    return [
+        'error' => false,
+        'array' => $tablesInError,
+        'message' => ""
+    ];
 }
