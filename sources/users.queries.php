@@ -480,7 +480,7 @@ if (null !== $post_type) {
                 foreach ($processes as $process) {
                     // Delete task
                     DB::delete(
-                        prefixTable('background_tasks'),
+                        prefixTable('background_subtasks'),
                         'task_id = %i',
                         $process['increment_id']
                     );
@@ -2666,6 +2666,7 @@ if (null !== $post_type) {
                     'value' => encryptUserObjectKey(base64_encode(uniqidReal(39)), $userKeys['public_key']),
                     'timestamp' => time(),
                     'user_id' => $newUserId,
+                    'allowed_folders' => '',
                 )
             );
 

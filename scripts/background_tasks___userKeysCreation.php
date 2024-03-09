@@ -70,15 +70,10 @@ $phpBinaryPath = getPHPBinary();
 $processToPerform = DB::queryfirstrow(
     'SELECT *
     FROM ' . prefixTable('background_tasks') . '
-    WHERE finished_at IS NULL AND process_type = %s
+    WHERE (finished_at IS NULL OR finished_at = "") AND process_type = %s
     ORDER BY increment_id ASC',
     'create_user_keys'
 );
-/*
-$fichier = fopen(__DIR__.'/log.txt', 'a');
-fwrite($fichier, 'DEBUT: '.print_r($processToPerform, true)." \n");
-fclose($fichier);
-*/
 
 // Vérifie s'il y a une tâche à exécuter
 if (DB::count() > 0) {

@@ -258,18 +258,6 @@ if (intval($tmp) === 0) {
 
 //--->BEGIN 3.1.2
 
-// Add field can_create to api table
-$res = addColumnIfNotExist(
-    $pre . 'api',
-    'read_only',
-    "INT(1) NOT NULL DEFAULT '1';"
-);
-if ($res === false) {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field read_only to table api! ' . mysqli_error($db_link) . '!"}]';
-    mysqli_close($db_link);
-    exit();
-}
-
 // Add field allowed_folders to api table
 $res = addColumnIfNotExist(
     $pre . 'api',
@@ -363,11 +351,34 @@ if ($res === false) {
 }
 
 // Rename column 'read_only' to 'allowed_to_read' in table api
+$query = "SELECT EXISTS (
+    SELECT 1 
+    FROM INFORMATION_SCHEMA.COLUMNS 
+    WHERE 
+      TABLE_SCHEMA = '" . $database . "' AND 
+      TABLE_NAME = '" . $pre . "api' AND 
+      COLUMN_NAME = 'read_only'
+  ) AS `Exists`";
+$result = mysqli_query($db_link, $query);
+$result = mysqli_query($db_link, $query);
+if ($result) {
+    $row = mysqli_fetch_assoc($result);
+    if ($row['Exists'] == 1) {
+        modifyColumn(
+            $pre . 'api',
+            'read_only',
+            "allowed_to_read",
+            "INT(1) NOT NULL DEFAULT '1';"
+        );
+    }
+}
+
+// Alter type for column 'allowed_to_read' in table api
 modifyColumn(
     $pre . 'api',
-    'read_only',
-    "allowed_to_read",
-    "INT(1) NOT NULL DEFAULT '1';"
+    'allowed_folders',
+    "allowed_folders",
+    "TEXT NULL DEFAULT NULL;"
 );
 
 //---<END 3.1.2

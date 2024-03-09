@@ -1144,7 +1144,7 @@ $SETTINGS = array (';
                             `value` text DEFAULT NULL,
                             `timestamp` varchar(50) NOT NULL,
                             `user_id` int(13) DEFAULT NULL,
-                            `allowed_folders` text NOT NULL,
+                            `allowed_folders` text NULL DEFAULT NULL,
                             `enabled` int(1) NOT NULL DEFAULT '0',
                             `allowed_to_create` int(1) NOT NULL DEFAULT '0',
                             `allowed_to_read` int(1) NOT NULL DEFAULT '1',

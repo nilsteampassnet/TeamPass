@@ -55,7 +55,6 @@ function itemAction(array $actions, array $userData)
             'HTTP/1.1 404 Not Found',
             json_encode(['error' => 'API requested action is not allowed for this user'])
         );
-        return false;
     }
     // Perform the action
     require API_ROOT_PATH . "/Controller/Api/ItemController.php";    
@@ -79,7 +78,6 @@ function folderAction(array $actions, array $userData)
             'HTTP/1.1 404 Not Found',
             json_encode(['error' => 'API requested action is not allowed for this user'])
         );
-        return false;
     }
     // Perform the action
     require API_ROOT_PATH . "/Controller/Api/FolderController.php";
