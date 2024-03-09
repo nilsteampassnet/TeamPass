@@ -1170,5 +1170,9 @@ return array(
     'error_otp_secret' => 'Umożliwić odszyfrowanie hasła OTP, czy hasło jest prawidłowe?',
     'users_api_access_info' => 'Users can access the API with same access rights as in Teampass.',
     'error_folder_not_allowed_for_this_user' => 'Folder is not allowed for this user',
+    'allowed_to_create' => 'Allowed to create',
+    'allowed_to_read' => 'Allowed to read',
+    'allowed_to_update' => 'Allowed to update',
+    'allowed_to_delete' => 'Allowed to delete',
 
 );

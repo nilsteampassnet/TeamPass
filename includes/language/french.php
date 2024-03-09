@@ -1170,5 +1170,9 @@ return array(
     'error_otp_secret' => 'Impossible de décoder, merci de vérifier le code secret saisi.',
     'users_api_access_info' => 'Les utilisateurs peuvent utiliser l&apos;API avec les mêmes droits que dans Teampass.',
     'error_folder_not_allowed_for_this_user' => 'Répertoire non accessible pour cet utilisateur',
+    'allowed_to_create' => 'Autorisé à créer',
+    'allowed_to_read' => 'Autorisé à lire',
+    'allowed_to_update' => 'Autorisé à mettre à jour',
+    'allowed_to_delete' => 'Allowed to supprimer',
 
 );
