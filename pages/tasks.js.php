@@ -349,7 +349,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 value = $('#task-define-modal-frequency').val() === 'hourly' ? $('#task-define-modal-parameter-hourly-value').val() : 
                     ($('#task-define-modal-frequency').val() === 'monthly' ? $('#task-define-modal-parameter-daily-value').val() + ';' + $('#task-define-modal-parameter-monthly-value').val() :
                     ($('#task-define-modal-parameter-daily-value').val()));
-
             requestRunning = true;
 
             var data = {
@@ -357,7 +356,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 "value": frequency === null ? '' : frequency + ';' +value,
                 "translate": frequency,
             }
-            console.log(data);
             
             // Store in DB   
             $.post(
@@ -416,7 +414,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         // Open modal
         let task = $(this).data('task'),
             definition = $('#'+task+'_parameter_value').val().split(';');
-        $('#task-define-modal-frequency option[value="'+definition[0]+'"]').prop('selected', true);
+        
         console.log($('#'+task+'_parameter_value').val()+" -- "+definition[0]+";"+definition[1]+";"+definition[2])
         if (definition[0] === "hourly") {
             $('#task-define-modal-parameter-hourly').removeClass('hidden');

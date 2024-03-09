@@ -757,7 +757,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         //col3
         $sOutput .= '"'.htmlspecialchars(stripslashes((string) $record['name']), ENT_QUOTES).' '.htmlspecialchars(stripslashes((string) $record['lastname']), ENT_QUOTES).' ['.htmlspecialchars(stripslashes((string) $record['login']), ENT_QUOTES).']", ';
         //col5 - TAGS
-        $sOutput .= '"'.htmlspecialchars(stripslashes((string) $record['label']), ENT_QUOTES).'"';
+        $sOutput .= '"'.htmlspecialchars(stripslashes((string) $record['label']), ENT_QUOTES).' ['.$record['item_id'].']"';
         //Finish the line
         $sOutput .= '],';
     }

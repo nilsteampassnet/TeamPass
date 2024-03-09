@@ -157,7 +157,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                 <div class="mt-4">
                                     <?php
                                     $rowsKeys = DB::query(
-                                        'SELECT increment_id, label, timestamp, user_id, value, read_only, allowed_folders
+                                        'SELECT *
                                         FROM ' . prefixTable('api') . '
                                         WHERE type = %s
                                         ORDER BY timestamp ASC',
@@ -181,7 +181,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                                     <td width="50px"><i class="fas fa-trash infotip pointer delete-api-key" title="' . $lang->get('del_button') . '"></i></td>
                                                     <td><span class="edit-api-key pointer">' . $key['label'] . '</span></td>
                                                     <td>' . $key['value']. '</td>   
-                                                    <td><i class="fas '.((int) $key['read_only'] === 1 ? 'fa-toggle-on text-info' : 'fa-toggle-off text-danger').' mr-1 text-center pointer api-clickme-action" data-field="read_only" data-increment-id="' . $key['increment_id'] . '"></i></td>                       
+                                                    <td><i class="fas '.((int) $key['read_only'] === 1 ? 'fa-toggle-on text-info' : 'fa-toggle-off').' mr-1 text-center pointer api-clickme-action" data-field="read_only" data-increment-id="' . $key['increment_id'] . '"></i></td>                       
                                                 </tr>';
                                             } ?>
                                         </tbody>
@@ -272,7 +272,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                 <div class="mt-4">
                                     <?php
                                     $rowsKeys = DB::query(
-                                        'SELECT a.increment_id, a.user_id, a.read_only, a.allowed_folders, u.name, u.lastname, u.login, a.enabled
+                                        'SELECT a.*, u.name, u.lastname, u.login
                                         FROM ' . prefixTable('api') . ' AS a
                                         INNER JOIN ' . prefixTable('users') . ' AS u ON a.user_id = u.id
                                         WHERE a.type = %s
@@ -285,7 +285,10 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                             <tr>
                                                 <th><?php echo $lang->get('user'); ?></th>
                                                 <th><?php echo $lang->get('enabled'); ?></th>
-                                                <th><?php echo $lang->get('read_only'); ?></th>
+                                                <th><?php echo $lang->get('allowed_to_create'); ?></th>
+                                                <th><?php echo $lang->get('allowed_to_read'); ?></th>
+                                                <th><?php echo $lang->get('allowed_to_update'); ?></th>
+                                                <th><?php echo $lang->get('allowed_to_delete'); ?></th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -294,8 +297,11 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                                 echo '
                                                     <tr data-id="' . $key['increment_id'] . '">
                                                     <td>' . $key['name'] . ' ' . $key['lastname'] . ' (<i>'.$key['login'].'</i>)</td>
-                                                    <td><i class="fas '.((int) $key['enabled'] === 1 ? 'fa-toggle-on text-info' : 'fa-toggle-off').' mr-1 text-center pointer api-clickme-action" data-field="enabled" data-increment-id="' . $key['increment_id'] . '"></i></td>   
-                                                    <td><i class="fas '.((int) $key['read_only'] === 1 ? 'fa-toggle-on text-info' : 'fa-toggle-off text-danger').' mr-1 text-center pointer api-clickme-action" data-field="read_only" data-increment-id="' . $key['increment_id'] . '"></i></td>                        
+                                                    <td><i class="fas '.((int) $key['enabled'] === 1 ? 'fa-toggle-on text-info' : 'fa-toggle-off').' mr-1 text-center pointer api-clickme-action" data-field="enabled" data-increment-id="' . $key['increment_id'] . '"></i></td>
+                                                    <td><i class="fas '.((int) $key['allowed_to_create'] === 1 ? 'fa-toggle-on text-info' : 'fa-toggle-off').' mr-1 text-center pointer api-clickme-action" data-field="allowed_to_create" data-increment-id="' . $key['increment_id'] . '"></i></td>
+                                                    <td><i class="fas '.((int) $key['allowed_to_read'] === 1 ? 'fa-toggle-on text-info' : 'fa-toggle-off').' mr-1 text-center pointer api-clickme-action" data-field="allowed_to_read" data-increment-id="' . $key['increment_id'] . '"></i></td>
+                                                    <td><i class="fas '.((int) $key['allowed_to_update'] === 1 ? 'fa-toggle-on text-info' : 'fa-toggle-off').' mr-1 text-center pointer api-clickme-action" data-field="allowed_to_update" data-increment-id="' . $key['increment_id'] . '"></i></td>
+                                                    <td><i class="fas '.((int) $key['allowed_to_delete'] === 1 ? 'fa-toggle-on text-info' : 'fa-toggle-off').' mr-1 text-center pointer api-clickme-action" data-field="allowed_to_delete" data-increment-id="' . $key['increment_id'] . '"></i></td>
                                                 </tr>';
                                             } ?>
                                         </tbody>

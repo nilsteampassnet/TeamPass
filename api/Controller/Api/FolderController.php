@@ -88,8 +88,8 @@ class FolderController extends BaseController
                 $this->sendOutput("", ['HTTP/1.1 204 No Content']);
             } else {
                 // Is user allowed to create a folder
-                // We check if read_only is false
-                if ((int) $userData['read_only'] === 1) {
+                // We check if allowed_to_create
+                if ((int) $userData['allowed_to_create'] !== 1) {
                     $strErrorDesc = 'User is not allowed to create a folder';
                     $strErrorHeader = 'HTTP/1.1 401 Unauthorized';
                 } else {

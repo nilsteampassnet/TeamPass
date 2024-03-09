@@ -120,22 +120,28 @@ mysqli_query(
 );
 
 // Alter table items_otp (see #4006)
-mysqli_query(
-    $db_link,
-    'ALTER TABLE `' . $pre . 'items_otp` CHANGE `increment_id` `increment_id` INT(12) NOT NULL AUTO_INCREMENT;'
+modifyColumn(
+    $pre . 'items_otp',
+    'increment_id',
+    "increment_id",
+    "INT(12) NOT NULL AUTO_INCREMENT;"
 );
 
 // Alter table TOKENS
-mysqli_query(
-    $db_link,
-    'ALTER TABLE `' . $pre . 'tokens` CHANGE `end_timestamp` `end_timestamp` VARCHAR(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL;'
+modifyColumn(
+    $pre . 'tokens',
+    'end_timestamp',
+    "end_timestamp",
+    "VARCHAR(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL;"
 );
 
 
 // Alter table ldap_groups_roles
-mysqli_query(
-    $db_link,
-    'ALTER TABLE `' . $pre . 'ldap_groups_roles` CHANGE `ldap_group_id` `ldap_group_id` VARCHAR(500) NOT NULL;'
+modifyColumn(
+    $pre . 'ldap_groups_roles',
+    'ldap_group_id',
+    "ldap_group_id",
+    "VARCHAR(500) NOT NULL;"
 );
 
 
@@ -212,6 +218,7 @@ if ($result === false) {
         'ALTER TABLE `' . $pre . 'background_subtasks` CHANGE `system_process_id` `process_id` varchar(100) NULL DEFAULT NULL;'
     );
 }
+
 // Add field can_create to api table
 $res = addColumnIfNotExist(
     $pre . 'background_subtasks',
@@ -258,7 +265,7 @@ $res = addColumnIfNotExist(
     "INT(1) NOT NULL DEFAULT '1';"
 );
 if ($res === false) {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field can_create to table api! ' . mysqli_error($db_link) . '!"}]';
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field read_only to table api! ' . mysqli_error($db_link) . '!"}]';
     mysqli_close($db_link);
     exit();
 }
@@ -310,6 +317,58 @@ if ($res === false) {
     mysqli_close($db_link);
     exit();
 }
+
+// Alter table background_subtasks 
+modifyColumn(
+    $pre . 'background_subtasks',
+    'process_id',
+    "process_id",
+    "varchar(100) NULL DEFAULT NULL;"
+);
+
+// Add field allowed_to_delete to api table
+$res = addColumnIfNotExist(
+    $pre . 'api',
+    'allowed_to_delete',
+    "INT(1) NOT NULL DEFAULT '0';"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field allowed_to_delete to table api! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// Add field allowed_to_update to api table
+$res = addColumnIfNotExist(
+    $pre . 'api',
+    'allowed_to_update',
+    "INT(1) NOT NULL DEFAULT '0';"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field allowed_to_update to table api! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// Add field allowed_to_create to api table
+$res = addColumnIfNotExist(
+    $pre . 'api',
+    'allowed_to_create',
+    "INT(1) NOT NULL DEFAULT '0';"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field allowed_to_create to table api! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// Rename column 'read_only' to 'allowed_to_read' in table api
+modifyColumn(
+    $pre . 'api',
+    'read_only',
+    "allowed_to_read",
+    "INT(1) NOT NULL DEFAULT '1';"
+);
 
 //---<END 3.1.2
 

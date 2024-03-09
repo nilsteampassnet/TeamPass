@@ -130,7 +130,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     } else {
                         selectedIcon
                             .removeClass('fa-toggle-on text-info')
-                            .addClass('fa-toggle-off text-danger')
+                            .addClass('fa-toggle-off')
                             .prop('data-user-auth-type', 'local');
                     }
 

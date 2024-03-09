@@ -1144,9 +1144,12 @@ $SETTINGS = array (';
                             `value` text DEFAULT NULL,
                             `timestamp` varchar(50) NOT NULL,
                             `user_id` int(13) DEFAULT NULL,
-                            `read_only` int(1) NOT NULL DEFAULT '1',
                             `allowed_folders` text NOT NULL,
                             `enabled` int(1) NOT NULL DEFAULT '0',
+                            `allowed_to_create` int(1) NOT NULL DEFAULT '0',
+                            `allowed_to_read` int(1) NOT NULL DEFAULT '1',
+                            `allowed_to_update` int(1) NOT NULL DEFAULT '0',
+                            `allowed_to_delete` int(1) NOT NULL DEFAULT '0',
                             PRIMARY KEY (`increment_id`),
                             KEY `USER` (`user_id`)
                             ) CHARSET=utf8;"

@@ -221,6 +221,45 @@ function addColumnIfNotExist($dbname, $column, $columnAttr = "VARCHAR(255) NULL"
 }
 
 /**
+ * Modify a column
+ *
+ * @param string $tableName  DB
+ * @param string $existingColumnName  Column
+ * @param string $newColumnName New name
+ * @param string $newColumnAttributes New attributes
+ *
+ * @return boolean
+ */
+function modifyColumn($tableName, $existingColumnName, $newColumnName, $newColumnAttributes = "VARCHAR(255) NULL")
+{
+    global $db_link;
+
+    // Vérifie si la colonne existe
+    $columnExists = false;
+    $queryCheckColumn = mysqli_query($db_link, "SHOW COLUMNS FROM `$tableName` LIKE '$existingColumnName'");
+    if (mysqli_num_rows($queryCheckColumn) > 0) {
+        $columnExists = true;
+    }
+
+    // Si la colonne existe, procède à la modification
+    if ($columnExists) {
+        // Si le nom de la colonne doit rester le même, mais que les attributs changent
+        if ($existingColumnName === $newColumnName) {
+            $query = "ALTER TABLE `$tableName` MODIFY COLUMN `$existingColumnName` $newColumnAttributes";
+        } else {
+            // Change le nom de la colonne et/ou ses attributs
+            $query = "ALTER TABLE `$tableName` CHANGE `$existingColumnName` `$newColumnName` $newColumnAttributes";
+        }
+
+        return mysqli_query($db_link, $query);
+    } else {
+        // La colonne n'existe pas, retourne false
+        return false;
+    }
+}
+
+
+/**
  * Remove column from table if exists
  *
  * @param string $table      Table

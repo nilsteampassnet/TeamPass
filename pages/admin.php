@@ -236,14 +236,14 @@ catch (Exception $e) {
                         }
 
                         // Check DB integrity
-                        echo '<div class="mt-3" id="db-integrity-check-status"><i class="fa-solid fa-circle-notch fa-spin"></i></div>';
+                        echo '<div class="mt-3 hidden" id="db-integrity-check-status"><i class="fa-solid fa-circle-notch fa-spin"></i></div>';
 
                         // Status on users passwords migration to new encryption Symfony Password
-                        DB::query("SELECT id FROM ".prefixTable('users')." WHERE pw LIKE '$2y$10$%' AND pw NOT LIKE '$2y$13$%'");
+                        DB::query("SELECT id FROM ".prefixTable('users')." WHERE pw LIKE '$2y$10$%' AND pw NOT LIKE '$2y$13$%' AND id NOT IN (9999991,9999997,9999998,9999999)");
                         if (DB::count() > 0) {
                             echo '<div class="mt-3">
                                 <i class="fa-solid fa-triangle-exclamation text-warning mr-2"></i>Teampass has introduced a new user password encryption library.<br>
-                                Some users password are still encrypted with the old one. Please ensure to have them changed before upgrading to future release 3.1.3.<br> They just have to login or change password from users page to have it encrypted with new system.<br>
+                                Some users password are still encrypted with the old one. Please ensure to have them changed before upgrading to future release 3.2.0.<br> They just have to login or change password from users page to have it encrypted with new system.<br>
                                 Remaining users: '.DB::count().'
                             </div>';
                         }

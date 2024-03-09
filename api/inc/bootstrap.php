@@ -49,8 +49,16 @@ require API_ROOT_PATH . "/Model/FolderModel.php";
  */
 function itemAction(array $actions, array $userData)
 {
-    require API_ROOT_PATH . "/Controller/Api/ItemController.php";
-    
+    // Check if user has rights to perform the action
+    if (checkUSerCRUDRights($userData, $actions[0]) === false) {
+        errorHdl(
+            'HTTP/1.1 404 Not Found',
+            json_encode(['error' => 'API requested action is not allowed for this user'])
+        );
+        return false;
+    }
+    // Perform the action
+    require API_ROOT_PATH . "/Controller/Api/ItemController.php";    
     $objFeedController = new ItemController();
     $strMethodName = $actions[0] . 'Action';
     $objFeedController->{$strMethodName}($userData);
@@ -65,11 +73,34 @@ function itemAction(array $actions, array $userData)
  */
 function folderAction(array $actions, array $userData)
 {
+    // Check if user has rights to perform the action
+    if (checkUSerCRUDRights($userData, $actions[0]) === false) {
+        errorHdl(
+            'HTTP/1.1 404 Not Found',
+            json_encode(['error' => 'API requested action is not allowed for this user'])
+        );
+        return false;
+    }
+    // Perform the action
     require API_ROOT_PATH . "/Controller/Api/FolderController.php";
-
     $objFeedController = new FolderController();
     $strMethodName = $actions[0] . 'Action';
     $objFeedController->{$strMethodName}($userData);
+}
+
+function checkUSerCRUDRights($userData, $actionToPerform): bool
+{
+    if ($actionToPerform === 'create' && $userData['allowed_to_create'] === 1) {
+        return true;
+    } elseif (in_array($actionToPerform, ['read', 'get', 'inFolders']) === true && $userData['allowed_to_read'] === 1) {
+        return true;
+    } elseif ($actionToPerform === 'update' && $userData['allowed_to_update'] === 1) {
+        return true;
+    } elseif ($actionToPerform === 'delete' && $userData['allowed_to_delete'] === 1) {
+        return true;
+    } else {
+        return false;
+    }
 }
 
 /**

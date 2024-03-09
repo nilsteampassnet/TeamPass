@@ -288,6 +288,7 @@ class ItemModel extends Database
                 'error_message' => 'Empty password is not allowed.'
             ];
         }
+        $strlen_password = strlen($password);
         if (empty($password) === false) {
             $cryptedStuff = doDataEncryption($password);
             $password = $cryptedStuff['encrypted'];
@@ -304,6 +305,7 @@ class ItemModel extends Database
                 'description' => $description,
                 'pw' => $password,
                 'pw_iv' => '',
+                'pw_len' => $strlen_password,
                 'email' => $email,
                 'url' => $url,
                 'id_tree' => $folderId,

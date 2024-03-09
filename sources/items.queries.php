@@ -7233,6 +7233,7 @@ switch ($inputData['type']) {
             WHERE item_id = %i',
             $inputData['itemId']
         );
+        if (WIP === true) error_log(">>> ".DB::count()." -- ".$inputData['itemId']);
         
         // if token already exists for this item then no edition is possible
         if (DB::count() > 0) {

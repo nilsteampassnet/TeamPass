@@ -171,8 +171,8 @@ class ItemController extends BaseController
 
         if (strtoupper($requestMethod) === 'POST') {
             // Is user allowed to create a folder
-            // We check if read_only is false
-            if ((int) $userData['read_only'] === 1) {
+            // We check if allowed_to_create
+            if ((int) $userData['allowed_to_create'] !== 1) {
                 $strErrorDesc = 'User is not allowed to create an item';
                 $strErrorHeader = 'HTTP/1.1 401 Unauthorized';
             } else {
