@@ -170,7 +170,11 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                                 <th width="50px"></th>
                                                 <th><?php echo $lang->get('label'); ?></th>
                                                 <th><?php echo $lang->get('settings_api_key'); ?></th>
-                                                <th><?php echo $lang->get('read_only'); ?></th>
+                                                <th><i class="fa-solid fa-user-check infotip" title="<?php echo $lang->get('enabled'); ?>"></i></th>
+                                                <th><i class="fa-regular fa-square-plus infotip" title="<?php echo $lang->get('allowed_to_create'); ?>"></i></th>
+                                                <th><i class="fa-solid fa-glasses infotip" title="<?php echo $lang->get('allowed_to_read'); ?>"></i></th>
+                                                <th><i class="fa-solid fa-pencil infotip" title="<?php echo $lang->get('allowed_to_update'); ?>"></i></th>
+                                                <th><i class="fa-solid fa-trash infotip" title="<?php echo $lang->get('allowed_to_delete'); ?>"></i></th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -181,7 +185,11 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                                     <td width="50px"><i class="fas fa-trash infotip pointer delete-api-key" title="' . $lang->get('del_button') . '"></i></td>
                                                     <td><span class="edit-api-key pointer">' . $key['label'] . '</span></td>
                                                     <td>' . $key['value']. '</td>   
-                                                    <td><i class="fas '.((int) $key['read_only'] === 1 ? 'fa-toggle-on text-info' : 'fa-toggle-off').' mr-1 text-center pointer api-clickme-action" data-field="read_only" data-increment-id="' . $key['increment_id'] . '"></i></td>                       
+                                                    <td><i class="fas '.((int) $key['enabled'] === 1 ? 'fa-toggle-on text-info' : 'fa-toggle-off').' mr-1 text-center pointer api-clickme-action" data-field="enabled" data-increment-id="' . $key['increment_id'] . '"></i></td>
+                                                    <td><i class="fas '.((int) $key['allowed_to_create'] === 1 ? 'fa-toggle-on text-info' : 'fa-toggle-off').' mr-1 text-center pointer api-clickme-action" data-field="allowed_to_create" data-increment-id="' . $key['increment_id'] . '"></i></td>
+                                                    <td><i class="fas '.((int) $key['allowed_to_read'] === 1 ? 'fa-toggle-on text-info' : 'fa-toggle-off').' mr-1 text-center pointer api-clickme-action" data-field="allowed_to_read" data-increment-id="' . $key['increment_id'] . '"></i></td>
+                                                    <td><i class="fas '.((int) $key['allowed_to_update'] === 1 ? 'fa-toggle-on text-info' : 'fa-toggle-off').' mr-1 text-center pointer api-clickme-action" data-field="allowed_to_update" data-increment-id="' . $key['increment_id'] . '"></i></td>
+                                                    <td><i class="fas '.((int) $key['allowed_to_delete'] === 1 ? 'fa-toggle-on text-info' : 'fa-toggle-off').' mr-1 text-center pointer api-clickme-action" data-field="allowed_to_delete" data-increment-id="' . $key['increment_id'] . '"></i></td>                   
                                                 </tr>';
                                             } ?>
                                         </tbody>
@@ -284,11 +292,11 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                         <thead>
                                             <tr>
                                                 <th><?php echo $lang->get('user'); ?></th>
-                                                <th><?php echo $lang->get('enabled'); ?></th>
-                                                <th><?php echo $lang->get('allowed_to_create'); ?></th>
-                                                <th><?php echo $lang->get('allowed_to_read'); ?></th>
-                                                <th><?php echo $lang->get('allowed_to_update'); ?></th>
-                                                <th><?php echo $lang->get('allowed_to_delete'); ?></th>
+                                                <th><i class="fa-solid fa-user-check infotip" title="<?php echo $lang->get('enabled'); ?>"></i></th>
+                                                <th><i class="fa-regular fa-square-plus infotip" title="<?php echo $lang->get('allowed_to_create'); ?>"></i></th>
+                                                <th><i class="fa-solid fa-glasses infotip" title="<?php echo $lang->get('allowed_to_read'); ?>"></i></th>
+                                                <th><i class="fa-solid fa-pencil infotip" title="<?php echo $lang->get('allowed_to_update'); ?>"></i></th>
+                                                <th><i class="fa-solid fa-trash infotip" title="<?php echo $lang->get('allowed_to_delete'); ?>"></i></th>
                                             </tr>
                                         </thead>
                                         <tbody>
