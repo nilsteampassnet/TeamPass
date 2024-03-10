@@ -7233,11 +7233,10 @@ switch ($inputData['type']) {
             WHERE item_id = %i',
             $inputData['itemId']
         );
-        if (WIP === true) error_log(">>> ".DB::count()." -- ".$inputData['itemId']);
-        
+
         // if token already exists for this item then no edition is possible
         if (DB::count() > 0) {
-            // Get if current user is one who locked the item
+            // Get if current user is the one who locked the item
             $userLockedItemQueryResults = DB::queryFirstRow(
                 'SELECT user_id 
                 FROM ' . prefixTable('items_edition') . ' 
@@ -7259,7 +7258,7 @@ switch ($inputData['type']) {
 
             // Get delay period
             if (isset($SETTINGS['delay_item_edition']) && $SETTINGS['delay_item_edition'] > 0 && empty($dataTmp['timestamp']) === false) {
-                $delay = $SETTINGS['delay_item_edition'];
+                $delay = $SETTINGS['delay_item_edition']*60;
             } else {
                 $delay = EDITION_LOCK_PERIOD; // One day delay
             }
@@ -7335,7 +7334,7 @@ switch ($inputData['type']) {
                 $edit = false;
                 $delete = false;
             }
-            if (LOG_TO_SERVER === true) error_log('TEAMPASS - access: ' . $access . ' - edit: ' . $edit . ' - delete: ' . $delete);
+            if (LOG_TO_SERVER === true) error_log('TEAMPASS - Folder: '.$inputData['treeId'].' - User: '.$inputData['userId'].' - access: ' . $access . ' - edit: ' . $edit . ' - delete: ' . $delete);
         }
 
         $data = array(

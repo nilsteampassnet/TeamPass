@@ -574,7 +574,7 @@ declare(strict_types=1);
                     );
 
                     // Delay page submit
-                    $(this).delay(2500).queue(function() {
+                    $(this).delay(1000).queue(function() {
                         document.location.reload(true);
                         $(this).dequeue();
                     });

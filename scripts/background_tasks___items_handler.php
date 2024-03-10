@@ -126,6 +126,10 @@ if (DB::count() > 0) {
     }
 }
 
+
+// Do special tasks
+performRecuringItemTasks($SETTINGS);
+
 // log end
 doLog('end', '', (isset($SETTINGS['enable_tasks_log']) === true ? (int) $SETTINGS['enable_tasks_log'] : 0), $logID);
 
@@ -350,4 +354,34 @@ function handleTaskStep(
             array_key_exists('all_users_except_id', $ProcessArguments) === true ? $ProcessArguments['all_users_except_id'] : -1
         );
     }
+}
+
+/**
+ * Perform recuring tasks
+ * 
+ * @param array $SETTINGS
+ * 
+ * @return void
+ */
+function performRecuringItemTasks($SETTINGS): void
+{
+    // Clean multeple items edition
+    DB::query(
+        'DELETE i1 FROM '.prefixTable('items_edition').' i1
+        JOIN (
+            SELECT user_id, item_id, MIN(timestamp) AS oldest_timestamp
+            FROM '.prefixTable('items_edition').'
+            GROUP BY user_id, item_id
+        ) i2 ON i1.user_id = i2.user_id AND i1.item_id = i2.item_id
+        WHERE i1.timestamp > i2.oldest_timestamp'
+    );
+
+    // Handle item tokens expiration
+    // Delete entry if token has expired
+    // Based upon SETTINGS['delay_item_edition'] or EDITION_LOCK_PERIOD (1 day by default)
+    DB::query(
+        'DELETE FROM '.prefixTable('items_edition').'
+        WHERE timestamp < %i',
+        ($SETTINGS['delay_item_edition'] > 0) ? time() - ($SETTINGS['delay_item_edition']*60) : time() - EDITION_LOCK_PERIOD
+    );
 }

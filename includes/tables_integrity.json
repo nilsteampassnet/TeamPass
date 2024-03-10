@@ -9,15 +9,15 @@
     },
     {
         "table_name": "background_subtasks",
-        "structure_hash": "3bdaaef2ef4a1876a8e0333c9887f63548d440c88a042574b610ec602541e7e6"
+        "structure_hash": "f4084e7290b571c0de6ede971a51080adddfe77a3c0dcdf1a386a1c36d2503fb"
     },
     {
         "table_name": "background_tasks",
-        "structure_hash": "59638d32ffe759b398bd12b28ed8c676f4bd3a3f467952a76f61c99938099703"
+        "structure_hash": "e5384ba71dfe86150cf5bdb4e571e1bfd05c0c00128d37dddb622b8f34f192e2"
     },
     {
         "table_name": "background_tasks_logs",
-        "structure_hash": "393d575030054bab0724f9413c99fecce7abb34b3cb5e035d4ad0723b673f6e4"
+        "structure_hash": "6a219fb3324dc829d1b01653c05d5675fd5729f660ccd9e5e1099822f68e4bd9"
     },
     {
         "table_name": "cache",
@@ -65,7 +65,7 @@
     },
     {
         "table_name": "items_edition",
-        "structure_hash": "834eb08718b08d930e01bf6af32d46a292a815fe4a744d2d3a1afec7d3ab31e1"
+        "structure_hash": "828e4b782634cb12bfcb6802c8470730c0962d985832e5820b372b3ece9f6876"
     },
     {
         "table_name": "items_otp",
@@ -93,11 +93,11 @@
     },
     {
         "table_name": "log_items",
-        "structure_hash": "d27745101efba9ff228943b818ba1db6b59febb3453cc7652a0d9e66b1154b32"
+        "structure_hash": "7dc6be61bf51e9cb70d07bbec85fb3ac1950e002c3381c195cb10bbf7a459100"
     },
     {
         "table_name": "log_system",
-        "structure_hash": "ff104447900c30a943a85f7cdfac869a373ef02825eeb92e9c2c9dd8ca7bb55f"
+        "structure_hash": "7730efb22bc114be47e71735e91ed76837cdda828791a7a24b3cf3dfead584cf"
     },
     {
         "table_name": "misc",
@@ -165,7 +165,7 @@
     },
     {
         "table_name": "sharekeys_items",
-        "structure_hash": "26688f80faf857d86632c5b25f4f0c4128078c5c50186e1e93bc8ddb33d6a0b7"
+        "structure_hash": "5104fa33976ac39be22373c2da5bc9c727925c01828cd390e164149fb18de2f5"
     },
     {
         "table_name": "sharekeys_logs",
