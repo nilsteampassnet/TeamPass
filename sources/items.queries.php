@@ -7211,8 +7211,7 @@ switch ($inputData['type']) {
             break;
         }
 
-        // Initi
-        $edit = $delete = true; 
+        // Init
         $editionLock = false;
 
         // decrypt and retrieve data in JSON format
@@ -7315,6 +7314,7 @@ switch ($inputData['type']) {
 
         // Check rights of this role on this folder
         // Is there no edit or no delete defined
+        $edit = $delete = null;
         $data = DB::queryFirstColumn(
             'SELECT type
             FROM ' . prefixTable('roles_values') . '
@@ -7324,18 +7324,20 @@ switch ($inputData['type']) {
         );       
         foreach ($data as $access) {
             if ($access === 'ND') {
-                $delete = false;
+                $delete = $delete === true ? true : false;
             } elseif ($access === 'NE') {
-                $edit = false;
+                $edit = $edit === true ? true : false;
             } elseif ($access === 'NDNE') {
-                $edit = false;
-                $delete = false;
+                $edit = $edit === true ? true : false;
+                $delete = $delete === true ? true : false;
             } elseif ($access === 'R') {
-                $edit = false;
-                $delete = false;
+                $edit = $edit === true ? true : false;
+                $delete = $delete === true ? true : false;
+            } elseif ($access === 'W') {
+                $edit = true;
             }
-            if (LOG_TO_SERVER === true) error_log('TEAMPASS - Folder: '.$inputData['treeId'].' - User: '.$inputData['userId'].' - access: ' . $access . ' - edit: ' . $edit . ' - delete: ' . $delete);
         }
+        if (LOG_TO_SERVER === true) error_log('TEAMPASS - Folder: '.$inputData['treeId'].' - User: '.$inputData['userId'].' - access: ' . $access . ' - edit: ' . $edit . ' - delete: ' . $delete);
 
         $data = array(
             'error' => false,
@@ -7343,6 +7345,7 @@ switch ($inputData['type']) {
             'edit' => $edit,
             'delete' => $delete,
             'edition_locked' => $editionLock,
+            'debug' => 'read_only_folders',
         );
 
         // send data
