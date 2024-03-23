@@ -574,7 +574,7 @@ if (null !== $post_type) {
             echo prepareExchangedData(
                 array(
                     'error' => $creationStatus['error'],
-                    'message' => $creationStatus['message'],
+                    'message' => $creationStatus['error'] === true ? $lang->get('error_not_allowed_to') : $lang->get('folder_created') ,
                     'newId' => $creationStatus['newId'],
                 ),
                 'encode'

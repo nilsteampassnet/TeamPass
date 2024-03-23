@@ -403,14 +403,12 @@ class FolderManager
             }
             return array(
                 'error' => false,
-                'message' => 'Folder added successfully',
                 'newId' => $newId,
             );
     
         } else {
             return array(
                 'error' => true,
-                'message' => $lang->get('error_not_allowed_to'),
                 'newId' => $newId,
             );
         }

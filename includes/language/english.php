@@ -28,6 +28,7 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'folder_created' => 'Folder created',
     'allowed_to_create' => 'Allowed to create',
     'allowed_to_read' => 'Allowed to read',
     'allowed_to_update' => 'Allowed to update',
