@@ -46,6 +46,8 @@ use RobThree\Auth\TwoFactorAuth;
 use TeampassClasses\LdapExtra\LdapExtra;
 use TeampassClasses\LdapExtra\OpenLdapExtra;
 use TeampassClasses\LdapExtra\ActiveDirectoryExtra;
+use TeampassClasses\AzureAuthController\AzureAuthController;
+use TheNetworg\OAuth2\Client\Provider\Azure;
 
 // Load functions
 require_once 'main.functions.php';
@@ -84,6 +86,7 @@ $checkUserAccess = new PerformChecks(
         'user_id' => returnIfSet($session->get('user-id'), null),
         'user_key' => returnIfSet($session->get('key'), null),
         'login' => isset($_POST['login']) === false ? null : $_POST['login'],
+        'sso' => isset($_POST['sso']) === false ? null : $_POST['sso'],
     ]
 );
 
@@ -110,7 +113,6 @@ error_reporting(E_ERROR);
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $post_login = filter_input(INPUT_POST, 'login', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES);
-
 
 if ($post_type === 'identify_user') {
     //--------
@@ -213,6 +215,68 @@ if ($post_type === 'identify_user') {
             ],
             'encode'
         ),
+        'key' => $session->get('key'),
+    ]);
+    return false;
+} elseif ($post_type === 'initiateSSOLogin') {
+    //--------
+    // Do initiateSSOLogin
+    //--------
+    //
+
+    // Création d'une instance du contrôleur
+    $azureAuth = new AzureAuthController($SETTINGS);
+
+    // Redirection vers Azure pour l'authentification
+    $azureAuth->redirect();
+
+/*
+    $provider = new TheNetworg\OAuth2\Client\Provider\Azure([
+        'clientId'                => $SETTINGS['oauth2_azure_clientId'],
+        'clientSecret'            => $SETTINGS['oauth2_azure_clientSecret'],
+        'redirectUri'             => $SETTINGS['oauth2_azure_redirectUri'],
+        'urlAuthorize'            => $SETTINGS['oauth2_azure_urlAuthorize'],
+        'urlAccessToken'          => $SETTINGS['oauth2_azure_urlAccessToken'],
+        'urlResourceOwnerDetails' => $SETTINGS['oauth2_azure_urlResourceOwnerDetails'],
+        'scopes'                  => explode(",", $SETTINGS['oauth2_azure_scopes']),
+        'defaultEndPointVersion' => '2.0'
+    ]);
+    $provider->defaultEndPointVersion = TheNetworg\OAuth2\Client\Provider\Azure::ENDPOINT_VERSION_2_0;
+    $baseGraphUri = $provider->getRootMicrosoftGraphUri(null);
+    $provider->scope = 'openid profile email offline_access ' . $baseGraphUri . '/User.Read';
+    if (isset($_GET['code']) && isset($_SESSION['OAuth2.state']) && isset($_GET['state'])) {
+        if ($_GET['state'] == $_SESSION['OAuth2.state']) {
+            unset($_SESSION['OAuth2.state']);
+    
+            $token = $provider->getAccessToken('authorization_code', [
+                'scope' => $provider->scope,
+                'code' => $_GET['code'],
+            ]);
+    
+            // Verify token
+            // Save it to local server session data
+            
+            return $token->getToken();
+        } else {
+            echo 'Invalid state';
+    
+            return null;
+        }
+    } else {
+        $authorizationUrl = $provider->getAuthorizationUrl(['scope' => $provider->scope]);
+
+        $_SESSION['OAuth2.state'] = $provider->getState();
+
+        header('Location: ' . $authorizationUrl);
+
+        exit;
+
+        return $token->getToken();
+    }
+*/
+
+    // Encrypt data to return
+    echo json_encode([
         'key' => $session->get('key'),
     ]);
     return false;
@@ -325,6 +389,25 @@ function identifyUser(string $sentData, array $SETTINGS): bool
 
     $userInfo = $userInitialData['userInfo'];
     $return = '';
+
+    // If we have oauth2-azure enabled then we need to check if the user is in the Azure Entra ID
+    /*if (isKeyExistingAndEqual('oauth2_azure', 1, $SETTINGS) === true) {
+        $authAzure = identifyDoAzureChecks(
+            $SETTINGS,
+            $userInfo,
+            (string) $username
+        );
+        if ($authAzure['error'] === true) {
+            // deepcode ignore ServerLeak: File and path are secured directly inside the function decryptFile()
+            echo prepareExchangedData(
+                $authAzure['array'],
+                'encode'
+            );
+            return false;
+        }
+    }*/
+
+    // Check if LDAP is enabled and user is in AD
     $userLdap = identifyDoLDAPChecks(
         $SETTINGS,
         $userInfo,
@@ -2303,7 +2386,7 @@ function identifyDoMFAChecks(
     $userInitialData,
     string $username
 ): array
-{    
+{
     $session = SessionManager::getSession();
     $lang = new Language();
     
@@ -2409,6 +2492,23 @@ function identifyDoMFAChecks(
     }
 
     // If something went wrong, let's catch and return an error
+    logEvents($SETTINGS, 'failed_auth', 'wrong_mfa_code', '', stripslashes($username), stripslashes($username));
+    return [
+        'error' => true,
+        'mfaData' => ['message' => $lang->get('wrong_mfa_code')],
+        'mfaQRCodeInfos' => false,
+    ];
+}
+
+function identifyDoAzureChecks(
+    array $SETTINGS,
+    $userInfo,
+    string $username
+): array
+{
+    $session = SessionManager::getSession();
+    $lang = new Language();
+
     logEvents($SETTINGS, 'failed_auth', 'wrong_mfa_code', '', stripslashes($username), stripslashes($username));
     return [
         'error' => true,

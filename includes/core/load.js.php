@@ -64,7 +64,9 @@ $request = SymfonyRequest::createFromGlobals();
 
 
     $(document).ready(function() {
-        if ($(location).attr('href').includes('?') === true && $(location).attr('href').includes('post_type') === false && (store.get('teampassUser') === undefined || parseInt(store.get('teampassUser').user_id) <= 0)) {
+        // Don't redirect in some conditions
+        // Exclude case where we get a code from Azure Entra
+        if ($(location).attr('href').includes('?') === true && $(location).attr('href').includes('post_type') === false && $(location).attr('href').includes('code') === false && (store.get('teampassUser') === undefined || parseInt(store.get('teampassUser').user_id) <= 0)) {
             $(location).attr('href', 'index.php?session=expired');
             return false;
         }

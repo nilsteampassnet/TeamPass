@@ -1,0 +1,44 @@
+{
+    "name": "thenetworg/oauth2-azure",
+    "description": "Azure Active Directory OAuth 2.0 Client Provider for The PHP League OAuth2-Client",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Jan Hajek",
+            "email": "jan.hajek@thenetw.org",
+            "homepage": "https://thenetw.org"
+        }
+    ],
+    "keywords": [
+        "oauth",
+        "oauth2",
+        "client",
+        "authorization",
+        "microsoft",
+        "windows azure",
+        "azure",
+        "azure active directory",
+        "aad",
+        "sso"
+    ],
+    "require": {
+        "ext-json": "*",
+        "ext-openssl": "*",
+        "php": "^7.1|^8.0",
+        "league/oauth2-client": "~2.0",
+        "firebase/php-jwt": "~3.0||~4.0||~5.0||~6.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "TheNetworg\\OAuth2\\Client\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "TheNetworg\\OAuth2\\Client\\Tests\\": "tests/"
+        }
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.6"
+    }
+}

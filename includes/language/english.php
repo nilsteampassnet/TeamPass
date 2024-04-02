@@ -28,6 +28,7 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'login_with_sso' => 'Login with SSO',
     'folder_created' => 'Folder created',
     'allowed_to_create' => 'Allowed to create',
     'allowed_to_read' => 'Allowed to read',

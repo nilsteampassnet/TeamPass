@@ -114,6 +114,16 @@ declare(strict_types=1);
             launchIdentify(false, '<?php isset($nextUrl) === true ? $nextUrl : ''; ?>');
         });
 
+        // Click on log in button with Azure Entra
+        if($("#but_login_with_sso").length > 0) {
+            $('#but_login_with_sso').click(function() {
+                if (debugJavascript === true) {
+                    console.log('User starts auth with Azure');
+                }
+                launchIdentify(false, '<?php isset($nextUrl) === true ? $nextUrl : ''; ?>', false, true);
+            });
+        }
+
         // Show tooltips
         $('.infotip').tooltip();
     });
@@ -488,7 +498,7 @@ declare(strict_types=1);
     /**
      * 
      */
-    function launchIdentify(isDuo, redirect, psk) {
+    function launchIdentify(isDuo, redirect, psk, sso = false) {
         if (redirect == undefined) {
             redirect = ""; //Check if redirection
         }
@@ -547,7 +557,16 @@ declare(strict_types=1);
 
         // get some info
         var client_info = '';
-        console.log('KEY : <?php echo $session->get('key'); ?>')
+        if (debugJavascript === true) {
+            console.log('KEY : <?php echo $session->get('key'); ?>')
+        }
+
+        // manage SSO login
+        if (sso === true) {
+            document.location.href="includes/core/login.sso.php";
+            return false;
+        }
+
         // Get 2fa
         //TODO : je pense que cela pourrait etre modifié pour ne pas faire de requete ajax ; on dispose des infos via `get_teampass_settings`
         $.post(
@@ -561,7 +580,9 @@ declare(strict_types=1);
             function(data) {
                 //data = prepareExchangedData(data, 'decode', "<?php echo $session->get('key'); ?>");
                 data = JSON.parse(data);
-                console.log("Voici ma clé reçue "+data.key+' et ma clé locale<?php echo $session->get('key'); ?>')
+                if (debugJavascript === true) {
+                    console.log("Recevied key "+data.key+' and local key<?php echo $session->get('key'); ?>')
+                }
                 if (data.key !== '<?php echo $session->get('key'); ?>') {
                     // No session was found, warn user
                     toastr.remove();

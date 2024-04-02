@@ -55,6 +55,7 @@ class PerformChecks
      */
     public function checkSession(): bool
     {
+        //error_log('Initial login array: '.print_r($this->sessionVar, true));
         // Check if session is valid
         if (count($this->sessionVar) > 0) {
             // if user is not logged in
@@ -125,7 +126,7 @@ class PerformChecks
                 'SELECT id FROM ' . prefixTable('users') . ' WHERE login = %s',
                 $this->sessionVar['login']
             );
-            if (DB::count() > 0) {
+            if (DB::count() > 0 || (isset($this->sessionVar['sso']) === true && (int) $this->sessionVar['sso'] === 1)) {
                 return true;
             }
         }

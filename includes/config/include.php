@@ -28,7 +28,7 @@
 
 define('TP_VERSION', '3.1.2');
 define("UPGRADE_MIN_DATE", "1705123921");
-define('TP_VERSION_MINOR', '28');
+define('TP_VERSION_MINOR', '29');
 define('TP_TOOL_NAME', 'Teampass');
 define('TP_ONE_DAY_SECONDS', 86400);
 define('TP_ONE_WEEK_SECONDS', 604800);
@@ -46,6 +46,7 @@ define('UPGRADE_SEND_EMAILS', true);
 define('KEY_LENGTH', 16);
 define('EDITION_LOCK_PERIOD', 86400);   // Defines the delay for which an item edition lock is active
 define('LOG_TO_SERVER', true);         // Defines if logs are sent to the server
+define('OAUTH2_REDIRECTURI', 'index.php?post_type=oauth2');
 
 define('ERR_NOT_ALLOWED', '1000');
 define('ERR_NOT_EXIST', '1001');

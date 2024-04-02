@@ -31,6 +31,7 @@ declare(strict_types=1);
 
 use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use TeampassClasses\Language\Language;
+use TeampassClasses\AzureAuthController\AzureAuthController;
 
 // Automatic redirection
 $nextUrl = '';
@@ -48,6 +49,20 @@ $get['post_type'] = $request->query->get('post_type', '', FILTER_SANITIZE_SPECIA
 if (isset($SETTINGS['duo']) === true && (int) $SETTINGS['duo'] === 1 && $get['post_type'] === 'duo' ) {
     $get['duo_state'] = $request->query->get('state');
     $get['duo_code'] = $request->query->get('duo_code');
+}
+
+if (isset($_GET['code']) === true && isset($_GET['state']) === true && $get['post_type'] === 'oauth2') {
+    $get['code'] = filter_var($_GET['code'], FILTER_SANITIZE_SPECIAL_CHARS);
+    $get['state'] = filter_var($_GET['state'], FILTER_SANITIZE_SPECIAL_CHARS);
+    $get['session_state'] = filter_var($_GET['session_state'], FILTER_SANITIZE_SPECIAL_CHARS);
+
+    error_log('---- CALLBACK ----');
+
+    // Création d'une instance du contrôleur
+    $azureAuth = new AzureAuthController($SETTINGS);
+
+    // Traitement de la réponse de callback Azure
+    $azureAuth->callback();
 }
 
 echo '
@@ -235,7 +250,7 @@ if (isset($SETTINGS['yubico_authentication']) === true && (int) $SETTINGS['yubic
 }
 
 echo '
-        <div class="row mb-3 mt-5">
+        <div class="row mt-5">
             <div class="col-12">
                 <button id="but_identify_user" class="btn btn-primary btn-block">' . $lang->get('log_in') . '</button>
                 
@@ -259,7 +274,20 @@ echo '
                 <!-- /end -->
 
             </div>
-        </div>
+        </div>';
+
+// SSO div
+if (isKeyExistingAndEqual('oauth2_azure', 1, $SETTINGS) === true) {
+    echo '
+        <hr class="mt-3 mb-3"/>
+        <div class="row mb-2">
+            <div class="col-12">
+                <button id="but_login_with_sso" class="btn btn-primary btn-block">' . $lang->get('login_with_sso') . '</button>
+            </div>
+        </div>';
+}
+
+echo '
     </div>';
 
 echo '

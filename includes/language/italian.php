@@ -1174,5 +1174,7 @@ return array(
     'allowed_to_read' => 'Allowed to read',
     'allowed_to_update' => 'Allowed to update',
     'allowed_to_delete' => 'Allowed to delete',
+    'folder_created' => 'Folder created',
+    'login_with_sso' => 'Login with SSO',
 
 );

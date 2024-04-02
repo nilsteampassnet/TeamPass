@@ -1174,5 +1174,7 @@ return array(
     'allowed_to_read' => 'Autorisé à lire',
     'allowed_to_update' => 'Autorisé à mettre à jour',
     'allowed_to_delete' => 'Allowed to supprimer',
+    'folder_created' => 'Répertoire créé',
+    'login_with_sso' => 'Se connecter en SSO',
 
 );

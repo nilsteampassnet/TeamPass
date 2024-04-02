@@ -704,6 +704,13 @@ $SETTINGS = array (';
                             array('admin', 'ldap_group_objectclasses_attibute', 'top,groupofuniquenames'),
                             array('admin', 'pwd_default_length', '14'),
                             array('admin', 'tasks_log_retention_delay', '30'),
+                            array('admin', 'oauth2_azure', '0'),
+                            array('admin', 'oauth2_azure_clientId', ''),
+                            array('admin', 'oauth2_azure_clientSecret', ''),
+                            array('admin', 'oauth2_azure_urlAuthorize', ''),
+                            array('admin', 'oauth2_azure_urlAccessToken', ''),
+                            array('admin', 'oauth2_azure_urlResourceOwnerDetails', ''),
+                            array('admin', 'oauth2_azure_scopes', 'openid,profile,email'),
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting
