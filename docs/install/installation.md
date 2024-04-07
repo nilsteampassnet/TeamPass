@@ -61,7 +61,7 @@ Find and adapt `max_execution_time` to 60
 * Access your newly configured server (you'll be prompted for the database root password): 
   ```# mysql -uroot -p```
 * Create the TeamPass database: 
-  ```create database teampass character set utf8mb3_general_ci collate utf8mb3_general_ci;```
+  ```create database teampass character set utf8mb3 collate utf8mb3_general_ci;```
 
 ### Set the database Administrator
 
@@ -86,9 +86,9 @@ Now it's time to set some privileges to this user.
 #### Using command line, on a Debian GNU/Linux system:
 
 * Access your newly configured server:
-  utf8mb3_general_ci# mysql -uroot -putf8mb3_general_ci
+  ```# mysql -uroot -p```
 * Create the teampass_admin user, assigning it full rights to the TeamPass table: 
-  utf8mb3_general_cigrant all privileges on teampass.* to teampass_admin@localhost identified by 'PASSWORD';utf8mb3_general_ci
+  ```grant all privileges on teampass.* to teampass_admin@localhost identified by 'PASSWORD';```
 
 ### Setup SSL
 
@@ -114,7 +114,7 @@ git clone https://github.com/nilsteampassnet/TeamPass.git
 Note:
 
 * On CentOS systems, the default folder is `/var/html/www`
-* On Debian systems, the default folder is `var/www/html`
+* On Debian systems, the default folder is `/var/www/html`
 
 ### Set folders permissions
 
