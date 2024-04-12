@@ -157,7 +157,7 @@ apt install docker.io docker-compose
 
 ### Download docker compose 
 ```
-wget https://github.com/nilsteampassnet/TeamPass/blob/master/docker-compose.yml
+wget https://raw.githubusercontent.com/nilsteampassnet/TeamPass/master/docker-compose.yml
 ```
 
 ### Modify docker-compose.yml file to suit your env (look at this values) 
