@@ -18,7 +18,8 @@ services:
     environment:
       VIRTUAL_HOST: YOUR_HOSTNAME
       VIRTUAL_PORT: 80
-      CERT_NAME: YOUR_CERTIFICATE
+      # uncomment if certificate's file name doesn't match VIRTUAL_HOST
+      #CERT_NAME: YOUR_CERTIFICATE
     volumes:
       - ./teampass-html:/var/www/html
     # uncomment ports to use without proxy
