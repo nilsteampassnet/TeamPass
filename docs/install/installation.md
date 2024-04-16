@@ -163,7 +163,7 @@ wget https://github.com/nilsteampassnet/TeamPass/blob/master/docker-compose.yml
 ### Modify docker-compose.yml file to suit your env (look at this values) 
 ```
 VIRTUAL_HOST: teampass.yourdomain.local
-CERT_NAME: teampass.yourdomain.local.crt
+CERT_NAME: teampass.yourdomain.local
 MYSQL_PASSWORD: YOUR_SECRET_PASSWORD
 ```
 About the certificate read the instructions on the main page: https://github.com/nilsteampassnet/TeamPass#with-docker-compose
