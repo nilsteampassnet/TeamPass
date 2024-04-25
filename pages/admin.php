@@ -319,7 +319,11 @@ catch (Exception $e) {
                         $serverTime = localtime(time(), true);
                         echo '<div class="row">'.
                             '<div class="col-6"><i class="fa-solid fa-clock mr-2"></i>Server time:</div>'.
-                            '<div class="col-6"><span class="badge badge-info">' . $serverTime['tm_hour'].':'.$serverTime['tm_min'].':'.$serverTime['tm_sec'].'</span></div>'.
+                            '<div class="col-6"><span class="badge badge-info">' . 
+                            str_pad(strval($serverTime['tm_hour']), 2, "0", STR_PAD_LEFT) . ':' .
+                            str_pad(strval($serverTime['tm_min']), 2, "0", STR_PAD_LEFT) . ':' .
+                            str_pad(strval($serverTime['tm_sec']), 2, "0", STR_PAD_LEFT) .
+                            '</span></div>' .
                         '</div>'.
                         '<div class="row">'.
                             '<div class="col-6"><span class="ml-4">Timezone:</span></div>'.

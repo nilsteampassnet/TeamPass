@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace OTPHP;
 
-use function assert;
-use function count;
 use InvalidArgumentException;
 use Throwable;
+use function assert;
+use function count;
 
 /**
  * This class is used to load OTP object from a provisioning Uri.

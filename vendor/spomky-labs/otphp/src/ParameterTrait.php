@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace OTPHP;
 
+use InvalidArgumentException;
 use function array_key_exists;
 use function assert;
 use function in_array;
-use InvalidArgumentException;
 use function is_int;
 use function is_string;
 

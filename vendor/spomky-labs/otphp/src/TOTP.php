@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace OTPHP;
 
-use function assert;
 use InvalidArgumentException;
+use function assert;
 use function is_int;
 
 /**
@@ -133,23 +133,21 @@ final class TOTP extends OTP implements TOTPInterface
      */
     protected function getParameterMap(): array
     {
-        return array_merge(
-            parent::getParameterMap(),
-            [
-                'period' => static function ($value): int {
-                    (int) $value > 0 || throw new InvalidArgumentException('Period must be at least 1.');
+        return [
+            ...parent::getParameterMap(),
+            'period' => static function ($value): int {
+                (int) $value > 0 || throw new InvalidArgumentException('Period must be at least 1.');
 
-                    return (int) $value;
-                },
-                'epoch' => static function ($value): int {
-                    (int) $value >= 0 || throw new InvalidArgumentException(
-                        'Epoch must be greater than or equal to 0.'
-                    );
+                return (int) $value;
+            },
+            'epoch' => static function ($value): int {
+                (int) $value >= 0 || throw new InvalidArgumentException(
+                    'Epoch must be greater than or equal to 0.'
+                );
 
-                    return (int) $value;
-                },
-            ]
-        );
+                return (int) $value;
+            },
+        ];
     }
 
     /**

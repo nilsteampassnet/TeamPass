@@ -182,8 +182,8 @@
             'dev_requirement' => false,
         ),
         'illuminate/collections' => array(
-            'pretty_version' => 'v10.48.4',
-            'version' => '10.48.4.0',
+            'pretty_version' => 'v10.48.9',
+            'version' => '10.48.9.0',
             'type' => 'library',
             'install_path' => __DIR__ . '/../illuminate/collections',
             'aliases' => array(),
@@ -191,8 +191,8 @@
             'dev_requirement' => false,
         ),
         'illuminate/conditionable' => array(
-            'pretty_version' => 'v10.48.4',
-            'version' => '10.48.4.0',
+            'pretty_version' => 'v10.48.9',
+            'version' => '10.48.9.0',
             'type' => 'library',
             'install_path' => __DIR__ . '/../illuminate/conditionable',
             'aliases' => array(),
@@ -200,8 +200,8 @@
             'dev_requirement' => false,
         ),
         'illuminate/container' => array(
-            'pretty_version' => 'v10.48.4',
-            'version' => '10.48.4.0',
+            'pretty_version' => 'v10.48.9',
+            'version' => '10.48.9.0',
             'type' => 'library',
             'install_path' => __DIR__ . '/../illuminate/container',
             'aliases' => array(),
@@ -209,8 +209,8 @@
             'dev_requirement' => false,
         ),
         'illuminate/contracts' => array(
-            'pretty_version' => 'v10.48.4',
-            'version' => '10.48.4.0',
+            'pretty_version' => 'v10.48.9',
+            'version' => '10.48.9.0',
             'type' => 'library',
             'install_path' => __DIR__ . '/../illuminate/contracts',
             'aliases' => array(),
@@ -218,8 +218,8 @@
             'dev_requirement' => false,
         ),
         'illuminate/filesystem' => array(
-            'pretty_version' => 'v10.48.4',
-            'version' => '10.48.4.0',
+            'pretty_version' => 'v10.48.9',
+            'version' => '10.48.9.0',
             'type' => 'library',
             'install_path' => __DIR__ . '/../illuminate/filesystem',
             'aliases' => array(),
@@ -227,8 +227,8 @@
             'dev_requirement' => false,
         ),
         'illuminate/macroable' => array(
-            'pretty_version' => 'v10.48.4',
-            'version' => '10.48.4.0',
+            'pretty_version' => 'v10.48.9',
+            'version' => '10.48.9.0',
             'type' => 'library',
             'install_path' => __DIR__ . '/../illuminate/macroable',
             'aliases' => array(),
@@ -236,17 +236,17 @@
             'dev_requirement' => false,
         ),
         'illuminate/support' => array(
-            'pretty_version' => 'v10.48.4',
-            'version' => '10.48.4.0',
+            'pretty_version' => 'v10.48.9',
+            'version' => '10.48.9.0',
             'type' => 'library',
             'install_path' => __DIR__ . '/../illuminate/support',
             'aliases' => array(),
-            'reference' => '980d80017e859c8b1720892d952516e8c0b6708f',
+            'reference' => 'ee3a1aaed36d916654ce0ae09dfbd38644a4f582',
             'dev_requirement' => false,
         ),
         'illuminate/translation' => array(
-            'pretty_version' => 'v10.48.4',
-            'version' => '10.48.4.0',
+            'pretty_version' => 'v10.48.9',
+            'version' => '10.48.9.0',
             'type' => 'library',
             'install_path' => __DIR__ . '/../illuminate/translation',
             'aliases' => array(),
@@ -254,8 +254,8 @@
             'dev_requirement' => false,
         ),
         'illuminate/validation' => array(
-            'pretty_version' => 'v10.48.4',
-            'version' => '10.48.4.0',
+            'pretty_version' => 'v10.48.9',
+            'version' => '10.48.9.0',
             'type' => 'library',
             'install_path' => __DIR__ . '/../illuminate/validation',
             'aliases' => array(),
@@ -515,39 +515,39 @@
             'dev_requirement' => false,
         ),
         'spomky-labs/otphp' => array(
-            'pretty_version' => '11.2.0',
-            'version' => '11.2.0.0',
+            'pretty_version' => '11.2.2',
+            'version' => '11.2.2.0',
             'type' => 'library',
             'install_path' => __DIR__ . '/../spomky-labs/otphp',
             'aliases' => array(),
-            'reference' => '9a1569038bb1c8e98040b14b8bcbba54f25e7795',
+            'reference' => 'b737d1c6330beae7c0bc225d3e848805b352fe42',
             'dev_requirement' => false,
         ),
         'symfony/cache-contracts' => array(
             'dev_requirement' => false,
             'replaced' => array(
-                0 => 'v3.4.1',
+                0 => 'v3.4.2',
             ),
         ),
         'symfony/contracts' => array(
-            'pretty_version' => 'v3.4.1',
-            'version' => '3.4.1.0',
+            'pretty_version' => 'v3.4.2',
+            'version' => '3.4.2.0',
             'type' => 'library',
             'install_path' => __DIR__ . '/../symfony/contracts',
             'aliases' => array(),
-            'reference' => 'db06a3f3c52adeb7a1e84745cece0a9c474f518a',
+            'reference' => 'db042d0a70de8984786bca91ff3174c8bec20761',
             'dev_requirement' => false,
         ),
         'symfony/deprecation-contracts' => array(
             'dev_requirement' => false,
             'replaced' => array(
-                0 => 'v3.4.1',
+                0 => 'v3.4.2',
             ),
         ),
         'symfony/event-dispatcher-contracts' => array(
             'dev_requirement' => false,
             'replaced' => array(
-                0 => 'v3.4.1',
+                0 => 'v3.4.2',
             ),
         ),
         'symfony/finder' => array(
@@ -562,7 +562,7 @@
         'symfony/http-client-contracts' => array(
             'dev_requirement' => false,
             'replaced' => array(
-                0 => 'v3.4.1',
+                0 => 'v3.4.2',
             ),
         ),
         'symfony/http-foundation' => array(
@@ -575,12 +575,12 @@
             'dev_requirement' => false,
         ),
         'symfony/mime' => array(
-            'pretty_version' => 'v6.4.3',
-            'version' => '6.4.3.0',
+            'pretty_version' => 'v6.4.6',
+            'version' => '6.4.6.0',
             'type' => 'library',
             'install_path' => __DIR__ . '/../symfony/mime',
             'aliases' => array(),
-            'reference' => '5017e0a9398c77090b7694be46f20eb796262a34',
+            'reference' => '14762b86918823cb42e3558cdcca62e58b5227fe',
             'dev_requirement' => false,
         ),
         'symfony/password-hasher' => array(
@@ -676,7 +676,7 @@
         'symfony/service-contracts' => array(
             'dev_requirement' => false,
             'replaced' => array(
-                0 => 'v3.4.1',
+                0 => 'v3.4.2',
             ),
         ),
         'symfony/translation' => array(
@@ -691,7 +691,7 @@
         'symfony/translation-contracts' => array(
             'dev_requirement' => false,
             'replaced' => array(
-                0 => 'v3.4.1',
+                0 => 'v3.4.2',
             ),
         ),
         'symfony/translation-implementation' => array(
@@ -701,12 +701,12 @@
             ),
         ),
         'symfony/var-dumper' => array(
-            'pretty_version' => 'v6.4.4',
-            'version' => '6.4.4.0',
+            'pretty_version' => 'v6.4.6',
+            'version' => '6.4.6.0',
             'type' => 'library',
             'install_path' => __DIR__ . '/../symfony/var-dumper',
             'aliases' => array(),
-            'reference' => 'b439823f04c98b84d4366c79507e9da6230944b1',
+            'reference' => '95bd2706a97fb875185b51ecaa6112ec184233d4',
             'dev_requirement' => false,
         ),
         'teampassclasses/azureauthcontroller' => array(
@@ -791,12 +791,12 @@
             'dev_requirement' => false,
         ),
         'tecnickcom/tcpdf' => array(
-            'pretty_version' => '6.7.4',
-            'version' => '6.7.4.0',
+            'pretty_version' => '6.7.5',
+            'version' => '6.7.5.0',
             'type' => 'library',
             'install_path' => __DIR__ . '/../tecnickcom/tcpdf',
             'aliases' => array(),
-            'reference' => 'd4adef47ca21c90e6483d59dcb9e5b1023696937',
+            'reference' => '951eabf0338ec2522bd0d5d9c79b08a3a3d36b36',
             'dev_requirement' => false,
         ),
         'thenetworg/oauth2-azure' => array(

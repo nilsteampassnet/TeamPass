@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace OTPHP;
 
-use function array_key_exists;
 use InvalidArgumentException;
+use function array_key_exists;
 use function is_string;
 
 /**

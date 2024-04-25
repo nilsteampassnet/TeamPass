@@ -2,6 +2,7 @@ TOTP / HOTP library in PHP
 ==========================
 
 ![Build Status](https://github.com/spomky-labs/otphp/workflows/Integrate/badge.svg)
+![Build Status](https://github.com/spomky-labs/otphp/workflows/Infection/badge.svg)
 
 [![Latest Stable Version](https://poser.pugx.org/spomky-labs/otphp/v/stable.png)](https://packagist.org/packages/spomky-labs/otphp)
 [![Total Downloads](https://poser.pugx.org/spomky-labs/otphp/downloads.png)](https://packagist.org/packages/spomky-labs/otphp)

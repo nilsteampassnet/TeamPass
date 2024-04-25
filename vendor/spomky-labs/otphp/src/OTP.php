@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace OTPHP;
 
+use Exception;
+use InvalidArgumentException;
+use ParagonIE\ConstantTime\Base32;
+use RuntimeException;
 use function assert;
 use function chr;
 use function count;
-use Exception;
-use InvalidArgumentException;
 use function is_string;
-use ParagonIE\ConstantTime\Base32;
-use RuntimeException;
 use const STR_PAD_LEFT;
 
 abstract class OTP implements OTPInterface
@@ -100,7 +100,7 @@ abstract class OTP implements OTPInterface
         $this->hasColon($label) === false || throw new InvalidArgumentException('Label must not contain a colon.');
         $options = [...$options, ...$this->getParameters()];
         $this->filterOptions($options);
-        $params = str_replace(['+', '%7E'], ['%20', '~'], http_build_query($options));
+        $params = str_replace(['+', '%7E'], ['%20', '~'], http_build_query($options, '', '&'));
 
         return sprintf(
             'otpauth://%s/%s?%s',
