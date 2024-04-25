@@ -1233,6 +1233,7 @@ function buildEmail(
         $mail->Port = (int) $SETTINGS['email_port'];
         $mail->SMTPSecure = $SETTINGS['email_security'] !== 'none' ? $SETTINGS['email_security'] : '';
         $mail->SMTPAutoTLS = $SETTINGS['email_security'] !== 'none';
+        $mail->CharSet = 'utf-8';   //#4143
         $mail->SMTPOptions = [
             'ssl' => [
                 'verify_peer' => false,

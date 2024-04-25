@@ -75,8 +75,21 @@ function getSettingValue($val)
 //get infos from SETTINGS.PHP file
 $filename = '../includes/config/settings.php';
 $events = '';
+
+// Declare SECUREPATH if not existing in settings.php file
 if (file_exists($filename)) {
     include_once $filename;
+}
+
+// Check that at least PHP version is correct
+if (version_compare(PHP_VERSION, MIN_PHP_VERSION, '>=')) {
+    $phpVersionisOkay = true;
+} else {
+    $phpVersionisOkay = false;
+}
+
+if (defined(SECUREPATH) === false) {
+    define("SECUREPATH", dirname(SECUREFILE));
 }
 
 ?>
@@ -175,7 +188,12 @@ if (!isset($_GET['step']) && !isset($post_step)) {
                             <li><i class="fas fa-exclamation-triangle mr-2 text-warning"></i>Perform a zip of the current Teampass folder</li>
                             <li><i class="fas fa-info-circle mr-2 text-success"></i>Refer to <a href="https://teampass.readthedocs.io/en/latest/install/upgrade/" target="_blank" class="text-info">upgrade documentation</a>.</li>
                         </ul>
-                        </p>
+                        </p>';
+    if ($phpVersionisOkay === false) {
+        echo '
+                        <h5><i class="fas fa-exclamation-triangle mr-2 text-warning">Minimum PHP version expected is '.MIN_PHP_VERSION.'. Current version is '.PHP_VERSION.'.';
+    }
+    echo '
                     </div>
                 </div>
 

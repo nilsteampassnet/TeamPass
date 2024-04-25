@@ -550,7 +550,17 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                                     <i class="fa-solid fa-id-card nav-icon"></i>
                                     <p>' . $lang->get('ldap') . '</p>
                                 </a>
-                            </li>
+                            </li>';
+if (WIP === true) {
+    echo '
+                            <li class="nav-item">
+                                <a href="#" data-name="oauth" class="nav-link', $get['page'] === 'oauth' ? ' active' : '', '">
+                                    <i class="fa-solid fa-plug nav-icon"></i>
+                                    <p>' . $lang->get('oauth') . '</p>
+                                </a>
+                            </li>';
+}
+echo '
                             <li class="nav-item">
                                 <a href="#" data-name="uploads" class="nav-link', $get['page'] === 'uploads' ? ' active' : '', '">
                                     <i class="fa-solid fa-file-upload nav-icon"></i>
@@ -1326,6 +1336,8 @@ if (isset($SETTINGS['cpassman_dir']) === true) {
             include_once $SETTINGS['cpassman_dir'] . '/pages/statistics.js.php';
         } elseif ($get['page'] === 'tasks') {
             include_once $SETTINGS['cpassman_dir'] . '/pages/tasks.js.php';
+        } elseif ($get['page'] === 'oauth') {
+            include_once $SETTINGS['cpassman_dir'] . '/pages/oauth.js.php';
         }
     } elseif (isset($get['page']) === true && $get['page'] !== '') {
         if ($get['page'] === 'items') {

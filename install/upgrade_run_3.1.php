@@ -381,70 +381,31 @@ modifyColumn(
     "TEXT NULL DEFAULT NULL;"
 );
 
-// Add new setting 'oauth2-azure'
-$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'oauth2_azure'"));
+// Add new setting 'oauth2_enabled'
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'oauth2_enabled'"));
 if (intval($tmp) === 0) {
     mysqli_query(
         $db_link,
-        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'oauth2_azure', '0')"
+        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'oauth2_enabled', '0')"
     );
 }
 
-// Add new setting 'oauth2_azure_clientId'
-$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'oauth2_azure_clientId'"));
+// Add new setting 'oauth2_client_appname'
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'oauth2_client_appname'"));
 if (intval($tmp) === 0) {
     mysqli_query(
         $db_link,
-        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'oauth2_azure_clientId', '')"
+        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'oauth2_client_appname', 'Login with Azure')"
     );
 }
-
-// Add new setting 'oauth2_azure_clientSecret'
-$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'oauth2_azure_clientSecret'"));
+// Add new setting 'oauth2_client_scopes'
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'oauth2_client_scopes'"));
 if (intval($tmp) === 0) {
     mysqli_query(
         $db_link,
-        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'oauth2_azure_clientSecret', '')"
+        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'oauth2_client_scopes', 'openid,profile,email')"
     );
 }
-
-// Add new setting 'oauth2_azure_urlAuthorize'
-$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'oauth2_azure_urlAuthorize'"));
-if (intval($tmp) === 0) {
-    mysqli_query(
-        $db_link,
-        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'oauth2_azure_urlAuthorize', '')"
-    );
-}
-
-// Add new setting 'oauth2_azure_urlAccessToken'
-$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'oauth2_azure_urlAccessToken'"));
-if (intval($tmp) === 0) {
-    mysqli_query(
-        $db_link,
-        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'oauth2_azure_urlAccessToken', '')"
-    );
-}
-
-// Add new setting 'oauth2_azure_urlResourceOwnerDetails'
-$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'oauth2_azure_urlResourceOwnerDetails'"));
-if (intval($tmp) === 0) {
-    mysqli_query(
-        $db_link,
-        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'oauth2_azure_urlResourceOwnerDetails', '')"
-    );
-}
-
-// Add new setting 'oauth2_azure_scopes'
-$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'oauth2_azure_scopes'"));
-if (intval($tmp) === 0) {
-    mysqli_query(
-        $db_link,
-        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'oauth2_azure_scopes', 'openid,profile,email')"
-    );
-}
-
-
 
 //---<END 3.1.2
 

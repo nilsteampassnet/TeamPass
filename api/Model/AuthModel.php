@@ -65,12 +65,46 @@ class AuthModel extends Database
         // Check apikey
         if (empty($inputData['password']) === true) {
             // case where it is a generic key
-            $apiInfo = $this->select("SELECT count(*) FROM " . prefixTable('api') . " WHERE value='".$inputData['apikey']."' AND label='".$inputData['login']."'");
-            if ((int) $apiInfo[0]['count(*)'] === 0) {
-                return ["error" => "Login failed.", "info" => "apikey : Not valid"];
-            }
+            $apiInfo = $this->select("SELECT * FROM " . prefixTable('api') . " WHERE value='".$inputData['apikey']."' AND label='".$inputData['login']."'");
+            $apiInfo = $apiInfo[0];
+            if (WIP === true) {
+                if (isset($apiInfo['increment_id']) === false) {
+                    return ["error" => "Login failed.", "info" => "apikey : Not valid"];
+                }
 
-            return ["error" => "Login failed.", "info" => "Not managed."];
+                // Check if user is enabled
+                if ((int) $apiInfo['enabled'] === 0) {
+                    return ["error" => "Login failed.", "info" => "User not allowed to use API"];
+                }
+
+                // Log user
+                include API_ROOT_PATH . '/../includes/config/tp.config.php';
+                logEvents($SETTINGS, 'api', 'user_connection', (string) $apiInfo['increment_id'], stripslashes($inputData['login']));
+
+                // create JWT
+                return $this->createUserJWT(
+                    $apiInfo['increment_id'],
+                    $inputData['login'],
+                    0,
+                    '',
+                    '',
+                    '',
+                    '',
+                    '',
+                    0,
+                    0,
+                    1,
+                    0,
+                    '',
+                    $apiInfo['allowed_folders'],
+                    $apiInfo['allowed_to_create'],
+                    $apiInfo['allowed_to_read'],
+                    $apiInfo['allowed_to_update'],
+                    $apiInfo['allowed_to_delete'],
+                );
+            } else {
+                return ["error" => "Login failed.", "info" => "Not managed."];
+            }
         } else {
             // case where it is a user api key
             // Check if user exists

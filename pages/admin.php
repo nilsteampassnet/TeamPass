@@ -228,7 +228,7 @@ try {
 catch (Exception $e) {
     error_log('TEAMPASS Error - admin page - '.$e->getMessage());
     // deepcode ignore ServerLeak: no critical information is provided
-    echo 'An error occurred.';
+    echo 'An error occurred. Please refer to server logs.';
 }
 ?>
                         </div>

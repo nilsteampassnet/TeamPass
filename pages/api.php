@@ -154,6 +154,10 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                 <small id="passwordHelpBlock" class="form-text text-muted mt-4">
                                     <?php echo $lang->get('settings_api_keys_list_tip'); ?>
                                 </small>
+                                
+                                <div class="mt-4 text-orange">
+                                    <i class="fa-solid fa-bullhorn mr-2"></i>Those keys are not anymore allowed to use the API. You should use API with a User account.
+                                </div>
                                 <div class="mt-4">
                                     <?php
                                     $rowsKeys = DB::query(

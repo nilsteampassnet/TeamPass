@@ -277,12 +277,12 @@ echo '
         </div>';
 
 // SSO div
-if (isKeyExistingAndEqual('oauth2_azure', 1, $SETTINGS) === true) {
+if (isKeyExistingAndEqual('oauth2_enabled', 1, $SETTINGS) === true) {
     echo '
         <hr class="mt-3 mb-3"/>
         <div class="row mb-2">
             <div class="col-12">
-                <button id="but_login_with_sso" class="btn btn-primary btn-block">' . $lang->get('login_with_sso') . '</button>
+                <button id="but_login_with_sso" class="btn btn-primary btn-block">' . $SETTINGS['oauth2_client_appname'] . '</button>
             </div>
         </div>';
 }

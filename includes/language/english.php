@@ -28,6 +28,24 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'oauth' => 'OAuth',
+    'admin_oauth_configuration' => 'OAuth Configuration',
+    'settings_oauth_mode' => 'Enable OAuth Mode',
+    'settings_oauth_mode_tip' => 'OAuth is only possible with ID Microsoft Entra (Azure AD) provider.',
+    'app_name' => 'Application name',
+    'app_name_tip' => 'This will displayed on SSO login button.',
+    'client_id' => 'Client ID',
+    'client_secret' => 'Client Secret',
+    'callback_url' => 'Callback URL',
+    'callback_url_tip' => 'Copy belcw callback URL (Redirect URI) and configure it in your OAuth provider.',
+    'scopes' => 'Scopes',
+    'scopes_tip' => 'Scopes to request from the OAuth provider. Separate multiple scopes with a comma.',
+    'authorization_endpoint' => 'Authorization Endpoint',
+    'token_endpoint' => 'Token Endpoint',
+    'test_configuration' => 'Test configuration',
+    'setup_wizard' => 'Setup Wizard',
+    'replace_tenant_id' => 'Please enter the tenant ID  in place of {tenant-id}.',
+
     'login_with_sso' => 'Login with SSO',
     'folder_created' => 'Folder created',
     'allowed_to_create' => 'Allowed to create',
