@@ -326,7 +326,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     ){
         $key = hash('sha256', $dataReceived['duo_state']);
         $iv = substr(hash('sha256', $dataReceived['duo_state']), 0, 16);
-        $duo_data_dec = openssl_decrypt(base64_decode($session->get('user-duo_status')), 'AES-256-CBC', $key, 0, $iv);
+        $duo_data_dec = openssl_decrypt(base64_decode($session->get('user-duo_data')), 'AES-256-CBC', $key, 0, $iv);
         // Clear the data from the Duo process to continue clean with the standard login process
         $session->set('user-duo_data','');
         if($duo_data_dec === false){
