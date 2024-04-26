@@ -51,12 +51,7 @@ use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Process;
 use Symfony\Component\Process\PhpExecutableFinder;
 use TeampassClasses\Encryption\Encryption;
-
-
-// Load config if $SETTINGS not defined
-if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir']) === true) {
-    include_once __DIR__ . '/../includes/config/tp.config.php';
-}
+use TeampassClasses\ConfigManager\ConfigManager;
 
 header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, must-revalidate');
@@ -64,6 +59,13 @@ header('Cache-Control: no-cache, must-revalidate');
 loadClasses('DB');
 $session = SessionManager::getSession();
 
+// Load config if $SETTINGS not defined
+$configManager = new ConfigManager();
+$SETTINGS = $configManager->getAllSettings();
+/*if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir']) === true) {
+    include_once __DIR__ . '/../includes/config/tp.config.php';
+}
+*/
 
 /**
  * genHash().

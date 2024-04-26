@@ -1,0 +1,19 @@
+{
+    "name": "teampassclasses/configmanager",
+    "description": "Perform the initial configuration.",
+    "type": "library",
+    "license": "GPL-3.0-only",
+    "keywords": [
+        "config"
+    ],
+    "authors": [
+        {
+            "name": "Nils Laumaillé"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "TeampassClasses\\ConfigManager\\": "src/"
+        }
+    }
+}

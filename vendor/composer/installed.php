@@ -718,6 +718,15 @@
             'reference' => '5948d5854bf9c775d9dd94810d91f8f07078f76b',
             'dev_requirement' => false,
         ),
+        'teampassclasses/configmanager' => array(
+            'pretty_version' => 'dev-master',
+            'version' => 'dev-master',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../teampassclasses/configmanager',
+            'aliases' => array(),
+            'reference' => 'dd074efd73e7f2fc7d5eae88ea3fdcebc42a6d17',
+            'dev_requirement' => false,
+        ),
         'teampassclasses/encryption' => array(
             'pretty_version' => 'dev-master',
             'version' => 'dev-master',

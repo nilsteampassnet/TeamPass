@@ -4752,6 +4752,40 @@
             "install-path": "../teampassclasses/azureauthcontroller"
         },
         {
+            "name": "teampassclasses/configmanager",
+            "version": "dev-master",
+            "version_normalized": "dev-master",
+            "dist": {
+                "type": "path",
+                "url": "includes/libraries/teampassclasses/configmanager",
+                "reference": "dd074efd73e7f2fc7d5eae88ea3fdcebc42a6d17"
+            },
+            "type": "library",
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "TeampassClasses\\ConfigManager\\": "src/"
+                }
+            },
+            "license": [
+                "GPL-3.0-only"
+            ],
+            "authors": [
+                {
+                    "name": "Nils Laumaillé"
+                }
+            ],
+            "description": "Perform the initial configuration.",
+            "keywords": [
+                "config"
+            ],
+            "transport-options": {
+                "symlink": false,
+                "relative": true
+            },
+            "install-path": "../teampassclasses/configmanager"
+        },
+        {
             "name": "teampassclasses/encryption",
             "version": "dev-master",
             "version_normalized": "dev-master",

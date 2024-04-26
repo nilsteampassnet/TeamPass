@@ -275,7 +275,7 @@ echo '
 
             </div>
         </div>';
-
+        
 // SSO div
 if (isKeyExistingAndEqual('oauth2_enabled', 1, $SETTINGS) === true) {
     echo '

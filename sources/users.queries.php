@@ -35,6 +35,7 @@ use TeampassClasses\SessionManager\SessionManager;
 use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use TeampassClasses\Language\Language;
 use TeampassClasses\PerformChecks\PerformChecks;
+use TeampassClasses\ConfigManager\ConfigManager;
 use TeampassClasses\PasswordManager\PasswordManager;
 
 // Load functions
@@ -47,11 +48,8 @@ $request = SymfonyRequest::createFromGlobals();
 $lang = new Language($session->get('user-language') ?? 'english');
 
 // Load config if $SETTINGS not defined
-try {
-    include_once __DIR__.'/../includes/config/tp.config.php';
-} catch (Exception $e) {
-    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
-}
+$configManager = new ConfigManager();
+$SETTINGS = $configManager->getAllSettings();
 
 // Do checks
 $checkUserAccess = new PerformChecks(

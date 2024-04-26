@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "9944df0b67feabd06b5f8a961f4fb3d6",
+    "content-hash": "300282e88a8c9541f18da769b16f9617",
     "packages": [
         {
             "name": "bjeavons/zxcvbn-php",
@@ -4551,6 +4551,37 @@
             }
         },
         {
+            "name": "teampassclasses/configmanager",
+            "version": "dev-master",
+            "dist": {
+                "type": "path",
+                "url": "includes/libraries/teampassclasses/configmanager",
+                "reference": "dd074efd73e7f2fc7d5eae88ea3fdcebc42a6d17"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "TeampassClasses\\ConfigManager\\": "src/"
+                }
+            },
+            "license": [
+                "GPL-3.0-only"
+            ],
+            "authors": [
+                {
+                    "name": "Nils Laumaillé"
+                }
+            ],
+            "description": "Perform the initial configuration.",
+            "keywords": [
+                "config"
+            ],
+            "transport-options": {
+                "symlink": false,
+                "relative": true
+            }
+        },
+        {
             "name": "teampassclasses/encryption",
             "version": "dev-master",
             "dist": {
@@ -5393,6 +5424,7 @@
         "teampassclasses/ldapextra": 20,
         "teampassclasses/passwordmanager": 20,
         "teampassclasses/azureauthcontroller": 20,
+        "teampassclasses/configmanager": 20,
         "passwordlib/passwordlib": 15
     },
     "prefer-stable": true,

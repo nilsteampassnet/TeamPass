@@ -33,6 +33,7 @@ use voku\helper\AntiXSS;
 use TeampassClasses\SessionManager\SessionManager;
 use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use TeampassClasses\Language\Language;
+use TeampassClasses\ConfigManager\ConfigManager;
 
 // Security Headers
 header('X-XSS-Protection: 1; mode=block');
@@ -71,21 +72,6 @@ if (file_exists(__DIR__.'/includes/config/settings.php') === false) {
 require_once __DIR__.'/includes/libraries/csrfp/libs/csrf/csrfprotector.php';
 csrfProtector::init();
 
-// Load config
-try {
-    include_once __DIR__.'/includes/config/tp.config.php';
-} catch (Exception $e) {
-    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
-}
-
-// initialize session
-if (isset($SETTINGS['cpassman_dir']) === false || $SETTINGS['cpassman_dir'] === '') {
-    if (isset($SETTINGS['cpassman_dir']) === false) {
-        $SETTINGS = [];
-    }
-    $SETTINGS['cpassman_dir'] = __DIR__;
-}
-
 // Load functions
 require_once __DIR__. '/includes/config/include.php';
 require_once __DIR__.'/sources/main.functions.php';
@@ -93,8 +79,10 @@ require_once __DIR__.'/sources/main.functions.php';
 // init
 loadClasses();
 $session = SessionManager::getSession();
-$request = SymfonyRequest::createFromGlobals();
 $session->set('key', SessionManager::getCookieValue('PHPSESSID'));
+$request = SymfonyRequest::createFromGlobals();
+$configManager = new ConfigManager(__DIR__, $request->getRequestUri());
+$SETTINGS = $configManager->getAllSettings();
 $antiXss = new AntiXSS();
 
 // Quick major version check -> upgrade needed?
@@ -109,9 +97,6 @@ if (isset($SETTINGS['teampass_version']) === true && version_compare(TP_VERSION,
     exit;
 }
 
-if (isset($SETTINGS['cpassman_url']) === false || $SETTINGS['cpassman_url'] === '') {
-    $SETTINGS['cpassman_url'] = $request->getRequestUri();
-}
 
 $SETTINGS = $antiXss->xss_clean($SETTINGS);
 
@@ -236,7 +221,7 @@ if (array_key_exists($get['page'], $utilitiesPages) === true) {
     <!-- Toastr -->
     <link rel="stylesheet" href="plugins/toastr/toastr.min.css" />
     <!-- favicon -->
-    <link rel="shortcut icon" type="image/png" href="<?php echo $SETTINGS['favicon'];?>"/>
+    <link rel="shortcut icon" type="image/png" href="<?php echo isset($SETTINGS['favicon']) === true ? $SETTINGS['favicon'] : '';?>"/>
     <!-- Custom style -->
     <?php
     if (file_exists(__DIR__ . '/includes/css/custom.css') === true) {?>

@@ -1578,6 +1578,7 @@ return array(
     'TCPDF_PARSER' => $vendorDir . '/tecnickcom/tcpdf/tcpdf_parser.php',
     'TCPDF_STATIC' => $vendorDir . '/tecnickcom/tcpdf/include/tcpdf_static.php',
     'TeampassClasses\\AzureAuthController\\AzureAuthController' => $vendorDir . '/teampassclasses/azureauthcontroller/src/AzureAuthController.php',
+    'TeampassClasses\\ConfigManager\\ConfigManager' => $vendorDir . '/teampassclasses/configmanager/src/ConfigManager.php',
     'TeampassClasses\\Encryption\\Encryption' => $vendorDir . '/teampassclasses/encryption/src/Encryption.php',
     'TeampassClasses\\Language\\Language' => $vendorDir . '/teampassclasses/language/src/Language.php',
     'TeampassClasses\\LdapExtra\\ActiveDirectoryExtra' => $vendorDir . '/teampassclasses/ldapextra/src/ActiveDirectoryExtra.php',
