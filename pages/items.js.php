@@ -346,7 +346,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
     // load list of visible folders for current user
     $(this).delay(500).queue(function() {
-        refreshVisibleFolders();
+        refreshVisibleFolders(true);
 
         $(this).dequeue();
     });
@@ -3188,7 +3188,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                             }
 
                             // Refresh list of items inside the folder
-                            ListerItems($('#form-item-folder').val(), '', 0);
+                            //ListerItems($('#form-item-folder').val(), '', 0);
 
                             // Inform user
                             toastr.info(
@@ -3731,6 +3731,13 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         // Exit if no folder is selected
         if (groupe_id === undefined) return false;
 
+        // prevent launch of similar query in case of doubleclick
+        if (requestRunning === true) {
+            if (debugJavascript === true) console.log('Request ABORTED as already running!');
+            return false;
+        }
+        requestRunning = true;
+
         // case where we should stop listing the items
         if (store.get('teampassApplication') !== undefined && store.get('teampassApplication').itemsListStop === 1) {
             //requestRunning = false;
@@ -3771,14 +3778,6 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 }
             );
         }
-
-
-        // prevent launch of similar query in case of doubleclick
-        if (requestRunning === true) {
-            if (debugJavascript === true) console.log('Request ABORTED as already running!');
-            return false;
-        }
-        requestRunning = true;
 
         // Hide any info
         $('#info_teampass_items_list').addClass('hidden');
@@ -4318,8 +4317,8 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         // Sort entries
         var $tbody = $('#teampass_items_list');
         $tbody.find('tr').sort(function(a, b) {
-            var tda = $(a).find('.list-item-row-description').text();
-            var tdb = $(b).find('.list-item-row-description').text();
+            var tda = $(a).find('.list-item-row-description').text().toLowerCase();
+            var tdb = $(b).find('.list-item-row-description').text().toLowerCase();
             // if a < b return 1
             return tda > tdb ? 1 :
                 tda < tdb ? -1 :
@@ -4482,7 +4481,6 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 },
                 function(data) {
                     data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>', 'items.queries.php', 'show_details_item');
-                    requestRunning = true;
                     if (debugJavascript === true) {
                         console.log("DEBUG: checkAccess");
                         console.log(data);
