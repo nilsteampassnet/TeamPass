@@ -45,7 +45,7 @@ require_once 'main.functions.php';
 loadClasses('DB');
 $session = SessionManager::getSession();
 $request = SymfonyRequest::createFromGlobals();
-$lang = new Language();
+$lang = new Language($session->get('user-language') ?? 'english');
 
 // TODO : ajouter un check sue l'envoi de la key
 
@@ -134,7 +134,8 @@ function mainQuery(array $SETTINGS)
     loadClasses('DB');
 
     // User's language loading
-    $lang = new Language();
+    $session = SessionManager::getSession();
+    $lang = new Language($session->get('user-language') ?? 'english');
 
     // Prepare post variables
     $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
@@ -859,7 +860,7 @@ function changePassword(
     $post_new_password_hashed = $passwordManager->hashPassword($post_new_password);
 
     // Load user's language
-    $lang = new Language();
+    $lang = new Language($session->get('user-language') ?? 'english');
 
     // User has decided to change is PW
     if ($post_change_request === 'reset_user_password_expected'
@@ -997,7 +998,8 @@ function generateQRCode(
 ): string
 {
     // Load user's language
-    $lang = new Language();
+    $session = SessionManager::getSession();
+    $lang = new Language($session->get('user-language') ?? 'english');
 
     // is this allowed by setting
     if (isKeyExistingAndEqual('ga_reset_by_user', 0, $SETTINGS) === true
@@ -1436,7 +1438,8 @@ function generateBugReport(
     );
 
     // Load user's language
-    $lang = new Language();
+    $session = SessionManager::getSession();
+    $lang = new Language($session->get('user-language') ?? 'english');
     
 
     // Read config file
@@ -1586,7 +1589,7 @@ function isUserPasswordCorrect(
 {
     $session = SessionManager::getSession();
     // Load user's language
-    $lang = new Language();
+    $lang = new Language($session->get('user-language') ?? 'english');
     
     if (isUserIdValid($post_user_id) === true) {
         // Check if user exists
@@ -1679,7 +1682,7 @@ function changePrivateKeyEncryptionPassword(
 {
     $session = SessionManager::getSession();
     // Load user's language
-    $lang = new Language();
+    $lang = new Language($session->get('user-language') ?? 'english');
     
     if (empty($post_new_code) === true) {
         if (empty($session->get('user-password')) === false) {
@@ -1760,7 +1763,8 @@ function initializeUserPassword(
 ): string
 {
     // Load user's language
-    $lang = new Language();
+    $session = SessionManager::getSession();
+    $lang = new Language($session->get('user-language') ?? 'english');
     
     if (isUserIdValid($post_user_id) === true) {
         // Get user info
@@ -1857,7 +1861,8 @@ function generateOneTimeCode(
 ): string
 {
     // Load user's language
-    $lang = new Language();
+    $session = SessionManager::getSession();
+    $lang = new Language($session->get('user-language') ?? 'english');
     
     if (isUserIdValid($post_user_id) === true) {
         // Get user info
@@ -1922,7 +1927,8 @@ function startReEncryptingUserSharekeys(
 ): string
 {
     // Load user's language
-    $lang = new Language();
+    $session = SessionManager::getSession();
+    $lang = new Language($session->get('user-language') ?? 'english');
     
     if (isUserIdValid($post_user_id) === true) {
         // Check if user exists
@@ -1991,7 +1997,8 @@ function continueReEncryptingUserSharekeys(
 ): string
 {
     // Load user's language
-    $lang = new Language();
+    $session = SessionManager::getSession();
+    $lang = new Language($session->get('user-language') ?? 'english');
     
     if (isUserIdValid($post_user_id) === true) {
         // Check if user exists
@@ -2677,8 +2684,8 @@ function migrateTo3_DoUserPersonalItemsEncryption(
 ) {
     $next_step = '';
     
-    $lang = new Language();
-    $session = SessionManager::getSession();    
+    $session = SessionManager::getSession();
+    $lang = new Language($session->get('user-language') ?? 'english');
     
     if (isUserIdValid($post_user_id) === true) {
         // Check if user exists
@@ -2861,7 +2868,8 @@ function getUserInfo(
 )
 {
     // Load user's language
-    $lang = new Language();
+    $session = SessionManager::getSession();
+    $lang = new Language($session->get('user-language') ?? 'english');
     
     if (isUserIdValid($post_user_id) === true) {
         // Get user info
@@ -2907,8 +2915,8 @@ function changeUserAuthenticationPassword(
     array $SETTINGS
 )
 {
-    $lang = new Language();
     $session = SessionManager::getSession();
+    $lang = new Language($session->get('user-language') ?? 'english');
     
     if (isUserIdValid($post_user_id) === true) {
         // Get user info
@@ -2934,7 +2942,7 @@ function changeUserAuthenticationPassword(
                 );
             }
 
-            $lang = new Language();
+            $lang = new Language($session->get('user-language') ?? 'english');
 
             if ($session->get('user-private_key') === $privateKey) {
                 // Encrypt it with new password
@@ -3007,7 +3015,7 @@ function changeUserLDAPAuthenticationPassword(
 {
     $session = SessionManager::getSession();
     // Load user's language
-    $lang = new Language();
+    $lang = new Language($session->get('user-language') ?? 'english');
     
     if (isUserIdValid($post_user_id) === true) {
         // Get user info
@@ -3105,7 +3113,7 @@ function changeUserLDAPAuthenticationPassword(
                         $post_user_id
                     );
                     
-                    $lang = new Language();
+                    $lang = new Language($session->get('user-language') ?? 'english');
                     $session->set('user-private_key', $privateKey);
 
                     return prepareExchangedData(

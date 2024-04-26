@@ -56,7 +56,7 @@ require_once 'main.functions.php';
 loadClasses('DB');
 $session = SessionManager::getSession();
 $request = SymfonyRequest::createFromGlobals();
-$lang = new Language();
+$lang = new Language($session->get('user-language') ?? 'english');
 
 
 // Load config if $SETTINGS not defined
@@ -132,7 +132,7 @@ if ($post_type === 'identify_user') {
     function handleAuthAttempts($post_data, $SETTINGS): bool|string
     {
         $session = SessionManager::getSession();
-        $lang = new Language();
+        $lang = new Language($session->get('user-language') ?? 'english');
         $sessionPwdAttempts = $session->get('pwd_attempts');
         $nextPossibleAttempts = (int) $session->get('next_possible_pwd_attempts');
 
@@ -293,9 +293,9 @@ if ($post_type === 'identify_user') {
 function identifyUser(string $sentData, array $SETTINGS): bool
 {
     $antiXss = new AntiXSS();
-    
+    $session = SessionManager::getSession();
     $request = SymfonyRequest::createFromGlobals();
-    $lang = new Language();
+    $lang = new Language($session->get('user-language') ?? 'english');
     $session = SessionManager::getSession();
 
     // Prepare GET variables
@@ -1250,7 +1250,8 @@ function checkUserPasswordValidity($userInfo, $numDaysBeforePwExpiration, $lastP
  */
 function authenticateThroughAD(string $username, array $userInfo, string $passwordClear, array $SETTINGS): array
 {
-    $lang = new Language();
+    $session = SessionManager::getSession();
+    $lang = new Language($session->get('user-language') ?? 'english');
 
     // 1- Connect to LDAP
     try {
@@ -1531,7 +1532,7 @@ function finalizeAuthentication(
 function yubicoMFACheck($dataReceived, string $userInfo, array $SETTINGS): array
 {
     $session = SessionManager::getSession();
-    $lang = new Language();
+    $lang = new Language($session->get('user-language') ?? 'english');
     $sessionAdmin = $session->get('user-admin');
     $sessionUrl = $session->get('user-initial_url');
     $sessionPwdAttempts = $session->get('pwd_attempts');
@@ -1694,7 +1695,7 @@ function ldapCreateUser(string $login, string $passwordClear, string $userEmail,
 function googleMFACheck(string $username, array $userInfo, $dataReceived, array $SETTINGS): array
 {
     $session = SessionManager::getSession();    
-    $lang = new Language();
+    $lang = new Language($session->get('user-language') ?? 'english');
 
     if (
         isset($dataReceived['GACode']) === true
@@ -1793,7 +1794,7 @@ function duoMFACheck(
 ): array
 {
     $session = SessionManager::getSession();
-    $lang = new Language();
+    $lang = new Language($session->get('user-language') ?? 'english');
 
     $sessionPwdAttempts = $session->get('pwd_attempts');
     $saved_state = null !== $session->get('user-duo_state') ? $session->get('user-duo_state') : '';
@@ -1858,7 +1859,7 @@ function duoMFAPerform(
 ): array
 {
     $session = SessionManager::getSession();
-    $lang = new Language();
+    $lang = new Language($session->get('user-language') ?? 'english');
 
     try {
         $duo_client = new Client(
@@ -2204,7 +2205,7 @@ function identifyDoInitialChecks(
     $session = SessionManager::getSession();
     $checks = new initialChecks();
     $enable_ad_user_auto_creation = isset($SETTINGS['enable_ad_user_auto_creation']) === true && (int) $SETTINGS['enable_ad_user_auto_creation'] === 1 ? true : false;
-    $lang = new Language();
+    $lang = new Language($session->get('user-language') ?? 'english');
     
     // Brute force management
     try {
@@ -2388,7 +2389,7 @@ function identifyDoMFAChecks(
 ): array
 {
     $session = SessionManager::getSession();
-    $lang = new Language();
+    $lang = new Language($session->get('user-language') ?? 'english');
     
     switch ($userInitialData['user_mfa_mode']) {
         case 'google':
@@ -2507,7 +2508,7 @@ function identifyDoAzureChecks(
 ): array
 {
     $session = SessionManager::getSession();
-    $lang = new Language();
+    $lang = new Language($session->get('user-language') ?? 'english');
 
     logEvents($SETTINGS, 'failed_auth', 'wrong_mfa_code', '', stripslashes($username), stripslashes($username));
     return [

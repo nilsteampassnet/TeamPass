@@ -33,7 +33,7 @@ require_once 'main.functions.php';
 loadClasses('DB');
 $session = SessionManager::getSession();
 $request = SymfonyRequest::createFromGlobals();
-$lang = new Language();
+$lang = new Language($session->get('user-language') ?? 'english');
 
 // Load config if $SETTINGS not defined
 try {
@@ -503,8 +503,9 @@ function prepareNodeJson(
     array $SETTINGS
 ): array
 {
+    $session = SessionManager::getSession();
     // Load user's language
-    $lang = new Language();
+    $lang = new Language($session->get('user-language') ?? 'english');
 
     // prepare json return for current node
     $parent = $currentNode->parent_id === '0' ? '#' : 'li_' . $currentNode->parent_id;
@@ -608,8 +609,9 @@ function prepareNodeData(
     NestedTree $tree
 ): array
 {
+    $session = SessionManager::getSession();
     // Load user's language
-    $lang = new Language();
+    $lang = new Language($session->get('user-language') ?? 'english');
 
     if (in_array($nodeId, $session_groupes_visibles) === true) {
         // special case for READ-ONLY folder

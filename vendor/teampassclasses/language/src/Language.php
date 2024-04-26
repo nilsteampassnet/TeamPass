@@ -48,7 +48,6 @@ class Language {
 
     private function loadTranslations() {
         // Load the translations from a file or database
-        // This is just a placeholder, replace with actual loading logic
         $this->translations = include $this->path."/{$this->language}.php";
     }
 

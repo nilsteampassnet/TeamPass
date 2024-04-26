@@ -43,7 +43,7 @@ require_once __DIR__.'/../sources/main.functions.php';
 $session = SessionManager::getSession();
 $request = Request::createFromGlobals();
 loadClasses('DB');
-$lang = new Language();
+$lang = new Language($session->get('user-language') ?? 'english');
 
 // Load config if $SETTINGS not defined
 try {

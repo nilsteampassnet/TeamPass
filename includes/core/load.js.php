@@ -52,7 +52,7 @@ if (
     </script>
 <?php
 }
-$lang = new Language();
+$lang = new Language($session->get('user-language') ?? 'english');
 $session = SessionManager::getSession();
 $request = SymfonyRequest::createFromGlobals();
 ?>

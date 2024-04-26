@@ -41,7 +41,7 @@ require_once __DIR__.'/../../sources/main.functions.php';
 loadClasses('DB');
 
 $request = Request::createFromGlobals();
-$lang = new Language();
+$lang = new Language($session->get('user-language') ?? 'english');
 $antiXSS = new AntiXSS();
 
 // Load config if $SETTINGS not defined

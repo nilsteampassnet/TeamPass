@@ -832,7 +832,7 @@ function cronContinueReEncryptingUserSharekeysStep10(
     array $extra_arguments
 ): array
 {
-    $lang = new Language();
+    $lang = new Language($session->get('user-language') ?? 'english');
 
     // IF USER IS NOT THE SAME
     if ((int) $post_user_id === (int) $extra_arguments['owner_id']) {

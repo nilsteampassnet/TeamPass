@@ -46,7 +46,7 @@ require_once 'main.functions.php';
 loadClasses('DB');
 $session = SessionManager::getSession();
 $request = SymfonyRequest::createFromGlobals();
-$lang = new Language();
+$lang = new Language($session->get('user-language') ?? 'english');
 
 // Load config if $SETTINGS not defined
 try {

@@ -44,7 +44,7 @@ require_once 'main.functions.php';
 loadClasses('DB');
 $session = SessionManager::getSession();
 $request = Request::createFromGlobals();
-$lang = new Language();
+$lang = new Language($session->get('user-language') ?? 'english');
 $antiXss = new AntiXSS();
 
 // Load config if $SETTINGS not defined
