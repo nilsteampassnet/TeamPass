@@ -31,6 +31,7 @@ use TeampassClasses\SessionManager\SessionManager;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Process\Process;
 use TeampassClasses\Language\Language;
+use TeampassClasses\ConfigManager\ConfigManager;
 
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';

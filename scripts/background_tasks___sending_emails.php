@@ -29,6 +29,7 @@
 use TeampassClasses\SessionManager\SessionManager;
 use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\Language\Language;
+use TeampassClasses\ConfigManager\ConfigManager;
 
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';

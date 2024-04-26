@@ -28,6 +28,7 @@
 
 use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\Language\Language;
+use TeampassClasses\ConfigManager\ConfigManager;
 
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
@@ -829,7 +830,7 @@ function cronContinueReEncryptingUserSharekeysStep10(
     array $extra_arguments
 ): array
 {
-    $lang = new Language($session->get('user-language') ?? 'english');
+    $lang = new Language('english');
 
     // IF USER IS NOT THE SAME
     if ((int) $post_user_id === (int) $extra_arguments['owner_id']) {
