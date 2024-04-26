@@ -27,8 +27,6 @@
  */
 
 use TeampassClasses\NestedTree\NestedTree;
-use TeampassClasses\SuperGlobal\SuperGlobal;
-use TeampassClasses\SessionManager\SessionManager;
 
 // Load config
 require_once __DIR__.'/../includes/config/tp.config.php';

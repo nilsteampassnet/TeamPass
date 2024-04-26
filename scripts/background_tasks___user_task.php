@@ -26,13 +26,7 @@
  * @see       https://www.teampass.net
  */
 
-use voku\helper\AntiXSS;
-use TeampassClasses\NestedTree\NestedTree;
-use TeampassClasses\SessionManager\SessionManager;
-use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\Language\Language;
-use EZimuel\PHPSecureSession;
-use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\ConfigManager\ConfigManager;
 
 
@@ -41,7 +35,7 @@ require_once __DIR__.'/../sources/main.functions.php';
 
 // init
 loadClasses('DB');
-$lang = new Language($session->get('user-language') ?? 'english');
+$lang = new Language('english');
 
 // Load config if $SETTINGS not defined
 $configManager = new ConfigManager();

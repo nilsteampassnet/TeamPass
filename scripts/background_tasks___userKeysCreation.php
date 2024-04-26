@@ -40,7 +40,7 @@ require_once __DIR__.'/../sources/main.functions.php';
 loadClasses('DB');
 $session = SessionManager::getSession();
 $request = Request::createFromGlobals();
-$lang = new Language($session->get('user-language') ?? 'english');
+$lang = new Language('english');
 
 // Load config if $SETTINGS not defined
 $configManager = new ConfigManager();
