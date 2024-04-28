@@ -518,6 +518,7 @@ function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived,
                 (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
                 (int) filter_var($dataReceived['start'], FILTER_SANITIZE_NUMBER_INT),
                 (int) filter_var($dataReceived['length'], FILTER_SANITIZE_NUMBER_INT),
+                (int) filter_var($dataReceived['counterItemsToTreat'], FILTER_SANITIZE_NUMBER_INT),
                 (string) filter_var($dataReceived['userPsk'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 $SETTINGS
             );
@@ -2604,9 +2605,10 @@ function continueReEncryptingUserSharekeysStep60(
         $rows = DB::query(
             'SELECT id, pw
             FROM ' . prefixTable('items') . '
-            WHERE perso = 1 AND id_tree IN %ls
+            WHERE perso = 1 AND id_tree IN %ls AND encryption_type = %s
             LIMIT ' . $post_start . ', ' . $post_length,
-            $session->get('user-personal_folders')
+            $session->get('user-personal_folders'),
+            "defuse"
         );
         foreach ($rows as $record) {
             // Get itemKey from current user
@@ -2677,10 +2679,11 @@ function migrateTo3_DoUserPersonalItemsEncryption(
     int $post_user_id,
     int $post_start,
     int $post_length,
+    int $post_counterItemsToTreat,
     string $post_user_psk,
     array $SETTINGS
 ) {
-    $next_step = '';
+    $next_step = 'psk';
     
     $session = SessionManager::getSession();
     $lang = new Language($session->get('user-language') ?? 'english');
@@ -2711,103 +2714,122 @@ function migrateTo3_DoUserPersonalItemsEncryption(
                     );
                 }
 
+                // Get number of user's personal items with no AES encryption
+                if ($post_counterItemsToTreat === -1) {
+                    DB::query(
+                        'SELECT id
+                        FROM ' . prefixTable('items') . '
+                        WHERE perso = 1 AND id_tree IN %ls AND encryption_type != %s',
+                        $session->get('user-personal_folders'),
+                        'teampass_aes'
+                    );
+                    $countUserPersonalItems = DB::count();
+                } else {
+                    $countUserPersonalItems = $post_counterItemsToTreat;
+                }
+
                 // Loop on persoanl items
                 $rows = DB::query(
                     'SELECT id, pw
                     FROM ' . prefixTable('items') . '
-                    WHERE perso = 1 AND id_tree IN %ls
-                    LIMIT ' . $post_start . ', ' . $post_length,
-                    $session->get('user-personal_folders')
+                    WHERE perso = 1 AND id_tree IN %ls AND encryption_type != %s
+                    LIMIT ' . $post_length,
+                    $session->get('user-personal_folders'),
+                    'teampass_aes'
                 );
-                $countUserPersonalItems = DB::count();
                 foreach ($rows as $record) {
-                    if ($record['encryption_type'] !== 'teampass_aes') {
-                        // Decrypt with Defuse
-                        $passwd = cryption(
-                            $record['pw'],
-                            $user_key_encoded,
+                    // Decrypt with Defuse
+                    $passwd = cryption(
+                        $record['pw'],
+                        $user_key_encoded,
+                        'decrypt',
+                        $SETTINGS
+                    );
+
+                    // Encrypt with Object Key
+                    $cryptedStuff = doDataEncryption($passwd['string']);
+
+                    // Store new password in DB
+                    DB::update(
+                        prefixTable('items'),
+                        array(
+                            'pw' => $cryptedStuff['encrypted'],
+                            'encryption_type' => 'teampass_aes',
+                        ),
+                        'id = %i',
+                        $record['id']
+                    );
+
+                    // Insert in DB the new object key for this item by user
+                    DB::insert(
+                        prefixTable('sharekeys_items'),
+                        array(
+                            'object_id' => (int) $record['id'],
+                            'user_id' => (int) $post_user_id,
+                            'share_key' => encryptUserObjectKey($cryptedStuff['objectKey'], $userInfo['public_key']),
+                        )
+                    );
+
+
+                    // Does this item has Files?
+                    // Loop on files
+                    $rows = DB::query(
+                        'SELECT id, file
+                        FROM ' . prefixTable('files') . '
+                        WHERE status != %s
+                        AND id_item = %i',
+                        TP_ENCRYPTION_NAME,
+                        $record['id']
+                    );
+                    //aes_encryption
+                    foreach ($rows as $record2) {
+                        // Now decrypt the file
+                        prepareFileWithDefuse(
                             'decrypt',
-                            $SETTINGS
+                            $SETTINGS['path_to_upload_folder'] . '/' . $record2['file'],
+                            $SETTINGS['path_to_upload_folder'] . '/' . $record2['file'] . '.delete',
+                            $SETTINGS,
+                            $post_user_psk
                         );
 
-                        // Encrypt with Object Key
-                        $cryptedStuff = doDataEncryption($passwd['string']);
+                        // Encrypt the file
+                        $encryptedFile = encryptFile($record2['file'] . '.delete', $SETTINGS['path_to_upload_folder']);
 
-                        // Store new password in DB
                         DB::update(
-                            prefixTable('items'),
+                            prefixTable('files'),
                             array(
-                                'pw' => $cryptedStuff['encrypted'],
-                                'encryption_type' => 'teampass_aes',
+                                'file' => $encryptedFile['fileHash'],
+                                'status' => TP_ENCRYPTION_NAME,
                             ),
                             'id = %i',
-                            $record['id']
+                            $record2['id']
                         );
 
-                        // Insert in DB the new object key for this item by user
+                        // Save key
                         DB::insert(
-                            prefixTable('sharekeys_items'),
+                            prefixTable('sharekeys_files'),
                             array(
-                                'object_id' => (int) $record['id'],
-                                'user_id' => (int) $post_user_id,
-                                'share_key' => encryptUserObjectKey($cryptedStuff['objectKey'], $userInfo['public_key']),
+                                'object_id' => (int) $record2['id'],
+                                'user_id' => (int) $session->get('user-id'),
+                                'share_key' => encryptUserObjectKey($encryptedFile['objectKey'], $session->get('user-public_key')),
                             )
                         );
 
-
-                        // Does this item has Files?
-                        // Loop on files
-                        $rows = DB::query(
-                            'SELECT id, file
-                            FROM ' . prefixTable('files') . '
-                            WHERE status != %s
-                            AND id_item = %i',
-                            TP_ENCRYPTION_NAME,
-                            $record['id']
-                        );
-                        //aes_encryption
-                        foreach ($rows as $record2) {
-                            // Now decrypt the file
-                            prepareFileWithDefuse(
-                                'decrypt',
-                                $SETTINGS['path_to_upload_folder'] . '/' . $record2['file'],
-                                $SETTINGS['path_to_upload_folder'] . '/' . $record2['file'] . '.delete',
-                                $SETTINGS,
-                                $post_user_psk
-                            );
-
-                            // Encrypt the file
-                            $encryptedFile = encryptFile($record2['file'] . '.delete', $SETTINGS['path_to_upload_folder']);
-
-                            DB::update(
-                                prefixTable('files'),
-                                array(
-                                    'file' => $encryptedFile['fileHash'],
-                                    'status' => TP_ENCRYPTION_NAME,
-                                ),
-                                'id = %i',
-                                $record2['id']
-                            );
-
-                            // Save key
-                            DB::insert(
-                                prefixTable('sharekeys_files'),
-                                array(
-                                    'object_id' => (int) $record2['id'],
-                                    'user_id' => (int) $session->get('user-id'),
-                                    'share_key' => encryptUserObjectKey($encryptedFile['objectKey'], $session->get('user-public_key')),
-                                )
-                            );
-
-                            // Unlink original file
-                            unlink($SETTINGS['path_to_upload_folder'] . '/' . $record2['file']);
-                        }
+                        // Unlink original file
+                        unlink($SETTINGS['path_to_upload_folder'] . '/' . $record2['file']);
                     }
                 }
 
                 // SHould we change step?
                 $next_start = (int) $post_start + (int) $post_length;
-                if ($next_start > $countUserPersonalItems) {
+                DB::query(
+                    'SELECT id
+                    FROM ' . prefixTable('items') . '
+                    WHERE perso = 1 AND id_tree IN %ls AND encryption_type != %s',
+                    $session->get('user-personal_folders'),
+                    'teampass_aes'
+                );
+                if (DB::count() === 0 || ($next_start - $post_length) >= $countUserPersonalItems) {
                     // Now update user
                     DB::update(
                         prefixTable('users'),

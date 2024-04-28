@@ -573,10 +573,21 @@ echo '
     }
 
     if (
-                                    $session_user_admin === 1
-                                    || $session_user_manager === 1
-                                    || $session_user_human_resources === 1
-                                ) {
+        $session_user_admin === 1
+        || $session_user_manager === 1
+        || $session_user_human_resources === 1
+    ) {
+        if (WIP === true) {
+            echo '
+                    <li class="nav-item">
+                        <a href="#" data-name="tools" class="nav-link', $get['page'] === 'tools' ? ' active' : '', '">
+                        <i class="nav-icon fa-solid fa-screwdriver-wrench"></i>
+                        <p>
+                            ' . $lang->get('tools') . '
+                        </p>
+                        </a>
+                    </li>';
+        }
         echo '
                     <li class="nav-item">
                         <a href="#" data-name="folders" class="nav-link', $get['page'] === 'folders' ? ' active' : '', '">
@@ -1322,7 +1333,9 @@ if (isset($SETTINGS['cpassman_dir']) === true) {
         } elseif ($get['page'] === 'tasks') {
             include_once $SETTINGS['cpassman_dir'] . '/pages/tasks.js.php';
         } elseif ($get['page'] === 'oauth') {
-            include_once $SETTINGS['cpassman_dir'] . '/pages/oauth.js.php';
+            include_once $SETTINGS['cpassman_dir'] . '/pages/oauth.js.php';        
+        } elseif ($get['page'] === 'tools') {
+            include_once $SETTINGS['cpassman_dir'] . '/pages/tools.js.php';
         }
     } elseif (isset($get['page']) === true && $get['page'] !== '') {
         if ($get['page'] === 'items') {

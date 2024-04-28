@@ -16,20 +16,20 @@ Teampass is a Collaborative Passwords Manager solution installed On-Premise.
 [![Build Status](https://scrutinizer-ci.com/g/nilsteampassnet/TeamPass/badges/build.png?b=master)](https://scrutinizer-ci.com/g/nilsteampassnet/TeamPass/build-status/master)
 [![Code Intelligence Status](https://scrutinizer-ci.com/g/nilsteampassnet/TeamPass/badges/code-intelligence.svg?b=master)](https://scrutinizer-ci.com/code-intelligence)
 
-> Copyright © 2009-2023, [Nils Laumaillé](Nils@Teampass.net)
+> Copyright © 2009-2024, [Nils Laumaillé](Nils@Teampass.net)
 
 <!-- MDTOC maxdepth:2 firsth1:0 numbering:0 flatten:0 bullets:1 updateOnSave:1 -->
 
-- [Teampass 3](#teampass-3)
-  - [Requirements](#requirements)
-    - [About PHP versions](#about-php-versions)
-  - [Documentation](#documentation)
-    - [With Docker](#with-docker)
-    - [With Docker Compose](#with-docker-compose)
-  - [Languages](#languages)
-  - [Licence Agreement](#licence-agreement)
-  - [Website](#website)
-  - [Bugs](#bugs)
+- [Requirements](#requirements)
+  - [About PHP versions](#about-php-versions)
+- [Documentation](#documentation)
+  - [Run from Docker image](#run-from-docker-image)
+  - [Install with Docker](#install-with-docker)
+  - [Install with Docker Compose](#install-with-docker-compose)
+- [Languages](#languages)
+- [Licence Agreement](#licence-agreement)
+- [Website](#website)
+- [Bugs](#bugs)
 
 <!-- /MDTOC -->
 
@@ -51,6 +51,13 @@ Teampass is a Collaborative Passwords Manager solution installed On-Premise.
   * curl
   * gmp
 
+Website article with instructions: https://www.valters.eu/teampass-a-self-hosted-password-manager-to-increase-organizations-cybersecurity/  
+
+
+
+YouTube video: https://youtu.be/eXieWAIsGzc?feature=shared
+
+
 ### About PHP versions
 
 Teampass should be installed using the most recent PHP version.
@@ -63,15 +70,23 @@ Notice that only bug fixing will be performed on this branch.
 
 ## Documentation
 
-> ✍️ Complete [documentation](https://documentation.teampass.net) is available.
+> ✍️ [Documentation](https://documentation.teampass.net) is available.
 
-### With Docker
+### Run from Docker image
+
+[@valterseu](https://github.com/valterseu) created a Docker image from scratch with no dependencies and fully automated that you can also use.
+
+Open the [Docker Hub image](https://hub.docker.com/r/valterseu/teampass) and get all information.
+
+Complete usage documentation can be found at [GitHub Docker image URL](https://github.com/valterseu/TeamPass).
+
+### Install with Docker
 The Docker image provided will create a Teampass installation in its `/var/www/html/` directory, which you should mount as a volume to keep persistent. **SSL is not provided** if you use this image without a proxy in front of it. See the included [Docker Compose file](docker-compose.yml) for an example setup.
 
 **Note:** Use `/var/www/html/sk` as your "Absolute path to saltkey" during installation.
 
 
-### With Docker Compose
+### Install with Docker Compose
 The included [docker-compose.yml](docker-compose.yml) file is an example setup, using virtual host-based reverse proxy routing to provide SSL. If you want to use the Compose file as-is, you will need to provide an SSL certificate with a CN matching the `teampass` service's `VIRTUAL_HOST` variable. See the documentation for the [jwilder/nginx-proxy](https://github.com/jwilder/nginx-proxy) image for details. In short, you'll need to put your certificate file (with extension .crt, e.g. teampass.domain.local.crt) and the according private key file (with extension .key, e.g. teampass.domain.local.key) into the directory ssl, named exactly after the FQDN you put into the `VIRTUAL_HOST` variable. Make sure to restart the nginx service after changes to the certificate or at least signal it with the reload command: `docker-compose exec nginx nginx -s reload`.
 
 **Note1:** The database's hostname is `db`. You can find the database's credentials in the environment variables of the `db` service.
@@ -102,7 +117,8 @@ Teampass is currently available in the following languages:
 * UKRAINIAN
 * VIETNAMESE
 
-Languages strings are managed at [POEditor.com](https://poeditor.com/projects/view?id=433631).
+Languages strings are managed at [POEditor.com](https://poeditor.com/projects/view?id=433631). 
+Please participate to improving its translation by joining Teampass POEditor project.
 
 ## Licence Agreement
 

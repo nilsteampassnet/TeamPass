@@ -385,9 +385,9 @@ $request = SymfonyRequest::createFromGlobals();
             toastr.remove();
             toastr.info('<?php echo $lang->get('in_progress'); ?><i class="fa-solid fa-circle-notch fa-spin fa-2x ml-3"></i>');
 
-            defusePskRemoval(store.get('teampassUser').user_id, 'psk', 0);
+            defusePskRemoval(store.get('teampassUser').user_id, 'psk', 0, -1);
             
-            function defusePskRemoval(userId, step, start)
+            function defusePskRemoval(userId, step, start, counterItemsToTreat)
             {
                 if (step === 'psk') {
                     // Inform user
@@ -396,9 +396,10 @@ $request = SymfonyRequest::createFromGlobals();
 
                     var data = {
                         'userPsk' : $('#user-current-defuse-psk').val(),
-                            'start': start,
-                            'length': <?php echo NUMBER_ITEMS_IN_BATCH;?>,
-                            'user_id': userId,
+                        'start': start,
+                        'length': <?php echo NUMBER_ITEMS_IN_BATCH;?>,
+                        'user_id': userId,
+                        'counterItemsToTreat': counterItemsToTreat
                     };
                     // Do query
                     $.post(
@@ -428,7 +429,7 @@ $request = SymfonyRequest::createFromGlobals();
                                 return false;
                             } else {
                                 // Start looping on all steps of re-encryption
-                                defusePskRemoval(data.userId, data.step, data.start);
+                                defusePskRemoval(data.userId, data.step, data.start, data.counterItemsToTreat);
                             }
                         }
                     );

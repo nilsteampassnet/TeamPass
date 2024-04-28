@@ -28,6 +28,12 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'tools' => 'Tools',
+    'fix_personal_items_empty' => 'Fix personal items are empty',
+    'fix_personal_items_empty_tip' => 'This tool permits to fix the issue where personal items are empty after a Teampass upgrade. It requires to have restored a copy of table teampass_items from Teampass version 2. The table needs to be named teampass_items_v2.',
+    'table_not_exists' => 'Expected table does not exist. Please restore it from a backup.',
+    'tools_usage_warning' => 'Using tools can have a direct impact on the database. Please be careful. Always perform a dump before and define a maintenance period.',
+    'select_user' => 'Select user',
     'oauth' => 'OAuth',
     'admin_oauth_configuration' => 'OAuth Configuration',
     'settings_oauth_mode' => 'Enable OAuth Mode',
