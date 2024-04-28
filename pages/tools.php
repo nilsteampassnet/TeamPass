@@ -31,12 +31,10 @@ declare(strict_types=1);
 
 
 use TeampassClasses\SessionManager\SessionManager;
-use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use TeampassClasses\Language\Language;
-use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\ConfigManager\ConfigManager;
-use TeampassClasses\AzureAuthController\AzureAuthController;
 
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
@@ -44,7 +42,7 @@ require_once __DIR__.'/../sources/main.functions.php';
 // init
 loadClasses('DB');
 $session = SessionManager::getSession();
-$request = Request::createFromGlobals();
+$request = SymfonyRequest::createFromGlobals();
 $lang = new Language($session->get('user-language') ?? 'english');
 
 // Load config if $SETTINGS not defined
@@ -68,7 +66,7 @@ $checkUserAccess = new PerformChecks(
 );
 // Handle the case
 echo $checkUserAccess->caseHandler();
-if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('oauth') === false) {
+if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('tools') === false) {
     // Not allowed page
     $session->set('system-error_code', ERR_NOT_ALLOWED);
     include $SETTINGS['cpassman_dir'] . '/error.php';
@@ -145,7 +143,7 @@ if (is_null($tableExists) === true) {
         WHERE disabled = 0 AND (login NOT LIKE "%_deleted%")
         ORDER BY login');
     foreach ($users as $user) {
-        $selectOptions .= '<option value="'.$user['id'].'">'.$user['lastname'].' '.$user['name'].' ('.$user['login'].')'.
+        $selectOptions .= '<option value="'.$user['id'].'" data-pf="'.$user['personal_folder'].'" data-psk="'.$user['encrypted_psk'].'">'.$user['lastname'].' '.$user['name'].' ('.$user['login'].')'.
             ((is_null($user['encrypted_psk']) === true || empty($user['encrypted_psk']) === true) ? ' - No user PSK exists in DB' : '').
             ((int) $user['personal_folder'] !== 1 ? ' - Personal Folder disabled for user' : '').
             '</option>';
@@ -163,7 +161,7 @@ if (is_null($tableExists) === true) {
                                 </div>
                             </div>
                             
-                            <div class='row mb-2'>
+                            <div class='row mb-3'>
                                 <button type='button' class='btn btn-primary btn-sm tp-action mr-2' data-action='fix_pf_items_but'>
                                     <i class='fas fa-cog mr-2'></i><?php echo $lang->get('perform'); ?>
                                 </button>

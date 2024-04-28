@@ -29,6 +29,7 @@
  */
 return array(
     'tools' => 'Tools',
+    'user_config_not_compliant' => 'User configuration is not compliant',
     'fix_personal_items_empty' => 'Fix personal items are empty',
     'fix_personal_items_empty_tip' => 'This tool permits to fix the issue where personal items are empty after a Teampass upgrade. It requires to have restored a copy of table teampass_items from Teampass version 2. The table needs to be named teampass_items_v2.',
     'table_not_exists' => 'Expected table does not exist. Please restore it from a backup.',
