@@ -17,7 +17,7 @@
     },
     {
         "table_name": "background_tasks_logs",
-        "structure_hash": "9b072e1597a803ab0031b84a87d3ac5e8d573101add53ca79dd0d6a366cd6b9e"
+        "structure_hash": "feb77f3c50b5e44f32637e99da273f2039f1900532c5cd35d01150b064a8adb2"
     },
     {
         "table_name": "cache",
@@ -101,11 +101,11 @@
     },
     {
         "table_name": "log_system",
-        "structure_hash": "15544bba163bc90d640de7994051bc4a6f9c02e5c47de88e74b8c3063b4074ee"
+        "structure_hash": "a994927c9bc82bf96c62f96e8a65ba6fb4bc02a62e4766ae1bad9bea46197992"
     },
     {
         "table_name": "misc",
-        "structure_hash": "c52f159b8e56553228be0b237d112952b8aa5c89b60ebfdcbc52e3e481e854d0"
+        "structure_hash": "eaaa979b373349965c71907f4a97da971f762387dff20bbdca1ab7069092810f"
     },
     {
         "table_name": "nested_tree",

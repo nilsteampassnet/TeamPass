@@ -28,6 +28,9 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'server_connected_to_internet' => 'Server is connected to internet',
+    'server_not_connected_to_internet' => 'Server is connected to internet',
+    'server_not_connected_to_internet_tip' => 'This could lead to several functionnalities not working properly. Especially MFA.',
     'tools' => 'Tools',
     'user_config_not_compliant' => 'User configuration is not compliant',
     'fix_personal_items_empty' => 'Fix personal items are empty',

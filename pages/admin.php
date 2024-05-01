@@ -299,10 +299,29 @@ catch (Exception $e) {
                             $os = 'Unknown';
                         }
 
+                        // Test internet access
+                        $connected = @fsockopen("www.google.com", 80); // Le site web est google et le port est 80 (HTTP)
+                        if ($connected){
+                            fclose($connected);
+                            $internetAccess = '
+                            <p>
+                                <i class="fa-solid fa-circle-check text-success mr-2"></i>'.$lang->get('server_connected_to_internet').'
+                            </p>';
+                        } else {
+                            $internetAccess = '
+                            <p>
+                                <i class="fa-solid fa-info mr-2"></i>'. $lang->get('server_not_connected_to_internet').'<br>'.
+                                '<small class="form-text text-muted">
+                                    '.$lang->get('server_not_connected_to_internet_tip').'
+                                </small>
+                            </p>';
+                        }
+
                         echo 
                         '<p>' . $os.
                             '<br><span class="ml-4"></span>'.
                         '</p>'.
+                        $internetAccess.
                         '<p><i class="fa-brands fa-php mr-2"></i>PHP version: ' . phpversion().
                             '<br><span class="ml-4">Memory limit: '.(ini_get('memory_limit')).'</span>'.
                             '<br><span class="ml-4">Memory usage: '.formatSizeUnits(memory_get_usage()).'</span>'.

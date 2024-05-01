@@ -253,7 +253,7 @@ $zones = timezone_list();
                                 <div class='toggle toggle-modern' id='enable_sts' data-toggle-on='<?php echo isset($SETTINGS['enable_sts']) && (int) $SETTINGS['enable_sts'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_sts_input' value='<?php echo isset($SETTINGS['enable_sts']) && (int) $SETTINGS['enable_sts'] === 1 ? '1' : '0'; ?>' />
                             </div>
                         </div>
-
+<!--
                         <div class='row mb-2 option' data-keywords="server setting proxy ip">
                             <div class='col-10'>
                                 <?php echo $lang->get('admin_proxy_ip'); ?>
@@ -277,7 +277,7 @@ $zones = timezone_list();
                                 <input type='number' class='form-control form-control-sm' id='proxy_port' value='<?php echo $SETTINGS['proxy_port'] ?? '60'; ?>'>
                             </div>
                         </div>
-
+-->
                         <div class='row mb-2 option' data-keywords="user ui setting login length password">
                             <div class='col-10'>
                                 <?php echo $lang->get('admin_pwd_maximum_length'); ?>
