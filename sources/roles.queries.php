@@ -693,17 +693,6 @@ if (null !== $post_type) {
                 break;
             }
 
-            if (empty($SETTINGS['ldap_group_object_filter']) === true) {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => $lang->get('ldap_group_object_filter'),
-                    ),
-                    'encode'
-                );
-                break;
-            }
-
 
             // Initialisation de la connexion LDAP et des paramètres
             $connection = null;

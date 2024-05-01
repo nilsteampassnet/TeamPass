@@ -1714,8 +1714,7 @@ function googleMFACheck(string $username, array $userInfo, $dataReceived, array 
 
             // If first time with MFA code
             $proceedIdentification = false;
-            $mfaStatus = 'ga_temporary_code_correct';
-            $mfaMessage = $lang->get('ga_flash_qr_and_login');
+            
             // generate new QR
             $new_2fa_qr = $tfa->getQRCodeImageAsDataUri(
                 'Teampass - ' . $username,
@@ -1735,8 +1734,8 @@ function googleMFACheck(string $username, array $userInfo, $dataReceived, array 
                 'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : '',
                 'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
                 'pwd_attempts' => (int) $sessionPwdAttempts,
-                'message' => $mfaMessage,
-                'mfaStatus' => $mfaStatus,
+                'message' => $lang->get('ga_flash_qr_and_login'),
+                'mfaStatus' => 'ga_temporary_code_correct',
             ];
         } else {
             // verify the user GA code

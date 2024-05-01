@@ -555,13 +555,9 @@ $SETTINGS = array (';
                             array('admin', 'teampass_version', TP_VERSION),
                             array('admin', 'ldap_mode', '0'),
                             array('admin', 'ldap_type', '0'),
-                            array('admin', 'ldap_suffix', '0'),
-                            array('admin', 'ldap_domain_dn', '0'),
-                            array('admin', 'ldap_domain_controler', '0'),
                             array('admin', 'ldap_user_attribute', '0'),
                             array('admin', 'ldap_ssl', '0'),
                             array('admin', 'ldap_tls', '0'),
-                            array('admin', 'ldap_search_base', '0'),
                             array('admin', 'ldap_port', '389'),
                             array('admin', 'richtext', '0'),
                             array('admin', 'allow_print', '0'),
@@ -626,7 +622,6 @@ $SETTINGS = array (';
                             array('admin', 'default_session_expiration_time', '60'),
                             array('admin', 'duo', '0'),
                             array('admin', 'enable_server_password_change', '0'),
-                            array('admin', 'ldap_object_class', '0'),
                             array('admin', 'bck_script_path', $var['absolute_path'] . '/backups'),
                             array('admin', 'bck_script_filename', 'bck_teampass'),
                             array('admin', 'syslog_enable', '0'),
@@ -688,7 +683,6 @@ $SETTINGS = array (';
                             array('admin', 'upgrade_timestamp', time()),
                             array('admin', 'enable_ad_users_with_ad_groups', '0'),
                             array('admin', 'enable_ad_user_auto_creation', '0'),
-                            array('admin', 'ldap_group_object_filter', ''),
                             array('admin', 'ldap_guid_attibute', 'objectguid'),
                             array('admin', 'sending_emails_job_frequency', '2'),
                             array('admin', 'user_keys_job_frequency', '1'),
@@ -1291,7 +1285,7 @@ $SETTINGS = array (';
                         );
                         $mysqli_result = mysqli_query(
                             $dbTmp,
-                            'ALTER TABLE `' . $var['tbl_prefix'] . 'processes_tasks`
+                            'ALTER TABLE `' . $var['tbl_prefix'] . 'background_subtasks`
                                 ADD KEY `task_id_idx` (`task_id`);'
                         );
                     } else if ($task === 'background_tasks') {
