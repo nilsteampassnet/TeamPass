@@ -62,7 +62,7 @@ class ActiveDirectoryExtra extends BaseGroup
 
             $groupsArr = [];
             foreach($groups as $key => $group) {
-                $adGroupId = (int) $group[(isset($settings['ldap_guid_attibute']) === true && empty($settings['ldap_guid_attibute']) === false ? $settings['ldap_guid_attibute'] : 'gidnumber')][0];
+                $adGroupId = md5($group[(isset($settings['ldap_guid_attibute']) === true && empty($settings['ldap_guid_attibute']) === false ? $settings['ldap_guid_attibute'] : 'gidnumber')][0]);
                 $groupsArr[$adGroupId] = [
                     'ad_group_id' => $adGroupId,
                     'ad_group_title' => $group['cn'][0],
@@ -113,7 +113,7 @@ class ActiveDirectoryExtra extends BaseGroup
             foreach ($groups as $group) {
                 array_push(
                     $groupsArr,
-                    $group[$idAttribute][0]
+                    md5($group[$idAttribute][0])
                 );
             }
         } catch (\LdapRecord\Auth\BindException $e) {
