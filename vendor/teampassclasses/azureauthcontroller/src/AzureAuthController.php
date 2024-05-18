@@ -119,7 +119,7 @@ class AzureAuthController
         $accessToken = $this->provider->getAccessToken('authorization_code', [
             'code' => $_GET['code'],
         ]);
-        error_log(print_r($accessToken, true));
+        //error_log(print_r($accessToken, true));
 
         $response = $this->provider->get($this->provider->getRootMicrosoftGraphUri($accessToken) . '/v1.0/groups', $accessToken);
         error_log(print_r($response, true));
