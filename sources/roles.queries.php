@@ -743,7 +743,7 @@ if (null !== $post_type) {
                         'SELECT a.increment_id as increment_id, a.role_id as role_id, r.title as title
                         FROM '.prefixTable('ldap_groups_roles').' AS a
                         INNER JOIN '.prefixTable('roles_title').' AS r ON r.id = a.role_id
-                        WHERE a.ldap_group_id = %i',
+                        WHERE a.ldap_group_id = %s',
                         $key
                     );
                     $counter = DB::count();
