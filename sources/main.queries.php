@@ -1440,6 +1440,11 @@ function generateBugReport(
     $session = SessionManager::getSession();
     $lang = new Language($session->get('user-language') ?? 'english');
     
+    // Only administrators can see this confidential informations.
+    if ($session->get('user-admin') !== 1) {
+        http_response_code(403);
+        exit;
+    }
 
     // Read config file
     $list_of_options = '';
