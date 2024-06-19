@@ -1178,7 +1178,7 @@ return array(
     'login_with_sso' => 'Se connecter en SSO',
     'server_connected_to_internet' => 'Serveur connecté à internet',
     'server_not_connected_to_internet' => 'Serveur non connecté à internet',
-    'server_not_connected_to_internet_tip' => 'Cela peut engendré des disfonctionnements de certaines fonctionnalités du MFA par exemple.',
+    'server_not_connected_to_internet_tip' => 'Cela peut engendrer des dysfonctionnements de certaines fonctionnalités du MFA par exemple.',
     'tools' => 'Outils',
     'user_config_not_compliant' => 'User configuration is not compliant',
     'fix_personal_items_empty' => 'Fix personal items are empty',
