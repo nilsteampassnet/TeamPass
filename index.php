@@ -1078,14 +1078,14 @@ echo '
         // REDIRECTION PAGE ERREUR
         echo '
             <script language="javascript" type="text/javascript">
-            <!--
+            /*
                 sessionStorage.clear();
                 store.set(
                     "teampassSettings", {},
                     function(teampassSettings) {}
                 );
+            */
                 window.location.href = "index.php";
-            -->
             </script>';
         exit;
     }
