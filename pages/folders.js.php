@@ -683,7 +683,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             '<div class="card-body">' +
             '<div class="form-group ml-2">' +
             '<label for="folder-edit-title"><?php echo $lang->get('label'); ?></label>' +
-            '<input type="text" class="form-control clear-me purify" id="folder-edit-title" data-field="title" value="' + folderTitle + '">' +
+            '<input type="text" class="form-control clear-me purify" id="folder-edit-title" data-field="title">' +
             '</div>' +
             '<div class="form-group ml-2">' +
             '<label for="folder-edit-parent"><?php echo $lang->get('parent'); ?></label><br>' +
@@ -730,6 +730,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             '</div>' +
             '</td></tr>'
         );
+
+        // XSS Protection
+        $('#folder-edit-title').val(folderTitle);
 
         // Prepare iCheck format for checkboxes
         $('input[type="checkbox"].form-check-input, input[type="radio"].form-radio-input').iCheck({
