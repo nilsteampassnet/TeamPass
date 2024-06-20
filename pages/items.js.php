@@ -2542,9 +2542,8 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
             $('#card-item-pwd')
                 .html(
-                    '<span style="cursor:none;">' +
-                    simplePurifier($('#hidden-item-pwd').val(), false, false, false, false) +
-                    '</span>'
+                    // XSS Filtering
+                    $('<span span style="cursor:none;">').text($('#hidden-item-pwd').val()).html()
                 );
 
             setTimeout('showPwdContinuous("card-item-pwd")', 50);

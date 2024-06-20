@@ -402,7 +402,7 @@ if (null === $request->query->get('type')) {
         $sOutputItem .= '"' . base64_encode(htmlspecialchars(stripslashes((string) $record['tags']), ENT_QUOTES)) . '", ';
         // col6 - URL
         if ($record['url'] !== '0') {
-            $sOutputItem .= '"'.filter_var($record['url'], FILTER_SANITIZE_URL).'", ';
+            $sOutputItem .= '"'.htmlspecialchars(filter_var($record['url'], FILTER_SANITIZE_URL)).'", ';
         } else {
             $sOutputItem .= '"", ';
         }
