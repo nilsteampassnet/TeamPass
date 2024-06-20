@@ -1850,7 +1850,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         userUploadedFile = false;
 
         // Sanitize text fields
-        let formLabel = fieldDomPurifier('#form-folder-add-label', false, false, false),
+        let formLabel = $('#form-folder-add-label').val(),
             formIcon = fieldDomPurifier('#form-folder-add-icon', false, false, false),
             formIconSelected = fieldDomPurifier('#form-folder-add-icon-selected', false, false, false);
         if (formLabel === false || formIcon === false || formIconSelected === false) {

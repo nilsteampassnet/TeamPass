@@ -317,7 +317,7 @@ if (null !== $post_type) {
             );
 
             // prepare variables
-            $post_title = filter_var($dataReceived['title'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_title = htmlspecialchars($dataReceived['title']);
             $post_parent_id = filter_var($dataReceived['parentId'], FILTER_SANITIZE_NUMBER_INT);
             $post_complexity = filter_var($dataReceived['complexity'], FILTER_SANITIZE_NUMBER_INT);
             $post_folder_id = filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT);
@@ -530,7 +530,7 @@ if (null !== $post_type) {
             );
 
             // prepare variables
-            $post_title = filter_var($dataReceived['title'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_title = htmlspecialchars($dataReceived['title']);
             $post_parent_id = isset($dataReceived['parentId']) === true ? filter_var($dataReceived['parentId'], FILTER_SANITIZE_NUMBER_INT) : 0;
             $post_complexity = filter_var($dataReceived['complexity'], FILTER_SANITIZE_NUMBER_INT);
             $post_duration = isset($dataReceived['renewalPeriod']) === true ? filter_var($dataReceived['renewalPeriod'], FILTER_SANITIZE_NUMBER_INT) : 0;

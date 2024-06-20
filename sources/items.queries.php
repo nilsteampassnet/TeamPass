@@ -6563,15 +6563,14 @@ switch ($inputData['type']) {
                     array_push($arrayFolders, [
                         'id' => (int) $folder->id,
                         'level' => (int) $folder->nlevel,
-                        'title' => ((int) $folder->title === (int) $session->get('user-id') && (int) $folder->nlevel === 1) ? htmlspecialchars_decode($session->get('user-login')) : htmlspecialchars_decode($folder->title, ENT_QUOTES),
+                        'title' => ((int) $folder->title === (int) $session->get('user-id') && (int) $folder->nlevel === 1) ? $session->get('user-login') : $folder->title,
                         'disabled' => (
                             in_array($folder->id, $session->get('user-accessible_folders')) === false
                             || in_array($folder->id, $session->get('user-read_only_folders')) === true
-                            //|| ((int) $session->get('user-read_only') === 1 && in_array($folder->id, $session->get('user-personal_visible_folders')) === false)
                         ) ? 1 : 0,
                         'parent_id' => (int) $folder->parent_id,
                         'perso' => (int) $folder->personal_folder,
-                        'path' => $path,
+                        'path' => htmlspecialchars($path),
                         'is_visible_active' => (null !== $session->get('user-read_only_folders') && in_array($folder->id, $session->get('user-read_only_folders'))) ? 1 : 0,
                     ]);
                 }
