@@ -2444,7 +2444,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         });
 
     $('#form-item-label').change(function() {
-        $('#form-item-title').html($(this).val());
+        $('#form-item-title').text($(this).val());
     });
 
     /**
