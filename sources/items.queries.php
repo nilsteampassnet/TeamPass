@@ -2831,10 +2831,10 @@ switch ($inputData['type']) {
             $arrData['pw'] = $pw;
             $arrData['pw_decrypt_info'] = empty($pw) === true && $pwIsEmptyNormal === false ? 'error_no_sharekey_yet' : '';
             $arrData['email'] = empty($dataItem['email']) === true || $dataItem['email'] === null ? '' : $dataItem['email'];
-            $arrData['url'] = empty($dataItem['url']) === true ? '' : '<a href="'.$dataItem['url'].'" target="_blank">'.$dataItem['url'].'</a>';
+            $arrData['url'] = empty($dataItem['url']) === true ? '' : '<a href="'.htmlspecialchars($dataItem['url']).'" target="_blank">'.htmlspecialchars($dataItem['url']).'</a>';
             $arrData['folder'] = $dataItem['id_tree'];
             $arrData['description'] = $dataItem['description'];
-            $arrData['login'] = htmlspecialchars_decode(str_replace(array('"'), array('&quot;'), $dataItem['login']), ENT_QUOTES);
+            $arrData['login'] = $dataItem['login'];
             $arrData['id_restricted_to'] = $listeRestriction;
             $arrData['id_restricted_to_roles'] = $listRestrictionRoles;
             $arrData['tags'] = $tags;
