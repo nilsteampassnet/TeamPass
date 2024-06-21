@@ -80,6 +80,11 @@ require_once __DIR__.'/sources/main.functions.php';
 loadClasses();
 $session = SessionManager::getSession();
 $session->set('key', SessionManager::getCookieValue('PHPSESSID'));
+// PHPSESSID isn't sent on first query.
+if ($session->get('key') == null) {
+    header('Refresh: 0');
+    exit;
+}
 $request = SymfonyRequest::createFromGlobals();
 $configManager = new ConfigManager(__DIR__, $request->getRequestUri());
 $SETTINGS = $configManager->getAllSettings();

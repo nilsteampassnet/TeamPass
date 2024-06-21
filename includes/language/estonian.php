@@ -1037,7 +1037,6 @@ return array(
     'creation_date' => 'Creation date',
     'never' => 'Never',
     'loading_main_page' => 'Loading main page ...',
-    'alert_session_not_consistent' => 'Current session is not consistent and needs to be refreshed. The page will reload.',
     'link' => 'Link',
     'error_not_allowed_to_authenticate' => 'You are not allowed to authenticate',
     'enable_tasks_log' => 'Enable cron job log',
