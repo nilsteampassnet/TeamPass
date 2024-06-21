@@ -124,6 +124,11 @@ declare(strict_types=1);
             });
         }
 
+        // Relaunch authentication
+        if (($("#pw").val() !== "" || $("#login").val() !== "")) {
+            document.getElementById('but_identify_user').click();
+        }
+        
         // Show tooltips
         $('.infotip').tooltip();
     });
@@ -584,22 +589,6 @@ declare(strict_types=1);
                     console.log("Recevied key "+data.key+' and local key<?php echo $session->get('key'); ?>')
                 }
                 if (data.key !== '<?php echo $session->get('key'); ?>') {
-                    // No session was found, warn user
-                    toastr.remove();
-                    toastr.error(
-                        '<?php echo $lang->get('alert_session_not_consistent'); ?>',
-                        '<?php echo $lang->get('caution'); ?>', {
-                            timeOut: 2500,
-                            progressBar: true
-                        }
-                    );
-
-                    // Delay page submit
-                    $(this).delay(1000).queue(function() {
-                        document.location.reload(true);
-                        $(this).dequeue();
-                    });
-
                     // Update session
                     store.update(
                         'teampassUser', {},
@@ -611,6 +600,9 @@ declare(strict_types=1);
                             teampassUser.page_reload = 1;
                         }
                     );
+
+                    // Reload login page.
+                    document.location.reload(true);
 
                     return false;
                 }

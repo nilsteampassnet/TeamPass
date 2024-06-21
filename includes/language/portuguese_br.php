@@ -1037,7 +1037,6 @@ return array(
     'creation_date' => 'Data de criação',
     'never' => 'Nunca',
     'loading_main_page' => 'Aguarde. Carregando página inicial ...',
-    'alert_session_not_consistent' => 'A sessão atual não é consistente e precisa ser atualizada. A página será recarregada.',
     'link' => 'Link',
     'error_not_allowed_to_authenticate' => 'Você não tem permissão para autent.',
     'enable_tasks_log' => 'Habilitar log do cron job',

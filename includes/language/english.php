@@ -207,7 +207,6 @@ return array(
     'enable_tasks_log_tip' => 'Permits to log all tasks performed by the cron job inside table <i>processes_log</i>. Could be useful for checking events.',
     'items_and_folders_statistics' => 'Items and folders statistics',
     'link' => 'Link',
-    'alert_session_not_consistent' => 'Current session is not consistent and needs to be refreshed. The page will reload.',
     'loading_main_page' => 'Loading main page ...',
     'never' => 'Never',
     'creation_date' => 'Creation date',

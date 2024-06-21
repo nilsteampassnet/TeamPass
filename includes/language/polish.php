@@ -1037,7 +1037,6 @@ return array(
     'creation_date' => 'Data utworzenia',
     'never' => 'Nigdy',
     'loading_main_page' => 'ładowana jest strona główna …',
-    'alert_session_not_consistent' => 'Bieżąca sesja nie jest spójna i wymaga odświeżenia. Strona zostanie przeładowana.',
     'link' => 'Link',
     'error_not_allowed_to_authenticate' => 'Uwierzytelnianie nie jest dozwolone',
     'enable_tasks_log' => 'Włącz rejestr zadań cron',
