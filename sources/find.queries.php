@@ -408,7 +408,7 @@ if (null === $request->query->get('type')) {
         }
 
         //col7 - Prepare the Treegrid
-        $sOutputItem .= '"' . base64_encode(htmlspecialchars(stripslashes((string) $record['folder']), ENT_QUOTES)) . '"';
+        $sOutputItem .= '"' . base64_encode(stripslashes((string) $record['folder'])) . '"';
         //Finish the line
         //$sOutputItem .= '], ';
         if ($getItemInList === true) {
