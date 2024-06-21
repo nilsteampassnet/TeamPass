@@ -2827,7 +2827,7 @@ switch ($inputData['type']) {
                 $arrData['show_detail_option'] = 2;
             }
 
-            $arrData['label'] = $dataItem['label'] === '' ? '' : htmlspecialchars_decode($dataItem['label'], ENT_QUOTES);
+            $arrData['label'] = $dataItem['label'] === '' ? '' : $dataItem['label'];
             $arrData['pw'] = $pw;
             $arrData['pw_decrypt_info'] = empty($pw) === true && $pwIsEmptyNormal === false ? 'error_no_sharekey_yet' : '';
             $arrData['email'] = empty($dataItem['email']) === true || $dataItem['email'] === null ? '' : $dataItem['email'];
