@@ -228,7 +228,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             // Build list
             var selectedFolders = '<ul>';
             $("input:checkbox[class=checkbox-folder]:checked").each(function() {
-                selectedFolders += '<li>' + $('#folder-' + $(this).data('id')).text() + '</li>';
+                var folderText = $('#folder-' + $(this).data('id')).text();
+                selectedFolders += '<li>' + $('<div>').text(folderText).html() + '</li>';
             });
             $('#delete-list').html(selectedFolders + '</ul>');
 
