@@ -1459,8 +1459,6 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     
                     // Refresh tree
                     refreshTree(folderId, true);
-                    // Load list of items
-                    ListerItems(folderId, '', 0);
                     // Close
                     if (closeItemCard === true) {
                         closeItemDetailsCard();
