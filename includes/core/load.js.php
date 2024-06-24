@@ -650,7 +650,6 @@ $request = SymfonyRequest::createFromGlobals();
                             // update the process
                             // add all tasks
                             var parameters = {
-                                'user_id': parseInt(store.get('teampassUser').user_id),
                                 'user_pwd': $('#encryption-otp').val(),
                                 'encryption_key': '',
                                 'delete_existing_keys': true,
