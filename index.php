@@ -959,9 +959,7 @@ echo '
                 
 
                 <?php
-                    if ($session_initial_url !== null && empty($session_initial_url) === false) {
-                        include $session_initial_url;
-                    } elseif ($get['page'] === 'items') {
+                    if ($get['page'] === 'items') {
                         // SHow page with Items
                         if ((int) $session_user_admin !== 1) {
                             include $SETTINGS['cpassman_dir'] . '/pages/items.php';
@@ -1089,7 +1087,6 @@ echo '
             </script>';
         exit;
     }
-    $session->set('user-initial_url', '');
     
     // LOGIN form
     include $SETTINGS['cpassman_dir'] . '/includes/core/login.php';
