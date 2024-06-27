@@ -4271,8 +4271,13 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 trash_link = '<span class="fa-stack fa-clickable warn-user pointer infotip mr-2 list-item-clicktodelete" title="<?php echo $lang->get('delete'); ?>" data-item-key="' + value.item_key + '"><i class="fa-solid fa-circle fa-stack-2x"></i><i class="fa-solid fa-trash fa-stack-1x fa-inverse"></i></span>';
 
                 // Prepare Description
-                if (value.desc !== '') {
-                    value.desc = ' <span class="text-secondary small">- ' + value.desc + '</span>';
+                var description = '';
+                if (value.desc !== '' || value.login !== '') {
+                    var description =
+                        '<span class="text-secondary small">' +
+                        (value.login !== '' ? ' - ' + value.login : '') +
+                        (value.desc !== '' ? ' - ' + value.desc : '') +
+                        '</span>';
                 }
 
                 $('#teampass_items_list').append(
@@ -4290,7 +4295,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     (value.fa_icon !== '' ? '<i class="'+value.fa_icon+' mr-1"></i>' : '') +
                     // Prepare item info
                     '<span class="list-item-clicktoshow' + (value.rights === 10 ? '' : ' pointer') + '" data-item-id="' + value.item_id + '" data-item-key="' + value.item_key + '">' +
-                    '<span class="list-item-row-description' + (value.rights === 10 ? ' font-weight-light' : '') + '">' + value.label + '</span>' + (value.rights === 10 ? '' : value.desc) + '</span>' +
+                    '<span class="list-item-row-description' + (value.rights === 10 ? ' font-weight-light' : '') + '">' + value.label + '</span>' + (value.rights === 10 ? '' : description) +
                     '<span class="list-item-actions hidden">' +
                     (value.rights === 10 ?
                         '<span class="fa-stack fa-clickable fa-clickable-access-request pointer infotip mr-2" title="<?php echo $lang->get('need_access'); ?>"><i class="fa-solid fa-circle fa-stack-2x text-danger"></i><i class="fa-regular fa-handshake fa-stack-1x fa-inverse"></i></span>' :
