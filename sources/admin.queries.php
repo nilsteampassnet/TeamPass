@@ -2234,6 +2234,9 @@ switch ($post_type) {
             );
         }
 
+        // Avoid break tp.config.php file with ' in parameter.
+        $dataReceived['value'] = addslashes($dataReceived['value']);
+
         // store in SESSION
         $SETTINGS[$post_field] = $post_value;
 
