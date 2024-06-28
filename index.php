@@ -435,7 +435,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                                 ) {
         echo '
                     <li class="nav-item">
-                        <a href="#" data-name="favourites" class="nav-link', $get['page'] === 'admin' ? ' favourites' : '', '">
+                        <a href="#" data-name="favourites" class="nav-link', $get['page'] === 'favourites' ? ' active' : '', '">
                         <i class="nav-icon fa-solid fa-star"></i>
                         <p>
                             ' . $lang->get('favorites') . '

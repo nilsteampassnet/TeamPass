@@ -64,9 +64,19 @@ $checkUserAccess = new PerformChecks(
         'user_key' => returnIfSet($session->get('key'), null),
     ]
 );
-// Handle the case
+
+// Check user access and printing enabled
 echo $checkUserAccess->caseHandler();
-if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('export') === false) {
+if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('export') === false
+    || isset($SETTINGS['allow_print']) === false || (int) $SETTINGS['allow_print'] === 0
+    || isset($SETTINGS['roles_allowed_to_print_select']) === false
+    || empty($SETTINGS['roles_allowed_to_print_select']) === true
+    || count(array_intersect(
+        explode(';', $session->get('user-roles')),
+        explode(',', str_replace(['"', '[', ']'], '', $SETTINGS['roles_allowed_to_print_select']))
+    )) === 0
+    || (int) $session_user_admin === 1
+) {
     // Not allowed page
     $session->set('system-error_code', ERR_NOT_ALLOWED);
     include $SETTINGS['cpassman_dir'] . '/error.php';
