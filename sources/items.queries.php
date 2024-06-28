@@ -2827,14 +2827,14 @@ switch ($inputData['type']) {
                 $arrData['show_detail_option'] = 2;
             }
 
-            $arrData['label'] = $dataItem['label'] === '' ? '' : htmlspecialchars_decode($dataItem['label'], ENT_QUOTES);
+            $arrData['label'] = $dataItem['label'] === '' ? '' : $dataItem['label'];
             $arrData['pw'] = $pw;
             $arrData['pw_decrypt_info'] = empty($pw) === true && $pwIsEmptyNormal === false ? 'error_no_sharekey_yet' : '';
             $arrData['email'] = empty($dataItem['email']) === true || $dataItem['email'] === null ? '' : $dataItem['email'];
-            $arrData['url'] = empty($dataItem['url']) === true ? '' : '<a href="'.$dataItem['url'].'" target="_blank">'.$dataItem['url'].'</a>';
+            $arrData['url'] = empty($dataItem['url']) === true ? '' : '<a href="'.htmlspecialchars($dataItem['url']).'" target="_blank">'.htmlspecialchars($dataItem['url']).'</a>';
             $arrData['folder'] = $dataItem['id_tree'];
             $arrData['description'] = $dataItem['description'];
-            $arrData['login'] = htmlspecialchars_decode(str_replace(array('"'), array('&quot;'), $dataItem['login']), ENT_QUOTES);
+            $arrData['login'] = $dataItem['login'];
             $arrData['id_restricted_to'] = $listeRestriction;
             $arrData['id_restricted_to_roles'] = $listRestrictionRoles;
             $arrData['tags'] = $tags;
@@ -6591,6 +6591,12 @@ switch ($inputData['type']) {
                 $SETTINGS,
                 'visible_folders',
             );
+        }
+
+        // XSS Filtering
+        foreach ($arr_data['folders'] as $folder_key => $folder_value) {
+            $arr_data['folders'][$folder_key]['title'] = htmlspecialchars($arr_data['folders'][$folder_key]['title']);
+            $arr_data['folders'][$folder_key]['path'] = htmlspecialchars($arr_data['folders'][$folder_key]['path']);
         }
 
         // send data

@@ -500,9 +500,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
             $('#pwd-show_' + itemId)
                 .html(
-                    '<span style="cursor:none;">' +
-                    simplePurifier($('#pwd-hidden_' + itemId).val(), false, false, false, false) +
-                    '</span>'
+                    $('<span style="cursor:none;">').text($('#pwd-hidden_' + itemId).val()).html()
                 );
 
             // log password is shown

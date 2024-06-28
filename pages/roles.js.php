@@ -137,7 +137,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
             // Prepare card header
             $('#role-detail-header').html(
-                $(this).find(':selected').text() +
+                $('<div>').text($(this).find(':selected').text()).html() +
                 ' <i class="' + $(this).find(':selected').data('complexity-icon') + ' infotip ml-3" ' +
                 'title="<?php echo $lang->get('complexity'); ?>: ' +
                 $(this).find(':selected').data('complexity-text') + '"></i>' +
@@ -620,6 +620,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         } else if ($(this).data('action') === 'delete' && $('#button-delete').hasClass('disabled') === false) {
             // SHOW ROLE DELETION FORM
             if ($('#card-role-details').hasClass('hidden') === false) {
+                selectedFolderText = $('<div>').text(selectedFolderText).html();
                 $('#span-role-delete').html('- <?php echo $lang->get('role'); ?> <b>' + selectedFolderText + '</b>');
 
                 $('#card-role-deletion').removeClass('hidden');

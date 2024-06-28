@@ -556,7 +556,7 @@ $request = SymfonyRequest::createFromGlobals();
                                 '<div class="input-group-prepend">' +
                                     '<span class="input-group-text"><?php echo $lang->get('confirm_password'); ?></span>' +
                                 '</div>' +
-                                '<input id="encryption-otp" type="password" class="form-control form-item-control" value="'+store.get('teampassUser').pwd+'">' +
+                                '<input id="encryption-otp" type="password" class="form-control form-item-control">' +
                                 '<div class="input-group-append">' +
                                     '<button class="btn btn-outline-secondary btn-no-click" id="show-encryption-otp" title="<?php echo $lang->get('mask_pw'); ?>"><i class="fa-solid fa-low-vision"></i></button>' +
                                 '</div>' +
@@ -589,6 +589,8 @@ $request = SymfonyRequest::createFromGlobals();
                     '<?php echo $lang->get('perform'); ?>',
                     '<?php echo $lang->get('close'); ?>'
                 );
+                // XSS protection
+                $('#encryption-otp').val(store.get('teampassUser').pwd);
 
                 // Manage show/hide password
                 $('#show-encryption-otp')
