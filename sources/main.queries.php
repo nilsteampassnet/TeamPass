@@ -2747,7 +2747,7 @@ function migrateTo3_DoUserPersonalItemsEncryption(
                     );
 
                     // Encrypt with Object Key
-                    $cryptedStuff = doDataEncryption($passwd['string']);
+                    $cryptedStuff = doDataEncryption(html_entity_decode($passwd['string']));
 
                     // Store new password in DB
                     DB::update(

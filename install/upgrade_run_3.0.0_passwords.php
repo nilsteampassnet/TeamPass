@@ -157,7 +157,7 @@ while ($data = mysqli_fetch_array($rows)) {
         );
 
         // Encrypt with Object Key
-        $cryptedStuff = doDataEncryption($passwd['string']);
+        $cryptedStuff = doDataEncryption(html_entity_decode($passwd['string']));
 
         // Store new password in DB
         mysqli_query(
