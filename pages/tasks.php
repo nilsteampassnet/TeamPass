@@ -233,15 +233,9 @@ catch (Exception $e) {
                                             <button class="btn btn-primary task-define" data-task="users_personal_folder_task">
                                                 <i class="fa-solid fa-cogs"></i>
                                             </button>
-                                            <?php
-                                            if (defined('WIP') === true && WIP === true) {
-                                                ?>
                                             <button class="btn btn-primary task-perform ml-1" data-task="users_personal_folder_task">
                                                 <i class="fa-solid fa-play"></i>
                                             </button>
-                                            <?php
-                                            }
-                                            ?>
                                         </div>
                                     </div>
 
