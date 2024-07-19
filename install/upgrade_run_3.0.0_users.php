@@ -179,7 +179,7 @@ if (null !== $post_step) {
 
                     // Return
                     echo '[{"finish":"0" , "next":"step1", "error":"" , "data" : "' . base64_encode(json_encode($usersArray)) . '" , "number":"1" , "loop_finished" : "' . (count($listOfUsers) === 0 ? "true" : "false") . '" , "rest" : "' . base64_encode(json_encode($listOfUsers)) . '"}]';
-
+                    mysqli_close($db_link);
                     exit();
                 }
             }
@@ -279,6 +279,7 @@ if (null !== $post_step) {
                 echo '[{"finish":"0" , "next":"step2", "error":"" , "data" : "" , "number":"' . (empty($post_number) === true ? 0 : $post_number) . '" , "loop_finished" : "true" , "rest" : ""}]';
             }
 
+            mysqli_close($db_link);
             exit();
             break;
 
@@ -298,6 +299,7 @@ if (null !== $post_step) {
             if ($userInfo['public_key'] === null) {
                 if ($userInfo['id'] !== TP_USER_ID) {
                     echo '[{"finish":"1" , "next":"step3", "error":"Public key is null; provided key is '.$post_user_info.'" , "data" : "" , "number":"' . $post_number . '" , "loop_finished" : "true"}]';
+                    mysqli_close($db_link);
                     exit();
                     break;
                 } else {
@@ -323,20 +325,27 @@ if (null !== $post_step) {
             $post_admin_info = json_decode(base64_decode(filter_input(INPUT_POST, 'info', FILTER_SANITIZE_FULL_SPECIAL_CHARS)));
             $adminId = $post_admin_info[2];
             $adminPwd = Encryption\Crypt\aesctr::decrypt(base64_decode($post_admin_info[1]), 'cpm', 128);
-            $adminQuery = mysqli_fetch_array(
-                mysqli_query(
-                    $db_link,
-                    'SELECT private_key
-                    FROM ' . $pre . 'users
-                    WHERE id = ' . (int) $adminId
-                )
-            );
-            $adminPrivateKey = decryptPrivateKey($adminPwd, $adminQuery['private_key']);
-            if ($adminPrivateKey === false) {
-                echo '[{"finish":"1" , "next":"step3", "error":"Admin PWD is null; provided key is '.$post_admin_info[1].'" , "data" : "" , "number":"' . $post_number . '" , "loop_finished" : "true"}]';
-                exit();
-                break;
+            // Get admin private key
+            $adminPrivateKey = $_SESSION['admin_private_key'] ?? null;
+            if ($adminPrivateKey === null) {
+                $adminQuery = mysqli_fetch_array(
+                    mysqli_query(
+                        $db_link,
+                        'SELECT private_key
+                        FROM ' . $pre . 'users
+                        WHERE id = ' . (int) $adminId
+                    )
+                );
+                $adminPrivateKey = decryptPrivateKey($adminPwd, $adminQuery['private_key']);
+                if ($adminPrivateKey === false) {
+                    echo '[{"finish":"1" , "next":"step3", "error":"Admin PWD is null; provided key is '.$post_admin_info[1].'" , "data" : "" , "number":"' . $post_number . '" , "loop_finished" : "true"}]';
+                    mysqli_close($db_link);
+                    exit();
+                    break;
+                }
+                $_SESSION['admin_private_key'] = $adminPrivateKey;
             }
+
 
             // Count Items
             $db_count = mysqli_fetch_row(
@@ -348,63 +357,59 @@ if (null !== $post_step) {
                 )
             );
 
-            //echo $post_start.' - '.$db_count[0];
+            // Get user public key
+            if ($userInfo['public_key'] === null) {
+                $dataTmp = mysqli_fetch_array(
+                    mysqli_query(
+                        $db_link,
+                        'SELECT public_key
+                        FROM ' . $pre . 'users
+                        WHERE id = ' . (int) $userInfo['id']
+                    )
+                );
+                $userInfo['public_key'] = $dataTmp['public_key'];
+            }
 
             if ($post_start < $db_count[0]) {
                 // Get items
-                $rows = mysqli_query(
-                    $db_link,
-                    'SELECT id, pw, encryption_type 
-                    FROM ' . $pre . 'items
-                    WHERE perso = 0
-                    LIMIT ' . $post_start . ', ' . $post_count_in_loop
-                );
+                $query = '
+                    SELECT items.id, items.pw, items.encryption_type, sharekeys_items.share_key
+                        FROM ' . $pre . 'items AS items
+                        LEFT JOIN ' . $pre . 'sharekeys_items AS sharekeys_items
+                        ON items.id = sharekeys_items.object_id AND sharekeys_items.user_id = ' . (int) $adminId . '
+                        WHERE items.perso = 0
+                        LIMIT ' . $post_start . ', ' . $post_count_in_loop;
+                $rows = mysqli_query($db_link, $query);
 
                 while ($item = mysqli_fetch_array($rows)) {
-                    // Get itemKey for admin
-                    $adminItem = mysqli_fetch_array(
-                        mysqli_query(
-                            $db_link,
-                            'SELECT share_key
-                            FROM ' . $pre . 'sharekeys_items
-                            WHERE object_id = ' . (int) $item['id'] . ' AND user_id = ' . (int) $adminId
-                        )
-                    );
+                    // Short variables names
+                    $item_id = $item['id'];
+                    $itemKey = $_SESSION['items_object_keys'][$item_id];
 
-                    if ($adminItem !== null) {
-                        // Decrypt itemkey with admin key
-                        $itemKey = decryptUserObjectKey($adminItem['share_key'], $adminPrivateKey);
+                    // Create sharekey for user
+                    $share_key_for_item = $userInfo['public_key'] !== null ? encryptUserObjectKey($itemKey, $userInfo['public_key']) : '';
 
-                        // Encrypt Item key
-                        if ($userInfo['public_key'] === null) {
-                            $dataTmp = mysqli_fetch_array(
-                                mysqli_query(
-                                    $db_link,
-                                    'SELECT public_key
-                                    FROM ' . $pre . 'users
-                                    WHERE id = ' . (int) $userInfo['id']
-                                )
-                            );
-                            $userInfo['public_key'] = $dataTmp['public_key'];
-                        }
+                    // Collect values for bulk insert
+                    $insert_values[] = '(NULL, ' . (int) $item['id'] . ', ' . (int) $userInfo['id'] . ", '" . mysqli_real_escape_string($db_link, $share_key_for_item) . "')";
+                }
 
-                        $share_key_for_item = $userInfo['public_key'] !== null ? encryptUserObjectKey($itemKey, $userInfo['public_key']) : '';
+                if (!empty($insert_values)) {
+                    // Create a single bulk insert query
+                    $insert_query = '
+                        INSERT INTO `' . $pre . 'sharekeys_items`
+                            (`increment_id`, `object_id`, `user_id`, `share_key`)
+                            VALUES ' . implode(', ', $insert_values);
 
-
-                        // Save the key in DB
-                        mysqli_query(
-                            $db_link,
-                            'INSERT INTO `' . $pre . 'sharekeys_items`(`increment_id`, `object_id`, `user_id`, `share_key`)
-                            VALUES (NULL,' . (int) $item['id'] . ',' . (int) $userInfo['id'] . ",'" . $share_key_for_item . "')"
-                        );
-                    }
+                    // Save all keys in DB
+                    mysqli_query($db_link, $insert_query);
                 }
 
                 echo '[{"finish":"0" , "next":"step2", "error":"" , "data" : "" , "number":"' . $post_number . '" , "loop_finished" : "false"}]';
             } else {
                 echo '[{"finish":"0" , "next":"step3", "error":"" , "data" : "" , "number":"' . $post_number . '" , "loop_finished" : "true"}]';
             }
-
+            
+            mysqli_close($db_link);
             exit();
             break;
 
@@ -444,8 +449,6 @@ if (null !== $post_step) {
                     WHERE raison LIKE 'at_pw :%' AND encryption_type = 'teampass_aes'"
                 )
             );
-
-            //echo $post_start.' - '.$db_count[0];
 
             if ($post_start < $db_count[0]) {
                 // Get items
@@ -489,6 +492,7 @@ if (null !== $post_step) {
                 echo '[{"finish":"0" , "next":"step4", "error":"" , "data" : "" , "number":"' . $post_number . '" , "loop_finished" : "true"}]';
             }
 
+            mysqli_close($db_link);
             exit();
             break;
 
@@ -570,6 +574,7 @@ if (null !== $post_step) {
                 echo '[{"finish":"0" , "next":"step5", "error":"" , "data" : "" , "number":"' . $post_number . '" , "loop_finished" : "true"}]';
             }
 
+            mysqli_close($db_link);
             exit();
             break;
 
@@ -635,12 +640,6 @@ if (null !== $post_step) {
                         // Decrypt itemkey with admin key
                         $itemKey = decryptUserObjectKey($adminItem['share_key'], $adminPrivateKey);
 
-                        // Decrypt password
-                        //$itemPwd = doDataDecryption($item['pw'], $itemKey);
-
-                        // Encrypt with Password
-                        //$cryptedStuff = doDataEncryption($itemPwd);
-
                         // Encrypt Item key
                         $share_key_for_item = $userInfo['public_key'] !== null ? encryptUserObjectKey($itemKey, $userInfo['public_key']) : '';
 
@@ -658,6 +657,7 @@ if (null !== $post_step) {
                 echo '[{"finish":"0" , "next":"step6", "error":"" , "data" : "" , "number":"' . $post_number . '" , "loop_finished" : "true"}]';
             }
 
+            mysqli_close($db_link);
             exit();
             break;
 
@@ -745,6 +745,7 @@ if (null !== $post_step) {
                 echo '[{"finish":"0" , "next":"nextUser", "error":"" , "data" : "" , "number":"' . $post_number . '" , "loop_finished" : "true"}]';
             }
 
+            mysqli_close($db_link);
             exit();
             break;
 

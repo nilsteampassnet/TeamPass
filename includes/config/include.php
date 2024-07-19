@@ -40,7 +40,7 @@ define('TP_ADMIN_NO_INFO', false);
 define('TP_COPYRIGHT', '2009-'.date('Y'));
 define('TP_ALLOWED_TAGS', '<b><i><sup><sub><em><strong><u><br><br /><a><strike><ul><blockquote><blockquote><img><li><h1><h2><h3><h4><h5><ol><small><font>');
 define('TP_FILE_PREFIX', 'EncryptedFile_');
-define('NUMBER_ITEMS_IN_BATCH', 100);
+define('NUMBER_ITEMS_IN_BATCH', 30000);
 define('WIP', false);
 define('UPGRADE_SEND_EMAILS', true);
 define('KEY_LENGTH', 16);
