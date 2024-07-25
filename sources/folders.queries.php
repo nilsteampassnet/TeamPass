@@ -619,12 +619,38 @@ if (null !== $post_type) {
             $folderForDel = array();
 
             foreach ($post_folders as $folderId) {
-                // Exclude a folder with id alreay in the list
+                /**
+                 * WARN: NestedTree->getDescendants:
+                 *      Specify an invalid ID (e.g. 0) to retrieve all data.
+                 * 
+                 * Which means the root folder may be deleted.
+                 * It is necessary to verify that the ID provided exists, is
+                 * not 0 and that the user is authorized to delete it.
+                */
+                $folderExists = DB::queryFirstRow(
+                    'SELECT COUNT(id) AS count FROM '.prefixTable('nested_tree').' WHERE id = %i',
+                    (int) $folderId
+                )['count'];
+                if ((int) $folderId === 0 ||
+                    (int) $folderExists === 0 ||
+                    !in_array((int) $folderId, $session->get('user-accessible_folders'))
+                ) {
+                    echo prepareExchangedData(
+                        array(
+                            'error' => true,
+                            'message' => $lang->get('error_not_allowed_to'),
+                        ),
+                        'encode'
+                    );
+                    exit();
+                }
+
+                // Exclude a folder with id already in the list
                 if (in_array($folderId, $folderForDel) === false) {
                     // Get through each subfolder
                     $subFolders = $tree->getDescendants($folderId, true);
                     foreach ($subFolders as $thisSubFolders) {
-                        if (($thisSubFolders->parent_id > 0 || $thisSubFolders->parent_id == 0)
+                        if ($thisSubFolders->parent_id >= 0
                             && $thisSubFolders->title !== $session->get('user-id')
                         ) {
                             //Store the deleted folder (recycled bin)
