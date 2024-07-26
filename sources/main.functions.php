@@ -3699,6 +3699,33 @@ function handleUserKeys(
         );
     }
 
+    // Check if valid public/private keys
+    if ($recovery_public_key !== '' && $recovery_private_key !== '') {
+        try {
+            // Generate random string
+            $random_str = generateQuickPassword(12, false);
+            // Encrypt random string with user publick key
+            $encrypted = encryptUserObjectKey($random_str, $recovery_public_key);
+            // Decrypt $encrypted with private key
+            $decrypted = decryptUserObjectKey($encrypted, $recovery_private_key);
+            error_log('$random_str='.$random_str.' | $decrypted='.$decrypted);
+            // Check if decryptUserObjectKey returns our random string
+            if ($decrypted !== $random_str) {
+                throw new Exception('Public/Private keypair invalid.');
+            }
+        } catch (Exception $e) {
+            // Show error message to user and log event
+            error_log('ERROR: User '.$userId.' - '.$e->getMessage());
+    
+            return prepareExchangedData([
+                    'error' => true,
+                    'message' => $lang->get('pw_encryption_error'),
+                ],
+                'encode'
+            );
+        }
+    }
+    
     // Generate new keys
     if ($user_self_change === true && empty($recovery_public_key) === false && empty($recovery_private_key) === false){
         $userKeys = [
