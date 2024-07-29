@@ -243,7 +243,8 @@ mysqli_query(
         `object_id` int(12) NOT NULL,
         `user_id` int(12) NOT NULL,
         `share_key` text NOT NULL,
-        PRIMARY KEY (`increment_id`)
+        PRIMARY KEY (`increment_id`),
+        INDEX idx_object_user (`object_id`, `user_id`)
     ) CHARSET=utf8;'
 );
 
