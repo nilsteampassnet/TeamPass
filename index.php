@@ -122,6 +122,19 @@ $get = [];
 $get['page'] = $request->query->get('page') === null ? '' : $antiXss->xss_clean($request->query->get('page'));
 $get['otv'] = $request->query->get('otv') === null ? '' : $antiXss->xss_clean($request->query->get('otv'));
 
+// Avoid blank page and session destroy if user go to index.php without ?page=
+if (empty($get['page']) && !empty($session_name)) {
+    if ($session_user_admin === 1) {
+        $redirect_page = 'admin';
+    } else {
+        $redirect_page = 'items';
+    }
+
+    // Redirect user on default page.
+    header('Location: index.php?page='.$redirect_page);
+    exit();
+}
+
 /* DEFINE WHAT LANGUAGE TO USE */
 if (null === $session->get('user-validite_pw') && $post_language === null && $session_user_language === null) {
     //get default language
