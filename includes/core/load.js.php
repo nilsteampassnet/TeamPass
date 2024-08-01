@@ -1975,7 +1975,7 @@ $request = SymfonyRequest::createFromGlobals();
         if (urlParams.get('page') === 'items') {
             // go back to list
             // Play with show and hide classes
-            $('.form-item, .form-item-action, .form-folder-action, .item-details-card, .columns-position, #item-details-card-categories, #form-item-upload-pickfilesList, #card-item-expired')
+            $('.form-item, .form-item-action, .form-folder-action, .columns-position, #item-details-card-categories, #form-item-upload-pickfilesList, #card-item-expired')
                 .addClass('hidden');
             $('#folders-tree-card').removeClass('hidden');
 

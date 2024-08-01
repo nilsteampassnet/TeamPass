@@ -207,7 +207,7 @@ if (array_key_exists($get['page'], $utilitiesPages) === true) {
     <meta http-equiv='Content-Type' content='text/html;charset=utf-8' />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta http-equiv="x-ua-compatible" content="ie=edge" />
-    <title>Teampass</title>
+    <title><?php echo $configManager->getSetting('teampass_title') ?? 'Teampass'; ?></title>
     <script type='text/javascript'>
         //<![CDATA[
         if (window.location.href.indexOf('page=') === -1 &&

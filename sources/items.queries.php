@@ -804,6 +804,7 @@ switch ($inputData['type']) {
 
             $arrData = array(
                 'error' => false,
+                'item_id' => $newID,
             );
         } else {
             // an error appears on JSON format
@@ -2832,7 +2833,7 @@ switch ($inputData['type']) {
             $arrData['pw'] = $pw;
             $arrData['pw_decrypt_info'] = empty($pw) === true && $pwIsEmptyNormal === false ? 'error_no_sharekey_yet' : '';
             $arrData['email'] = empty($dataItem['email']) === true || $dataItem['email'] === null ? '' : $dataItem['email'];
-            $arrData['url'] = empty($dataItem['url']) === true ? '' : '<a href="'.htmlspecialchars($dataItem['url']).'" target="_blank">'.htmlspecialchars($dataItem['url']).'</a>';
+            $arrData['url'] = empty($dataItem['url']) === true ? '' : $dataItem['url'];
             $arrData['folder'] = $dataItem['id_tree'];
             $arrData['description'] = $dataItem['description'];
             $arrData['login'] = $dataItem['login'];
