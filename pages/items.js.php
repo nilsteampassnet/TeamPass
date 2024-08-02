@@ -4393,7 +4393,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 new_path_elem = ' class="pointer" onclick="ListerItems(' + value['id'] + ', \'\', 0)"';
             }
 
-            new_path += '<li class="breadcrumb-item" id="path_elem_' + value['id'] + '"' + new_path_elem + '>' + value['title'] + '</li>';
+            new_path += '<li class="breadcrumb-item pointer" id="path_elem_' + value['id'] + '"' + new_path_elem + '>' + value['title'] + '</li>';
         });
 
         return new_path;
