@@ -1310,8 +1310,7 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
         $error = $e->getDetailedError();
         return [
             'error' => true,
-            'message' => $lang->get('error')." - ".(isset($error) === true ? $error->getErrorCode()." - ".$error->getErrorMessage(). "<br>".$error->getDiagnosticMessage() : $e),
-
+            'message' => $lang->get('error_bad_credentials'),
         ];
     }
 
