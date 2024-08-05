@@ -588,6 +588,21 @@ declare(strict_types=1);
             function(data) {
                 //data = prepareExchangedData(data, 'decode', "<?php echo $session->get('key'); ?>");
                 data = JSON.parse(data);
+
+                // Handle the case where the user doesn't exists.
+                if (data.error === true) {
+                    toastr.remove();
+                    toastr.error(
+                        data.message,
+                        '<?php echo $lang->get('caution'); ?>', {
+                            timeOut: 5000,
+                            progressBar: true,
+                            positionClass: "toast-top-right"
+                        }
+                    );
+                    return false;
+                }
+
                 if (debugJavascript === true) {
                     console.log("Recevied key "+data.key+' and local key<?php echo $session->get('key'); ?>')
                 }

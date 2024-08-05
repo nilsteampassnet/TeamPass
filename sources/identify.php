@@ -87,7 +87,10 @@ echo $checkUserAccess->caseHandler();
 if ($checkUserAccess->checkSession() === false) {
     // Not allowed page
     $session->set('system-error_code', ERR_NOT_ALLOWED);
-    include $SETTINGS['cpassman_dir'] . '/error.php';
+    echo json_encode([
+        'error' => true,
+        'message' => $lang->get('error_bad_credentials'),
+    ]);
     exit;
 }
 
