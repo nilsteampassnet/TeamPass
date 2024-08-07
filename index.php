@@ -269,8 +269,8 @@ $theme_navbar = $theme === 'dark' ? 'navbar-dark' : 'navbar-white navbar-light';
     <link rel="stylesheet" href="plugins/toastr/toastr.min.css?v=<?php echo TP_VERSION; ?>" />
     <!-- favicon -->
     <link rel="shortcut icon" type="image/png" href="<?php echo $favicon;?>"/>
-    <!-- manifest -->
-    <!-- <link rel="manifest" href="includes/manifest.json?v=<?php echo TP_VERSION; ?>"> -->
+    <!-- manifest (PWA) -->
+    <link rel="manifest" href="includes/manifest.json?v=<?php echo TP_VERSION; ?>">
     <!-- Custom style -->
     <?php
     if (file_exists(__DIR__ . '/includes/css/custom.css') === true) {?>
@@ -1335,6 +1335,46 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
     }
 </script>
 
+<script>
+    $(document).ready(function() {
+        // PWA with windowControlsOverlay
+        if ('windowControlsOverlay' in navigator) {
+            // Event listener for window-controls-overlay changes
+            navigator.windowControlsOverlay.addEventListener('geometrychange', function(event) {
+                // Wait few time for resize animations
+                $(this).delay(250).queue(function() {
+                    // Move header content
+                    adjustForWindowControlsOverlay(event.titlebarAreaRect);
+                    $(this).dequeue();
+                });
+            });
+
+            // Move header content
+            adjustForWindowControlsOverlay(navigator.windowControlsOverlay.getTitlebarAreaRect());
+        }
+
+        function adjustForWindowControlsOverlay(rect) {
+            // Display width - available space + 5px margin
+            let margin = 5;
+            let width = document.documentElement.clientWidth - rect.width + margin;
+
+            if (width - margin !== document.documentElement.clientWidth) {
+                // Add right padding to main-header
+                $('.main-header').css('padding-right', width + 'px');
+
+                // Window drag area
+                $('.main-header').css('-webkit-app-region', 'drag');
+                $('.main-header *').css('-webkit-app-region', 'no-drag');
+            } else {
+                // Remove right padding to main-header
+                $('.main-header').css('padding-right', '0px');
+
+                // No window drag area when titlebar is present
+                $('.main-header').css('-webkit-app-region', 'no-drag');
+            }
+        }
+    });
+</script>
 
 <?php
 //$get = [];
