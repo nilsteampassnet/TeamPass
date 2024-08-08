@@ -280,21 +280,6 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                     <li class="nav-item">
                         <a class="nav-link" data-widget="pushmenu" href="#"><i class="fa-solid fa-bars"></i></a>
                     </li>
-                    <?php
-                        if ($get['page'] === 'items') {
-                            ?>
-                        <li class="nav-item d-none d-sm-inline-block">
-                            <a class="nav-link" href="#">
-                                <i class="far fa-arrow-alt-circle-right columns-position tree-increase infotip" title="<?php echo $lang->get('move_right_columns_separator'); ?>"></i>
-                            </a>
-                        </li>
-                        <li class="nav-item d-none d-sm-inline-block">
-                            <a class="nav-link" href="#">
-                                <i class="far fa-arrow-alt-circle-left columns-position tree-decrease infotip" title="<?php echo $lang->get('move_left_columns_separator'); ?>"></i>
-                            </a>
-                        </li>
-                    <?php
-                        } ?>
                 </ul>
 
                 <!-- Right navbar links -->
