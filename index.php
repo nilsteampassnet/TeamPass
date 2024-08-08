@@ -1374,6 +1374,16 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
             }
         }
     });
+
+    // Handle external link open in current PWA
+    if ("launchQueue" in window) {
+        window.launchQueue.setConsumer((launchParams) => {
+            if (launchParams.targetURL) {
+                // Redirect on new URL in focus-existing client mode
+                window.location.href = launchParams.targetURL;
+            }
+        });
+    }
 </script>
 
 <?php

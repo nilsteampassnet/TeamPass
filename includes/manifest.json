@@ -7,6 +7,9 @@
   "display_override": [
     "window-controls-overlay"
   ],
+  "launch_handler": {
+    "client_mode": "focus-existing"
+  },
   "background_color": "#FFFFFF",
   "theme_color": " #FFFFFF",
   "icons": [
