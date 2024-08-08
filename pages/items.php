@@ -152,7 +152,7 @@ foreach ($rows as $reccord) {
             <div class="card text-center">
                 <div class="card-header">
                     <div class="card-tools-left">
-                        <button type="button" class="btn btn-gray but-back" id="but_back_top_left">
+                        <button type="button" class="btn btn-secondary but-back" id="but_back_top_left">
                             <i class="fa-solid fa-arrow-left"></i>
                         </button>
                     </div>
@@ -160,7 +160,7 @@ foreach ($rows as $reccord) {
                     <h5 id="form-item-title" class="clear-me-html" style="min-height:23px;"></h5>
 
                     <div class="card-tools">
-                        <button type="button" class="btn btn-tool btn-sm but-back" id="but_back_top_right">
+                        <button type="button" class="btn btn-secondary btn-sm but-back" id="but_back_top_right">
                             <i class="fa-solid fa-times"></i>
                         </button>
                     </div>
@@ -218,9 +218,9 @@ foreach ($rows as $reccord) {
                                     </div>
                                     <input id="form-item-password" type="password" class="form-control form-item-control" placeholder="<?php echo $lang->get('password'); ?>" data-field-name="pwd" data-change-ongoing="">
                                     <div class="input-group-append">
-                                        <button class="btn btn-outline-secondary btn-no-click infotip password-generate" id="item-button-password-generate" title="<?php echo $lang->get('pw_generate'); ?>" data-id="form-item-password"><i class="fa-solid fa-random"></i></button>
-                                        <button class="btn btn-outline-secondary btn-no-click infotip" id="item-button-password-showOptions" title="<?php echo $lang->get('options'); ?>"><i class="fa-solid fa-sliders-h"></i></button>
-                                        <button class="btn btn-outline-secondary btn-no-click infotip" id="item-button-password-show" title="<?php echo $lang->get('mask_pw'); ?>"><i class="fa-solid fa-low-vision"></i></button>
+                                        <button class="btn btn-secondary btn-no-click infotip password-generate" id="item-button-password-generate" title="<?php echo $lang->get('pw_generate'); ?>" data-id="form-item-password"><i class="fa-solid fa-random"></i></button>
+                                        <button class="btn btn-secondary btn-no-click infotip" id="item-button-password-showOptions" title="<?php echo $lang->get('options'); ?>"><i class="fa-solid fa-sliders-h"></i></button>
+                                        <button class="btn btn-secondary btn-no-click infotip" id="item-button-password-show" title="<?php echo $lang->get('mask_pw'); ?>"><i class="fa-solid fa-low-vision"></i></button>
                                     </div>
                                 </div>
                                 <div class="container-fluid mb-0">
@@ -234,15 +234,15 @@ foreach ($rows as $reccord) {
                                 <div class="mt-1 hidden" id="form-item-password-options">
                                     <div class="btn-toolbar justify-content-center" role="toolbar" aria-label="Toolbar with button groups">
                                         <div class="btn-group btn-group-sm btn-group-toggle mr-2" data-toggle="buttons">
-                                            <label class="btn btn-outline-secondary btn-sm">
+                                            <label class="btn btn-secondary btn-sm">
                                                 <input type="checkbox" class="password-definition" id="pwd-definition-lcl">abc</label>
-                                            <label class="btn btn-outline-secondary btn-sm">
+                                            <label class="btn btn-secondary btn-sm">
                                                 <input type="checkbox" class="password-definition" id="pwd-definition-ucl">ABC</label>
-                                            <label class="btn btn-outline-secondary btn-sm">
+                                            <label class="btn btn-secondary btn-sm">
                                                 <input type="checkbox" class="password-definition" id="pwd-definition-numeric">123</label>
-                                            <label class="btn btn-outline-secondary btn-sm">
+                                            <label class="btn btn-secondary btn-sm">
                                                 <input type="checkbox" class="password-definition" id="pwd-definition-symbols">@#&amp;</label>
-                                            <label class="btn btn-outline-secondary btn-sm">
+                                            <label class="btn btn-secondary btn-sm">
                                                 <input type="checkbox" class="password-definition" id="pwd-definition-secure"><?php echo $lang->get('secure'); ?></label>
                                         </div>
 
@@ -1039,13 +1039,13 @@ foreach ($rows as $reccord) {
                     <div class="card">
                         <div class="card-header">
                             <span class="mr-3 align-middle">
-                                <button type="button" class="btn btn-gray but-back-to-list">
+                                <button type="button" class="btn btn-secondary but-back-to-list">
                                     <i class="fa-solid fa-arrow-left"></i>
                                 </button>
                             </span>
                             <h3 class="d-inline align-middle" id="card-item-label"></h3>
                             <div class="card-tools">
-                                <button type="button" class="btn btn-tool btn-sm but-back-to-list mt-2">
+                                <button type="button" class="btn btn-secondary btn-sm but-back-to-list mt-2">
                                     <i class="fa-solid fa-times"></i>
                                 </button>
                             </div>
@@ -1121,13 +1121,13 @@ foreach ($rows as $reccord) {
                             <ul class="list-group list-group-unbordered mb-3">
                                 <li class="list-group-item">
                                     <b><?php echo $lang->get('pw'); ?></b>
-                                    <button type="button" class="float-right btn btn-outline-info btn-sm btn-copy-clipboard infotip" id="card-item-pwd-button" title="<?php echo $lang->get('copy'); ?>">
+                                    <button type="button" class="float-right btn btn-secondary btn-sm btn-copy-clipboard infotip" id="card-item-pwd-button" title="<?php echo $lang->get('copy'); ?>">
                                         <i class="fa-regular fa-copy"></i>
                                     </button>
-                                    <button type="button" class="float-right btn btn-outline-info btn-sm mr-1 hidden infotip" id="card-item-password-history-button" title="<?php echo $lang->get('history'); ?>">
+                                    <button type="button" class="float-right btn btn-secondary btn-sm mr-1 hidden infotip" id="card-item-password-history-button" title="<?php echo $lang->get('history'); ?>">
                                     <i class="fa-solid fa-clock-rotate-left"></i>
                                     </button>
-                                    <button type="button" class="float-right btn btn-outline-info btn-sm mr-1 infotip" id="card-item-pwd-show-button" title="<?php echo $lang->get('show'); ?>">
+                                    <button type="button" class="float-right btn btn-secondary btn-sm mr-1 infotip" id="card-item-pwd-show-button" title="<?php echo $lang->get('show'); ?>">
                                         <i class="fa-regular fa-eye pwd-show-spinner"></i>
                                     </button>
                                     <span id="card-item-pwd" class="float-right unhide_masked_data pointer mr-2"></span>
@@ -1135,24 +1135,24 @@ foreach ($rows as $reccord) {
                                 </li>
                                 <li class="list-group-item">
                                     <b><?php echo $lang->get('index_login'); ?></b>
-                                    <button type="button" class="float-right btn btn-outline-info btn-sm ml-1 btn-copy-clipboard-clear infotip" data-clipboard-target="#card-item-login" id="card-item-login-btn" title="<?php echo $lang->get('copy'); ?>">
+                                    <button type="button" class="float-right btn btn-secondary btn-sm ml-1 btn-copy-clipboard-clear infotip" data-clipboard-target="#card-item-login" id="card-item-login-btn" title="<?php echo $lang->get('copy'); ?>">
                                         <i class="fa-regular fa-copy"></i>
                                     </button>
                                     <span id="card-item-login" class="float-right"></span>
                                 </li>
                                 <li class="list-group-item">
                                     <b><?php echo $lang->get('email'); ?></b>
-                                    <button type="button" class="float-right btn btn-outline-info btn-sm ml-1 btn-copy-clipboard-clear" data-clipboard-target="#card-item-email" id="card-item-email-btn">
+                                    <button type="button" class="float-right btn btn-secondary btn-sm ml-1 btn-copy-clipboard-clear" data-clipboard-target="#card-item-email" id="card-item-email-btn">
                                         <i class="fa-regular fa-copy"></i>
                                     </button>
                                     <span id="card-item-email" class="float-right ml-1"></span>
                                 </li>
                                 <li class="list-group-item">
                                     <b><?php echo $lang->get('url'); ?></b>
-                                    <button type="button" class="float-right btn btn-outline-info btn-sm ml-1 btn-copy-clipboard-clear" data-clipboard-target="#card-item-url-text" id="card-item-url-text-btn">
+                                    <button type="button" class="float-right btn btn-secondary btn-sm ml-1 btn-copy-clipboard-clear" data-clipboard-target="#card-item-url-text" id="card-item-url-text-btn">
                                         <i class="fa-regular fa-copy"></i>
                                     </button>
-                                    <a id="card-item-url" class="float-right ml-1 btn btn-outline-info btn-sm" href="#" target="_blank">
+                                    <a id="card-item-url" class="float-right ml-1 btn btn-secondary btn-sm" href="#" target="_blank">
                                         <i class="fa-solid fa-arrow-up-right-from-square"></i>
                                     </a>
                                     <span id="card-item-url-text" class="float-right ml-1"></span>
@@ -1221,7 +1221,7 @@ foreach ($rows as $reccord) {
                                             echo '
                                             <li class="list-group-item card-item-field hidden" id="card-item-field-' . $field['id'] . '">
                                                 <span id="card-item-field-title-' . $field['id'] . '"><b>' . $field['title'] . '</b></span>
-                                                <button type="button" class="float-right btn btn-outline-info btn-sm ml-1 btn-copy-clipboard-clear"  data-clipboard-target="#card-item-field-value-' . $field['id'] . '">
+                                                <button type="button" class="float-right btn btn-secondary btn-sm ml-1 btn-copy-clipboard-clear"  data-clipboard-target="#card-item-field-value-' . $field['id'] . '">
                                                     <i class="fa-solid fa-copy"></i>
                                                 </button>
                                                 <span class="card-item-field-value float-right ml-1" id="card-item-field-value-' . $field['id'] . '"></span>

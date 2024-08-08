@@ -66,7 +66,7 @@ if (isset($_GET['code']) === true && isset($_GET['state']) === true && $get['pos
 }
 
 echo '
-<body class="hold-transition login-page">
+<body class="hold-transition login-page '.$theme_body.'">
 <div class="login-box">
     <div class="login-logo"><div style="margin:30px;">',
     isset($SETTINGS['custom_logo']) === true && empty($SETTINGS['custom_logo']) === false ?

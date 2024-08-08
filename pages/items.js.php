@@ -717,6 +717,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     codeviewIframeFilter: true
                 });
 
+                // Buttons more theme compliants
+                $('.btn-light').addClass('btn-secondary').removeClass('btn-light');
+
                 // Set folder
                 $('#form-item-folder').val(selectedFolderId).change();
                 // Select tab#1
@@ -4938,6 +4941,8 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                             }
                         });
 
+                    // Buttons more theme compliants
+                    $('.btn-light').addClass('btn-secondary').removeClass('btn-light');
 
                     //prepare nice list of users / groups
                     var html_users = '',

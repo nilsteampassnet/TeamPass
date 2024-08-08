@@ -75,7 +75,6 @@
     position: absolute;
     top: 8px;
     right: 0px;
-    background-color:#ECECEC;
     color:#c4c4c4;
 }
 
@@ -287,4 +286,29 @@
 	height: 100%;
 	line-height: inherit;
 	padding-top: 10px;
+}
+
+/* Some issues with background-image on buttons in 
+ * dark mode and it's not particularly pretty. */
+.btn {
+    background-image: none !important;
+}
+
+/* Light blue on blue is not very readable */
+.dark-mode .jstree-anchor:hover {
+    color: #fff !important;
+}
+
+/* Not adminlte items */
+.dark-mode .select2-selection {
+    background-color: #343a40 !important;
+    border: 1px solid #6c757d !important;
+}
+.dark-mode .select2-selection span {
+    color: #fff !important;
+}
+
+/* Scrollbar */
+.dark-mode {
+    scrollbar-color: #3b3b3b #555;
 }

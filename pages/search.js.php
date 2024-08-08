@@ -248,8 +248,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                         (data.description === '' ? '' : '<div class="form-group">' + data.description + '</div>') +
                         '<div class="form-group">' +
                         '<label class="form-group-label"><?php echo $lang->get('pw'); ?>' +
-                        '<button type="button" class="btn btn-gray ml-2" id="btn-copy-pwd" data-id="' + data.item_key + '" data-label="' + data.label + '"><i class="fas fa-copy"></i></button>' +
-                        '<button type="button" class="btn btn-gray btn-show-pwd ml-2" data-id="' + data.id + '"><i class="fas fa-eye pwd-show-spinner"></i></button>' +
+                        '<button type="button" class="btn btn-secondary ml-2" id="btn-copy-pwd" data-id="' + data.item_key + '" data-label="' + data.label + '"><i class="fas fa-copy"></i></button>' +
+                        '<button type="button" class="btn btn-secondary btn-show-pwd ml-2" data-id="' + data.id + '"><i class="fas fa-eye pwd-show-spinner"></i></button>' +
                         '</label>' +
                         '<span id="pwd-show_' + data.id + '" class="unhide_masked_data ml-2" style="height: 20px;"><?php echo $var['hidden_asterisk']; ?></span>' +
                         '<input id="pwd-hidden_' + data.id + '" class="pwd-clear" type="hidden" value="' + atob(data.pw).utf8Decode() + '">' +
@@ -258,14 +258,14 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                         (data.login === '' ? '' :
                             '<div class="form-group">' +
                             '<label class="form-group-label"><?php echo $lang->get('index_login'); ?>' +
-                            '<button type="button" class="btn btn-gray ml-2" id="btn-copy-login" data-id="' + data.id + '"><i class="fas fa-copy"></i></button>' +
+                            '<button type="button" class="btn btn-secondary ml-2" id="btn-copy-login" data-id="' + data.id + '"><i class="fas fa-copy"></i></button>' +
                             '</label>' +
                             '<span class="ml-2" id="login-item_' + data.id + '">' + data.login + '</span>' +
                             '</div>') +
                         (data.url === '' ? '' :
                             '<div class="form-group">' +
                             '<label class="form-group-label"><?php echo $lang->get('url'); ?>' +
-                            '<button type="button" class="btn btn-gray ml-2" id="btn-copy-url" data-id="' + data.id + '"><i class="fas fa-copy"></i></button>' +
+                            '<button type="button" class="btn btn-secondary ml-2" id="btn-copy-url" data-id="' + data.id + '"><i class="fas fa-copy"></i></button>' +
                             '</label>' +
                             '<span class="ml-2" id="url-item_' + data.id + '">' + data.url + '</span>' +
                             '</div>') +
