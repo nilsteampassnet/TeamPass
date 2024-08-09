@@ -193,7 +193,7 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
                                         </small>
                                     </div>
                                     <div class='col-7'>
-                                        <input type='text' class='form-control form-control-sm setting-ldap' id='ldap_password' value='<?php echo $SETTINGS['ldap_password'] ?? ''; ?>'>
+                                        <input type='password' class='form-control form-control-sm setting-ldap' id='ldap_password' value='<?php echo $SETTINGS['ldap_password'] ?? ''; ?>'>
                                     </div>
                                 </div>
 
