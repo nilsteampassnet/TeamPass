@@ -302,6 +302,16 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
     // Refresh data later to avoid php session lock which slows page display.
     $(this).delay(500).queue(function() {
         refreshVisibleFolders(true);
+
+        // show correct folder in Tree
+        let groupe_id = store.get('teampassApplication').itemsListFolderId;
+        if ($('#jstree').jstree('get_selected', true)[0] === undefined ||
+            'li_' + groupe_id !== $('#jstree').jstree('get_selected', true)[0].id
+        ) {
+            $('#jstree').jstree('deselect_all');
+            $('#jstree').jstree('select_node', '#li_' + groupe_id);
+        }
+
         $(this).dequeue();
     });
 
@@ -3717,14 +3727,6 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             return false;
         }
         requestRunning = true;
-
-        // show correct folder in Tree
-        if ($('#jstree').jstree('get_selected', true)[0] === undefined ||
-            'li_' + groupe_id !== $('#jstree').jstree('get_selected', true)[0].id
-        ) {
-            $('#jstree').jstree('deselect_all');
-            $('#jstree').jstree('select_node', '#li_' + groupe_id);
-        }
 
         // case where we should stop listing the items
         if (store.get('teampassApplication') !== undefined && store.get('teampassApplication').itemsListStop === 1) {

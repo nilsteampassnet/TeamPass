@@ -6537,7 +6537,7 @@ switch ($inputData['type']) {
                 $displayThisNode = false;
 
                 // Check if any allowed folder is part of the descendants of this node
-                $nodeDescendants = $tree->getDescendants($folder->id, true, false, true);
+                $nodeDescendants = $tree->getDescendantsFromTreeArray($folders, $folder->id);
                 foreach ($nodeDescendants as $node) {
                     // manage tree counters
                     if (
