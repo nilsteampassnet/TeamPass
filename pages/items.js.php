@@ -299,37 +299,37 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
     });
 
     // load list of visible folders for current user
+    // Refresh data later to avoid php session lock which slows page display.
     $(this).delay(500).queue(function() {
         refreshVisibleFolders(true);
-
-        // Preload list of items
-        if (store.get('teampassApplication') !== undefined &&
-            store.get('teampassApplication').selectedFolder !== undefined &&
-            store.get('teampassApplication').selectedFolder !== ''
-        ) {
-            startedItemsListQuery = true;
-            ListerItems(store.get('teampassApplication').itemsListFolderId, '', 0);
-        }
-
-        // Show details of item
-        if (showItemOnPageLoad === true) {
-            // Display item details
-            $.when(
-                Details(itemIdToShow, 'show', true)
-            ).then(function() {
-                // Force previous view to Tree folders
-                store.update(
-                    'teampassUser',
-                    function(teampassUser) {
-                        teampassUser.previousView = '#folders-tree-card';
-                    }
-                );
-            });
-        }
-
-
         $(this).dequeue();
     });
+
+    // Preload list of items
+    if (store.get('teampassApplication') !== undefined &&
+        store.get('teampassApplication').selectedFolder !== undefined &&
+        store.get('teampassApplication').selectedFolder !== '' && 
+        showItemOnPageLoad === true
+    ) {
+        startedItemsListQuery = true;
+        ListerItems(store.get('teampassApplication').itemsListFolderId, '', 0);
+    }
+
+    // Show details of item
+    if (showItemOnPageLoad === true) {
+        // Display item details
+        $.when(
+            Details(itemIdToShow, 'show', true)
+        ).then(function() {
+            // Force previous view to Tree folders
+            store.update(
+                'teampassUser',
+                function(teampassUser) {
+                    teampassUser.previousView = '#folders-tree-card';
+                }
+            );
+        });
+    }
 
     // Keep the scroll position
     $(window).on("scroll", function() {
