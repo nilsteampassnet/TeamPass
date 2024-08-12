@@ -368,6 +368,18 @@ if ($result) {
     }
 }
 
+// Add field allowed_to_create to api table
+$res = addColumnIfNotExist(
+    $pre . 'api',
+    'allowed_to_read',
+    "INT(1) NOT NULL DEFAULT '0';"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field allowed_to_read to table api! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
 // Alter type for column 'allowed_to_read' in table api
 modifyColumn(
     $pre . 'api',
