@@ -3493,8 +3493,6 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
                     // Do drag'n'drop for the folders
                     prepareFolderDragNDrop();
-
-                    adjustElemsSize();
                 }
             }
         );
@@ -4377,16 +4375,6 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             $('#jstree').jstree('select_node', '#li_' + $(this).data('tree-id'));
         }
     });
-
-
-    function adjustElemsSize() {
-        // Adjust height of folders tree
-        if ($('#teampass_items_list').height() > (screenHeight - 215)) {
-            $('#jstree').height($('#teampass_items_list').height() + 75);
-        } else {
-            $('#jstree').height($(window).height() - 215);
-        }
-    }
 
     /**
      * Builds the HTML path
