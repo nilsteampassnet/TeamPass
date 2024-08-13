@@ -4497,6 +4497,10 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             console.log(itemDefinition);
         }
 
+        // Clear old editors (otherwise the content is not updated)
+        $('#form-item-description').summernote('destroy');
+        $('#form-item-suggestion-description').summernote('destroy');
+
         // Init
         var hasItemAccess = false;
         if (hotlink === false) {
