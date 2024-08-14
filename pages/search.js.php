@@ -355,7 +355,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                                 '<?php echo $lang->get('copy_to_clipboard'); ?>',
                                 '', {
                                     timeOut: 2000,
-                                    positionClass: 'toast-top-right',
+                                    positionClass: 'toast-bottom-right',
                                     progressBar: true
                                 }
                             );
@@ -390,7 +390,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                             '<?php echo $lang->get('copy_to_clipboard'); ?>',
                             '', {
                                 timeOut: 2000,
-                                positionClass: 'toast-top-right',
+                                positionClass: 'toast-bottom-right',
                                 progressBar: true
                             }
                         );
@@ -409,7 +409,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                             '<?php echo $lang->get('copy_to_clipboard'); ?>',
                             '', {
                                 timeOut: 2000,
-                                positionClass: 'toast-top-right',
+                                positionClass: 'toast-bottom-right',
                                 progressBar: true
                             }
                         );

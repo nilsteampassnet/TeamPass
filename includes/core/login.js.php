@@ -639,7 +639,7 @@ declare(strict_types=1);
                         '<?php echo $lang->get('caution'); ?>', {
                             timeOut: 5000,
                             progressBar: true,
-                            positionClass: "toast-top-right"
+                            positionClass: "toast-bottom-right"
                         }
                     );
                     return false;
@@ -752,7 +752,7 @@ declare(strict_types=1);
                         '<?php echo $lang->get('caution'); ?>', {
                             timeOut: 5000,
                             progressBar: true,
-                            positionClass: "toast-top-right"
+                            positionClass: "toast-bottom-right"
                         }
                     );
                     return false;
@@ -771,7 +771,7 @@ declare(strict_types=1);
                         '<?php echo $lang->get('index_maintenance_mode_admin'); ?>',
                         '<?php echo $lang->get('caution'); ?>', {
                             timeOut: 0,
-                            positionClass: "toast-top-right"
+                            positionClass: "toast-bottom-right"
                         }
                     );
                     return false;
@@ -796,7 +796,7 @@ declare(strict_types=1);
                             {
                                 timeOut: 10000,
                                 progressBar: true,
-                                positionClass: "toast-top-right"
+                                positionClass: "toast-bottom-right"
                             }
                         );
                         if(data.ga_bad_code === true)
@@ -810,7 +810,7 @@ declare(strict_types=1);
                             '<?php echo $lang->get('caution'); ?>', {
                                 timeOut: 5000,
                                 progressBar: true,
-                                positionClass: "toast-top-right"
+                                positionClass: "toast-bottom-right"
                             }
                         );
                     }

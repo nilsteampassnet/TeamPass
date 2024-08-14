@@ -1656,7 +1656,7 @@ $request = SymfonyRequest::createFromGlobals();
                         '<?php echo $lang->get('caution'); ?>', {
                             timeOut: 5000,
                             progressBar: true,
-                            positionClass: "toast-top-right"
+                            positionClass: "toast-bottom-right"
                         }
                     );
                     return false;

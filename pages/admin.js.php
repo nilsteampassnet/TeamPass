@@ -152,7 +152,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                         '<?php echo $lang->get('server_answer_error') . '<br />' . $lang->get('server_returned_data') . ':<br />'; ?>' + data.error,
                         '', {
                             closeButton: true,
-                            positionClass: 'toastr-top-right'
+                            positionClass: 'toast-bottom-right'
                         }
                     );
                     return false;
@@ -226,7 +226,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                         '<?php echo $lang->get('server_answer_error') . '<br />' . $lang->get('server_returned_data') . ':<br />'; ?>' + data.error,
                         '', {
                             closeButton: true,
-                            positionClass: 'toastr-top-right'
+                            positionClass: 'toast-bottom-right'
                         }
                     );
                     return false;
@@ -274,7 +274,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                         '<?php echo $lang->get('server_answer_error') . '<br />' . $lang->get('server_returned_data') . ':<br />'; ?>' + data.error,
                         '', {
                             closeButton: true,
-                            positionClass: 'toastr-top-right'
+                            positionClass: 'toast-bottom-right'
                         }
                     );
                     return false;

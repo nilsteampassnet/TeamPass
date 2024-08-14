@@ -373,7 +373,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             '<?php echo $lang->get('server_answer_error') . '<br />' . $lang->get('server_returned_data') . ':<br />'; ?>' + data.error,
                             '', {
                                 closeButton: true,
-                                positionClass: 'toastr-top-right'
+                                positionClass: 'toast-bottom-right'
                             }
                         );
                         return false;
@@ -506,7 +506,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             '<?php echo $lang->get('server_answer_error') . '<br />' . $lang->get('server_returned_data') . ':<br />'; ?>' + data.error,
                             '', {
                                 closeButton: true,
-                                positionClass: 'toastr-top-right'
+                                positionClass: 'toast-bottom-right'
                             }
                         );
                         manuelTaskIsRunning = false;
@@ -535,7 +535,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             '<?php echo $lang->get('error'); ?>',
                             data.output, {
                                 closeButton: true,
-                                positionClass: 'toastr-top-right'
+                                positionClass: 'toast-bottom-right'
                             }
                         );
                     }
@@ -567,7 +567,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         '<?php echo $lang->get('server_answer_error') . '<br />' . $lang->get('server_returned_data') . ':<br />'; ?>' + data.error,
                         '', {
                             closeButton: true,
-                            positionClass: 'toastr-top-right'
+                            positionClass: 'toast-bottom-right'
                         }
                     );
                     return false;

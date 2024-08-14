@@ -3926,7 +3926,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                                 '<?php echo $lang->get('copy_to_clipboard'); ?>',
                                 '', {
                                     timeOut: 2000,
-                                    positionClass: 'toast-top-right',
+                                    positionClass: 'toast-bottom-right',
                                     progressBar: true
                                 }
                             );
@@ -3998,7 +3998,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                                     '<?php echo $lang->get('copy_to_clipboard'); ?>',
                                     '', {
                                         timeOut: 2000,
-                                        positionClass: 'toast-top-right',
+                                        positionClass: 'toast-bottom-right',
                                         progressBar: true
                                     }
                                 );
@@ -5105,7 +5105,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                             '', {
                                 timeOut: 2000,
                                 progressBar: true,
-                                positionClass: 'toast-top-right'
+                                positionClass: 'toast-bottom-right'
                             }
                         );
                         e.clearSelection();
@@ -5139,7 +5139,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                                         '<?php echo $lang->get('copy_to_clipboard'); ?>',
                                         '', {
                                             timeOut: 2000,
-                                            positionClass: 'toast-top-right',
+                                            positionClass: 'toast-bottom-right',
                                             progressBar: true
                                         }
                                     );
@@ -5587,7 +5587,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                                 '<?php echo $lang->get('copy_to_clipboard'); ?>',
                                 '', {
                                     timeOut: 2000,
-                                    positionClass: 'toast-top-right',
+                                    positionClass: 'toast-bottom-right',
                                     progressBar: true
                                 }
                             );
@@ -6047,7 +6047,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                             '<?php echo $lang->get('copy_to_clipboard'); ?>',
                             '', {
                                 timeOut: 2000,
-                                positionClass: 'toast-top-right',
+                                positionClass: 'toast-bottom-right',
                                 progressBar: true
                             }
                         );
@@ -6093,7 +6093,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                             '<?php echo $lang->get('copy_to_clipboard'); ?>',
                             '', {
                                 timeOut: 2000,
-                                positionClass: 'toast-top-right',
+                                positionClass: 'toast-bottom-right',
                                 progressBar: true
                             }
                         );
@@ -6139,7 +6139,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     '<?php echo $lang->get('please_select_a_folder'); ?>',
                     {
                         timeOut: 5000,
-                        positionClass: 'toast-top-right',
+                        positionClass: 'toast-bottom-right',
                         progressBar: true
                     }
                 );*/
