@@ -472,7 +472,8 @@ if (null !== $post_type) {
                             `updated_at` varchar(30) NULL,
                             `deleted_at` varchar(30) NULL,
                             PRIMARY KEY (`id`),
-                            KEY `restricted_inactif_idx` (`restricted_to`,`inactif`)
+                            KEY `restricted_inactif_idx` (`restricted_to`,`inactif`),
+                            INDEX items_perso_id_idx (`perso`, `id`)
                             ) CHARSET=utf8;"
                         );
                     } elseif ($task === 'log_items') {
@@ -487,7 +488,8 @@ if (null !== $post_type) {
                             `raison` text NULL,
                             `old_value` MEDIUMTEXT NULL DEFAULT NULL,
                             `encryption_type` VARCHAR(20) NOT NULL DEFAULT 'not_set',
-                            PRIMARY KEY (`increment_id`)
+                            PRIMARY KEY (`increment_id`),
+                            INDEX log_items_item_action_user_idx (`id_item`, `action`, `id_user`)
                             ) CHARSET=utf8;"
                         );
                         // create index

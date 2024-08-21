@@ -450,6 +450,34 @@ try {
     mysqli_rollback($db_link);
 }
 
+// Add index on items.
+try {
+    $alter_table_query = "
+        ALTER TABLE `" . $pre . "items`
+        ADD INDEX items_perso_id_idx (`perso`, `id`)
+    ";
+    mysqli_begin_transaction($db_link);
+    mysqli_query($db_link, $alter_table_query);
+    mysqli_commit($db_link);
+} catch (Exception $e) {
+    // Rollback transaction if index already exists.
+    mysqli_rollback($db_link);
+}
+
+// Add index on log_items.
+try {
+    $alter_table_query = "
+        ALTER TABLE `" . $pre . "log_items`
+        ADD INDEX log_items_item_action_user_idx (`id_item`, `action`, `id_user`)
+    ";
+    mysqli_begin_transaction($db_link);
+    mysqli_query($db_link, $alter_table_query);
+    mysqli_commit($db_link);
+} catch (Exception $e) {
+    // Rollback transaction if index already exists.
+    mysqli_rollback($db_link);
+}
+
 //---<END 3.1.3
 
 //---------------------------------------------------------------------
