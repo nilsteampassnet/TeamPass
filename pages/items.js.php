@@ -305,8 +305,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
         // show correct folder in Tree
         let groupe_id = store.get('teampassApplication').itemsListFolderId;
-        if ($('#jstree').jstree('get_selected', true)[0] === undefined ||
-            'li_' + groupe_id !== $('#jstree').jstree('get_selected', true)[0].id
+        if (groupe_id !== false && 
+            ($('#jstree').jstree('get_selected', true)[0] === undefined ||
+            'li_' + groupe_id !== $('#jstree').jstree('get_selected', true)[0].id)
         ) {
             $('#jstree').jstree('deselect_all');
             $('#jstree').jstree('select_node', '#li_' + groupe_id);
