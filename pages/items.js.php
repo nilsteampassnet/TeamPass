@@ -4242,7 +4242,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     }
                     // Pwd icon
                     if (value.pw_status !== 'pw_is_empty' && value.pw_status !== 'encryption_error') {
-                        icon_pwd = '<span class="fa-stack fa-clickable fa-clickable-password pointer infotip mr-2" title="<?php echo $lang->get('item_menu_copy_pw'); ?>" data-item-key="' + value.item_key + '" data-item-label="' + value.label + '"><i class="fa-solid fa-circle fa-stack-2x"></i><i class="fa-solid fa-key fa-stack-1x fa-inverse"></i></span>';
+                        icon_pwd = '<span class="fa-stack fa-clickable fa-clickable-password pointer infotip mr-2" title="<?php echo $lang->get('item_menu_copy_pw'); ?>" data-item-key="' + value.item_key + '" data-item-label="' + value.label + '" data-item-id="' + value.item_id + '"><i class="fa-solid fa-circle fa-stack-2x"></i><i class="fa-solid fa-key fa-stack-1x fa-inverse"></i></span>';
                     }
 
                     // Now check if pwd is empty. If it is then warn user
@@ -5142,7 +5142,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                             .on('success', function(e) {
                                 itemLog(
                                     'at_password_copied',
-                                    e.trigger.dataset.clipboardId,
+                                    store.get('teampassItem').id,
                                     $('#card-item-label').text()
                                 );
 
