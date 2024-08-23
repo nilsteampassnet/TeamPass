@@ -551,12 +551,23 @@ if (null !== $post_type) {
             $post_icon_selected = filter_var($dataReceived['iconSelected'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $post_access_rights = isset($dataReceived['accessRight']) === true ? filter_var($dataReceived['accessRight'], FILTER_SANITIZE_FULL_SPECIAL_CHARS) : 'W';
 
+            // Check if parent folder is personal
+            $dataParent = DB::queryfirstrow(
+                'SELECT personal_folder
+                FROM ' . prefixTable('nested_tree') . '
+                WHERE id = %i',
+                $post_parent_id
+            );
+
+            $isPersonal = (isset($dataParent['personal_folder']) === true && (int) $dataParent['personal_folder'] === 1) ? 1 : 0;
+
             // Create folder
             require_once 'folders.class.php';
             $folderManager = new FolderManager($lang);
             $params = [
                 'title' => (string) $post_title,
                 'parent_id' => (int) $post_parent_id,
+                'personal_folder' => (int) $isPersonal,
                 'complexity' => (int) $post_complexity,
                 'duration' => (int) $post_duration,
                 'create_auth_without' => (int) $post_create_auth_without,
@@ -629,6 +640,9 @@ if (null !== $post_type) {
             //decrypt and retreive data in JSON format
             $folderForDel = array();
 
+            // Start transaction
+            DB::startTransaction();
+
             foreach ($post_folders as $folderId) {
                 /**
                  * WARN: NestedTree->getDescendants:
@@ -685,7 +699,11 @@ if (null !== $post_type) {
                         ),
                         'encode'
                     );
-                    break;
+
+                    // Rollback transaction if error
+                    DB::rollback();
+
+                    exit;
                 }
 
                 // Exclude a folder with id already in the list
@@ -817,6 +835,9 @@ if (null !== $post_type) {
                 'timestamp',
                 'last_folder_change'
             );
+
+            // Commit transaction
+            DB::commit();
 
             echo prepareExchangedData(
                 array(

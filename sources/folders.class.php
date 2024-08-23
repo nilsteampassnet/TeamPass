@@ -77,7 +77,7 @@ class FolderManager
             return $this->errorResponse($this->lang->get('error_folder_not_allowed_for_this_user'));
         }
 
-        if (!$this->checkDuplicateFolderAllowed($title)) {
+        if (!$this->checkDuplicateFolderAllowed($title) && $personal_folder == 0) {
             return $this->errorResponse($this->lang->get('error_group_exist'));
         }
 
@@ -135,7 +135,7 @@ class FolderManager
             DB::query(
                 'SELECT *
                 FROM ' . prefixTable('nested_tree') . '
-                WHERE title = %s',
+                WHERE title = %s AND personal_folder = 0',
                 $title
             );
             $counter = DB::count();
