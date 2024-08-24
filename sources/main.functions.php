@@ -2871,7 +2871,11 @@ function ldapCheckUserPassword(string $login, string $password, array $SETTINGS)
         $connection->connect();
     } catch (\LdapRecord\Auth\BindException $e) {
         $error = $e->getDetailedError();
-        error_log('TEAMPASS Error - Auth - '.$error->getErrorCode()." - ".$error->getErrorMessage(). " - ".$error->getDiagnosticMessage());
+        if ($error) {
+            error_log('TEAMPASS Error - LDAP - '.$error->getErrorCode()." - ".$error->getErrorMessage(). " - ".$error->getDiagnosticMessage());
+        } else {
+            error_log('TEAMPASS Error - LDAP - Code: '.$e->getCode().' - Message: '.$e->getMessage());
+        }
         // deepcode ignore ServerLeak: No important data is sent
         echo 'An error occurred.';
         return false;
@@ -2886,7 +2890,11 @@ function ldapCheckUserPassword(string $login, string $password, array $SETTINGS)
         }
     } catch (\LdapRecord\Auth\BindException $e) {
         $error = $e->getDetailedError();
-        error_log('TEAMPASS Error - Auth - '.$error->getErrorCode()." - ".$error->getErrorMessage(). " - ".$error->getDiagnosticMessage());
+        if ($error) {
+            error_log('TEAMPASS Error - LDAP - '.$error->getErrorCode()." - ".$error->getErrorMessage(). " - ".$error->getDiagnosticMessage());
+        } else {
+            error_log('TEAMPASS Error - LDAP - Code: '.$e->getCode().' - Message: '.$e->getMessage());
+        }
         // deepcode ignore ServerLeak: No important data is sent
         echo 'An error occurred.';
         return false;

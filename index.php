@@ -1332,7 +1332,7 @@ if (isset($SETTINGS['cpassman_dir']) === true) {
             include_once $SETTINGS['cpassman_dir'] . '/pages/statistics.js.php';
         } elseif ($get['page'] === 'tasks') {
             include_once $SETTINGS['cpassman_dir'] . '/pages/tasks.js.php';
-        } elseif ($get['page'] === 'oauth') {
+        } elseif ($get['page'] === 'oauth' && WIP === true) {
             include_once $SETTINGS['cpassman_dir'] . '/pages/oauth.js.php';        
         } elseif ($get['page'] === 'tools') {
             include_once $SETTINGS['cpassman_dir'] . '/pages/tools.js.php';

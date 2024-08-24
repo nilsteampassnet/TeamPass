@@ -2410,7 +2410,11 @@ if (null !== $post_type) {
             
             } catch (\LdapRecord\Auth\BindException $e) {
                 $error = $e->getDetailedError();
-                error_log('TEAMPASS Error - Users - '.$error->getErrorCode()." - ".$error->getErrorMessage(). " - ".$error->getDiagnosticMessage());
+                if ($error) {
+                    error_log('TEAMPASS Error - LDAP - '.$error->getErrorCode()." - ".$error->getErrorMessage(). " - ".$error->getDiagnosticMessage());
+                } else {
+                    error_log('TEAMPASS Error - LDAP - Code: '.$e->getCode().' - Message: '.$e->getMessage());
+                }
                 // deepcode ignore ServerLeak: No important data is sent and it is encrypted before sending
                 echo prepareExchangedData(
                     array(
@@ -2438,7 +2442,11 @@ if (null !== $post_type) {
                     ->paginate(100);
             } catch (\LdapRecord\Auth\BindException $e) {
                 $error = $e->getDetailedError();
-                error_log('TEAMPASS Error - Users - '.$error->getErrorCode()." - ".$error->getErrorMessage(). " - ".$error->getDiagnosticMessage());
+                if ($error) {
+                    error_log('TEAMPASS Error - LDAP - '.$error->getErrorCode()." - ".$error->getErrorMessage(). " - ".$error->getDiagnosticMessage());
+                } else {
+                    error_log('TEAMPASS Error - LDAP - Code: '.$e->getCode().' - Message: '.$e->getMessage());
+                }
                 // deepcode ignore ServerLeak: No important data is sent and it is encrypted before sending
                 echo prepareExchangedData(
                     array(

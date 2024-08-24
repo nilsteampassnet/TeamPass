@@ -231,7 +231,11 @@ switch ($post_type) {
             }
         } catch (\LdapRecord\Query\ObjectNotFoundException $e) {
             $error = $e->getDetailedError();
-            error_log('TEAMPASS Error - LDAP - '.$error->getErrorCode()." - ".$error->getErrorMessage(). " - ".$error->getDiagnosticMessage());
+            if ($error) {
+                error_log('TEAMPASS Error - LDAP - '.$error->getErrorCode()." - ".$error->getErrorMessage(). " - ".$error->getDiagnosticMessage());
+            } else {
+                error_log('TEAMPASS Error - LDAP - Code: '.$e->getCode().' - Message: '.$e->getMessage());
+            }
             // deepcode ignore ServerLeak: No important data is sent and is encrypted before being sent
             echo prepareExchangedData(
                 array(
