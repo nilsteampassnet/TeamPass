@@ -4182,7 +4182,8 @@ switch ($inputData['type']) {
                     MIN(n.renewal_period) AS renewal_period,
                     MIN(l.action) AS log_action,
                     l.id_user AS log_user,
-                    i.url AS link
+                    i.url AS link,
+                    i.email AS email
                     FROM ' . prefixTable('items') . ' AS i
                     INNER JOIN ' . prefixTable('nested_tree') . ' AS n ON (i.id_tree = n.id)
                     INNER JOIN ' . prefixTable('log_items') . ' AS l ON (i.id = l.id_item)
@@ -4203,7 +4204,8 @@ switch ($inputData['type']) {
                     MIN(n.renewal_period) AS renewal_period,
                     MIN(l.action) AS log_action,
                     l.id_user AS log_user,
-                    i.url AS link
+                    i.url AS link,
+                    i.email AS email
                     FROM ' . prefixTable('items') . ' AS i
                     INNER JOIN ' . prefixTable('nested_tree') . ' AS n ON (i.id_tree = n.id)
                     INNER JOIN ' . prefixTable('log_items') . ' AS l ON (i.id = l.id_item)
@@ -4298,6 +4300,7 @@ switch ($inputData['type']) {
                     $html_json[$record['id']]['is_result_of_search'] = 0;
                     $html_json[$record['id']]['is_favourited'] = in_array($record['id'], $session->get('user-favorites')) === true ? 1 : 0;
                     $html_json[$record['id']]['link'] = $record['link'];
+                    $html_json[$record['id']]['email'] = $record['email'] ?? '';
                     $html_json[$record['id']]['fa_icon'] = $record['fa_icon'];
 
                     // Possible values:
