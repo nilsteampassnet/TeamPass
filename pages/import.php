@@ -64,9 +64,11 @@ $checkUserAccess = new PerformChecks(
         'user_key' => returnIfSet($session->get('key'), null),
     ]
 );
-// Handle the case
+
+// Check user access and import enabled
 echo $checkUserAccess->caseHandler();
-if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('import') === false) {
+if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('import') === false
+    || isset($SETTINGS['allow_import']) === false || (int) $SETTINGS['allow_import'] !== 1) {
     // Not allowed page
     $session->set('system-error_code', ERR_NOT_ALLOWED);
     include $SETTINGS['cpassman_dir'] . '/error.php';

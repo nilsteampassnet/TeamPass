@@ -64,9 +64,12 @@ $checkUserAccess = new PerformChecks(
         'user_key' => returnIfSet($session->get('key'), null),
     ]
 );
-// Handle the case
+
+// Check user access and favourites enabled
 echo $checkUserAccess->caseHandler();
-if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('favourites') === false) {
+if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('favourites') === false
+    || isset($SETTINGS['enable_favourites']) === false || (int) $SETTINGS['enable_favourites'] === 0
+    || (int) $session_user_admin === 1) {
     // Not allowed page
     $session->set('system-error_code', ERR_NOT_ALLOWED);
     include $SETTINGS['cpassman_dir'] . '/error.php';
