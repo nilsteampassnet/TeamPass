@@ -543,7 +543,10 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             $username,
             $SETTINGS,
         );
-        $lifetime = time() + ($dataReceived['duree_session'] * 60);
+        // Avoid unlimited session.
+        $max_time = $SETTINGS['maximum_session_expiration_time'] ?? 60;
+        $session_time = $dataReceived['duree_session'] <= $max_time ? $dataReceived['duree_session'] : $max_time;
+        $lifetime = time() + ($session_time * 60);
 
         //--- Handle the session duration and ID
         //$cookieParams = session_get_cookie_params();
