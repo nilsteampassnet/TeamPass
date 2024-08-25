@@ -327,9 +327,9 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         //col1
         $sOutput .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['date']).'", ';
         //col2
-        $sOutput .= '"'.htmlspecialchars(stripslashes((string) $record['label']), ENT_QUOTES).'", ';
+        $sOutput .= '"'.trim(htmlspecialchars(stripslashes((string) $record['label']), ENT_QUOTES)).'", ';
         //col3
-        $sOutput .= '"'.htmlspecialchars(stripslashes((string) $record['login']), ENT_QUOTES).'"';
+        $sOutput .= '"'.trim(htmlspecialchars(stripslashes((string) $record['login']), ENT_QUOTES)).'"';
         //Finish the line
         $sOutput .= '],';
     }
@@ -513,20 +513,20 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         //col1
         $sOutput_item .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['date']).'", ';
         //col3
-        $sOutput_item .= '"'.htmlspecialchars(stripslashes((string) $record['id']), ENT_QUOTES).'", ';
+        $sOutput_item .= '"'.trim(htmlspecialchars(stripslashes((string) $record['id']), ENT_QUOTES)).'", ';
         //col3
-        $sOutput_item .= '"'.htmlspecialchars(stripslashes((string) $record['label']), ENT_QUOTES).'", ';
+        $sOutput_item .= '"'.trim(htmlspecialchars(stripslashes((string) $record['label']), ENT_QUOTES)).'", ';
         //col2
-        $sOutput_item .= '"'.htmlspecialchars(stripslashes((string) $record['folder']), ENT_QUOTES).'", ';
+        $sOutput_item .= '"'.trim(htmlspecialchars(stripslashes((string) $record['folder']), ENT_QUOTES)).'", ';
         //col2
-        $sOutput_item .= '"'.htmlspecialchars(stripslashes((string) $record['name']), ENT_QUOTES).' '.htmlspecialchars(stripslashes((string) $record['lastname']), ENT_QUOTES).' ['.htmlspecialchars(stripslashes((string) $record['login']), ENT_QUOTES).']", ';
+        $sOutput_item .= '"'.trim(htmlspecialchars(stripslashes((string) $record['name']), ENT_QUOTES)).' '.trim(htmlspecialchars(stripslashes((string) $record['lastname']), ENT_QUOTES)).' ['.trim(htmlspecialchars(stripslashes((string) $record['login']), ENT_QUOTES)).']", ';
         //col4
-        $sOutput_item .= '"'.htmlspecialchars(stripslashes($lang->get($record['action'])), ENT_QUOTES).'", ';
+        $sOutput_item .= '"'.trim(htmlspecialchars(stripslashes($lang->get($record['action'])), ENT_QUOTES)).'", ';
         //col5
         if ($record['perso'] === 1) {
-            $sOutput_item .= '"'.htmlspecialchars(stripslashes($lang->get('yes')), ENT_QUOTES).'"';
+            $sOutput_item .= '"'.trim(htmlspecialchars(stripslashes($lang->get('yes')), ENT_QUOTES)).'"';
         } else {
-            $sOutput_item .= '"'.htmlspecialchars(stripslashes($lang->get('no')), ENT_QUOTES).'"';
+            $sOutput_item .= '"'.trim(htmlspecialchars(stripslashes($lang->get('no')), ENT_QUOTES)).'"';
         }
 
         //Finish the line
