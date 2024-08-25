@@ -590,15 +590,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             toastr.remove();
             toastr.info('<?php echo $lang->get('in_progress'); ?><i class="fa-solid fa-circle-notch fa-spin fa-2x ml-3"></i>');
 
-            var data = {
-                'user_id': store.get('teampassUser').user_id,
-            };
             // Do query
             $.post(
                 "sources/main.queries.php", {
                     'type': "user_recovery_keys_download",
                     'type_category': 'action_key',
-                    'data': prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
                     'key': '<?php echo $session->get('key'); ?>'
                 },
                 function(data) {

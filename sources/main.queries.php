@@ -478,6 +478,7 @@ function mailHandler(string $post_type, /*php8 array|null|string */$dataReceived
  */
 function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived, array $SETTINGS): string
 {
+    $session = SessionManager::getSession();
     switch ($post_type) {
         /*
         * Generate a temporary encryption key for user
@@ -539,8 +540,19 @@ function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived,
         * Launch user keys change on his demand
         */
         case 'user_new_keys_generation'://action_key
+
+            // Only admins can reset user password
+            if ($session->get('user-admin') === 1
+                && empty($dataReceived['user_id']) === false) {
+                // Use id requested from user if he is admin.
+                $userId = $dataReceived['user_id'];
+            } else {
+                // Use id from session if user not admin or id not sent.
+                $userId = $session->get('user-id');
+            }
+
             return handleUserKeys(
-                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
+                (int) filter_var($userId, FILTER_SANITIZE_NUMBER_INT),
                 (string) filter_var($dataReceived['user_pwd'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 (int) isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH,
                 (string) filter_var($dataReceived['encryption_key'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
@@ -559,7 +571,7 @@ function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived,
         */
         case 'user_recovery_keys_download'://action_key
             return handleUserRecoveryKeysDownload(
-                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
+                (int) $session->get('user-id'),
                 (array) $SETTINGS,
             );
 
