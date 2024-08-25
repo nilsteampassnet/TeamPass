@@ -131,7 +131,7 @@ if (!defined('__CSRF_PROTECTOR__')) {
 
             // Start session in case its not, and unit test is not going on
             if (session_id() == '' && !defined('__CSRFP_UNIT_TEST__')) {
-                //session_start();
+                session_start();
             }
 
             // Load configuration file and properties & Check locally for a 

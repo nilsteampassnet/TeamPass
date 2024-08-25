@@ -639,9 +639,8 @@ abstract class AbstractProvider
             );
         }
         $prepared = $this->prepareAccessTokenResponse($response);
-        //error_log('11 - '.print_r($grant, true));
         $token    = $this->createAccessToken($prepared, $grant);
-        //error_log('12 - '.print_r($token, true));
+
         return $token;
     }
 
@@ -723,7 +722,7 @@ abstract class AbstractProvider
         }
 
         $parsed = $this->parseResponse($response);
-        //error_log(print_r($parsed, true));
+
         $this->checkResponse($response, $parsed);
 
         return $parsed;

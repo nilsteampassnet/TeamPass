@@ -31,7 +31,7 @@ use PasswordLib\Random\Factory as RandomFactory;
  * @subpackage Implementation
  * @author     Anthony Ferrara <ircmaxell@ircmaxell.com>
  */
-class PHPASS extends \PasswordLib\Password\AbstractPassword {
+class PHPASS implements \PasswordLib\Password\Password {
 
     /**
      * @var string The ITOA string to be used for base64 conversion
@@ -39,9 +39,10 @@ class PHPASS extends \PasswordLib\Password\AbstractPassword {
     protected static $itoa = './0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ
                                 abcdefghijklmnopqrstuvwxyz';
 
-    protected $defaultOptions = array(
-        'cost' => 8,
-    );
+    /**
+     * @var Generator The random generator to use for seeds
+     */
+    protected $generator = null;
 
     /**
      * This is the hash function to use.  To be overriden by child classes
@@ -49,6 +50,11 @@ class PHPASS extends \PasswordLib\Password\AbstractPassword {
      * @var string The hash function to use for this instance
      */
     protected $hashFunction = 'md5';
+
+    /**
+     * @var int The number of iterations to perform (base 2)
+     */
+    protected $iterations = 10;
 
     /**
      * @var string The prefix for the generated hash
@@ -65,6 +71,15 @@ class PHPASS extends \PasswordLib\Password\AbstractPassword {
     public static function detect($hash) {
         $prefix = preg_quote(static::$prefix, '/');
         return 1 == preg_match('/^'.$prefix.'[a-zA-Z0-9.\/]{31}$/', $hash);
+    }
+
+    /**
+     * Return the prefix used by this hashing method
+     *
+     * @return string The prefix used
+     */
+    public static function getPrefix() {
+        return static::$prefix;
     }
 
     /**
@@ -89,7 +104,7 @@ class PHPASS extends \PasswordLib\Password\AbstractPassword {
             throw new \InvalidArgumentException('Hash Not Created Here');
         }
         $iterations = static::decodeIterations($hash[3]);
-        return new static(array('cost' => $iterations));
+        return new static($iterations);
     }
 
     /**
@@ -115,23 +130,27 @@ class PHPASS extends \PasswordLib\Password\AbstractPassword {
     }
 
     /**
-     * Set an option for the instance
+     * Build a new instance
      *
-     * @param string $option The option to set
-     * @param mixed  $value  The value to set the option to
+     * @param int       $iterations The number of times to iterate the hash
+     * @param Generator $generator  The random generator to use for seeds
+     * @param Factory   $factory    The hash factory to use for this instance
      *
-     * @return $this
+     * @return void
      */
-    public function setOption($option, $value) {
-        if ($option == 'cost') {
-            if ($value > 30 || $value < 7) {
-                throw new \InvalidArgumentException(
-                    'Invalid Cost Supplied'
-                );
-            }
+    public function __construct(
+        $iterations = 8,
+        \PasswordLib\Random\Generator $generator = null
+    ) {
+        if ($iterations > 30 || $iterations < 7) {
+            throw new \InvalidArgumentException('Invalid Iteration Count Supplied');
         }
-        $this->options[$option] = $value;
-        return $this;
+        $this->iterations = $iterations;
+        if (is_null($generator)) {
+            $random    = new RandomFactory();
+            $generator = $random->getMediumStrengthGenerator();
+        }
+        $this->generator = $generator;
     }
 
     /**
@@ -142,10 +161,9 @@ class PHPASS extends \PasswordLib\Password\AbstractPassword {
      * @return string The formatted password hash
      */
     public function create($password) {
-        $password = $this->checkPassword($password);
-        $salt     = $this->to64($this->generator->generate(6));
-        $prefix   = static::encodeIterations($this->options['cost']).$salt;
-        return static::$prefix.$prefix.$this->hash($password, $salt);
+        $salt   = $this->to64($this->generator->generate(6));
+        $prefix = static::encodeIterations($this->iterations) . $salt;
+        return static::$prefix . $prefix . $this->hash($password, $salt);
     }
 
     /**
@@ -157,14 +175,13 @@ class PHPASS extends \PasswordLib\Password\AbstractPassword {
      * @return boolean Does the password validate against the hash
      */
     public function verify($password, $hash) {
-        $password = $this->checkPassword($password);
         if (!static::detect($hash)) {
             throw new \InvalidArgumentException(
                 'The hash was not created here, we cannot verify it'
             );
         }
         $iterations = static::decodeIterations($hash[3]);
-        if ($iterations != $this->options['cost']) {
+        if ($iterations != $this->iterations) {
             throw new \InvalidArgumentException(
                 'Iteration Count Mismatch, Bailing'
             );
@@ -172,7 +189,7 @@ class PHPASS extends \PasswordLib\Password\AbstractPassword {
         $salt = substr($hash, 4, 8);
         $hash = substr($hash, 12);
         $test = $this->hash($password, $salt);
-        return $this->compareStrings($test, $hash);
+        return $test == $hash;
     }
 
     /**
@@ -184,10 +201,10 @@ class PHPASS extends \PasswordLib\Password\AbstractPassword {
      * @return string The base64 encoded generated hash
      */
     protected function hash($password, $salt) {
-        $count = 1 << $this->options['cost'];
-        $hash  = hash($this->hashFunction, $salt.$password, true);
+        $count = 1 << $this->iterations;
+        $hash  = hash($this->hashFunction, $salt . $password, true);
         do {
-            $hash = hash($this->hashFunction, $hash.$password, true);
+            $hash = hash($this->hashFunction, $hash . $password, true);
         } while (--$count);
         return $this->to64($hash);
     }

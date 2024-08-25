@@ -18,7 +18,6 @@
 namespace PasswordLib\Password\Implementation;
 
 use PasswordLib\Random\Factory as RandomFactory;
-require_once dirname(__FILE__)."/../AbstractPassword.php";
 
 /**
  * The Blowfish password hashing implementation
@@ -30,12 +29,14 @@ require_once dirname(__FILE__)."/../AbstractPassword.php";
  * @subpackage Implementation
  * @author     Anthony Ferrara <ircmaxell@ircmaxell.com>
  */
-class Crypt extends \PasswordLib\Password\AbstractPassword {
+class Crypt implements \PasswordLib\Password\Password {
 
     /**
      * @var Generator The random generator to use for seeds
      */
     protected $generator = null;
+
+    protected $iterations = 10;
 
     protected $saltLen = 2;
 
@@ -49,6 +50,15 @@ class Crypt extends \PasswordLib\Password\AbstractPassword {
     public static function detect($hash) {
         static $regex = '/^[.\/0-9A-Za-z]{13}$/';
         return 1 == preg_match($regex, $hash);
+    }
+
+    /**
+     * Return the prefix used by this hashing method
+     *
+     * @return string The prefix used
+     */
+    public static function getPrefix() {
+        return '';
     }
 
     /**
@@ -67,6 +77,29 @@ class Crypt extends \PasswordLib\Password\AbstractPassword {
     }
 
     /**
+     * Build a new instance
+     *
+     * @param int       $iterations The number of times to iterate the hash
+     * @param Generator $generator  The random generator to use for seeds
+     *
+     * @return void
+     */
+    public function __construct(
+        $iterations = 8,
+        \PasswordLib\Random\Generator $generator = null
+    ) {
+        if ($iterations > 31 || $iterations < 4) {
+            throw new \InvalidArgumentException('Invalid Iteration Count Supplied');
+        }
+        $this->iterations = $iterations;
+        if (is_null($generator)) {
+            $random    = new RandomFactory();
+            $generator = $random->getMediumStrengthGenerator();
+        }
+        $this->generator = $generator;
+    }
+
+    /**
      * Create a password hash for a given plain text password
      *
      * @param string $password The password to hash
@@ -74,9 +107,8 @@ class Crypt extends \PasswordLib\Password\AbstractPassword {
      * @return string The formatted password hash
      */
     public function create($password) {
-        $password = $this->checkPassword($password);
-        $salt     = $this->generateSalt();
-        $result   = crypt($password, $salt);
+        $salt   = $this->generateSalt();
+        $result = crypt($password, $salt);
         if ($result[0] == '*') {
             //@codeCoverageIgnoreStart
             throw new \RuntimeException('Password Could Not Be Created');
@@ -94,14 +126,13 @@ class Crypt extends \PasswordLib\Password\AbstractPassword {
      * @return boolean Does the password validate against the hash
      */
     public function verify($password, $hash) {
-        $password = $this->checkPassword($password);
         if (!static::detect($hash)) {
             throw new \InvalidArgumentException(
                 'The hash was not created here, we cannot verify it'
             );
         }
         $test = crypt($password, $hash);
-        return $this->compareStrings($test, $hash);
+        return $test == $hash;
     }
 
     protected function generateSalt() {
@@ -138,11 +169,7 @@ class Crypt extends \PasswordLib\Password\AbstractPassword {
             $cval1 |= $cval2 >> 4;
             $output .= $itoa[$cval1];
             $cval1   = ($cval2 & 0x0f) << 2;
-            if ($ictr >= $size) {
-                $output .= $itoa[$cval1];
-                break;
-            }
-            $cval2 = ord($input[$ictr++]);
+            $cval2   = ord($input[$ictr++]);
             $cval1 |= $cval2 >> 6;
             $output .= $itoa[$cval1];
             $output .= $itoa[$cval2 & 0x3f];

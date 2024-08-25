@@ -15,7 +15,6 @@
 namespace PasswordLib\Password;
 
 use PasswordLib\Password\Implementation\Blowfish;
-require_once dirname(__FILE__)."/Implementation/Blowfish.php";
 
 /**
  * The Password Factory
@@ -51,17 +50,13 @@ class Factory extends \PasswordLib\Core\AbstractFactory {
      * @return string The hashed password
      * @throws DomainException if the supplied prefix is not supported
      */
-    public function createHash(
-        $password,
-        $prefix = '$2a$',
-        array $options = array()
-    ) {
+    public function createHash($password, $prefix = '$2a$') {
         if ($prefix === false) {
             throw new \DomainException('Unsupported Prefix Supplied');
         }
         foreach ($this->implementations as $impl) {
             if ($impl::getPrefix() == $prefix) {
-                $instance = new $impl($options);
+                $instance = new $impl;
                 return $instance->create($password);
             }
         }
@@ -98,7 +93,7 @@ class Factory extends \PasswordLib\Core\AbstractFactory {
     public function registerImplementation($name, $class) {
         $this->registerType(
             'implementations',
-            __NAMESPACE__.'\\Password',
+            __NAMESPACE__ . '\\Password',
             $name,
             $class
         );
@@ -112,8 +107,8 @@ class Factory extends \PasswordLib\Core\AbstractFactory {
      */
     protected function loadImplementations() {
         $this->loadFiles(
-            __DIR__.'/Implementation',
-            __NAMESPACE__.'\\Implementation\\',
+            __DIR__ . '/Implementation',
+            __NAMESPACE__ . '\\Implementation\\',
             array($this, 'registerImplementation')
         );
     }

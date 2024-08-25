@@ -108,7 +108,7 @@ class Generator {
             );
         }
 
-        $bits  = $this->countBits($range) + 1;
+        $bits  = (int) floor(log($range, 2) + 1);
         $bytes = (int) max(ceil($bits / 8), 1);
         $mask  = (int) (pow(2, $bits) - 1);
         /**
@@ -150,29 +150,19 @@ class Generator {
             return '';
         } elseif (empty($characters)) {
             // Default to base 64
-            $characters = '0123456789abcdefghijklmnopqrstuvwxyz'.
-                            'ABCDEFGHIJKLMNOPQRSTUVWXYZ./';
+            $characters = '0123456789abcdefghijklmnopqrstuvwxyz' .
+                          'ABCDEFGHIJKLMNOPQRSTUVWXYZ./';
         }
-        // determine how many bytes to generate
-        // This is basically doing floor(log(strlen($characters)))
-        // But it's fixed to work properly for all numbers
-        $len   = strlen($characters);
-        $bytes = ceil($length * ($this->countBits($len) + 1) / 8);
-
-        // determine mask for valid characters
-        $mask   = 255 - (255 % $len);
-        $result = '';
-        do {
-            $rand = $this->generate($bytes);
-            for ($i = 0; $i < $bytes; $i++) {
-                if (ord($rand[$i]) > $mask) {
-                    continue;
-                }
-                $result .= $characters[ord($rand[$i]) % $len];
-            }
-        } while (strlen($result) < $length);
-        // We may over-generate, since we always use the entire buffer
-        return substr($result, 0, $length);
+        //determine how many bytes to generate
+        $bytes  = ceil($length * floor(log(strlen($characters), 2) + 1) / 8);
+        $rand   = $this->generate($bytes);
+        $result = BaseConverter::convertFromBinary($rand, $characters);
+        if (strlen($result) < $length) {
+            $result = str_pad($result, $length, $characters[0], STR_PAD_LEFT);
+        } else {
+            $result = substr($result, 0, $length);
+        }
+        return $result;
     }
 
     /**
@@ -191,24 +181,6 @@ class Generator {
      */
     public function getSources() {
         return $this->sources;
-    }
-
-    /**
-     * Count the minimum number of bits to represent the provided number
-     *
-     * This is basically floor(log($number, 2))
-     * But avoids float precision issues
-     *
-     * @param int $number The number to count
-     *
-     * @return int The number of bits
-     */
-    protected function countBits($number) {
-        $log2 = 0;
-        while ($number >>= 1) {
-            $log2++;
-        }
-        return $log2;
     }
 
 }

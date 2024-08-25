@@ -27,9 +27,6 @@ interface OTPInterface
      */
     public function setSecret(string $secret): void;
 
-    /**
-     * @param positive-int $digits
-     */
     public function setDigits(int $digits): void;
 
     /**
@@ -38,6 +35,8 @@ interface OTPInterface
     public function setDigest(string $digest): void;
 
     /**
+     * Generate the OTP at the specified input.
+     *
      * @param 0|positive-int $input
      *
      * @return non-empty-string Return the OTP at the specified timestamp

@@ -23,15 +23,9 @@ namespace TeampassClasses\SuperGlobal;
  * details, see the `licenses` directory or individual file headers.
  * ---
  * @file      SuperGlobal.php
- * ---
- *
  * @author    Nils Laumaillé (nils@teampass.net)
- *
  * @copyright 2009-2024 Teampass.net
- *
- * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
- * ---
- *
+ * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
 
@@ -139,7 +133,7 @@ class SuperGlobal
         } elseif ($type === 'SERVER') {
             unset($_GET[$key]);
         } elseif ($type === 'COOKIE') {
-            setcookie($_COOKIE[$key], "", time() - 3600);
+            setcookie($_COOKIE[$key], "", time() - 3600, "/", "", true, true);
         }
     }
 }

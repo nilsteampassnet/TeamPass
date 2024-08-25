@@ -35,6 +35,9 @@ abstract class OTP implements OTPInterface
         return str_replace($placeholder, $provisioning_uri, $uri);
     }
 
+    /**
+     * @param 0|positive-int $input
+     */
     public function at(int $input): string
     {
         return $this->generateOTP($input);
@@ -134,9 +137,6 @@ abstract class OTP implements OTPInterface
         return $decoded;
     }
 
-    /**
-     * @param 0|positive-int $int
-     */
     private function intToByteString(int $int): string
     {
         $result = [];

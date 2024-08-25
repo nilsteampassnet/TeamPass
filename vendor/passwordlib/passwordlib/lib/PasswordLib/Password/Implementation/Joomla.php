@@ -31,7 +31,7 @@ use PasswordLib\Random\Factory as RandomFactory;
  * @subpackage Implementation
  * @author     Anthony Ferrara <ircmaxell@ircmaxell.com>
  */
-class Joomla extends \PasswordLib\Password\AbstractPassword {
+class Joomla implements \PasswordLib\Password\Password {
 
     /**
      * @var Generator The random generator to use for seeds
@@ -50,6 +50,15 @@ class Joomla extends \PasswordLib\Password\AbstractPassword {
     }
 
     /**
+     * Return the prefix used by this hashing method
+     *
+     * @return string The prefix used
+     */
+    public static function getPrefix() {
+        return false;
+    }
+
+    /**
      * Load an instance of the class based upon the supplied hash
      *
      * @param string $hash The hash to load from
@@ -65,6 +74,24 @@ class Joomla extends \PasswordLib\Password\AbstractPassword {
     }
 
     /**
+     * Build a new instance
+     *
+     * @param Generator $generator  The random generator to use for seeds
+     * @param Factory   $factory    The hash factory to use for this instance
+     *
+     * @return void
+     */
+    public function __construct(
+        \PasswordLib\Random\Generator $generator = null
+    ) {
+        if (is_null($generator)) {
+            $random    = new RandomFactory();
+            $generator = $random->getMediumStrengthGenerator();
+        }
+        $this->generator = $generator;
+    }
+
+    /**
      * Create a password hash for a given plain text password
      *
      * @param string $password The password to hash
@@ -72,12 +99,10 @@ class Joomla extends \PasswordLib\Password\AbstractPassword {
      * @return string The formatted password hash
      */
     public function create($password) {
-        $password = $this->checkPassword($password);
-        $chars    = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-            . '0123456789';
-        $salt     = $this->generator->generateString(32, $chars);
-        $hash     = md5($password.$salt);
-        return $hash.':'.$salt;
+        $chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        $salt  = $this->generator->generateString(32, $chars);
+        $hash  = md5($password . $salt);
+        return $hash . ':' . $salt;
     }
 
     /**
@@ -89,15 +114,14 @@ class Joomla extends \PasswordLib\Password\AbstractPassword {
      * @return boolean Does the password validate against the hash
      */
     public function verify($password, $hash) {
-        $password = $this->checkPassword($password);
         if (!static::detect($hash)) {
             throw new \InvalidArgumentException(
                 'The hash was not created here, we cannot verify it'
             );
         }
         list ($hash, $salt) = explode(':', $hash, 2);
-        $test               = md5($password.$salt);
-        return $this->compareStrings($test, $hash);
+        $test               = md5($password . $salt);
+        return $test == $hash;
     }
 
 }

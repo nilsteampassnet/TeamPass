@@ -36,8 +36,6 @@ use PasswordLib\Core\Strength;
  */
 class MicroTime implements \PasswordLib\Random\Source {
 
-    private $state = null;
-
     /**
      * Return an instance of Strength indicating the strength of the source
      *
@@ -45,16 +43,6 @@ class MicroTime implements \PasswordLib\Random\Source {
      */
     public static function getStrength() {
         return new Strength(Strength::VERYLOW);
-    }
-
-    public function __construct() {
-        $state = '';
-        if (function_exists('posix_times')) {
-            $state .= serialize(posix_times());
-        }
-        $state      .= getmypid().memory_get_usage();
-        $state      .= serialize($_ENV);
-        $this->state = hash('sha512', $state, true);
     }
 
     /**
@@ -65,27 +53,13 @@ class MicroTime implements \PasswordLib\Random\Source {
      * @return string A string of the requested size
      */
     public function generate($size) {
-        $result      = '';
-        $seed        = microtime().memory_get_usage();
-        $this->state = hash('sha512', $this->state.$seed, true);
-        /**
-         * Make the generated randomness a bit better by forcing a GC run which
-         * should complete in a indeterminate amount of time, hence improving
-         * the strength of the randomness a bit. It's still not crypto-safe,
-         * but at least it's more difficult to predict.
-         */
-        gc_collect_cycles();
-        for ($i = 0; $i < $size; $i += 8) {
-            $seed        = $this->state.microtime().pack('N', $i);
-            $this->state = hash('sha512', $seed, true);
-            /**
-             * We only use the first 8 bytes here to prevent exposing the state
-             * in its entirety, which could potentially expose other random 
-             * generations in the future (in the same process)...
-             */
-            $result .= substr($this->state, 0, 8);
+        $result = '';
+        $seed   = microtime() . memory_get_usage() . getmypid();
+        for ($i = 0; $i < $size; $i++) {
+            $seed    = md5(microtime() . $seed, true);
+            $result .= $seed[$i % 16];
         }
-        return substr($result, 0, $size);
+        return $result;
     }
 
 }

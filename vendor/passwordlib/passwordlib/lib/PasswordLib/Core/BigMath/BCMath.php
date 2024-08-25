@@ -29,7 +29,7 @@ class BCMath extends \PasswordLib\Core\BigMath {
      * @param string $left  The left argument
      * @param string $right The right argument
      * 
-     * @return string base-10 string of the sum of the two arguments
+     * @return A base-10 string of the sum of the two arguments
      */
     public function add($left, $right) {
         return bcadd($left, $right, 0);
@@ -41,7 +41,7 @@ class BCMath extends \PasswordLib\Core\BigMath {
      * @param string $left  The left argument
      * @param string $right The right argument
      * 
-     * @return string base-10 string of the difference of the two arguments
+     * @return A base-10 string of the difference of the two arguments
      */
     public function subtract($left, $right) {
         return bcsub($left, $right);

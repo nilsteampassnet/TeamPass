@@ -126,7 +126,7 @@ class AccessToken implements AccessTokenInterface, ResourceOwnerAccessTokenInter
 
             $this->expires = $expires;
         }
-        
+
         // Capture any additional values that might exist in the token but are
         // not part of the standard response. Vendors will sometimes pass
         // additional user data this way.

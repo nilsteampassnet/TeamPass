@@ -29,7 +29,6 @@ namespace TeampassClasses\SessionManager;
  */
 
 use Symfony\Component\HttpFoundation\Session\Session;
-use Symfony\Component\HttpFoundation\Session\Storage\NativeSessionStorage;
 use Symfony\Component\HttpFoundation\Request;
 
 class SessionManager
@@ -131,11 +130,5 @@ class SessionManager
         }
 
         return null;
-    }
-
-    private static function determineBasePath(Request $request) {
-        // Utilise l'objet Request pour obtenir le chemin de base
-        $basePath = $request->getBasePath();
-        return $basePath !== '' ? $basePath : '/';
     }
 }

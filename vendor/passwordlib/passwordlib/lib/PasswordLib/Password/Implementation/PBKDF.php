@@ -35,13 +35,12 @@ use PasswordLib\Key\Derivation\PBKDF\PBKDF2 as PBKDF2;
  * @subpackage Implementation
  * @author     Anthony Ferrara <ircmaxell@ircmaxell.com>
  */
-class PBKDF extends \PasswordLib\Password\AbstractPassword {
+class PBKDF implements \PasswordLib\Password\Password {
 
-    protected $defaultOptions = array(
-        'kdf'        => 'pbkdf2-sha512',
-        'size'       => 40,
-        'iterations' => 5000,
-    );
+    /**
+     * @var PBKDF The PBKDF derivation implementation to use for this instance
+     */
+    protected $derivation = null;
 
     /**
      * @var Generator The Random Number Generator to use for making salts
@@ -49,9 +48,34 @@ class PBKDF extends \PasswordLib\Password\AbstractPassword {
     protected $generator = null;
 
     /**
-     * @var string The prefix for the generated hash
+     * @var int The number of iterations to perform on the password
      */
-    protected static $prefix = '$pbkdf$';
+    protected $iterations = 5000;
+
+    /**
+     * @var int The length in bytes of the generated password hash
+     */
+    protected $size = 40;
+
+    /**
+     * Determine if the hash was made with this method
+     *
+     * @param string $hash The hashed data to check
+     *
+     * @return boolean Was the hash created by this method
+     */
+    public static function detect($hash) {
+        return strncmp($hash, '$pbkdf$', 7) === 0;
+    }
+
+    /**
+     * Return the prefix used by this hashing method
+     *
+     * @return string The prefix used
+     */
+    public static function getPrefix() {
+        return '$pbkdf$';
+    }
 
     /**
      * Load an instance of the class based upon the supplied hash
@@ -74,30 +98,36 @@ class PBKDF extends \PasswordLib\Password\AbstractPassword {
         $hash       = $factory->getPBKDFFromSignature($signature);
         $iterations = $parts[3];
         $size       = $parts[4];
-        return new static(array(
-            'kdf'        => $hash,
-            'size'       => $size,
-            'iterations' => $iterations,
-        ));
+        return new static($hash, $size, $iterations);
     }
 
     /**
-     * Set an option for the instance
+     * Build a new instance of the PBKDF password class
      *
-     * @param string $option The option to set
-     * @param mixed  $value  The value to set the option to
+     * @param PBKDF     $derivation The derivation class to use
+     * @param int       $size       The size of hash to generate
+     * @param int       $iterations The number of iterations to perform
+     * @param Generator $generator  The Random Generator to use
      *
-     * @return $this
+     * @return void;
      */
-    public function setOption($option, $value) {
-        if ($option == 'kdf') {
-            if (!$value instanceof \PasswordLib\Key\Derivation\PBKDF) {
-                $factory = new KeyFactory();
-                $value   = $factory->getPBKDFFromSignature($value);
-            }
+    public function __construct(
+        \PasswordLib\Key\Derivation\PBKDF $derivation = null,
+        $size = 40,
+        $iterations = 5000,
+        \PasswordLib\Random\Generator $generator = null
+    ) {
+        if (is_null($derivation)) {
+            $derivation = new PBKDF2();
         }
-        $this->options[$option] = $value;
-        return $this;
+        $this->derivation = $derivation;
+        $this->size       = $size < 40 ? 40 : (int) $size;
+        $this->iterations = $iterations > 0 ? (int) $iterations : 1;
+        if (is_null($generator)) {
+            $factory   = new RandomFactory;
+            $generator = $factory->getMediumStrengthGenerator();
+        }
+        $this->generator = $generator;
     }
 
     /**
@@ -108,17 +138,11 @@ class PBKDF extends \PasswordLib\Password\AbstractPassword {
      * @return string The formatted password hash
      */
     public function create($password) {
-        $password = $this->checkPassword($password);
-        $size     = $this->options['size'] - 8; // remove size of stored bits
-        $saltSize = floor($size / 5); //Use 20% of the size for the salt
+        $size     = $this->size - 8; // remove size of stored bits
+        $saltSize = floor($size / 5);  //Use 20% of the size for the salt
         $hashSize = $size - $saltSize;
         $salt     = $this->generator->generate($saltSize);
-        return $this->hash(
-            $password,
-            $salt,
-            $this->options['iterations'],
-            $hashSize
-        );
+        return $this->hash($password, $salt, $this->iterations, $hashSize);
     }
 
     /**
@@ -130,21 +154,19 @@ class PBKDF extends \PasswordLib\Password\AbstractPassword {
      * @return boolean Does the password validate against the hash
      */
     public function verify($password, $hash) {
-        $password = $this->checkPassword($password);
         if (strlen($hash) <= 16 || strpos($hash, '$') === false) {
             return false;
         }
         $parts = explode('$', $hash);
         if (count($parts) != 7) {
             return false;
-        } elseif ($parts[2] != $this->options['kdf']->getSignature()) {
+        } elseif ($parts[2] != $this->derivation->getSignature()) {
             return false;
         }
         $iterations = $parts[3];
         $size       = $parts[4];
         $salt       = base64_decode($parts[5]);
-        $tmp        = $this->hash($password, $salt, $iterations, $size);
-        return $this->compareStrings($tmp, $hash);
+        return $this->hash($password, $salt, $iterations, $size) == $hash;
     }
 
     /**
@@ -157,10 +179,10 @@ class PBKDF extends \PasswordLib\Password\AbstractPassword {
      * @return string The hashed password
      */
     protected function hash($password, $salt, $iterations, $size) {
-        $bit = $this->options['kdf']->derive($password, $salt, $iterations, $size);
-        $sig = $this->options['kdf']->getSignature();
-        $sig = '$pbkdf$'.$sig.'$'.$iterations.'$'.$size;
-        return $sig.'$'.base64_encode($salt).'$'.base64_encode($bit);
+        $bit = $this->derivation->derive($password, $salt, $iterations, $size);
+        $sig = $this->derivation->getSignature();
+        $sig = '$pbkdf$' . $sig . '$' . $iterations . '$' . $size;
+        return $sig . '$' . base64_encode($salt) . '$' . base64_encode($bit);
     }
 
 }

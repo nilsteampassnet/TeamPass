@@ -301,7 +301,7 @@ class Azure extends AbstractProvider
         }
 
         $request  = $this->getAuthenticatedRequest($method, $url, $accessToken, $options);
-        $response = $this->getParsedResponse($request);        
+        $response = $this->getParsedResponse($request);
 
         return $response;
     }

@@ -10,8 +10,6 @@ interface HOTPInterface extends OTPInterface
 
     /**
      * The initial counter (a positive integer).
-     *
-     * @return 0|positive-int
      */
     public function getCounter(): int;
 
@@ -34,8 +32,5 @@ interface HOTPInterface extends OTPInterface
         int $digits = 6
     ): self;
 
-    /**
-     * @param 0|positive-int $counter
-     */
     public function setCounter(int $counter): void;
 }

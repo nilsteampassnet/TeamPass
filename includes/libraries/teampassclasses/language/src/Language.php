@@ -33,7 +33,7 @@ class Language {
     private $path;
     private $translations;
 
-    public function __construct($language = null, $path = __DIR__."/../../../../language") {
+    public function __construct($language = null, $path = __DIR__."/../../../../includes/language") {
         if (null === $language || empty($language) === true ) {
             $language = 'english';
         }

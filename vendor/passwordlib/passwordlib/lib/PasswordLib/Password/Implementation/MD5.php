@@ -31,8 +31,6 @@ use PasswordLib\Random\Factory as RandomFactory;
  */
 class MD5 extends Crypt {
 
-    protected static $prefix = '$1$';
-
     protected $saltLen = 12;
 
     /**
@@ -43,12 +41,21 @@ class MD5 extends Crypt {
      * @return boolean Was the hash created by this method
      */
     public static function detect($hash) {
-        static $regex = '/^\$1\$[a-zA-Z0-9.\/]{8}\$[a-zA-Z0-9.\/]{22}/';
+        static $regex = '/^\$1\$[a-zA-Z0-9.\/]{12}\$[a-zA-Z0-9.\/]{22}/';
         return 1 == preg_match($regex, $hash);
+    }
+
+    /**
+     * Return the prefix used by this hashing method
+     *
+     * @return string The prefix used
+     */
+    public static function getPrefix() {
+        return '$1$';
     }
 
     protected function generateSalt() {
         $salt = parent::generateSalt();
-        return '$1$'.$salt;
+        return '$1$' . $salt;
     }
 }

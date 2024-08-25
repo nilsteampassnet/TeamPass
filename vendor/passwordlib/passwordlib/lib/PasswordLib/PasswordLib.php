@@ -1,5 +1,4 @@
 <?php
-namespace PasswordLib;
 /**
  * A core wrapper class to provide easy access to all of the cryptographic functions
  * contained within the library
@@ -14,23 +13,19 @@ namespace PasswordLib;
  * @version    Build @@version@@
  */
 
+namespace PasswordLib;
 
 /**
  * The autoloader class will be autoloaded at this point even if another autoloader
  * is in use.  So if it does not exist at this point, we know we must bootstrap
  * the libraries.
  */
-    /*
 if (!class_exists('\\PasswordLib\Core\AutoLoader', true)) {
     require_once 'bootstrap.php';
 }
-*/
 
 use PasswordLib\Password\Factory as PasswordFactory;
 use PasswordLib\Random\Factory as RandomFactory;
-
-require_once dirname(__FILE__)."/Password/Factory.php";
-require_once dirname(__FILE__)."/Random/Factory.php";
 
 /**
  * A core wrapper class to provide easy access to some of the cryptographic
@@ -50,18 +45,9 @@ class PasswordLib {
      *
      * @return string The generated password hash
      */
-    public function createPasswordHash(
-        $password,
-        $prefix = '$2a$',
-        array $options = array()
-    ) {
-        // if we're in a later version of PHP, we need to change this
-        if ($prefix == '$2a$' && version_compare(PHP_VERSION, '5.3.7') >= 0) {
-            $prefix = '$2y$';
-        }
-
+    public function createPasswordHash($password, $prefix = '$2a$') {
         $factory = new PasswordFactory();
-        return $factory->createHash($password, $prefix, $options);
+        return $factory->createHash($password, $prefix);
     }
 
     /**
@@ -70,7 +56,6 @@ class PasswordLib {
      * @param string $password The supplied password to attempt to verify
      * @param string $hash     The valid hash to verify against
      *
-     * @throws \DomainException If the hash is invalid or impossible to verify
      * @return boolean Is the password valid
      */
     public function verifyPasswordHash($password, $hash) {
@@ -169,8 +154,9 @@ class PasswordLib {
      * @return string The shuffled string
      */
     public function shuffleString($string) {
-        $array  = str_split($string);
-        $result = $this->shuffleArray($array);
+        $factory = new RandomFactory;
+        $array   = str_split($string);
+        $result  = $this->shuffleArray($array);
         return implode('', $result);
     }
 

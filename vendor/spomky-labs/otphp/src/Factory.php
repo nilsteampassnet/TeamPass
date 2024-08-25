@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OTPHP;
 
 use InvalidArgumentException;
+use Psr\Clock\ClockInterface;
 use Throwable;
 use function assert;
 use function count;
@@ -16,7 +17,7 @@ use function count;
  */
 final class Factory implements FactoryInterface
 {
-    public static function loadFromProvisioningUri(string $uri): OTPInterface
+    public static function loadFromProvisioningUri(string $uri, ?ClockInterface $clock = null): OTPInterface
     {
         try {
             $parsed_url = Url::fromString($uri);
@@ -24,8 +25,16 @@ final class Factory implements FactoryInterface
         } catch (Throwable $throwable) {
             throw new InvalidArgumentException('Not a valid OTP provisioning URI', $throwable->getCode(), $throwable);
         }
+        if ($clock === null) {
+            trigger_deprecation(
+                'spomky-labs/otphp',
+                '11.3.0',
+                'The parameter "$clock" will become mandatory in 12.0.0. Please set a valid PSR Clock implementation instead of "null".'
+            );
+            $clock = new InternalClock();
+        }
 
-        $otp = self::createOTP($parsed_url);
+        $otp = self::createOTP($parsed_url, $clock);
 
         self::populateOTP($otp, $parsed_url);
 
@@ -62,11 +71,11 @@ final class Factory implements FactoryInterface
         $otp->setIssuer($result[0]);
     }
 
-    private static function createOTP(Url $parsed_url): OTPInterface
+    private static function createOTP(Url $parsed_url, ClockInterface $clock): OTPInterface
     {
         switch ($parsed_url->getHost()) {
             case 'totp':
-                $totp = TOTP::createFromSecret($parsed_url->getSecret());
+                $totp = TOTP::createFromSecret($parsed_url->getSecret(), $clock);
                 $totp->setLabel(self::getLabel($parsed_url->getPath()));
 
                 return $totp;

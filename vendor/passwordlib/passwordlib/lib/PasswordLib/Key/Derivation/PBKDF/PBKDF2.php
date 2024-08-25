@@ -49,7 +49,7 @@ class PBKDF2
         for ($i = 1; $i <= $len; $i++) {
             $tmp = hash_hmac(
                 $this->hash,
-                $salt.pack('N', $i),
+                $salt . pack('N', $i),
                 $password,
                 true
             );
@@ -72,7 +72,7 @@ class PBKDF2
      * @return string The signature for this instance
      */
     public function getSignature() {
-        return 'pbkdf2-'.$this->hash;
+        return 'pbkdf2-' . $this->hash;
     }
 
 }

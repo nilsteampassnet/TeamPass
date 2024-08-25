@@ -29,14 +29,8 @@ interface TOTPInterface extends OTPInterface
         int $digits = self::DEFAULT_DIGITS
     ): self;
 
-    /**
-     * @param positive-int $period
-     */
     public function setPeriod(int $period): void;
 
-    /**
-     * @param 0|positive-int $epoch
-     */
     public function setEpoch(int $epoch): void;
 
     /**
@@ -48,18 +42,10 @@ interface TOTPInterface extends OTPInterface
 
     /**
      * Get the period of time for OTP generation (a non-null positive integer, in second).
-     *
-     * @return positive-int
      */
     public function getPeriod(): int;
 
-    /**
-     * @return 0|positive-int
-     */
     public function expiresIn(): int;
 
-    /**
-     * @return 0|positive-int
-     */
     public function getEpoch(): int;
 }

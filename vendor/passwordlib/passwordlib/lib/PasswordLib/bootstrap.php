@@ -18,7 +18,7 @@
 
 namespace PasswordLib;
 
-require_once __DIR__.'/Core/AutoLoader.php';
+require_once __DIR__ . '/Core/AutoLoader.php';
 
 $autoloader = new Core\AutoLoader(__NAMESPACE__, dirname(__DIR__));
 

@@ -33,7 +33,7 @@ use PasswordLib\Random\Factory as RandomFactory;
  * @subpackage Implementation
  * @author     Anthony Ferrara <ircmaxell@ircmaxell.com>
  */
-class APR1 extends \PasswordLib\Password\AbstractPassword {
+class APR1 implements \PasswordLib\Password\Password {
 
     /**
      * @var Generator The random generator to use for seeds
@@ -50,7 +50,25 @@ class APR1 extends \PasswordLib\Password\AbstractPassword {
      */
     protected $iterations = 1000;
 
-    protected static $prefix = '$apr1$';
+    /**
+     * Determine if the hash was made with this method
+     *
+     * @param string $hash The hashed data to check
+     *
+     * @return boolean Was the hash created by this method
+     */
+    public static function detect($hash) {
+        return strncmp($hash, '$apr1$', 6) === 0;
+    }
+
+    /**
+     * Return the prefix used by this hashing method
+     *
+     * @return string The prefix used
+     */
+    public static function getPrefix() {
+        return '$apr1$';
+    }
 
     /**
      * Load an instance of the class based upon the supplied hash
@@ -68,6 +86,23 @@ class APR1 extends \PasswordLib\Password\AbstractPassword {
     }
 
     /**
+     * Build a new instance
+     *
+     * @param Generator $generator The random generator to use for seeds
+     *
+     * @return void
+     */
+    public function __construct(
+        \PasswordLib\Random\Generator $generator = null
+    ) {
+        if (is_null($generator)) {
+            $random    = new RandomFactory();
+            $generator = $random->getMediumStrengthGenerator();
+        }
+        $this->generator = $generator;
+    }
+
+    /**
      * Create a password hash for a given plain text password
      *
      * @param string $password The password to hash
@@ -75,11 +110,7 @@ class APR1 extends \PasswordLib\Password\AbstractPassword {
      * @return string The formatted password hash
      */
     public function create($password) {
-        $password = $this->checkPassword($password);
-        $salt     = $this->to64(
-            $this->generator->generateInt(0, PHP_INT_MAX),
-            8
-        );
+        $salt = $this->to64($this->generator->generateInt(0, PHP_INT_MAX), 8);
         return $this->hash($password, $salt, $this->iterations);
     }
 
@@ -92,13 +123,12 @@ class APR1 extends \PasswordLib\Password\AbstractPassword {
      * @return boolean Does the password validate against the hash
      */
     public function verify($password, $hash) {
-        $password = $this->checkPassword($password);
-        $bits     = explode('$', $hash);
+        $bits = explode('$', $hash);
         if (!isset($bits[3]) || $bits[1] != 'apr1') {
             return false;
         }
         $test = $this->hash($password, $bits[2], $this->iterations);
-        return $this->compareStrings($test, $hash);
+        return $test == $hash;
     }
 
     /**
@@ -112,7 +142,7 @@ class APR1 extends \PasswordLib\Password\AbstractPassword {
      */
     protected function hash($password, $salt, $iterations) {
         $len  = strlen($password);
-        $text = $password.'$apr1$'.$salt;
+        $text = $password . '$apr1$' . $salt;
         $bin  = md5($password.$salt.$password, true);
         for ($i = $len; $i > 0; $i -= 16) {
             $text .= substr($bin, 0, min(16, $i));
@@ -143,23 +173,23 @@ class APR1 extends \PasswordLib\Password\AbstractPassword {
     protected function convertToHash($bin, $salt) {
         $tmp  = '$apr1$'.$salt.'$';
         $tmp .= $this->to64(
-            (ord($bin[0]) << 16) | (ord($bin[6]) << 8) | ord($bin[12]),
+            (ord($bin[0])<<16) | (ord($bin[6])<<8) | ord($bin[12]),
             4
         );
         $tmp .= $this->to64(
-            (ord($bin[1]) << 16) | (ord($bin[7]) << 8) | ord($bin[13]),
+            (ord($bin[1])<<16) | (ord($bin[7])<<8) | ord($bin[13]),
             4
         );
         $tmp .= $this->to64(
-            (ord($bin[2]) << 16) | (ord($bin[8]) << 8) | ord($bin[14]),
+            (ord($bin[2])<<16) | (ord($bin[8])<<8) | ord($bin[14]),
             4
         );
         $tmp .= $this->to64(
-            (ord($bin[3]) << 16) | (ord($bin[9]) << 8) | ord($bin[15]),
+            (ord($bin[3])<<16) | (ord($bin[9])<<8) | ord($bin[15]),
             4
         );
         $tmp .= $this->to64(
-            (ord($bin[4]) << 16) | (ord($bin[10]) << 8) | ord($bin[5]),
+            (ord($bin[4])<<16) | (ord($bin[10])<<8) | ord($bin[5]),
             4
         );
         $tmp .= $this->to64(

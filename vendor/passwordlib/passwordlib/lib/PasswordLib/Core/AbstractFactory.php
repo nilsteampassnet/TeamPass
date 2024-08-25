@@ -73,7 +73,7 @@ abstract class AbstractFactory {
             $filename = $file->getBasename();
             if ($file->isFile() && substr($filename, -4) == '.php') {
                 $name  = substr($filename, 0, -4);
-                $class = $namespace.$name;
+                $class = $namespace . $name;
                 call_user_func($callback, $name, $class);
             }
         }

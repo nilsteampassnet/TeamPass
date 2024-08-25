@@ -44,7 +44,7 @@ class BaseConverter {
             };
         $string    = array_map($callback, $string);
         $converted = static::baseConvert($string, 256, strlen($characters));
-        $callback  = function($num) use ($characters) {
+        $callback  = function ($num) use ($characters) {
                 return $characters[$num];
             };
         $ret = implode('', array_map($callback, $converted));
@@ -69,7 +69,7 @@ class BaseConverter {
             };
         $string    = array_map($callback, $string);
         $converted = static::baseConvert($string, strlen($characters), 256);
-        $callback  = function($num) {
+        $callback  = function ($num) {
                 return chr($num);
             };
         return implode('', array_map($callback, $converted));
@@ -98,7 +98,7 @@ class BaseConverter {
         while ($count) {
             $itMax     = $count;
             $remainder = $count = $loop = 0;
-            while ($loop < $itMax) {
+            while($loop < $itMax) {
                 $dividend  = $source[$loop++] + $remainder * $srcBase;
                 $remainder = $dividend % $dstBase;
                 $res       = ($dividend - $remainder) / $dstBase;

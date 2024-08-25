@@ -46,6 +46,9 @@ final class HOTP extends OTP implements HOTPInterface
         return self::createFromSecret(self::generateSecret());
     }
 
+    /**
+     * @return 0|positive-int
+     */
     public function getCounter(): int
     {
         $value = $this->getParameter('counter');
@@ -63,6 +66,8 @@ final class HOTP extends OTP implements HOTPInterface
 
     /**
      * If the counter is not provided, the OTP is verified at the actual counter.
+     *
+     * @param null|0|positive-int $counter
      */
     public function verify(string $otp, null|int $counter = null, null|int $window = null): bool
     {
@@ -97,9 +102,6 @@ final class HOTP extends OTP implements HOTPInterface
         ]];
     }
 
-    /**
-     * @param positive-int $counter
-     */
     private function updateCounter(int $counter): void
     {
         $this->setCounter($counter);

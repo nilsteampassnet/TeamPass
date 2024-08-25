@@ -31,14 +31,17 @@ use PasswordLib\Random\Factory as RandomFactory;
  * @subpackage Implementation
  * @author     Anthony Ferrara <ircmaxell@ircmaxell.com>
  */
-class Hash extends \PasswordLib\Password\AbstractPassword {
+class Hash implements \PasswordLib\Password\Password {
+
+    /**
+     * @var Generator The random generator to use for seeds
+     */
+    protected $generator = null;
 
     /**
      * @var Hash The hash function to use (MD5)
      */
-    protected $defaultOptions = array(
-        'hash' => 'sha512',
-    );
+    protected $hash = null;
 
     /**
      * Determine if the hash was made with this method
@@ -51,6 +54,15 @@ class Hash extends \PasswordLib\Password\AbstractPassword {
         $res  = preg_match('/^[a-fA-F0-9]+$/', $hash);
         $res &= (int) in_array(strlen($hash), array(32, 40, 64, 128));
         return (boolean) $res;
+    }
+
+    /**
+     * Return the prefix used by this hashing method
+     *
+     * @return string The prefix used
+     */
+    public static function getPrefix() {
+        return false;
     }
 
     /**
@@ -80,7 +92,28 @@ class Hash extends \PasswordLib\Password\AbstractPassword {
                 $hashMethod = 'sha512';
                 break;
         }
-        return new static(array('hash' => $hashMethod));
+        return new static($hashMethod);
+    }
+
+    /**
+     * Build a new instance
+     *
+     * @param string    $hashMethod The hash function to use for hashing
+     * @param Generator $generator  The random generator to use for seeds
+     * @param Factory   $factory    The hash factory to use for this instance
+     *
+     * @return void
+     */
+    public function __construct(
+        $hashMethod,
+        \PasswordLib\Random\Generator $generator = null
+    ) {
+        $this->hash = $hashMethod;
+        if (is_null($generator)) {
+            $random    = new RandomFactory();
+            $generator = $random->getMediumStrengthGenerator();
+        }
+        $this->generator = $generator;
     }
 
     /**
@@ -105,9 +138,8 @@ class Hash extends \PasswordLib\Password\AbstractPassword {
      * @return boolean Does the password validate against the hash
      */
     public function verify($password, $hash) {
-        $password = $this->checkPassword($password);
-        $test     = hash($this->options['hash'], $password);
-        return $this->compareStrings($test, $hash);
+        $test = hash($this->hash, $password);
+        return $test == $hash;
     }
 
 }

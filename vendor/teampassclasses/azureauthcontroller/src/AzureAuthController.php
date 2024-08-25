@@ -30,6 +30,7 @@ namespace TeampassClasses\AzureAuthController;
  */
 
 use TheNetworg\OAuth2\Client\Provider\Azure;
+//use League\OAuth2\Client\Token\AccessToken;
 
 /*** INFO - .htaccess modification ***
  * RewriteEngine On
@@ -43,25 +44,22 @@ class AzureAuthController
     protected $provider;
     protected $settings;
 
-    public function __construct(array $settings, bool $setup = false)
+    public function __construct(array $settings)
     {
         $this->provider = new Azure([
-            'clientId'                => $settings['oauth2_client_id'],
-            'clientSecret'            => $settings['oauth2_client_secret'],
-            'redirectUri'             => $settings['cpassman_url'].'/'.($setup === false ? OAUTH2_REDIRECTURI : 'index.php?page=oauth'),
-            'urlAuthorize'            => $settings['oauth2_client_endpoint'],
-            'urlAccessToken'          => $settings['oauth2_client_token'],
-            'urlResourceOwnerDetails' => '',
-            'scopes'                  => explode(",", $settings['oauth2_client_scopes']),
+            'clientId'                => $settings['oauth2_azure_clientId'],
+            'clientSecret'            => $settings['oauth2_azure_clientSecret'],
+            'redirectUri'             => $settings['oauth2_azure_redirectUri'],
+            'urlAuthorize'            => $settings['oauth2_azure_urlAuthorize'],
+            'urlAccessToken'          => $settings['oauth2_azure_urlAccessToken'],
+            'urlResourceOwnerDetails' => $settings['oauth2_azure_urlResourceOwnerDetails'],
+            'scopes'                  => explode(",", $settings['oauth2_azure_scopes']),
         ]);
     }
 
     public function redirect()
     {
         // Si nous n'avons pas de code, redirigeons vers le login Azure AD
-        //$baseGraphUri = $this->provider->getRootMicrosoftGraphUri(null);
-        //$this->provider->scope = 'openid profile email Group.Read.All User.Read offline_access';
-        //$authUrl = $this->provider->getAuthorizationUrl(['scope' => $this->provider->scope]);
         $authUrl = $this->provider->getAuthorizationUrl();
         $_SESSION['oauth2state'] = $this->provider->getState();
         header('Location: ' . $authUrl);
@@ -70,35 +68,22 @@ class AzureAuthController
 
     public function callback()
     {
-        error_log('---- CALBACK INIT ----');
-        //error_log('Verif: '.$_SESSION['oauth2state']." -- ".$_GET['state']);
         // Vérifier l'état pour mitiger les attaques CSRF
         if (empty($_GET['state']) || ($_GET['state'] !== $_SESSION['oauth2state'])) {
             unset($_SESSION['oauth2state']);
-            error_log('---- DONE ERROR ----');
             exit('État invalide');
         }
 
-        $baseGraphUri = $this->provider->getRootMicrosoftGraphUri(null);
-        $this->provider->scope = 'openid profile email User.Read offline_access';//Group.Read.All
         try {
             // Échanger le code contre un token d'access
             $token = $this->provider->getAccessToken('authorization_code', [
-                //'scope' => 'Group.Read.All',//$this->provider->scope,
-                'scope' => $this->provider->scope,
                 'code' => $_GET['code']
             ]);
 
             // Récupérer les informations de l'utilisateur
             $user = $this->provider->getResourceOwner($token);
-            error_log('Value : '.print_r($user, true)." ---- RESR ----".$baseGraphUri);
 
-            var_dump(array($user));;
-            
-            echo "getMemberGroups:<br>";
-            $groupMember = $this->provider->get($this->provider->getRootMicrosoftGraphUri($token) . '/v1.0/me', $token);
-            var_dump($groupMember);
-
+            // Ici, gérer la connexion de l'utilisateur dans votre système
             return [
                 'error' => false,
                 'userAzureInfo' => $user,
@@ -111,123 +96,4 @@ class AzureAuthController
             ];
         }
     }
-
-    public function getAllGroups()
-{
-    error_log('---- getAllGroups INIT ----');
-    try {
-        $accessToken = $this->provider->getAccessToken('authorization_code', [
-            'code' => $_GET['code'],
-        ]);
-        //error_log(print_r($accessToken, true));
-
-        $response = $this->provider->get($this->provider->getRootMicrosoftGraphUri($accessToken) . '/v1.0/groups', $accessToken);
-        error_log(print_r($response, true));
-
-    } catch (\League\OAuth2\Client\Provider\Exception\IdentityProviderException $e) {
-        exit('Erreur lors de la récupération des groupes : ' . $e->getMessage());
-    }
 }
-
-    public function callbackSetup()
-    {
-        error_log('---- CALBACKSETUP INIT ----');
-        // Vérifier l'état pour mitiger les attaques CSRF
-        if (empty($_GET['state']) || ($_GET['state'] !== $_SESSION['oauth2state'])) {
-            unset($_SESSION['oauth2state']);
-            error_log('---- DONE ERROR ----');
-            exit('État invalide');
-        }
-// aud: api://46ea19d2-1db1-4005-b131-4b4c12d39786
-        $this->provider->scope = 'api://46ea19d2-1db1-4005-b131-4b4c12d39786/Group.Read.All';
-        $accessToken = $this->provider->getAccessToken('authorization_code', [
-            'scope' => $this->provider->scope,
-            'code' => $_GET['code'],
-        ]);
-        error_log(print_r($accessToken, true));
-        //error_log($this->provider->getRootMicrosoftGraphUri($accessToken));
-        //$userData = $this->provider->get($this->provider->getRootMicrosoftGraphUri($accessToken) . '/v1.0/me', $accessToken);
-
-        /*
-        // Utilisation du token pour faire une requête à Microsoft Graph
-        $graphUrl = "https://graph.microsoft.com/v1.0/me";
-        $response = $this->provider->getAuthenticatedRequest(
-            'GET',
-            $graphUrl,
-            $accessToken->getToken()  // Assurez-vous de passer le token correctement
-        );
-        $userData = $this->provider->getParsedResponse($response);
-        */
-        print_r($userData);
-
-        
-    }
-}
-
-/*
-        $baseGraphUri = $this->provider->getRootMicrosoftGraphUri(null);
-        $this->provider->scope = 'openid profile email User.Read offline_access';//Group.Read.All
-        try {
-            // Échanger le code contre un token d'access
-            $accessToken = $this->provider->getAccessToken('authorization_code', [
-                'scope' => $this->provider->scope,
-                'code' => $_GET['code'],
-            ]);
-
-            // Utilisation du token pour accéder à Microsoft Graph
-            $resourceUrl = $this->provider->getRootMicrosoftGraphUri(null) . '/v1.0/me';
-            $response = $this->provider->getAuthenticatedRequest('GET', $resourceUrl, $accessToken);
-            error_log("---ICI---");
-            // Exécution de la requête
-            $userData = $this->provider->getParsedResponse($response);
-            error_log(print_r($userData, true));
-
-            return [
-                'error' => false,
-            ];
-
-        } catch (\Exception $e) {
-            return [
-                'error' => true,
-                'message' => 'Error while catching token: '.$e->getMessage(),
-            ];
-        }*/
-
-//--------------------------
-
-/*
-            $accessToken = $token->getToken(); // Obtenez le token d'accès du token retourné par getAccessToken
-            if (isset($token)) {
-                $graphUrl = "https://graph.microsoft.com/v1.0/me";//api://46ea19d2-1db1-4005-b131-4b4c12d39786/Group.Read.All
-                $ch = curl_init($graphUrl);
-                curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                    "Authorization: Bearer " . $accessToken,
-                    "Content-Type: application/json"
-                ]);
-                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                $userData = curl_exec($ch);
-                curl_close($ch);
-            
-                print_r($userData);
-            }
-/*
-
-            // Get meail and groups
-            // Récupérer les informations de profil, y compris l'email
-            $baseGraphUri = $this->provider->getRootMicrosoftGraphUri($token) . '/v1.0/me';
-            error_log('Value : '.($baseGraphUri));
-            $me = $this->provider->get($baseGraphUri, $token);
-
-            error_log('Value : '.print_r($me, true));
-            // Convertir la réponse en array
-            $userInfo = json_decode($me, true);
-            $email = $userInfo['mail'] ?? $userInfo['userPrincipalName']; // L'email peut être dans 'mail' ou 'userPrincipalName'
-
-            // Récupérer les groupes de l'utilisateur
-            $response = $this->provider->get($this->provider->getRootMicrosoftGraphUri($token) . '/v1.0/me/memberOf', $token);
-
-            $groupsInfo = json_decode($response, true);
-            $groups = $groupsInfo['value']; // Les groupes sont dans la clé 'value'
-
-            error_log('Value2 >> Email: '.$email.' - Groups: '.$groups);
-*/

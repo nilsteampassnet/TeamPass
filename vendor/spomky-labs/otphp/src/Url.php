@@ -80,7 +80,6 @@ final class Url
             array_key_exists($key, $parsed_url) || throw new InvalidArgumentException(
                 'Not a valid OTP provisioning URI'
             );
-            is_string($parsed_url[$key]) || throw new InvalidArgumentException('Not a valid OTP provisioning URI');
         }
         $scheme = $parsed_url['scheme'] ?? null;
         $host = $parsed_url['host'] ?? null;

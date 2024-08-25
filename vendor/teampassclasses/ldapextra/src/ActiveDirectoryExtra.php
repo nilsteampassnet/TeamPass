@@ -30,9 +30,9 @@ namespace TeampassClasses\LdapExtra;
  */
 
 use LdapRecord\Models\ActiveDirectory\Group as BaseGroup ;
-use LdapRecord\Models\ActiveDirectory\User as AdUser;
 use LdapRecord\Connection;
 use LdapRecord\Container;
+use LdapRecord\Models\OpenLDAP\User;
 
 class ActiveDirectoryExtra extends BaseGroup 
 {
@@ -94,12 +94,6 @@ class ActiveDirectoryExtra extends BaseGroup
 
         try {
             Container::addConnection($connection);
-
-            // Check if connection is ok
-            if (!$connection->isConnected()) {
-                $connection->connect();
-            }
-
             // get id attribute
             if (isset($SETTINGS['ldap_guid_attibute']) ===true && empty($SETTINGS['ldap_guid_attibute']) === false) {
                 $idAttribute = $SETTINGS['ldap_guid_attibute'];
@@ -108,7 +102,7 @@ class ActiveDirectoryExtra extends BaseGroup
             }
 
             // Get user groups from AD
-            $user = AdUser::find($userDN);
+            $user = User::find($userDN);
             $groups = $user->groups()->get();
             foreach ($groups as $group) {
                 array_push(
@@ -117,7 +111,7 @@ class ActiveDirectoryExtra extends BaseGroup
                 );
             }
         } catch (\LdapRecord\Auth\BindException $e) {
-            error_log("TEAMPASS ERROR - ".__FILE__." - userIsEnabled - ".$e->getMessage());
+            // Do nothing
         }
 
         return [
@@ -139,19 +133,10 @@ class ActiveDirectoryExtra extends BaseGroup
         $isEnabled = false;
         try {
             Container::addConnection($connection);
-
-            // Check if connection is ok
-            if (!$connection->isConnected()) {
-                $connection->connect();
-            }
-
-            $user = AdUser::find($userDN);
-            if (!$user) {
-                return false;
-            }
+            $user = User::find($userDN);
             $isEnabled = $user->isEnabled();
         } catch (\LdapRecord\Auth\BindException $e) {
-            error_log("TEAMPASS ERROR - ".__FILE__." - userIsEnabled - ".$e->getMessage());
+            // Do nothing
         }
         return $isEnabled;
     }

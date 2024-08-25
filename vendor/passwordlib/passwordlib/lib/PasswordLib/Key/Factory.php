@@ -74,7 +74,7 @@ class Factory extends \PasswordLib\Core\AbstractFactory {
     public function registerKDF($name, $class) {
         $this->registerType(
             'kdf',
-            __NAMESPACE__.'\\Derivation\\KDF',
+            __NAMESPACE__ . '\\Derivation\\KDF',
             $name,
             $class
         );
@@ -83,7 +83,7 @@ class Factory extends \PasswordLib\Core\AbstractFactory {
     public function registerPBKDF($name, $class) {
         $this->registerType(
             'pbkdf',
-            __NAMESPACE__.'\\Derivation\\PBKDF',
+            __NAMESPACE__ . '\\Derivation\\PBKDF',
             $name,
             $class
         );
@@ -91,16 +91,16 @@ class Factory extends \PasswordLib\Core\AbstractFactory {
 
     protected function loadKDF() {
         $this->loadFiles(
-            __DIR__.'/Derivation/KDF',
-            __NAMESPACE__.'\\Derivation\\KDF\\',
+            __DIR__ . '/Derivation/KDF',
+            __NAMESPACE__ . '\\Derivation\\KDF\\',
             array($this, 'registerKDF')
         );
     }
 
     protected function loadPBKDF() {
         $this->loadFiles(
-            __DIR__.'/Derivation/PBKDF',
-            __NAMESPACE__.'\\Derivation\\PBKDF\\',
+            __DIR__ . '/Derivation/PBKDF',
+            __NAMESPACE__ . '\\Derivation\\PBKDF\\',
             array($this, 'registerPBKDF')
         );
     }

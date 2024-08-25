@@ -55,7 +55,7 @@ class PHPMath extends \PasswordLib\Core\BigMath {
             $this->addBinary($left, $right),
             '0123456789'
         );
-        return $negative.$result;
+        return $negative . $result;
     }
 
     /**
@@ -74,13 +74,13 @@ class PHPMath extends \PasswordLib\Core\BigMath {
         } elseif ($right[0] == '-') {
             return $this->add($left, substr($right, 1));
         } elseif ($left[0] == '-') {
-            return '-'.$this->add(ltrim($left, '-'), $right);
+            return '-' . $this->add(ltrim($left, '-'), $right);
         }
         $left    = $this->normalize($left);
         $right   = $this->normalize($right);
         $results = $this->subtractBinary($left, $right);
         $result  = BaseConverter::convertFromBinary($results[1], '0123456789');
-        return $results[0].$result;
+        return $results[0] . $result;
     }
 
     /**
@@ -117,7 +117,7 @@ class PHPMath extends \PasswordLib\Core\BigMath {
      * @param string $left  The left argument
      * @param string $right The right argument
      *
-     * @return string[] The binary result
+     * @return string The binary result
      */
     protected function subtractBinary($left, $right) {
         $len    = max(strlen($left), strlen($right));

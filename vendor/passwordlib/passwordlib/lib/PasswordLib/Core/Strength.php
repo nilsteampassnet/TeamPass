@@ -14,8 +14,6 @@
 
 namespace PasswordLib\Core;
 
-require_once dirname(__FILE__)."/Enum.php";
-
 /**
  * The strength FlyweightEnum class
  *

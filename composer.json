@@ -132,7 +132,7 @@
         "teampassclasses/azureauthcontroller": "dev-master",
         "teampassclasses/configmanager": "dev-master",
         "illuminate/contracts": "^10.32",
-        "tightenco/collect": "^9.52",
+        "illuminate/collections": "^10.48",
         "nesbot/carbon": "^2.71",
         "directorytree/ldaprecord": "^2.20",
         "voku/anti-xss": "^4.1",

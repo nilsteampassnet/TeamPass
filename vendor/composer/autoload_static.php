@@ -4,14 +4,14 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInit917ba785e18cef2723bd769999d8fa5e
+class ComposerStaticInite3f3ee27f81ca21f7bd7499d7b935c11
 {
     public static $files = array (
         '0e6d7bf4a5811bfa5cf40c5ccd6fae6a' => __DIR__ . '/..' . '/symfony/polyfill-mbstring/bootstrap.php',
-        'a4a119a56e50fbb293281d9a48007e0e' => __DIR__ . '/..' . '/symfony/polyfill-php80/bootstrap.php',
         '60799491728b879e74601d83e38b2cad' => __DIR__ . '/..' . '/illuminate/collections/helpers.php',
         'e69f7f6ee287b969198c3c9d6777bd38' => __DIR__ . '/..' . '/symfony/polyfill-intl-normalizer/bootstrap.php',
         '25072dd6e2470089de65ae7bf11d3109' => __DIR__ . '/..' . '/symfony/polyfill-php72/bootstrap.php',
+        'a4a119a56e50fbb293281d9a48007e0e' => __DIR__ . '/..' . '/symfony/polyfill-php80/bootstrap.php',
         'a1105708a18b76903365ca1c4aa61b02' => __DIR__ . '/..' . '/symfony/translation/Resources/functions.php',
         'f598d06aa772fa33d905e87be6398fb1' => __DIR__ . '/..' . '/symfony/polyfill-intl-idn/bootstrap.php',
         '72579e7bd17821bb1321b87411366eae' => __DIR__ . '/..' . '/illuminate/support/helpers.php',
@@ -1476,6 +1476,7 @@ class ComposerStaticInit917ba785e18cef2723bd769999d8fa5e
         'OTPHP\\FactoryInterface' => __DIR__ . '/..' . '/spomky-labs/otphp/src/FactoryInterface.php',
         'OTPHP\\HOTP' => __DIR__ . '/..' . '/spomky-labs/otphp/src/HOTP.php',
         'OTPHP\\HOTPInterface' => __DIR__ . '/..' . '/spomky-labs/otphp/src/HOTPInterface.php',
+        'OTPHP\\InternalClock' => __DIR__ . '/..' . '/spomky-labs/otphp/src/InternalClock.php',
         'OTPHP\\OTP' => __DIR__ . '/..' . '/spomky-labs/otphp/src/OTP.php',
         'OTPHP\\OTPInterface' => __DIR__ . '/..' . '/spomky-labs/otphp/src/OTPInterface.php',
         'OTPHP\\ParameterTrait' => __DIR__ . '/..' . '/spomky-labs/otphp/src/ParameterTrait.php',
@@ -1517,7 +1518,6 @@ class ComposerStaticInit917ba785e18cef2723bd769999d8fa5e
         'PasswordLib\\Key\\Derivation\\PBKDF\\PBKDF2' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/Key/Derivation/PBKDF/PBKDF2.php',
         'PasswordLib\\Key\\Factory' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/Key/Factory.php',
         'PasswordLib\\PasswordLib' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/PasswordLib.php',
-        'PasswordLib\\Password\\AbstractPassword' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/Password/AbstractPassword.php',
         'PasswordLib\\Password\\Factory' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/Password/Factory.php',
         'PasswordLib\\Password\\Implementation\\APR1' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/Password/Implementation/APR1.php',
         'PasswordLib\\Password\\Implementation\\Blowfish' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/Password/Implementation/Blowfish.php',
@@ -1526,7 +1526,6 @@ class ComposerStaticInit917ba785e18cef2723bd769999d8fa5e
         'PasswordLib\\Password\\Implementation\\Hash' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/Password/Implementation/Hash.php',
         'PasswordLib\\Password\\Implementation\\Joomla' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/Password/Implementation/Joomla.php',
         'PasswordLib\\Password\\Implementation\\MD5' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/Password/Implementation/MD5.php',
-        'PasswordLib\\Password\\Implementation\\MediaWiki' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/Password/Implementation/MediaWiki.php',
         'PasswordLib\\Password\\Implementation\\PBKDF' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/Password/Implementation/PBKDF.php',
         'PasswordLib\\Password\\Implementation\\PHPASS' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/Password/Implementation/PHPASS.php',
         'PasswordLib\\Password\\Implementation\\PHPBB' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/Password/Implementation/PHPBB.php',
@@ -2039,7 +2038,9 @@ class ComposerStaticInit917ba785e18cef2723bd769999d8fa5e
         'Symfony\\Contracts\\Service\\Attribute\\Required' => __DIR__ . '/..' . '/symfony/contracts/Service/Attribute/Required.php',
         'Symfony\\Contracts\\Service\\Attribute\\SubscribedService' => __DIR__ . '/..' . '/symfony/contracts/Service/Attribute/SubscribedService.php',
         'Symfony\\Contracts\\Service\\ResetInterface' => __DIR__ . '/..' . '/symfony/contracts/Service/ResetInterface.php',
+        'Symfony\\Contracts\\Service\\ServiceCollectionInterface' => __DIR__ . '/..' . '/symfony/contracts/Service/ServiceCollectionInterface.php',
         'Symfony\\Contracts\\Service\\ServiceLocatorTrait' => __DIR__ . '/..' . '/symfony/contracts/Service/ServiceLocatorTrait.php',
+        'Symfony\\Contracts\\Service\\ServiceMethodsSubscriberTrait' => __DIR__ . '/..' . '/symfony/contracts/Service/ServiceMethodsSubscriberTrait.php',
         'Symfony\\Contracts\\Service\\ServiceProviderInterface' => __DIR__ . '/..' . '/symfony/contracts/Service/ServiceProviderInterface.php',
         'Symfony\\Contracts\\Service\\ServiceSubscriberInterface' => __DIR__ . '/..' . '/symfony/contracts/Service/ServiceSubscriberInterface.php',
         'Symfony\\Contracts\\Service\\ServiceSubscriberTrait' => __DIR__ . '/..' . '/symfony/contracts/Service/ServiceSubscriberTrait.php',
@@ -2154,10 +2155,10 @@ class ComposerStaticInit917ba785e18cef2723bd769999d8fa5e
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixLengthsPsr4 = ComposerStaticInit917ba785e18cef2723bd769999d8fa5e::$prefixLengthsPsr4;
-            $loader->prefixDirsPsr4 = ComposerStaticInit917ba785e18cef2723bd769999d8fa5e::$prefixDirsPsr4;
-            $loader->prefixesPsr0 = ComposerStaticInit917ba785e18cef2723bd769999d8fa5e::$prefixesPsr0;
-            $loader->classMap = ComposerStaticInit917ba785e18cef2723bd769999d8fa5e::$classMap;
+            $loader->prefixLengthsPsr4 = ComposerStaticInite3f3ee27f81ca21f7bd7499d7b935c11::$prefixLengthsPsr4;
+            $loader->prefixDirsPsr4 = ComposerStaticInite3f3ee27f81ca21f7bd7499d7b935c11::$prefixDirsPsr4;
+            $loader->prefixesPsr0 = ComposerStaticInite3f3ee27f81ca21f7bd7499d7b935c11::$prefixesPsr0;
+            $loader->classMap = ComposerStaticInite3f3ee27f81ca21f7bd7499d7b935c11::$classMap;
 
         }, null, ClassLoader::class);
     }

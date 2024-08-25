@@ -49,7 +49,7 @@ abstract class Enum {
      * @param mixed   $value  The value this instance represents
      * @param boolean $strict Not Implemented at this time
      *
-     * @return Strength
+     * @return void
      * @throws UnexpectedValueException If the value is not a constant
      */
     public function __construct($value = null, $strict = false) {
@@ -60,7 +60,7 @@ abstract class Enum {
         $this->name  = array_search($value, $validValues);
         if (!$this->name) {
             throw new \UnexpectedValueException(
-                'Value not a const in enum '.get_class($this)
+                'Value not a const in enum ' . get_class($this)
             );
         }
         $this->value = $value;
@@ -69,7 +69,7 @@ abstract class Enum {
     /**
      * Cast the current object to a string and return its value
      *
-     * @return string the current value of the instance
+     * @return mixed the current value of the instance
      */
     public function __toString() {
         return (string) $this->value;
