@@ -1459,8 +1459,6 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     
                     // Refresh tree
                     refreshTree(folderId, true);
-                    // Load list of items
-                    ListerItems(folderId, '', 0);
                     // Close
                     if (closeItemCard === true) {
                         closeItemDetailsCard();
@@ -2346,15 +2344,15 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             event.preventDefault();
             // Delete item
             if (debugJavascript === true) {
-                console.info('SHOW DELETE ITEM '+$(this).data('item-key'));
+                console.info('SHOW DELETE ITEM '+$(this).data('item-id'));
             }
             startedItemsListQuery = false;
 
             // check if user still has access
-            var itemKeyToDelete = $(this).data('item-key');
+            var itemIdToDelete = $(this).data('item-id');
 
             $.when(
-                checkAccess($(this).data('item-key'), selectedFolderId, <?php echo $session->get('user-id'); ?>, 'delete')
+                checkAccess($(this).data('item-id'), selectedFolderId, <?php echo $session->get('user-id'); ?>, 'delete')
             ).then(function(retData) {
                 // Is the user allowed?
                 if (retData.access === false || retData.delete === false) {
@@ -2390,8 +2388,8 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     event2.preventDefault();
                     
                     goDeleteItem(
+                        itemIdToDelete,
                         '',
-                        itemKeyToDelete,
                         selectedFolderId,
                         '',
                         false
@@ -4268,7 +4266,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 }
 
                 // Trash icon
-                trash_link = '<span class="fa-stack fa-clickable warn-user pointer infotip mr-2 list-item-clicktodelete" title="<?php echo $lang->get('delete'); ?>" data-item-key="' + value.item_key + '"><i class="fa-solid fa-circle fa-stack-2x"></i><i class="fa-solid fa-trash fa-stack-1x fa-inverse"></i></span>';
+                trash_link = '<span class="fa-stack fa-clickable warn-user pointer infotip mr-2 list-item-clicktodelete" title="<?php echo $lang->get('delete'); ?>" data-item-id="' + value.item_id + '"><i class="fa-solid fa-circle fa-stack-2x"></i><i class="fa-solid fa-trash fa-stack-1x fa-inverse"></i></span>';
 
                 // Prepare Description
                 if (value.desc !== '') {
