@@ -30,6 +30,7 @@ use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\SessionManager\SessionManager;
 use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\Language\Language;
+use TeampassClasses\ConfigManager\ConfigManager;
 
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
@@ -75,26 +76,15 @@ function createUserPersonalFolder(): void
     //Libraries call
     $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
-    //get through all users
+    //get through all users with enabled personnal folder.
     $users = DB::query(
         'SELECT id, login, email
         FROM ' . prefixTable('users') . '
         WHERE id NOT IN ('.OTV_USER_ID.', '.TP_USER_ID.', '.SSH_USER_ID.', '.API_USER_ID.')
+        AND personal_folder = 1
         ORDER BY login ASC'
     );
     foreach ($users as $user) {
-        /*
-        //update PF field for user
-        DB::update(
-            prefixTable('users'),
-            array(
-                'personal_folder' => '1',
-            ),
-            'id = %i',
-            $user['id']
-        );
-        */
-
         //if folder doesn't exist then create it
         $data = DB::queryfirstrow(
             'SELECT id

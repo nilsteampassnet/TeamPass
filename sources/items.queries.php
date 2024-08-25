@@ -427,7 +427,8 @@ switch ($inputData['type']) {
                 // if not allowed then warn user
                 if (($session->has('user-create_item_without_password') && $session->has('user-create_item_without_password') && null !== $session->get('user-create_item_without_password')
                         && (int) $session->get('user-create_item_without_password') !== 1) ||
-                    empty($post_password) === false
+                    empty($post_password) === false ||
+                    (int) $post_folder_is_personal === 1
                 ) {
                     // NEW ENCRYPTION
                     $cryptedStuff = doDataEncryption($post_password);
@@ -3903,7 +3904,8 @@ switch ($inputData['type']) {
             // Prepare tree
             $arbo = $tree->getPath($inputData['id'], true);
             foreach ($arbo as $elem) {
-                if ($elem->title === $session->get('user-id') && (int) $elem->nlevel === 1) {
+                // Personnal folder
+                if ((int) $elem->title === (int) $session->get('user-id') && (int) $elem->nlevel === 1) {
                     $elem->title = $session->get('user-login');
                 }
                 // Store path elements
