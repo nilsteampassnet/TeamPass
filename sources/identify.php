@@ -1419,7 +1419,7 @@ function handleUserADGroups(string $username, array $userInfo, array $groups, ar
             $role = DB::queryFirstRow(
                 'SELECT lgr.role_id
                 FROM ' . prefixTable('ldap_groups_roles') . ' AS lgr
-                WHERE lgr.ldap_group_id = %i',
+                WHERE lgr.ldap_group_id = %s',
                 $group
             );
             if (DB::count() > 0) {
