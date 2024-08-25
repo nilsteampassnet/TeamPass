@@ -1019,6 +1019,20 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             //
             // > END <
             //
+        } else if ($(this).data('item-action') === 'link') {
+            // Add link to clipboard.
+            navigator.clipboard.writeText("<?php echo $SETTINGS['cpassman_url'];?>/index.php?page=items&group="+store.get('teampassItem').folderId+"&id="+store.get('teampassItem').id);
+
+            // Display message.
+            toastr.remove();
+            toastr.info(
+                '<?php echo $lang->get('copy_to_clipboard'); ?>',
+                '', {
+                    timeOut: 2000,
+                    progressBar: true,
+                    positionClass: 'toast-top-right'
+                }
+            );
         }
 
         return false;
@@ -5060,28 +5074,6 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
                     // Waiting
                     $('#card-item-attachments').html("<?php echo $lang->get('please_wait'); ?>");
-
-                    // Manage clipboard for link
-                    if (clipboardForLink) clipboardForLink.destroy();
-                    clipboardForLink = new ClipboardJS(
-                        '#get_item_link',
-                        {
-                            text: function(e) {
-                                return ("<?php echo $SETTINGS['cpassman_url'];?>/index.php?page=items&group="+store.get('teampassItem').folderId+"&id="+store.get('teampassItem').id);
-                            }
-                        })
-                        .on('success', function(e) {
-                            toastr.remove();
-                            toastr.info(
-                                '<?php echo $lang->get('copy_to_clipboard'); ?>',
-                                '', {
-                                    timeOut: 2000,
-                                    progressBar: true,
-                                    positionClass: 'toast-top-right'
-                                }
-                            );
-                            e.clearSelection();
-                        });
 
                     // Manage clipboard button
                     if (itemClipboard) itemClipboard.destroy();

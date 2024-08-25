@@ -589,7 +589,7 @@ foreach ($rows as $reccord) {
                                     <a class="text-navy tp-action ml-3" href="#" data-item-action="copy"><i class="fa-regular fa-copy mr-1"></i><small><?php echo $lang->get('copy'); ?></small></a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="text-navy ml-3" href="#" data-item-action="link" id="get_item_link"><i class="fa-solid fa-link mr-1"></i><small><?php echo $lang->get('link'); ?></small></a>
+                                    <a class="text-navy tp-action ml-3" href="#" data-item-action="link" id="get_item_link"><i class="fa-solid fa-link mr-1"></i><small><?php echo $lang->get('link'); ?></small></a>
                                 </li>
                                 <li class="nav-item">
                                     <a class="text-navy tp-action ml-3" href="#" data-item-action="share"><i class="fa-regular fa-share-square mr-1"></i><small><?php echo $lang->get('share'); ?></small></a>
