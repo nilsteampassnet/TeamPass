@@ -65,17 +65,6 @@ $checkUserAccess = new PerformChecks(
         'user_key' => returnIfSet($session->get('key'), null),
     ]
 );
-// Handle the case
-echo $checkUserAccess->caseHandler();
-if (
-    $checkUserAccess->userAccessPage('folders') === false ||
-    $checkUserAccess->checkSession() === false
-) {
-    // Not allowed page
-    $session->set('system-error_code', ERR_NOT_ALLOWED);
-    include $SETTINGS['cpassman_dir'] . '/error.php';
-    exit;
-}
 
 // Define Timezone
 date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
@@ -430,7 +419,29 @@ if (null !== $post_type) {
                     }
                 }
             }
-            
+
+            // Check if user is allowed
+            if (
+                !(
+                    (int) $isPersonal === 1
+                    || (int) $session->get('user-admin') === 1
+                    || (int) $session->get('user-manager') === 1
+                    || (int) $session->get('user-can_manage_all_users') === 1
+                    || (isset($SETTINGS['enable_user_can_create_folders']) === true
+                        && (int) $SETTINGS['enable_user_can_create_folders'] == 1)
+                    || (int) $session->get('user-can_create_root_folder') === 1
+                )
+            ) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
             // Prepare update parameters
             $folderParameters = array(
                 'parent_id' => $post_parent_id,
@@ -540,12 +551,23 @@ if (null !== $post_type) {
             $post_icon_selected = filter_var($dataReceived['iconSelected'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $post_access_rights = isset($dataReceived['accessRight']) === true ? filter_var($dataReceived['accessRight'], FILTER_SANITIZE_FULL_SPECIAL_CHARS) : 'W';
 
+            // Check if parent folder is personal
+            $dataParent = DB::queryfirstrow(
+                'SELECT personal_folder
+                FROM ' . prefixTable('nested_tree') . '
+                WHERE id = %i',
+                $post_parent_id
+            );
+
+            $isPersonal = (isset($dataParent['personal_folder']) === true && (int) $dataParent['personal_folder'] === 1) ? 1 : 0;
+
             // Create folder
             require_once 'folders.class.php';
             $folderManager = new FolderManager($lang);
             $params = [
                 'title' => (string) $post_title,
                 'parent_id' => (int) $post_parent_id,
+                'personal_folder' => (int) $isPersonal,
                 'complexity' => (int) $post_complexity,
                 'duration' => (int) $post_duration,
                 'create_auth_without' => (int) $post_create_auth_without,
@@ -618,13 +640,78 @@ if (null !== $post_type) {
             //decrypt and retreive data in JSON format
             $folderForDel = array();
 
+            // Start transaction
+            DB::startTransaction();
+
             foreach ($post_folders as $folderId) {
-                // Exclude a folder with id alreay in the list
+                /**
+                 * WARN: NestedTree->getDescendants:
+                 *      Specify an invalid ID (e.g. 0) to retrieve all data.
+                 * 
+                 * Which means the root folder may be deleted.
+                 * It is necessary to verify that the ID provided exists, is
+                 * not 0 and that the user is authorized to delete it.
+                */
+                $folderExists = DB::queryFirstRow(
+                    'SELECT COUNT(id) AS count FROM '.prefixTable('nested_tree').' WHERE id = %i',
+                    (int) $folderId
+                )['count'];
+                if ((int) $folderId === 0 ||
+                    (int) $folderExists === 0 ||
+                    !in_array((int) $folderId, $session->get('user-accessible_folders'))
+                ) {
+                    echo prepareExchangedData(
+                        array(
+                            'error' => true,
+                            'message' => $lang->get('error_not_allowed_to'),
+                        ),
+                        'encode'
+                    );
+                    exit();
+                }
+
+                // Check if parent folder is personal
+                $dataParent = DB::queryfirstrow(
+                    'SELECT personal_folder
+                    FROM ' . prefixTable('nested_tree') . '
+                    WHERE id = %i',
+                    $folderId
+                );
+
+                $isPersonal = (isset($dataParent['personal_folder']) === true && (int) $dataParent['personal_folder'] === 1) ? 1 : 0;
+
+                // Check if user is allowed
+                if (
+                    !(
+                        (int) $isPersonal === 1
+                        || (int) $session->get('user-admin') === 1
+                        || (int) $session->get('user-manager') === 1
+                        || (int) $session->get('user-can_manage_all_users') === 1
+                        || (isset($SETTINGS['enable_user_can_create_folders']) === true
+                            && (int) $SETTINGS['enable_user_can_create_folders'] == 1)
+                        || (int) $session->get('user-can_create_root_folder') === 1
+                    )
+                ) {
+                    echo prepareExchangedData(
+                        array(
+                            'error' => true,
+                            'message' => $lang->get('error_not_allowed_to'),
+                        ),
+                        'encode'
+                    );
+
+                    // Rollback transaction if error
+                    DB::rollback();
+
+                    exit;
+                }
+
+                // Exclude a folder with id already in the list
                 if (in_array($folderId, $folderForDel) === false) {
                     // Get through each subfolder
                     $subFolders = $tree->getDescendants($folderId, true);
                     foreach ($subFolders as $thisSubFolders) {
-                        if (($thisSubFolders->parent_id > 0 || $thisSubFolders->parent_id == 0)
+                        if ($thisSubFolders->parent_id >= 0
                             && $thisSubFolders->title !== $session->get('user-id')
                         ) {
                             //Store the deleted folder (recycled bin)
@@ -749,6 +836,9 @@ if (null !== $post_type) {
                 'last_folder_change'
             );
 
+            // Commit transaction
+            DB::commit();
+
             echo prepareExchangedData(
                 array(
                     'error' => false,
@@ -795,6 +885,38 @@ if (null !== $post_type) {
             // Test if target folder is Read-only
             // If it is then stop
             if (in_array($post_target_folder_id, $session->get('user-read_only_folders')) === true) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // Check if target parent folder is personal
+            $dataParent = DB::queryfirstrow(
+                'SELECT personal_folder
+                FROM ' . prefixTable('nested_tree') . '
+                WHERE id = %i',
+                $post_target_folder_id
+            );
+
+            $isPersonal = (isset($dataParent['personal_folder']) === true && (int) $dataParent['personal_folder'] === 1) ? 1 : 0;
+
+            // Check if user is allowed
+            if (
+                !(
+                    (int) $isPersonal === 1
+                    || (int) $session->get('user-admin') === 1
+                    || (int) $session->get('user-manager') === 1
+                    || (int) $session->get('user-can_manage_all_users') === 1
+                    || (isset($SETTINGS['enable_user_can_create_folders']) === true
+                        && (int) $SETTINGS['enable_user_can_create_folders'] == 1)
+                    || (int) $session->get('user-can_create_root_folder') === 1
+                )
+            ) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
