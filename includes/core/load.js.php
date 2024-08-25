@@ -59,7 +59,7 @@ $request = SymfonyRequest::createFromGlobals();
 
 <script type="text/javascript">
     var userScrollPosition = 0,
-        debugJavascript = true;
+        debugJavascript = false;
     let hourInMinutes = 60;
 
 

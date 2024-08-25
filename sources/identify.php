@@ -87,7 +87,10 @@ echo $checkUserAccess->caseHandler();
 if ($checkUserAccess->checkSession() === false) {
     // Not allowed page
     $session->set('system-error_code', ERR_NOT_ALLOWED);
-    include $SETTINGS['cpassman_dir'] . '/error.php';
+    echo json_encode([
+        'error' => true,
+        'message' => $lang->get('error_bad_credentials'),
+    ]);
     exit;
 }
 
@@ -1313,8 +1316,7 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
         $error = $e->getDetailedError();
         return [
             'error' => true,
-            'message' => $lang->get('error')." - ".(isset($error) === true ? $error->getErrorCode()." - ".$error->getErrorMessage(). "<br>".$error->getDiagnosticMessage() : $e),
-
+            'message' => $lang->get('error_bad_credentials'),
         ];
     }
 

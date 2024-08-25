@@ -1037,7 +1037,6 @@ return array(
     'creation_date' => 'Data de creació',
     'never' => 'Mai',
     'loading_main_page' => 'Carregant pàgina principal ...',
-    'alert_session_not_consistent' => 'La sessió actual no és coherent i cal refrescar-se. La pàgina tornarà a carregar.',
     'link' => 'Enllaç',
     'error_not_allowed_to_authenticate' => 'No teniu permès autenticar-vos',
     'enable_tasks_log' => 'Activa el registre de treballs de Cron',
