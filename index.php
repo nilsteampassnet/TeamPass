@@ -204,28 +204,30 @@ if (array_key_exists($get['page'], $utilitiesPages) === true) {
     </script>
 
     <!-- IonIcons -->
-    <link rel="stylesheet" href="includes/css/ionicons.min.css">
+    <link rel="stylesheet" href="includes/css/ionicons.min.css?v=<?php echo TP_VERSION; ?>">
     <!-- Theme style -->
-    <link rel="stylesheet" href="plugins/adminlte/css/adminlte.min.css">
-    <link rel="stylesheet" href="plugins/pace-progress/themes/corner-indicator.css" type="text/css" />
-    <link rel="stylesheet" href="plugins/select2/css/select2.min.css" type="text/css" />
-    <!--<link rel="stylesheet" href="plugins/select2/css/select2-bootstrap.min.css" type="text/css" />-->
-    <link rel="stylesheet" href="plugins/select2/theme/select2-bootstrap4.min.css" type="text/css" />
+    <link rel="stylesheet" href="plugins/adminlte/css/adminlte.min.css?v=<?php echo TP_VERSION; ?>">
+    <link rel="stylesheet" href="plugins/pace-progress/themes/corner-indicator.css?v=<?php echo TP_VERSION; ?>" type="text/css" />
+    <link rel="stylesheet" href="plugins/select2/css/select2.min.css?v=<?php echo TP_VERSION; ?>" type="text/css" />
+    <!--<link rel="stylesheet" href="plugins/select2/css/select2-bootstrap.min.css?v=<?php echo TP_VERSION; ?>" type="text/css" />-->
+    <link rel="stylesheet" href="plugins/select2/theme/select2-bootstrap4.min.css?v=<?php echo TP_VERSION; ?>" type="text/css" />
     <!-- Theme style -->
-    <link rel="stylesheet" href="includes/css/teampass.css">
+    <link rel="stylesheet" href="includes/css/teampass.css?v=<?php echo TP_VERSION; ?>">
     <!-- Google Font: Source Sans Pro -->
-    <link rel="stylesheet" type="text/css" href="includes/fonts/fonts.css">
+    <link rel="stylesheet" type="text/css" href="includes/fonts/fonts.css?v=<?php echo TP_VERSION; ?>">
     <!-- Altertify -->
-    <link rel="stylesheet" href="plugins/alertifyjs/css/alertify.min.css" />
-    <link rel="stylesheet" href="plugins/alertifyjs/css/themes/bootstrap.min.css" />
+    <link rel="stylesheet" href="plugins/alertifyjs/css/alertify.min.css?v=<?php echo TP_VERSION; ?>" />
+    <link rel="stylesheet" href="plugins/alertifyjs/css/themes/bootstrap.min.css?v=<?php echo TP_VERSION; ?>" />
     <!-- Toastr -->
-    <link rel="stylesheet" href="plugins/toastr/toastr.min.css" />
+    <link rel="stylesheet" href="plugins/toastr/toastr.min.css?v=<?php echo TP_VERSION; ?>" />
     <!-- favicon -->
     <link rel="shortcut icon" type="image/png" href="<?php echo isset($SETTINGS['favicon']) === true ? $SETTINGS['favicon'] : '';?>"/>
+    <!-- manifest -->
+    <link rel="manifest" href="includes/manifest.json?v=<?php echo TP_VERSION; ?>">
     <!-- Custom style -->
     <?php
     if (file_exists(__DIR__ . '/includes/css/custom.css') === true) {?>
-        <link rel="stylesheet" href="includes/css/custom.css">
+        <link rel="stylesheet" href="includes/css/custom.css?v=<?php echo TP_VERSION; ?>">
     <?php
     } ?>
 </head>
@@ -1124,153 +1126,155 @@ echo '
     <!-- REQUIRED SCRIPTS -->
 
     <!-- Font Awesome Icons -->
-    <link href="plugins/fontawesome-free-6/css/fontawesome.min.css" rel="stylesheet">
-    <link href="plugins/fontawesome-free-6/css/solid.min.css" rel="stylesheet">
-    <link href="plugins/fontawesome-free-6/css/regular.min.css" rel="stylesheet">
-    <link href="plugins/fontawesome-free-6/css/brands.min.css" rel="stylesheet">
-    <link href="plugins/fontawesome-free-6/css/v5-font-face.min.css" rel="stylesheet" /> 
+    <link href="plugins/fontawesome-free-6/css/fontawesome.min.css?v=<?php echo TP_VERSION; ?>" rel="stylesheet">
+    <link href="plugins/fontawesome-free-6/css/solid.min.css?v=<?php echo TP_VERSION; ?>" rel="stylesheet">
+    <link href="plugins/fontawesome-free-6/css/regular.min.css?v=<?php echo TP_VERSION; ?>" rel="stylesheet">
+    <link href="plugins/fontawesome-free-6/css/brands.min.css?v=<?php echo TP_VERSION; ?>" rel="stylesheet">
+    <link href="plugins/fontawesome-free-6/css/v5-font-face.min.css?v=<?php echo TP_VERSION; ?>" rel="stylesheet" /> 
     <!-- jQuery -->
-    <script src="plugins/jquery/jquery.min.js"></script>
+    <script src="plugins/jquery/jquery.min.js?v=<?php echo TP_VERSION; ?>"></script>
+    <script src="plugins/jquery/jquery.cookie.js?v=<?php echo TP_VERSION; ?>" type="text/javascript"></script>
     <!-- jQuery UI -->
-    <script src="plugins/jqueryUI/jquery-ui.min.js"></script>
-    <link rel="stylesheet" href="plugins/jqueryUI/jquery-ui.min.css">
+    <script src="plugins/jqueryUI/jquery-ui.min.js?v=<?php echo TP_VERSION; ?>"></script>
+    <link rel="stylesheet" href="plugins/jqueryUI/jquery-ui.min.css?v=<?php echo TP_VERSION; ?>">
     <!-- Popper -->
-    <script src="plugins/popper/umd/popper.min.js"></script>
+    <script src="plugins/popper/umd/popper.min.js?v=<?php echo TP_VERSION; ?>"></script>
     <!-- Bootstrap -->
-    <script src="plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="plugins/bootstrap/js/bootstrap.bundle.min.js?v=<?php echo TP_VERSION; ?>"></script>
     <!-- AdminLTE -->
-    <script src="plugins/adminlte/js/adminlte.min.js"></script>
+    <script src="plugins/adminlte/js/adminlte.min.js?v=<?php echo TP_VERSION; ?>"></script>
     <!-- Altertify -->
     <!--<script type="text/javascript" src="plugins/alertifyjs/alertify.min.js"></script>-->
     <!-- Toastr -->
-    <script type="text/javascript" src="plugins/toastr/toastr.min.js"></script>
+    <script type="text/javascript" src="plugins/toastr/toastr.min.js?v=<?php echo TP_VERSION; ?>"></script>
     <!-- STORE.JS -->
-    <script type="text/javascript" src="plugins/store.js/dist/store.everything.min.js"></script>
+    <script type="text/javascript" src="plugins/store.js/dist/store.everything.min.js?v=<?php echo TP_VERSION; ?>"></script>
     <!-- cryptojs-aesphp -->
-    <script type="text/javascript" src="includes/libraries/cryptojs/crypto-js.js"></script>
-    <script type="text/javascript" src="includes/libraries/cryptojs/encryption.js"></script>
+    <script type="text/javascript" src="includes/libraries/cryptojs/crypto-js.js?v=<?php echo TP_VERSION; ?>"></script>
+    <script type="text/javascript" src="includes/libraries/cryptojs/encryption.js?v=<?php echo TP_VERSION; ?>"></script>
     <!-- pace -->
-    <script type="text/javascript" data-pace-options='{ "ajax": true, "eventLag": false }' src="plugins/pace-progress/pace.min.js"></script>
+    <script type="text/javascript" data-pace-options='{ "ajax": true, "eventLag": false }' src="plugins/pace-progress/pace.min.js?v=<?php echo TP_VERSION; ?>"></script>
     <!-- clipboardjs -->
-    <script type="text/javascript" src="plugins/clipboard/clipboard.min.js"></script>
+    <script type="text/javascript" src="plugins/clipboard/clipboard.min.js?v=<?php echo TP_VERSION; ?>"></script>
     <!-- select2 -->
-    <script type="text/javascript" src="plugins/select2/js/select2.full.min.js"></script>
+    <script type="text/javascript" src="plugins/select2/js/select2.full.min.js?v=<?php echo TP_VERSION; ?>"></script>
     <!-- simplePassMeter -->
-    <link rel="stylesheet" href="plugins/simplePassMeter/simplePassMeter.css" type="text/css" />
-    <script type="text/javascript" src="plugins/simplePassMeter/simplePassMeter.js"></script>
+    <link rel="stylesheet" href="plugins/simplePassMeter/simplePassMeter.css?v=<?php echo TP_VERSION; ?>" type="text/css" />
+    <script type="text/javascript" src="plugins/simplePassMeter/simplePassMeter.js?v=<?php echo TP_VERSION; ?>"></script>
     <!-- platform -->
-    <script type="text/javascript" src="plugins/platform/platform.js"></script>
+    <script type="text/javascript" src="plugins/platform/platform.js?v=<?php echo TP_VERSION; ?>"></script>
     <!-- radiobuttons -->
-    <link rel="stylesheet" href="plugins/radioforbuttons/bootstrap-buttons.min.css" type="text/css" />
-    <script type="text/javascript" src="plugins/radioforbuttons/jquery.radiosforbuttons.min.js"></script>
+    <link rel="stylesheet" href="plugins/radioforbuttons/bootstrap-buttons.min.css?v=<?php echo TP_VERSION; ?>" type="text/css" />
+    <script type="text/javascript" src="plugins/radioforbuttons/jquery.radiosforbuttons.min.js?v=<?php echo TP_VERSION; ?>"></script>
     <!-- ICHECK -->
     <!--<link rel="stylesheet" href="./plugins/icheck-material/icheck-material.min.css">-->
-    <link rel="stylesheet" href="./plugins/icheck/skins/all.css">
-    <script type="text/javascript" src="./plugins/icheck/icheck.min.js"></script>
+    <link rel="stylesheet" href="./plugins/icheck/skins/all.css?v=<?php echo TP_VERSION; ?>">
+    <script type="text/javascript" src="./plugins/icheck/icheck.min.js?v=<?php echo TP_VERSION; ?>"></script>
     <!-- bootstrap-add-clear -->
-    <script type="text/javascript" src="plugins/bootstrap-add-clear/bootstrap-add-clear.min.js"></script>
+    <script type="text/javascript" src="plugins/bootstrap-add-clear/bootstrap-add-clear.min.js?v=<?php echo TP_VERSION; ?>"></script>
     <!-- DOMPurify -->
-    <script type="text/javascript" src="plugins/DOMPurify/purify.min.js"></script>
+    <script type="text/javascript" src="plugins/DOMPurify/purify.min.js?v=<?php echo TP_VERSION; ?>"></script>
 
     <?php
     $get['page'] = $request->query->filter('page', null, FILTER_SANITIZE_SPECIAL_CHARS);
     if ($menuAdmin === true) {
         ?>
-        <link rel="stylesheet" href="./plugins/toggles/css/toggles.css" />
-        <link rel="stylesheet" href="./plugins/toggles/css/toggles-modern.css" />
-        <script src="./plugins/toggles/toggles.min.js" type="text/javascript"></script>
+        <link rel="stylesheet" href="./plugins/toggles/css/toggles.css?v=<?php echo TP_VERSION; ?>" />
+        <link rel="stylesheet" href="./plugins/toggles/css/toggles-modern.css?v=<?php echo TP_VERSION; ?>" />
+        <script src="./plugins/toggles/toggles.min.js?v=<?php echo TP_VERSION; ?>" type="text/javascript"></script>
         <!-- InputMask -->
-        <script src="./plugins/inputmask/jquery.inputmask.min.js"></script>
+        <script src="./plugins/inputmask/jquery.inputmask.min.js?v=<?php echo TP_VERSION; ?>"></script>
         <!-- Sortable -->
         <!--<script src="./plugins/sortable/jquery.sortable.js"></script>-->
         <!-- PLUPLOAD -->
-        <script type="text/javascript" src="plugins/plupload/js/plupload.full.min.js"></script>
+        <script type="text/javascript" src="plugins/plupload/js/plupload.full.min.js?v=<?php echo TP_VERSION; ?>"></script>
         <!-- DataTables -->
-        <link rel="stylesheet" src="./plugins/datatables/css/jquery.dataTables.min.css">
-        <link rel="stylesheet" src="./plugins/datatables/css/dataTables.bootstrap4.min.css">
-        <script type="text/javascript" src="./plugins/datatables/js/jquery.dataTables.min.js"></script>
-        <script type="text/javascript" src="./plugins/datatables/js/dataTables.bootstrap4.min.js"></script>
-        <link rel="stylesheet" src="./plugins/datatables/extensions/Responsive-2.2.2/css/responsive.bootstrap4.min.css">
-        <script type="text/javascript" src="./plugins/datatables/extensions/Responsive-2.2.2/js/dataTables.responsive.min.js"></script>
-        <script type="text/javascript" src="./plugins/datatables/extensions/Responsive-2.2.2/js/responsive.bootstrap4.min.js"></script>
-        <script type="text/javascript" src="./plugins/datatables/plugins/select.js"></script>
-        <link rel="stylesheet" src="./plugins/datatables/extensions/Scroller-1.5.0/css/scroller.bootstrap4.min.css">
-        <script type="text/javascript" src="./plugins/datatables/extensions/Scroller-1.5.0/js/dataTables.scroller.min.js"></script>
+        <link rel="stylesheet" src="./plugins/datatables/css/jquery.dataTables.min.css?v=<?php echo TP_VERSION; ?>">
+        <link rel="stylesheet" src="./plugins/datatables/css/dataTables.bootstrap4.min.css?v=<?php echo TP_VERSION; ?>">
+        <script type="text/javascript" src="./plugins/datatables/js/jquery.dataTables.min.js?v=<?php echo TP_VERSION; ?>"></script>
+        <script type="text/javascript" src="./plugins/datatables/js/dataTables.bootstrap4.min.js?v=<?php echo TP_VERSION; ?>"></script>
+        <link rel="stylesheet" src="./plugins/datatables/extensions/Responsive-2.2.2/css/responsive.bootstrap4.min.css?v=<?php echo TP_VERSION; ?>">
+        <script type="text/javascript" src="./plugins/datatables/extensions/Responsive-2.2.2/js/dataTables.responsive.min.js?v=<?php echo TP_VERSION; ?>"></script>
+        <script type="text/javascript" src="./plugins/datatables/extensions/Responsive-2.2.2/js/responsive.bootstrap4.min.js?v=<?php echo TP_VERSION; ?>"></script>
+        <script type="text/javascript" src="./plugins/datatables/plugins/select.js?v=<?php echo TP_VERSION; ?>"></script>
+        <link rel="stylesheet" src="./plugins/datatables/extensions/Scroller-1.5.0/css/scroller.bootstrap4.min.css?v=<?php echo TP_VERSION; ?>">
+        <script type="text/javascript" src="./plugins/datatables/extensions/Scroller-1.5.0/js/dataTables.scroller.min.js?v=<?php echo TP_VERSION; ?>"></script>
     <?php
     } elseif (isset($get['page']) === true) {
         if (in_array($get['page'], ['items', 'import']) === true) {
             ?>
-            <link rel="stylesheet" href="./plugins/jstree/themes/default/style.min.css" />
-            <script src="./plugins/jstree/jstree.min.js" type="text/javascript"></script>
+            <link rel="stylesheet" href="./plugins/jstree/themes/default/style.min.css?v=<?php echo TP_VERSION; ?>" />
+            <link rel="stylesheet" href="./plugins/jstree/themes/default-dark/style.min.css?v=<?php echo TP_VERSION; ?>" />
+            <script src="./plugins/jstree/jstree.min.js?v=<?php echo TP_VERSION; ?>" type="text/javascript"></script>
             <!-- countdownTimer -->
-            <script src="./plugins/jquery.countdown360/jquery.countdown360.js"></script>
+            <script src="./plugins/jquery.countdown360/jquery.countdown360.js?v=<?php echo TP_VERSION; ?>"></script>
             <!-- SUMMERNOTE -->
-            <link rel="stylesheet" href="./plugins/summernote/summernote-bs4.css">
-            <script src="./plugins/summernote/summernote-bs4.min.js"></script>
+            <link rel="stylesheet" href="./plugins/summernote/summernote-bs4.css?v=<?php echo TP_VERSION; ?>">
+            <script src="./plugins/summernote/summernote-bs4.min.js?v=<?php echo TP_VERSION; ?>"></script>
             <!-- date-picker -->
-            <link rel="stylesheet" href="./plugins/bootstrap-datepicker/css/bootstrap-datepicker3.min.css">
-            <script src="./plugins/bootstrap-datepicker/js/bootstrap-datepicker.min.js"></script>
+            <link rel="stylesheet" href="./plugins/bootstrap-datepicker/css/bootstrap-datepicker3.min.css?v=<?php echo TP_VERSION; ?>">
+            <script src="./plugins/bootstrap-datepicker/js/bootstrap-datepicker.min.js?v=<?php echo TP_VERSION; ?>"></script>
             <!-- time-picker -->
-            <link rel="stylesheet" href="./plugins/timepicker/bootstrap-timepicker.min.css">
-            <script src="./plugins/timepicker/bootstrap-timepicker.min.js"></script>
+            <link rel="stylesheet" href="./plugins/timepicker/bootstrap-timepicker.min.css?v=<?php echo TP_VERSION; ?>">
+            <script src="./plugins/timepicker/bootstrap-timepicker.min.js?v=<?php echo TP_VERSION; ?>"></script>
             <!-- PLUPLOAD -->
-            <script type="text/javascript" src="plugins/plupload/js/plupload.full.min.js"></script>
+            <script type="text/javascript" src="plugins/plupload/js/plupload.full.min.js?v=<?php echo TP_VERSION; ?>"></script>
             <!-- VALIDATE -->
-            <script type="text/javascript" src="plugins/jquery-validation/jquery.validate.js"></script>
+            <script type="text/javascript" src="plugins/jquery-validation/jquery.validate.js?v=<?php echo TP_VERSION; ?>"></script>
             <!-- PWSTRENGHT -->
-            <script type="text/javascript" src="plugins/zxcvbn/zxcvbn.js"></script>
-            <script type="text/javascript" src="plugins/jquery.pwstrength/pwstrength-bootstrap.min.js"></script>
+            <script type="text/javascript" src="plugins/zxcvbn/zxcvbn.js?v=<?php echo TP_VERSION; ?>"></script>
+            <script type="text/javascript" src="plugins/jquery.pwstrength/pwstrength-bootstrap.min.js?v=<?php echo TP_VERSION; ?>"></script>
             <!-- TOGGLE -->
-            <link rel="stylesheet" href="./plugins/toggles/css/toggles.css" />
-            <link rel="stylesheet" href="./plugins/toggles/css/toggles-modern.css" />
-            <script src="./plugins/toggles/toggles.min.js" type="text/javascript"></script>
+            <link rel="stylesheet" href="./plugins/toggles/css/toggles.css?v=<?php echo TP_VERSION; ?>" />
+            <link rel="stylesheet" href="./plugins/toggles/css/toggles-modern.css?v=<?php echo TP_VERSION; ?>" />
+            <script src="./plugins/toggles/toggles.min.js?v=<?php echo TP_VERSION; ?>" type="text/javascript"></script>
         <?php
         } elseif (in_array($get['page'], ['search', 'folders', 'users', 'roles', 'utilities.deletion', 'utilities.logs', 'utilities.database', 'utilities.renewal', 'tasks']) === true) {
             ?>
             <!-- DataTables -->
-            <link rel="stylesheet" src="./plugins/datatables/css/jquery.dataTables.min.css">
-            <link rel="stylesheet" src="./plugins/datatables/css/dataTables.bootstrap4.min.css">
-            <script type="text/javascript" src="./plugins/datatables/js/jquery.dataTables.min.js"></script>
-            <script type="text/javascript" src="./plugins/datatables/js/dataTables.bootstrap4.min.js"></script>
-            <link rel="stylesheet" src="./plugins/datatables/extensions/Responsive-2.2.2/css/responsive.bootstrap4.min.css">
-            <script type="text/javascript" src="./plugins/datatables/extensions/Responsive-2.2.2/js/dataTables.responsive.min.js"></script>
-            <script type="text/javascript" src="./plugins/datatables/extensions/Responsive-2.2.2/js/responsive.bootstrap4.min.js"></script>
-            <script type="text/javascript" src="./plugins/datatables/plugins/select.js"></script>
-            <link rel="stylesheet" src="./plugins/datatables/extensions/Scroller-1.5.0/css/scroller.bootstrap4.min.css">
-            <script type="text/javascript" src="./plugins/datatables/extensions/Scroller-1.5.0/js/dataTables.scroller.min.js"></script>
+            <link rel="stylesheet" src="./plugins/datatables/css/jquery.dataTables.min.css?v=<?php echo TP_VERSION; ?>">
+            <link rel="stylesheet" src="./plugins/datatables/css/dataTables.bootstrap4.min.css?v=<?php echo TP_VERSION; ?>">
+            <script type="text/javascript" src="./plugins/datatables/js/jquery.dataTables.min.js?v=<?php echo TP_VERSION; ?>"></script>
+            <script type="text/javascript" src="./plugins/datatables/js/dataTables.bootstrap4.min.js?v=<?php echo TP_VERSION; ?>"></script>
+            <link rel="stylesheet" src="./plugins/datatables/extensions/Responsive-2.2.2/css/responsive.bootstrap4.min.css?v=<?php echo TP_VERSION; ?>">
+            <script type="text/javascript" src="./plugins/datatables/extensions/Responsive-2.2.2/js/dataTables.responsive.min.js?v=<?php echo TP_VERSION; ?>"></script>
+            <script type="text/javascript" src="./plugins/datatables/extensions/Responsive-2.2.2/js/responsive.bootstrap4.min.js?v=<?php echo TP_VERSION; ?>"></script>
+            <script type="text/javascript" src="./plugins/datatables/plugins/select.js?v=<?php echo TP_VERSION; ?>"></script>
+            <link rel="stylesheet" src="./plugins/datatables/extensions/Scroller-1.5.0/css/scroller.bootstrap4.min.css?v=<?php echo TP_VERSION; ?>">
+            <script type="text/javascript" src="./plugins/datatables/extensions/Scroller-1.5.0/js/dataTables.scroller.min.js?v=<?php echo TP_VERSION; ?>"></script>
             <!-- dater picker -->
-            <link rel="stylesheet" href="./plugins/bootstrap-datepicker/css/bootstrap-datepicker3.min.css">
-            <script src="./plugins/bootstrap-datepicker/js/bootstrap-datepicker.min.js"></script>
+            <link rel="stylesheet" href="./plugins/bootstrap-datepicker/css/bootstrap-datepicker3.min.css?v=<?php echo TP_VERSION; ?>">
+            <script src="./plugins/bootstrap-datepicker/js/bootstrap-datepicker.min.js?v=<?php echo TP_VERSION; ?>"></script>
             <!-- daterange picker -->
-            <link rel="stylesheet" href="./plugins/daterangepicker/daterangepicker.css">
-            <script src="./plugins/moment/moment.min.js"></script>
-            <script src="./plugins/daterangepicker/daterangepicker.js"></script>
+            <link rel="stylesheet" href="./plugins/daterangepicker/daterangepicker.css?v=<?php echo TP_VERSION; ?>">
+            <script src="./plugins/moment/moment.min.js?v=<?php echo TP_VERSION; ?>"></script>
+            <script src="./plugins/daterangepicker/daterangepicker.js?v=<?php echo TP_VERSION; ?>"></script>
             <!-- SlimScroll -->
-            <script src="./plugins/slimScroll/jquery.slimscroll.min.js"></script>
+            <script src="./plugins/slimScroll/jquery.slimscroll.min.js?v=<?php echo TP_VERSION; ?>"></script>
             <!-- FastClick -->
-            <script src="./plugins/fastclick/fastclick.min.js"></script>
+            <script src="./plugins/fastclick/fastclick.min.js?v=<?php echo TP_VERSION; ?>"></script>
         <?php
         } elseif ($get['page'] === 'profile') {
             ?>
             <!-- FILESAVER -->
-            <script type="text/javascript" src="plugins/downloadjs/download.js"></script>
+            <script type="text/javascript" src="plugins/downloadjs/download.js?v=<?php echo TP_VERSION; ?>"></script>
             <!-- PLUPLOAD -->
-            <script type="text/javascript" src="plugins/plupload/js/plupload.full.min.js"></script>
+            <script type="text/javascript" src="plugins/plupload/js/plupload.full.min.js?v=<?php echo TP_VERSION; ?>"></script>
         <?php
         } elseif ($get['page'] === 'export') {
             ?>
             <!-- FILESAVER -->
-            <script type="text/javascript" src="plugins/downloadjs/download.js"></script>
+            <script type="text/javascript" src="plugins/downloadjs/download.js?v=<?php echo TP_VERSION; ?>"></script>
             <!-- PWSTRENGHT -->
-            <script type="text/javascript" src="plugins/zxcvbn/zxcvbn.js"></script>
-            <script type="text/javascript" src="plugins/jquery.pwstrength/pwstrength-bootstrap.min.js"></script>
+            <script type="text/javascript" src="plugins/zxcvbn/zxcvbn.js?v=<?php echo TP_VERSION; ?>"></script>
+            <script type="text/javascript" src="plugins/jquery.pwstrength/pwstrength-bootstrap.min.js?v=<?php echo TP_VERSION; ?>"></script>
         <?php
         }
     }
     ?>
     <!-- functions -->
-    <script type="text/javascript" src="includes/js/functions.js"></script>
-    <script type="text/javascript" src="includes/js/CreateRandomString.js"></script>
+    <script type="text/javascript" src="includes/js/functions.js?v=<?php echo TP_VERSION; ?>"></script>
+    <script type="text/javascript" src="includes/js/CreateRandomString.js?v=<?php echo TP_VERSION; ?>"></script>
 
     </body>
 
