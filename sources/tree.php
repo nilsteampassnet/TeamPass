@@ -525,7 +525,7 @@ function prepareNodeJson(
             array(
                 'id' => 'li_' . $nodeId,
                 'parent' => $last_visible_parent === -1 ? $parent : $last_visible_parent,
-                'text' => '<i class="'.$currentNode->fa_icon.' tree-folder mr-2" data-folder="'.$currentNode->fa_icon.'"  data-folder-selected="'.$currentNode->fa_icon_selected.'"></i>'.$text.$currentNode->title.$nodeData['html'],
+                'text' => '<i class="'.$currentNode->fa_icon.' tree-folder mr-2" data-folder="'.$currentNode->fa_icon.'"  data-folder-selected="'.$currentNode->fa_icon_selected.'"></i>'.$text.htmlspecialchars($currentNode->title).$nodeData['html'],
                 'li_attr' => array(
                     'class' => 'jstreeopen',
                     'title' => 'ID [' . $nodeId . '] ' . $nodeData['title'],
@@ -534,7 +534,7 @@ function prepareNodeJson(
                     'id' => 'fld_' . $nodeId,
                     'class' => $nodeData['folderClass'],
                     'onclick' => 'ListerItems(' . $nodeId . ', ' . $nodeData['restricted'] . ', 0, 1)',
-                    'data-title' => $currentNode->title,
+                    'data-title' => htmlspecialchars($currentNode->title),
                 ),
                 'is_pf' => in_array($nodeId, $inputData['personalFolders']) === true ? 1 : 0,
                 'can_edit' => (int) $inputData['userCanCreateRootFolder'],
@@ -551,7 +551,7 @@ function prepareNodeJson(
             array(
                 'id' => 'li_' . $nodeId,
                 'parent' => $last_visible_parent === -1 ? $parent : $last_visible_parent,
-                'text' => '<i class="'.$currentNode->fa_icon.' tree-folder mr-2" data-folder="'.$currentNode->fa_icon.'"  data-folder-selected="'.$currentNode->fa_icon_selected.'"></i>'.'<i class="fas fa-times fa-xs text-danger mr-1 ml-1"></i>'.$text.$currentNode->title.$nodeData['html'],
+                'text' => '<i class="'.$currentNode->fa_icon.' tree-folder mr-2" data-folder="'.$currentNode->fa_icon.'"  data-folder-selected="'.$currentNode->fa_icon_selected.'"></i>'.'<i class="fas fa-times fa-xs text-danger mr-1 ml-1"></i>'.$text.htmlspecialchars($currentNode->title).$nodeData['html'],
                 'li_attr' => array(
                     'class' => '',
                     'title' => 'ID [' . $nodeId . '] ' . $lang->get('no_access'),

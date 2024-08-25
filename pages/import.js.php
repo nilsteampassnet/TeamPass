@@ -723,7 +723,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                     // Isolate first item
                                     if (itemsList.length > 0) {
                                         $('#import-feedback-progress-text')
-                                            .html('<i class="fas fa-cog fa-spin ml-4 mr-2"></i><?php echo $lang->get('operation_progress');?> ('+((counter*100)/itemsNumber).toFixed(2)+'%) - <i>'+itemsList[0].Title + '</i>');
+                                            .html('<i class="fas fa-cog fa-spin ml-4 mr-2"></i><?php echo $lang->get('operation_progress');?> ('+((counter*100)/itemsNumber).toFixed(2)+'%) - <i id="item-title"></i>');
+
+                                        // XSS Filtering :
+                                        $('#import-feedback-progress-text').text(itemsList[0].Title);
 
                                         data = {
                                             'edit-all': $('#import-keepass-edit-all-checkbox').prop('checked') === true ? 1 : 0,

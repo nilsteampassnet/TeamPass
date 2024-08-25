@@ -1839,7 +1839,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         userUploadedFile = false;
 
         // Sanitize text fields
-        let formLabel = fieldDomPurifier('#form-folder-add-label', false, false, false),
+        let formLabel = $('#form-folder-add-label').val(),
             formIcon = fieldDomPurifier('#form-folder-add-icon', false, false, false),
             formIconSelected = fieldDomPurifier('#form-folder-add-icon-selected', false, false, false);
         if (formLabel === false || formIcon === false || formIconSelected === false) {
@@ -2433,7 +2433,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         });
 
     $('#form-item-label').change(function() {
-        $('#form-item-title').html($(this).val());
+        $('#form-item-title').text($(this).val());
     });
 
     /**
@@ -2531,9 +2531,8 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
             $('#card-item-pwd')
                 .html(
-                    '<span style="cursor:none;">' +
-                    simplePurifier($('#hidden-item-pwd').val(), false, false, false, false) +
-                    '</span>'
+                    // XSS Filtering
+                    $('<span span style="cursor:none;">').text($('#hidden-item-pwd').val()).html()
                 );
 
             setTimeout('showPwdContinuous("card-item-pwd")', 50);
