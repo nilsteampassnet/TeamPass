@@ -60,20 +60,15 @@ $database = DB_NAME;
 $port = DB_PORT;
 $user = DB_USER;
 
-if (mysqli_connect(
-    $server,
-    $user,
-    $pass,
-    $database,
-    $port
-)) {
-    $db_link = mysqli_connect(
+if ($db_link = mysqli_connect(
         $server,
         $user,
         $pass,
         $database,
         $port
-    );
+    )
+) {
+    $db_link->set_charset(DB_ENCODING);
 } else {
     $res = 'Impossible to get connected to server. Error is: ' . addslashes(mysqli_connect_error());
     echo '[{"finish":"1", "msg":"", "error":"Impossible to get connected to server. Error is: ' . addslashes(mysqli_connect_error()) . '!"}]';
@@ -373,6 +368,18 @@ if ($result) {
     }
 }
 
+// Add field allowed_to_create to api table
+$res = addColumnIfNotExist(
+    $pre . 'api',
+    'allowed_to_read',
+    "INT(1) NOT NULL DEFAULT '0';"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field allowed_to_read to table api! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
 // Alter type for column 'allowed_to_read' in table api
 modifyColumn(
     $pre . 'api',
@@ -409,6 +416,69 @@ if (intval($tmp) === 0) {
 
 //---<END 3.1.2
 
+
+//--->BEGIN 3.1.2
+
+// Add index and change created/updated/finished_at type.
+try {
+    $alter_table_query = "
+        ALTER TABLE `" . $pre . "background_tasks_logs`
+        ADD INDEX idx_created_at (`created_at`),
+        MODIFY `created_at` INT,
+        MODIFY `updated_at` INT,
+        MODIFY `finished_at` INT
+    ";
+    mysqli_begin_transaction($db_link);
+    mysqli_query($db_link, $alter_table_query);
+    mysqli_commit($db_link);
+} catch (Exception $e) {
+    // Rollback transaction if index already exists.
+    mysqli_rollback($db_link);
+}
+
+// Add index on sharekeys_items.
+try {
+    $alter_table_query = "
+        ALTER TABLE `" . $pre . "sharekeys_items`
+        ADD INDEX idx_object_user (`object_id`, `user_id`)
+    ";
+    mysqli_begin_transaction($db_link);
+    mysqli_query($db_link, $alter_table_query);
+    mysqli_commit($db_link);
+} catch (Exception $e) {
+    // Rollback transaction if index already exists.
+    mysqli_rollback($db_link);
+}
+
+// Add index on items.
+try {
+    $alter_table_query = "
+        ALTER TABLE `" . $pre . "items`
+        ADD INDEX items_perso_id_idx (`perso`, `id`)
+    ";
+    mysqli_begin_transaction($db_link);
+    mysqli_query($db_link, $alter_table_query);
+    mysqli_commit($db_link);
+} catch (Exception $e) {
+    // Rollback transaction if index already exists.
+    mysqli_rollback($db_link);
+}
+
+// Add index on log_items.
+try {
+    $alter_table_query = "
+        ALTER TABLE `" . $pre . "log_items`
+        ADD INDEX log_items_item_action_user_idx (`id_item`, `action`, `id_user`)
+    ";
+    mysqli_begin_transaction($db_link);
+    mysqli_query($db_link, $alter_table_query);
+    mysqli_commit($db_link);
+} catch (Exception $e) {
+    // Rollback transaction if index already exists.
+    mysqli_rollback($db_link);
+}
+
+//---<END 3.1.3
 
 //---------------------------------------------------------------------
 

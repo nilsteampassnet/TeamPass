@@ -78,20 +78,15 @@ $database = DB_NAME;
 $port = DB_PORT;
 $user = DB_USER;
 
-if (mysqli_connect(
-    $server,
-    $user,
-    $pass,
-    $database,
-    $port
-)) {
-    $db_link = mysqli_connect(
+if ($db_link = mysqli_connect(
         $server,
         $user,
         $pass,
         $database,
         $port
-    );
+    )
+) {
+    $db_link->set_charset(DB_ENCODING);
 } else {
     $res = 'Impossible to get connected to server. Error is: ' . addslashes(mysqli_connect_error());
     echo '[{"finish":"1", "msg":"", "error":"Impossible to get connected to server. Error is: ' . addslashes(mysqli_connect_error()) . '!"}]';
@@ -248,7 +243,8 @@ mysqli_query(
         `object_id` int(12) NOT NULL,
         `user_id` int(12) NOT NULL,
         `share_key` text NOT NULL,
-        PRIMARY KEY (`increment_id`)
+        PRIMARY KEY (`increment_id`),
+        INDEX idx_object_user (`object_id`, `user_id`)
     ) CHARSET=utf8;'
 );
 

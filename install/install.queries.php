@@ -382,7 +382,8 @@ if (null !== $post_type) {
 								`object_id` int(12) NOT NULL,
 								`user_id` int(12) NOT NULL,
 								`share_key` text NOT NULL,
-								PRIMARY KEY (`increment_id`)
+								PRIMARY KEY (`increment_id`),
+                                INDEX idx_object_user (`object_id`, `user_id`)
 							) CHARSET=utf8;'
                         );
                         $mysqli_result = mysqli_query(
@@ -471,7 +472,8 @@ if (null !== $post_type) {
                             `updated_at` varchar(30) NULL,
                             `deleted_at` varchar(30) NULL,
                             PRIMARY KEY (`id`),
-                            KEY `restricted_inactif_idx` (`restricted_to`,`inactif`)
+                            KEY `restricted_inactif_idx` (`restricted_to`,`inactif`),
+                            INDEX items_perso_id_idx (`perso`, `id`)
                             ) CHARSET=utf8;"
                         );
                     } elseif ($task === 'log_items') {
@@ -486,7 +488,8 @@ if (null !== $post_type) {
                             `raison` text NULL,
                             `old_value` MEDIUMTEXT NULL DEFAULT NULL,
                             `encryption_type` VARCHAR(20) NOT NULL DEFAULT 'not_set',
-                            PRIMARY KEY (`increment_id`)
+                            PRIMARY KEY (`increment_id`),
+                            INDEX log_items_item_action_user_idx (`id_item`, `action`, `id_user`)
                             ) CHARSET=utf8;"
                         );
                         // create index
@@ -1311,13 +1314,14 @@ $SETTINGS = array (';
                             $dbTmp,
                             "CREATE TABLE IF NOT EXISTS `" . $var['tbl_prefix'] . "background_tasks_logs` (
                             `increment_id` int(12) NOT NULL AUTO_INCREMENT,
-                            `created_at` varchar(20) NOT NULL,
+                            `created_at` INT NOT NULL,
                             `job` varchar(50) NOT NULL,
                             `status` varchar(10) NOT NULL,
-                            `updated_at` varchar(20) DEFAULT NULL,
-                            `finished_at` varchar(20) DEFAULT NULL,
+                            `updated_at` INT DEFAULT NULL,
+                            `finished_at` INT DEFAULT NULL,
                             `treated_objects` varchar(20) DEFAULT NULL,
-                            PRIMARY KEY (`increment_id`)
+                            PRIMARY KEY (`increment_id`),
+                            INDEX idx_created_at (`created_at`)
                             ) CHARSET=utf8;"
                         );
                     } else if ($task === 'ldap_groups_roles') {

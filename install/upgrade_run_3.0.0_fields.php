@@ -69,21 +69,14 @@ $database = DB_NAME;
 $port = DB_PORT;
 $user = DB_USER;
 
-if (mysqli_connect(
-    $server,
-    $user,
-    $pass,
-    $database,
-    $port
-)
-) {
-    $db_link = mysqli_connect(
+if ($db_link = mysqli_connect(
         $server,
         $user,
         $pass,
         $database,
         $port
-    );
+    )
+) {
 	$db_link->set_charset(DB_ENCODING);
 } else {
     $res = 'Impossible to get connected to server. Error is: '.addslashes(mysqli_connect_error());
@@ -161,7 +154,7 @@ while ($data = mysqli_fetch_array($rows)) {
         );
 
         // Encrypt with Object Key
-        $cryptedStuff = doDataEncryption($passwd['string']);
+        $cryptedStuff = doDataEncryption(html_entity_decode($passwd['string']));
 
         // Store new password in DB
         mysqli_query(

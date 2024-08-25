@@ -754,7 +754,7 @@ function aesEncrypt(text)
 function manageUpgradeScripts(file_number)
 {
     var start_at = 0;
-    var noitems_by_loop = 100;
+    var noitems_by_loop = 1000;
     var loop_number = 0;
 
     if (file_number == 0) {

@@ -73,20 +73,15 @@ $database = DB_NAME;
 $port = DB_PORT;
 $user = DB_USER;
 
-if (mysqli_connect(
-    $server,
-    $user,
-    $pass,
-    $database,
-    $port
-)) {
-    $db_link = mysqli_connect(
+if ($db_link = mysqli_connect(
         $server,
         $user,
         $pass,
         $database,
         $port
-    );
+    )
+) {
+    $db_link->set_charset(DB_ENCODING);
 } else {
     $res = 'Impossible to get connected to server. Error is: ' . addslashes(mysqli_connect_error());
     echo '[{"finish":"1", "msg":"", "error":"Impossible to get connected to server. Error is: ' . addslashes(mysqli_connect_error()) . '!"}]';
@@ -102,6 +97,9 @@ if (isset($post_operation) === true && empty($post_operation) === false && strpo
         // ---->
         // OPERATION - 20230604_1 - generate key for item_key
 
+        // Start transaction to avoid autocommit
+        mysqli_begin_transaction($db_link, MYSQLI_TRANS_START_READ_WRITE);
+
         // Get items to treat
         $rows = mysqli_query(
             $db_link,
@@ -113,6 +111,8 @@ if (isset($post_operation) === true && empty($post_operation) === false && strpo
         // Handle error on query
         if (!$rows) {
             echo '[{"finish":"1" , "error":"'.mysqli_error($db_link).'"}]';
+            mysqli_commit($db_link);
+            mysqli_close($db_link);
             exit();
         }
 
@@ -131,6 +131,8 @@ if (isset($post_operation) === true && empty($post_operation) === false && strpo
                 );
                 if (mysqli_error($db_link)) {
                     echo '[{"finish":"1", "next":"", "error":"MySQL Error! '.addslashes(mysqli_error($db_link)).'"}]';
+                    mysqli_commit($db_link);
+                    mysqli_close($db_link);
                     exit();
                 }
             }
@@ -158,12 +160,17 @@ if (isset($post_operation) === true && empty($post_operation) === false && strpo
     }
     // Return back
     echo '[{"finish":"'.$finish.'" , "next":"", "error":"", "total":"'.$total.'"}]';
+    // Commit transaction.
+    mysqli_commit($db_link);
 }
 
 
 function populateItemsTable_CreatedAt($pre, $post_nb)
 {
     global $db_link;
+    // Start transaction to avoid autocommit
+    mysqli_begin_transaction($db_link, MYSQLI_TRANS_START_READ_WRITE);
+
     // loop on items - created_at
     $items = mysqli_query(
         $db_link,
@@ -190,12 +197,19 @@ function populateItemsTable_CreatedAt($pre, $post_nb)
             "SELECT * FROM `" . $pre . "items` WHERE created_at IS NULL"
         )
     );
+
+    // Commit transaction.
+    mysqli_commit($db_link);
+
     return $remainingItems > 0 ? 0 : 1;
 }
 
 function populateItemsTable_UpdatedAt($pre)
 {
     global $db_link;
+    // Start transaction to avoid autocommit
+    mysqli_begin_transaction($db_link, MYSQLI_TRANS_START_READ_WRITE);
+
     // loop on items - updated_at
     $items = mysqli_query(
         $db_link,
@@ -212,12 +226,18 @@ function populateItemsTable_UpdatedAt($pre)
         }
     }
 
+    // Commit transaction.
+    mysqli_commit($db_link);
+
     return 1;
 }
 
 function populateItemsTable_DeletedAt($pre)
 {
     global $db_link;
+    // Start transaction to avoid autocommit
+    mysqli_begin_transaction($db_link, MYSQLI_TRANS_START_READ_WRITE);
+
     // loop on items - deleted_at
     $items = mysqli_query(
         $db_link,
@@ -233,6 +253,9 @@ function populateItemsTable_DeletedAt($pre)
             );
         }
     }
+
+    // Commit transaction.
+    mysqli_commit($db_link);
 
     return 1;
 }
@@ -273,6 +296,9 @@ function installPurgeUnnecessaryKeys(bool $allUsers = true, int $user_id=0, stri
 function installPurgeUnnecessaryKeysForUser(int $user_id=0, string $pre)
 {
     global $db_link;
+    // Start transaction to avoid autocommit
+    mysqli_begin_transaction($db_link, MYSQLI_TRANS_START_READ_WRITE);
+
     if ($user_id === 0) {
         return;
     }
@@ -319,6 +345,9 @@ function installPurgeUnnecessaryKeysForUser(int $user_id=0, string $pre)
             WHERE object_id IN ('.$pfItemsList.') AND user_id NOT IN ('.TP_USER_ID.', '.$user_id.')'
         );
     }
+
+    // Commit transaction.
+    mysqli_commit($db_link);
 }
 
 

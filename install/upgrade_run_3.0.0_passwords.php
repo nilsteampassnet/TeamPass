@@ -70,21 +70,14 @@ $database = DB_NAME;
 $port = DB_PORT;
 $user = DB_USER;
 
-if (mysqli_connect(
-    $server,
-    $user,
-    $pass,
-    $database,
-    $port
-)
-) {
-    $db_link = mysqli_connect(
+if ($db_link = mysqli_connect(
         $server,
         $user,
         $pass,
         $database,
         $port
-    );
+    )
+) {
 	$db_link->set_charset(DB_ENCODING);
 } else {
     $res = 'Impossible to get connected to server. Error is: '.addslashes(mysqli_connect_error());
@@ -128,20 +121,14 @@ if (isset($userPassword) === false || empty($userPassword) === true
 }
 
 // Get total items
-$rows = mysqli_query(
+$total = mysqli_fetch_array(mysqli_query(
     $db_link,
-    'SELECT id
+    'SELECT COUNT(id)
     FROM '.$pre.'items
     WHERE perso = 0'
-);
-if (!$rows) {
-    echo '[{"finish":"1" , "error":"'.mysqli_error($db_link).'"}]';
-    exit();
-}
+))[0];
 
-$total = mysqli_num_rows($rows);
-
-// Loop on Items
+// Get items by batch
 $rows = mysqli_query(
     $db_link,
     'SELECT id, pw, encryption_type
@@ -149,10 +136,28 @@ $rows = mysqli_query(
     WHERE perso = 0
     LIMIT '.$post_start.', '.$post_nb
 );
+
+// No more items
 if (!$rows) {
     echo '[{"finish":"1" , "error":"'.mysqli_error($db_link).'"}]';
     exit();
 }
+
+// Use transaction to save 80% of execution time.
+mysqli_begin_transaction($db_link, MYSQLI_TRANS_START_READ_WRITE);
+
+// Update items statement
+$updateStmt = mysqli_prepare($db_link, '
+    UPDATE ' . $pre . 'items
+        SET pw = ?,
+            encryption_type = "teampass_aes"
+        WHERE id = ?');
+
+// Insert sharekey items statement
+$insertStmt = mysqli_prepare($db_link, "
+    INSERT INTO " . $pre . "sharekeys_items
+        (increment_id, object_id, user_id, share_key)
+        VALUES (NULL, ?, ?, ?)");
 
 while ($data = mysqli_fetch_array($rows)) {
     if ($data['encryption_type'] !== 'teampass_aes') {
@@ -164,24 +169,25 @@ while ($data = mysqli_fetch_array($rows)) {
         );
 
         // Encrypt with Object Key
-        $cryptedStuff = doDataEncryption($passwd['string']);
+        $cryptedStuff = doDataEncryption(html_entity_decode($passwd['string']));
+        $_SESSION['items_object_keys'][$data['id']] = $cryptedStuff['objectKey'];
 
         // Store new password in DB
-        mysqli_query(
-            $db_link,
-            'UPDATE '.$pre."items
-            SET pw = '".$cryptedStuff['encrypted']."', encryption_type = 'teampass_aes'
-            WHERE id = ".$data['id']
-        );
+        mysqli_stmt_bind_param($updateStmt, 'si', $cryptedStuff['encrypted'], $data['id']);
+        mysqli_stmt_execute($updateStmt);
 
         // Insert in DB the new object key for this item by user
-        mysqli_query(
-            $db_link,
-            "INSERT INTO `".$pre."sharekeys_items` (`increment_id`, `object_id`, `user_id`, `share_key`) 
-            VALUES (NULL, '".$data['id']."', '".$userId."', '".encryptUserObjectKey($cryptedStuff['objectKey'], $userPublicKey)."');"
-        );
+        $encryptedKey = encryptUserObjectKey($cryptedStuff['objectKey'], $userPublicKey);
+        mysqli_stmt_bind_param($insertStmt, 'iis', $data['id'], $userId, $encryptedKey);
+        mysqli_stmt_execute($insertStmt);
     }
 }
+
+// Commit transaction and close db connection
+mysqli_commit($db_link);
+mysqli_stmt_close($updateStmt);
+mysqli_stmt_close($insertStmt);
+mysqli_close($db_link);
 
 if ($next >= $total) {
     $finish = 1;

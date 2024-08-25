@@ -299,7 +299,10 @@ function cronContinueReEncryptingUserSharekeysStep20(
     // get user private key
     $ownerInfo = getOwnerInfo($extra_arguments['owner_id'], $extra_arguments['creator_pwd'], $SETTINGS);
     $userInfo = getOwnerInfo($extra_arguments['new_user_id'], $extra_arguments['new_user_pwd'], $SETTINGS);
-    
+
+    // Start transaction for better performance
+    DB::startTransaction();
+
     // Loop on items
     $rows = DB::query(
         'SELECT id, pw, perso
@@ -375,6 +378,9 @@ function cronContinueReEncryptingUserSharekeysStep20(
         'SELECT *
         FROM ' . prefixTable('items')
     );
+
+    // Commit transaction
+    DB::commit();
 
     $next_start = (int) $post_start + (int) $post_length;
     return [
