@@ -300,7 +300,7 @@ catch (Exception $e) {
                         }
 
                         // Test internet access
-                        $connected = @fsockopen("www.google.com", 80); // Le site web est google et le port est 80 (HTTP)
+                        $connected = @fsockopen("api-123456.duo.com", 443, $errno, $errstr, 1); // API Duo API (MFA).
                         if ($connected){
                             fclose($connected);
                             $internetAccess = '
