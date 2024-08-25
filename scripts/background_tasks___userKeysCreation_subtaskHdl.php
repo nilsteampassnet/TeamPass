@@ -61,7 +61,7 @@ $arguments = $_SERVER['argv'];
 array_shift($arguments);
 
 
-$data = [
+$inputData = [
     'subTaskId' => $_SERVER['argv'][1],
     'index' => $_SERVER['argv'][2],
     'nb' => $_SERVER['argv'][3],
@@ -78,12 +78,6 @@ $filters = [
     'taskArguments' => 'trim|strip_tags',
     'taskId' => 'trim|escape',
 ];
-
-$inputData = dataSanitizer(
-    $data,
-    $filters
-);
-
 
 $taskArgs = json_decode($inputData['taskArguments'], true);
 /*
