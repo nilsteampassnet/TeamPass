@@ -2194,6 +2194,14 @@ if (null !== $post_type) {
                     (array) $filters
                 );
 
+                // Prevent LFI.
+                $inputData['language'] = preg_replace('/[^a-z]/', "", $inputData['language']);
+
+                // Force english if non-existent language.
+                if (!file_exists(__DIR__."/../includes/language/".$inputData['language'].".php")) {
+                    $inputData['language'] = 'english';
+                }
+
                 // update user
                 DB::update(
                     prefixTable('users'),
