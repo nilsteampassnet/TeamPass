@@ -241,7 +241,7 @@ if (array_key_exists($get['page'], $utilitiesPages) === true) {
     <!-- favicon -->
     <link rel="shortcut icon" type="image/png" href="<?php echo isset($SETTINGS['favicon']) === true ? $SETTINGS['favicon'] : '';?>"/>
     <!-- manifest -->
-    <link rel="manifest" href="includes/manifest.json?v=<?php echo TP_VERSION; ?>">
+    <!-- <link rel="manifest" href="includes/manifest.json?v=<?php echo TP_VERSION; ?>"> -->
     <!-- Custom style -->
     <?php
     if (file_exists(__DIR__ . '/includes/css/custom.css') === true) {?>
@@ -1148,7 +1148,7 @@ echo '
     <link href="plugins/fontawesome-free-6/css/v5-font-face.min.css?v=<?php echo TP_VERSION; ?>" rel="stylesheet" /> 
     <!-- jQuery -->
     <script src="plugins/jquery/jquery.min.js?v=<?php echo TP_VERSION; ?>"></script>
-    <script src="plugins/jquery/jquery.cookie.js?v=<?php echo TP_VERSION; ?>" type="text/javascript"></script>
+    <script src="plugins/jstree/jquery.cookie.js?v=<?php echo TP_VERSION; ?>" type="text/javascript"></script>
     <!-- jQuery UI -->
     <script src="plugins/jqueryUI/jquery-ui.min.js?v=<?php echo TP_VERSION; ?>"></script>
     <link rel="stylesheet" href="plugins/jqueryUI/jquery-ui.min.css?v=<?php echo TP_VERSION; ?>">

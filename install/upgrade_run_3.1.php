@@ -414,11 +414,6 @@ if (intval($tmp) === 0) {
     );
 }
 
-//---<END 3.1.2
-
-
-//--->BEGIN 3.1.2
-
 // Add index and change created/updated/finished_at type.
 try {
     $alter_table_query = "
@@ -478,7 +473,7 @@ try {
     mysqli_rollback($db_link);
 }
 
-//---<END 3.1.3
+//---<END 3.1.2
 
 //---------------------------------------------------------------------
 

@@ -13,11 +13,11 @@
     },
     {
         "table_name": "background_tasks",
-        "structure_hash": "e5b4f85a38e5e24f4eeafcbc01a17808f9301a76b918d4774f267f56ceec214e"
+        "structure_hash": "1ea5ceabaead323f0ab3d09a2dd1b0702609739773c55b9bab11fa9a1995bdda"
     },
     {
         "table_name": "background_tasks_logs",
-        "structure_hash": "ba98e1d5df107bcba95fc9b967d348ed91b37cfcec563f5ed134d211ec2ad802"
+        "structure_hash": "a57c18b891a3003ef444ad2d953437750c3ed4b8b86faa6f05e233e10d126e2e"
     },
     {
         "table_name": "cache",
@@ -57,7 +57,7 @@
     },
     {
         "table_name": "items",
-        "structure_hash": "7cbfdc99e60ef45c5007fd59b236c07b74c859710e926e756614a224e412a18a"
+        "structure_hash": "1da6d3517984be863421b51b51901df89651166759a760796c342017cef8350c"
     },
     {
         "table_name": "items_change",
@@ -93,19 +93,19 @@
     },
     {
         "table_name": "ldap_groups_roles",
-        "structure_hash": "876249365fe8f5a992e392e84b46f8fdfada965ce01ee4db8c70f73f3568a4a1"
+        "structure_hash": "d635b77e6ef1f92bb9c2e68c1caa85defb310973be3af8c3fd01f9c155614fa7"
     },
     {
         "table_name": "log_items",
-        "structure_hash": "4b816b75e42b8e3f38bcaac03ebc8a61051c228c58429366d3c0245db375b07a"
+        "structure_hash": "029a2f73cd42f51ec01415224fb1086d7966b869c17112079312f32034256601"
     },
     {
         "table_name": "log_system",
-        "structure_hash": "cbaceb6c0ac51db9e6e76bb67c79281582102bbba7a014c474ef057278b9ae8d"
+        "structure_hash": "dd5eb14116409bb914a335311ba4ca1e2cfbfec17958bac154b8fb5fb8bb850e"
     },
     {
         "table_name": "misc",
-        "structure_hash": "eaaa979b373349965c71907f4a97da971f762387dff20bbdca1ab7069092810f"
+        "structure_hash": "a75679378d7cc280172f8519e064d1b8b97c9fa8671f670d56c2feabd495613f"
     },
     {
         "table_name": "nested_tree",
@@ -169,7 +169,7 @@
     },
     {
         "table_name": "sharekeys_items",
-        "structure_hash": "32e7dbe0e2c96f5803964b7dc2913140cd9c97d3a94a1aeb1df1ec4fdafc1676"
+        "structure_hash": "30e520fafbd38f659d16a7797ef6f21f0e8eb18001087c8355675248d3292796"
     },
     {
         "table_name": "sharekeys_logs",
