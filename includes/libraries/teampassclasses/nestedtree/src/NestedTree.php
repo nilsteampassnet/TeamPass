@@ -191,6 +191,36 @@ class NestedTree
     }
 
     /**
+     * Costless than getDescendants, need a tree from $this->getDescendants().
+     * $this->getDescendantsFromTreeArray($treeAray, 10);
+     * Gives the same results as $this->getDescendants(10, true, false, true);
+     * Without any sql call (useful in loops on very big teampass instances).
+     *
+     * @param int  $treeAray $this->getDescendants() array
+     * @param bool $parentId ID of the parent node.
+     *
+     * @return array The children of the passed node
+     */
+    public function getDescendantsFromTreeArray(&$treeAray, $parentId, $firstIteration = true) {
+        $descendants = $firstIteration ? [$parentId] : [];
+    
+        foreach ($treeAray as $key => $object) {
+            // If the object's parent_id matches parentId, it is added to the list of descendants
+            if ($object->parent_id == $parentId) {
+                // Ajouter l'id du descendant
+                $descendants[] = $object->id;
+    
+                // If nb_subfolders > 0, recursive call to find the descendants of this element
+                if ($object->nb_subfolders > 0) {
+                    $descendants = array_merge($descendants, $this->getDescendantsFromTreeArray($treeAray, $object->id, false));
+                }
+            }
+        }
+    
+        return $descendants;
+    }
+
+    /**
      * Fetch the children of a node, or if no node is specified, fetch the
      * top level items.
      *

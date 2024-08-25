@@ -275,6 +275,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         store.set(
             'teampassApplication', {
                 selectedFolder: parseInt(queryDict['group']),
+                itemsListFolderId: parseInt(queryDict['group']),
                 selectedItem: parseInt(queryDict['id'])
             }
         );
@@ -288,24 +289,49 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         showItemOnPageLoad = true;
         itemIdToShow = queryDict['id'];
         startedItemsListQuery = true;
+    }
 
-        $('.item-details-card').removeClass('hidden');
-        $('#folders-tree-card, .columns-position').addClass('hidden');
+    // Close on escape key
+    $(document).keyup(function(e) {
+        if (e.keyCode == 27) {
+            closeItemDetailsCard();
+        }
+    });
 
-        // refresh selection in jstree
-        $('#jstree').jstree('deselect_all');
-        $('#jstree').jstree('select_node', '#li_' + itemIdToShow);
-        $('#jstree').jstree(true).hide_icons()
+    // load list of visible folders for current user
+    // Refresh data later to avoid php session lock which slows page display.
+    $(this).delay(500).queue(function() {
+        refreshVisibleFolders(true);
 
-        // Get list of items in this folder
-        ListerItems(store.get('teampassApplication').selectedFolder, '', 0);
+        // show correct folder in Tree
+        let groupe_id = store.get('teampassApplication').itemsListFolderId;
+        if (groupe_id !== false && 
+            ($('#jstree').jstree('get_selected', true)[0] === undefined ||
+            'li_' + groupe_id !== $('#jstree').jstree('get_selected', true)[0].id)
+        ) {
+            $('#jstree').jstree('deselect_all');
+            $('#jstree').jstree('select_node', '#li_' + groupe_id);
+        }
 
-        // Show details
+        $(this).dequeue();
+    });
+
+    // Preload list of items
+    if (store.get('teampassApplication') !== undefined &&
+        store.get('teampassApplication').selectedFolder !== undefined &&
+        store.get('teampassApplication').selectedFolder !== '' && 
+        showItemOnPageLoad === true
+    ) {
+        startedItemsListQuery = true;
+        ListerItems(store.get('teampassApplication').itemsListFolderId, '', 0);
+    }
+
+    // Show details of item
+    if (showItemOnPageLoad === true) {
+        // Display item details
         $.when(
             Details(itemIdToShow, 'show', true)
         ).then(function() {
-            //requestRunning = false;
-            //console.log('Item detail affiché')
             // Force previous view to Tree folders
             store.update(
                 'teampassUser',
@@ -315,41 +341,6 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             );
         });
     }
-
-    // Preload list of items
-    if (store.get('teampassApplication') !== undefined &&
-        store.get('teampassApplication').selectedFolder !== undefined &&
-        store.get('teampassApplication').selectedFolder !== ''
-    ) {
-        startedItemsListQuery = true;
-        ListerItems(store.get('teampassApplication').selectedFolder, '', 0);
-    }
-
-
-
-    // Close on escape key
-    $(document).keyup(function(e) {
-        if (e.keyCode == 27) {
-            closeItemDetailsCard();
-        }
-    });
-
-    /*// Edit on e key
-    $(document).keyup(function(e) {
-        if (e.keyCode == 69 && $('.item-details-card').is(':visible') === true) {
-            if ($('#form-item').hasClass('hidden') === false) {
-                showItemEditForm(store.get('teampassItem').id);
-            }
-        }
-    });
-    */
-
-    // load list of visible folders for current user
-    $(this).delay(500).queue(function() {
-        refreshVisibleFolders(true);
-
-        $(this).dequeue();
-    });
 
     // Keep the scroll position
     $(window).on("scroll", function() {
@@ -365,7 +356,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
 
     // Ensure correct height of folders tree
-    $('#jstree').height(screenHeight - 200);
+    $('#jstree').height(screenHeight - 270);
 
     // Prepare iCheck format for checkboxes
     $('input[type="checkbox"].flat-blue, input[type="radio"].flat-blue').iCheck({
@@ -3892,24 +3883,6 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                                 .append(rebuildPath(initialQueryData.path));
                         } else {
                             $('#form-folder-path').html('');
-                        }
-
-                        /*
-                        // PSK is requested but not set
-                        if (data.folder_requests_psk === 1
-                            && (store.get('teampassUser').pskSetForSession === ''
-                            || store.get('teampassUser').pskSetForSession === undefined)
-                        ) {
-                            showPersonalSKDialog();
-                        }
-                        */
-
-                        // show correct fodler in Tree
-                        if ($('#jstree').jstree('get_selected', true)[0] !== undefined &&
-                            'li_' + groupe_id !== $('#jstree').jstree('get_selected', true)[0].id
-                        ) {
-                            $('#jstree').jstree('deselect_all');
-                            $('#jstree').jstree('select_node', '#li_' + groupe_id);
                         }
 
                         // Delete existing clipboard
