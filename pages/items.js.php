@@ -4254,16 +4254,22 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 // Trash icon
                 trash_link = '<span class="fa-stack fa-clickable warn-user pointer infotip mr-2 list-item-clicktodelete" title="<?php echo $lang->get('delete'); ?>" data-item-id="' + value.item_id + '"><i class="fa-solid fa-circle fa-stack-2x"></i><i class="fa-solid fa-trash fa-stack-1x fa-inverse"></i></span>';
 
-                // Prepare Description
-                var description = '';
-                if (value.login !== '' || value.email !== '' || value.link !== '' || value.desc.replace(/<.*>/gi, '').trim() !== '') {
-                    var description =
-                        '<span class="text-secondary small">' +
-                        (value.login !== '' ? ' - <i class="fa-solid fa-user mr-1"></i>' + value.login : '') +
-                        (value.email !== undefined && value.email !== '' ? ' - <i class="fa-solid fa-mail-bulk mr-1"></i>' + value.email : '') +
-                        (value.link !== '' ? ' - <i class="fa-solid fa-link mr-1"></i>' + value.link : '') +
-                        (value.desc.replace(/<.*>/gi, '').trim() !== '' ? ' - <i class="fa-solid fa-pen mr-1"></i>' + value.desc : '') +
-                        '</span>';
+                var description = '',
+                    itemLabel = '';
+                // Add username, email and url if requested
+                if (store.get('teampassSettings') !== undefined && parseInt(store.get('teampassSettings').show_item_data) === 1) {
+                    if (value.login !== '' || value.email !== '' || value.link !== '') {
+                        itemLabel =
+                            (value.login !== '' ? ' - <i class="fa-solid fa-user mr-1"></i>' + value.login : '') +
+                            (value.email !== undefined && value.email !== '' ? ' - <i class="fa-solid fa-mail-bulk mr-1"></i>' + value.email : '') +
+                            (value.link !== '' ? ' - <i class="fa-solid fa-link mr-1"></i>' + value.link : '');
+                    }
+                }
+                // Add Description 
+                description = (value.desc.replace(/<.*>/gi, '').trim() !== '' ? itemLabel + ' - <i class="fa-solid fa-pen mr-1"></i>' + value.desc : itemLabel);
+                // Consolidate item label
+                if (description !== '') {
+                    description = '<span class="text-secondary small">' + description + '</span>';
                 }
 
                 $('#teampass_items_list').append(

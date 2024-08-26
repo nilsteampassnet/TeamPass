@@ -708,6 +708,7 @@ $SETTINGS = array (';
                             array('admin', 'oauth2_client_token', ''),
                             array('admin', 'oauth2_client_scopes', 'openid,profile,email'),
                             array('admin', 'oauth2_client_appname', 'Login with Azure'),
+                            array('admin', 'show_item_data', '0'),
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting

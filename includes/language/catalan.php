@@ -1185,5 +1185,7 @@ return array(
     'table_not_exists' => 'Expected table does not exist. Please restore it from a backup.',
     'tools_usage_warning' => 'Using tools can have a direct impact on the database. Please be careful. Always perform a dump before and define a maintenance period.',
     'select_user' => 'Select user',
+    'show_item_data' => 'Show item data in items list',
+    'show_item_data_tip' => 'Permits to display extra information in the items list (username, email and url). This could be useful to have a quick view of the item content.',
 
 );

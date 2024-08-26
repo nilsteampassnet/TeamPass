@@ -473,6 +473,15 @@ try {
     mysqli_rollback($db_link);
 }
 
+// Add new setting 'show_item_data'
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'show_item_data'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'show_item_data', '0')"
+    );
+}
+
 //---<END 3.1.2
 
 //---------------------------------------------------------------------

@@ -874,6 +874,19 @@ $zones = timezone_list();
                             </div>
                         </div>
 
+                        <div class='row mb-2 option' data-keywords="display tree counter">
+                            <div class='col-10'>
+                                <?php echo $lang->get('show_item_data'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('show_item_data_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='show_item_data' data-toggle-on='<?php echo isset($SETTINGS['show_item_data']) === true && $SETTINGS['show_item_data'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='show_item_data_input' value='<?php echo isset($SETTINGS['show_item_data']) && $SETTINGS['show_item_data'] === '1' ? '1' : '0'; ?>' />
+                            </div>
+                        </div>
+
+
                         <div class='row mb-2 option' data-keywords="display optimization description">
                             <div class='col-10'>
                                 <?php echo $lang->get('settings_show_description'); ?>

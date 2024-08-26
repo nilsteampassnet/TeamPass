@@ -668,6 +668,7 @@ function systemHandler(string $post_type, array|null|string $dataReceived, array
                         'personal_saltkey_security_level' => '',
                         'enable_tasks_manager' => '',
                         'insert_manual_entry_item_history' => '',
+                        'show_item_data' => '',
                     )
                 ),
                 'encode'
