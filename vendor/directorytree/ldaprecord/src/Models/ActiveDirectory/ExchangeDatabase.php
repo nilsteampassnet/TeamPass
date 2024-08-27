@@ -5,14 +5,14 @@ namespace LdapRecord\Models\ActiveDirectory;
 class ExchangeDatabase extends Entry
 {
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
-    public static $objectClasses = ['msExchMDB'];
+    public static array $objectClasses = ['msExchMDB'];
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
-    public static function boot()
+    public static function boot(): void
     {
         parent::boot();
 

@@ -134,7 +134,7 @@
         "illuminate/contracts": "^10.32",
         "illuminate/collections": "^10.48",
         "nesbot/carbon": "^2.71",
-        "directorytree/ldaprecord": "^2.20",
+        "directorytree/ldaprecord": "^3.0",
         "voku/anti-xss": "^4.1",
         "tiben/crontab-manager": "^1.4",
         "sergeytsalkov/meekrodb": "^2.5",

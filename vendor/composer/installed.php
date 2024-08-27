@@ -47,12 +47,12 @@
             'dev_requirement' => false,
         ),
         'directorytree/ldaprecord' => array(
-            'pretty_version' => 'v2.20.5',
-            'version' => '2.20.5.0',
+            'pretty_version' => 'v3.7.0',
+            'version' => '3.7.0.0',
             'type' => 'library',
             'install_path' => __DIR__ . '/../directorytree/ldaprecord',
             'aliases' => array(),
-            'reference' => '5bd0a5a9d257cf1049ae83055dbba4c3479ddf16',
+            'reference' => '4113aa08f72bbc76630fad3b05d57cd431fb0839',
             'dev_requirement' => false,
         ),
         'dittertp/gibberish-aes-php' => array(
@@ -479,12 +479,12 @@
             'dev_requirement' => false,
         ),
         'psr/simple-cache' => array(
-            'pretty_version' => '2.0.0',
-            'version' => '2.0.0.0',
+            'pretty_version' => '3.0.0',
+            'version' => '3.0.0.0',
             'type' => 'library',
             'install_path' => __DIR__ . '/../psr/simple-cache',
             'aliases' => array(),
-            'reference' => '8707bf3cea6f710bf6ef05491234e3ab06f6432a',
+            'reference' => '764e0b3939f5ca87cb904f570ef9be2d78a07865',
             'dev_requirement' => false,
         ),
         'ralouphie/getallheaders' => array(
@@ -700,15 +700,6 @@
                 0 => '2.3|3.0',
             ),
         ),
-        'symfony/var-dumper' => array(
-            'pretty_version' => 'v6.4.10',
-            'version' => '6.4.10.0',
-            'type' => 'library',
-            'install_path' => __DIR__ . '/../symfony/var-dumper',
-            'aliases' => array(),
-            'reference' => 'a71cc3374f5fb9759da1961d28c452373b343dd4',
-            'dev_requirement' => false,
-        ),
         'teampassclasses/azureauthcontroller' => array(
             'pretty_version' => 'dev-master',
             'version' => 'dev-master',
@@ -824,15 +815,6 @@
             'install_path' => __DIR__ . '/../tiben/crontab-manager',
             'aliases' => array(),
             'reference' => '79ade7bfc895c4594905a2554d7a82f6567aabf3',
-            'dev_requirement' => false,
-        ),
-        'tightenco/collect' => array(
-            'pretty_version' => 'v9.52.7',
-            'version' => '9.52.7.0',
-            'type' => 'library',
-            'install_path' => __DIR__ . '/../tightenco/collect',
-            'aliases' => array(),
-            'reference' => 'b15143cd11fe01a700fcc449df61adc64452fa6d',
             'dev_requirement' => false,
         ),
         'voku/anti-xss' => array(
