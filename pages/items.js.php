@@ -2226,8 +2226,8 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     $('#folders-tree-card, .columns-position').removeClass('hidden');
                     $('.item-details-card, .form-item-action, .form-item, .form-folder-action, #card-item-expired')
                         .addClass('hidden');
-                    $('#folder-tree-container').addClass('col-md-5').removeClass('col-md-3');
-                    $('#items-list-container').addClass('col-md-7').removeClass('col-md-4');
+                    $('#folder-tree-container').addClass('col-md-5').removeClass('col-md-3').removeClass('hidden');
+                    $('#items-list-container').addClass('col-md-7').removeClass('col-md-4').removeClass('hidden');
                     $('#items-details-container').addClass('hidden');
 
                 } else {
@@ -4818,13 +4818,26 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                         // Prepare Views
                         $('.item-details-card, #item-details-card-categories').removeClass('hidden');
                         $('.form-item').addClass('hidden');
-                        $('#folder-tree-container').removeClass('col-md-5').addClass('col-md-3');
-                        $('#items-list-container').removeClass('col-md-7').addClass('col-md-4');
-                        $('#items-details-container').removeClass('hidden');
-                        // Reduce menu size and trigger event listener
-                        if ($('body').hasClass('sidebar-collapse') === false) {
-                            $('a[data-widget="pushmenu"]').click();
+
+                        split_mode = true; // Add user or admin parameter to replace this var
+                        if (split_mode) {
+                            // Optionnal splited item view
+                            $('#folder-tree-container').removeClass('col-md-5').addClass('col-md-3');
+                            $('#items-list-container').removeClass('col-md-7').addClass('col-md-4');
+                            $('#items-details-container').removeClass('col-md-12').addClass('col-md-5');
+                            // Reduce menu size and trigger event listener
+                            if ($('body').hasClass('sidebar-collapse') === false) {
+                                $('a[data-widget="pushmenu"]').click();
+                            }
+                        } else {
+                            // Defaut = full screen item view
+                            $('#folder-tree-container').removeClass('col-md-5').addClass('hidden');
+                            $('#items-list-container').removeClass('col-md-7').addClass('hidden');
+                            $('#items-details-container').removeClass('col-md-5').addClass('col-md-12');
                         }
+
+                        // Show item details
+                        $('#items-details-container').removeClass('hidden');
 
                         $('#form-item-suggestion-password').focus();
                         // If Description empty then remove it
