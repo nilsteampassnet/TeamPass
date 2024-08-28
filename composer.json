@@ -13,7 +13,17 @@
     "version": "3.1.1",
     "keywords": ["passwords", "manager", "collaborative", "vault", "security"],
     "homepage": "https://www.teampass.net",
-    "license": "GPL-3.0-only",
+    "license": [
+        "GPL-3.0-only",
+        "GPL-2.0-only",
+        "AGPL-3.0-only",
+        "LGPL-2.1-only",
+        "LGPL-3.0-or-later",
+        "LGPL-3.0-only",
+        "GPL-3.0-or-later",
+        "GPL-3.0-only",
+        "LGPL-2.1-or-later"
+    ],
     "authors": [
         {
             "name": "Nils Laumaillé",
