@@ -79,7 +79,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
 <script type='text/javascript'>
     //<![CDATA[
-    var debugJavascript = false;
+    var debugJavascript = true;
 
 
     // Prepare tooltips
