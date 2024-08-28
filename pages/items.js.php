@@ -3112,12 +3112,6 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     console.log(data);
                 }
 
-                // Inform user
-                toastr.remove();
-                toastr.info(
-                    '<?php echo $lang->get('opening_folder'); ?><i class="fa-solid fa-circle-notch fa-spin ml-2"></i>'
-                );
-
                 // CLear tempo var
                 store.update(
                     'teampassApplication',
@@ -3190,9 +3184,10 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                             }
 
                             // Refresh list of items inside the folder
-                            //ListerItems($('#form-item-folder').val(), '', 0);
+                            ListerItems($('#form-item-folder').val(), '', 0);
 
                             // Inform user
+                            toastr.remove();
                             toastr.info(
                                 '<?php echo $lang->get('success'); ?>',
                                 '', {
@@ -4260,13 +4255,13 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 if (store.get('teampassSettings') !== undefined && parseInt(store.get('teampassSettings').show_item_data) === 1) {
                     if (value.login !== '' || value.email !== '' || value.link !== '') {
                         itemLabel =
-                            (value.login !== '' ? ' - <i class="fa-solid fa-user mr-1"></i>' + value.login : '') +
-                            (value.email !== undefined && value.email !== '' ? ' - <i class="fa-solid fa-mail-bulk mr-1"></i>' + value.email : '') +
-                            (value.link !== '' ? ' - <i class="fa-solid fa-link mr-1"></i>' + value.link : '');
+                            (value.login !== '' ? '<i class="fa-regular fa-circle-user mr-1 ml-2"></i>' + value.login : '') +
+                            (value.email !== undefined && value.email !== '' ? '<i class="fa-solid fa-at mr-1 ml-2"></i>' + value.email : '') +
+                            (value.link !== '' ? '<i class="fa-solid fa-link mr-1 ml-2"></i>' + value.link : '');
                     }
                 }
                 // Add Description 
-                description = (value.desc.replace(/<.*>/gi, '').trim() !== '' ? itemLabel + ' - <i class="fa-solid fa-pen mr-1"></i>' + value.desc : itemLabel);
+                description = (value.desc.replace(/<.*>/gi, '').trim() !== '' ? '<i>'+itemLabel + '</i><i class="fa-solid fa-heading mr-1 ml-2"></i>' + value.desc : '<i>'+itemLabel + '</i>');
                 // Consolidate item label
                 if (description !== '') {
                     description = '<span class="text-secondary small">' + description + '</span>';
