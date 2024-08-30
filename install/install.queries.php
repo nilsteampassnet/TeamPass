@@ -844,6 +844,7 @@ $SETTINGS = array (';
                             `deleted_at` varchar(30) NULL DEFAULT NULL,
                             `keys_recovery_time` VARCHAR(500) NULL DEFAULT NULL,
                             `aes_iv` TEXT NULL DEFAULT NULL,
+                            `split_view_mode` tinyint(1) NOT null DEFAULT '0',
                             PRIMARY KEY (`id`),
                             UNIQUE KEY `login` (`login`)
                             ) CHARSET=utf8;"

@@ -867,6 +867,7 @@ declare(strict_types=1);
                             teampassUser.mfaSelector = false;
                             teampassUser.mfaCode = '';
                             teampassUser.page_reload = 0;
+                            teampassUser.split_view_mode = data.split_view_mode;
                         }
                     );
 

@@ -1187,5 +1187,6 @@ return array(
     'select_user' => 'Select user',
     'show_item_data' => 'Show item data in items list',
     'show_item_data_tip' => 'Permits to display extra information in the items list (username, email and url). This could be useful to have a quick view of the item content.',
+    'items_page_split_view_mode' => 'Show item details in page split view mode',
 
 );

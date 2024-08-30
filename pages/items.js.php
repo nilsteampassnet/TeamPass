@@ -105,7 +105,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         initialPageLoad = true,
         previousSelectedFolder = -1,
         intervalId = false,
-        debugJavascript = true;
+        debugJavascript = false;
 
     // Manage memory
     browserSession(
@@ -4814,8 +4814,8 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                         $('.item-details-card, #item-details-card-categories').removeClass('hidden');
                         $('.form-item').addClass('hidden');
 
-                        split_mode = true; // Add user or admin parameter to replace this var
-                        if (split_mode) {
+                        // show split mode or not
+                        if (store.get('teampassUser').split_view_mode === 1) {
                             // Optionnal splited item view
                             $('#folder-tree-container').removeClass('col-md-5').addClass('col-md-3');
                             $('#items-list-container').removeClass('col-md-7').addClass('col-md-4');

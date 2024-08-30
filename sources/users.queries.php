@@ -2177,6 +2177,7 @@ if (null !== $post_type) {
                     'agsescardid' => isset($dataReceived['agsescardid']) === true ? $dataReceived['agsescardid'] : '',
                     'name' => isset($dataReceived['name']) === true ? $dataReceived['name'] : '',
                     'lastname' => isset($dataReceived['lastname']) === true ? $dataReceived['lastname'] : '',
+                    'split_view_mode' => isset($dataReceived['split_view_mode']) === true ? $dataReceived['split_view_mode'] : '',
                 ];
                 
                 $filters = [
@@ -2187,6 +2188,7 @@ if (null !== $post_type) {
                     'agsescardid' => 'trim|escape',
                     'name' => 'trim|escape',
                     'lastname' => 'trim|escape',
+                    'split_view_mode' => 'cast:integer',
                 ];
                 
                 $inputData = dataSanitizer(
@@ -2210,9 +2212,10 @@ if (null !== $post_type) {
                         'usertimezone' => $inputData['timezone'],
                         'user_language' => $inputData['language'],
                         'treeloadstrategy' => $inputData['treeloadstrategy'],
-                        'agses-usercardid' => $inputData['agsescardid'],
+                        //'agses-usercardid' => $inputData['agsescardid'],
                         'name' => $inputData['name'],
                         'lastname' => $inputData['lastname'],
+                        'split_view_mode' => $inputData['split_view_mode'],
                     ),
                     'id = %i',
                     $session->get('user-id')
@@ -2226,6 +2229,7 @@ if (null !== $post_type) {
                 $session->set('user-tree_load_strategy', $inputData['treeloadstrategy']);
                 //$_SESSION['user_agsescardid'] = $inputData['agsescardid'];
                 $session->set('user-language', $inputData['language']);
+                $session->set('user-split_view_mode', (int) $inputData['split_view_mode']);
 
             } else {
                 // An error appears on JSON format
@@ -2246,6 +2250,7 @@ if (null !== $post_type) {
                     'name' => $session->get('user-name'),
                     'lastname' => $session->get('user-lastname'),
                     'email' => $session->get('user-email'),
+                    'split_view_mode' => $session->get('user-split_view_mode'),
                 ),
                 'encode'
             );
@@ -3485,10 +3490,11 @@ if (null !== $post_type) {
             $value[0] = 'user_language';
             $post_newValue = strtolower($post_newValue);
         }
+        
         // Check that operation is allowed
         if (in_array(
             $value[0],
-            array('login', 'pw', 'email', 'treeloadstrategy', 'usertimezone', 'yubico_user_key', 'yubico_user_id', 'agses-usercardid', 'user_language', 'psk')
+            array('login', 'pw', 'email', 'treeloadstrategy', 'usertimezone', 'yubico_user_key', 'yubico_user_id', 'agses-usercardid', 'user_language', 'psk', 'split_view_mode')
         )) {
             DB::update(
                 prefixTable('users'),
@@ -3507,22 +3513,25 @@ if (null !== $post_type) {
                 $session->get('user-login'),
                 filter_input(INPUT_POST, 'id', FILTER_SANITIZE_FULL_SPECIAL_CHARS)
             );
+
             // refresh SESSION if requested
-            if ($value[0] === 'treeloadstrategy') {
-                $session->set('user-tree_load_strategy', $post_newValue);
-            } elseif ($value[0] === 'usertimezone') {
-                // special case for usertimezone where session needs to be updated
-                $session->set('user-timezone', $post_newValue);
-            } elseif ($value[0] === 'userlanguage') {
-                // special case for user_language where session needs to be updated
-                $session->set('user-language', $post_newValue);
-            } elseif ($value[0] === 'agses-usercardid') {
-                // special case for agsescardid where session needs to be updated
-                //$_SESSION['user_agsescardid'] = $post_newValue;
-            } elseif ($value[0] === 'email') {
-                // store email change in session
-                $session->set('user-email', $post_newValue);
+            // Session keys mapping
+            $sessionMapping = [
+                'treeloadstrategy' => 'user-tree_load_strategy',
+                'usertimezone' => 'user-timezone',
+                'userlanguage' => 'user-language',
+                'agses-usercardid' => null, 
+                'email' => 'user-email',
+                'split_view_mode' => 'user-split_view_mode',
+            ];
+            // Update session
+            if (array_key_exists($value[0], $sessionMapping)) {
+                $sessionKey = $sessionMapping[$value[0]];
+                if ($sessionKey !== null) {
+                    $session->set($sessionKey, $post_newValue);
+                }
             }
+            
             // Display info
             echo htmlentities($post_newValue, ENT_QUOTES);
         }
