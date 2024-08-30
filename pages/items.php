@@ -152,7 +152,7 @@ foreach ($rows as $reccord) {
             <div class="card text-center">
                 <div class="card-header">
                     <div class="card-tools-left">
-                        <button type="button" class="btn btn-gray but-back" id="but_back_top_left">
+                        <button type="button" class="btn btn-secondary but-back" id="but_back_top_left">
                             <i class="fa-solid fa-arrow-left"></i>
                         </button>
                     </div>
@@ -160,7 +160,7 @@ foreach ($rows as $reccord) {
                     <h5 id="form-item-title" class="clear-me-html" style="min-height:23px;"></h5>
 
                     <div class="card-tools">
-                        <button type="button" class="btn btn-tool btn-sm but-back" id="but_back_top_right">
+                        <button type="button" class="btn btn-secondary btn-sm but-back" id="but_back_top_right">
                             <i class="fa-solid fa-times"></i>
                         </button>
                     </div>
@@ -218,9 +218,9 @@ foreach ($rows as $reccord) {
                                     </div>
                                     <input id="form-item-password" type="password" class="form-control form-item-control" placeholder="<?php echo $lang->get('password'); ?>" data-field-name="pwd" data-change-ongoing="">
                                     <div class="input-group-append">
-                                        <button class="btn btn-outline-secondary btn-no-click infotip password-generate" id="item-button-password-generate" title="<?php echo $lang->get('pw_generate'); ?>" data-id="form-item-password"><i class="fa-solid fa-random"></i></button>
-                                        <button class="btn btn-outline-secondary btn-no-click infotip" id="item-button-password-showOptions" title="<?php echo $lang->get('options'); ?>"><i class="fa-solid fa-sliders-h"></i></button>
-                                        <button class="btn btn-outline-secondary btn-no-click infotip" id="item-button-password-show" title="<?php echo $lang->get('mask_pw'); ?>"><i class="fa-solid fa-low-vision"></i></button>
+                                        <button class="btn btn-secondary btn-no-click infotip password-generate" id="item-button-password-generate" title="<?php echo $lang->get('pw_generate'); ?>" data-id="form-item-password"><i class="fa-solid fa-random"></i></button>
+                                        <button class="btn btn-secondary btn-no-click infotip" id="item-button-password-showOptions" title="<?php echo $lang->get('options'); ?>"><i class="fa-solid fa-sliders-h"></i></button>
+                                        <button class="btn btn-secondary btn-no-click infotip" id="item-button-password-show" title="<?php echo $lang->get('mask_pw'); ?>"><i class="fa-solid fa-low-vision"></i></button>
                                     </div>
                                 </div>
                                 <div class="container-fluid mb-0">
@@ -234,15 +234,15 @@ foreach ($rows as $reccord) {
                                 <div class="mt-1 hidden" id="form-item-password-options">
                                     <div class="btn-toolbar justify-content-center" role="toolbar" aria-label="Toolbar with button groups">
                                         <div class="btn-group btn-group-sm btn-group-toggle mr-2" data-toggle="buttons">
-                                            <label class="btn btn-outline-secondary btn-sm">
+                                            <label class="btn btn-secondary btn-sm">
                                                 <input type="checkbox" class="password-definition" id="pwd-definition-lcl">abc</label>
-                                            <label class="btn btn-outline-secondary btn-sm">
+                                            <label class="btn btn-secondary btn-sm">
                                                 <input type="checkbox" class="password-definition" id="pwd-definition-ucl">ABC</label>
-                                            <label class="btn btn-outline-secondary btn-sm">
+                                            <label class="btn btn-secondary btn-sm">
                                                 <input type="checkbox" class="password-definition" id="pwd-definition-numeric">123</label>
-                                            <label class="btn btn-outline-secondary btn-sm">
+                                            <label class="btn btn-secondary btn-sm">
                                                 <input type="checkbox" class="password-definition" id="pwd-definition-symbols">@#&amp;</label>
-                                            <label class="btn btn-outline-secondary btn-sm">
+                                            <label class="btn btn-secondary btn-sm">
                                                 <input type="checkbox" class="password-definition" id="pwd-definition-secure"><?php echo $lang->get('secure'); ?></label>
                                         </div>
 
@@ -549,460 +549,6 @@ foreach ($rows as $reccord) {
             </div>
         </div>
     </div>
-
-
-    <!-- ITEM DETAILS -->
-    <div class="row hidden item-details-card item-details-card-menu">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <span class="mr-3 align-middle">
-                        <button type="button" class="btn btn-gray but-back-to-list">
-                            <i class="fa-solid fa-arrow-left"></i>
-                        </button>
-                    </span>
-                    <h3 class="d-inline align-middle" id="card-item-label"></h3>
-                    <div class="card-tools">
-                        <button type="button" class="btn btn-tool btn-sm but-back mt-2">
-                            <i class="fa-solid fa-times"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <div class="card-body p-0">
-                    <nav class="navbar navbar-expand-lg navbar-light bg-light">
-                        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                            <span class="navbar-toggler-icon"></span>
-                        </button>
-                        <div class="collapse navbar-collapse" id="navbarNav">
-                            <ul class="navbar-nav">
-                                <li class="nav-item" id="item-form-new-button">
-                                    <a class="text-navy tp-action ml-3" href="#" data-item-action="new"><i class="fa-regular fa-plus-square mr-1"></i><small><?php echo $lang->get('new'); ?></small></a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="text-navy tp-action ml-3" href="#" data-item-action="edit"><i class="fa-regular fa-edit mr-1"></i><small><?php echo $lang->get('edit'); ?></small></a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="text-navy tp-action ml-3" href="#" data-item-action="delete"><i class="fa-regular fa-trash-alt mr-1"></i><small><?php echo $lang->get('delete'); ?></small></a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="text-navy tp-action ml-3" href="#" data-item-action="copy"><i class="fa-regular fa-copy mr-1"></i><small><?php echo $lang->get('copy'); ?></small></a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="text-navy tp-action ml-3" href="#" data-item-action="link" id="get_item_link"><i class="fa-solid fa-link mr-1"></i><small><?php echo $lang->get('link'); ?></small></a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="text-navy tp-action ml-3" href="#" data-item-action="share"><i class="fa-regular fa-share-square mr-1"></i><small><?php echo $lang->get('share'); ?></small></a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="text-navy tp-action ml-3" href="#" data-item-action="notify"><i class="fa-regular fa-bell mr-1"></i><small><?php echo $lang->get('notify'); ?></small></a>
-                                </li>
-                                <?php
-                                if (
-                                    isset($SETTINGS['enable_server_password_change']) === true
-                                    && (int) $SETTINGS['enable_server_password_change'] === 1
-                                ) {
-                                    ?>
-                                    <li class="nav-item">
-                                        <a class="text-navy tp-action ml-3" href="#" data-item-action="server"><i class="fa-solid fa-server mr-1"></i><small><?php echo $lang->get('server'); ?></small></a>
-                                    </li>
-                                <?php
-                                }
-                                if (
-                                    isset($SETTINGS['otv_is_enabled']) === true
-                                    && (int) $SETTINGS['otv_is_enabled'] === 1
-                                ) {
-                                    ?>
-                                    <li class="nav-item">
-                                        <a class="text-navy tp-action ml-3" href="#" data-item-action="otv"><i class="fab fa-slideshare mr-1"></i><small><?php echo $lang->get('one_time_view'); ?></small></a>
-                                    </li>
-                                <?php
-                                }
-                                ?>
-                                <li class="nav-item">
-                                    <a class="text-navy tp-action ml-3" href="#" data-item-action="reload"><i class="fa-solid fa-rotate mr-1"></i><small><?php echo $lang->get('refresh'); ?></small></a>
-                                </li>
-                            </ul>
-                        </div>
-                    </nav>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="card-item-preview" class="hidden"></div>
-
-    <div class="row hidden item-details-card">
-        <div class="col-md-7">
-            <div class="card card-primary card-outline">
-                <div class="card-body" id="list-group-item-main">
-                    <ul class="list-group list-group-unbordered mb-3">
-                        <li class="list-group-item">
-                            <b><?php echo $lang->get('pw'); ?></b>
-                            <button type="button" class="float-right btn btn-outline-info btn-sm btn-copy-clipboard infotip" id="card-item-pwd-button" title="<?php echo $lang->get('copy'); ?>">
-                                <i class="fa-regular fa-copy"></i>
-                            </button>
-                            <button type="button" class="float-right btn btn-outline-info btn-sm mr-1 hidden infotip" id="card-item-password-history-button" title="<?php echo $lang->get('history'); ?>">
-                            <i class="fa-solid fa-clock-rotate-left"></i>
-                            </button>
-                            <button type="button" class="float-right btn btn-outline-info btn-sm mr-1 infotip" id="card-item-pwd-show-button" title="<?php echo $lang->get('show'); ?>">
-                                <i class="fa-regular fa-eye pwd-show-spinner"></i>
-                            </button>
-                            <span id="card-item-pwd" class="float-right unhide_masked_data pointer mr-2"></span>
-                            <input id="hidden-item-pwd" type="hidden">
-                        </li>
-                        <li class="list-group-item">
-                            <b><?php echo $lang->get('index_login'); ?></b>
-                            <button type="button" class="float-right btn btn-outline-info btn-sm ml-1 btn-copy-clipboard-clear infotip" data-clipboard-target="#card-item-login" id="card-item-login-btn" title="<?php echo $lang->get('copy'); ?>">
-                                <i class="fa-regular fa-copy"></i>
-                            </button>
-                            <span id="card-item-login" class="float-right"></span>
-                        </li>
-                        <li class="list-group-item">
-                            <b><?php echo $lang->get('email'); ?></b>
-                            <button type="button" class="float-right btn btn-outline-info btn-sm ml-1 btn-copy-clipboard-clear" data-clipboard-target="#card-item-email" id="card-item-email-btn">
-                                <i class="fa-regular fa-copy"></i>
-                            </button>
-                            <span id="card-item-email" class="float-right ml-1"></span>
-                        </li>
-                        <li class="list-group-item">
-                            <b><?php echo $lang->get('url'); ?></b>
-                            <a id="card-item-url" class="float-right ml-1" href="#" target="_blank"></a>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-5">
-            <div class="card">
-                <div class="card-body">
-                    <ul class="list-group list-group-unbordered mb-3">
-                        <li class="list-group-item">
-                            <b><?php echo $lang->get('restricted_to'); ?></b>
-                            <a id="card-item-restrictedto" class="float-right ml-1"></a>
-                        </li>
-                        <li class="list-group-item">
-                            <b><?php echo $lang->get('tags'); ?></b>
-                            <a id="card-item-tags" class="float-right ml-1"></a>
-                        </li>
-                        <li class="list-group-item">
-                            <b><?php echo $lang->get('otp_code'); ?></b>
-                            <a id="card-item-opt_code" class="float-right ml-1"></a>
-                            <span id="card-item-opt_code_error" class="float-right"></span>
-                        </li>
-                        <li class="list-group-item" id="card-item-misc">
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row hidden item-details-card">
-        <div class="col-12">
-            <div class="callout callout-info visible" id="card-item-description">No description</div>
-        </div>
-    </div>
-
-
-    <?php
-    if (
-        isset($SETTINGS['item_extra_fields']) === true
-        && (int) $SETTINGS['item_extra_fields'] === 1
-    ) {
-        ?>
-        <div class="row hidden item-details-card" id="item-details-card-categories">
-            <div class="col-12">
-                <div class="card card-default">
-                    <div class="card-header bg-gray-dark">
-                        <h3 class="card-title pointer" data-toggle="collapse" data-target="#card-item-fields">
-                            <i class="fa-solid fa-random mr-2"></i><?php echo $lang->get('categories'); ?>
-                        </h3>
-                        <!-- /.card-tools -->
-                    </div>
-                    <!-- /.card-header -->
-                    <div class="card-body collapse show" id="card-item-fields">
-                        <?php
-                            foreach ($session_item_fields as $elem) {
-                                echo '
-                        <div class="callout callout-info card-item-category hidden" id="card-item-category-' . $elem['id'] . '">
-                            <h5>' . $elem['title'] . '</h5>
-                            <p>
-                                <ul class="list-group list-group-unbordered mb-3">';
-                                foreach ($elem['fields'] as $field) {
-                                    echo '
-                                    <li class="list-group-item card-item-field hidden" id="card-item-field-' . $field['id'] . '">
-                                        <span id="card-item-field-title-' . $field['id'] . '"><b>' . $field['title'] . '</b></span>
-                                        <button type="button" class="float-right btn btn-outline-info btn-sm ml-1 btn-copy-clipboard-clear"  data-clipboard-target="#card-item-field-value-' . $field['id'] . '">
-                                            <i class="fa-solid fa-copy"></i>
-                                        </button>
-                                        <span class="card-item-field-value float-right ml-1" id="card-item-field-value-' . $field['id'] . '"></span>
-                                    </li>';
-                                }
-                                echo '
-                                </ul>
-                            </p>
-                        </div>';
-                            } ?>
-                        <div class="hidden no-item-fields"><?php echo $lang->get('no_custom_fields'); ?></div>
-                    </div>
-                    <!-- /.card-body -->
-                </div>
-            </div>
-        </div>
-    <?php
-    }
-    ?>
-
-    <div class="row hidden item-details-card item-card-attachments">
-        <div class="col-12">
-            <div class="card card-default collapsed">
-                <div class="card-header bg-gray-dark">
-                    <h3 class="card-title pointer" id="add-item-attachment" data-toggle="collapse" data-target="#card-item-attachments">
-                        <i class="fa-solid fa-paperclip mr-2"></i><?php echo $lang->get('attachments'); ?>
-                        <span class="badge badge-secondary ml-2" id="card-item-attachments-badge"></span>
-                    </h3>
-                    <i class="fa-solid fa-square-plus fa-2x float-right text-info pointer infotip hidden add-button" title="<?php echo $lang->get('add_new_file'); ?>" data-add-type="attachment"></i>
-                </div>
-                <!-- /.card-header -->
-                <div class="card-body collapse clear-me-html" id="card-item-attachments">
-                </div>
-                <!-- /.card-body -->
-                <div class="overlay">
-                    <i class="fa-solid fa-refresh fa-spin"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row hidden item-details-card">
-        <div class="col-12">
-            <div class="card card-default collapsed">
-                <div class="card-header bg-gray-dark">
-                    <h3 class="card-title pointer" id="add-item-history" data-toggle="collapse" data-target="#card-item-history">
-                        <i class="fa-solid fa-history mr-2"></i><?php echo $lang->get('history'); ?>
-                        <span class="badge badge-secondary ml-2" id="card-item-history-badge"></span>
-                    </h3>
-                    <i class="fa-solid fa-square-plus fa-2x float-right text-info pointer infotip hidden add-button" title="<?php echo $lang->get('history_insert_entry'); ?>" data-add-type="history"></i>
-                    <!-- /.card-tools -->
-                </div>
-                <!-- /.card-header -->
-                <div class="card-body collapse" id="card-item-history">
-                </div>
-                <!-- /.card-body -->
-                <div class="overlay">
-                    <i class="fa-solid fa-refresh fa-spin"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-
-
-    <?php
-    if (isset($SETTINGS['enable_suggestion']) === true && (int) $SETTINGS['enable_suggestion'] === 1) {
-        /*
-            // TODO: NOT YET PORTED ?>
-        <div class="row hidden item-details-card">
-            <div class="col-12">
-                <div class="card card-default collapsed-card card-item-extra collapseme">
-                    <div class="card-header bg-gray">
-                        <h3 class="card-title pointer" data-widget="collapse">
-                            <i class="fa-solid fa-random mr-2"></i><?php echo $lang->get('suggest_password_change'); ?>
-                        </h3>
-                        <!-- /.card-tools -->
-                    </div>
-                    <!-- /.card-header -->
-                    <div class="card-body collapse show">
-                        <form id="form-item-suggestion" class="needs-validation" novalidate onsubmit="return false;">
-                            <div class="alert alert-info">
-                                <h5><i class="icon fa fa-info mr-2"></i><?php echo $lang->get('information'); ?></h5>
-                                <?php echo $lang->get('suggestion_information'); ?>
-                            </div>
-                            <!-- LABEL -->
-                            <div class="input-group mb-3">
-                                <div class="input-group-prepend">
-                                    <span class="input-group-text"><?php echo $lang->get('label'); ?></span>
-                                </div>
-                                <input id="form-item-suggestion-label" type="text" class="form-control form-item-control form-item-suggestion" data-change-ongoing="" data-field-name="label">
-                            </div>
-                            <!-- DESCRIPTION -->
-                            <div class="mb-3">
-                                <textarea id="form-item-suggestion-description" class="form-item-control form-item-suggestion w-100 clear-me-html" data-field-name="description" data-change-ongoing=""></textarea>
-                            </div>
-                            <!-- LOGIN -->
-                            <div class="input-group mb-3">
-                                <div class="input-group-prepend">
-                                    <span class="input-group-text"><?php echo $lang->get('login'); ?></span>
-                                </div>
-                                <input id="form-item-suggestion-login" type="text" class="form-control form-item-control form-item-suggestion" data-field-name="login" data-change-ongoing="">
-                            </div>
-                            <!-- PASSWORD -->
-                            <div class="input-group mb-0">
-                                <div class="input-group-prepend">
-                                    <span class="input-group-text p-1"><div id="form-item-suggestion-password-strength"></div></span>
-                                </div>
-                                <input id="form-item-suggestion-password" type="password" class="form-control form-item-control form-item-suggestion" placeholder="<?php echo $lang->get('password'); ?>" data-field-name="pwd" data-change-ongoing="">
-                            </div>
-                            <input type="hidden" id="form-item-suggestion-password-complex" value="0">
-                            <!-- EMAIL -->
-                            <div class="input-group mb-3 mt-3">
-                                <div class="input-group-prepend">
-                                    <span class="input-group-text"><?php echo $lang->get('email'); ?></span>
-                                </div>
-                                <input id="form-item-suggestion-email" type="email" class="form-control form-item-control form-item-suggestion" data-field-name="email" data-change-ongoing="">
-                            </div>
-                            <!-- URL -->
-                            <div class="input-group mb-3">
-                                <div class="input-group-prepend">
-                                    <span class="input-group-text"><?php echo $lang->get('url'); ?></span>
-                                </div>
-                                <input id="form-item-suggestion-url" type="url" class="form-control form-item-control form-item-suggestion" data-field-name="url" data-change-ongoing="">
-                            </div>
-                            <!-- COMMENT -->
-                            <div class="input-group mb-3">
-                                <div class="input-group-prepend">
-                                    <span class="input-group-text"><?php echo $lang->get('comment'); ?></span>
-                                </div>
-                                <textarea id="form-item-suggestion-comment" class="form-control form-item-control form-item-suggestion" rows="2" data-field-name="comment" data-change-ongoing=""></textarea>
-                            </div>
-                        </form>
-                    </div>
-                    <!-- /.card-body -->
-                    <div class="card-footer">
-                        <button type="submit" class="btn btn-primary" id="form-item-suggestion-perform"><?php echo $lang->get('perform'); ?></button>
-                    </div>
-                    <!-- /.card-footer -->
-                </div>
-            </div>
-        </div>
-        <?php
-        */
-    }
-    ?>
-
-    <!--
-        <div class="row hidden item-details-card">
-            <div class="col-12">
-                <div class="input-group mb-3">
-                    <div class="input-group-prepend">
-                        <button type="button" class="btn btn-warning btn-copy-clipboard"  id="card-item-otv-generate-button"><?php echo $lang->get('generate_otv_link'); ?></button>
-                    </div>
-                    <div class="input-group-prepend">
-                        <button type="button" class="btn btn-warning btn-copy-clipboard"  id="card-item-otv-copy-button"><?php echo $lang->get('copy'); ?></button>
-                    </div>
-                    <input type="text" class="form-control" placeholder="OTV link" id="card-item-otv">
-                </div>
-            </div>
-        </div>
-        -->
-
-    <!-- SERVER UPDATE --><?php
-                            if (DEBUG === true) {
-                                ?>
-        <div class="row hidden form-item-server form-item-action">
-            <div class="col-12">
-                <div class="card card-primary">
-                    <div class="card-header bg-navy">
-                        <h5>
-                            <i class="fa-solid fa-server mr-2"></i><?php echo $lang->get('update_server_password'); ?>
-                        </h5>
-                        <!-- /.card-tools -->
-                    </div>
-                    <!-- /.card-header -->
-                    <div class="card-body">
-                        <ul class="nav nav-tabs" id="server-tab">
-                            <li class="nav-item">
-                                <a class="nav-link active" href="#tab-one-shot" data-action="ssh-one-shot" data-toggle="tab"><?php echo $lang->get('ssh_one_shot_change'); ?></a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="#tab-scheduled" data-action="ssh-scheduled" data-toggle="tab"><?php echo $lang->get('ssh_scheduled_change'); ?></a>
-                            </li>
-                        </ul>
-                        <div class="tab-content" id="myTabContent">
-                            <div class="tab-pane fade show active tab-pane" id="tab-one-shot">
-                                <div class="alert alert-info mt-3 form-text text-muted">
-                                    <?php echo $lang->get('auto_update_server_password_info'); ?>
-                                </div>
-                                <div class="input-group mb-3 mt-3">
-                                    <div class="input-group-prepend">
-                                        <span class="input-group-text"><?php echo $lang->get('ssh_user'); ?></span>
-                                    </div>
-                                    <input id="form-item-server-login" type="text" class="form-control form-item-control form-item-server" data-field-name="login" data-change-ongoing="">
-                                </div>
-                                <div class="input-group mb-3">
-                                    <div class="input-group-prepend">
-                                        <span class="input-group-text"><?php echo $lang->get('ssh_pwd'); ?></span>
-                                    </div>
-                                    <input id="form-item-server-old-password" type="password" class="form-control form-item-control form-item-server" data-field-name="old-password" data-change-ongoing="">
-                                </div>
-                                <div class="input-group mb-3">
-                                    <div class="input-group-prepend">
-                                        <span class="input-group-text"><?php echo $lang->get('index_new_pw'); ?></span>
-                                    </div>
-                                    <input id="form-item-server-password" type="password" class="form-control form-item-control form-item-server" data-field-name="password" data-change-ongoing="">
-                                    <div class="input-group-append">
-                                        <button class="btn btn-outline-secondary btn-no-click infotip password-generate" title="<?php echo $lang->get('pw_generate'); ?>" data-id="form-item-server-password"><i class="fa-solid fa-random"></i></button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="tab-pane fade tab-pane" id="tab-scheduled">
-                                <div class="alert alert-info mt-3 form-text text-muted">
-                                    <?php echo $lang->get('ssh_password_frequency_change_info'); ?>
-                                </div>
-                                <div class="form-group">
-                                    <label><?php echo $lang->get('ssh_password_frequency_change'); ?></label>
-                                    <select class="form-control form-item-control select2" style="width:100%;" id="form-item-server-cron-frequency">
-                                        <option value="0">0</option>
-                                        <option value="1">1</option>
-                                        <option value="2">2</option>
-                                        <option value="3">3</option>
-                                        <option value="4">4</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="callout callout-alert mt-3 hidden" id="form-item-server-status">
-
-                            </div>
-                        </div>
-                    </div>
-                    <!-- /.card-body -->
-                    <div class="card-footer">
-                        <button type="submit" class="btn btn-primary" id="form-item-server-perform"><?php echo $lang->get('perform'); ?></button>
-                        <button type="submit" class="btn btn-default float-right but-back"><?php echo $lang->get('cancel'); ?></button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-    <?php
-                            } else {
-                                ?>
-        <!--
-            <div class="mt-4">
-            <div class="alert alert-warning">
-                <i class="fa-solid fa-info-circle mr-2"></i><?php echo $lang->get('not_yet_implemented'); ?>
-            </div>
-        </div>
-        -->
-    <?php
-                            }
-    ?>
-
-    <!-- Bottom bar -->
-    <div class="row hidden item-details-card">
-        <div class="col-12">
-            <div class="card">
-                    <div class="card-footer">
-                        <button type="button" class="btn btn-secondary but-navigate-item but-prev-item hidden" data-prev-item-id=""></button>
-                        <button type="button" class="btn btn-secondary but-navigate-item but-next-item hidden" data-next-item-id=""></button>
-                        <button type="button" class="btn btn-info float-right but-back"><?php echo $lang->get('close'); ?></button>
-                    </div>
-            </div>
-        </div>
-    </div>
-
 
     <!-- COPY ITEM FORM -->
     <div class="row hidden form-item-copy form-item-action">
@@ -1381,7 +927,7 @@ foreach ($rows as $reccord) {
 
 
     <div class="row h-25" id="folders-tree-card">
-        <div class="col-md-5 column-left">
+        <div id="folder-tree-container" class="col-md-5 column-left">
             <div class="card card-info card-outline">
                 <div class="card-header">
                     <div class="row justify-content-end">
@@ -1427,7 +973,7 @@ foreach ($rows as $reccord) {
             </div><!-- /.card -->
         </div>
         <!-- /.col-md-6 -->
-        <div class="col-md-7">
+        <div id="items-list-container" class="col-md-7">
             <div class="card card-primary card-outline" id="items-list-card">
                 <div class="card-header">
                     <div class="card-title w-100">
@@ -1463,20 +1009,20 @@ foreach ($rows as $reccord) {
                     <!-- /.card-tools -->
                 </div>
                 <!-- /.card-header -->
-                <div class="card-body p-1">
+                <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-truncated table-hover table-striped" id="table_teampass_items_list" style="width:100%;">
                             <tbody id="teampass_items_list"></tbody>
                         </table>
                         <!-- /.table -->
+                        <div class="form-group row justify-content-md-center m-0" id="info_teampass_items_list">
+                            <div class="alert alert-info text-center col col-10" role="alert">
+                                <i class="fa-solid fa-info-circle mr-2"></i><?php echo $lang->get('please_select_a_folder'); ?></b>
+                            </div>
+                        </div>
+                        <!-- /#info_teampass_items_list -->
                     </div>
 
-                    <div class="form-group row justify-content-md-center" id="info_teampass_items_list">
-                        <div class="alert alert-info text-center col col-10" role="alert">
-                            <i class="fa-solid fa-info-circle mr-2"></i><?php echo $lang->get('please_select_a_folder'); ?></b>
-                        </div>
-                    </div>
-                    <!-- /.mail-box-messages -->
                 </div>
                 <!-- /.card-body -->
                 <div class="card-footer p-0">
@@ -1484,6 +1030,359 @@ foreach ($rows as $reccord) {
             </div>
             <!-- /. box -->
         </div>
+
+        
+        <div id="items-details-container" class="col-md-5 overflow-auto hidden">
+            <!-- ITEM DETAILS -->
+            <div class="row item-details-card item-details-card-menu">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="mr-3 align-middle">
+                                <button type="button" class="btn btn-secondary but-back-to-list">
+                                    <i class="fa-solid fa-arrow-left"></i>
+                                </button>
+                            </span>
+                            <h3 class="d-inline align-middle" id="card-item-label"></h3>
+                            <div class="card-tools">
+                                <button type="button" class="btn btn-secondary btn-sm but-back-to-list mt-2">
+                                    <i class="fa-solid fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="card-body p-0">
+                            <nav class="navbar navbar-expand-lg navbar-light bg-light">
+                                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                                    <span class="navbar-toggler-icon"></span>
+                                </button>
+                                <div class="collapse navbar-collapse" id="navbarNav">
+                                    <ul class="navbar-nav">
+                                        <li class="nav-item" id="item-form-new-button">
+                                            <a class="text-navy tp-action ml-3" href="#" data-item-action="new"><i class="fa-regular fa-plus-square mr-1"></i><small><?php echo $lang->get('new'); ?></small></a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="text-navy tp-action ml-3" href="#" data-item-action="edit"><i class="fa-regular fa-edit mr-1"></i><small><?php echo $lang->get('edit'); ?></small></a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="text-navy tp-action ml-3" href="#" data-item-action="delete"><i class="fa-regular fa-trash-alt mr-1"></i><small><?php echo $lang->get('delete'); ?></small></a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="text-navy tp-action ml-3" href="#" data-item-action="copy"><i class="fa-regular fa-copy mr-1"></i><small><?php echo $lang->get('copy'); ?></small></a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="text-navy tp-action ml-3" href="#" data-item-action="link" id="get_item_link"><i class="fa-solid fa-link mr-1"></i><small><?php echo $lang->get('link'); ?></small></a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="text-navy tp-action ml-3" href="#" data-item-action="share"><i class="fa-regular fa-share-square mr-1"></i><small><?php echo $lang->get('share'); ?></small></a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="text-navy tp-action ml-3" href="#" data-item-action="notify"><i class="fa-regular fa-bell mr-1"></i><small><?php echo $lang->get('notify'); ?></small></a>
+                                        </li>
+                                        <?php
+                                        if (
+                                            isset($SETTINGS['enable_server_password_change']) === true
+                                            && (int) $SETTINGS['enable_server_password_change'] === 1
+                                        ) {
+                                            ?>
+                                            <li class="nav-item">
+                                                <a class="text-navy tp-action ml-3" href="#" data-item-action="server"><i class="fa-solid fa-server mr-1"></i><small><?php echo $lang->get('server'); ?></small></a>
+                                            </li>
+                                        <?php
+                                        }
+                                        if (
+                                            isset($SETTINGS['otv_is_enabled']) === true
+                                            && (int) $SETTINGS['otv_is_enabled'] === 1
+                                        ) {
+                                            ?>
+                                            <li class="nav-item">
+                                                <a class="text-navy tp-action ml-3" href="#" data-item-action="otv"><i class="fab fa-slideshare mr-1"></i><small><?php echo $lang->get('one_time_view'); ?></small></a>
+                                            </li>
+                                        <?php
+                                        }
+                                        ?>
+                                        <li class="nav-item">
+                                            <a class="text-navy tp-action ml-3" href="#" data-item-action="reload"><i class="fa-solid fa-rotate mr-1"></i><small><?php echo $lang->get('refresh'); ?></small></a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="card-item-preview" class="hidden"></div>
+
+            <div class="row item-details-card">
+                <div class="col-md-7">
+                    <div class="card card-primary card-outline">
+                        <div class="card-body" id="list-group-item-main">
+                            <ul class="list-group list-group-unbordered mb-3">
+                                <li class="list-group-item">
+                                    <b><?php echo $lang->get('pw'); ?></b>
+                                    <button type="button" class="float-right btn btn-secondary btn-sm btn-copy-clipboard infotip" id="card-item-pwd-button" title="<?php echo $lang->get('copy'); ?>">
+                                        <i class="fa-regular fa-copy"></i>
+                                    </button>
+                                    <button type="button" class="float-right btn btn-secondary btn-sm mr-1 hidden infotip" id="card-item-password-history-button" title="<?php echo $lang->get('history'); ?>">
+                                    <i class="fa-solid fa-clock-rotate-left"></i>
+                                    </button>
+                                    <button type="button" class="float-right btn btn-secondary btn-sm mr-1 infotip" id="card-item-pwd-show-button" title="<?php echo $lang->get('show'); ?>">
+                                        <i class="fa-regular fa-eye pwd-show-spinner"></i>
+                                    </button>
+                                    <span id="card-item-pwd" class="float-right unhide_masked_data pointer mr-2"></span>
+                                    <input id="hidden-item-pwd" type="hidden">
+                                </li>
+                                <li class="list-group-item">
+                                    <b><?php echo $lang->get('index_login'); ?></b>
+                                    <button type="button" class="float-right btn btn-secondary btn-sm ml-1 btn-copy-clipboard-clear infotip" data-clipboard-target="#card-item-login" id="card-item-login-btn" title="<?php echo $lang->get('copy'); ?>">
+                                        <i class="fa-regular fa-copy"></i>
+                                    </button>
+                                    <span id="card-item-login" class="float-right"></span>
+                                </li>
+                                <li class="list-group-item">
+                                    <b><?php echo $lang->get('email'); ?></b>
+                                    <button type="button" class="float-right btn btn-secondary btn-sm ml-1 btn-copy-clipboard-clear" data-clipboard-target="#card-item-email" id="card-item-email-btn">
+                                        <i class="fa-regular fa-copy"></i>
+                                    </button>
+                                    <span id="card-item-email" class="float-right ml-1"></span>
+                                </li>
+                                <li class="list-group-item">
+                                    <b><?php echo $lang->get('url'); ?></b>
+                                    <button type="button" class="float-right btn btn-secondary btn-sm ml-1 btn-copy-clipboard-clear" data-clipboard-target="#card-item-url-text" id="card-item-url-text-btn">
+                                        <i class="fa-regular fa-copy"></i>
+                                    </button>
+                                    <a id="card-item-url" class="float-right ml-1 btn btn-secondary btn-sm" href="#" target="_blank">
+                                        <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                    </a>
+                                    <span id="card-item-url-text" class="float-right ml-1"></span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-5">
+                    <div class="card">
+                        <div class="card-body">
+                            <ul class="list-group list-group-unbordered mb-3">
+                                <li class="list-group-item">
+                                    <b><?php echo $lang->get('restricted_to'); ?></b>
+                                    <a id="card-item-restrictedto" class="float-right ml-1"></a>
+                                </li>
+                                <li class="list-group-item">
+                                    <b><?php echo $lang->get('tags'); ?></b>
+                                    <a id="card-item-tags" class="float-right ml-1"></a>
+                                </li>
+                                <li class="list-group-item">
+                                    <b><?php echo $lang->get('otp_code'); ?></b>
+                                    <a id="card-item-opt_code" class="float-right ml-1"></a>
+                                    <span id="card-item-opt_code_error" class="float-right"></span>
+                                </li>
+                                <li class="list-group-item" id="card-item-misc">
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row item-details-card">
+                <div class="col-12">
+                    <div class="callout callout-info visible" id="card-item-description">No description</div>
+                </div>
+            </div>
+
+
+            <?php
+            if (
+                isset($SETTINGS['item_extra_fields']) === true
+                && (int) $SETTINGS['item_extra_fields'] === 1
+            ) {
+                ?>
+                <div class="row hidden item-details-card" id="item-details-card-categories">
+                    <div class="col-12">
+                        <div class="card card-default">
+                            <div class="card-header bg-gray-dark">
+                                <h3 class="card-title pointer" data-toggle="collapse" data-target="#card-item-fields">
+                                    <i class="fa-solid fa-random mr-2"></i><?php echo $lang->get('categories'); ?>
+                                </h3>
+                                <!-- /.card-tools -->
+                            </div>
+                            <!-- /.card-header -->
+                            <div class="card-body collapse show" id="card-item-fields">
+                                <?php
+                                    foreach ($session_item_fields as $elem) {
+                                        echo '
+                                <div class="callout callout-info card-item-category hidden" id="card-item-category-' . $elem['id'] . '">
+                                    <h5>' . $elem['title'] . '</h5>
+                                    <p>
+                                        <ul class="list-group list-group-unbordered mb-3">';
+                                        foreach ($elem['fields'] as $field) {
+                                            echo '
+                                            <li class="list-group-item card-item-field hidden" id="card-item-field-' . $field['id'] . '">
+                                                <span id="card-item-field-title-' . $field['id'] . '"><b>' . $field['title'] . '</b></span>
+                                                <button type="button" class="float-right btn btn-secondary btn-sm ml-1 btn-copy-clipboard-clear"  data-clipboard-target="#card-item-field-value-' . $field['id'] . '">
+                                                    <i class="fa-solid fa-copy"></i>
+                                                </button>
+                                                <span class="card-item-field-value float-right ml-1" id="card-item-field-value-' . $field['id'] . '"></span>
+                                            </li>';
+                                        }
+                                        echo '
+                                        </ul>
+                                    </p>
+                                </div>';
+                                    } ?>
+                                <div class="hidden no-item-fields"><?php echo $lang->get('no_custom_fields'); ?></div>
+                            </div>
+                            <!-- /.card-body -->
+                        </div>
+                    </div>
+                </div>
+            <?php
+            }
+            ?>
+
+            <div class="row item-details-card item-card-attachments">
+                <div class="col-12">
+                    <div class="card card-default collapsed">
+                        <div class="card-header bg-gray-dark">
+                            <h3 class="card-title pointer" id="add-item-attachment" data-toggle="collapse" data-target="#card-item-attachments">
+                                <i class="fa-solid fa-paperclip mr-2"></i><?php echo $lang->get('attachments'); ?>
+                                <span class="badge badge-secondary ml-2" id="card-item-attachments-badge"></span>
+                            </h3>
+                            <i class="fa-solid fa-square-plus fa-2x float-right text-info pointer infotip hidden add-button" title="<?php echo $lang->get('add_new_file'); ?>" data-add-type="attachment"></i>
+                        </div>
+                        <!-- /.card-header -->
+                        <div class="card-body collapse clear-me-html" id="card-item-attachments">
+                        </div>
+                        <!-- /.card-body -->
+                        <div class="overlay">
+                            <i class="fa-solid fa-refresh fa-spin"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row item-details-card">
+                <div class="col-12">
+                    <div class="card card-default collapsed">
+                        <div class="card-header bg-gray-dark">
+                            <h3 class="card-title pointer" id="add-item-history" data-toggle="collapse" data-target="#card-item-history">
+                                <i class="fa-solid fa-history mr-2"></i><?php echo $lang->get('history'); ?>
+                                <span class="badge badge-secondary ml-2" id="card-item-history-badge"></span>
+                            </h3>
+                            <i class="fa-solid fa-square-plus fa-2x float-right text-info pointer infotip hidden add-button" title="<?php echo $lang->get('history_insert_entry'); ?>" data-add-type="history"></i>
+                            <!-- /.card-tools -->
+                        </div>
+                        <!-- /.card-header -->
+                        <div class="card-body collapse" id="card-item-history">
+                        </div>
+                        <!-- /.card-body -->
+                        <div class="overlay">
+                            <i class="fa-solid fa-refresh fa-spin"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SERVER UPDATE --><?php
+                                    if (DEBUG === true) {
+                                        ?>
+                <div class="row form-item-server form-item-action">
+                    <div class="col-12">
+                        <div class="card card-primary">
+                            <div class="card-header bg-navy">
+                                <h5>
+                                    <i class="fa-solid fa-server mr-2"></i><?php echo $lang->get('update_server_password'); ?>
+                                </h5>
+                                <!-- /.card-tools -->
+                            </div>
+                            <!-- /.card-header -->
+                            <div class="card-body">
+                                <ul class="nav nav-tabs" id="server-tab">
+                                    <li class="nav-item">
+                                        <a class="nav-link active" href="#tab-one-shot" data-action="ssh-one-shot" data-toggle="tab"><?php echo $lang->get('ssh_one_shot_change'); ?></a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" href="#tab-scheduled" data-action="ssh-scheduled" data-toggle="tab"><?php echo $lang->get('ssh_scheduled_change'); ?></a>
+                                    </li>
+                                </ul>
+                                <div class="tab-content" id="myTabContent">
+                                    <div class="tab-pane fade show active tab-pane" id="tab-one-shot">
+                                        <div class="alert alert-info mt-3 form-text text-muted">
+                                            <?php echo $lang->get('auto_update_server_password_info'); ?>
+                                        </div>
+                                        <div class="input-group mb-3 mt-3">
+                                            <div class="input-group-prepend">
+                                                <span class="input-group-text"><?php echo $lang->get('ssh_user'); ?></span>
+                                            </div>
+                                            <input id="form-item-server-login" type="text" class="form-control form-item-control form-item-server" data-field-name="login" data-change-ongoing="">
+                                        </div>
+                                        <div class="input-group mb-3">
+                                            <div class="input-group-prepend">
+                                                <span class="input-group-text"><?php echo $lang->get('ssh_pwd'); ?></span>
+                                            </div>
+                                            <input id="form-item-server-old-password" type="password" class="form-control form-item-control form-item-server" data-field-name="old-password" data-change-ongoing="">
+                                        </div>
+                                        <div class="input-group mb-3">
+                                            <div class="input-group-prepend">
+                                                <span class="input-group-text"><?php echo $lang->get('index_new_pw'); ?></span>
+                                            </div>
+                                            <input id="form-item-server-password" type="password" class="form-control form-item-control form-item-server" data-field-name="password" data-change-ongoing="">
+                                            <div class="input-group-append">
+                                                <button class="btn btn-outline-secondary btn-no-click infotip password-generate" title="<?php echo $lang->get('pw_generate'); ?>" data-id="form-item-server-password"><i class="fa-solid fa-random"></i></button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="tab-pane fade tab-pane" id="tab-scheduled">
+                                        <div class="alert alert-info mt-3 form-text text-muted">
+                                            <?php echo $lang->get('ssh_password_frequency_change_info'); ?>
+                                        </div>
+                                        <div class="form-group">
+                                            <label><?php echo $lang->get('ssh_password_frequency_change'); ?></label>
+                                            <select class="form-control form-item-control select2" style="width:100%;" id="form-item-server-cron-frequency">
+                                                <option value="0">0</option>
+                                                <option value="1">1</option>
+                                                <option value="2">2</option>
+                                                <option value="3">3</option>
+                                                <option value="4">4</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="callout callout-alert mt-3 hidden" id="form-item-server-status">
+
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- /.card-body -->
+                            <div class="card-footer">
+                                <button type="submit" class="btn btn-primary" id="form-item-server-perform"><?php echo $lang->get('perform'); ?></button>
+                                <button type="submit" class="btn btn-default float-right but-back"><?php echo $lang->get('cancel'); ?></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <?php
+                }
+            ?>
+
+            <!-- Bottom bar -->
+            <div class="row item-details-card">
+                <div class="col-12">
+                    <div class="card">
+                            <div class="card-footer">
+                                <button type="button" class="btn btn-secondary but-navigate-item but-prev-item hidden" data-prev-item-id=""></button>
+                                <button type="button" class="btn btn-secondary but-navigate-item but-next-item hidden" data-next-item-id=""></button>
+                                <button type="button" class="btn btn-info float-right but-back-to-list"><?php echo $lang->get('close'); ?></button>
+                            </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- /#items-details-container -->
+
     </div>
     <!-- /.col -->
 

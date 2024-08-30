@@ -594,6 +594,10 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             'user-tree_load_strategy',
             (isset($userInfo['treeloadstrategy']) === false || empty($userInfo['treeloadstrategy']) === true) ? 'full' : $userInfo['treeloadstrategy']
         );
+        $session->set(
+            'user-split_view_mode',
+            (isset($userInfo['split_view_mode']) === false || empty($userInfo['split_view_mode']) === true) ? 0 : $userInfo['split_view_mode']
+        );
         $session->set('user-language', $userInfo['user_language']);
         $session->set('user-timezone', $userInfo['usertimezone']);
         $session->set('user-keys_recovery_time', $userInfo['keys_recovery_time']);
@@ -879,6 +883,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                 'nb_unsuccessful_logins' => $session->get('user-unsuccessfull_login_attempts_nb'),
                 'upgrade_needed' => isset($userInfo['upgrade_needed']) === true ? (int) $userInfo['upgrade_needed'] : 0,
                 'special' => isset($userInfo['special']) === true ? (int) $userInfo['special'] : 0,
+                'split_view_mode' => isset($userInfo['split_view_mode']) === true ? (int) $userInfo['split_view_mode'] : 0,
             ],
             'encode'
         );

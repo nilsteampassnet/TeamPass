@@ -166,11 +166,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 // Decode returned data
                 var myData = prepareExchangedData(object.response, 'decode', '<?php echo $session->get('key'); ?>');
                 // update form
+                toastr.remove();
                 if (myData.error === false) {
                     $('#profile-user-avatar').attr('src', 'includes/avatars/' + myData.filename);
                     $('#profile-avatar-file-list').html('').addClass('hidden');
                 } else {
-                    toastr.remove();
                     toastr.error(
                         'An error occurred.<br />Returned data:<br />' + myData.message,
                         '', {
@@ -233,6 +233,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             'language': $('#profile-user-language').val().toLowerCase(),
             'treeloadstrategy': $('#profile-user-treeloadstrategy').val().toLowerCase(),
             'agsescardid': $('#profile-user-agsescardid').length > 0 ? $('#profile-user-agsescardid').val() : '',
+            'split_view_mode': $('#profile-user-split_view_mode').val(),
         }
         console.log(data);
         //return false;
@@ -278,6 +279,22 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     $('#profile-user-name').val(data.name)
                     $('#profile-user-lastname').val(data.lastname)
                     $('#profile-user-email').val(data.email)
+
+                    // Force session update
+                    store.update(
+                        'teampassUser',
+                        function(teampassUser) {
+                            teampassUser.user_name = data.name;
+                            teampassUser.user_lastname = data.lastname;
+                            teampassUser.user_email = data.email;
+                            teampassUser.user_language = data.language;
+                            teampassUser.user_timezone = data.timezone;
+                            teampassUser.user_treeloadstrategy = data.treeloadstrategy;
+                            teampassUser.user_agsescardid = data.agsescardid;
+                            teampassUser.split_view_mode = data.split_view_mode;
+                        }
+                    );
+                    console.log(store.get('teampassUser'));
 
                     // reload page in case of language change
                     if ($('#profile-user-language').val().toLowerCase() !== '<?php echo $session->get('user-language');?>') {

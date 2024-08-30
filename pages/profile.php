@@ -443,6 +443,22 @@ foreach ($session->get('user-roles_array') as $role) {
                                         </div>
                                     </div>
 
+                                    <div class="form-group">
+                                        <label class="col-sm-10 control-label"><?php echo $lang->get('items_page_split_view_mode'); ?></label>
+                                        <div class="col-sm-10">
+                                            <select class="form-control" id="profile-user-split_view_mode">
+                                                
+                                                <option value="0" <?php echo $session->has('user-split_view_mode') && $session->get('user-split_view_mode') && null !== $session->get('user-split_view_mode') && $session->get('user-split_view_mode') === 0 ? 'selected' : '';?>>
+                                                    <?php echo $lang->get('no'); ?>
+                                                </option>
+                                                
+                                                <option value="1" <?php echo $session->has('user-split_view_mode') && $session->get('user-split_view_mode') && null !== $session->get('user-split_view_mode') && (int) $session->get('user-split_view_mode') === 1 ? 'selected' : '';?>>
+                                                    <?php echo $lang->get('yes'); ?>
+                                                </option>
+                                            </select>
+                                        </div>
+                                    </div>
+
                                     <?php
                                     /*if (
                                         isset($SETTINGS['agses_authentication_enabled']) === true

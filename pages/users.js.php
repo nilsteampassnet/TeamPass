@@ -2175,7 +2175,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         toastr.warning(
             '&nbsp;<button type="button" class="btn clear btn-toastr" style="width:100%;" onclick="addRoleToUser()"><?php echo $lang->get('please_confirm'); ?></button>',
             '<?php echo $lang->get('info'); ?>', {
-                positionClass: 'toast-top-center',
+                positionClass: 'toast-bottom-right',
                 closeButton: true
             }
         );
@@ -2513,7 +2513,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             toastr.warning(
                 '&nbsp;<button type="button" class="btn clear btn-toastr" style="width:100%;" onclick="changeUserAuthType(\'ldap\')"><?php echo $lang->get('please_confirm'); ?></button>',
                 '<?php echo $lang->get('change_authentification_type_to_ldap'); ?>', {
-                    positionClass: 'toast-top-center',
+                    positionClass: 'toast-bottom-right',
                     closeButton: true
                 }
             );
@@ -2524,7 +2524,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             toastr.warning(
                 '&nbsp;<button type="button" class="btn clear btn-toastr" style="width:100%;" onclick="changeUserAuthType(\'local\')"><?php echo $lang->get('please_confirm'); ?></button>',
                 '<?php echo $lang->get('change_authentification_type_to_local'); ?>', {
-                    positionClass: 'toast-top-center',
+                    positionClass: 'toast-bottom-right',
                     closeButton: true
                 }
             );

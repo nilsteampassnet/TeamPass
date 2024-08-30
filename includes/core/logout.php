@@ -90,20 +90,22 @@ if (empty($user_id) === false) {
 $session->invalidate();
 $session->set('key', SessionManager::getCookieValue('PHPSESSID'));
 
-echo '
-    <script type="text/javascript" src="../../plugins/store.js/dist/store.everything.min.js"></script>
-    <script language="javascript" type="text/javascript">
-    <!--
-        // Clear localstorage
-        store.remove("teampassApplication");
-        store.remove("teampassSettings");
-        store.remove("teampassUser");
-        store.remove("teampassItem");
-        sessionStorage.clear();
-        localStorage.clear();
-        
-        setTimeout(function() {
-            document.location.href="../../index.php"
-        }, 1);
-    -->
-    </script>';
+?>
+<script type="text/javascript" src="../../plugins/store.js/dist/store.everything.min.js"></script>
+<script language="javascript" type="text/javascript">
+    // Save jstree state
+    jstree_save = store.get("jstree") !== undefined ? store.get("jstree") : null;
+
+    // Clear all localstorage
+    sessionStorage.clear();
+    localStorage.clear();
+
+    // Restore jstree state
+    if (jstree_save !== null) {
+        store.set('jstree', jstree_save);
+    }
+    
+    setTimeout(function() {
+        document.location.href="../../index.php"
+    }, 1);
+</script>

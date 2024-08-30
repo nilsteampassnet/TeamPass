@@ -480,6 +480,18 @@ if (intval($tmp) === 0) {
     );
 }
 
+// Add field split_view_mode to users table
+$res = addColumnIfNotExist(
+    $pre . 'users',
+    'split_view_mode',
+    "tinyint(1) NOT null DEFAULT '0';"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field split_view_mode to table users! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
 //---<END 3.1.2
 
 //---------------------------------------------------------------------

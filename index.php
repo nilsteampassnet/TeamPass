@@ -198,6 +198,12 @@ if (array_key_exists($get['page'], $utilitiesPages) === true) {
     $menuUtilities = false;
 }
 
+// Force dark theme on page generation
+$theme = $_COOKIE['teampass_theme'] ?? 'light';
+$theme_body = $theme === 'dark' ? 'dark-mode' : '';
+$theme_meta = $theme === 'dark' ? '#343a40' : '#fff';
+$theme_navbar = $theme === 'dark' ? 'navbar-dark' : 'navbar-white navbar-light';
+
 ?>
 <!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Transitional//EN' 'http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd'>
 
@@ -207,7 +213,8 @@ if (array_key_exists($get['page'], $utilitiesPages) === true) {
     <meta http-equiv='Content-Type' content='text/html;charset=utf-8' />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta http-equiv="x-ua-compatible" content="ie=edge" />
-    <title>Teampass</title>
+    <meta name="theme-color" content="<?php echo $theme_meta; ?>" />
+    <title><?php echo $configManager->getSetting('teampass_title') ?? 'Teampass'; ?></title>
     <script type='text/javascript'>
         //<![CDATA[
         if (window.location.href.indexOf('page=') === -1 &&
@@ -265,11 +272,11 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
     empty($get['page']) === false && empty($session->get('user-id')) === false
 ) {
     ?>
-    <body class="hold-transition sidebar-mini layout-navbar-fixed layout-fixed">
+    <body class="hold-transition sidebar-mini layout-navbar-fixed layout-fixed <?php echo $theme_body; ?>">
         <div class="wrapper">
 
             <!-- Navbar -->
-            <nav class="main-header navbar navbar-expand navbar-white navbar-light border-bottom">
+            <nav class="main-header navbar navbar-expand <?php echo $theme_navbar ?>">
                 <!-- User encryption still ongoing -->
                 <div id="user_not_ready" class="alert alert-warning hidden pointer p-2 mt-2" style="position:absolute; left:200px;">
                     <span class="align-middle infotip ml-2" title="<?php echo $lang->get('keys_encryption_not_ready'); ?>"><?php echo $lang->get('account_not_ready'); ?><span id="user_not_ready_progress"></span><i class="fa-solid fa-hourglass-half fa-beat-fade mr-2 ml-2"></i></span>
@@ -280,21 +287,6 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                     <li class="nav-item">
                         <a class="nav-link" data-widget="pushmenu" href="#"><i class="fa-solid fa-bars"></i></a>
                     </li>
-                    <?php
-                        if ($get['page'] === 'items') {
-                            ?>
-                        <li class="nav-item d-none d-sm-inline-block">
-                            <a class="nav-link" href="#">
-                                <i class="far fa-arrow-alt-circle-right columns-position tree-increase infotip" title="<?php echo $lang->get('move_right_columns_separator'); ?>"></i>
-                            </a>
-                        </li>
-                        <li class="nav-item d-none d-sm-inline-block">
-                            <a class="nav-link" href="#">
-                                <i class="far fa-arrow-alt-circle-left columns-position tree-decrease infotip" title="<?php echo $lang->get('move_left_columns_separator'); ?>"></i>
-                            </a>
-                        </li>
-                    <?php
-                        } ?>
                 </ul>
 
                 <!-- Right navbar links -->
@@ -355,6 +347,9 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" data-widget="control-sidebar" data-slide="true" href="#" id="controlsidebar"><i class="fa-solid fa-th-large"></i></a>
+                    </li>
+                    <li id="switch-theme" class="nav-item pointer">
+                        <i class="fa-solid fa-circle-half-stroke m-2 m-2"></i>
                     </li>
                 </ul>
             </nav>
@@ -1148,7 +1143,7 @@ echo '
     <link href="plugins/fontawesome-free-6/css/v5-font-face.min.css?v=<?php echo TP_VERSION; ?>" rel="stylesheet" /> 
     <!-- jQuery -->
     <script src="plugins/jquery/jquery.min.js?v=<?php echo TP_VERSION; ?>"></script>
-    <script src="plugins/jstree/jquery.cookie.js?v=<?php echo TP_VERSION; ?>" type="text/javascript"></script>
+    <script src="plugins/jquery/jquery.cookie.js?v=<?php echo TP_VERSION; ?>" type="text/javascript"></script>
     <!-- jQuery UI -->
     <script src="plugins/jqueryUI/jquery-ui.min.js?v=<?php echo TP_VERSION; ?>"></script>
     <link rel="stylesheet" href="plugins/jqueryUI/jquery-ui.min.css?v=<?php echo TP_VERSION; ?>">

@@ -13,11 +13,11 @@
     },
     {
         "table_name": "background_tasks",
-        "structure_hash": "37f798a1de40e5eaf93c5d44c76b781a5dc8f011f4b5e13201391d4b5b96fbd6"
+        "structure_hash": "f7ae39f605b43cd9c603414900877426a758e6dbab0d25236a2971948f3291c8"
     },
     {
         "table_name": "background_tasks_logs",
-        "structure_hash": "6c0bb2fe9d326a52d95b65976ed06d71360e4e18e8e50968af910caaddf03100"
+        "structure_hash": "4015362ea3e5186818824568c7c2db695c06fea3c2f43c4649494218454d5cc3"
     },
     {
         "table_name": "cache",
@@ -65,7 +65,7 @@
     },
     {
         "table_name": "items_edition",
-        "structure_hash": "d066cfb6317f03fda281c9c269017c2970c513628cde931a13f4db8052658315"
+        "structure_hash": "17dac18c7ef640e3c74791e6467c345bd2db3239beeec48987f1b581904464ab"
     },
     {
         "table_name": "items_otp",
@@ -97,15 +97,15 @@
     },
     {
         "table_name": "log_items",
-        "structure_hash": "9ed89305e190263b12eaf1669f299be54385a77a85baf601fe1070bdab3f90f1"
+        "structure_hash": "d7193f23bcf22b7043a7f6f8624e89edb3e2bf617479f6fc936f2864a781d05e"
     },
     {
         "table_name": "log_system",
-        "structure_hash": "e80d93183b225dccc490b98111ebc452a429cee09b7054ad68001d518545841e"
+        "structure_hash": "c1c5b72eb633a66a8d5e72550f290ee51e75a96bcf125c7e721953cd3c21b7a6"
     },
     {
         "table_name": "misc",
-        "structure_hash": "de1a13bc62c98cdd743eea06b246b44b650c5650e43fc8c4fbdc073ea85ed73b"
+        "structure_hash": "d595d4ec5187dee5e4219254d90b352a5f6fa9a44a26bb4ccbd4f084dbe9491a"
     },
     {
         "table_name": "nested_tree",
@@ -185,7 +185,7 @@
     },
     {
         "table_name": "tags",
-        "structure_hash": "2ef4ea645a64814655bc9bae450b01f496811a26b9976c83a70c83bac17e1d73"
+        "structure_hash": "827feb17a9599367ff539b5223ef2d696738aaa9a4029a3bb2dd2a2a75ccdcf9"
     },
     {
         "table_name": "templates",
@@ -193,7 +193,7 @@
     },
     {
         "table_name": "tokens",
-        "structure_hash": "117f6140fddfab25bfc13e78b10acf61a67713ee4fe3f691b20c2a4c691cb597"
+        "structure_hash": "253356f2855ef13ef9be850e34a6cb69537909711ba8fdb73ac9d9da256cf0da"
     },
     {
         "table_name": "user_requests",
@@ -201,7 +201,7 @@
     },
     {
         "table_name": "users",
-        "structure_hash": "66c734ff20d3f31835aad3c0a7c1c439e41a74ff57ec9e0a7759cf5c2cfb9164"
+        "structure_hash": "08c9bee02458241ffea201a2486660bf3ab9e69f2836ea9d5a5379a6182617cd"
     },
     {
         "table_name": "version_control",
