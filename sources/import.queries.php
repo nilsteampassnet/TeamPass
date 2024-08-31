@@ -305,13 +305,23 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
             $post_data,
             'decode'
         );
-        
+
         // Init post variable
         $post_folder = filter_var($dataReceived['folder-id'], FILTER_SANITIZE_NUMBER_INT);
-        $post_items = filter_var_array(
-            $dataReceived['items'],
-            FILTER_SANITIZE_FULL_SPECIAL_CHARS
-        );
+
+        // Clean each array entry and exclude password as it will be hashed
+        $post_items = [];
+        foreach ($dataReceived['items'] as $item) {
+            $filtered_item = [];
+            foreach ($item as $key => $value) {
+                if ($key !== 'pwd') {
+                    $value = filter_var($value, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+                }
+                $filtered_item[$key] = $value;
+            }
+            $post_items[] = $filtered_item;
+        }
+
         $post_edit_role = filter_var($dataReceived['edit-role'], FILTER_SANITIZE_NUMBER_INT);
         $post_edit_all = filter_var($dataReceived['edit-all'], FILTER_SANITIZE_NUMBER_INT);
 
@@ -330,14 +340,11 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
             $personalFolder = 0;
         }
 
-        //Prepare variables
-        //$listItems = json_decode($post_items, true);
-
         // Clean each array entry
         if (is_array($post_items) === true) {
             array_walk_recursive($post_items, 'cleanOutput');
         }
-        //print_r($post_items);
+        
         // Loop on array
         foreach ($post_items as $item) {
             //For each item, insert into DB

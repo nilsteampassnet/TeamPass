@@ -61,7 +61,7 @@ class PasswordManager
     {
         // Vérifiez si le mot de passe a été haché avec passwordlib
         if ($this->isPasswordLibHash($hashedPassword)) {
-            // Utilisez la vérification de passwordlib ici
+            // Vérification de passwordlib
             if ($this->passwordLibVerify($hashedPassword, html_entity_decode($plainPassword))) {
                 // Password is valid, hash it with new system
                 $newHashedPassword = $this->hashPassword($plainPassword);
