@@ -26,7 +26,7 @@
  * @see       https://www.teampass.net
  */
 
-use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use TeampassClasses\ConfigManager\ConfigManager;
 
 // Load functions
@@ -34,7 +34,7 @@ require_once __DIR__.'/../sources/main.functions.php';
 
 // init
 loadClasses('DB');
-$request = Request::createFromGlobals();
+$request = SymfonyRequest::createFromGlobals();
 
 // Load config if $SETTINGS not defined
 $configManager = new ConfigManager();

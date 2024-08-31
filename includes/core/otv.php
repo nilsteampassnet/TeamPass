@@ -30,7 +30,7 @@ declare(strict_types=1);
  */
 
 
-use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use TeampassClasses\Language\Language;
 use TeampassClasses\NestedTree\NestedTree;
 use voku\helper\AntiXSS;
@@ -40,7 +40,7 @@ use voku\helper\AntiXSS;
 require_once __DIR__.'/../../sources/main.functions.php';
 loadClasses('DB');
 
-$request = Request::createFromGlobals();
+$request = SymfonyRequest::createFromGlobals();
 $lang = new Language($session->get('user-language') ?? 'english');
 $antiXSS = new AntiXSS();
 

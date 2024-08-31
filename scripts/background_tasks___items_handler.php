@@ -28,7 +28,7 @@
 
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\SessionManager\SessionManager;
-use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use TeampassClasses\Language\Language;
 use TeampassClasses\ConfigManager\ConfigManager;
 
@@ -38,7 +38,7 @@ require_once __DIR__.'/../sources/main.functions.php';
 // init
 loadClasses('DB');
 $session = SessionManager::getSession();
-$request = Request::createFromGlobals();
+$request = SymfonyRequest::createFromGlobals();
 $lang = new Language('english');
 
 // Load config if $SETTINGS not defined

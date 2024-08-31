@@ -35,16 +35,16 @@ use Symfony\Component\Process\Process;
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\ConfigManager\ConfigManager;
 use TeampassClasses\SessionManager\SessionManager;
-use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use TeampassClasses\Language\Language;
 // Load functions
 require_once 'main.functions.php';
 // Case permit to check if SESSION is still valid        
 $session = SessionManager::getSession();
-$request = Request::createFromGlobals();
+$request = SymfonyRequest::createFromGlobals();
 loadClasses('DB');
 $session = SessionManager::getSession();
-$request = Request::createFromGlobals();
+$request = SymfonyRequest::createFromGlobals();
 $lang = new Language($session->get('user-language') ?? 'english');
 
 

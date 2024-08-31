@@ -34,7 +34,7 @@ declare(strict_types=1);
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\ConfigManager\ConfigManager;
 use TeampassClasses\SessionManager\SessionManager;
-use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use TeampassClasses\Language\Language;
 
 // Load functions
@@ -43,7 +43,7 @@ require_once __DIR__.'/../sources/main.functions.php';
 // init
 loadClasses();
 $session = SessionManager::getSession();
-$request = Request::createFromGlobals();
+$request = SymfonyRequest::createFromGlobals();
 $lang = new Language($session->get('user-language') ?? 'english');
 
 if ($session->get('key') === null) {

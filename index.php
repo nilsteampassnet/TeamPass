@@ -184,6 +184,15 @@ if (isset($SETTINGS['cpassman_dir']) === false || $SETTINGS['cpassman_dir'] === 
     $SETTINGS['cpassman_url'] = (string) $server['request_uri'];
 }
 
+// Get the URL
+$cpassman_url = isset($SETTINGS['cpassman_url']) ? $SETTINGS['cpassman_url'] : '';
+// URL validation
+if (!filter_var($cpassman_url, FILTER_VALIDATE_URL)) {
+    $cpassman_url = '';
+}
+// Sanitize the URL to prevent XSS
+$cpassman_url = htmlspecialchars($cpassman_url, ENT_QUOTES, 'UTF-8');
+
 // Some template adjust
 if (array_key_exists($get['page'], $mngPages) === true) {
     $menuAdmin = true;
@@ -197,6 +206,19 @@ if (array_key_exists($get['page'], $utilitiesPages) === true) {
 } else {
     $menuUtilities = false;
 }
+
+// Get the favicon
+$favicon = isset($SETTINGS['favicon']) ? $SETTINGS['favicon'] : '';
+// URL Validation
+if (!filter_var($favicon, FILTER_VALIDATE_URL)) {
+    $favicon = '';
+}
+// Sanitize the URL to prevent XSS
+$favicon = htmlspecialchars($favicon, ENT_QUOTES, 'UTF-8');
+
+// Define the date and time format
+$date_format = isset($SETTINGS['date_format']) ? $SETTINGS['date_format'] : 'Y-m-d';
+$time_format = isset($SETTINGS['time_format']) ? $SETTINGS['time_format'] : 'H:i:s';
 
 // Force dark theme on page generation
 $theme = $_COOKIE['teampass_theme'] ?? 'light';
@@ -246,7 +268,7 @@ $theme_navbar = $theme === 'dark' ? 'navbar-dark' : 'navbar-white navbar-light';
     <!-- Toastr -->
     <link rel="stylesheet" href="plugins/toastr/toastr.min.css?v=<?php echo TP_VERSION; ?>" />
     <!-- favicon -->
-    <link rel="shortcut icon" type="image/png" href="<?php echo isset($SETTINGS['favicon']) === true ? $SETTINGS['favicon'] : '';?>"/>
+    <link rel="shortcut icon" type="image/png" href="<?php echo $favicon;?>"/>
     <!-- manifest -->
     <!-- <link rel="manifest" href="includes/manifest.json?v=<?php echo TP_VERSION; ?>"> -->
     <!-- Custom style -->
@@ -358,7 +380,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
             <!-- Main Sidebar Container -->
             <aside class="main-sidebar sidebar-dark-primary elevation-4">
                 <!-- Brand Logo -->
-                <a href="<?php echo $SETTINGS['cpassman_url'] . '/index.php?page=' . ((int) $session_user_admin === 1 ? 'admin' : 'items'); ?>" class="brand-link">
+                <a href="<?php echo $cpassman_url . '/index.php?page=' . ((int) $session_user_admin === 1 ? 'admin' : 'items'); ?>" class="brand-link">
                     <img src="includes/images/teampass-logo2-home.png" alt="Teampass Logo" class="brand-image">
                     <span class="brand-text font-weight-light"><?php echo TP_TOOL_NAME; ?></span>
                 </a>
@@ -667,8 +689,8 @@ echo '
                 <div class="menu-footer">
                     <div class="" id="sidebar-footer">
                         <i class="fa-solid fa-clock-o mr-2 infotip text-info pointer" title="<?php echo $lang->get('server_time') . ' ' .
-                            date($SETTINGS['date_format'], (int) $server['request_time']) . ' - ' .
-                            date($SETTINGS['time_format'], (int) $server['request_time']); ?>"></i>
+                            date($date_format, (int) $server['request_time']) . ' - ' .
+                            date($time_format, (int) $server['request_time']); ?>"></i>
                         <i class="fa-solid fa-users mr-2 infotip text-info pointer" title="<?php echo $session_nb_users_online . ' ' . $lang->get('users_online'); ?>"></i>
                         <a href="<?php echo DOCUMENTATION_URL; ?>" target="_blank" class="text-info"><i class="fa-solid fa-book mr-2 infotip" title="<?php echo $lang->get('documentation_canal'); ?>"></i></a>
                         <a href="<?php echo HELP_URL; ?>" target="_blank" class="text-info"><i class="fa-solid fa-life-ring mr-2 infotip" title="<?php echo $lang->get('admin_help'); ?>"></i></a>

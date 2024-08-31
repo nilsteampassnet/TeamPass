@@ -31,7 +31,7 @@ declare(strict_types=1);
 
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\SessionManager\SessionManager;
-use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
@@ -46,7 +46,7 @@ $session = SessionManager::getSession();
 // init
 loadClasses('DB');
 $session = SessionManager::getSession();
-$request = Request::createFromGlobals();
+$request = SymfonyRequest::createFromGlobals();
 $lang = new Language($session->get('user-language') ?? 'english');
 
 // Load config if $SETTINGS not defined

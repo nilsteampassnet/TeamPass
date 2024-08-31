@@ -1212,6 +1212,8 @@ function buildEmail(
     // Load PHPMailer
     $mail = new PHPMailer(true);
     $languageDir = $SETTINGS['cpassman_dir'] . '/vendor/phpmailer/phpmailer/language/';
+    // Load AntiXSS
+    $antiXss = new AntiXSS();
 
     try {
         // Set language and SMTPDebug
@@ -1256,6 +1258,8 @@ function buildEmail(
         
         // Prepare HTML and AltBody
         $text_html = emailBody($textMail);
+        $text_html = $antiXss->xss_clean($text_html);
+        $text_html = htmlspecialchars($text_html, ENT_QUOTES, 'UTF-8');
         $mail->WordWrap = 80;
         $mail->isHtml(true);
         $mail->Subject = $subject;

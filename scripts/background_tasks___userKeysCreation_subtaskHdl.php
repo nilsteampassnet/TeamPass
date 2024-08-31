@@ -26,7 +26,7 @@
  * @see       https://www.teampass.net
  */
 
-use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use TeampassClasses\Language\Language;
 use TeampassClasses\ConfigManager\ConfigManager;
 
@@ -35,7 +35,7 @@ require_once __DIR__.'/../sources/main.functions.php';
 
 // init
 loadClasses('DB');
-$request = Request::createFromGlobals();
+$request = SymfonyRequest::createFromGlobals();
 
 // Load config if $SETTINGS not defined
 $configManager = new ConfigManager();
@@ -867,6 +867,7 @@ function cronContinueReEncryptingUserSharekeysStep10(
     if (isset($extra_arguments['send_email']) === true && (int) $extra_arguments['send_email'] === 1) {
         sendMailToUser(
             filter_var($userInfo['email'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+            // @scrutinizer ignore-type
             empty($extra_arguments['email_body']) === false ? $extra_arguments['email_body'] : $lang->get('email_body_user_config_1'),
             'TEAMPASS - ' . $lang->get('login_credentials'),
             (array) filter_var_array(

@@ -45,7 +45,9 @@ if (strpos($server['request_uri'], '?') > 0) {
 $request = SymfonyRequest::createFromGlobals();
 $lang = new Language($session->get('user-language') ?? 'english');
 $get = [];
-$get['post_type'] = $request->query->get('post_type', '', FILTER_SANITIZE_SPECIAL_CHARS);
+$postType = $request->query->get('post_type', '');
+$postType = filter_var($postType, FILTER_SANITIZE_SPECIAL_CHARS);
+$get['post_type'] = $postType;
 if (isset($SETTINGS['duo']) === true && (int) $SETTINGS['duo'] === 1 && $get['post_type'] === 'duo' ) {
     $get['duo_state'] = $request->query->get('state');
     $get['duo_code'] = $request->query->get('duo_code');
