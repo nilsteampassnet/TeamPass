@@ -510,7 +510,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         }
                     );
 
-                    window.location.href = "index.php";
+                    window.location.href = "./index.php";
                 }
 
             }

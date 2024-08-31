@@ -1515,7 +1515,7 @@ $request = SymfonyRequest::createFromGlobals();
                                 );
 
                                 // refresh the page
-                                window.location.href = 'index.php?page=items';
+                                window.location.href = './index.php?page=items';
                             }
                         }
                     );

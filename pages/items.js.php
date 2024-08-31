@@ -3200,7 +3200,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                                     }
                                 );
                             } else if ($('#form-item-button-save').data('action') === 'new_item') {
-                                window.location.href = '/index.php?page=items&group='+$('#form-item-folder').val()+'&id='+data.item_id;
+                                window.location.href = './index.php?page=items&group='+$('#form-item-folder').val()+'&id='+data.item_id;
                                 return;
                             } else {
                                 refreshTree($('#form-item-folder').val(), true);

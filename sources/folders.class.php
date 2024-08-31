@@ -230,8 +230,8 @@ class FolderManager
             (int) $isPersonal === 1
             || (int) $user_is_admin === 1
             || ((int) $user_is_manager === 1 || (int) $user_can_manage_all_users === 1)
-            || (isset($SETTINGS['enable_user_can_create_folders']) === true
-                && (int) $SETTINGS['enable_user_can_create_folders'] == 1)
+            || (isset($this->settings['enable_user_can_create_folders']) === true
+                && (int) $this->settings['enable_user_can_create_folders'] == 1)
             || ((int) $user_can_create_root_folder && null !== $user_can_create_root_folder && (int) $user_can_create_root_folder === 1)
         ) {
             //create folder
@@ -343,8 +343,8 @@ class FolderManager
     
             // Create expected groups access rights based upon option selected
             if (
-                isset($SETTINGS['subfolder_rights_as_parent']) === true
-                && (int) $SETTINGS['subfolder_rights_as_parent'] === 1
+                isset($this->settings['subfolder_rights_as_parent']) === true
+                && (int) $this->settings['subfolder_rights_as_parent'] === 1
             ) {
                 //If it is a subfolder, then give access to it for all roles that allows the parent folder
                 $rows = DB::query('SELECT role_id, type FROM ' . prefixTable('roles_values') . ' WHERE folder_id = %i', $parent_id);

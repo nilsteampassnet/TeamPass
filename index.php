@@ -1120,7 +1120,7 @@ echo '
                     function(teampassSettings) {}
                 );
             */
-                window.location.href = "index.php";
+                window.location.href = "./index.php";
             </script>';
         exit;
     }

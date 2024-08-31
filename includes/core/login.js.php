@@ -873,11 +873,11 @@ declare(strict_types=1);
 
                     //redirection for admin is specific
                     if (parseInt(data.user_admin) === 1) {
-                        window.location.href = 'index.php?page=admin';
+                        window.location.href = './index.php?page=admin';
                     } else if (data.initial_url !== '' && data.initial_url !== null) {
                         window.location.href = data.initial_url;
                     } else {
-                        window.location.href = 'index.php?page=items';
+                        window.location.href = './index.php?page=items';
                     }
                 }
 
