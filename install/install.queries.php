@@ -36,6 +36,7 @@ use Hackzilla\PasswordGenerator\Generator\ComputerPasswordGenerator;
 use Hackzilla\PasswordGenerator\RandomGenerator\Php7RandomGenerator;
 use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\Language\Language;
+use TeampassClasses\PasswordManager\PasswordManager;
 
 // Do initial test
 if (file_exists('../includes/config/settings.php') === false) {
@@ -851,15 +852,20 @@ $SETTINGS = array (';
                         );
 
                         require_once '../includes/config/include.php';
+
+                        // Hash password
+                        $passwordManager = new PasswordManager();
+                        $hashedPassword = $passwordManager->hashPassword($var['admin_pwd']);
+
                         // check that admin accounts doesn't exist
                         $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `" . $var['tbl_prefix'] . "users` WHERE login = 'admin'"));
                         if ($tmp === 0) {
                             $mysqli_result = mysqli_query(
                                 $dbTmp,
-                                "INSERT INTO `" . $var['tbl_prefix'] . "users` (`id`, `login`, `pw`, `admin`, `gestionnaire`, `personal_folder`, `groupes_visibles`, `email`, `encrypted_psk`, `last_pw_change`, `name`, `lastname`, `can_create_root_folder`, `public_key`, `private_key`, `is_ready_for_usage`, `otp_provided`) VALUES ('1', 'admin', '" . bCrypt($var['admin_pwd'], '13') . "', '1', '0', '0', '0', '" . $var['admin_email'] . "', '', '" . time() . "', 'Change me', 'Change me', '1', 'none', 'none', '1', '1')"
+                                "INSERT INTO `" . $var['tbl_prefix'] . "users` (`id`, `login`, `pw`, `admin`, `gestionnaire`, `personal_folder`, `groupes_visibles`, `email`, `encrypted_psk`, `last_pw_change`, `name`, `lastname`, `can_create_root_folder`, `public_key`, `private_key`, `is_ready_for_usage`, `otp_provided`) VALUES ('1', 'admin', '" . $hashedPassword . "', '1', '0', '0', '0', '" . $var['admin_email'] . "', '', '" . time() . "', 'Change me', 'Change me', '1', 'none', 'none', '1', '1')"
                             );
                         } else {
-                            $mysqli_result = mysqli_query($dbTmp, 'UPDATE `' . $var['tbl_prefix'] . "users` SET `pw` = '" . bCrypt($var['admin_pwd'], '13') . "' WHERE login = 'admin' AND id = '1'");
+                            $mysqli_result = mysqli_query($dbTmp, 'UPDATE `' . $var['tbl_prefix'] . "users` SET `pw` = '" . $hashedPassword . "' WHERE login = 'admin' AND id = '1'");
                         }
 
                         // check that API doesn't exist

@@ -4544,7 +4544,7 @@ switch ($inputData['type']) {
                     $session->get('user-private_key')
                 )
             );
-
+            
             $log = 'Used user ID: '.$session->get('user-id')."\n";
             $log .= 'Used user Private key: '.$session->get('user-private_key')."\n";
             $log .= '$currentUserKey: '.$dataItem['share_key']."\n";

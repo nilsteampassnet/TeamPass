@@ -59,10 +59,10 @@ class PasswordManager
     // --- Handle migration from PasswordLib to Symfony PasswordHasher
     public function migratePassword(string $hashedPassword, string $plainPassword, int $userId): string
     {
-        // Vérifiez si le mot de passe a été haché avec passwordlib
-        if ($this->isPasswordLibHash($hashedPassword)) {
-            // Vérification de passwordlib
-            if ($this->passwordLibVerify($hashedPassword, html_entity_decode($plainPassword))) {
+        // Check if the password is correct
+        if ($this->verifyPassword($hashedPassword, $plainPassword) === true) {
+            // Check if password has been hashed with passwordlib
+            if ($this->isPasswordLibHash($hashedPassword)) {
                 // Password is valid, hash it with new system
                 $newHashedPassword = $this->hashPassword($plainPassword);
                 $userInfo['pw'] = $newHashedPassword;
@@ -73,13 +73,10 @@ class PasswordManager
                 if (WIP === true) error_log("migratePassword performed for user ".$userId." | Old hash: ".$hashedPassword." | New hash: ".$newHashedPassword);
                 // Return new hashed password
                 return $newHashedPassword;
-            } else {
-                //throw new \Exception("Password is not correct");
-                return false;
             }
         }
 
-        // Le mot de passe a déjà été haché avec le nouveau système
+        // Return hashed password
         return $hashedPassword;
     }
 
@@ -89,7 +86,7 @@ class PasswordManager
         return strpos($hashedPassword, '$2y$10$') === 0;
     }
 
-    // Vous devrez implémenter cette fonction pour utiliser la vérification de passwordlib
+    // Vérification du hash et mdp passwordlib
     private function passwordLibVerify(string $hashedPassword, string $plainPassword): bool
     {
         // Vérification avec passwordlib

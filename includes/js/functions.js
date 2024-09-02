@@ -407,11 +407,14 @@ function simplePurifier(
     .replaceAll('&#62;', '>')
     .replaceAll('&amp;', '&')
     .replaceAll('&#38;', '&')
+    .replaceAll('&#038;', '&')
     .replaceAll('&#x26;', '&')
     .replaceAll('&quot;', '"')
     .replaceAll('&#34;;', '"')
+    .replaceAll('&#034;;', '"')
     .replaceAll('&#x22;', '"')
-    .replaceAll('&#39;', "'");
+    .replaceAll('&#39;', "'")
+    .replaceAll('&#039;', "'");
 
     if (bSanitize === false) {
         return textCleaned;

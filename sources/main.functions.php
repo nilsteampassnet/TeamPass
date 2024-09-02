@@ -62,10 +62,6 @@ $session = SessionManager::getSession();
 // Load config if $SETTINGS not defined
 $configManager = new ConfigManager();
 $SETTINGS = $configManager->getAllSettings();
-/*if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir']) === true) {
-    include_once __DIR__ . '/../includes/config/tp.config.php';
-}
-*/
 
 /**
  * genHash().
@@ -77,6 +73,7 @@ $SETTINGS = $configManager->getAllSettings();
  *
  * @return string|void
  */
+/* TODO - Remove this function
 function bCrypt(
     string $password,
     string $cost
@@ -94,6 +91,7 @@ function bCrypt(
 
     return crypt($password, $salt);
 }
+*/
 
 /**
  * Checks if a string is hex encoded
