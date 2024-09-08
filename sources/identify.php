@@ -2127,7 +2127,7 @@ class initialChecks {
     public $login;
 
     // Methods
-    public function get_is_too_much_attempts($attempts) {
+    public function isTooManyPasswordAttempts($attempts) {
         if ($attempts > 30) {
             throw new Exception(
                 "error" 
@@ -2135,7 +2135,7 @@ class initialChecks {
         }
     }
 
-    public function get_user_info($login, $enable_ad_user_auto_creation, $oauth2_enabled) {
+    public function getUserInfo($login, $enable_ad_user_auto_creation, $oauth2_enabled) {
         $session = SessionManager::getSession();
 
         // Get user info from DB
@@ -2172,7 +2172,7 @@ class initialChecks {
         return $data;
     }
 
-    public function get_teampass_in_maintenance_mode($maintenance_mode, $user_admin) {
+    public function isMaintenanceModeEnabled($maintenance_mode, $user_admin) {
         if ((int) $maintenance_mode === 1 && (int) $user_admin === 0) {
             throw new Exception(
                 "error" 
@@ -2180,7 +2180,7 @@ class initialChecks {
         }
     }
 
-    public function get_mfa_code_is_set(
+    public function is2faCodeRequired(
         $yubico,
         $ga,
         $duo,
@@ -2209,7 +2209,7 @@ class initialChecks {
         }
     }
 
-    public function get_install_folder_is_not_present($admin, $install_folder) {
+    public function isInstallFolderPresent($admin, $install_folder) {
         if ((int) $admin === 1 && is_dir($install_folder) === true) {
             throw new Exception(
                 "error" 
@@ -2227,7 +2227,7 @@ class initialChecks {
  * @param string $username
  * @param integer $sessionAdmin
  * @param string $sessionUrl
- * @param string $user_2fa_selection
+ * @param string $user2faSelection
  * @param boolean $oauth2Token
  * @return array
  */
@@ -2237,25 +2237,23 @@ function identifyDoInitialChecks(
     string $username,
     int $sessionAdmin,
     string $sessionUrl,
-    string $user_2fa_selection
+    string $user2faSelection
 ): array
 {
     $session = SessionManager::getSession();
     $checks = new initialChecks();
-    $enable_ad_user_auto_creation = isset($SETTINGS['enable_ad_user_auto_creation']) === true && (int) $SETTINGS['enable_ad_user_auto_creation'] === 1 ? true : false;
-    $oauth2_enabled = isset($SETTINGS['oauth2_enabled']) === true && (int) $SETTINGS['oauth2_enabled'] === 1 ? true : false;
+    $enableAdUserAutoCreation = $settings['enable_ad_user_auto_creation'] ?? false;
+    $oauth2Enabled = $settings['oauth2_enabled'] ?? false;
     $lang = new Language($session->get('user-language') ?? 'english');
     
     // Brute force management
     try {
-        $checks->get_is_too_much_attempts($sessionPwdAttempts);
+        $checks->isTooManyPasswordAttempts($sessionPwdAttempts);
     } catch (Exception $e) {
         $session->set('next_possible_pwd_attempts', (time() + 10));
         $session->set('pwd_attempts', 0);
         $session->set('userOauth2Info', '');
-
         logEvents($SETTINGS, 'failed_auth', 'user_not_exists', '', stripslashes($username), stripslashes($username));
-
         return [
             'error' => true,
             'array' => [
@@ -2268,10 +2266,9 @@ function identifyDoInitialChecks(
             ]
         ];
     }
-
     // Check if user exists
     try {
-        $userInfo = $checks->get_user_info($username, $enable_ad_user_auto_creation, $oauth2_enabled);
+        $userInfo = $checks->getUserInfo($username, $enableAdUserAutoCreation, $oauth2Enabled);
     } catch (Exception $e) {
         logEvents($SETTINGS, 'failed_auth', 'user_not_exists', '', stripslashes($username), stripslashes($username));
         return [
@@ -2289,7 +2286,7 @@ function identifyDoInitialChecks(
     
     // Manage Maintenance mode
     try {
-        $checks->get_teampass_in_maintenance_mode(
+        $checks->isMaintenanceModeEnabled(
             $SETTINGS['maintenance_mode'],
             $userInfo['admin']
         );
@@ -2306,23 +2303,21 @@ function identifyDoInitialChecks(
             ]
         ];
     }
-
     // user should use MFA?
     $userInfo['mfa_auth_requested_roles'] = mfa_auth_requested_roles(
         (string) $userInfo['fonction_id'],
         is_null($SETTINGS['mfa_for_roles']) === true ? '' : (string) $SETTINGS['mfa_for_roles']
     );
-
     // Check if 2FA code is requested
     try {
-        $checks->get_mfa_code_is_set(
+        $checks->is2faCodeRequired(
             $SETTINGS['yubico_authentication'],
             $SETTINGS['google_authentication'],
             $SETTINGS['duo'],
             $userInfo['admin'],
             $SETTINGS['admin_2fa_required'],
             $userInfo['mfa_auth_requested_roles'],
-            $user_2fa_selection,
+            $user2faSelection,
             $userInfo['mfa_enabled']
         );
     } catch (Exception $e) {
@@ -2338,11 +2333,10 @@ function identifyDoInitialChecks(
             ]
         ];
     }
-
     // If admin user then check if folder install exists
     // if yes then refuse connection
     try {
-        $checks->get_install_folder_is_not_present(
+        $checks->isInstallFolderPresent(
             $userInfo['admin'],
             '../install'
         );
@@ -2363,7 +2357,7 @@ function identifyDoInitialChecks(
     // Return some usefull information about user
     return [
         'error' => false,
-        'user_mfa_mode' => $user_2fa_selection,
+        'user_mfa_mode' => $user2faSelection,
         'userInfo' => $userInfo,
     ];
 }
@@ -2446,7 +2440,7 @@ function createOauth2User(
             is_null($userInfo['givenname']) ? (is_null($userInfo['givenName']) ? '' : $userInfo['givenName']) : $userInfo['givenname'],
             is_null($userInfo['surname']) ? '' : $userInfo['surname'],
             'oauth2',
-            is_null($userInfo['groups']) ? '' : $userInfo['groups'],
+            is_null($userInfo['groups']) ? [] : $userInfo['groups'],
             $SETTINGS
         );
 

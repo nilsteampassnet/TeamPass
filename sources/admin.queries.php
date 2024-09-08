@@ -186,7 +186,7 @@ switch ($post_type) {
 
         if (!empty($return)) {
             // get a token
-            $token = GenerateCryptKey(20, false, true, true, false, true, $SETTINGS);
+            $token = GenerateCryptKey(20, false, true, true, false, true);
 
             //save file
             $filename = time() . '-' . $token . '.sql';
@@ -217,7 +217,7 @@ switch ($post_type) {
             }
 
             //generate 2d key
-            $session->set('user-key_tmp', GenerateCryptKey(20, false, true, true, false, true, $SETTINGS));
+            $session->set('user-key_tmp', GenerateCryptKey(20, false, true, true, false, true));
 
             //update LOG
             logEvents($SETTINGS, 'admin_action', 'dataBase backup', (string) $session->get('user-id'), $session->get('user-login'));
@@ -1633,7 +1633,7 @@ switch ($post_type) {
         if (null !== $post_action && $post_action === 'add') {
             // Generate KEY
             require_once 'main.functions.php';
-            $key = GenerateCryptKey(39, false, true, true, false, true, $SETTINGS);
+            $key = GenerateCryptKey(39, false, true, true, false, true);
 
             // Generate objectKey
             //$object = doDataEncryption($key, SECUREFILE.':'.$timestamp);

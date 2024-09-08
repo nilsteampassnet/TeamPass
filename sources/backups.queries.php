@@ -189,7 +189,7 @@ if (null !== $post_type) {
 
             if (empty($return) === false) {
                 // get a token
-                $token = GenerateCryptKey(20, false, true, true, false, true, $SETTINGS);
+                $token = GenerateCryptKey(20, false, true, true, false, true);
 
                 //save file
                 $filename = time() . '-' . $token . '.sql';
@@ -220,7 +220,7 @@ if (null !== $post_type) {
                 }
 
                 //generate 2d key
-                $session->set('user-key_tmp', GenerateCryptKey(16, false, true, true, false, true, $SETTINGS));
+                $session->set('user-key_tmp', GenerateCryptKey(16, false, true, true, false, true));
 
                 //update LOG
                 logEvents(

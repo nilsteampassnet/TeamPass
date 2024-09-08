@@ -2016,7 +2016,7 @@ switch ($inputData['type']) {
             }
 
             // generate 2d key
-            $session->set('user-key_tmp', bin2hex(GenerateCryptKey(16, false, true, true, false, true, $SETTINGS)));
+            $session->set('user-key_tmp', bin2hex(GenerateCryptKey(16, false, true, true, false, true)));
 
             // Send email
             if (is_array($post_diffusion_list) === true && count($post_diffusion_list) > 0) {
@@ -3216,7 +3216,7 @@ switch ($inputData['type']) {
         // Get all expected data about this ITEM
         } else {
             // generate 2d key
-            $session->set('user-key_tmp', bin2hex(GenerateCryptKey(16, false, true, true, false, true, $SETTINGS)));
+            $session->set('user-key_tmp', bin2hex(GenerateCryptKey(16, false, true, true, false, true)));
 
             // Prepare files listing
             $attachments = [];
@@ -6134,8 +6134,8 @@ switch ($inputData['type']) {
         }
 
         // generate session
-        $otv_code = GenerateCryptKey(32, false, true, true, false, true, $SETTINGS);
-        $otv_key = GenerateCryptKey(32, false, true, true, false, true, $SETTINGS);
+        $otv_code = GenerateCryptKey(32, false, true, true, false, true);
+        $otv_key = GenerateCryptKey(32, false, true, true, false, true);
 
         // Generate Defuse key
         $otv_user_code_encrypted = defuse_generate_personal_key($otv_key);

@@ -380,7 +380,7 @@ if (!$chunks || $chunk == $chunks - 1) {
 }
 
 // generate file name
-$newFileName = bin2hex(GenerateCryptKey(16, false, true, true, false, true, $SETTINGS));
+$newFileName = bin2hex(GenerateCryptKey(16, false, true, true, false, true));
 
 if (
     null !== ($post_type_upload)
