@@ -125,7 +125,7 @@ class PerformChecks
                 'SELECT id FROM ' . prefixTable('users') . ' WHERE login = %s',
                 $this->sessionVar['login']
             );
-            if (DB::count() > 0 || isset($this->sessionVar['sso']) === true) {
+            if (DB::count() > 0 || isset($this->sessionVar['oauth2']) === true) {
                 return true;
             }
         }

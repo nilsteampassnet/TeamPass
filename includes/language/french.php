@@ -1188,5 +1188,6 @@ return array(
     'show_item_data' => 'Afficher les détails de l&apos;objet dans la liste',
     'show_item_data_tip' => 'Permet d&apos;afficher des informations supplémentaires dans la liste des éléments (nom d&apos;utilisateur, e-mail et URL). Cela peut être utile pour avoir un aperçu rapide du contenu de l&apos;élément.',
     'items_page_split_view_mode' => 'Afficher le détail d&apos;un objet sur la page des objets',
+    'replace_tenant_id' => 'Adapter l&apos;url tout en laissant {tenant-id}. Il sera remplacer lors de l&apos;appel.',
 
 );

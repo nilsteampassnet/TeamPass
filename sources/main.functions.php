@@ -418,7 +418,7 @@ function identAdmin($idFonctions, $SETTINGS, $tree)
  *
  * @return array
  */
-function convertToArray($element): array
+function convertToArray($element): ?array
 {
     if (is_string($element) === true) {
         if (empty($element) === true) {
@@ -1498,7 +1498,6 @@ function prefixTable(string $table): string
  * @param bool $uppercase Uppercase letters
  * @param bool $symbols Symbols
  * @param bool $lowercase Lowercase
- * @param array   $SETTINGS  SETTINGS
  * 
  * @return string
  */
@@ -1508,8 +1507,7 @@ function GenerateCryptKey(
     bool $numerals = false,
     bool $uppercase = false,
     bool $symbols = false,
-    bool $lowercase = false,
-    array $SETTINGS = []
+    bool $lowercase = false
 ): string {
     $generator = new ComputerPasswordGenerator();
     $generator->setRandomGenerator(new Php7RandomGenerator());
@@ -1529,6 +1527,66 @@ function GenerateCryptKey(
     }
 
     return $generator->generatePasswords()[0];
+}
+
+/**
+ * GenerateGenericPassword
+ *
+ * @param int     $size      Length
+ * @param bool $secure Secure
+ * @param bool $numerals Numerics
+ * @param bool $uppercase Uppercase letters
+ * @param bool $symbols Symbols
+ * @param bool $lowercase Lowercase
+ * @param array   $SETTINGS  SETTINGS
+ * 
+ * @return string
+ */
+function generateGenericPassword(
+    int $size,
+    bool $secure,
+    bool $lowercase,
+    bool $capitalize,
+    bool $numerals,
+    bool $symbols,
+    array $SETTINGS
+): string
+{
+    if ((int) $size > (int) $SETTINGS['pwd_maximum_length']) {
+        return prepareExchangedData(
+            array(
+                'error_msg' => 'Password length is too long! ',
+                'error' => 'true',
+            ),
+            'encode'
+        );
+    }
+    // Load libraries
+    $generator = new ComputerPasswordGenerator();
+    $generator->setRandomGenerator(new Php7RandomGenerator());
+
+    // Manage size
+    $generator->setLength(($size <= 0) ? 10 : $size);
+
+    if ($secure === true) {
+        $generator->setSymbols(true);
+        $generator->setLowercase(true);
+        $generator->setUppercase(true);
+        $generator->setNumbers(true);
+    } else {
+        $generator->setLowercase($lowercase);
+        $generator->setUppercase($capitalize);
+        $generator->setNumbers($numerals);
+        $generator->setSymbols($symbols);
+    }
+
+    return prepareExchangedData(
+        array(
+            'key' => $generator->generatePasswords(),
+            'error' => '',
+        ),
+        'encode'
+    );
 }
 
 /**
@@ -4268,7 +4326,7 @@ function handleUserRecoveryKeysDownload(int $userId, array $SETTINGS):string
 
     if (DB::count() > 0) {
         $now = (int) time();
-
+error_log('password: '.$session->get('user-password'));
         // Prepare file content
         $export_value = file_get_contents(__DIR__."/../includes/core/teampass_ascii.txt")."\n".
             "Generation date: ".date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], $now)."\n\n".

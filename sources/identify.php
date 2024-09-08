@@ -48,7 +48,6 @@ use TeampassClasses\LdapExtra\LdapExtra;
 use TeampassClasses\LdapExtra\OpenLdapExtra;
 use TeampassClasses\LdapExtra\ActiveDirectoryExtra;
 use TeampassClasses\AzureAuthController\AzureAuthController;
-use TheNetworg\OAuth2\Client\Provider\Azure;
 
 // Load functions
 require_once 'main.functions.php';
@@ -78,7 +77,7 @@ $checkUserAccess = new PerformChecks(
         'user_id' => returnIfSet($session->get('user-id'), null),
         'user_key' => returnIfSet($session->get('key'), null),
         'login' => isset($_POST['login']) === false ? null : $_POST['login'],
-        'sso' => isset($_POST['sso']) === false ? null : $_POST['sso'],
+        'oauth2' => returnIfSet($session->get('userOauth2Info'), null),
     ]
 );
 
@@ -382,25 +381,8 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         return false;
     }
 
-    $userInfo = $userInitialData['userInfo'];
+    $userInfo = $userInitialData['userInfo'] + $dataReceived;
     $return = '';
-
-    // If we have oauth2-azure enabled then we need to check if the user is in the Azure Entra ID
-    /*if (isKeyExistingAndEqual('oauth2_azure', 1, $SETTINGS) === true) {
-        $authAzure = identifyDoAzureChecks(
-            $SETTINGS,
-            $userInfo,
-            (string) $username
-        );
-        if ($authAzure['error'] === true) {
-            // deepcode ignore ServerLeak: File and path are secured directly inside the function decryptFile()
-            echo prepareExchangedData(
-                $authAzure['array'],
-                'encode'
-            );
-            return false;
-        }
-    }*/
 
     // Check if LDAP is enabled and user is in AD
     $userLdap = identifyDoLDAPChecks(
@@ -421,13 +403,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         return false;
     }
     if (isset($userLdap['user_info']) === true && (int) $userLdap['user_info']['has_been_created'] === 1) {
-        /*$userInfo = DB::queryfirstrow(
-            'SELECT *
-            FROM ' . prefixTable('users') . '
-            WHERE login = %s',
-            $username
-        );*/
-        //$userInfo = $userLdap['user_info'];
         echo json_encode([
             'data' => prepareExchangedData(
                 [
@@ -442,8 +417,28 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         return false;
     }
 
+    // Should we create new oauth2 user?
+    $userOauth2 = createOauth2User(
+        (array) $SETTINGS,
+        (array) $userInfo,
+        (string) $username,
+        (string) $passwordClear,
+        (int) $userLdap['user_info']['has_been_created']
+    );
+    if ($userOauth2['error'] === true) {
+        // deepcode ignore ServerLeak: File and path are secured directly inside the function decryptFile()
+        echo prepareExchangedData(
+            $userOauth2['array'],
+            'encode'
+        );
+        $session->remove('userOauth2Info');
+        return false;
+    }
+   
     // Check user and password
-    if ($userLdap['userPasswordVerified'] === false && (int) checkCredentials($passwordClear, $userInfo) !== 1) {
+    if ($userLdap['userPasswordVerified'] === false && $userOauth2['userPasswordVerified'] === false
+        && (int) checkCredentials($passwordClear, $userInfo) !== 1
+    ) {
         echo prepareExchangedData(
             [
                 'value' => '',
@@ -749,7 +744,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         );
         
         // Get user's rights
-        if ($userLdap['user_initial_creation_through_ldap'] === true) {
+        if ($userLdap['user_initial_creation_through_external_ad'] === true || $userOauth2['retExternalAD']['has_been_created'] === 1) {
             // is new LDAP user. Show only his personal folder
             if ($SETTINGS['enable_pf_feature'] === '1') {
                 $session->set('user-personal_visible_folders', [$userInfo['id']]);
@@ -1339,13 +1334,15 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
     }
 
     // Create LDAP user if not exists and tasks enabled
-    if ($userInfo['ldap_user_to_be_created'] === true) {   
-        $userInfo = ldapCreateUser(
+    if ($userInfo['ldap_user_to_be_created'] === true) {
+        $userInfo = externalAdCreateUser(
             $username,
             $passwordClear,
             $userADInfos['mail'][0],
             $userADInfos['givenname'][0],
             $userADInfos['sn'][0],
+            'ldap',
+            [],
             $SETTINGS
         );
 
@@ -1519,7 +1516,7 @@ function finalizeAuthentication(
             $userInfo['id']
         );
     }
-    if (WIP === true) error_log("finalizeAuthentication - hashedPassword: " . $hashedPassword. " | ".$passwordManager->verifyPassword($userInfo['pw'], $passwordClear));
+    if (WIP === true) error_log("finalizeAuthentication - hashedPassword: " . $hashedPassword. " | ".$passwordManager->verifyPassword($userInfo['pw'], $passwordClear)." || ".$passwordClear);
 }
 
 /**
@@ -1605,7 +1602,16 @@ function yubicoMFACheck($dataReceived, string $userInfo, array $SETTINGS): array
  *
  * @return array
  */
-function ldapCreateUser(string $login, string $passwordClear, string $userEmail, string $userName, string $userLastname, array $SETTINGS): array
+function externalAdCreateUser(
+    string $login,
+    string $passwordClear,
+    string $userEmail,
+    string $userName,
+    string $userLastname,
+    string $authType,
+    array $userGroups,
+    array $SETTINGS
+): array
 {
     // Generate user keys pair
     $userKeys = generateUserKeys($passwordClear);
@@ -1613,6 +1619,27 @@ function ldapCreateUser(string $login, string $passwordClear, string $userEmail,
     // Create password hash
     $passwordManager = new PasswordManager();
     $hashedPassword = $passwordManager->hashPassword($passwordClear);
+    
+    // If any groups provided, add user to them
+    if (count($userGroups) > 0) {
+        $groupIds = [];
+        foreach ($userGroups as $group) {
+            // Check if exists in DB
+            $groupData = DB::queryFirstRow(
+                'SELECT id
+                FROM ' . prefixTable('roles_title') . '
+                WHERE title = %s',
+                $group["displayName"]
+            );
+
+            if (DB::count() > 0) {
+                array_push($groupIds, $groupData['id']);
+            }
+        }
+        $userGroups = implode(';', $groupIds);
+    } else {
+        $userGroups = '';
+    }
 
     // Insert user in DB
     DB::insert(
@@ -1629,14 +1656,15 @@ function ldapCreateUser(string $login, string $passwordClear, string $userEmail,
             'personal_folder' => $SETTINGS['enable_pf_feature'] === '1' ? '1' : '0',
             'groupes_interdits' => '',
             'groupes_visibles' => '',
+            'fonction_id' => $userGroups,
             'last_pw_change' => (int) time(),
-            'user-language' => (string) $SETTINGS['default_language'],
+            'user_language' => (string) $SETTINGS['default_language'],
             'encrypted_psk' => '',
             'isAdministratedByRole' => isset($SETTINGS['ldap_new_user_is_administrated_by']) === true && empty($SETTINGS['ldap_new_user_is_administrated_by']) === false ? $SETTINGS['ldap_new_user_is_administrated_by'] : 0,
             'public_key' => $userKeys['public_key'],
             'private_key' => $userKeys['private_key'],
             'special' => 'none',
-            'auth_type' => 'ldap',
+            'auth_type' => $authType,
             'otp_provided' => '1',
             'is_ready_for_usage' => '0',
         ]
@@ -1651,7 +1679,7 @@ function ldapCreateUser(string $login, string $passwordClear, string $userEmail,
             'user_id' => $newUserId,
             'value' => encryptUserObjectKey(base64_encode(base64_encode(uniqidReal(39))), $userKeys['public_key']),
             'timestamp' => time(),
-            'read_only' => 1,
+            'allowed_to_read' => 1,
             'allowed_folders' => '',
             'enabled' => 0,
         )
@@ -1675,11 +1703,12 @@ function ldapCreateUser(string $login, string $passwordClear, string $userEmail,
         $tree->rebuild();
     }
 
+
     return [
         'error' => false,
         'message' => '',
         'proceedIdentification' => true,
-        'user_initial_creation_through_ldap' => true,
+        'user_initial_creation_through_external_ad' => true,
         'id' => $newUserId,
     ];
 }
@@ -2106,7 +2135,10 @@ class initialChecks {
         }
     }
 
-    public function get_user_info($login, $enable_ad_user_auto_creation) {
+    public function get_user_info($login, $enable_ad_user_auto_creation, $oauth2_enabled) {
+        $session = SessionManager::getSession();
+
+        // Get user info from DB
         $data = DB::queryFirstRow(
             'SELECT u.*, a.value AS api_key
             FROM ' . prefixTable('users') . ' AS u
@@ -2117,12 +2149,16 @@ class initialChecks {
         
         // User doesn't exist then return error
         // Except if user creation from LDAP is enabled
-        if (DB::count() === 0 && $enable_ad_user_auto_creation === false) {
+        if (DB::count() === 0 && ($enable_ad_user_auto_creation === false || $oauth2_enabled === false)) {
             throw new Exception(
                 "error" 
             );
         }
-        $data['ldap_user_to_be_created'] = $enable_ad_user_auto_creation === true && DB::count() === 0 ? true : false;
+        // We cannot create a user with LDAP if the OAuth2 login is ongoing
+        $oauth2LoginOngoing = isset($session->get('userOauth2Info')['oauth2LoginOngoing']) ? $session->get('userOauth2Info')['oauth2LoginOngoing'] : false;
+        $data['ldap_user_to_be_created'] = $enable_ad_user_auto_creation === true && DB::count() === 0 && $oauth2LoginOngoing !== true ? true : false;
+        $data['oauth2_user_to_be_created'] = $oauth2_enabled === true && DB::count() === 0 && $oauth2LoginOngoing === true ? true : false;
+
 
         // ensure user fonction_id is set to false if not existing
         /*if (is_null($data['fonction_id']) === true) {
@@ -2192,6 +2228,7 @@ class initialChecks {
  * @param integer $sessionAdmin
  * @param string $sessionUrl
  * @param string $user_2fa_selection
+ * @param boolean $oauth2Token
  * @return array
  */
 function identifyDoInitialChecks(
@@ -2206,6 +2243,7 @@ function identifyDoInitialChecks(
     $session = SessionManager::getSession();
     $checks = new initialChecks();
     $enable_ad_user_auto_creation = isset($SETTINGS['enable_ad_user_auto_creation']) === true && (int) $SETTINGS['enable_ad_user_auto_creation'] === 1 ? true : false;
+    $oauth2_enabled = isset($SETTINGS['oauth2_enabled']) === true && (int) $SETTINGS['oauth2_enabled'] === 1 ? true : false;
     $lang = new Language($session->get('user-language') ?? 'english');
     
     // Brute force management
@@ -2214,6 +2252,7 @@ function identifyDoInitialChecks(
     } catch (Exception $e) {
         $session->set('next_possible_pwd_attempts', (time() + 10));
         $session->set('pwd_attempts', 0);
+        $session->set('userOauth2Info', '');
 
         logEvents($SETTINGS, 'failed_auth', 'user_not_exists', '', stripslashes($username), stripslashes($username));
 
@@ -2232,7 +2271,7 @@ function identifyDoInitialChecks(
 
     // Check if user exists
     try {
-        $userInfo = $checks->get_user_info($username, $enable_ad_user_auto_creation);
+        $userInfo = $checks->get_user_info($username, $enable_ad_user_auto_creation, $oauth2_enabled);
     } catch (Exception $e) {
         logEvents($SETTINGS, 'failed_auth', 'user_not_exists', '', stripslashes($username), stripslashes($username));
         return [
@@ -2367,6 +2406,85 @@ function identifyDoLDAPChecks(
             'error' => false,
             'retLDAP' => $retLDAP,
             'ldapConnection' => true,
+            'userPasswordVerified' => true,
+        ];
+    }
+
+    // return if no addmin
+    return [
+        'error' => false,
+        'retLDAP' => [],
+        'ldapConnection' => false,
+        'userPasswordVerified' => false,
+    ];
+}
+
+
+function createOauth2User(
+    array $SETTINGS,
+    array $userInfo,
+    string $username,
+    string $passwordClear,
+    int $userLdapHasBeenCreated
+): array
+{
+    error_log($SETTINGS['oauth2_enabled']." -- ".$username." -- ".$userInfo['oauth2_user_to_be_created']." -- ".$userLdapHasBeenCreated);
+    // Prepare creating the new oauth2 user in Teampass
+    if ((int) $SETTINGS['oauth2_enabled'] === 1
+        && $username !== 'admin'
+        && (bool) $userInfo['oauth2_user_to_be_created'] === true
+        && $userLdapHasBeenCreated !== 1
+    ) {
+        $session = SessionManager::getSession();
+        $lang = new Language($session->get('user-language') ?? 'english');
+        
+        // Create Oauth2 user if not exists and tasks enabled
+        $userInfo = externalAdCreateUser(
+            $username,
+            $passwordClear,
+            $userInfo['mail'],
+            is_null($userInfo['givenname']) ? (is_null($userInfo['givenName']) ? '' : $userInfo['givenName']) : $userInfo['givenname'],
+            is_null($userInfo['surname']) ? '' : $userInfo['surname'],
+            'oauth2',
+            is_null($userInfo['groups']) ? '' : $userInfo['groups'],
+            $SETTINGS
+        );
+
+        // prepapre background tasks for item keys generation  
+        handleUserKeys(
+            (int) $userInfo['id'],
+            (string) $passwordClear,
+            (int) (isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH),
+            uniqidReal(20),
+            true,
+            true,
+            true,
+            false,
+            $lang->get('email_body_user_config_2'),
+        );
+
+        // Complete $userInfo
+        $userInfo['has_been_created'] = 1;
+
+        error_log("--- USER CREATED ---");
+
+        return [
+            'error' => false,
+            'retExternalAD' => $userInfo,
+            'oauth2Connection' => true,
+            'userPasswordVerified' => true,
+        ];
+    
+    } elseif ((int) $SETTINGS['oauth2_enabled'] === 1
+        && isset($userInfo['id']) === true && empty($userInfo['id']) === false
+    ) {
+        // Oauth2 user already exists and authenticated
+        error_log("--- USER AUTHENTICATED ---");
+        $userInfo['has_been_created'] = 0;
+        return [
+            'error' => false,
+            'retExternalAD' => $userInfo,
+            'oauth2Connection' => true,
             'userPasswordVerified' => true,
         ];
     }

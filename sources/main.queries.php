@@ -1249,53 +1249,6 @@ function sendEmailsNotSent(
     }
 }
 
-function generateGenericPassword(
-    int $size,
-    bool $secure,
-    bool $lowercase,
-    bool $capitalize,
-    bool $numerals,
-    bool $symbols,
-    array $SETTINGS
-): string
-{
-    if ((int) $size > (int) $SETTINGS['pwd_maximum_length']) {
-        return prepareExchangedData(
-            array(
-                'error_msg' => 'Password length is too long! ',
-                'error' => 'true',
-            ),
-            'encode'
-        );
-    }
-    // Load libraries
-    //require_once __DIR__.'/../vendor/autoload.php';
-    $generator = new ComputerPasswordGenerator();
-    $generator->setRandomGenerator(new Php7RandomGenerator());
-
-    // Manage size
-    $generator->setLength(($size <= 0) ? 10 : $size);
-
-    if ($secure === true) {
-        $generator->setSymbols(true);
-        $generator->setLowercase(true);
-        $generator->setUppercase(true);
-        $generator->setNumbers(true);
-    } else {
-        $generator->setLowercase($lowercase);
-        $generator->setUppercase($capitalize);
-        $generator->setNumbers($numerals);
-        $generator->setSymbols($symbols);
-    }
-
-    return prepareExchangedData(
-        array(
-            'key' => $generator->generatePasswords(),
-            'error' => '',
-        ),
-        'encode'
-    );
-}
 
 function refreshUserItemsSeenList(
     array $SETTINGS

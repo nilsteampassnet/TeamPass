@@ -1188,5 +1188,6 @@ return array(
     'show_item_data' => 'Show item data in items list',
     'show_item_data_tip' => 'Permits to display extra information in the items list (username, email and url). This could be useful to have a quick view of the item content.',
     'items_page_split_view_mode' => 'Show item details in page split view mode',
+    'replace_tenant_id' => 'Adapt the URL but keep {tenant-id} as is. It will be replaced live by the tenant ID.',
 
 );

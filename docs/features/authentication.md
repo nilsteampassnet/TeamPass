@@ -86,3 +86,42 @@ If disabled for a user, a red fingerprint symbol is shown in the users list.
 
 ![Settings tasks options](../_media/tp3_auth_mfa_3.png)
 
+
+## Oauth2 with Microsoft Entra (Azure)
+
+Users can authenticate through your Entra AD. The first time a user is authenticate in Teampass through oauth2, his account will be created in Teampass.
+
+👉 Notice that if the user has `group memberships` defined in AD and that those groups also exist in Teampass, then the user will be automatically associated to the matching groups (based upon their names).
+
+### Setting up at Entra side
+
+You need to create a new `App registration` for example called `Teampass`.
+
+This App will have an `Application (client) ID` and a `Directory (tenant) ID`.
+A `Client secret` is also expected, not the `Secret ID` but the `Value` (the one that is only seen once).
+
+You will have to define a new `Redirect URIs` with the value provided from Teampass OAuth configuration page.
+And it is suggested to use option `Accounts in any organizational directory (Any Microsoft Entra ID tenant - Multitenant)` as `Supported account types`.
+
+Now define `API permissions` with next permissions:
+
+* `Microsoft Graph`:
+  * `email` with Type `Delegated`
+  * `Group.Read.All` with Type `Delegated`
+  * `Group.Read.All` with Type `Application`
+  * `offline_access` with Type `Delegated`
+  * `openid` with Type `Delegated`
+  * `profile` with Type `Delegated`
+  * `User.Read` with Type `Delegated`
+* `Teampass`:
+  * `Read.All` with Type `Delegated`
+
+Don't forget to `Grant admin consent for Default Directory`.
+
+Finaly define the users allowaed to access this new Application
+
+### Setting up in Teampass
+
+Navigate to `OAuth` page from the administration, and provide the expected information.
+
+It is suggested to perform a test with a fake user.

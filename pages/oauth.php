@@ -148,7 +148,7 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
                                     </small>
                                 </div>
                                 <div class='col-7'>
-                                    <input type='text' class='form-control form-control-sm setting-oauth' id='oauth2_callback_url' value='<?php echo $SETTINGS['cpassman_url']; ?>'>
+                                    <input type='text' class='form-control form-control-sm setting-oauth' id='oauth2_callback_url' value='<?php echo $SETTINGS['cpassman_url'].'/'.OAUTH2_REDIRECTURI; ?>' disabled>
                                 </div>
                             </div>
 
@@ -167,6 +167,15 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
                                 </div>
                                 <div class='col-7'>
                                     <input type='password' class='form-control form-control-sm setting-oauth' id='oauth2_client_secret' value='<?php echo $SETTINGS['oauth2_client_secret'] ?? ''; ?>'>
+                                </div>
+                            </div>
+
+                            <div class='row mb-2 tr-ldap'>
+                                <div class='col-5'>
+                                    <?php echo $lang->get('tenant_id'); ?>
+                                </div>
+                                <div class='col-7'>
+                                    <input type='text' class='form-control form-control-sm setting-oauth' id='oauth2_tenant_id' value='<?php echo $SETTINGS['oauth2_tenant_id'] ?? ''; ?>'>
                                 </div>
                             </div>
 
@@ -208,51 +217,6 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
 
                             </div>
 
-                        </form>
-                    </div>
-
-                    <div class='card card-primary'>
-                        <div class='card-header'>
-                            <h3 class='card-title'><?php echo $lang->get('setup_wizard'); ?></h3>
-                        </div>
-                        <!-- /.card-header -->
-                        <!-- form start -->
-                        <form role='form-horizontal'>
-                            <div class='card-body'>
-                                <div class='tab-content mt-2' id=''>
-                                    <div class='row mb-2'>
-                                        <button type='button' class='btn btn-primary btn-sm  mr-2' id='but_perform_setup'>
-                                            <i class='fas fa-cog mr-2'></i><?php echo $lang->get('perform'); ?>
-                                        </button>
-                                    </div>
-                                    <div class='row mb-2'>
-                                        <div class='col-8'>
-<?php
-if (isset($_GET['code']) === true && isset($_GET['state']) === true) {
-    $get['code'] = filter_var($_GET['code'], FILTER_SANITIZE_SPECIAL_CHARS);
-    $get['state'] = filter_var($_GET['state'], FILTER_SANITIZE_SPECIAL_CHARS);
-    $get['session_state'] = filter_var($_GET['session_state'], FILTER_SANITIZE_SPECIAL_CHARS);
-
-    error_log('---- CALLBACK ----');
-
-    // Création d'une instance du contrôleur
-    $azureAuth = new AzureAuthController($SETTINGS, true);
-
-    // Traitement de la réponse de callback Azure
-    $azureAuth->getAllGroups();//callbackSetup();
-
-
-} 
-?>
-                                        </div>
-                                        <div class='col-4'>
-                                            
-                                        </div>
-                                    </div>
-                                       
-                                </div>
-
-                            </div>
                         </form>
                     </div>
                 

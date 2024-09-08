@@ -31,7 +31,7 @@ declare(strict_types=1);
 
 ?>
 <script type="text/javascript">
-    var debugJavascript = false;
+    var debugJavascript = true;
 
     // On page load
     $(function() {
@@ -58,7 +58,7 @@ declare(strict_types=1);
         $('#login').focus();
 
         // Page has beed reloaded due to session key inconsistency
-        if (store.get('teampassUser') !== null && typeof store.get('teampassUser') !== 'undefined'&& store.get('teampassUser').page_reload === 1) {
+        if (store.get('teampassUser') !== null && typeof store.get('teampassUser') !== 'undefined' && store.get('teampassUser').page_reload === 1) {
             // Set previous values
             $("#pw").val(store.get('teampassUser').pwd);
             $("#login").val(store.get('teampassUser').login);
@@ -71,6 +71,40 @@ declare(strict_types=1);
                 function(teampassUser) {
                     teampassUser.page_reload = 0;
                 }
+            );
+        }
+
+        // Manage case of oauth2 login
+        var userOauth2Info = <?php echo empty($userOauth2InfoJson) ? 'null' : $userOauth2InfoJson; ?>;
+        // Case of oauth2 login
+        if (userOauth2Info !== null && userOauth2Info['oauth2TokenUsed'] === false) {
+            // disable token
+            userOauth2Info['oauth2TokenUsed'] = true;
+            // get the Teampass login from userPrincipalName
+            userOauth2Info['login'] = userOauth2Info['userPrincipalName'].split("@")[0];
+
+            // manage cryto ID
+            function hashUserId(userId) {
+                const hash = CryptoJS.SHA256(userId);
+                return hash.toString(CryptoJS.enc.Hex).substring(0, 16);
+            }
+            $("#pw").val(hashUserId(userOauth2Info['id']));
+            
+            // store userOauth2Info   
+            store.set(
+                'userOauth2Info', userOauth2Info
+            );
+            
+            if (debugJavascript === true) {
+                console.log("We have an oauth2 login");
+            }
+
+            // launch identification process inside Teampass.
+            launchIdentify(false, "", "", false);
+        } else {
+            // clear userOauth2Info
+            store.set(
+                'userOauth2Info', ''
             );
         }
 
@@ -100,7 +134,7 @@ declare(strict_types=1);
             
             // Launch identification process inside Teampass.
             if (debugJavascript === true) {
-                console.log('User starts auth');
+                console.log('User starts auth through Duo');
             }
             
             launchIdentify(true, '<?php isset($nextUrl) === true ? $nextUrl : ''; ?>');
@@ -109,25 +143,28 @@ declare(strict_types=1);
         // Click on log in button
         $('#but_identify_user').click(function() {
             if (debugJavascript === true) {
-                console.log('User starts auth');
+                console.log('User starts auth through button but_identify_user click');
             }
             launchIdentify(false, '<?php isset($nextUrl) === true ? $nextUrl : ''; ?>');
         });
 
         // Click on log in button with Azure Entra
-        if($("#but_login_with_sso").length > 0) {
-            $('#but_login_with_sso').click(function() {
+        if($("#but_login_with_oauth2").length > 0) {
+            $('#but_login_with_oauth2').click(function() {
                 if (debugJavascript === true) {
-                    console.log('User starts auth with Azure');
-                }
+                console.log('User starts auth through button but_login_with_oauth2 click');
+            }
+                $('#but_login_with_oauth2, #but_identify_user').prop('disabled', true);
                 launchIdentify(false, '<?php isset($nextUrl) === true ? $nextUrl : ''; ?>', false, true);
             });
         }
-
+        
         // Relaunch authentication
-        if (($("#pw").val() !== "" || $("#login").val() !== "")) {
+        if (($("#pw").val() !== "" || $("#login").val() !== "") && store.get('userOauth2Info').oauth2LoginOngoing === false) {
             $(this).delay(500).queue(function() {
-                document.getElementById('but_identify_user').click();
+                if($("#but_identify_user").length > 0) {
+                    document.getElementById('but_identify_user').click();
+                }
                 $(this).dequeue();
             });
         }
@@ -506,9 +543,16 @@ declare(strict_types=1);
     /**
      * 
      */
-    function launchIdentify(isDuo, redirect, psk, sso = false) {
+    function launchIdentify(isDuo, redirect, psk, oauth2 = false) {
         if (redirect == undefined) {
             redirect = ""; //Check if redirection
+        }
+
+        // manage OAUTH2 login
+        // in this case we need to redirect in order to load oauth2 login page
+        if (oauth2 === true) {
+            document.location.href="includes/core/login.oauth2.php";
+            return false;
         }
 
         // Check credentials are set
@@ -569,12 +613,6 @@ declare(strict_types=1);
             console.log('KEY : <?php echo $session->get('key'); ?>')
         }
 
-        // manage SSO login
-        if (sso === true) {
-            document.location.href="includes/core/login.sso.php";
-            return false;
-        }
-
         // Get 2fa
         //TODO : je pense que cela pourrait etre modifié pour ne pas faire de requete ajax ; on dispose des infos via `get_teampass_settings`
         $.post(
@@ -586,7 +624,6 @@ declare(strict_types=1);
                 }
             },
             function(data) {
-                //data = prepareExchangedData(data, 'decode', "<?php echo $session->get('key'); ?>");
                 data = JSON.parse(data);
 
                 // Handle the case where the user doesn't exists.
@@ -711,16 +748,19 @@ declare(strict_types=1);
 
                 if (debugJavascript === true) {
                     console.log('Data submitted to identifyUser:');
-                    console.log(mfaData);
+                    console.log({...mfaData, ...store.get('userOauth2Info')});
                 }
                 
-                identifyUser(redirect, psk, mfaData, randomstring);
+                identifyUser(redirect, psk, mfaData, randomstring, store.get('userOauth2Info'));
+
+                // Clear userOauth2Info
+                //store.set('userOauth2Info', '');
             }
         );
     }
 
     //Identify user
-    function identifyUser(redirect, psk, data, randomstring) {
+    function identifyUser(redirect, psk, data, randomstring, oauth2Info) {
         var old_data = data;
         // Check if session is still existing
         //send query
@@ -729,7 +769,7 @@ declare(strict_types=1);
                 type: "identify_user",
                 login: $('#login').val(),
                 data: prepareExchangedData(
-                    JSON.stringify(data),
+                    JSON.stringify({...data, ...oauth2Info}),
                     'encode',
                     '<?php echo $session->get('key'); ?>'
                 ),
@@ -880,6 +920,8 @@ declare(strict_types=1);
                         window.location.href = './index.php?page=items';
                     }
                 }
+
+                $('#but_login_with_oauth2, #but_identify_user').prop('disabled', false);
 
                 // Clear Yubico
                 if ($("#yubico_key").length > 0) {

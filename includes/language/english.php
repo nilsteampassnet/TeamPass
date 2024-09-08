@@ -28,6 +28,7 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'tenant_id' => 'Tenant ID',
     'items_page_split_view_mode' => 'Show item details in page split view mode',
     'show_item_data' => 'Show item data in items list',
     'show_item_data_tip' => 'Permits to display extra information in the items list (username, email and url). This could be useful to have a quick view of the item content.',
@@ -57,7 +58,7 @@ return array(
     'token_endpoint' => 'Token Endpoint',
     'test_configuration' => 'Test configuration',
     'setup_wizard' => 'Setup Wizard',
-    'replace_tenant_id' => 'Please enter the tenant ID  in place of {tenant-id}.',
+    'replace_tenant_id' => 'Adapt the URL but keep {tenant-id} as is. It will be replaced live by the tenant ID.',
 
     'login_with_sso' => 'Login with SSO',
     'folder_created' => 'Folder created',

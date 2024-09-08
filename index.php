@@ -333,7 +333,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                                     <i class="fa-solid fa-user-circle fa-fw mr-2"></i><?php echo $lang->get('my_profile'); ?>
                                 </a>
                                 <?php
-                                    if (empty($session_auth_type) === false && $session_auth_type !== 'ldap') {
+                                    if (empty($session_auth_type) === false && $session_auth_type !== 'ldap' && $session_auth_type !== 'oauth2') {
                                         ?>
                                     <a class="dropdown-item user-menu" href="#" data-name="password-change">
                                         <i class="fa-solid fa-lock fa-fw mr-2"></i><?php echo $lang->get('index_change_pw'); ?>
@@ -572,17 +572,15 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                                     <i class="fa-solid fa-id-card nav-icon"></i>
                                     <p>' . $lang->get('ldap') . '</p>
                                 </a>
-                            </li>';
-if (WIP === true) {
-    echo '
+                            </li>
+
                             <li class="nav-item">
                                 <a href="#" data-name="oauth" class="nav-link', $get['page'] === 'oauth' ? ' active' : '', '">
                                     <i class="fa-solid fa-plug nav-icon"></i>
                                     <p>' . $lang->get('oauth') . '</p>
                                 </a>
-                            </li>';
-}
-echo '
+                            </li>
+                            
                             <li class="nav-item">
                                 <a href="#" data-name="uploads" class="nav-link', $get['page'] === 'uploads' ? ' active' : '', '">
                                     <i class="fa-solid fa-file-upload nav-icon"></i>
@@ -1125,8 +1123,9 @@ echo '
         exit;
     }
     
-    // LOGIN form
+    // LOGIN form  
     include $SETTINGS['cpassman_dir'] . '/includes/core/login.php';
+    
 } else {
     // Clear session
     $session->invalidate();

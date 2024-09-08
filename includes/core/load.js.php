@@ -559,7 +559,8 @@ $request = SymfonyRequest::createFromGlobals();
                         '<?php echo $lang->get('generate_new_keys_info'); ?>' +
                     '</div>' +
                     '<div class="hidden" id="new-encryption-div">' +
-                        '<div class="row">' +
+                     
+                        '<div class="row'+((store.get('teampassUser').auth_type !== 'ldap' && store.get('teampassUser').auth_type !== 'oauth2') ? '' : ' hidden') + '">' +
                             '<div class="input-group mb-2">' +
                                 '<div class="input-group-prepend">' +
                                     '<span class="input-group-text"><?php echo $lang->get('confirm_password'); ?></span>' +
