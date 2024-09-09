@@ -1243,10 +1243,14 @@ function buildEmail(
             $mail->addAddress($dest);
         }
         
+        // Check the email content to make sure it is safe
+        $textMailClean = $antiXss->xss_clean($textMail);
+        $textMailClean = htmlspecialchars($textMailClean, ENT_QUOTES, 'UTF-8');
+        if ($antiXss->isXssFound()) {
+            $textMail = $textMailClean;
+        }
         // Prepare HTML and AltBody
         $text_html = emailBody($textMail);
-        $text_html = $antiXss->xss_clean($text_html);
-        $text_html = htmlspecialchars($text_html, ENT_QUOTES, 'UTF-8');
         $mail->WordWrap = 80;
         $mail->isHtml(true);
         $mail->Subject = $subject;
