@@ -1322,26 +1322,27 @@
         },
         {
             "name": "hackzilla/password-generator",
-            "version": "1.6.0",
-            "version_normalized": "1.6.0.0",
+            "version": "1.7.0",
+            "version_normalized": "1.7.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/hackzilla/password-generator.git",
-                "reference": "53c13507b5b9875a07618f1f2a7db95e5b8c0638"
+                "reference": "743c8493d2c33ebf9496a1c3c248efeb568fe134"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/hackzilla/password-generator/zipball/53c13507b5b9875a07618f1f2a7db95e5b8c0638",
-                "reference": "53c13507b5b9875a07618f1f2a7db95e5b8c0638",
+                "url": "https://api.github.com/repos/hackzilla/password-generator/zipball/743c8493d2c33ebf9496a1c3c248efeb568fe134",
+                "reference": "743c8493d2c33ebf9496a1c3c248efeb568fe134",
                 "shasum": ""
             },
             "require": {
-                "php": ">=7.1.0"
+                "ext-mbstring": "*",
+                "php": ">=8.0"
             },
             "require-dev": {
                 "phpunit/phpunit": "^9.0"
             },
-            "time": "2021-01-13T23:18:24+00:00",
+            "time": "2024-08-23T17:13:49+00:00",
             "type": "library",
             "installation-source": "dist",
             "autoload": {
@@ -1363,7 +1364,7 @@
             "description": "Password Generator Library",
             "support": {
                 "issues": "https://github.com/hackzilla/password-generator/issues",
-                "source": "https://github.com/hackzilla/password-generator/tree/1.6.0"
+                "source": "https://github.com/hackzilla/password-generator/tree/1.7.0"
             },
             "install-path": "../hackzilla/password-generator"
         },
@@ -3501,17 +3502,17 @@
         },
         {
             "name": "symfony/finder",
-            "version": "v6.4.10",
-            "version_normalized": "6.4.10.0",
+            "version": "v6.4.11",
+            "version_normalized": "6.4.11.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/finder.git",
-                "reference": "af29198d87112bebdd397bd7735fbd115997824c"
+                "reference": "d7eb6daf8cd7e9ac4976e9576b32042ef7253453"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/finder/zipball/af29198d87112bebdd397bd7735fbd115997824c",
-                "reference": "af29198d87112bebdd397bd7735fbd115997824c",
+                "url": "https://api.github.com/repos/symfony/finder/zipball/d7eb6daf8cd7e9ac4976e9576b32042ef7253453",
+                "reference": "d7eb6daf8cd7e9ac4976e9576b32042ef7253453",
                 "shasum": ""
             },
             "require": {
@@ -3520,7 +3521,7 @@
             "require-dev": {
                 "symfony/filesystem": "^6.0|^7.0"
             },
-            "time": "2024-07-24T07:06:38+00:00",
+            "time": "2024-08-13T14:27:37+00:00",
             "type": "library",
             "installation-source": "dist",
             "autoload": {
@@ -3548,7 +3549,7 @@
             "description": "Finds files and directories via an intuitive fluent interface",
             "homepage": "https://symfony.com",
             "support": {
-                "source": "https://github.com/symfony/finder/tree/v6.4.10"
+                "source": "https://github.com/symfony/finder/tree/v6.4.11"
             },
             "funding": [
                 {
@@ -3648,17 +3649,17 @@
         },
         {
             "name": "symfony/mime",
-            "version": "v6.4.9",
-            "version_normalized": "6.4.9.0",
+            "version": "v6.4.11",
+            "version_normalized": "6.4.11.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/mime.git",
-                "reference": "7d048964877324debdcb4e0549becfa064a20d43"
+                "reference": "dba5d5f6073baf7a3576b580cc4a208b4ca00553"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/mime/zipball/7d048964877324debdcb4e0549becfa064a20d43",
-                "reference": "7d048964877324debdcb4e0549becfa064a20d43",
+                "url": "https://api.github.com/repos/symfony/mime/zipball/dba5d5f6073baf7a3576b580cc4a208b4ca00553",
+                "reference": "dba5d5f6073baf7a3576b580cc4a208b4ca00553",
                 "shasum": ""
             },
             "require": {
@@ -3684,7 +3685,7 @@
                 "symfony/property-info": "^5.4|^6.0|^7.0",
                 "symfony/serializer": "^6.4.3|^7.0.3"
             },
-            "time": "2024-06-28T09:49:33+00:00",
+            "time": "2024-08-13T12:15:02+00:00",
             "type": "library",
             "installation-source": "dist",
             "autoload": {
@@ -3716,7 +3717,7 @@
                 "mime-type"
             ],
             "support": {
-                "source": "https://github.com/symfony/mime/tree/v6.4.9"
+                "source": "https://github.com/symfony/mime/tree/v6.4.11"
             },
             "funding": [
                 {

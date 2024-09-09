@@ -55,7 +55,7 @@ class HumanPasswordGenerator extends AbstractPasswordGenerator
 
         foreach ($words as $i => $word) {
             $words[$i] = trim($word);
-            $wordLength = \strlen($word);
+            $wordLength = \mb_strlen($word);
 
             if ($wordLength > $maxWordLength || $wordLength < $minWordLength) {
                 unset($words[$i]);
@@ -82,7 +82,7 @@ class HumanPasswordGenerator extends AbstractPasswordGenerator
         $this->maxWordLength = 0;
 
         foreach ($words as $word) {
-            $wordLength = \strlen($word);
+            $wordLength = \mb_strlen($word);
 
             $this->minWordLength = min($wordLength, $this->minWordLength);
             $this->maxWordLength = max($wordLength, $this->maxWordLength);
@@ -95,7 +95,7 @@ class HumanPasswordGenerator extends AbstractPasswordGenerator
         $newWordList = array();
 
         foreach ($wordList as $word) {
-            $wordLength = strlen($word);
+            $wordLength = mb_strlen($word);
 
             if ($wordLength < $min || $wordLength > $max) {
                 continue;
@@ -152,8 +152,8 @@ class HumanPasswordGenerator extends AbstractPasswordGenerator
         }
 
         while(--$wordCount) {
-            $thisMin = $this->getLength() - strlen($password) - ($wordCount * $this->getMaxWordLength()) - (strlen($this->getWordSeparator()) * $wordCount);
-            $thisMax = $this->getLength() - strlen($password) - ($wordCount * $this->getMinWordLength()) - (strlen($this->getWordSeparator()) * $wordCount);
+            $thisMin = $this->getLength() - mb_strlen($password) - ($wordCount * $this->getMaxWordLength()) - (mb_strlen($this->getWordSeparator()) * $wordCount);
+            $thisMax = $this->getLength() - mb_strlen($password) - ($wordCount * $this->getMinWordLength()) - (mb_strlen($this->getWordSeparator()) * $wordCount);
 
             if ($thisMin < 1) {
                 $thisMin = $this->getMinWordLength();
@@ -172,7 +172,7 @@ class HumanPasswordGenerator extends AbstractPasswordGenerator
             }
         }
 
-        $desiredLength = $this->getLength() - strlen($password);
+        $desiredLength = $this->getLength() - mb_strlen($password);
         $password .= $this->randomWord($desiredLength, $desiredLength);
 
         return $password;
@@ -345,11 +345,13 @@ class HumanPasswordGenerator extends AbstractPasswordGenerator
      */
     public function getWordList()
     {
-        if (!file_exists($this->getParameter(self::PARAMETER_DICTIONARY_FILE))) {
-            throw new FileNotFoundException();
+        $filename = $this->getParameter(self::PARAMETER_DICTIONARY_FILE);
+
+        if ($filename === null || !file_exists($filename)) {
+            throw new FileNotFoundException($filename ?? 'No file provided');
         }
 
-        return $this->getParameter(self::PARAMETER_DICTIONARY_FILE);
+        return $filename;
     }
 
     /**
@@ -421,7 +423,7 @@ class HumanPasswordGenerator extends AbstractPasswordGenerator
     {
         $wordCount = $this->getWordCount();
 
-        return ($this->getMinWordLength() * $wordCount) + (strlen($this->getWordSeparator()) * ($wordCount - 1));
+        return ($this->getMinWordLength() * $wordCount) + (mb_strlen($this->getWordSeparator()) * ($wordCount - 1));
     }
 
     /**
@@ -433,6 +435,6 @@ class HumanPasswordGenerator extends AbstractPasswordGenerator
     {
         $wordCount = $this->getWordCount();
 
-        return ($this->getMaxWordLength() * $wordCount) + (strlen($this->getWordSeparator()) * ($wordCount - 1));
+        return ($this->getMaxWordLength() * $wordCount) + (mb_strlen($this->getWordSeparator()) * ($wordCount - 1));
     }
 }

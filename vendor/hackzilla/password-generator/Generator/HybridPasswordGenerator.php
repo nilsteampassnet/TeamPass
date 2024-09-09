@@ -48,7 +48,7 @@ class HybridPasswordGenerator extends ComputerPasswordGenerator
     public function generatePassword()
     {
         $characterList = $this->getCharacterList()->getCharacters();
-        $characters = \strlen($characterList);
+        $characters = \mb_strlen($characterList);
         $password = '';
 
         $segmentCount = $this->getSegmentCount();

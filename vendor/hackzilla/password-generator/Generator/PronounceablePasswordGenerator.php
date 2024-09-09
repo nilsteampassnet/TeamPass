@@ -19,12 +19,12 @@ class PronounceablePasswordGenerator extends ComputerPasswordGenerator
     {
         $vowels = $this->getParameter(self::PARAMETER_VOWELS, '');
 
-        if (!strlen($vowels)) {
+        if (!mb_strlen($vowels)) {
             return parent::generatePassword();
         }
 
         $characterList = $this->getCharacterList()->getCharacters();
-        $charactersCount = strlen($characterList);
+        $charactersCount = mb_strlen($characterList);
         $password = '';
 
         $length = $this->getLength();

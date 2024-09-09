@@ -242,7 +242,7 @@ class RequirementPasswordGenerator extends ComputerPasswordGenerator
         foreach ($this->validOptions as $option) {
             $minCount = $this->getMinimumCount($option);
             $maxCount = $this->getMaximumCount($option);
-            $count = strlen(preg_replace('|[^'.preg_quote($this->getParameter($option)).']|', '', $password));
+            $count = mb_strlen(preg_replace('|[^'.preg_quote($this->getParameter($option)).']|u', '', $password));
 
             if (!is_null($minCount) && $count < $minCount) {
                 return false;

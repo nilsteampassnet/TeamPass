@@ -4,14 +4,14 @@ namespace Hackzilla\PasswordGenerator\Model;
 
 class CharacterSet
 {
-    private $characters;
+    private string $characters;
 
     /**
      * CharacterSet constructor.
      *
      * @param string $characters
      */
-    public function __construct($characters)
+    public function __construct(string $characters)
     {
         $this->characters = $characters;
     }
@@ -21,7 +21,7 @@ class CharacterSet
      *
      * @return string
      */
-    public function getCharacters()
+    public function getCharacters(): string
     {
         return $this->characters;
     }
@@ -31,10 +31,6 @@ class CharacterSet
      */
     public function __toString()
     {
-        if (!is_string($this->characters)) {
-            return '';
-        }
-
         return $this->characters;
     }
 }

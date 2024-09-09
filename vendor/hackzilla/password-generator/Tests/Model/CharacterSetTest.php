@@ -24,7 +24,6 @@ class CharacterSetTest extends \PHPUnit\Framework\TestCase
         return array(
             array('ABC', 'ABC'),
             array('', ''),
-            array(null, null),
         );
     }
 
@@ -47,7 +46,6 @@ class CharacterSetTest extends \PHPUnit\Framework\TestCase
         return array(
             array('ABC', 'ABC'),
             array('', ''),
-            array(null, ''),
         );
     }
 }

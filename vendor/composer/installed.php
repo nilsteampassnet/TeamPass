@@ -173,12 +173,12 @@
             'dev_requirement' => false,
         ),
         'hackzilla/password-generator' => array(
-            'pretty_version' => '1.6.0',
-            'version' => '1.6.0.0',
+            'pretty_version' => '1.7.0',
+            'version' => '1.7.0.0',
             'type' => 'library',
             'install_path' => __DIR__ . '/../hackzilla/password-generator',
             'aliases' => array(),
-            'reference' => '53c13507b5b9875a07618f1f2a7db95e5b8c0638',
+            'reference' => '743c8493d2c33ebf9496a1c3c248efeb568fe134',
             'dev_requirement' => false,
         ),
         'illuminate/collections' => array(
@@ -551,12 +551,12 @@
             ),
         ),
         'symfony/finder' => array(
-            'pretty_version' => 'v6.4.10',
-            'version' => '6.4.10.0',
+            'pretty_version' => 'v6.4.11',
+            'version' => '6.4.11.0',
             'type' => 'library',
             'install_path' => __DIR__ . '/../symfony/finder',
             'aliases' => array(),
-            'reference' => 'af29198d87112bebdd397bd7735fbd115997824c',
+            'reference' => 'd7eb6daf8cd7e9ac4976e9576b32042ef7253453',
             'dev_requirement' => false,
         ),
         'symfony/http-client-contracts' => array(
@@ -575,12 +575,12 @@
             'dev_requirement' => false,
         ),
         'symfony/mime' => array(
-            'pretty_version' => 'v6.4.9',
-            'version' => '6.4.9.0',
+            'pretty_version' => 'v6.4.11',
+            'version' => '6.4.11.0',
             'type' => 'library',
             'install_path' => __DIR__ . '/../symfony/mime',
             'aliases' => array(),
-            'reference' => '7d048964877324debdcb4e0549becfa064a20d43',
+            'reference' => 'dba5d5f6073baf7a3576b580cc4a208b4ca00553',
             'dev_requirement' => false,
         ),
         'symfony/password-hasher' => array(

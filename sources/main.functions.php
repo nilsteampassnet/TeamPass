@@ -1210,22 +1210,11 @@ function buildEmail(
     // Load PHPMailer
     $mail = new PHPMailer(true);
     $languageDir = $SETTINGS['cpassman_dir'] . '/vendor/phpmailer/phpmailer/language/';
-    // Load AntiXSS
-    $antiXss = new AntiXSS();
 
     try {
         // Set language and SMTPDebug
         $mail->setLanguage('en', $languageDir);
         $mail->SMTPDebug = ($cron || $silent) ? 0 : $SETTINGS['email_debug_level'];
-        
-        /*
-        // Define custom Debug output function
-        $mail->Debugoutput = function($str, $level) {
-            // Path to your log file
-            $logFilePath = '/var/log/phpmailer.log';
-            file_put_contents($logFilePath, gmdate('Y-m-d H:i:s'). "\t$level\t$str\n", FILE_APPEND | LOCK_EX);
-        };
-        */
 
         // Configure SMTP
         $mail->isSMTP();

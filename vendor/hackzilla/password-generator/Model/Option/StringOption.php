@@ -29,7 +29,9 @@ class StringOption extends Option
             throw new InvalidArgumentException('String required');
         }
 
-        if ($this->minRange > strlen($value) || $this->maxRange < strlen($value)) {
+        $strlen = mb_strlen($value);
+
+        if ($this->minRange > $strlen || $this->maxRange < $strlen) {
             throw new InvalidArgumentException('Invalid Value');
         }
 

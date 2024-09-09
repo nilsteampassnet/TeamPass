@@ -2242,8 +2242,8 @@ function identifyDoInitialChecks(
 {
     $session = SessionManager::getSession();
     $checks = new initialChecks();
-    $enableAdUserAutoCreation = $settings['enable_ad_user_auto_creation'] ?? false;
-    $oauth2Enabled = $settings['oauth2_enabled'] ?? false;
+    $enableAdUserAutoCreation = $SETTINGS['enable_ad_user_auto_creation'] ?? false;
+    $oauth2Enabled = $SETTINGS['oauth2_enabled'] ?? false;
     $lang = new Language($session->get('user-language') ?? 'english');
     
     // Brute force management

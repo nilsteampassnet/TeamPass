@@ -349,7 +349,7 @@ class HumanPasswordGeneratorTest extends \PHPUnit\Framework\TestCase
         $this->_object->setWordCount(3);
         $this->_object->setWordSeparator('-');
 
-        $this->assertEquals($length, \strlen($this->_object->generatePassword()));
+        $this->assertEquals($length, \mb_strlen($this->_object->generatePassword()));
     }
 
     public function fixedPasswordsProvider()

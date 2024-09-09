@@ -38,12 +38,12 @@ class PronounceablePasswordGeneratorTest extends \PHPUnit\Framework\TestCase
 
         $passwords = $this->_object->generatePasswords(10);
         foreach ($passwords as $password) {
-            $passwordLen = strlen($password);
+            $passwordLen = mb_strlen($password);
             $isLastCharVowel = null;
 
             for ($i = 0; $i < $passwordLen; $i++) {
                 $char = $password[$i];
-                $isVowel = false !== stripos($vowels, $char);
+                $isVowel = false !== mb_stripos($vowels, $char);
                 if (null !== $isLastCharVowel) {
                     $this->assertNotEquals($isVowel, $isLastCharVowel);
                 }

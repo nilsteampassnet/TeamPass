@@ -22,7 +22,7 @@ class DummyPasswordGenerator extends AbstractPasswordGenerator
         $length = $this->getOptionValue(self::OPTION_LENGTH);
 
         if ($length < 8) {
-            return \substr('password', 0, $length);
+            return \mb_substr('password', 0, $length);
         }
 
         return str_pad('password', $length, '?');

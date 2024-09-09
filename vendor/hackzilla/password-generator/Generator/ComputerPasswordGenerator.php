@@ -68,7 +68,7 @@ class ComputerPasswordGenerator extends AbstractPasswordGenerator
         }
 
         if ($this->getOptionValue(self::OPTION_AVOID_SIMILAR)) {
-            $removeCharacters = \str_split($this->getParameter(self::PARAMETER_SIMILAR, ''));
+            $removeCharacters = \mb_str_split($this->getParameter(self::PARAMETER_SIMILAR, ''));
             $characters = \str_replace($removeCharacters, '', $characters);
         }
 
@@ -87,13 +87,14 @@ class ComputerPasswordGenerator extends AbstractPasswordGenerator
     public function generatePassword()
     {
         $characterList = $this->getCharacterList()->getCharacters();
-        $characters = \strlen($characterList);
+        $characters = \mb_strlen($characterList);
         $password = '';
 
         $length = $this->getLength();
 
         for ($i = 0; $i < $length; ++$i) {
-            $password .= $characterList[$this->randomInteger(0, $characters - 1)];
+            $randomIndex = $this->randomInteger(0, $characters - 1);
+            $password .= \mb_substr($characterList, $randomIndex, 1);
         }
 
         return $password;
@@ -101,8 +102,6 @@ class ComputerPasswordGenerator extends AbstractPasswordGenerator
 
     /**
      * Password length.
-     *
-     * @return int
      */
     public function getLength()
     {
