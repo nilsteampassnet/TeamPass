@@ -2424,7 +2424,6 @@ function shouldUserAuthWithOauth2(
     string $username
 ): array
 {
-    $session = SessionManager::getSession();
     // Prepare Oauth2 connection if set up
     if ((int) $SETTINGS['oauth2_enabled'] === 1
         && $username !== 'admin'
@@ -2493,7 +2492,6 @@ function createOauth2User(
             $SETTINGS
         );
         $userInfo = $userInfo + $ret;
-        error_log(print_r($userInfo, true));
 
         // prepapre background tasks for item keys generation  
         handleUserKeys(
