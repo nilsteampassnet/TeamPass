@@ -1239,7 +1239,11 @@ class EmailSettings
 function sanitizeEmailBody($textMail, $antiXss): string
 {
     $textMailClean = $antiXss->xss_clean($textMail);
-    return htmlspecialchars($textMailClean, ENT_QUOTES, 'UTF-8');
+    if ($antiXss->isXssFound()) {
+        return htmlspecialchars($textMailClean, ENT_QUOTES, 'UTF-8');
+    }
+
+    return $textMail;
 }
 
 
