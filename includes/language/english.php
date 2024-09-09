@@ -28,6 +28,9 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'user_exists_but_not_oauth2' => 'User has to authenticate using Entra/Azure AD',
+    'user_not_allowed_to_auth_to_teampass_app' => 'User is not allowed to authenticate with Teampass application',
+    'user_is_not_auth_with_oauth2' => 'User should not authenticate with Entra/Azure AD',
     'tenant_id' => 'Tenant ID',
     'items_page_split_view_mode' => 'Show item details in page split view mode',
     'show_item_data' => 'Show item data in items list',

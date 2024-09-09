@@ -1210,6 +1210,8 @@ function buildEmail(
     // Load PHPMailer
     $mail = new PHPMailer(true);
     $languageDir = $SETTINGS['cpassman_dir'] . '/vendor/phpmailer/phpmailer/language/';
+    // Load AntiXSS
+    $antiXss = new AntiXSS();
 
     try {
         // Set language and SMTPDebug

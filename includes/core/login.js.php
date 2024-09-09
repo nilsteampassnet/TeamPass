@@ -145,6 +145,8 @@ declare(strict_types=1);
             if (debugJavascript === true) {
                 console.log('User starts auth through button but_identify_user click');
             }
+            // Clear userOauth2Info
+            store.set('userOauth2Info', '');
             launchIdentify(false, '<?php isset($nextUrl) === true ? $nextUrl : ''; ?>');
         });
 
@@ -752,9 +754,6 @@ declare(strict_types=1);
                 }
                 
                 identifyUser(redirect, psk, mfaData, randomstring, store.get('userOauth2Info'));
-
-                // Clear userOauth2Info
-                //store.set('userOauth2Info', '');
             }
         );
     }

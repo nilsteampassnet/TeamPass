@@ -426,12 +426,15 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         (int) $userLdap['user_info']['has_been_created']
     );
     if ($userOauth2['error'] === true) {
-        // deepcode ignore ServerLeak: File and path are secured directly inside the function decryptFile()
+        $session->set('userOauth2Info', '');
+        // deepcode ignore ServerLeak: File and path are secured directly inside the function decryptFile()        
         echo prepareExchangedData(
-            $userOauth2['array'],
+            [
+                'error' => true,
+                'message' => $lang->get($userOauth2['message']),
+            ],
             'encode'
         );
-        $session->remove('userOauth2Info');
         return false;
     }
    
@@ -2156,6 +2159,7 @@ class initialChecks {
         }
         // We cannot create a user with LDAP if the OAuth2 login is ongoing
         $oauth2LoginOngoing = isset($session->get('userOauth2Info')['oauth2LoginOngoing']) ? $session->get('userOauth2Info')['oauth2LoginOngoing'] : false;
+        $data['oauth2_login_ongoing'] = $oauth2LoginOngoing;
         $data['ldap_user_to_be_created'] = $enable_ad_user_auto_creation === true && DB::count() === 0 && $oauth2LoginOngoing !== true ? true : false;
         $data['oauth2_user_to_be_created'] = $oauth2_enabled === true && DB::count() === 0 && $oauth2LoginOngoing === true ? true : false;
 
@@ -2414,6 +2418,51 @@ function identifyDoLDAPChecks(
 }
 
 
+function shouldUserAuthWithOauth2(
+    array $SETTINGS,
+    array $userInfo,
+    string $username
+): array
+{
+    $session = SessionManager::getSession();
+    // Prepare Oauth2 connection if set up
+    if ((int) $SETTINGS['oauth2_enabled'] === 1
+        && $username !== 'admin'
+    ) {
+        // User has started to auth with oauth2
+        if ((bool) $userInfo['oauth2_login_ongoing'] === true) {
+            // Case where user exists in Teampass but not allowed to auth with Oauth2        
+            if ((string) $userInfo['auth_type'] === 'ldap' || (string) $userInfo['auth_type'] === 'local') {
+                return [
+                    'error' => true,
+                    'message' => 'user_exists_but_not_oauth2',
+                ];
+            } elseif ((string) $userInfo['auth_type'] !== 'oauth2') {
+                // Case where auth_type is not managed
+                return [
+                    'error' => true,
+                    'message' => 'user_not_allowed_to_auth_to_teampass_app',
+                ];
+            }
+        } else {
+            // User has started to auth the normal way
+            if ((string) $userInfo['auth_type'] === 'oauth2') {
+                // Case where user exists in Teampass but not allowed to auth with Oauth2
+                return [
+                    'error' => true,
+                    'message' => 'user_exists_but_not_oauth2',
+                ];
+            }
+        }
+    }
+
+    // return if no addmin
+    return [
+        'error' => false,
+        'message' => '',
+    ];
+}
+
 function createOauth2User(
     array $SETTINGS,
     array $userInfo,
@@ -2422,7 +2471,7 @@ function createOauth2User(
     int $userLdapHasBeenCreated
 ): array
 {
-    error_log($SETTINGS['oauth2_enabled']." -- ".$username." -- ".$userInfo['oauth2_user_to_be_created']." -- ".$userLdapHasBeenCreated);
+    //error_log($SETTINGS['oauth2_enabled']." -- ".$username." -- ".$userInfo['oauth2_user_to_be_created']." -- ".$userLdapHasBeenCreated);
     // Prepare creating the new oauth2 user in Teampass
     if ((int) $SETTINGS['oauth2_enabled'] === 1
         && $username !== 'admin'
@@ -2433,7 +2482,7 @@ function createOauth2User(
         $lang = new Language($session->get('user-language') ?? 'english');
         
         // Create Oauth2 user if not exists and tasks enabled
-        $userInfo = externalAdCreateUser(
+        $ret = externalAdCreateUser(
             $username,
             $passwordClear,
             $userInfo['mail'],
@@ -2443,6 +2492,8 @@ function createOauth2User(
             is_null($userInfo['groups']) ? [] : $userInfo['groups'],
             $SETTINGS
         );
+        $userInfo = $userInfo + $ret;
+        error_log(print_r($userInfo, true));
 
         // prepapre background tasks for item keys generation  
         handleUserKeys(
@@ -2472,6 +2523,19 @@ function createOauth2User(
     } elseif ((int) $SETTINGS['oauth2_enabled'] === 1
         && isset($userInfo['id']) === true && empty($userInfo['id']) === false
     ) {
+        // CHeck if user should use oauth2
+        $ret = shouldUserAuthWithOauth2(
+            $SETTINGS,
+            $userInfo,
+            $username
+        );
+        if ($ret['error'] === true) {
+            return [
+                'error' => true,
+                'message' => $ret['message'],
+            ];
+        }
+        
         // Oauth2 user already exists and authenticated
         error_log("--- USER AUTHENTICATED ---");
         $userInfo['has_been_created'] = 0;
