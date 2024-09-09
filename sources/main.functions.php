@@ -1161,11 +1161,12 @@ function sendEmail(
     }
 
     // Build and send email
+    $emailSettings = new EmailSettings($SETTINGS);
     $email = buildEmail(
         $subject,
         $textMail,
         $email,
-        $SETTINGS,
+        $emailSettings,
         $textMailAlt = null,
         $silent = true,
         $cron
@@ -1196,85 +1197,160 @@ function sendEmail(
     );
 }
 
+/**
+ * Class to manage email settings.
+ */
+class EmailSettings
+{
+    public $smtpServer;
+    public $smtpAuth;
+    public $authUsername;
+    public $authPassword;
+    public $port;
+    public $security;
+    public $from;
+    public $fromName;
+    public $debugLevel;
+    public $dir;
 
+    public function __construct(array $SETTINGS)
+    {
+        $this->smtpServer = $SETTINGS['email_smtp_server'];
+        $this->smtpAuth = (int) $SETTINGS['email_smtp_auth'] === 1;
+        $this->authUsername = $SETTINGS['email_auth_username'];
+        $this->authPassword = $SETTINGS['email_auth_pwd'];
+        $this->port = (int) $SETTINGS['email_port'];
+        $this->security = $SETTINGS['email_security'];
+        $this->from = $SETTINGS['email_from'];
+        $this->fromName = $SETTINGS['email_from_name'];
+        $this->debugLevel = $SETTINGS['email_debug_level'];
+        $this->dir = $SETTINGS['cpassman_dir'];
+    }
+}
+
+/**
+ * function to sanitize email body
+ * 
+ * @param string $textMail email body
+ * @param object $antiXss  AntiXSS object
+ * 
+ * @return string
+ */
+function sanitizeEmailBody($textMail, $antiXss): string
+{
+    $textMailClean = $antiXss->xss_clean($textMail);
+    return htmlspecialchars($textMailClean, ENT_QUOTES, 'UTF-8');
+}
+
+
+/**
+ * Function to configure the mailer
+ * 
+ * @param object $mail          PHPMailer object
+ * @param object $emailSettings EmailSettings object
+ * @param bool   $silent        Silent mode
+ * @param bool   $cron          Cron mode
+ * 
+ * @return void
+ */
+function configureMailer($mail, $emailSettings, $silent, $cron): void
+{
+    $mail->setLanguage('en', $emailSettings->dir . '/vendor/phpmailer/phpmailer/language/');
+    $mail->SMTPDebug = ($cron || $silent) ? 0 : $emailSettings->debugLevel;
+    $mail->isSMTP();
+    $mail->Host = $emailSettings->smtpServer;
+    $mail->SMTPAuth = $emailSettings->smtpAuth;
+    $mail->Username = $emailSettings->authUsername;
+    $mail->Password = $emailSettings->authPassword;
+    $mail->Port = $emailSettings->port;
+    $mail->SMTPSecure = $emailSettings->security !== 'none' ? $emailSettings->security : '';
+    $mail->SMTPAutoTLS = $emailSettings->security !== 'none';
+    $mail->CharSet = 'utf-8';
+    $mail->SMTPOptions = [
+        'ssl' => [
+            'verify_peer' => false,
+            'verify_peer_name' => false,
+            'allow_self_signed' => true,
+        ],
+    ];
+    $mail->From = $emailSettings->from;
+    $mail->FromName = $emailSettings->fromName;
+}
+
+/**
+ * Function to add recipients to the mailer
+ *
+ * @param object $mail  PHPMailer object
+ * @param string $email email
+ * 
+ * @return void
+ */
+function addRecipients($mail, $email): void
+{
+    foreach (array_filter(explode(',', $email)) as $dest) {
+        $mail->addAddress($dest);
+    }
+}
+
+/**
+ * Function to build an email
+ * 
+ * @param string        $subject       email subject
+ * @param string        $textMail      email message
+ * @param string        $email         email
+ * @param EmailSettings $emailSettings EmailSettings object
+ * @param string        $textMailAlt   email message alt
+ * @param bool          $silent        Silent mode
+ * @param bool          $cron          Cron mode
+ * 
+ * @return string
+ */
 function buildEmail(
     $subject,
     $textMail,
     $email,
-    $SETTINGS,
+    EmailSettings $emailSettings,
     $textMailAlt = null,
     $silent = true,
     $cron = false
-)
+): string
 {
-    // Load PHPMailer
+    // Charger PHPMailer et AntiXSS
     $mail = new PHPMailer(true);
-    $languageDir = $SETTINGS['cpassman_dir'] . '/vendor/phpmailer/phpmailer/language/';
-    // Load AntiXSS
     $antiXss = new AntiXSS();
 
     try {
-        // Set language and SMTPDebug
-        $mail->setLanguage('en', $languageDir);
-        $mail->SMTPDebug = ($cron || $silent) ? 0 : $SETTINGS['email_debug_level'];
+        // Configurer le mailer
+        configureMailer($mail, $emailSettings, $silent, $cron);
 
-        // Configure SMTP
-        $mail->isSMTP();
-        $mail->Host = $SETTINGS['email_smtp_server'];
-        $mail->SMTPAuth = (int) $SETTINGS['email_smtp_auth'] === 1;
-        $mail->Username = $SETTINGS['email_auth_username'];
-        $mail->Password = $SETTINGS['email_auth_pwd'];
-        $mail->Port = (int) $SETTINGS['email_port'];
-        $mail->SMTPSecure = $SETTINGS['email_security'] !== 'none' ? $SETTINGS['email_security'] : '';
-        $mail->SMTPAutoTLS = $SETTINGS['email_security'] !== 'none';
-        $mail->CharSet = 'utf-8';   //#4143
-        $mail->SMTPOptions = [
-            'ssl' => [
-                'verify_peer' => false,
-                'verify_peer_name' => false,
-                'allow_self_signed' => true,
-            ],
-        ];
+        // Ajouter les destinataires
+        addRecipients($mail, $email);
 
-        // Set From and FromName
-        $mail->From = $SETTINGS['email_from'];
-        $mail->FromName = $SETTINGS['email_from_name'];
+        // Nettoyer le contenu du mail et vérifier le XSS
+        $textMail = sanitizeEmailBody($textMail, $antiXss);
 
-        // Prepare recipients
-        foreach (array_filter(explode(',', $email)) as $dest) {
-            $mail->addAddress($dest);
-        }
-        
-        // Check the email content to make sure it is safe
-        $textMailClean = $antiXss->xss_clean($textMail);
-        $textMailClean = htmlspecialchars($textMailClean, ENT_QUOTES, 'UTF-8');
-        if ($antiXss->isXssFound()) {
-            $textMail = $textMailClean;
-        }
-        // Prepare HTML and AltBody
-        $text_html = emailBody($textMail);
-        $mail->WordWrap = 80;
+        // Préparer le contenu du mail
         $mail->isHtml(true);
+        $mail->WordWrap = 80;
         $mail->Subject = $subject;
-        $mail->Body = $text_html;
-        $mail->AltBody = is_null($textMailAlt) ? '' : $textMailAlt;
-        
-        // Send email
+        $mail->Body = emailBody($textMail);  // emailBody doit être définie ailleurs dans le code
+        $mail->AltBody = $textMailAlt ?? '';
+
+        // Envoyer l'email
         $mail->send();
         $mail->smtpClose();
-        
+
         return '';
+
     } catch (Exception $e) {
         error_log('Error sending email: ' . $e->getMessage());
-        if (!$silent || (int) $SETTINGS['email_debug_level'] !== 0) {
-            return json_encode([
-                'error' => true,
-                'errorInfo' => str_replace(["\n", "\t", "\r"], '', $mail->ErrorInfo),
-            ]);
-        }
-        return '';
+        return ($silent || $emailSettings->debugLevel === 0) ? '' : json_encode([
+            'error' => true,
+            'errorInfo' => str_replace(["\n", "\t", "\r"], '', $mail->ErrorInfo),
+        ]);
     }
 }
+
 
 /**
  * Returns the email body.
