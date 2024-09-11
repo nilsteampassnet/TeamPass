@@ -80,11 +80,15 @@ class EmailService
     // Fonction pour nettoyer le contenu de l'email et prévenir les attaques XSS
     public function sanitizeEmailBody($textMail)
     {
+        // Nettoyage Anti-XSS pour garantir que $textMail est sécurisé avant utilisation
         $textMailClean = $this->antiXSS->xss_clean($textMail);
+
+        // Si un XSS potentiel est détecté, on échappe les caractères spéciaux pour se protéger
         if ($this->antiXSS->isXssFound()) {
             return htmlspecialchars($textMailClean, ENT_QUOTES, 'UTF-8');
         }
 
+        // Si aucun XSS n'est trouvé, retourner le texte original
         return $textMail;
     }
 
