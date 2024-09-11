@@ -37,6 +37,8 @@ use TeampassClasses\Language\Language;
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\ConfigManager\ConfigManager;
 use TeampassClasses\PasswordManager\PasswordManager;
+use TeampassClasses\EmailService\EmailService;
+use TeampassClasses\EmailService\EmailSettings;
 
 // Load functions
 require_once 'main.functions.php';
@@ -2712,7 +2714,9 @@ if (null !== $post_type) {
 
             // Send email to new user
             if (isset($SETTINGS['enable_tasks_manager']) === false || (int) $SETTINGS['enable_tasks_manager'] === 0) {
-                sendEmail(
+                $emailSettings = new EmailSettings($SETTINGS);
+                $emailService = new EmailService();
+                $emailService->sendMail(
                     $lang->get('email_subject_new_user'),
                     str_replace(
                         array('#tp_login#', '#enc_code#', '#tp_link#'),
@@ -2720,7 +2724,7 @@ if (null !== $post_type) {
                         $lang->get('email_body_user_added_from_ldap_encryption_code')
                     ),
                     $post_email,
-                    $SETTINGS
+                    $emailSettings
                 );
             }
 
@@ -2782,7 +2786,9 @@ if (null !== $post_type) {
                 WHERE id = %i',
                 $post_userId
             );
-            sendEmail(
+            $emailSettings = new EmailSettings($SETTINGS);
+            $emailService = new EmailService();
+            $emailService->sendMail(
                 'TEAMPASS - ' . $lang->get('temporary_encryption_code'),
                 str_replace(
                     array('#enc_code#'),
@@ -2790,7 +2796,7 @@ if (null !== $post_type) {
                     $lang->get('email_body_user_added_from_ldap_encryption_code')
                 ),
                 $userInfo['email'],
-                $SETTINGS
+                $emailSettings
             );
 
 

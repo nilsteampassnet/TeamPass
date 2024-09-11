@@ -39,6 +39,8 @@ use RobThree\Auth\TwoFactorAuth;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\ConfigManager\ConfigManager;
+use TeampassClasses\EmailService\EmailService;
+use TeampassClasses\EmailService\EmailSettings;
 
 // Load functions
 require_once 'main.functions.php';
@@ -1197,6 +1199,9 @@ function sendEmailsNotSent(
     array $SETTINGS
 )
 {
+    $emailSettings = new EmailSettings($SETTINGS);
+    $emailService = new EmailService();
+
     if (isKeyExistingAndEqual('enable_send_email_on_user_login', 1, $SETTINGS) === true) {
         $row = DB::queryFirstRow(
             'SELECT valeur FROM ' . prefixTable('misc') . ' WHERE type = %s AND intitule = %s',
@@ -1214,11 +1219,11 @@ function sendEmailsNotSent(
             foreach ($rows as $record) {
                 // Send email
                 $ret = json_decode(
-                    sendEmail(
+                    $emailService->sendMail(
                         $record['subject'],
                         $record['body'],
                         $record['receivers'],
-                        $SETTINGS
+                        $emailSettings
                     ),
                     true
                 );

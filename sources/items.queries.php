@@ -39,6 +39,8 @@ use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\ConfigManager\ConfigManager;
 use OTPHP\TOTP;
+use TeampassClasses\EmailService\EmailService;
+use TeampassClasses\EmailService\EmailSettings;
 
 // Load functions
 require_once 'main.functions.php';
@@ -6884,6 +6886,8 @@ switch ($inputData['type']) {
         );
 
         // notify Managers
+        $emailSettings = new EmailSettings($SETTINGS);
+        $emailService = new EmailService();
         $rows = DB::query(
             'SELECT email
             FROM ' . prefixTable('users') . '
@@ -6891,11 +6895,11 @@ switch ($inputData['type']) {
             1
         );
         foreach ($rows as $record) {
-            sendEmail(
+            $emailService->sendMail(
                 $lang->get('suggestion_notify_subject'),
                 str_replace(array('#tp_label#', '#tp_user#', '#tp_folder#'), array(addslashes($label), addslashes($resp_user['login']), addslashes($resp_folder['title'])), $lang->get('suggestion_notify_body')),
                 $record['email'],
-                $SETTINGS
+                $emailSettings
             );
         }
 

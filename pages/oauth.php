@@ -29,7 +29,6 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-
 use TeampassClasses\SessionManager\SessionManager;
 use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use TeampassClasses\Language\Language;

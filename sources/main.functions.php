@@ -52,6 +52,8 @@ use Symfony\Component\Process\Process;
 use Symfony\Component\Process\PhpExecutableFinder;
 use TeampassClasses\Encryption\Encryption;
 use TeampassClasses\ConfigManager\ConfigManager;
+use TeampassClasses\EmailService\EmailService;
+use TeampassClasses\EmailService\EmailSettings;
 
 header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, must-revalidate');
@@ -1138,7 +1140,7 @@ function prepareSendingEmail(
  *
  * @return string some json info
  */
-function sendEmail(
+function sendEmail1(
     $subject,
     $textMail,
     $email,
@@ -1162,7 +1164,8 @@ function sendEmail(
 
     // Build and send email
     $emailSettings = new EmailSettings($SETTINGS);
-    $email = buildEmail(
+    $emailService = new EmailService();
+    $email = $emailService->sendMail(
         $subject,
         $textMail,
         $email,
@@ -1200,7 +1203,7 @@ function sendEmail(
 /**
  * Class to manage email settings.
  */
-class EmailSettings
+class EmailSettings1
 {
     public $smtpServer;
     public $smtpAuth;
@@ -4533,6 +4536,9 @@ function sendMailToUser(
     bool $immediate_email = false
 ): ?string {
     global $SETTINGS;
+    $emailSettings = new EmailSettings($SETTINGS);
+    $emailService = new EmailService();
+    
     if (count($post_replace) > 0 && is_null($post_replace) === false) {
         $post_body = str_replace(
             array_keys($post_replace),
@@ -4542,11 +4548,12 @@ function sendMailToUser(
     }
 
     if ($immediate_email === true) {
-        $ret = sendEmail(
+        
+        $ret = $emailService->sendMail(
             $post_subject,
             $post_body,
             $post_receipt,
-            $SETTINGS,
+            $emailSettings,
             '',
             false
         );

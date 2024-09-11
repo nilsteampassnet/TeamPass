@@ -119,6 +119,13 @@
             "options": {
                 "symlink": false
             }
+        },
+        {
+            "type": "path",
+            "url": "includes/libraries/teampassclasses/emailservice",
+            "options": {
+                "symlink": false
+            }
         }
     ],
     "require": {
@@ -141,6 +148,7 @@
         "teampassclasses/passwordmanager": "dev-master",
         "teampassclasses/azureauthcontroller": "dev-master",
         "teampassclasses/configmanager": "dev-master",
+        "teampassclasses/emailservice": "dev-master",
         "illuminate/contracts": "^10.32",
         "illuminate/collections": "^10.48",
         "nesbot/carbon": "^2.71",

@@ -37,6 +37,8 @@ use TeampassClasses\ConfigManager\ConfigManager;
 use TeampassClasses\NestedTree\NestedTree;
 use Duo\DuoUniversal\Client;
 use Duo\DuoUniversal\DuoException;
+use TeampassClasses\EmailService\EmailSettings;
+use TeampassClasses\EmailService\EmailService;
 
 // Load functions
 require_once 'main.functions.php';
@@ -1229,12 +1231,15 @@ switch ($post_type) {
             require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
 
             //send email
-            sendEmail(
+            $emailSettings = new EmailSettings($SETTINGS);
+            $emailService = new EmailService();
+            $emailService->sendMail(
                 $lang->get('admin_email_test_subject'),
                 $lang->get('admin_email_test_body'),
                 $session->get('user-email'),
-                $SETTINGS
+                $emailSettings
             );
+            
             echo prepareExchangedData(
                 array(
                     'error' => false,
@@ -1262,6 +1267,8 @@ switch ($post_type) {
         }
 
         include_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
+        $emailSettings = new EmailSettings($SETTINGS);
+        $emailService = new EmailService();
 
         $rows = DB::query(
             'SELECT *
@@ -1278,13 +1285,14 @@ switch ($post_type) {
             // Only treat first email
             foreach ($rows as $record) {
                 //send email
+                $email = $emailService->sendMail(
+                    $record['subject'],
+                    $record['body'],
+                    $record['receivers'],
+                    $emailSettings
+                );
                 $ret = json_decode(
-                    sendEmail(
-                        $record['subject'],
-                        $record['body'],
-                        $record['receivers'],
-                        $SETTINGS
-                    ),
+                    $email,
                     true
                 );
 
@@ -1352,16 +1360,21 @@ switch ($post_type) {
 
         include_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
 
+        // Instatiate email settings and service
+        $emailSettings = new EmailSettings($SETTINGS);
+        $emailService = new EmailService();
+
         $rows = DB::query('SELECT * FROM ' . prefixTable('emails') . ' WHERE status = %s OR status = %s', 'not_sent', '');
         foreach ($rows as $record) {
             //send email
+            $email = $emailService->sendMail(
+                $record['subject'],
+                $record['body'],
+                $record['receivers'],
+                $emailSettings
+            );
             $ret = json_decode(
-                sendEmail(
-                    $record['subject'],
-                    $record['body'],
-                    $record['receivers'],
-                    $SETTINGS
-                ),
+                $email,
                 true
             );
 

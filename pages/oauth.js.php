@@ -29,7 +29,6 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\ConfigManager\ConfigManager;
 use TeampassClasses\SessionManager\SessionManager;
