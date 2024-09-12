@@ -661,7 +661,26 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     teampassUser.shown_warning_unsuccessful_login = true;
                 }
             );
-        });
-        
+        });        
     });
+
+    // Handle the copy in clipboard button for api key
+    document.getElementById('copy-api-key').addEventListener('click', function() {
+        const apiKey = document.getElementById('profile-user-api-token').textContent;
+        navigator.clipboard.writeText(apiKey).then(function() {
+            // Display message.
+            toastr.remove();
+            toastr.info(
+                '<?php echo $lang->get('copy_to_clipboard'); ?>',
+                '', {
+                    timeOut: 2000,
+                    progressBar: true,
+                    positionClass: 'toast-top-right'
+                }
+            );
+        }, function(err) {
+            // nothing
+        });
+    });
+
 </script>

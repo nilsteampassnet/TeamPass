@@ -2324,15 +2324,36 @@ if (null !== $post_type) {
                 $encrypted_key = encryptUserObjectKey(base64_encode($post_new_value), $session->get('user-public_key'));
                 $session->set('user-api_key', $post_new_value);
 
-                DB::update(
-                    prefixTable('api'),
-                    array(
-                        'value' => $encrypted_key,
-                        'timestamp' => time()
-                    ),
-                    'user_id = %i',
+                // test if user has an api key
+                $data_user = DB::queryfirstrow(
+                    'SELECT value
+                    FROM ' . prefixTable('api') . '
+                    WHERE user_id = %i',
                     $post_user_id
                 );
+                if ($data_user) {
+                    // update
+                    DB::update(
+                        prefixTable('api'),
+                        array(
+                            'value' => $encrypted_key,
+                            'timestamp' => time()
+                        ),
+                        'user_id = %i',
+                        $post_user_id
+                    );
+                } else {
+                    // insert
+                    DB::insert(
+                        prefixTable('api'),
+                        array(
+                            'type' => 'user',
+                            'user_id' => $post_user_id,
+                            'value' => $encrypted_key,
+                            'timestamp' => time()
+                        )
+                    );
+                }
 
                 // send data
                 echo prepareExchangedData(
