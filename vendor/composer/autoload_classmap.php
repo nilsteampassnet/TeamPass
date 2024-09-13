@@ -1514,6 +1514,7 @@ return array(
     'TeampassClasses\\AzureAuthController\\AzureAuthController' => $vendorDir . '/teampassclasses/azureauthcontroller/src/AzureAuthController.php',
     'TeampassClasses\\ConfigManager\\ConfigManager' => $vendorDir . '/teampassclasses/configmanager/src/ConfigManager.php',
     'TeampassClasses\\EmailService\\EmailService' => $vendorDir . '/teampassclasses/emailservice/src/EmailService.php',
+    'TeampassClasses\\EmailService\\EmailSettings' => $vendorDir . '/teampassclasses/emailservice/src/EmailSettings.php',
     'TeampassClasses\\Encryption\\Encryption' => $vendorDir . '/teampassclasses/encryption/src/Encryption.php',
     'TeampassClasses\\Language\\Language' => $vendorDir . '/teampassclasses/language/src/Language.php',
     'TeampassClasses\\LdapExtra\\ActiveDirectoryExtra' => $vendorDir . '/teampassclasses/ldapextra/src/ActiveDirectoryExtra.php',

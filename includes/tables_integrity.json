@@ -9,23 +9,23 @@
     },
     {
         "table_name": "background_subtasks",
-        "structure_hash": "fa1b91a90831d8551dd15382363055d740c6a276aba8d4ea6179ba47d456b44f"
+        "structure_hash": "f1e4792ca0704feb8292a112fb4a35762ffa797973a67a6c75aa67ceb93e516f"
     },
     {
         "table_name": "background_tasks",
-        "structure_hash": "55abb02b0108c6361447c8063f33ccc95e9e87f128812c44c7902940ab3b680c"
+        "structure_hash": "4b9509f4f599ed0d740c3a1eba74ca0bc6634bbffb78dc8e6cd38d336ce7feac"
     },
     {
         "table_name": "background_tasks_logs",
-        "structure_hash": "f79cfdf6d07763de051307530add35850ff7f36cb9a4bd35f460c74f7b4ae956"
+        "structure_hash": "ff03765e36130fa35e38db8027227afc81c94b99813e2581b4bdaaedea936638"
     },
     {
         "table_name": "cache",
-        "structure_hash": "0a93e028439f6b0767f083683e0b23c80e885624c800d9432195dd61daf4dc8d"
+        "structure_hash": "d3bf3f986a7f461a7abc1c2b1acf2e51823a7fc359d9d0a6df8e6a8609ca0213"
     },
     {
         "table_name": "cache_tree",
-        "structure_hash": "7efb5b1f13896e721918994daa29de092917b8e59e061c9d23441aa8fd7fa6c4"
+        "structure_hash": "efe3f3abab2e27d61f5df294722f2b9908ef83bfb63c8540a3c800ef29870fa9"
     },
     {
         "table_name": "categories",
@@ -57,7 +57,7 @@
     },
     {
         "table_name": "items",
-        "structure_hash": "d2a8ce666c52f60ffe6876e3da4ac1eada4ac77319ff1cfe07a324124aa2af10"
+        "structure_hash": "b6db953e2ffe440662d8a58faf384f7a0f68a96f25c7eaf179c334ae079061b8"
     },
     {
         "table_name": "items_change",
@@ -97,19 +97,19 @@
     },
     {
         "table_name": "log_items",
-        "structure_hash": "21f70282e119dd0eb32d2854457025984747ec78415772b611b9f183e02d9e7c"
+        "structure_hash": "00830c64d14adae076b5b064e645f6c7011d07aacb363d3290f1c82696a20395"
     },
     {
         "table_name": "log_system",
-        "structure_hash": "ae03b53ccc71dacb85cf87a6b4da9a7423c3f8090da86261b8b17988e8f1e39d"
+        "structure_hash": "bb39e2ab38dd6dd307cd4a43c3b1ede3154d94440c486f36c20a009dd5005693"
     },
     {
         "table_name": "misc",
-        "structure_hash": "c57a696824200dcf34cf06c293af85efb28bbba0e08338d0f1e4d6d2abc51d45"
+        "structure_hash": "14b19547bd0d8331108f91697dca663e2d28274c164782c82a9a66316964940c"
     },
     {
         "table_name": "nested_tree",
-        "structure_hash": "1eb849da0b5770fd7ef347fe1bb5ceecae92b0b90ac84b01e1ca9ebe0314f8f3"
+        "structure_hash": "3528774a3840468768c3b3f2c91e510c6a34640144b1f4e2178557aade8170b3"
     },
     {
         "table_name": "notification",
@@ -157,7 +157,7 @@
     },
     {
         "table_name": "roles_values",
-        "structure_hash": "93c3f4668efb28e03cf5e380455808dd6dbfb465313db98e2c24ba4a84f04812"
+        "structure_hash": "e31b433be42217e41c94f269f159d16a4553f72d0b61b27060a7faf3fafd9cb1"
     },
     {
         "table_name": "sharekeys_fields",
@@ -169,7 +169,7 @@
     },
     {
         "table_name": "sharekeys_items",
-        "structure_hash": "36d7a797caeb4692087c9fb89b43812fe1b5ba8f5341e330274f9a20f6d855a7"
+        "structure_hash": "f4cfd22fa7cc4a9a352a5d61ec5122d216163bf9d1885708e43851e3ffe73f28"
     },
     {
         "table_name": "sharekeys_logs",

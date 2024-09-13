@@ -16,8 +16,8 @@ class ComposerStaticInite3f3ee27f81ca21f7bd7499d7b935c11
         '72579e7bd17821bb1321b87411366eae' => __DIR__ . '/..' . '/illuminate/support/helpers.php',
         '7b11c4dc42b3b3023073cb14e519683c' => __DIR__ . '/..' . '/ralouphie/getallheaders/src/getallheaders.php',
         '37a3dc5111fe8f707ab4c132ef1dbc62' => __DIR__ . '/..' . '/guzzlehttp/guzzle/src/functions_include.php',
-        '06a34129a50df3d9257ee706cf3c875b' => __DIR__ . '/..' . '/illuminate/filesystem/functions.php',
         '662a729f963d39afe703c9d9b7ab4a8c' => __DIR__ . '/..' . '/symfony/polyfill-php83/bootstrap.php',
+        '06a34129a50df3d9257ee706cf3c875b' => __DIR__ . '/..' . '/illuminate/filesystem/functions.php',
         'def43f6c87e4f8dfd0c9e1b1bab14fe8' => __DIR__ . '/..' . '/symfony/polyfill-iconv/bootstrap.php',
         '8825ede83f2f289127722d4e842cf7e8' => __DIR__ . '/..' . '/symfony/polyfill-intl-grapheme/bootstrap.php',
         'b46ad4fe52f4d1899a2951c7e6ea56b0' => __DIR__ . '/..' . '/voku/portable-utf8/bootstrap.php',
@@ -341,9 +341,9 @@ class ComposerStaticInite3f3ee27f81ca21f7bd7499d7b935c11
         ),
         'Illuminate\\Support\\' => 
         array (
-            0 => __DIR__ . '/..' . '/illuminate/collections',
+            0 => __DIR__ . '/..' . '/illuminate/macroable',
             1 => __DIR__ . '/..' . '/illuminate/conditionable',
-            2 => __DIR__ . '/..' . '/illuminate/macroable',
+            2 => __DIR__ . '/..' . '/illuminate/collections',
             3 => __DIR__ . '/..' . '/illuminate/support',
         ),
         'Illuminate\\Filesystem\\' => 
@@ -1997,6 +1997,7 @@ class ComposerStaticInite3f3ee27f81ca21f7bd7499d7b935c11
         'TeampassClasses\\AzureAuthController\\AzureAuthController' => __DIR__ . '/..' . '/teampassclasses/azureauthcontroller/src/AzureAuthController.php',
         'TeampassClasses\\ConfigManager\\ConfigManager' => __DIR__ . '/..' . '/teampassclasses/configmanager/src/ConfigManager.php',
         'TeampassClasses\\EmailService\\EmailService' => __DIR__ . '/..' . '/teampassclasses/emailservice/src/EmailService.php',
+        'TeampassClasses\\EmailService\\EmailSettings' => __DIR__ . '/..' . '/teampassclasses/emailservice/src/EmailSettings.php',
         'TeampassClasses\\Encryption\\Encryption' => __DIR__ . '/..' . '/teampassclasses/encryption/src/Encryption.php',
         'TeampassClasses\\Language\\Language' => __DIR__ . '/..' . '/teampassclasses/language/src/Language.php',
         'TeampassClasses\\LdapExtra\\ActiveDirectoryExtra' => __DIR__ . '/..' . '/teampassclasses/ldapextra/src/ActiveDirectoryExtra.php',

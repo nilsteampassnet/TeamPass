@@ -637,6 +637,42 @@ if (null !== $post_type) {
                 FILTER_SANITIZE_FULL_SPECIAL_CHARS
             );
 
+            // Ensure that the root folder is not part of the list
+            if (in_array(0, $post_folders, true)) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'). " (You can't delete the root folder)",
+                    ),
+                    'encode'
+                );
+                break;
+            }
+            
+            // Ensure that user has access to all folders
+            $foldersAccessible = DB::query(
+                'SELECT id
+                FROM ' . prefixTable('nested_tree') . '
+                WHERE id IN %li AND id IN %li',
+                $post_folders,
+                $session->get('user-accessible_folders')
+            );
+            // Extract found folder IDs
+            $accessibleIds = array_column($foldersAccessible, 'id');
+            // Identify those that are not existing in DB or not visible by user
+            $missingFolders = array_diff($post_folders, $accessibleIds);
+            if (!empty($missingFolders)) {
+                // There is some issues
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to') . ' (The following folders are not accessible or do not exist: ' . implode(', ', $missingFolders) . ')',
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
             //decrypt and retreive data in JSON format
             $folderForDel = array();
 
@@ -644,32 +680,6 @@ if (null !== $post_type) {
             DB::startTransaction();
 
             foreach ($post_folders as $folderId) {
-                /**
-                 * WARN: NestedTree->getDescendants:
-                 *      Specify an invalid ID (e.g. 0) to retrieve all data.
-                 * 
-                 * Which means the root folder may be deleted.
-                 * It is necessary to verify that the ID provided exists, is
-                 * not 0 and that the user is authorized to delete it.
-                */
-                $folderExists = DB::queryFirstRow(
-                    'SELECT COUNT(id) AS count FROM '.prefixTable('nested_tree').' WHERE id = %i',
-                    (int) $folderId
-                )['count'];
-                if ((int) $folderId === 0 ||
-                    (int) $folderExists === 0 ||
-                    !in_array((int) $folderId, $session->get('user-accessible_folders'))
-                ) {
-                    echo prepareExchangedData(
-                        array(
-                            'error' => true,
-                            'message' => $lang->get('error_not_allowed_to'),
-                        ),
-                        'encode'
-                    );
-                    exit();
-                }
-
                 // Check if parent folder is personal
                 $dataParent = DB::queryfirstrow(
                     'SELECT personal_folder
@@ -730,7 +740,11 @@ if (null !== $post_type) {
                             $folderForDel[] = $thisSubFolders->id;
 
                             //delete items & logs
-                            $itemsInSubFolder = DB::query('SELECT id FROM ' . prefixTable('items') . ' WHERE id_tree=%i', $thisSubFolders->id);
+                            $itemsInSubFolder = DB::query(
+                                'SELECT id FROM ' . prefixTable('items') . ' 
+                                WHERE id_tree=%i', 
+                                $thisSubFolders->id
+                            );
                             foreach ($itemsInSubFolder as $item) {
                                 DB::update(
                                     prefixTable('items'),
@@ -758,7 +772,7 @@ if (null !== $post_type) {
 
                                 //Update CACHE table
                                 updateCacheTable('delete_value',(int) $item['id']);
-
+/*
                                 // --> build json tree  
                                 // update cache_tree
                                 $cache_tree = DB::queryfirstrow(
@@ -802,28 +816,39 @@ if (null !== $post_type) {
                                     );
                                 }
                                 // <-- end - build json tree
+                                */
                             }
 
                             //Actualize the variable
                             $session->set('user-nb_folders', $session->get('user-nb_folders') - 1);
                         }
                     }
-
-                    // delete folders
-                    $folderForDel = array_unique($folderForDel);
-                    foreach ($folderForDel as $fol) {
-                        DB::delete(prefixTable('nested_tree'), 'id = %i', $fol);
-                    }
                 }
             }
+            
+            // Add new task for building user cache tree
+            if ((int) $session->get('user-admin') !== 1) {
+                DB::insert(
+                    prefixTable('background_tasks'),
+                    array(
+                        'created_at' => time(),
+                        'process_type' => 'user_build_cache_tree',
+                        'arguments' => json_encode([
+                            'user_id' => (int) $session->get('user-id'),
+                        ], JSON_HEX_QUOT | JSON_HEX_TAG),
+                        'updated_at' => '',
+                        'finished_at' => '',
+                        'output' => '',
+                    )
+                );
+            }
 
-            //rebuild tree
-            $tree->rebuild();
-
-            // reload cache table
-            include_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
-            updateCacheTable('reload', null);
-
+            // delete folders
+            $folderForDel = array_unique($folderForDel);
+            foreach ($folderForDel as $fol) {
+                DB::delete(prefixTable('nested_tree'), 'id = %i', $fol);
+            }
+            
             // Update timestamp
             DB::update(
                 prefixTable('misc'),
@@ -835,9 +860,16 @@ if (null !== $post_type) {
                 'timestamp',
                 'last_folder_change'
             );
-
+            
             // Commit transaction
             DB::commit();
+            
+            //rebuild tree
+            $tree->rebuild();
+            
+            // reload cache table
+            include_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
+            updateCacheTable('reload', null);
 
             echo prepareExchangedData(
                 array(

@@ -172,7 +172,7 @@ class ItemModel extends Database
             $password = $cryptedData['encrypted'];
 
             // Step 8: Insert the new item into the database
-            $newID = $this->insertNewItem($data, $password, $passwordKey, $userId, $itemInfos, $SETTINGS);
+            $newID = $this->insertNewItem($data, $password, $itemInfos);
 
             // Step 9: Handle post-insert tasks (logging, sharing, tagging)
             $this->handlePostInsertTasks($newID, $itemInfos, $folderId, $passwordKey, $userId, $username, $tags, $data, $SETTINGS);
@@ -330,7 +330,7 @@ class ItemModel extends Database
      */
     private function checkForDuplicates(string $label, array $SETTINGS, array $itemInfos) : void
     {
-        $existingItem = DB::queryFirstRow(
+        DB::queryFirstRow(
             'SELECT * FROM ' . prefixTable('items') . '
             WHERE label = %s AND inactif = %i',
             $label,
@@ -364,13 +364,10 @@ class ItemModel extends Database
      * Inserts the new item into the database with all its associated data.
      * @param array $data - The item data to insert
      * @param string $password - The encrypted password
-     * @param string $passwordKey - The encryption key for the password
-     * @param int $userId - The ID of the user creating the item
      * @param array $itemInfos - Folder-specific settings
-     * @param array $SETTINGS - Global settings
      * @return int - Returns the ID of the newly created item
      */
-    private function insertNewItem(array $data, string $password, string $passwordKey, int $userId, array $itemInfos, array $SETTINGS) : int
+    private function insertNewItem(array $data, string $password, array $itemInfos) : int
     {
         DB::insert(
             prefixTable('items'),
