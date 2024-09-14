@@ -47,6 +47,11 @@ class AzureAuthController
 
     public function __construct(array $settings)
     {
+        // Multi-tenant is not allowed
+        if (empty($settings['oauth2_tenant_id']) || $settings['oauth2_tenant_id'] === 'common') {
+            throw new Exception('Invalid tenant_id provided. Multi-tenant access is not allowed.');
+        }
+
         // Utilisation du point de terminaison v2.0
         $this->provider = new Azure([
             'clientId'                => $settings['oauth2_client_id'],
@@ -63,6 +68,11 @@ class AzureAuthController
 
     public function redirect()
     {
+        // Force a unique tenant by refusing any other configuration
+        if ($this->settings['oauth2_tenant_id'] === 'common') {
+            throw new Exception('Multi-tenant access is not allowed. Tenant must be specified.');
+        }
+
         // Force user to select account
         $options = [
             'prompt' => 'select_account'
@@ -88,14 +98,11 @@ class AzureAuthController
             $token = $this->provider->getAccessToken('authorization_code', [
                 'code' => $_GET['code']
             ]);
-            //error_log('Token récupéré : ' . print_r($token, true));
 
             // Récupérer les informations de l'utilisateur via Microsoft Graph
             $graphUrl = 'https://graph.microsoft.com/v1.0/me';
             $response = $this->provider->getAuthenticatedRequest('GET', $graphUrl, $token->getToken());
             $user = $this->provider->getParsedResponse($response);
-
-            //error_log('Utilisateur récupéré : ' . print_r($user, true));
 
             // Récupérer les groupes auxquels l'utilisateur appartient
             $groupsUrl = 'https://graph.microsoft.com/v1.0/me/memberOf';
@@ -112,11 +119,6 @@ class AzureAuthController
                     ];
                 }
             }
-            //error_log('Utilisateur  : ' . print_r(array_merge($user, array('groups' => $userGroups)), true));
-
-            // Get groups
-            //$groups = $this->getAllGroups($token);
-            //error_log('Groupes récupérés : ' . print_r($groups, true));
 
             // Retourner les informations de l'utilisateur
             return [
