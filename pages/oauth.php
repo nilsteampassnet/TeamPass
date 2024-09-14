@@ -115,7 +115,7 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
                     <form role='form-horizontal'>
                         <div class='card-body'>
 
-                            <div class='row mb-5'>
+                            <div class='row mb-2'>
                                 <div class='col-12'>
                                     <div class="alert alert-warning" role="alert">
                                     <i class="fa-solid fa-flask-vial mr-3"></i>Expiremental feature. Use at your own risk.
@@ -123,7 +123,7 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
                                 </div>
                             </div>
 
-                            <div class='row mb-5'>
+                            <div class='row mb-2'>
                                 <div class='col-10'>
                                     <?php echo $lang->get('settings_oauth_mode'); ?>
                                     <small id='passwordHelpBlock' class='form-text text-muted'>
@@ -194,7 +194,7 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
                                     </small>
                                 </div>
                                 <div class='col-7'>
-                                    <input type='text' class='form-control form-control-sm setting-oauth' id='oauth2_client_scopes' value='<?php echo $SETTINGS['oauth2_client_scopes'] ?? 'openid,email,profile'; ?>'>
+                                    <input type='text' class='form-control form-control-sm setting-oauth' id='oauth2_client_scopes' value='<?php echo $SETTINGS['oauth2_client_scopes'] ?? 'openid,profile,email,User.Read,Group.Read.All'; ?>'>
                                 </div>
                             </div>
 

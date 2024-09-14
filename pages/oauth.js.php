@@ -140,12 +140,18 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
      */
     $(function() {
         // Click on log in button with Azure Entra
-        $('#but_perform_setup').click(function() {
-            if (debugJavascript === true) {
-                console.log('User starts setup with Azure');
-            }
-            document.location.href="sources/oauth.php";
-            return false;
+        $('#oauth2_tenant_id').change(function(event) {
+            var tenantId = $(this).val();
+            var endpointUrl = $('#oauth2_client_endpoint').val();
+            var tokenUrl = $('#oauth2_client_token').val();
+
+            // Remplace l'identifiant de locataire dans l'URL du point de terminaison
+            endpointUrl = endpointUrl.replace(/([^\/]*)\/oauth2\/v2.0\/authorize/, tenantId + '/oauth2/v2.0/authorize');
+            $('#oauth2_client_endpoint').val(endpointUrl);
+
+            // Remplace l'identifiant de locataire dans l'URL du jeton
+            tokenUrl = tokenUrl.replace(/([^\/]*)\/oauth2\/v2.0\/token/, tenantId + '/oauth2/v2.0/token');
+            $('#oauth2_client_token').val(tokenUrl);
         });
     });
 

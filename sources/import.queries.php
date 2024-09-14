@@ -499,92 +499,151 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
         $new = simplexml_load_string($xmlfile);
         $con = json_encode($new);
         $newArr = json_decode($con, true);
-        
+
+
         /**
-         * Undocumented function
-         *
-         * @param array $array
-         * @param integer $previousFolder
-         * @param array $newItemsToAdd
-         * @param integer $level
-         * @return array
+         * Recursive function to process the Keepass XML structure.
+         * 
+         * @param array $array The current array to process.
+         * @param string $previousFolder The parent folder ID.
+         * @param array $newItemsToAdd The new items to add to the database.
+         * @param int $level The current level of the recursion.
+         * 
+         * @return array The new items to add to the database.
          */
         function recursive($array, $previousFolder, $newItemsToAdd, $level) : array
         {
-            // Manage entries
-            if (isset($array['Entry']) === true) {
-                foreach($array['Entry'] as $key => $value) {
-                    if (isset($value['String']) === true) {
-                        $itemDefinition = [];
-                        $c = count($value['String']);
-                        for ($i = 0; $i < $c; $i++) {
-                            $itemDefinition[$value['String'][$i]['Key']] = is_array($value['String'][$i]['Value']) === false ? $value['String'][$i]['Value'] : '';
-                        }
-                        $itemDefinition['parentFolderId'] = $previousFolder;
-                        isset($itemDefinition['Notes']) === false ? $itemDefinition['Notes'] = '' : '';
-                        isset($itemDefinition['URL']) === false ? $itemDefinition['URL'] = '' : '';
-                        isset($itemDefinition['Password']) === false ? $itemDefinition['Password'] = '' : '';
-                        array_push(
-                            $newItemsToAdd['items'],
-                            $itemDefinition
-                        );
-                        continue;
-                    }
-                    
-                    if ($key === "String") {
-                        array_push(
-                            $newItemsToAdd['items'],
-                            [
-                                'Notes' => is_array($value[0]['Value']) === false ? $value[0]['Value'] : '',
-                                'Title' => is_array($value[2]['Value']) === false ? $value[2]['Value'] : '',
-                                'Password' => is_array($value[1]['Value']) === false ? $value[1]['Value'] : '',
-                                'URL' => is_array($value[3]['Value']) === false ? $value[3]['Value'] : '',
-                                'UserName' => is_array($value[4]['Value']) === false ? $value[4]['Value'] : '',
-                                'parentFolderId' => $previousFolder,
-                            ]
-                        );
-                    }
-                }
+            // Handle entries (items)
+            if (isset($array['Entry'])) {
+                $newItemsToAdd = handleEntries($array['Entry'], $previousFolder, $newItemsToAdd);
             }
 
-            // Manage GROUPS
-            if (isset($array['Group']) === true && is_array($array['Group'])=== true) {
-                $currentFolderId = $previousFolder;
-                if (isset($array['Group']['UUID']) === true) {
-                    // build expect array format
-                    $array['Group'] = [$array['Group']];
-                }
-                foreach($array['Group'] as $key => $value){
-                    // Add this new folder
-                    array_push(
-                        $newItemsToAdd['folders'],
-                        [
-                            'folderName' => $value['Name'],
-                            'uuid' => $value['UUID'],
-                            'parentFolderId' => $previousFolder,
-                            'level' => $level,
-                        ]
-                    );
-                    $previousFolder = $value['UUID'];
-                    
-                    // recursive inside this entry
-                    $newItemsToAdd = recursive(
-                        array_merge(
-                            ['Entry' => isset($value['Entry']) === true ? $value['Entry'] : ''],
-                            ['Group' => isset($value['Group']) === true ? $value['Group'] : ''],
-                        ),
-                        $previousFolder,
-                        $newItemsToAdd,
-                        $level + 1
-                    );
-
-                    $previousFolder = $currentFolderId;
-                }
+            // Handle groups (folders)
+            if (isset($array['Group']) && is_array($array['Group'])) {
+                $newItemsToAdd = handleGroups($array['Group'], $previousFolder, $newItemsToAdd, $level);
             }
-            
+
             return $newItemsToAdd;
         }
-        
+
+        /**
+         * Handle entries (items) within the structure.
+         * It processes each entry and adds it to the new items list.
+         * 
+         * @param array $entries The entries to process.
+         * @param string $previousFolder The parent folder ID.
+         * @param array $newItemsToAdd The new items to add to the database.
+         * 
+         * @return array The new items to add to the database.
+         */
+        function handleEntries(array $entries, string $previousFolder, array $newItemsToAdd) : array
+        {
+            foreach ($entries as $key => $value) {
+                // Check if the entry has a 'String' field and process it
+                if (isset($value['String'])) {
+                    $newItemsToAdd['items'][] = buildItemDefinition($value['String'], $previousFolder);
+                } 
+                // If it's a direct 'String' item, build a simple item
+                elseif ($key === 'String') {
+                    $newItemsToAdd['items'][] = buildSimpleItem($value, $previousFolder);
+                }
+            }
+
+            return $newItemsToAdd;
+        }
+
+        /**
+         * Build an item definition from the 'String' fields.
+         * Converts the key-value pairs into a usable item format.
+         * 
+         * @param array $strings The 'String' fields to process.
+         * @param string $previousFolder The parent folder ID.
+         * 
+         * @return array The item definition.
+         */
+        function buildItemDefinition(array $strings, string $previousFolder) : array
+        {
+            $itemDefinition = [];
+            // Loop through each 'String' entry and map keys and values
+            foreach ($strings as $entry) {
+                $itemDefinition[$entry['Key']] = is_array($entry['Value']) ? '' : $entry['Value'];
+            }
+
+            // Set the parent folder and ensure default values for certain fields
+            $itemDefinition['parentFolderId'] = $previousFolder;
+            $itemDefinition['Notes'] = $itemDefinition['Notes'] ?? '';
+            $itemDefinition['URL'] = $itemDefinition['URL'] ?? '';
+            $itemDefinition['Password'] = $itemDefinition['Password'] ?? '';
+
+            return $itemDefinition;
+        }
+
+        /**
+         * Build a simple item with predefined fields.
+         * This is used when there is no associated key, just ordered values.
+         * 
+         * @param array $value The ordered values to process.
+         * @param string $previousFolder The parent folder ID.
+         * 
+         * @return array The simple item definition.
+         */
+        function buildSimpleItem(array $value, string $previousFolder) : array
+        {
+            return [
+                'Notes' => is_array($value[0]['Value']) ? '' : $value[0]['Value'],
+                'Title' => is_array($value[2]['Value']) ? '' : $value[2]['Value'],
+                'Password' => is_array($value[1]['Value']) ? '' : $value[1]['Value'],
+                'URL' => is_array($value[3]['Value']) ? '' : $value[3]['Value'],
+                'UserName' => is_array($value[4]['Value']) ? '' : $value[4]['Value'],
+                'parentFolderId' => $previousFolder,
+            ];
+        }
+
+        /**
+         * Handle groups (folders) within the structure.
+         * It processes each group and recursively goes deeper into subgroups and subentries.
+         * 
+         * @param array $groups The groups to process.
+         * @param string $previousFolder The parent folder ID.
+         * @param array $newItemsToAdd The new items to add to the database.
+         * 
+         * @return array The new items to add to the database.
+         */
+        function handleGroups($groups, string $previousFolder, array $newItemsToAdd, int $level) : array
+        {
+            // If a single group is found, wrap it into an array
+            if (isset($groups['UUID'])) {
+                $groups = [$groups];
+            }
+
+            // Save the current folder ID to restore it after recursion
+            $currentFolderId = $previousFolder;
+
+            foreach ($groups as $group) {
+                // Add the current group (folder) to the list
+                $newItemsToAdd['folders'][] = [
+                    'folderName' => $group['Name'],
+                    'uuid' => $group['UUID'],
+                    'parentFolderId' => $previousFolder,
+                    'level' => $level,
+                ];
+
+                // Recursively process entries and subgroups inside this group
+                $newItemsToAdd = recursive(
+                    [
+                        'Entry' => $group['Entry'] ?? '',
+                        'Group' => $group['Group'] ?? '',
+                    ],
+                    $group['UUID'],
+                    $newItemsToAdd,
+                    $level + 1
+                );
+            }
+
+            return $newItemsToAdd;
+        }
+
+        // Start the recursive processing
         $ret = recursive(
             array_merge(
                 ['Entry' => $newArr['Root']['Group']['Entry']],

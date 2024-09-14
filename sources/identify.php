@@ -2163,16 +2163,6 @@ class initialChecks {
         $data['ldap_user_to_be_created'] = $enable_ad_user_auto_creation === true && DB::count() === 0 && $oauth2LoginOngoing !== true ? true : false;
         $data['oauth2_user_to_be_created'] = $oauth2_enabled === true && DB::count() === 0 && $oauth2LoginOngoing === true ? true : false;
 
-
-        // ensure user fonction_id is set to false if not existing
-        /*if (is_null($data['fonction_id']) === true) {
-            $data['fonction_id'] = '';
-        }*/
-
-        // Prepare user roles (fonction_id + roles_from_ad_groups)
-        // Disable this as this happend repeadetly and is not necessary when working with AD groups
-        //$data['fonction_id'] = is_null($data['roles_from_ad_groups']) === true ? $data['fonction_id'] : (empty($data['roles_from_ad_groups']) === true ? $data['fonction_id'] : $data['fonction_id'] . ';' . $data['roles_from_ad_groups']);
-
         return $data;
     }
 
