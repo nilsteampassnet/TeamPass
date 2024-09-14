@@ -86,7 +86,10 @@ if (isset($_GET['code']) === true && isset($_GET['state']) === true && $get['pos
 if (null !== $session->get('userOauth2Info') && empty($session->get('userOauth2Info')) === false && $session->get('userOauth2Info')['oauth2TokenUsed'] === false) {
     // Azure step is done
     // Check if user exists in Teampass
-    if (WIP === true) error_log('---- CALLBACK LOGIN ----');
+    if (WIP === true) {
+        error_log('---- CALLBACK LOGIN ----');
+        //error_log('Info : ' . print_r($session->get('userOauth2Info'), true));
+    }
 
     $session->set('user-login', strstr($session->get('userOauth2Info')['userPrincipalName'], '@', true));
 

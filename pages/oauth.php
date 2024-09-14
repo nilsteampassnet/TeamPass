@@ -116,6 +116,14 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
                         <div class='card-body'>
 
                             <div class='row mb-5'>
+                                <div class='col-12'>
+                                    <div class="alert alert-warning" role="alert">
+                                    <i class="fa-solid fa-flask-vial mr-3"></i>Expiremental feature. Use at your own risk.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class='row mb-5'>
                                 <div class='col-10'>
                                     <?php echo $lang->get('settings_oauth_mode'); ?>
                                     <small id='passwordHelpBlock' class='form-text text-muted'>

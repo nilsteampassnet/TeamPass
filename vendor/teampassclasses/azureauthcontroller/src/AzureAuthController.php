@@ -48,10 +48,10 @@ class AzureAuthController
     public function __construct(array $settings)
     {
         // Utilisation du point de terminaison v2.0
-
         $this->provider = new Azure([
             'clientId'                => $settings['oauth2_client_id'],
             'clientSecret'            => $settings['oauth2_client_secret'],
+            'tenant'                  => $settings['oauth2_tenant_id'],
             'redirectUri'             => $settings['cpassman_url'].'/index.php?post_type=oauth2',
             'urlAuthorize'            => 'https://login.microsoftonline.com/' . $settings['oauth2_tenant_id'] . '/oauth2/v2.0/authorize', // Utilisation du endpoint v2.0
             'urlAccessToken'          => 'https://login.microsoftonline.com/' . $settings['oauth2_tenant_id'] . '/oauth2/v2.0/token',     // Endpoint v2.0 pour le token
@@ -169,72 +169,6 @@ class AzureAuthController
             return [
                 'error' => true,
                 'message' => 'Error while getting groups: ' . $e->getMessage(),
-            ];
-        }
-    }
-}
-
-
-class AzureAuthController_OLD
-{
-    protected $provider;
-    protected $settings;
-
-    public function __construct(array $settings)
-    {
-        $this->provider = new Azure([
-            'clientId'                => $settings['oauth2_client_id'],
-            'clientSecret'            => $settings['oauth2_client_secret'],
-            'redirectUri'             => $settings['cpassman_url'].'/index.php?post_type=oauth2',
-            'urlAuthorize'            => strpos($settings['oauth2_client_endpoint'], '{tenant-id}') !== false ? str_replace('{tenant-id}', $settings['oauth2_tenant_id'], $settings['oauth2_client_endpoint']) : $settings['oauth2_client_endpoint'],
-            'urlAccessToken'          => strpos($settings['oauth2_client_token'], '{tenant-id}') !== false ? str_replace('{tenant-id}', $settings['oauth2_tenant_id'], $settings['oauth2_client_token']) : $settings['oauth2_client_token'],
-            'urlResourceOwnerDetails' => 'https://graph.microsoft.com/v1.0/me',
-            'scopes'                  => explode(",", $settings['oauth2_client_scopes']),
-            'defaultEndPointVersion' => '1.0',
-        ]);
-    }
-
-    public function redirect()
-    {
-        // Si nous n'avons pas de code, redirigeons vers le login Azure AD
-        $authUrl = $this->provider->getAuthorizationUrl();
-        $_SESSION['oauth2state'] = $this->provider->getState();
-        header('Location: ' . $authUrl);
-        exit;
-    }
-
-    public function callback()
-    {
-        error_log('Callback initiated');
-        // Vérifier l'état pour mitiger les attaques CSRF
-        if (empty($_GET['state']) || ($_GET['state'] !== $_SESSION['oauth2state'])) {
-            unset($_SESSION['oauth2state']);
-            error_log('Invalid state detected');
-            exit('État invalide');
-        }
-
-        try {
-            // Échanger le code contre un token d'access
-            $token = $this->provider->getAccessToken('authorization_code', [
-                'code' => $_GET['code']
-            ]);
-            error_log('Access token obtained successfully');
-
-            // Récupérer les informations de l'utilisateur
-            $user = $this->provider->getResourceOwner($token);
-            error_log('User information retrieved successfully');
-
-            // Ici, gérer la connexion de l'utilisateur dans votre système
-            return [
-                'error' => false,
-                'userOauth2Info' => $user,
-            ];
-
-        } catch (\Exception $e) {
-            error_log('Error while catching token: ' . $e->getMessage());
-            return [
-                'error' => true,
-                'message' => 'Error while catching token: '.$e->getMessage(),
             ];
         }
     }

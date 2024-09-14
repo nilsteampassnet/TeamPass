@@ -101,7 +101,7 @@ This App will have an `Application (client) ID` and a `Directory (tenant) ID`.
 A `Client secret` is also expected, not the `Secret ID` but the `Value` (the one that is only seen once).
 
 You will have to define a new `Redirect URIs` with the value provided from Teampass OAuth configuration page.
-And it is suggested to use option `Accounts in any organizational directory (Any Microsoft Entra ID tenant - Multitenant)` as `Supported account types`.
+And it is requested to use option `Accounts in this organizational directory only (Default Directory only - Single tenant)` as `Supported account types`.
 
 Now define `API permissions` with next permissions:
 
@@ -125,3 +125,5 @@ Finaly define the users allowaed to access this new Application
 Navigate to `OAuth` page from the administration, and provide the expected information.
 
 It is suggested to perform a test with a fake user.
+
+![OAuth2 settings example](../_media/tp3_auth_oauth2_1.png)

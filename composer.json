@@ -180,6 +180,8 @@
         "symfony/process": "^6.3",
         "symfony/contracts": "^3.4",
         "bjeavons/zxcvbn-php": "^1.0",
-        "thenetworg/oauth2-azure": "^2.2"
+        "thenetworg/oauth2-azure": "^2.2",
+        "symfony/console": "^6.4",
+        "composer/composer": "^2.7"
     }
 }

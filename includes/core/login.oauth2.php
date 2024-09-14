@@ -30,6 +30,7 @@ declare(strict_types=1);
  */
 
 use TeampassClasses\AzureAuthController\AzureAuthController;
+
 session_start();
 require_once __DIR__. '/../../includes/config/include.php';
 require_once __DIR__.'/../../sources/main.functions.php';
