@@ -4261,7 +4261,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 }
 
                 // Trash icon
-                trash_link = '<span class="fa-stack fa-clickable warn-user pointer infotip mr-2 list-item-clicktodelete" title="<?php echo $lang->get('delete'); ?>" data-item-key="' + value.item_key + '" data-item-tree-id="' + value.tree_id + '"><i class="fa-solid fa-circle fa-stack-2x"></i><i class="fa-solid fa-trash fa-stack-1x fa-inverse"></i></span>';
+                trash_link = '<span class="fa-stack fa-clickable warn-user pointer infotip mr-2 list-item-clicktodelete" title="<?php echo $lang->get('delete'); ?>" data-item-id="' + value.item_id + '" data-item-tree-id="' + value.tree_id + '"><i class="fa-solid fa-circle fa-stack-2x"></i><i class="fa-solid fa-trash fa-stack-1x fa-inverse"></i></span>';
 
                 var description = '',
                     itemLabel = '';
