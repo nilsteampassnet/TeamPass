@@ -912,6 +912,43 @@ if (isset($SETTINGS['show_description']) === true && $SETTINGS['show_description
 <?php
 }
 ?>
+
+                        <div class='row mb-2 option' data-keywords="query display optimization">
+                            <div class='col-10'>
+                                <?php echo $lang->get('limited_search_default'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('limited_search_default_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='limited_search_default' data-toggle-on='<?php echo isset($SETTINGS['limited_search_default']) === true && $SETTINGS['limited_search_default'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='limited_search_default_input' value='<?php echo isset($SETTINGS['limited_search_default']) && $SETTINGS['limited_search_default'] === '1' ? '1' : '0'; ?>' />
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option' data-keywords="query display optimization">
+                            <div class='col-10'>
+                                <?php echo $lang->get('highlight_selected'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('highlight_selected_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='highlight_selected' data-toggle-on='<?php echo isset($SETTINGS['highlight_selected']) === true && $SETTINGS['highlight_selected'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='highlight_selected_input' value='<?php echo isset($SETTINGS['highlight_selected']) && $SETTINGS['highlight_selected'] === '1' ? '1' : '0'; ?>' />
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option' data-keywords="query display optimization">
+                            <div class='col-10'>
+                                <?php echo $lang->get('highlight_favorites'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('highlight_favorites_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='highlight_favorites' data-toggle-on='<?php echo isset($SETTINGS['highlight_favorites']) === true && $SETTINGS['highlight_favorites'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='highlight_favorites_input' value='<?php echo isset($SETTINGS['highlight_favorites']) && $SETTINGS['highlight_favorites'] === '1' ? '1' : '0'; ?>' />
+                            </div>
+                        </div>
+
                         <div class='row mb-2 option' data-keywords="query display optimization">
                             <div class='col-10'>
                                 <?php echo $lang->get('nb_items_by_query'); ?>

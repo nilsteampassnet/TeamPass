@@ -59,9 +59,9 @@ class AuthModel extends Database
                 'apikey' => isset($apikey) === true ? $apikey : '',
             ],
             [
-                'login' => 'trim|escape',
+                'login' => 'trim|escape|strip_tags',
                 'password' => 'trim|escape',
-                'apikey' => 'trim|escape',
+                'apikey' => 'trim|escape|strip_tags',
             ]
         );
         if (empty($inputData['login']) === true || empty($inputData['apikey']) === true) {

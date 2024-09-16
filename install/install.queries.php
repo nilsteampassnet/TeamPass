@@ -707,9 +707,13 @@ $SETTINGS = array (';
                             array('admin', 'oauth2_client_secret', ''),
                             array('admin', 'oauth2_client_endpoint', ''),
                             array('admin', 'oauth2_client_token', ''),
-                            array('admin', 'oauth2_client_scopes', 'openid,profile,email'),
+                            array('admin', 'oauth2_client_scopes', 'openid,profile,email,User.Read,Group.Read.All'),
                             array('admin', 'oauth2_client_appname', 'Login with Azure'),
                             array('admin', 'show_item_data', '0'),
+                            array('admin', 'oauth2_tenant_id', ''),
+                            array('admin', 'limited_search_default', '0'),
+                            array('admin', 'highlight_selected', '0'),
+                            array('admin', 'highlight_favorites', '0'),
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting

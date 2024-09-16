@@ -1,7 +1,7 @@
 [
     {
         "table_name": "api",
-        "structure_hash": "83f32764fba9efcf2c12ea30c90c4360d6020c8fb74cb4165f62fafce69b692f"
+        "structure_hash": "59deba4080818d00e2f678fb078568e83d93e7916b03aa76d3cc2d907b8e201c"
     },
     {
         "table_name": "automatic_del",
@@ -13,11 +13,11 @@
     },
     {
         "table_name": "background_tasks",
-        "structure_hash": "ebdf0ce49d3be2223e59e9faa598965b041243540c65dcfe2c03a91ce4c2ab2e"
+        "structure_hash": "968de2c0235717ce902720bd311882d535e9eeefcb84d16a0d92a585951b63a0"
     },
     {
         "table_name": "background_tasks_logs",
-        "structure_hash": "3895fed095075e05002fc7a9efdda430b2f7899172cfb2f0d04f743f7eef2012"
+        "structure_hash": "8a3d4f647da31132347a3dc30bca5245bfa1cf15227f3b32343c528fa31337c2"
     },
     {
         "table_name": "cache",
@@ -25,7 +25,7 @@
     },
     {
         "table_name": "cache_tree",
-        "structure_hash": "8554b55726ea0ee0c91e25fc43742404060aa8b1555610a84a1a1f2f4de5d514"
+        "structure_hash": "c81daf2ff2011b3e91ac7dc9b3cf2965e62576f269b0a6f21c35f8383fc8c3c8"
     },
     {
         "table_name": "categories",
@@ -101,11 +101,11 @@
     },
     {
         "table_name": "log_system",
-        "structure_hash": "29e304570416adcbc09673d1023bf0ae3442ad4ac93b1eeac1de4db9ebc35187"
+        "structure_hash": "a86a8716c0e36296ca89e59c9b109784222ab29f8f28bb545d5467c55e261922"
     },
     {
         "table_name": "misc",
-        "structure_hash": "14b19547bd0d8331108f91697dca663e2d28274c164782c82a9a66316964940c"
+        "structure_hash": "2ad2500c7a127eb693be06e25272616e35748dbc07f20519bc6098b7b2ea0db3"
     },
     {
         "table_name": "nested_tree",

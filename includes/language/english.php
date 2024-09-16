@@ -28,6 +28,12 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'limited_search_default' => 'Limited search by default',
+    'limited_search_default_tip' => 'When enabled, the search will be limited to the current folder and its subfolders. Otherwise, the search will be performed on all items.',
+    'highlight_selected' => 'Highlight selected',
+    'highlight_selected_tip' => 'When enabled, the selected item will be highlighted in the list.',
+    'highlight_favorites' => 'Highlight favorites',
+    'highlight_favorites_tip' => 'When enabled, the favorite items will be highlighted in the list.',
     'user_exists_but_not_oauth2' => 'User has to authenticate using Entra/Azure AD',
     'user_not_allowed_to_auth_to_teampass_app' => 'User is not allowed to authenticate with Teampass application',
     'user_is_not_auth_with_oauth2' => 'User should not authenticate with Entra/Azure AD',
