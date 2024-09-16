@@ -368,7 +368,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
     });
 
     // Prepare some UI elements
-    $('#limited-search').prop('checked', false);
+    $('#limited-search').prop('checked', '<?php echo $SETTINGS['limited_search_default']; ?>');
 
     $(document).on('blur', '#form-item-icon', function() {
         $('#form-item-icon-show').html('<i class="fas '+$(this).val()+'"></i>');
@@ -3316,7 +3316,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
     // Warn in case of limited search
     $(document).on('click', '#limited-search', function() {
-        if ($(this).is(":checked") === true) {
+        if ($(this).is(":checked") != "<?php echo $SETTINGS['limited_search_default']; ?>") {
             $('#find_items').css({
                 "background-color": "#f56954"
             });
