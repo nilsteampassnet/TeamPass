@@ -213,6 +213,9 @@ $request = SymfonyRequest::createFromGlobals();
 
                             // Show form
                             $('#dialog-ldap-user-change-password').removeClass('hidden');
+                            $('#dialog-ldap-user-change-password-info')
+                                .html('<i class="icon fa-solid fa-info mr-2"></i><?php echo $lang->get('ldap_user_has_changed_his_password');?>')
+                                .removeClass('hidden');
                         } else if (typeof data.queryResults !== 'undefined' && data.queryResults.keys_recovery_time === null && store.get('teampassUser').user_admin === 0) {
                             // User has not yet recovered his keys
                             $('#open_user_keys_management').removeClass('hidden');
