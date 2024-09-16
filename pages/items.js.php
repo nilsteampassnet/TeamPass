@@ -122,6 +122,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             personalSaltkeyRequired: 0,
             uploadedFileId: '',
             tempScrollTop: 0,
+            highlightSelected: parseInt(<?php echo $SETTINGS['highlight_selected']; ?>),
             highlightFavorites: parseInt(<?php echo $SETTINGS['highlight_favorites']; ?>)
         }
     );
@@ -278,7 +279,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             'teampassApplication', {
                 selectedFolder: parseInt(queryDict['group']),
                 itemsListFolderId: parseInt(queryDict['group']),
-                selectedItem: parseInt(queryDict['id'])
+                selectedItem: parseInt(queryDict['id']),
+                highlightSelected: parseInt(<?php echo $SETTINGS['highlight_selected']; ?>),
+                highlightFavorites: parseInt(<?php echo $SETTINGS['highlight_favorites']; ?>)
             }
         );
         store.update(
@@ -2230,6 +2233,11 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     $('#folder-tree-container').addClass('col-md-5').removeClass('col-md-3').removeClass('hidden');
                     $('#items-list-container').addClass('col-md-7').removeClass('col-md-4').removeClass('hidden');
                     $('#items-details-container').addClass('hidden');
+
+                    // Remove selected item highlighting in list
+                    if (store.get('teampassApplication').highlightSelected === 1) {
+                        $('.list-item-row .list-item-description').removeClass('bg-black');
+                    }
 
                 } else {
                     // Hide all
@@ -4826,6 +4834,12 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                         // Prepare Views
                         $('.item-details-card, #item-details-card-categories').removeClass('hidden');
                         $('.form-item').addClass('hidden');
+
+                        // Highlight selected item in list
+                        if (store.get('teampassApplication').highlightSelected === 1) {
+                            $('.list-item-row .list-item-description').removeClass('bg-black');
+                            $('#list-item-row_' + data.id + ' .list-item-description').addClass('bg-black');
+                        }
 
                         // show split mode or not
                         if (store.get('teampassUser').split_view_mode === 1) {
