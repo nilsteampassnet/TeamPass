@@ -47,6 +47,9 @@ class AzureAuthController
 
     public function __construct(array $settings)
     {
+        // Initialize the settings property
+        $this->settings = $settings;
+        
         // Multi-tenant is not allowed
         if (empty($settings['oauth2_tenant_id']) || $settings['oauth2_tenant_id'] === 'common') {
             throw new Exception('Invalid tenant_id provided. Multi-tenant access is not allowed.');
