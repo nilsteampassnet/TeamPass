@@ -11,7 +11,7 @@ loadClasses();
 // MDP  teampass.admin  Goh@u939!879
 
 // Création d'une instance du contrôleur
-$azureAuth = new AzureAuthController($SETTINGS, true);
+$azureAuth = new AzureAuthController($SETTINGS);
 
 // Redirection vers Azure pour l'authentification
 $azureAuth->redirect();
