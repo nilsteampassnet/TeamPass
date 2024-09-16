@@ -606,7 +606,23 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         // User signature keys
         $returnKeys = prepareUserEncryptionKeys($userInfo, $passwordClear);  
         $session->set('user-private_key', $returnKeys['private_key_clear']);
-        $session->set('user-public_key', $returnKeys['public_key']);      
+        $session->set('user-public_key', $returnKeys['public_key']);
+
+        // Automatically detect LDAP password changes.
+        if ($userInfo['auth_type'] === 'ldap' && $returnKeys['private_key_clear'] === '') {
+            // Add special "recrypt-private-key" in database profile.
+            DB::update(
+                prefixTable('users'),
+                array(
+                    'special' => 'recrypt-private-key',
+                ),
+                'id = %i',
+                $userInfo['id']
+            );
+
+            // Store new value in userInfos.
+            $userInfo['special'] = 'recrypt-private-key';
+        }
 
         // API key
         $session->set(

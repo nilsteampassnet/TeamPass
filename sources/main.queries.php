@@ -3083,24 +3083,16 @@ function changeUserLDAPAuthenticationPassword(
                 );
             }
 
-            // Test if possible to decvrypt one key
-            // Get one item
-            $record = DB::queryFirstRow(
-                'SELECT id, pw
-                FROM ' . prefixTable('items') . '
-                WHERE perso = 0'
-            );
-
-            // Get itemKey from current user
+            // Get one itemKey from current user
             $currentUserKey = DB::queryFirstRow(
                 'SELECT share_key, increment_id
                 FROM ' . prefixTable('sharekeys_items') . '
-                WHERE object_id = %i AND user_id = %i',
-                $record['id'],
+                WHERE user_id = %i
+                LIMIT 1',
                 $post_user_id
             );
 
-            if (count($currentUserKey) > 0) {
+            if (is_countable($currentUserKey) && count($currentUserKey) > 0) {
                 // Decrypt itemkey with user key
                 // use old password to decrypt private_key
                 $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $privateKey);
