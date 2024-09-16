@@ -122,6 +122,8 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             personalSaltkeyRequired: 0,
             uploadedFileId: '',
             tempScrollTop: 0,
+            highlightSelected: parseInt(<?php echo $SETTINGS['highlight_selected']; ?>),
+            highlightFavorites: parseInt(<?php echo $SETTINGS['highlight_favorites']; ?>)
         }
     );
 
@@ -277,7 +279,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             'teampassApplication', {
                 selectedFolder: parseInt(queryDict['group']),
                 itemsListFolderId: parseInt(queryDict['group']),
-                selectedItem: parseInt(queryDict['id'])
+                selectedItem: parseInt(queryDict['id']),
+                highlightSelected: parseInt(<?php echo $SETTINGS['highlight_selected']; ?>),
+                highlightFavorites: parseInt(<?php echo $SETTINGS['highlight_favorites']; ?>)
             }
         );
         store.update(
@@ -368,7 +372,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
     });
 
     // Prepare some UI elements
-    $('#limited-search').prop('checked', false);
+    $('#limited-search').prop('checked', '<?php echo $SETTINGS['limited_search_default']; ?>');
 
     $(document).on('blur', '#form-item-icon', function() {
         $('#form-item-icon-show').html('<i class="fas '+$(this).val()+'"></i>');
@@ -2230,6 +2234,11 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     $('#items-list-container').addClass('col-md-7').removeClass('col-md-4').removeClass('hidden');
                     $('#items-details-container').addClass('hidden');
 
+                    // Remove selected item highlighting in list
+                    if (store.get('teampassApplication').highlightSelected === 1) {
+                        $('.list-item-row .list-item-description').removeClass('bg-black');
+                    }
+
                 } else {
                     // Hide all
                     $('.form-item, .form-item-action, .form-folder-action, .item-details-card, #folders-tree-card, #card-item-expired')
@@ -2504,10 +2513,22 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                         //change quick icon
                         if (elem.data('item-favourited') === 0) {
                             $(elem)
-                                .html('<span class="fa-stack fa-clickable item-favourite pointer infotip mr-2" title="<?php echo $lang->get('unfavorite'); ?>" data-item-id="' + elem.item_id + '" data-item-favourited="1"><i class="fa-solid fa-circle fa-stack-2x"></i><i class="fa-solid fa-star fa-stack-1x fa-inverse text-warning"></i></span>');
+                                .html('<span class="fa-stack fa-clickable item-favourite pointer infotip mr-2" title="<?php echo $lang->get('unfavorite'); ?>" data-item-id="' + data.item_id + '" data-item-favourited="1"><i class="fa-solid fa-circle fa-stack-2x"></i><i class="fa-solid fa-star fa-stack-1x fa-inverse text-warning"></i></span>');
+
+                            // Remove highlighting
+                            if (store.get('teampassApplication').highlightFavorites === 1) {
+                                $('#list-item-row_' + data.item_id).addClass('bg-yellow');
+                                $('#list-item-row_' + data.item_id + ' .item-favorite-star').addClass('fa-star mr-1');
+                            }
                         } else {
                             $(elem)
-                                .html('<span class="fa-stack fa-clickable item-favourite pointer infotip mr-2" title="<?php echo $lang->get('favorite'); ?>" data-item-id="' + elem.item_id + '" data-item-favourited="0"><i class="fa-solid fa-circle fa-stack-2x"></i><i class="fa-solid fa-star fa-stack-1x fa-inverse"></i></span>');
+                                .html('<span class="fa-stack fa-clickable item-favourite pointer infotip mr-2" title="<?php echo $lang->get('favorite'); ?>" data-item-id="' + data.item_id + '" data-item-favourited="0"><i class="fa-solid fa-circle fa-stack-2x"></i><i class="fa-solid fa-star fa-stack-1x fa-inverse"></i></span>');
+                            
+                            // Add highlighting
+                            if (store.get('teampassApplication').highlightFavorites === 1) {
+                                $('#list-item-row_' + data.item_id).removeClass('bg-yellow');
+                                $('#list-item-row_' + data.item_id + ' .item-favorite-star').removeClass('fa-star mr-1');
+                            }
                         }
 
                         toastr.remove();
@@ -3316,7 +3337,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
     // Warn in case of limited search
     $(document).on('click', '#limited-search', function() {
-        if ($(this).is(":checked") === true) {
+        if ($(this).is(":checked") != "<?php echo $SETTINGS['limited_search_default']; ?>") {
             $('#find_items').css({
                 "background-color": "#f56954"
             });
@@ -4282,7 +4303,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 }
 
                 $('#teampass_items_list').append(
-                    '<tr class="list-item-row' + (value.canMove === 1 ? ' is-draggable' : '') + '" id="list-item-row_' + value.item_id + '" data-item-key="' + value.item_key + '" data-item-edition="' + value.open_edit + '" data-item-id="' + value.item_id + '" data-item-sk="' + value.sk + '" data-item-expired="' + value.expired + '" data-item-rights="' + value.rights + '" data-item-display="' + value.display + '" data-item-open-edit="' + value.open_edit + '" data-item-tree-id="' + value.tree_id + '" data-is-search-result="' + value.is_result_of_search + '" data-label="' + escape(value.label) + '">' +
+                    '<tr class="list-item-row' + (value.canMove === 1 ? ' is-draggable' : '') + ((store.get('teampassApplication').highlightFavorites === 1 && value.is_favourited === 1) ? ' bg-yellow' : '') + '" id="list-item-row_' + value.item_id + '" data-item-key="' + value.item_key + '" data-item-edition="' + value.open_edit + '" data-item-id="' + value.item_id + '" data-item-sk="' + value.sk + '" data-item-expired="' + value.expired + '" data-item-rights="' + value.rights + '" data-item-display="' + value.display + '" data-item-open-edit="' + value.open_edit + '" data-item-tree-id="' + value.tree_id + '" data-is-search-result="' + value.is_result_of_search + '" data-label="' + escape(value.label) + '">' +
                     '<td class="list-item-description" style="width: 100%;">' +
                     // Show user a grippy bar to move item
                     (value.canMove === 1  ? '<i class="fa-solid fa-ellipsis-v mr-2 dragndrop"></i>' : '') + //&& value.is_result_of_search === 0
@@ -4296,7 +4317,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     (value.fa_icon !== '' ? '<i class="'+value.fa_icon+' mr-1"></i>' : '') +
                     // Prepare item info
                     '<span class="list-item-clicktoshow' + (value.rights === 10 ? '' : ' pointer') + '" data-item-id="' + value.item_id + '" data-item-key="' + value.item_key + '">' +
-                    '<span class="list-item-row-description' + (value.rights === 10 ? ' font-weight-light' : '') + '">' + value.label + '</span>' + (value.rights === 10 ? '' : description) +
+                    '<span class="list-item-row-description' + (value.rights === 10 ? ' font-weight-light' : '') + '"><i class="item-favorite-star fa-solid' + ((store.get('teampassApplication').highlightFavorites === 1 && value.is_favourited === 1) ? ' fa-star mr-1' : '') + '"></i>' + value.label + '</span>' + (value.rights === 10 ? '' : description) +
                     '</span>' +
                     '<span class="list-item-actions hidden">' +
                     (value.rights === 10 ?
@@ -4813,6 +4834,12 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                         // Prepare Views
                         $('.item-details-card, #item-details-card-categories').removeClass('hidden');
                         $('.form-item').addClass('hidden');
+
+                        // Highlight selected item in list
+                        if (store.get('teampassApplication').highlightSelected === 1) {
+                            $('.list-item-row .list-item-description').removeClass('bg-black');
+                            $('#list-item-row_' + data.id + ' .list-item-description').addClass('bg-black');
+                        }
 
                         // show split mode or not
                         if (store.get('teampassUser').split_view_mode === 1) {
