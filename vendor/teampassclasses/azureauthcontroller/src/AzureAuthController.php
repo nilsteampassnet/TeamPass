@@ -55,17 +55,17 @@ class AzureAuthController
             throw new Exception('Invalid tenant_id provided. Multi-tenant access is not allowed.');
         }
 
-        // Utilisation du point de terminaison v2.0
+        // Using the v2.0 endpoint
         $this->provider = new Azure([
             'clientId'                => $settings['oauth2_client_id'],
             'clientSecret'            => $settings['oauth2_client_secret'],
             'tenant'                  => $settings['oauth2_tenant_id'],
             'redirectUri'             => $settings['cpassman_url'].'/index.php?post_type=oauth2',
-            'urlAuthorize'            => 'https://login.microsoftonline.com/' . $settings['oauth2_tenant_id'] . '/oauth2/v2.0/authorize', // Utilisation du endpoint v2.0
-            'urlAccessToken'          => 'https://login.microsoftonline.com/' . $settings['oauth2_tenant_id'] . '/oauth2/v2.0/token',     // Endpoint v2.0 pour le token
-            'urlResourceOwnerDetails' => 'https://graph.microsoft.com/v1.0/me',  // Endpoint pour obtenir les infos de l'utilisateur
-            'scopes'                  => explode(",", $settings['oauth2_client_scopes']),  // Les scopes sont définis dans les paramètres
-            'defaultEndPointVersion'  => '2.0',  // Version du point de terminaison
+            'urlAuthorize'            => 'https://login.microsoftonline.com/' . $settings['oauth2_tenant_id'] . '/oauth2/v2.0/authorize', // Using the v2.0 endpoint
+            'urlAccessToken'          => 'https://login.microsoftonline.com/' . $settings['oauth2_tenant_id'] . '/oauth2/v2.0/token',     // v2.0 endpoint for the token
+            'urlResourceOwnerDetails' => 'https://graph.microsoft.com/v1.0/me',  // Endpoint to get user info
+            'scopes'                  => explode(",", $settings['oauth2_client_scopes']),  // Scopes are defined in the settings
+            'defaultEndPointVersion'  => '2.0',  // Endpoint version
         ]);
     }
 
@@ -81,7 +81,7 @@ class AzureAuthController
             'prompt' => 'select_account'
         ];
 
-        // Rediriger l'utilisateur vers Azure AD pour l'authentification
+        // Redirect the user to Azure AD for authentication
         $authUrl = $this->provider->getAuthorizationUrl($options);
         $_SESSION['oauth2state'] = $this->provider->getState();
         header('Location: ' . $authUrl);
@@ -90,29 +90,29 @@ class AzureAuthController
 
     public function callback()
     {
-        // Vérification de l'état CSRF
+        // CSRF state verification
         if (empty($_GET['state']) || ($_GET['state'] !== $_SESSION['oauth2state'])) {
             unset($_SESSION['oauth2state']);
-            exit('État invalide');
+            exit('Invalid state');
         }
 
         try {
-            // Échanger le code d'autorisation contre un token d'accès
+            // Exchange the authorization code for an access token
             $token = $this->provider->getAccessToken('authorization_code', [
                 'code' => $_GET['code']
             ]);
 
-            // Récupérer les informations de l'utilisateur via Microsoft Graph
+            // Retrieve user information via Microsoft Graph
             $graphUrl = 'https://graph.microsoft.com/v1.0/me';
             $response = $this->provider->getAuthenticatedRequest('GET', $graphUrl, $token->getToken());
             $user = $this->provider->getParsedResponse($response);
 
-            // Récupérer les groupes auxquels l'utilisateur appartient
+            // Retrieve the groups the user belongs to
             $groupsUrl = 'https://graph.microsoft.com/v1.0/me/memberOf';
             $groupsResponse = $this->provider->getAuthenticatedRequest('GET', $groupsUrl, $token->getToken());
             $groups = $this->provider->getParsedResponse($groupsResponse);
             
-            // Extraire uniquement les IDs et noms des groupes si disponibles
+            // Extract only the IDs and names of the groups if available
             $userGroups = [];
             if (isset($groups['value']) && is_array($groups['value'])) {
                 foreach ($groups['value'] as $group) {
@@ -123,17 +123,17 @@ class AzureAuthController
                 }
             }
 
-            // Retourner les informations de l'utilisateur
+            // Return user information
             return [
                 'error' => false,
                 'userOauth2Info' => array_merge($user, array('groups' => $userGroups, 'oauth2TokenUsed' => false, 'oauth2LoginOngoing' => true)),
             ];
 
         } catch (\Exception $e) {
-            error_log('Erreur inattendue : ' . $e->getMessage());
+            error_log('Unexpected error: ' . $e->getMessage());
             return [
                 'error' => true,
-                'message' => 'Erreur lors de la récupération du token : ' . $e->getMessage(),
+                'message' => 'Error retrieving token: ' . $e->getMessage(),
             ];
         }
     }
@@ -142,32 +142,32 @@ class AzureAuthController
     {
         try {
             if (is_null($token)) {
-                // Obtenir un token avec les scopes appropriés pour accéder aux groupes
+                // Obtain a token with the appropriate scopes to access groups
                 $token = $this->provider->getAccessToken('authorization_code', [
                     'code' => $_GET['code'],
                 ]);
             }
 
-            // Faire une requête pour récupérer tous les groupes
+            // Make a request to retrieve all groups
             $graphUrl = 'https://graph.microsoft.com/v1.0/groups';
             $response = $this->provider->getAuthenticatedRequest('GET', $graphUrl, $token->getToken());
             $groupsResponse  = $this->provider->getParsedResponse($response);
 
-            // Initialiser un tableau pour stocker les groupes avec id et displayName
+            // Initialize an array to store groups with id and displayName
             $groupsList = [];
 
-            // Vérifier si la réponse contient des groupes
+            // Check if the response contains groups
             if (isset($groupsResponse['value']) && is_array($groupsResponse['value'])) {
                 foreach ($groupsResponse['value'] as $group) {
-                    // Extraire l'ID et le displayName de chaque groupe
+                    // Extract the ID and displayName of each group
                     $groupsList[] = [
-                        'id' => $group['id'] ?? null, // Utiliser l'opérateur null coalescent pour éviter les erreurs
+                        'id' => $group['id'] ?? null, // Use null coalescing operator to avoid errors
                         'displayName' => $group['displayName'] ?? null,
                     ];
                 }
             }
 
-            // Retourner la liste des groupes avec id et displayName
+            // Return the list of groups with id and displayName
             return $groupsList;
 
         } catch (Exception $e) {
