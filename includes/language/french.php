@@ -261,7 +261,7 @@ return array(
     'expected_complexity_level' => 'Niveau de complexité requis',
     'your_attention_is_required' => 'Merci de votre attention',
     'favorite' => 'Favori',
-    'unfavorite' => 'Non favori',
+    'unfavorite' => 'Retirer favori',
     'you_need_to_select_at_least_one_folder' => 'Vous devez sélectionner au moins un répertoire',
     'no_value_defined_please_fix' => 'Aucune valeur définie ! Vous devriez le faire.',
     'apply' => 'Appliquer',
