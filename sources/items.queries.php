@@ -759,7 +759,7 @@ switch ($inputData['type']) {
                     // Get path
                     $path = geItemReadablePath(
                         (int) $inputData['folderId'],
-                        $label,
+                        $inputData['label'],
                         $SETTINGS
                     );
 
