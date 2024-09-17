@@ -559,7 +559,7 @@ if (null !== $post_type) {
                 $post_parent_id
             );
 
-            $isPersonal = (isset($dataParent['personal_folder']) === true && (int) $dataParent['personal_folder'] === 1) ? 1 : 0;
+            $isPersonal = (isset($dataParent['personal_folder']) === true && (int) $dataParent['personal_folder'] == 1) ? 1 : 0;
 
             // Create folder
             require_once 'folders.class.php';

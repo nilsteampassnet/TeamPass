@@ -264,7 +264,7 @@ class FolderManager
         DB::insert(prefixTable('nested_tree'), [
             'parent_id' => $params['parent_id'],
             'title' => $params['title'],
-            'personal_folder' => $params['isPersonal'] ?? 0,
+            'personal_folder' => $params['personal_folder'] ?? 0,
             'renewal_period' => $params['duration'] ?? 0,
             'bloquer_creation' => $params['create_auth_without'] ?? $parentFolderData['parentBloquerCreation'],
             'bloquer_modification' => $params['edit_auth_without'] ?? $parentFolderData['parentBloquerModification'],
