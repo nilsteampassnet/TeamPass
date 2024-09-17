@@ -519,6 +519,24 @@ if (intval($tmp) === 0) {
     );
 }
 
+// Add field is_encrypted to misc table
+$res = addColumnIfNotExist(
+    $pre . 'misc',
+    'is_encrypted',
+    "tinyint(1) NOT NULL DEFAULT '0';"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field is_encrypted to table misc! ' . mysqli_error($db_link) . '!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// Force some settings to be encrypted
+mysqli_query(
+    $db_link,
+    "UPDATE `" . $pre . "misc` SET `is_encrypted` = '1' WHERE `intitule` IN ('onthefly-restore-key', 'onthefly-backup-key', 'bck_script_passkey', 'duo_akey', 'duo_ikey', 'duo_skey', 'oauth2_client_secret', 'ldap_password', 'email_auth_pwd')"
+);
+
 //---<END 3.1.2
 
 //---------------------------------------------------------------------

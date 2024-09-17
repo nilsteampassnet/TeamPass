@@ -1723,72 +1723,121 @@ function noHTML(string $input, string $encoding = 'UTF-8'): string
     return htmlspecialchars($input, ENT_QUOTES | ENT_XHTML, $encoding, false);
 }
 
+
 /**
- * Permits to handle the Teampass config file
- * $action accepts "rebuild" and "update"
+ * Handles the Teampass config file.
  *
- * @param string $action   Action to perform
- * @param array  $SETTINGS Teampass settings
- * @param string $field    Field to refresh
- * @param string $value    Value to set
+ * @param string $action   Action to perform. Accepts "rebuild" and "update".
+ * @param array  $settings Teampass settings.
+ * @param string $field    Field to refresh. Optional.
+ * @param string $value    Value to set. Optional.
+ * @param int   $isEncrypted Is the value encrypted? Optional.
  *
  * @return string|bool
  */
-function handleConfigFile($action, $SETTINGS, $field = null, $value = null)
+function handleConfigFile(string $action, array $settings, string $field = null, string $value = null, int $isEncrypted = 0)
 {
-    $tp_config_file = $SETTINGS['cpassman_dir'] . '/includes/config/tp.config.php';
+    $configFilePath = $settings['cpassman_dir'] . '/includes/config/tp.config.php';
 
     // Load class DB
     loadClasses('DB');
 
-    if (file_exists($tp_config_file) === false || $action === 'rebuild') {
-        // perform a copy
-        if (file_exists($tp_config_file)) {
-            if (! copy($tp_config_file, $tp_config_file . '.' . date('Y_m_d_His', time()))) {
-                return "ERROR: Could not copy file '" . $tp_config_file . "'";
-            }
-        }
+    if (!file_exists($configFilePath) || $action === 'rebuild') {
+        return rebuildConfigFile($configFilePath, $settings);
+    }
 
-        // regenerate
-        $data = [];
-        $data[0] = "<?php\n";
-        $data[1] = "global \$SETTINGS;\n";
-        $data[2] = "\$SETTINGS = array (\n";
-        $rows = DB::query(
-            'SELECT * FROM ' . prefixTable('misc') . ' WHERE type=%s',
-            'admin'
-        );
-        foreach ($rows as $record) {
-            array_push($data, "    '" . $record['intitule'] . "' => '" . htmlspecialchars_decode($record['valeur'], ENT_COMPAT) . "',\n");
-        }
-        array_push($data, ");\n");
-        $data = array_unique($data);
-    // ---
-    } elseif ($action === 'update' && empty($field) === false) {
-        $data = file($tp_config_file);
-        $inc = 0;
-        $bFound = false;
-        foreach ($data as $line) {
-            if (stristr($line, ');')) {
-                break;
-            }
+    if ($action === 'update' && !empty($field)) {
+        return updateConfigFile($configFilePath, $field, $value, $isEncrypted);
+    }
 
-            if (stristr($line, "'" . $field . "' => '")) {
-                $data[$inc] = "    '" . $field . "' => '" . htmlspecialchars_decode($value ?? '', ENT_COMPAT) . "',\n";
-                $bFound = true;
-                break;
-            }
-            ++$inc;
-        }
-        if ($bFound === false) {
-            $data[$inc] = "    '" . $field . "' => '" . htmlspecialchars_decode($value ?? '', ENT_COMPAT). "',\n);\n";
+    return true;
+}
+
+/**
+ * Rebuilds the Teampass config file.
+ *
+ * @param string $configFilePath Path to the config file.
+ * @param array  $settings       Teampass settings.
+ *
+ * @return string|bool
+ */
+function rebuildConfigFile(string $configFilePath, array $settings)
+{
+    // Perform a copy if the file exists
+    if (file_exists($configFilePath)) {
+        $backupFilePath = $configFilePath . '.' . date('Y_m_d_His', time());
+        if (!copy($configFilePath, $backupFilePath)) {
+            return "ERROR: Could not copy file '$configFilePath'";
         }
     }
 
-    // update file
-    file_put_contents($tp_config_file, implode('', $data ?? []));
+    // Regenerate the config file
+    $data = ["<?php\n", "global \$SETTINGS;\n", "\$SETTINGS = array (\n"];
+    $rows = DB::query('SELECT * FROM ' . prefixTable('misc') . ' WHERE type=%s', 'admin');
+    foreach ($rows as $record) {
+        $value = getEncryptedValue($record['valeur'], $record['is_encrypted']);
+        $data[] = "    '{$record['intitule']}' => '". htmlspecialchars_decode($value, ENT_COMPAT) . "',\n";
+    }
+    $data[] = ");\n";
+    $data = array_unique($data);
+
+    // Update the file
+    file_put_contents($configFilePath, implode('', $data));
+
     return true;
 }
+
+/**
+ * Updates the Teampass config file.
+ *
+ * @param string $configFilePath Path to the config file.
+ * @param string $field          Field to refresh.
+ * @param string $value          Value to set.
+ * @param int   $isEncrypted    Is the value encrypted?
+ *
+ * @return string|bool
+ */
+function updateConfigFile(string $configFilePath, string $field, string $value, int $isEncrypted)
+{
+    $data = file($configFilePath);
+    $lineIndex = null;
+    foreach ($data as $index => $line) {
+        if (stristr($line, ');')) {
+            break;
+        }
+
+        if (stristr($line, "'$field' => '")) {
+            $value = getEncryptedValue($value, $isEncrypted);
+            $data[$index] = "    '$field' => '" . htmlspecialchars_decode($value, ENT_COMPAT) . "',\n";
+            $lineIndex = $index;
+            break;
+        }
+    }
+
+    if ($lineIndex === null) {
+        $value = getEncryptedValue($value, $isEncrypted);
+        $data[] = "    '$field' => '" . htmlspecialchars_decode($value, ENT_COMPAT) . "',\n);\n";
+    }
+
+    // Update the file
+    file_put_contents($configFilePath, implode('', $data));
+
+    return true;
+}
+
+/**
+ * Returns the encrypted value if needed.
+ *
+ * @param string $value       Value to encrypt.
+ * @param int   $isEncrypted Is the value encrypted?
+ *
+ * @return string
+ */
+function getEncryptedValue(string $value, int $isEncrypted): string
+{
+    return $isEncrypted ? cryption($value, '', 'encrypt')['string'] : $value;
+}
+
 
 /**
  * Permits to replace &#92; to permit correct display

@@ -30,13 +30,11 @@ namespace TeampassClasses\AzureAuthController;
  */
 
 use TheNetworg\OAuth2\Client\Provider\Azure;
-//use League\OAuth2\Client\Token\AccessToken;
 
 /*** INFO - .htaccess modification ***
  * RewriteEngine On
  * RewriteRule ^login/azure$ /path/to/AzureAuthController.php?method=redirect [L]
  * RewriteRule ^login/azure/callback$ /path/to/AzureAuthController.php?method=callback [L]
-
  */
 use Exception;
 

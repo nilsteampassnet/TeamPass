@@ -501,15 +501,16 @@ if (null !== $post_type) {
                     } elseif ($task === 'misc') {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
-                            'CREATE TABLE IF NOT EXISTS `' . $var['tbl_prefix'] . 'misc` (
+                            "CREATE TABLE IF NOT EXISTS `" . $var['tbl_prefix'] . "misc` (
                             `increment_id` int(12) NOT null AUTO_INCREMENT,
                             `type` varchar(50) NOT NULL,
                             `intitule` varchar(100) NOT NULL,
                             `valeur` varchar(500) NOT NULL,
                             `created_at` varchar(255) NULL DEFAULT NULL,
                             `updated_at` varchar(255) NULL DEFAULT NULL,
+                            `is_encrypted` tinyint(1) NOT NULL DEFAULT '0',
                             PRIMARY KEY (`increment_id`)
-                            ) CHARSET=utf8;'
+                            ) CHARSET=utf8;"
                         );
 
                         // include constants

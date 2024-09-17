@@ -466,10 +466,11 @@ function installHandleFoldersCategories(
  * @param array  $SETTINGS Teampass settings
  * @param string $field    Field to refresh
  * @param string $value    Value to set
+ * @param int   $isEncrypted
  *
  * @return string|bool
  */
-function installHandleConfigFile($action, $SETTINGS, $field = null, $value = null)
+function installHandleConfigFile($action, $SETTINGS, $field = null, $value = null, int $isEncrypted = 0)
 {
     $tp_config_file = $SETTINGS['cpassman_dir'] . '/includes/config/tp.config.php';
     $filename = '../includes/config/settings.php';
@@ -504,7 +505,8 @@ function installHandleConfigFile($action, $SETTINGS, $field = null, $value = nul
         $rowcount = $result->num_rows;
         if ($rowcount > 0) {
             while ($row = $result->fetch_assoc()) {
-                array_push($data, "    '" . $row['intitule'] . "' => '" . htmlspecialchars_decode($row['valeur'], ENT_COMPAT) . "',\n");
+                $value = getEncryptedValue($row['valeur'], $row['is_encrypted']);
+                array_push($data, "    '" . $row['intitule'] . "' => '" . htmlspecialchars_decode($value, ENT_COMPAT) . "',\n");
             }
         }
         array_push($data, ");\n");
@@ -520,6 +522,7 @@ function installHandleConfigFile($action, $SETTINGS, $field = null, $value = nul
             }
 
             if (stristr($line, "'" . $field . "' => '")) {
+                $value = getEncryptedValue($value, $isEncrypted);
                 $data[$inc] = "    '" . $field . "' => '" . htmlspecialchars_decode($value ?? '', ENT_COMPAT) . "',\n";
                 $bFound = true;
                 break;
@@ -527,6 +530,7 @@ function installHandleConfigFile($action, $SETTINGS, $field = null, $value = nul
             ++$inc;
         }
         if ($bFound === false) {
+            $value = getEncryptedValue($record['valeur'], $isEncrypted);
             $data[$inc] = "    '" . $field . "' => '" . htmlspecialchars_decode($value ?? '', ENT_COMPAT). "',\n);\n";
         }
     }
