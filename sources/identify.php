@@ -2384,10 +2384,18 @@ function shouldUserAuthWithOauth2(
     string $username
 ): array
 {
+    // Security issue without this return if an user auth_type == oauth2 and
+    // oauth2 disabled : we can login as a valid user by using hashUserId(username)
+    // as password in the login the form.
+    if ((int) $SETTINGS['oauth2_enabled'] !== 1) {
+        return [
+            'error' => true,
+            'message' => 'user_not_allowed_to_auth_to_teampass_app',
+        ];
+    }
+
     // Prepare Oauth2 connection if set up
-    if ((int) $SETTINGS['oauth2_enabled'] === 1
-        && $username !== 'admin'
-    ) {
+    if ($username !== 'admin') {
         // User has started to auth with oauth2
         if ((bool) $userInfo['oauth2_login_ongoing'] === true) {
             // Case where user exists in Teampass but not allowed to auth with Oauth2        
@@ -2478,9 +2486,7 @@ function createOauth2User(
             'userPasswordVerified' => true,
         ];
     
-    } elseif ((int) $SETTINGS['oauth2_enabled'] === 1
-        && isset($userInfo['id']) === true && empty($userInfo['id']) === false
-    ) {
+    } elseif (isset($userInfo['id']) === true && empty($userInfo['id']) === false) {
         // CHeck if user should use oauth2
         $ret = shouldUserAuthWithOauth2(
             $SETTINGS,
