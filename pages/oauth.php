@@ -35,7 +35,7 @@ use TeampassClasses\Language\Language;
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\ConfigManager\ConfigManager;
-use TeampassClasses\AzureAuthController\AzureAuthController;
+use TeampassClasses\OAuth2Controller\OAuth2Controller;
 
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';

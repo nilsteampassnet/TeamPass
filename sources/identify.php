@@ -47,8 +47,7 @@ use RobThree\Auth\TwoFactorAuth;
 use TeampassClasses\LdapExtra\LdapExtra;
 use TeampassClasses\LdapExtra\OpenLdapExtra;
 use TeampassClasses\LdapExtra\ActiveDirectoryExtra;
-use TeampassClasses\AzureAuthController\AzureAuthController;
-
+use TeampassClasses\OAuth2Controller\OAuth2Controller;
 // Load functions
 require_once 'main.functions.php';
 
@@ -219,55 +218,10 @@ if ($post_type === 'identify_user') {
     //
 
     // Création d'une instance du contrôleur
-    $azureAuth = new AzureAuthController($SETTINGS);
+    $OAuth2 = new OAuth2Controller($SETTINGS);
 
     // Redirection vers Azure pour l'authentification
-    $azureAuth->redirect();
-
-/*
-    $provider = new TheNetworg\OAuth2\Client\Provider\Azure([
-        'clientId'                => $SETTINGS['oauth2_azure_clientId'],
-        'clientSecret'            => $SETTINGS['oauth2_azure_clientSecret'],
-        'redirectUri'             => $SETTINGS['oauth2_azure_redirectUri'],
-        'urlAuthorize'            => $SETTINGS['oauth2_azure_urlAuthorize'],
-        'urlAccessToken'          => $SETTINGS['oauth2_azure_urlAccessToken'],
-        'urlResourceOwnerDetails' => $SETTINGS['oauth2_azure_urlResourceOwnerDetails'],
-        'scopes'                  => explode(",", $SETTINGS['oauth2_azure_scopes']),
-        'defaultEndPointVersion' => '2.0'
-    ]);
-    $provider->defaultEndPointVersion = TheNetworg\OAuth2\Client\Provider\Azure::ENDPOINT_VERSION_2_0;
-    $baseGraphUri = $provider->getRootMicrosoftGraphUri(null);
-    $provider->scope = 'openid profile email offline_access ' . $baseGraphUri . '/User.Read';
-    if (isset($_GET['code']) && isset($_SESSION['OAuth2.state']) && isset($_GET['state'])) {
-        if ($_GET['state'] == $_SESSION['OAuth2.state']) {
-            unset($_SESSION['OAuth2.state']);
-    
-            $token = $provider->getAccessToken('authorization_code', [
-                'scope' => $provider->scope,
-                'code' => $_GET['code'],
-            ]);
-    
-            // Verify token
-            // Save it to local server session data
-            
-            return $token->getToken();
-        } else {
-            echo 'Invalid state';
-    
-            return null;
-        }
-    } else {
-        $authorizationUrl = $provider->getAuthorizationUrl(['scope' => $provider->scope]);
-
-        $_SESSION['OAuth2.state'] = $provider->getState();
-
-        header('Location: ' . $authorizationUrl);
-
-        exit;
-
-        return $token->getToken();
-    }
-*/
+    $OAuth2->redirect();
 
     // Encrypt data to return
     echo json_encode([

@@ -31,8 +31,7 @@ declare(strict_types=1);
 
 use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use TeampassClasses\Language\Language;
-use TeampassClasses\AzureAuthController\AzureAuthController;
-
+use TeampassClasses\OAuth2Controller\OAuth2Controller;
 // Automatic redirection
 $nextUrl = '';
 if (strpos($server['request_uri'], '?') > 0) {
@@ -62,10 +61,10 @@ if (isset($_GET['code']) === true && isset($_GET['state']) === true && $get['pos
     if (WIP === true) error_log('---- OAUTH2 START ----');
 
     // Création d'une instance du contrôleur
-    $azureAuth = new AzureAuthController($SETTINGS);
+    $OAuth2 = new OAuth2Controller($SETTINGS);
 
     // Traitement de la réponse de callback Azure
-    $userInfo = $azureAuth->callback();
+    $userInfo = $OAuth2->callback();
 
     if ($userInfo['error'] === false) {
         // Si aucune erreur, stocker les informations utilisateur dans la session PHP

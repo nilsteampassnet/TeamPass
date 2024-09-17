@@ -6102,12 +6102,12 @@
             "install-path": "../symfony/translation"
         },
         {
-            "name": "teampassclasses/azureauthcontroller",
+            "name": "teampassclasses/oauth2controller",
             "version": "dev-master",
             "version_normalized": "dev-master",
             "dist": {
                 "type": "path",
-                "url": "includes/libraries/teampassclasses/azureauthcontroller",
+                "url": "includes/libraries/teampassclasses/oauth2controller",
                 "reference": "5948d5854bf9c775d9dd94810d91f8f07078f76b"
             },
             "require": {
@@ -6117,7 +6117,7 @@
             "installation-source": "dist",
             "autoload": {
                 "psr-4": {
-                    "TeampassClasses\\AzureAuthController\\": "src/"
+                    "TeampassClasses\\OAuth2Controller\\": "src/"
                 }
             },
             "license": [
@@ -6138,7 +6138,7 @@
                 "symlink": false,
                 "relative": true
             },
-            "install-path": "../teampassclasses/azureauthcontroller"
+            "install-path": "../teampassclasses/oauth2controller"
         },
         {
             "name": "teampassclasses/configmanager",

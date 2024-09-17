@@ -4249,7 +4249,6 @@ function handleUserRecoveryKeysDownload(int $userId, array $SETTINGS):string
 
     if (DB::count() > 0) {
         $now = (int) time();
-error_log('password: '.$session->get('user-password'));
         // Prepare file content
         $export_value = file_get_contents(__DIR__."/../includes/core/teampass_ascii.txt")."\n".
             "Generation date: ".date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], $now)."\n\n".

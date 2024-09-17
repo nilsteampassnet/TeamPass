@@ -2033,7 +2033,7 @@ return array(
     'TCPDF_IMPORT' => $vendorDir . '/tecnickcom/tcpdf/tcpdf_import.php',
     'TCPDF_PARSER' => $vendorDir . '/tecnickcom/tcpdf/tcpdf_parser.php',
     'TCPDF_STATIC' => $vendorDir . '/tecnickcom/tcpdf/include/tcpdf_static.php',
-    'TeampassClasses\\AzureAuthController\\AzureAuthController' => $vendorDir . '/teampassclasses/azureauthcontroller/src/AzureAuthController.php',
+    'TeampassClasses\\OAuth2Controller\\OAuth2Controller' => $vendorDir . '/teampassclasses/OAuth2Controller/src/OAuth2Controller.php',
     'TeampassClasses\\ConfigManager\\ConfigManager' => $vendorDir . '/teampassclasses/configmanager/src/ConfigManager.php',
     'TeampassClasses\\EmailService\\EmailService' => $vendorDir . '/teampassclasses/emailservice/src/EmailService.php',
     'TeampassClasses\\EmailService\\EmailSettings' => $vendorDir . '/teampassclasses/emailservice/src/EmailSettings.php',

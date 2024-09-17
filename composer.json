@@ -108,7 +108,7 @@
         },
         {
             "type": "path",
-            "url": "includes/libraries/teampassclasses/azureauthcontroller",
+            "url": "includes/libraries/teampassclasses/oauth2controller",
             "options": {
                 "symlink": false
             }
@@ -146,7 +146,7 @@
         "teampassclasses/language": "dev-master",
         "teampassclasses/ldapextra": "dev-master",
         "teampassclasses/passwordmanager": "dev-master",
-        "teampassclasses/azureauthcontroller": "dev-master",
+        "teampassclasses/oauth2controller": "dev-master",
         "teampassclasses/configmanager": "dev-master",
         "teampassclasses/emailservice": "dev-master",
         "illuminate/contracts": "^10.32",

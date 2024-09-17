@@ -88,6 +88,7 @@ declare(strict_types=1);
                 const hash = CryptoJS.SHA256(userId);
                 return hash.toString(CryptoJS.enc.Hex).substring(0, 16);
             }
+            $("#login").val(userOauth2Info['login']);
             $("#pw").val(hashUserId(userOauth2Info['id']));
             
             // store userOauth2Info   
