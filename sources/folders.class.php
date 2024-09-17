@@ -268,12 +268,12 @@ class FolderManager
         DB::insert(prefixTable('nested_tree'), [
             'parent_id' => $params['parent_id'],
             'title' => $params['title'],
-            'personal_folder' => $params['isPersonal'] ?? 0,
+            'personal_folder' => $params['personal_folder'] ?? 0,
             'renewal_period' => $params['duration'] ?? 0,
             'bloquer_creation' => $params['create_auth_without'] ?? $parentFolderData['parentBloquerCreation'],
             'bloquer_modification' => $params['edit_auth_without'] ?? $parentFolderData['parentBloquerModification'],
-            'fa_icon' => $params['icon'] ?? TP_DEFAULT_ICON,
-            'fa_icon_selected' => $params['icon_selected'] ?? TP_DEFAULT_ICON_SELECTED,
+            'fa_icon' => empty($params['icon']) ? TP_DEFAULT_ICON : $params['icon'],
+            'fa_icon_selected' => empty($params['icon_selected']) ? TP_DEFAULT_ICON_SELECTED : $params['icon_selected'],
             'categories' => '',
         ]);
 
