@@ -30,17 +30,17 @@ namespace TeampassClasses\ConfigManager;
 
  class ConfigManager
  {
-     private $settings;
+    private $settings;
  
-     public function __construct($rootPath = null, $rootUrl = null)
-     {
-         $this->loadConfiguration($rootPath, $rootUrl);
-     }
+    public function __construct( $rootPath = null, $rootUrl = null)
+    {
+        $this->loadConfiguration($rootPath, $rootUrl);
+    }
  
-     private function loadConfiguration($rootPath = null, $rootUrl = null)
-     {
-         $configPath = __DIR__ . '/../../../../includes/config/tp.config.php';
-         global $SETTINGS;
+    private function loadConfiguration($rootPath = null, $rootUrl = null)
+    {
+        $configPath = __DIR__ . '/../../../../includes/config/tp.config.php';
+        global $SETTINGS;
          
          // Vérifier si le répertoire de configuration est défini et non vide, et que le fichier de configuration existe.
          if (file_exists($configPath) === false) {
@@ -53,8 +53,15 @@ namespace TeampassClasses\ConfigManager;
                 ];
             }
          } else {
-             include_once $configPath;
-             $this->settings = $SETTINGS;
+            include_once $configPath;
+            $this->settings = $SETTINGS;
+
+             // Decrypt values of keys that start with "def"
+            foreach ($this->settings as $key => $value) {
+                if (strpos($value, 'def') === 0) {
+                    $this->settings[$key] = $this->getDecryptedValue($value, 1);
+                }
+            }
          }
      }
  
@@ -65,6 +72,19 @@ namespace TeampassClasses\ConfigManager;
  
      public function getAllSettings()
      {
-         return $this->settings;
+        return $this->settings;
      }
+     
+    /**
+     * Returns the decrypted value if needed.
+     *
+     * @param string $value       Value to decrypt.
+     * @param int   $isEncrypted Is the value encrypted?
+     *
+     * @return string
+     */
+    public function getDecryptedValue(string $value, int $isEncrypted): string
+    {
+        return $isEncrypted ? cryption($value, '', 'decrypt')['string'] : $value;
+    }
  }

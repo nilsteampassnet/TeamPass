@@ -1378,7 +1378,7 @@ function sendingStatistics(
         $SETTINGS['send_stats_time'] = time();
 
         // save change in config file
-        handleConfigFile('update', $SETTINGS, 'send_stats_time', $SETTINGS['send_stats_time']);
+        handleConfigFile('update', $SETTINGS, 'send_stats_time', (string) $SETTINGS['send_stats_time']);
     }
 }
 

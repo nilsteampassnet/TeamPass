@@ -31,6 +31,7 @@ declare(strict_types=1);
 
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\SessionManager\SessionManager;
+use TeampassClasses\ConfigManager\ConfigManager;
 
 class FolderManager
 {
@@ -51,12 +52,15 @@ class FolderManager
      */
     private function loadSettings()
     {
-        try {
+        // Load config if $SETTINGS not defined
+        $configManager = new ConfigManager();
+        $this->settings = $configManager->getAllSettings();
+        /*try {
             include_once TEAMPASS_ROOT_PATH.'/includes/config/tp.config.php';
             $this->settings = $GLOBALS['SETTINGS'];
         } catch (Exception $e) {
             throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
-        }
+        }*/
     }
 
     /**

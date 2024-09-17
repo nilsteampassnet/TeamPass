@@ -28,6 +28,7 @@
 
 use GO\Scheduler;
 use EZimuel\PHPSecureSession;
+use TeampassClasses\ConfigManager\ConfigManager;
 
 
 // Load config

@@ -62,7 +62,7 @@ loadClasses('DB');
 $session = SessionManager::getSession();
 
 // Load config if $SETTINGS not defined
-$configManager = new ConfigManager();
+$configManager = new ConfigManager($session);
 $SETTINGS = $configManager->getAllSettings();
 
 /**
@@ -1837,6 +1837,7 @@ function getEncryptedValue(string $value, int $isEncrypted): string
 {
     return $isEncrypted ? cryption($value, '', 'encrypt')['string'] : $value;
 }
+
 
 
 /**

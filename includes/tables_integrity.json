@@ -13,11 +13,11 @@
     },
     {
         "table_name": "background_tasks",
-        "structure_hash": "c880f6b4291dda0b013e095169f7872be4b3317b42b333ff2a6d202244070baf"
+        "structure_hash": "290ce42f64d40f5eee64d5e52f44882a3485175ac3d003851e89dcb0b01da06b"
     },
     {
         "table_name": "background_tasks_logs",
-        "structure_hash": "70ea455a0f6cc6c31264922db58a4ba21eb91a1b7b33c3e713dc23754a4e29a0"
+        "structure_hash": "6589ba3b4409962ae692b73c23e6eea28692e44caf762a91f90b392800763977"
     },
     {
         "table_name": "cache",
@@ -97,19 +97,19 @@
     },
     {
         "table_name": "log_items",
-        "structure_hash": "27130568dcfafbeb35e257db898082c5e2827de6c4384c1432a4a9fdf409c4cb"
+        "structure_hash": "b00ea541a3886f1702d6cd53b3a9c4b78a39ed09f8709e49fe1019288beddaba"
     },
     {
         "table_name": "log_system",
-        "structure_hash": "1b0a244008da93aa7af92ed8a8e4d19d23a45e6beeb6cc192f5dfae62ade3705"
+        "structure_hash": "c65b7d2aaf07cf74fd349a18f253ab99dcef0b88f9a9b143becd7c69fdb4e388"
     },
     {
         "table_name": "misc",
-        "structure_hash": "338ab480d477104739150c6fb7f019de107e533a0d551f6b9083b45e939818a9"
+        "structure_hash": "e0f66692d0b324c63e8af0d1ed59b71ec7a831b4662ea92057c9989ac790bbc5"
     },
     {
         "table_name": "nested_tree",
-        "structure_hash": "3528774a3840468768c3b3f2c91e510c6a34640144b1f4e2178557aade8170b3"
+        "structure_hash": "c9538e5cb03a9c15f4a2f3e96096e6fabe16fab58c8a13588f927644baa7cd74"
     },
     {
         "table_name": "notification",
@@ -117,7 +117,7 @@
     },
     {
         "table_name": "otv",
-        "structure_hash": "240be92633f1e8165d8f52bad083cce95ec19752f5877ecb72e1050759662d56"
+        "structure_hash": "c07ead41fe85cc1eab57cac0ac74fe5fb3b15907624228dd601f3bf703607eb2"
     },
     {
         "table_name": "processes",
@@ -157,7 +157,7 @@
     },
     {
         "table_name": "roles_values",
-        "structure_hash": "e31b433be42217e41c94f269f159d16a4553f72d0b61b27060a7faf3fafd9cb1"
+        "structure_hash": "7bb4170313db95c45c8c8fd07c7513b2352b807f92d5a78a6d443b5ed32ce50d"
     },
     {
         "table_name": "sharekeys_fields",
