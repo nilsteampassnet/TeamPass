@@ -3781,12 +3781,21 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             );
         }
 
-        //Evaluate number of items to display - depends on screen height
-        //adapt to the screen height
+        // Evaluate number of items to display
+        let nb_items_by_query = '<?php echo !empty($SETTINGS['nb_items_by_query']) ? htmlspecialchars($SETTINGS['nb_items_by_query']) : 'auto'; ?>';
+        if (nb_items_by_query === 'auto' || isNaN(parseInt(nb_items_by_query))) {
+            // Based on screen height
+            nb_items_by_query = Math.max(Math.round((screenHeight - 450) / 23), 2);
+        } else {
+            // Admin choosen value
+            nb_items_by_query = parseInt(nb_items_by_query);
+        }
+
+        // Store parameter in teampassApplication.itemsShownByQuery
         store.update(
             'teampassApplication',
             function(teampassApplication) {
-                teampassApplication.itemsShownByQuery = Math.max(Math.round((screenHeight - 450) / 23), 2);
+                teampassApplication.itemsShownByQuery = nb_items_by_query;
             }
         );
 
