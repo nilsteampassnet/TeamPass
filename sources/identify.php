@@ -2398,11 +2398,27 @@ function shouldUserAuthWithOauth2(
     if ($username !== 'admin') {
         // User has started to auth with oauth2
         if ((bool) $userInfo['oauth2_login_ongoing'] === true) {
-            // Case where user exists in Teampass but not allowed to auth with Oauth2        
+            // Case where user exists in Teampass with password login type
             if ((string) $userInfo['auth_type'] === 'ldap' || (string) $userInfo['auth_type'] === 'local') {
+                // Update user in database:
+                DB::update(
+                    prefixTable('users'),
+                    array(
+                        'special' => 'recrypt-private-key',
+                        'auth_type' => 'oauth2',
+                    ),
+                    'id = %i',
+                    $userInfo['id']
+                );
+
+                // Update session auth type
+                $session = SessionManager::getSession();
+                $session->set('user-auth_type', 'oauth2');
+
+                // Accept login request
                 return [
-                    'error' => true,
-                    'message' => 'user_exists_but_not_oauth2',
+                    'error' => false,
+                    'message' => '',
                 ];
             } elseif ((string) $userInfo['auth_type'] !== 'oauth2') {
                 // Case where auth_type is not managed

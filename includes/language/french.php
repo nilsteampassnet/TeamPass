@@ -1192,5 +1192,6 @@ return array(
     'user_exists_but_not_oauth2' => 'Vous devez vous authentifier avec votre compte Azure/Entra AD',
     'user_not_allowed_to_auth_to_teampass_app' => 'Vous n&apos;êtes pas autoriser à vous authentifier à l&apos;application Teampass',
     'user_is_not_auth_with_oauth2' => 'Vous ne pouvez pas vous authentifier avec un compte Entra/Azure AD',
+    'oauth2_need_user_old_password' => 'Pour la première connexion en SSO, merci de fournir votre précédent mot de passe.',
 
 );
