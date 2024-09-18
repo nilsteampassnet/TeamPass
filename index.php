@@ -89,6 +89,7 @@ $request = SymfonyRequest::createFromGlobals();
 $configManager = new ConfigManager(__DIR__, $request->getRequestUri());
 $SETTINGS = $configManager->getAllSettings();
 $antiXss = new AntiXSS();
+$session->set('encryptClientServer', (int) $SETTINGS['encryptClientServer'] ?? 1);
 
 // Quick major version check -> upgrade needed?
 if (isset($SETTINGS['teampass_version']) === true && version_compare(TP_VERSION, $SETTINGS['teampass_version']) > 0) {
@@ -1304,6 +1305,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
     <!-- functions -->
     <script type="text/javascript" src="includes/js/functions.js?v=<?php echo TP_VERSION; ?>"></script>
     <script type="text/javascript" src="includes/js/CreateRandomString.js?v=<?php echo TP_VERSION; ?>"></script>
+    <input type="hidden" id="encryptClientServer" value="<?php echo $SETTINGS['encryptClientServer'] ?? 1; ?>" />
 
     </body>
 
