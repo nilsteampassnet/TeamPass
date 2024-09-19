@@ -609,6 +609,8 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
 
     if (
         $session_user_admin === 1
+        || $session_user_manager === 1
+        || $session_user_human_resources === 1
     ) {
         if (WIP === true) {
             echo '
