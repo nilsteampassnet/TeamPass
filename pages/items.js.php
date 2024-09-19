@@ -1598,6 +1598,11 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                             timeOut: 1000
                         }
                     );
+
+                    // Select folder of new item in jstree
+                    $('#jstree').jstree('deselect_all');
+                    $('#jstree').jstree('select_node', '#li_' + $('#form-item-copy-destination').val());
+
                     // Refresh tree
                     refreshTree(parseInt($('#form-item-copy-destination').val()), true);
                     // Load list of items
@@ -1611,7 +1616,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     );
                     
                     // Close
-                    $('#folder-tree-container').removeClass('hidden');
+                    $('#folders-tree-card').removeClass('hidden');
                     $('.form-item-copy').addClass('hidden');
                 } else {
                     // ERROR
@@ -3220,6 +3225,11 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                                         key: '<?php echo $session->get('key'); ?>'
                                     }
                                 );
+
+                                // Select new folder of item in jstree
+                                $('#jstree').jstree('deselect_all');
+                                $('#jstree').jstree('select_node', '#li_' + $('#form-item-folder').val());
+
                             } else if ($('#form-item-button-save').data('action') === 'new_item') {
                                 window.location.href = './index.php?page=items&group='+$('#form-item-folder').val()+'&id='+data.item_id;
                                 return;
