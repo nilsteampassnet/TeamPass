@@ -321,7 +321,9 @@ class FolderManager
         $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
         $tree->rebuild();
         
-        SessionManager::addRemoveFromSessionArray('user-accessible_folders', [$newId], 'add');
+        // Update session visible flolders
+        $sess_key = $isPersonal ? 'user-personal_folders' : 'user-accessible_folders';
+        SessionManager::addRemoveFromSessionArray($sess_key, [$newId], 'add');
 
         if ($user_is_admin === 0) {
             $this->updateUserFolderCache($tree, $title, $parent_id, $isPersonal, $user_id, $newId);

@@ -1923,6 +1923,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     // Refresh list of folders
                     refreshVisibleFolders(true);
                     if ($('#form-folder-add').data('action') === 'add') {
+                        // select new folder on jstree
+                        $('#jstree').jstree('deselect_all');
+                        $('#jstree').jstree('select_node', '#li_' + data.newId);
                         // Refresh tree
                         refreshTree(data.newId, true);
                         // Refresh list of items inside the folder
