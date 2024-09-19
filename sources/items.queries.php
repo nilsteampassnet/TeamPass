@@ -2469,9 +2469,6 @@ switch ($inputData['type']) {
                 'at_copy',
                 $session->get('user-login')
             );
-            // reload cache table
-            include_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
-            updateCacheTable('reload', null);
 
             echo (string) prepareExchangedData(
                 array(
@@ -2481,6 +2478,9 @@ switch ($inputData['type']) {
                 ),
                 'encode'
             );
+
+            // Add new item to cache table.
+            updateCacheTable('add_value', (int) $newItemId);
         } else {
             // no item
             echo (string) prepareExchangedData(
