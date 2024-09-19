@@ -497,7 +497,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
             // Prepare some data in the form
             if (selectedFolder.parent !== undefined && selectedFolder.parent !== '') {
-                $('#form-folder-add-parent').val(selectedFolder.parent.split('_')[1]).change();
+                $('#form-folder-add-parent').val(selectedFolder.id.split('_')[1]).change();
             }
 
             $('#form-folder-add-label, #form-folder-add-parent').prop('disabled', false);
