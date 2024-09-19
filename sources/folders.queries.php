@@ -754,7 +754,7 @@ if (null !== $post_type) {
                                     'id = %i',
                                     $item['id']
                                 );
-                                
+
                                 // log
                                 logItems(
                                     $SETTINGS,
@@ -772,51 +772,6 @@ if (null !== $post_type) {
 
                                 //Update CACHE table
                                 updateCacheTable('delete_value',(int) $item['id']);
-/*
-                                // --> build json tree  
-                                // update cache_tree
-                                $cache_tree = DB::queryfirstrow(
-                                    'SELECT increment_id, folders, visible_folders
-                                    FROM ' . prefixTable('cache_tree').' WHERE user_id = %i',
-                                    (int) $session->get('user-id')
-                                );
-                                if (DB::count()>0) {
-                                    // remove id from folders
-                                    if (empty($cache_tree['folders']) === false && is_null($cache_tree['folders']) === false) {
-                                        $a_folders = json_decode($cache_tree['folders'], true);
-                                        $key = array_search($item['id'], $a_folders, true);
-                                        if ($key !== false) {
-                                            unset($a_folders[$key]);
-                                        }
-                                    } else {
-                                        $a_folders = [];
-                                    }
-
-                                    // remove id from visible_folders
-                                    if (empty($cache_tree['visible_folders']) === false && is_null($cache_tree['visible_folders']) === false) {
-                                        $a_visible_folders = json_decode($cache_tree['visible_folders'], true);
-                                        foreach ($a_visible_folders as $i => $v) {
-                                            if ($v['id'] == $item['id']) {
-                                                unset($a_visible_folders[$i]);
-                                            }
-                                        }
-                                    } else {
-                                        $a_visible_folders = [];
-                                    }
-
-                                    DB::update(
-                                        prefixTable('cache_tree'),
-                                        array(
-                                            'folders' => json_encode($a_folders),
-                                            'visible_folders' => json_encode($a_visible_folders),
-                                            'timestamp' => time(),
-                                        ),
-                                        'increment_id = %i',
-                                        (int) $cache_tree['increment_id']
-                                    );
-                                }
-                                // <-- end - build json tree
-                                */
                             }
 
                             //Actualize the variable
@@ -825,7 +780,7 @@ if (null !== $post_type) {
                     }
                 }
             }
-            
+
             // Add new task for building user cache tree
             if ((int) $session->get('user-admin') !== 1) {
                 DB::insert(
@@ -848,7 +803,7 @@ if (null !== $post_type) {
             foreach ($folderForDel as $fol) {
                 DB::delete(prefixTable('nested_tree'), 'id = %i', $fol);
             }
-            
+
             // Update timestamp
             DB::update(
                 prefixTable('misc'),
@@ -860,16 +815,12 @@ if (null !== $post_type) {
                 'timestamp',
                 'last_folder_change'
             );
-            
+
             // Commit transaction
             DB::commit();
-            
+
             //rebuild tree
             $tree->rebuild();
-            
-            // reload cache table
-            include_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
-            updateCacheTable('reload', null);
 
             echo prepareExchangedData(
                 array(
@@ -1348,16 +1299,15 @@ if (null !== $post_type) {
                             'at_copy',
                             $session->get('user-login')
                         );
+
+                        // Add item to cache table
+                        updateCacheTable('add_value', (int) $newItemId);
                     }
                 }
             }
 
             // rebuild tree
             $tree->rebuild();
-
-            // reload cache table
-            include_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
-            updateCacheTable('reload', NULL);
 
             // Update timestamp
             DB::update(
