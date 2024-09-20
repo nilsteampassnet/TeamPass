@@ -1747,7 +1747,7 @@ function handleConfigFile(string $action, array $settings, string $field = null,
     }
 
     if ($action === 'update' && !empty($field)) {
-        return updateConfigFile($configFilePath, $field, $value, $isEncrypted);
+        return updateConfigFile($configFilePath, (string) $field, (string) $value, (int) $isEncrypted);
     }
 
     return true;
@@ -4249,6 +4249,7 @@ function handleUserRecoveryKeysDownload(int $userId, array $SETTINGS):string
 
     if (DB::count() > 0) {
         $now = (int) time();
+error_log('password: '.$session->get('user-password'));
         // Prepare file content
         $export_value = file_get_contents(__DIR__."/../includes/core/teampass_ascii.txt")."\n".
             "Generation date: ".date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], $now)."\n\n".

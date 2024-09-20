@@ -28,8 +28,10 @@ namespace TeampassClasses\ConfigManager;
  * @see       https://www.teampass.net
  */
 
- class ConfigManager
- {
+use Symfony\Component\HttpFoundation\Session\Session;
+use TeampassClasses\SessionManager\SessionManager;
+class ConfigManager
+{
     private $settings;
  
     public function __construct( $rootPath = null, $rootUrl = null)
@@ -41,6 +43,9 @@ namespace TeampassClasses\ConfigManager;
     {
         $configPath = __DIR__ . '/../../../../includes/config/tp.config.php';
         global $SETTINGS;
+        
+        // Get the session object
+        $session = SessionManager::getSession();
          
          // Vérifier si le répertoire de configuration est défini et non vide, et que le fichier de configuration existe.
          if (file_exists($configPath) === false) {
@@ -53,15 +58,31 @@ namespace TeampassClasses\ConfigManager;
                 ];
             }
          } else {
-            include_once $configPath;
-            $this->settings = $SETTINGS;
+            // Get the last modification time of the configuration file
+            //$lastModified = filemtime($configPath);
+/*
+            // Check if the settings have been loaded before and if the configuration file hasn't been modified since the last load
+            if ($session->has('teampass-settings') && isset($this->settings['timestamp']) && $this->settings['timestamp'] >= $lastModified) {
+                error_log('Using settings from session');
+                $this->settings = $session->get('teampass-settings');
+            } else {*/
+                include_once $configPath;
+                $this->settings = $SETTINGS;
 
-             // Decrypt values of keys that start with "def"
-            foreach ($this->settings as $key => $value) {
-                if (strpos($value, 'def') === 0) {
-                    $this->settings[$key] = $this->getDecryptedValue($value, 1);
+                // Decrypt values of keys that start with "def"
+                foreach ($this->settings as $key => $value) {
+                    if (strpos($value, 'def') === 0) {
+                        error_log('Decrypting value for key ' . $key);
+                        $this->settings[$key] = $this->getDecryptedValue($value, 1);
+                    }
                 }
-            }
+
+                // Add the timestamp to the settings
+                $this->settings['timestamp'] = time();
+
+                // Save the settings in the session
+                $session->set('teampass-settings', $this->settings);
+            //}
          }
      }
  
@@ -87,4 +108,4 @@ namespace TeampassClasses\ConfigManager;
     {
         return $isEncrypted ? cryption($value, '', 'decrypt')['string'] : $value;
     }
- }
+}

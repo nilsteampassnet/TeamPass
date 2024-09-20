@@ -47,7 +47,8 @@ use RobThree\Auth\TwoFactorAuth;
 use TeampassClasses\LdapExtra\LdapExtra;
 use TeampassClasses\LdapExtra\OpenLdapExtra;
 use TeampassClasses\LdapExtra\ActiveDirectoryExtra;
-use TeampassClasses\OAuth2Controller\OAuth2Controller;
+use TeampassClasses\AzureAuthController\AzureAuthController;
+
 // Load functions
 require_once 'main.functions.php';
 
@@ -218,10 +219,55 @@ if ($post_type === 'identify_user') {
     //
 
     // Création d'une instance du contrôleur
-    $OAuth2 = new OAuth2Controller($SETTINGS);
+    $azureAuth = new AzureAuthController($SETTINGS);
 
     // Redirection vers Azure pour l'authentification
-    $OAuth2->redirect();
+    $azureAuth->redirect();
+
+/*
+    $provider = new TheNetworg\OAuth2\Client\Provider\Azure([
+        'clientId'                => $SETTINGS['oauth2_azure_clientId'],
+        'clientSecret'            => $SETTINGS['oauth2_azure_clientSecret'],
+        'redirectUri'             => $SETTINGS['oauth2_azure_redirectUri'],
+        'urlAuthorize'            => $SETTINGS['oauth2_azure_urlAuthorize'],
+        'urlAccessToken'          => $SETTINGS['oauth2_azure_urlAccessToken'],
+        'urlResourceOwnerDetails' => $SETTINGS['oauth2_azure_urlResourceOwnerDetails'],
+        'scopes'                  => explode(",", $SETTINGS['oauth2_azure_scopes']),
+        'defaultEndPointVersion' => '2.0'
+    ]);
+    $provider->defaultEndPointVersion = TheNetworg\OAuth2\Client\Provider\Azure::ENDPOINT_VERSION_2_0;
+    $baseGraphUri = $provider->getRootMicrosoftGraphUri(null);
+    $provider->scope = 'openid profile email offline_access ' . $baseGraphUri . '/User.Read';
+    if (isset($_GET['code']) && isset($_SESSION['OAuth2.state']) && isset($_GET['state'])) {
+        if ($_GET['state'] == $_SESSION['OAuth2.state']) {
+            unset($_SESSION['OAuth2.state']);
+    
+            $token = $provider->getAccessToken('authorization_code', [
+                'scope' => $provider->scope,
+                'code' => $_GET['code'],
+            ]);
+    
+            // Verify token
+            // Save it to local server session data
+            
+            return $token->getToken();
+        } else {
+            echo 'Invalid state';
+    
+            return null;
+        }
+    } else {
+        $authorizationUrl = $provider->getAuthorizationUrl(['scope' => $provider->scope]);
+
+        $_SESSION['OAuth2.state'] = $provider->getState();
+
+        header('Location: ' . $authorizationUrl);
+
+        exit;
+
+        return $token->getToken();
+    }
+*/
 
     // Encrypt data to return
     echo json_encode([
@@ -499,23 +545,10 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             $SETTINGS,
         );
         // Avoid unlimited session.
-        $max_time = (int) $SETTINGS['maximum_session_expiration_time'] ?? 60;
-        $session_time = $dataReceived['duree_session'] <= $max_time ? $dataReceived['duree_session'] : $max_time;
-        $lifetime = time() + ((int) $session_time * 60);
-
-        //--- Handle the session duration and ID
-        //$cookieParams = session_get_cookie_params();
-        //error_log('DEBUG: '.session_name()."=".session_id()."; lifetime=".$lifetime."; cookieParams=".print_r($cookieParams, true));
-        /*setcookie(
-            session_name(),
-            session_id(),
-            $lifetime,
-            $cookieParams['path'],
-            $cookieParams['domain'],
-            $cookieParams['secure'],
-            $cookieParams['httponly']
-        );*/
-        //---
+        $max_time = isset($SETTINGS['maximum_session_expiration_time']) ? (int) $SETTINGS['maximum_session_expiration_time'] : 60;
+        $session_time = max(0, min($dataReceived['duree_session'], $max_time));
+        $session_time = $session_time > 0 ? $session_time : 60;
+        $lifetime = time() + ($session_time * 60);
 
         
         // Save account in SESSION
@@ -995,25 +1028,6 @@ function handleLoginAttempts(
     ];
 }
 
-/**
- * Permits to load config file
- *
- * @return boolean
- */
-function findTpConfigFile() : bool
-{
-    if (file_exists('../includes/config/tp.config.php')) {
-        include_once '../includes/config/tp.config.php';
-        return true;
-    } elseif (file_exists('./includes/config/tp.config.php')) {
-        include_once './includes/config/tp.config.php';
-    } elseif (file_exists('../../includes/config/tp.config.php')) {
-        include_once '../../includes/config/tp.config.php';
-    } elseif (file_exists('../../../includes/config/tp.config.php')) {
-        include_once '../../../includes/config/tp.config.php';
-    }
-    return false;
-}
 
 /**
  * Can you user get logged into main page
@@ -2384,41 +2398,17 @@ function shouldUserAuthWithOauth2(
     string $username
 ): array
 {
-    // Security issue without this return if an user auth_type == oauth2 and
-    // oauth2 disabled : we can login as a valid user by using hashUserId(username)
-    // as password in the login the form.
-    if ((int) $SETTINGS['oauth2_enabled'] !== 1) {
-        return [
-            'error' => true,
-            'message' => 'user_not_allowed_to_auth_to_teampass_app',
-        ];
-    }
-
     // Prepare Oauth2 connection if set up
-    if ($username !== 'admin') {
+    if ((int) $SETTINGS['oauth2_enabled'] === 1
+        && $username !== 'admin'
+    ) {
         // User has started to auth with oauth2
         if ((bool) $userInfo['oauth2_login_ongoing'] === true) {
-            // Case where user exists in Teampass with password login type
+            // Case where user exists in Teampass but not allowed to auth with Oauth2        
             if ((string) $userInfo['auth_type'] === 'ldap' || (string) $userInfo['auth_type'] === 'local') {
-                // Update user in database:
-                DB::update(
-                    prefixTable('users'),
-                    array(
-                        'special' => 'recrypt-private-key',
-                        'auth_type' => 'oauth2',
-                    ),
-                    'id = %i',
-                    $userInfo['id']
-                );
-
-                // Update session auth type
-                $session = SessionManager::getSession();
-                $session->set('user-auth_type', 'oauth2');
-
-                // Accept login request
                 return [
-                    'error' => false,
-                    'message' => '',
+                    'error' => true,
+                    'message' => 'user_exists_but_not_oauth2',
                 ];
             } elseif ((string) $userInfo['auth_type'] !== 'oauth2') {
                 // Case where auth_type is not managed
@@ -2502,7 +2492,9 @@ function createOauth2User(
             'userPasswordVerified' => true,
         ];
     
-    } elseif (isset($userInfo['id']) === true && empty($userInfo['id']) === false) {
+    } elseif ((int) $SETTINGS['oauth2_enabled'] === 1
+        && isset($userInfo['id']) === true && empty($userInfo['id']) === false
+    ) {
         // CHeck if user should use oauth2
         $ret = shouldUserAuthWithOauth2(
             $SETTINGS,
