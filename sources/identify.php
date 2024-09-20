@@ -47,7 +47,7 @@ use RobThree\Auth\TwoFactorAuth;
 use TeampassClasses\LdapExtra\LdapExtra;
 use TeampassClasses\LdapExtra\OpenLdapExtra;
 use TeampassClasses\LdapExtra\ActiveDirectoryExtra;
-use TeampassClasses\AzureAuthController\AzureAuthController;
+use TeampassClasses\OAuth2Controller\OAuth2Controller;
 
 // Load functions
 require_once 'main.functions.php';

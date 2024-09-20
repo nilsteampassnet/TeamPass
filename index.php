@@ -596,20 +596,16 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                         </ul>
                     </li>';
 
-                    if (isset($SETTINGS['enable_tasks_manager']) && (int) $SETTINGS['enable_tasks_manager'] === 1) {
-                        echo '
+        if (isset($SETTINGS['enable_tasks_manager']) && (int) $SETTINGS['enable_tasks_manager'] === 1) {
+            echo '
                     <li class="nav-item">
                         <a href="#" data-name="tasks" class="nav-link', $get['page'] === 'tasks' ? ' active' : '', '">
                         <i class="fa-solid fa-tasks nav-icon"></i>
                         <p>' . $lang->get('tasks') . '</p>
                         </a>
                     </li>';
-                    }
-    }
-
-    if (
-        $session_user_admin === 1
-    ) {
+        }
+        
         if (WIP === true) {
             echo '
                     <li class="nav-item">
@@ -621,6 +617,13 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                         </a>
                     </li>';
         }
+    }
+
+    if (
+        $session_user_admin === 1
+        || $session_user_manager === 1
+        || $session_user_human_resources === 1
+    ) {
         echo '
                     <li class="nav-item">
                         <a href="#" data-name="folders" class="nav-link', $get['page'] === 'folders' ? ' active' : '', '">
@@ -798,7 +801,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                                     </div>
                                     <input type="password" class="form-control" id="dialog-ldap-user-change-password-old">
                                 </div>
-                                <div class="input-group mb-3" id="new-password-field">
+                                <div class="input-group mb-3">
                                     <div class="input-group-prepend">
                                         <span class="input-group-text"><?php echo $lang->get('provide_your_current_password'); ?></span>
                                     </div>
@@ -1068,6 +1071,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
 
     <?php
         /* MAIN PAGE */
+
         echo '
 <input type="hidden" id="temps_restant" value="', $session->get('user-session_duration') ?? '', '" />';
 // display an item in the context of OTV link
