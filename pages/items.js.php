@@ -730,7 +730,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 // Select tab#1
                 $('#form-item-nav-pills li:first-child a').tab('show');
                 // Preselect
-                $('#pwd-definition-size').val(12);
+                $('#pwd-definition-size').val(20);
                 // Set type of action
                 $('#form-item-button-save').data('action', 'new_item');
                 // Does this folder contain Custom Fields
@@ -6364,12 +6364,12 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         if (anyBoxesChecked === false || $('#pwd-definition-secure').prop('checked') === true) {
             secure_pwd = true;
         }
-        
+
         $.post(
             "sources/main.queries.php", {
                 type: "generate_password",
                 type_category: 'action_user',
-                size: $('#pwd-definition-size').val(),
+                size: $('#pwd-definition-size').val() ?? 20,
                 lowercase: $('#pwd-definition-lcl').prop("checked"),
                 numerals: $('#pwd-definition-numeric').prop("checked"),
                 capitalize: $('#pwd-definition-ucl').prop("checked"),
