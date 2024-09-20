@@ -240,7 +240,7 @@ class FolderManager
             $this->rebuildFolderTree($user_is_admin, $title, $parent_id, $isPersonal, $user_id, $newId);
             $this->manageFolderPermissions($parent_id, $newId, $user_roles, $access_rights, $user_is_admin);
             $this->copyCustomFieldsCategories($parent_id, $newId);
-            $this->clearCacheForUsersWithSimilarRoles($user_roles);
+            $this->refreshCacheForUsersWithSimilarRoles($user_roles);
 
             return ['error' => false, 'newId' => $newId];
         } else {
@@ -416,13 +416,25 @@ class FolderManager
     }
 
     /**
-     * Clears the cache for users with similar roles to the current user.
+     * Refresh the cache for users with similar roles to the current user.
      */
-    private function clearCacheForUsersWithSimilarRoles($user_roles)
+    private function refreshCacheForUsersWithSimilarRoles($user_roles)
     {
         $usersWithSimilarRoles = getUsersWithRoles(explode(";", $user_roles));
         foreach ($usersWithSimilarRoles as $user) {
-            DB::delete(prefixTable('cache_tree'), 'user_id = %i', $user);
+            DB::insert(
+                prefixTable('background_tasks'),
+                array(
+                    'created_at' => time(),
+                    'process_type' => 'user_build_cache_tree',
+                    'arguments' => json_encode([
+                        'user_id' => (int) $user,
+                    ], JSON_HEX_QUOT | JSON_HEX_TAG),
+                    'updated_at' => '',
+                    'finished_at' => '',
+                    'output' => '',
+                )
+            );
         }
     }
 
