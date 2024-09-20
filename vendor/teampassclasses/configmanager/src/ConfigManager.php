@@ -59,20 +59,18 @@ class ConfigManager
             }
          } else {
             // Get the last modification time of the configuration file
-            //$lastModified = filemtime($configPath);
-/*
+            $lastModified = filemtime($configPath);
+
             // Check if the settings have been loaded before and if the configuration file hasn't been modified since the last load
-            if ($session->has('teampass-settings') && isset($this->settings['timestamp']) && $this->settings['timestamp'] >= $lastModified) {
-                error_log('Using settings from session');
+            if ($session->has('teampass-settings') && isset($session->get('teampass-settings')['timestamp']) === true && $session->get('teampass-settings')['timestamp'] >= $lastModified) {
                 $this->settings = $session->get('teampass-settings');
-            } else {*/
+            } else {
                 include_once $configPath;
                 $this->settings = $SETTINGS;
 
                 // Decrypt values of keys that start with "def"
                 foreach ($this->settings as $key => $value) {
                     if (strpos($value, 'def') === 0) {
-                        error_log('Decrypting value for key ' . $key);
                         $this->settings[$key] = $this->getDecryptedValue($value, 1);
                     }
                 }
@@ -82,7 +80,7 @@ class ConfigManager
 
                 // Save the settings in the session
                 $session->set('teampass-settings', $this->settings);
-            //}
+            }
          }
      }
  
