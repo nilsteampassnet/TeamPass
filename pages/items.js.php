@@ -3969,8 +3969,6 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                                 // Send query and get password
                                 var result = '',
                                     error = false;
-
-                                    console.log("COUCOU")
                                 
                                 $.ajax({
                                     type: "POST",
