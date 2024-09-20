@@ -798,7 +798,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                                     </div>
                                     <input type="password" class="form-control" id="dialog-ldap-user-change-password-old">
                                 </div>
-                                <div class="input-group mb-3">
+                                <div class="input-group mb-3" id="new-password-field">
                                     <div class="input-group-prepend">
                                         <span class="input-group-text"><?php echo $lang->get('provide_your_current_password'); ?></span>
                                     </div>

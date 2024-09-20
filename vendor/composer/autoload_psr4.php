@@ -22,7 +22,7 @@ return array(
     'TeampassClasses\\Encryption\\' => array($vendorDir . '/teampassclasses/encryption/src'),
     'TeampassClasses\\EmailService\\' => array($vendorDir . '/teampassclasses/emailservice/src'),
     'TeampassClasses\\ConfigManager\\' => array($vendorDir . '/teampassclasses/configmanager/src'),
-    'TeampassClasses\\AzureAuthController\\' => array($vendorDir . '/teampassclasses/azureauthcontroller/src'),
+    'TeampassClasses\\OAuth2Controller\\' => array($vendorDir . '/teampassclasses/oauth2authcontroller/src'),
     'Symfony\\Polyfill\\Php83\\' => array($vendorDir . '/symfony/polyfill-php83'),
     'Symfony\\Polyfill\\Php81\\' => array($vendorDir . '/symfony/polyfill-php81'),
     'Symfony\\Polyfill\\Php80\\' => array($vendorDir . '/symfony/polyfill-php80'),

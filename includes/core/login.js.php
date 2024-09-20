@@ -76,6 +76,8 @@ declare(strict_types=1);
 
         // Manage case of oauth2 login
         var userOauth2Info = <?php echo empty($userOauth2InfoJson) ? 'null' : $userOauth2InfoJson; ?>;
+        var autoLogin = parseInt(<?php echo $SETTINGS['oauth2_auto_login'] ?? 0; ?>);
+        var loginForm = parseInt(<?php echo str_contains($session->get('user-initial_url') ?? '', 'loginForm') ? 1 : 0; ?>);
         // Case of oauth2 login
         if (userOauth2Info !== null && userOauth2Info['oauth2TokenUsed'] === false) {
             // disable token
@@ -88,6 +90,7 @@ declare(strict_types=1);
                 const hash = CryptoJS.SHA256(userId);
                 return hash.toString(CryptoJS.enc.Hex).substring(0, 16);
             }
+            $("#login").val(userOauth2Info['login']);
             $("#pw").val(hashUserId(userOauth2Info['id']));
             
             // store userOauth2Info   
@@ -99,6 +102,9 @@ declare(strict_types=1);
                 console.log("We have an oauth2 login");
             }
 
+            // Hide login form to avoid confusion.
+            $('.login-box').hide();
+
             // launch identification process inside Teampass.
             launchIdentify(false, "", "", false);
         } else {
@@ -106,6 +112,11 @@ declare(strict_types=1);
             store.set(
                 'userOauth2Info', ''
             );
+
+            // Auto login with OAuth2 provider
+            if (autoLogin === 1 && loginForm === 0) {
+                launchIdentify(false, '<?php isset($nextUrl) === true ? $nextUrl : ''; ?>', false, true);
+            }
         }
 
         // Prepare iCheck format for checkboxes

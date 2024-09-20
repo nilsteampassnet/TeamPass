@@ -59,7 +59,7 @@ class ComposerStaticInite3f3ee27f81ca21f7bd7499d7b935c11
             'TeampassClasses\\Encryption\\' => 27,
             'TeampassClasses\\EmailService\\' => 29,
             'TeampassClasses\\ConfigManager\\' => 30,
-            'TeampassClasses\\AzureAuthController\\' => 36,
+            'TeampassClasses\\Oauth2AuthController\\' => 36,
         ),
         'S' => 
         array (
@@ -241,9 +241,9 @@ class ComposerStaticInite3f3ee27f81ca21f7bd7499d7b935c11
         array (
             0 => __DIR__ . '/..' . '/teampassclasses/configmanager/src',
         ),
-        'TeampassClasses\\AzureAuthController\\' => 
+        'TeampassClasses\\OAuth2Controller\\' => 
         array (
-            0 => __DIR__ . '/..' . '/teampassclasses/azureauthcontroller/src',
+            0 => __DIR__ . '/..' . '/teampassclasses/oauth2controller/src',
         ),
         'Symfony\\Polyfill\\Php83\\' => 
         array (
@@ -2619,7 +2619,7 @@ class ComposerStaticInite3f3ee27f81ca21f7bd7499d7b935c11
         'TCPDF_IMPORT' => __DIR__ . '/..' . '/tecnickcom/tcpdf/tcpdf_import.php',
         'TCPDF_PARSER' => __DIR__ . '/..' . '/tecnickcom/tcpdf/tcpdf_parser.php',
         'TCPDF_STATIC' => __DIR__ . '/..' . '/tecnickcom/tcpdf/include/tcpdf_static.php',
-        'TeampassClasses\\AzureAuthController\\AzureAuthController' => __DIR__ . '/..' . '/teampassclasses/azureauthcontroller/src/AzureAuthController.php',
+        'TeampassClasses\\OAuth2Controller\\OAuth2Controller' => __DIR__ . '/..' . '/teampassclasses/oauth2controller/src/OAuth2Controller.php',
         'TeampassClasses\\ConfigManager\\ConfigManager' => __DIR__ . '/..' . '/teampassclasses/configmanager/src/ConfigManager.php',
         'TeampassClasses\\EmailService\\EmailService' => __DIR__ . '/..' . '/teampassclasses/emailservice/src/EmailService.php',
         'TeampassClasses\\EmailService\\EmailSettings' => __DIR__ . '/..' . '/teampassclasses/emailservice/src/EmailSettings.php',

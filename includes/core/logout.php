@@ -113,6 +113,6 @@ $session->set('key', SessionManager::getCookieValue('PHPSESSID'));
     }
     
     setTimeout(function() {
-        document.location.href="../../index.php"
+        document.location.href="../../index.php?page=items&loginForm"
     }, 1);
 </script>

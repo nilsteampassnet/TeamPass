@@ -5851,11 +5851,11 @@
             "time": "2024-07-26T12:30:32+00:00"
         },
         {
-            "name": "teampassclasses/azureauthcontroller",
+            "name": "teampassclasses/oauth2controller",
             "version": "dev-master",
             "dist": {
                 "type": "path",
-                "url": "includes/libraries/teampassclasses/azureauthcontroller",
+                "url": "includes/libraries/teampassclasses/oauth2controller",
                 "reference": "5948d5854bf9c775d9dd94810d91f8f07078f76b"
             },
             "require": {
@@ -5864,7 +5864,7 @@
             "type": "library",
             "autoload": {
                 "psr-4": {
-                    "TeampassClasses\\AzureAuthController\\": "src/"
+                    "TeampassClasses\\OAuth2Controller\\": "src/"
                 }
             },
             "license": [
@@ -6738,7 +6738,7 @@
         "teampassclasses/language": 20,
         "teampassclasses/ldapextra": 20,
         "teampassclasses/passwordmanager": 20,
-        "teampassclasses/azureauthcontroller": 20,
+        "teampassclasses/oauth2controller": 20,
         "teampassclasses/configmanager": 20,
         "teampassclasses/emailservice": 20,
         "passwordlib/passwordlib": 15

@@ -877,12 +877,12 @@
                 0 => '2.3|3.0',
             ),
         ),
-        'teampassclasses/azureauthcontroller' => array(
+        'teampassclasses/oauth2controller' => array(
             'pretty_version' => 'dev-master',
             'version' => 'dev-master',
             'reference' => '5948d5854bf9c775d9dd94810d91f8f07078f76b',
             'type' => 'library',
-            'install_path' => __DIR__ . '/../teampassclasses/azureauthcontroller',
+            'install_path' => __DIR__ . '/../teampassclasses/oauth2controller',
             'aliases' => array(),
             'dev_requirement' => false,
         ),

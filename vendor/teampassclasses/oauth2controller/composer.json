@@ -1,5 +1,5 @@
 {
-    "name": "teampassclasses/azureauthcontroller",
+    "name": "teampassclasses/oauth2controller",
     "description": "Provide Azure Auth.",
     "type": "library",
     "license": "GPL-3.0-only",
@@ -18,7 +18,7 @@
     },
     "autoload": {
         "psr-4": {
-            "TeampassClasses\\AzureAuthController\\": "src/"
+            "TeampassClasses\\OAuth2Controller\\": "src/"
         }
     }
 }
