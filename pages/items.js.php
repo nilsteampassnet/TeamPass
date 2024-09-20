@@ -3372,6 +3372,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             $('#card-item-visibility').html(store.get('teampassItem').itemVisibility);
             $('#card-item-minimum-complexity').html(store.get('teampassItem').itemMinimumComplexity);
 
+            // Set selected folder id
+            $('#form-item-folder').val(selectedFolderId).change();
+
             // show top back buttons
             $('#but_back_top_left, #but_back_top_right').addClass('hidden');
 
