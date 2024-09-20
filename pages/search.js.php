@@ -247,10 +247,9 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                         '<div class="card-body">' +
                         (data.description === '' ? '' : '<div class="form-group">' + data.description + '</div>') +
                         '<div class="form-group">' +
-                        '<label class="form-group-label"><?php echo $lang->get('pw'); ?>' +
-                        '<button type="button" class="btn btn-secondary ml-2" id="btn-copy-pwd" data-id="' + data.item_key + '" data-label="' + data.label + '"><i class="fas fa-copy"></i></button>' +
+                        '<?php echo $lang->get('pw'); ?>' +
+                        '<button type="button" class="btn btn-secondary ml-2" id="btn-copy-pwd" data-id="' + data.id + '" data-label="' + data.label + '"><i class="fas fa-copy"></i></button>' +
                         '<button type="button" class="btn btn-secondary btn-show-pwd ml-2" data-id="' + data.id + '"><i class="fas fa-eye pwd-show-spinner"></i></button>' +
-                        '</label>' +
                         '<span id="pwd-show_' + data.id + '" class="unhide_masked_data ml-2" style="height: 20px;"><?php echo $var['hidden_asterisk']; ?></span>' +
                         '<input id="pwd-hidden_' + data.id + '" class="pwd-clear" type="hidden" value="' + atob(data.pw).utf8Decode() + '">' +
                         '<input type="hidden" id="pwd-is-shown_' + data.id + '" value="0">' +
@@ -293,52 +292,9 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
                 // Manage buttons --> PASSWORD
                 new ClipboardJS('#btn-copy-pwd', {
-                        text: function(trigger) {
-                            // Send query and get password
-                            var result = '',
-                                error = false;
-
-                            // Warn user that it starts
-                            toastr.remove();
-                            toastr.info(
-                                '<i class="fas fa-circle-notch fa-spin fa-2x"></i>'
-                            );
-
-                            $.ajax({
-                                type: "POST",
-                                async: false,
-                                url: 'sources/items.queries.php',
-                                data: 'type=show_item_password&item_key=' + $('#btn-copy-pwd').data('id') +
-                                    '&key=<?php echo $session->get('key'); ?>',
-                                dataType: "",
-                                success: function(data) {
-                                    //decrypt data
-                                    try {
-                                        data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
-                                    } catch (e) {
-                                        // error
-                                        toastr.remove();
-                                        toastr.warning(
-                                            '<?php echo $lang->get('no_item_to_display'); ?>'
-                                        );
-                                        return false;
-                                    }
-                                    console.log(data)
-                                    if (data.error === true) {
-                                        error = true;
-                                    } else {
-                                        if (data.password_error !== '') {
-                                            error = true;
-                                        } else {
-                                            result = atob(data.password).utf8Decode();
-                                        }
-                                    }
-
-                                    // Remove cog
-                                    toastr.remove();
-                                }
-                            });
-                            return result;
+                        text: function(trigger) {                           
+                            // Read password
+                            return $('#pwd-hidden_' + $('#btn-copy-pwd').data('id')).val();
                         }
                     })
                     .on('success', function(e) {

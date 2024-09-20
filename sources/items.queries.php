@@ -4554,7 +4554,6 @@ switch ($inputData['type']) {
                 $dataItem['share_key'],
                 $session->get('user-private_key')
             )."\n\n";
-            file_put_contents('/var/www/html/tplog.log', $log, FILE_APPEND | LOCK_EX);
         }
 
         $returnValues = array(
