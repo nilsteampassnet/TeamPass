@@ -1258,24 +1258,36 @@ function prepareExchangedData($data, string $type, ?string $key = null)
     
     // Perform
     if ($type === 'encode' && is_array($data) === true) {
-        // Now encode
-        return Encryption::encrypt(
-            json_encode(
-                $data,
-                JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP
-            ),
-            $session->get('key')
+        // json encoding
+        $data = json_encode(
+            $data,
+            JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP
         );
+
+        // Now encrypt
+        if ($session->get('encryptClientServer') === 1) {
+            $data = Encryption::encrypt(
+                $data,
+                $session->get('key')
+            );
+        }
+
+        return $data;
     }
     if ($type === 'decode' && is_array($data) === false) {
-        // check if key exists
-        return json_decode(
-            (string) Encryption::decrypt(
+        // Decrypt if needed
+        if ($session->get('encryptClientServer') === 1) {
+            $data = (string) Encryption::decrypt(
                 (string) $data,
                 $session->get('key')
-            ),
-            true
-        );
+            );
+        } else {
+            // Double html encoding received
+            $data = html_entity_decode(html_entity_decode($data));
+        }
+
+        // Return data array
+        return json_decode($data, true);
     }
     return '';
 }

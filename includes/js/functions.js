@@ -183,7 +183,7 @@ function prepareExchangedData(data, type, key, fileName = '', functionName = '')
         }
     } else if (type === 'encode') {
         if (parseInt($('#encryptClientServer').val()) === 0) {
-            return stripHtml(data);
+            return data;
         } else {
             let encryption = new Encryption();
             return encryption.encrypt(data, key);
@@ -201,22 +201,6 @@ function isJsonString(str) {
     }
     return true;
 }
-
-
-/**
- * Returns the text from a HTML string
- * 
- * @param {string} String The html string
- */
-function stripHtml(html) {
-    // Create a new div element
-    let temporalDivElement = document.createElement('div');
-    // Set the HTML content with the providen
-    temporalDivElement.innerHTML = html;
-    // Retrieve the text property of the element (cross-browser support)
-    return temporalDivElement.textContent || temporalDivElement.innerText || '';
-}
-
 
 /**
  * 
