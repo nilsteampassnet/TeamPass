@@ -104,19 +104,8 @@ if (null !== $post_type) {
             //Get actual favourites
             $data = DB::queryfirstrow('SELECT favourites FROM '.prefixTable('users').' WHERE id = %i', $session->get('user-id'));
             $tmp = explode(';', $data['favourites']);
-            $favorites = '';
-            $arrayFavorites = array();
-            //redefine new list of favourites
-            foreach ($tmp as $favorite) {
-                if (!empty($favorite) && $favorite != $post_id) {
-                    if (empty($favorites)) {
-                        $favorites = $favorite;
-                    } else {
-                        $favorites = ';'.$favorite;
-                    }
-                    array_push($arrayFavorites, $favorite);
-                }
-            }
+            $arrayFavorites = array_diff($tmp, [$post_id]);
+
             //update user's account
             DB::update(
                 prefixTable('users'),
