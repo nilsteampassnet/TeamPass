@@ -495,7 +495,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         runtimes: "gears,html5,flash,silverlight,browserplus",
         browse_button: "import-keepass-attach-pickfile-keepass",
         container: "import-keepass-upload-zone",
-        max_file_size: "10mb",
+        max_file_size: "20mb",
         chunk_size: "0",
         unique_names: true,
         dragdrop: true,
@@ -731,7 +731,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                         data = {
                                             'edit-all': $('#import-keepass-edit-all-checkbox').prop('checked') === true ? 1 : 0,
                                             'edit-role': $('#import-keepass-edit-role-checkbox').prop('checked') === true ? 1 : 0,
-                                            'items': itemsToAdd[0],
+                                            'items': itemsToAdd.slice(0, 500),
                                             'folders': foldersList,
                                         }
                                         if (debugJavascript === true) {
@@ -771,7 +771,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                                     $('#import-feedback-result').append(data.info+"<br>");
 
                                                     // Remove item from list
-                                                    itemsToAdd.shift();
+                                                    itemsToAdd.splice(0, 500);
 
                                                     // Do recursive call until step = finished
                                                     counter++

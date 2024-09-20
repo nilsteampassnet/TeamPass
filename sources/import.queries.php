@@ -767,13 +767,17 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
             $receivedParameters['folders'],
             FILTER_SANITIZE_FULL_SPECIAL_CHARS
         );
-        $item = filter_var_array(
+        $post_items = filter_var_array(
             $receivedParameters['items'],
             FILTER_SANITIZE_FULL_SPECIAL_CHARS
         );
         $ret = '';
 
-        //foreach($post_items as $item) {
+        // Start transaction for better performance
+        DB::startTransaction();
+
+        // Import all items
+        foreach($post_items as $item) {
             // get info about this folder
             $destinationFolderMore = DB::queryFirstRow(
                 'SELECT title FROM '.prefixTable('nested_tree').' WHERE id = %i',
@@ -871,8 +875,10 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
 
             // prepare return
             $ret .= "<li>".substr(stripslashes($item['Title']), 0, 500)." [".$destinationFolderMore['title']."]</li>";
-        //}
+        }
 
+        // Commit transaction.
+        DB::commit();
 
         echo prepareExchangedData(
             array(
