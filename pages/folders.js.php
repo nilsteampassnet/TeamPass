@@ -760,7 +760,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         // Prepare select2
         $('#folder-edit-parent').val(folderParent).change();
         $('#folder-edit-complexity').val(folderComplexity).change();
-
+        $('#folder-edit-renewal').val(folderRenewal).change();
         currentFolderEdited = '';
     });
 
@@ -791,7 +791,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 'title': purifyRes.arrFields['title'],    //$('#folder-edit-title').val(),
                 'parentId': $('#folder-edit-parent').val(),
                 'complexity': $('#folder-edit-complexity').val(),
-                'renewalPeriod': $('#new-renewal').val() === '' ? 0 : parseInt($('#new-renewal').val()),
+                'renewalPeriod': $('#folder-edit-renewal').val() === '' ? 0 : parseInt($('#folder-edit-renewal').val()),
                 'addRestriction': $('#folder-edit-add-restriction').prop("checked") === true ? 1 : 0,
                 'editRestriction': $('#folder-edit-edit-restriction').prop("checked") === true ? 1 : 0,
                 'icon': purifyRes.arrFields['icon'],    //$('#folder-edit-icon').val(),

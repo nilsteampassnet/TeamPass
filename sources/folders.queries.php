@@ -191,7 +191,11 @@ if (null !== $post_type) {
                         $arrayColumns['folderComplexity'] = '';
                     }
 
-                    $arrayColumns['renewalPeriod'] = (int) is_null($node_data) === false ? $node_data['renewal_period'] : 0;
+                    if (is_null($node_data)=== false) {
+                        $arrayColumns['renewalPeriod'] = (int) $node_data['renewal_period'];
+                    } else {
+                        $arrayColumns['renewalPeriod']=0;
+                    }
 
                     //col7
                     $data7 = DB::queryFirstRow(
