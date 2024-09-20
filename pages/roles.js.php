@@ -257,7 +257,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     $('.infotip').tooltip();
 
                     // Adapt select
-                    $('#folders-depth').val('').change();
+                    $('#folders-depth').val('').empty();
                     $('#folders-depth').append('<option value="all"><?php echo $lang->get('all'); ?></option>');
                     for (x = 1; x < max_folder_depth; x++) {
                         $('#folders-depth').append('<option value="' + x + '">' + x + '</option>');
