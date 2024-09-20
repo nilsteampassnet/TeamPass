@@ -497,7 +497,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
             // Prepare some data in the form
             if (selectedFolder.parent !== undefined && selectedFolder.parent !== '') {
-                $('#form-folder-add-parent').val(selectedFolder.parent.split('_')[1]).change();
+                $('#form-folder-add-parent').val(selectedFolder.id.split('_')[1]).change();
             }
 
             $('#form-folder-add-label, #form-folder-add-parent').prop('disabled', false);
@@ -3372,6 +3372,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             $('#card-item-visibility').html(store.get('teampassItem').itemVisibility);
             $('#card-item-minimum-complexity').html(store.get('teampassItem').itemMinimumComplexity);
 
+            // Set selected folder id
+            $('#form-item-folder').val(selectedFolderId).change();
+
             // show top back buttons
             $('#but_back_top_left, #but_back_top_right').addClass('hidden');
 
@@ -4412,10 +4415,10 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         $.each((data), function(i, value) {
             new_path_elem = '';
             if (value['visible'] === 1) {
-                new_path_elem = ' class="pointer" onclick="ListerItems(' + value['id'] + ', \'\', 0)"';
+                new_path_elem = ' data-id="' + value['id'] + '"';
             }
 
-            new_path += '<li class="breadcrumb-item pointer" id="path_elem_' + value['id'] + '"' + new_path_elem + '>' + value['title'] + '</li>';
+            new_path += '<li class="breadcrumb-item pointer path-elem" id="path_elem_' + value['id'] + '"' + new_path_elem + '>' + value['title'] + '</li>';
         });
 
         return new_path;
@@ -6570,23 +6573,21 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         return splitCounter.join('/');
     }
 
-    /*
-    // Get parameters from url
-    var currentTeampassUrl = new URL(window.location.href);
-    var actionFromUrl = currentTeampassUrl.searchParams.get('action');
-    if (actionFromUrl !== undefined && atob(actionFromUrl) === 'reset_private_key') {
-        // Case where we need to re-encrypt all share keys
-        if (debugJavascript === true) console.log("ACTION RE-ENCRYPTION OF SHAREKEYS");
-
-        $('#dialog-encryption-keys').removeClass('hidden');    
-
-        // Hide other
-        $('.content-header, .content').addClass('hidden');
-
-        alertify.dismissAll();
-    }
-    */
     $(document).ready(function() {
-        //
+        // Event listener for path elems
+        $(document).on('click', '.path-elem', function() {
+            // Read folder id
+            let folder_id = $(this).data('id');
+
+            // Only if valid id
+            if (!isNaN(folder_id)) {
+                // List items on folder
+                ListerItems(folder_id, '', 0);
+
+                // Update jstree selection
+                $('#jstree').jstree('deselect_all');
+                $('#jstree').jstree('select_node', '#li_' + folder_id);
+            }
+        });
     });
 </script>
