@@ -46,14 +46,10 @@ class ConfigManager
         // Get the last modification time of a change in the settings
         $lastModified = $this->getLastModificationTimestamp();
 
-        //error_log('Debug: ' . $lastModified. ' - ' . $session->get('teampass-settings')['timestamp']);
-
         // Check if the settings have been loaded before and if a setting hasn't been modified since the last load
-        if ($session->has('teampass-settings') && isset($session->get('teampass-settings')['timestamp']) === true && $session->get('teampass-settings')['timestamp'] >= $lastModified) {
+        if ($session->has('teampass-settings') && isset($session->get('teampass-settings')['timestamp']) === true && $session->get('teampass-settings')['timestamp'] >= $lastModified && is_null($lastModified) === false) {
             $this->settings = $session->get('teampass-settings');
-            //error_log('Settings loaded from session');
         } else {
-
             // Load settings from DB
             $this->settings = $this->loadSettingsFromDB('DB');
 
@@ -62,7 +58,6 @@ class ConfigManager
 
             // Save the settings in the session
             $session->set('teampass-settings', $this->settings);
-            //error_log('Settings loaded from DB');
         }
      }
  
@@ -96,6 +91,13 @@ class ConfigManager
      */
     public function loadSettingsFromDB(): array
     {
+        // Do we have a settings file?
+        $settingsFile = __DIR__ . '/../../../../includes/config/settings.php';
+        if (!file_exists($settingsFile)) {
+            return [];
+        }
+
+        // Load the DB library
         require_once __DIR__.'/../../../sergeytsalkov/meekrodb/db.class.php';
         $ret = [];
 
@@ -115,10 +117,17 @@ class ConfigManager
     /**
      * Get the last modification timestamp of the settings.
      *
-     * @return string
+     * @return string|null
      */
-    public function getLastModificationTimestamp(): string
+    public function getLastModificationTimestamp(): string|null
     {
+        // Do we have a settings file?
+        $settingsFile = __DIR__ . '/../../../../includes/config/settings.php';
+        if (!file_exists($settingsFile)) {
+            return "";
+        }
+
+        // Load the DB library
         require_once __DIR__.'/../../../sergeytsalkov/meekrodb/db.class.php';
 
         $maxTimestamp = DB::queryFirstField(
@@ -128,6 +137,7 @@ class ConfigManager
             'admin'
         );
 
+        // NULL is returned if no settings are found or if the settings have no created_at value
         return $maxTimestamp;
     }
 }

@@ -514,21 +514,6 @@ if (null !== $post_type) {
                         // include constants
                         require_once '../includes/config/include.php';
 
-                        // prepare config file
-                        $tp_config_file = '../includes/config/tp.config.php';
-                        if (file_exists($tp_config_file)) {
-                            if (!copy($tp_config_file, $tp_config_file . '.' . date('Y_m_d', mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'))))) {
-                                echo '[{"error" : "includes/config/tp.config.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "' . $post_index . '", "multiple" : "' . $post_multiple . '"}]';
-                                break;
-                            } else {
-                                unlink($tp_config_file);
-                            }
-                        }
-                        $file_handler = fopen($tp_config_file, 'w');
-                        $config_text = '<?php
-global $SETTINGS;
-$SETTINGS = array (';
-
                         // add by default settings
                         $aMiscVal = array(
                             array('admin', 'max_latest_items', '10'),
@@ -593,8 +578,8 @@ $SETTINGS = array (';
                             array('admin', 'personal_saltkey_cookie_duration', '31'),
                             array('admin', 'email_smtp_server', ''),
                             array('admin', 'email_smtp_auth', ''),
-                            array('admin', 'email_auth_username', ''),
-                            array('admin', 'email_auth_pwd', ''),
+                            array('admin', 'email_auth_username', '', '1'),
+                            array('admin', 'email_auth_pwd', '', '1'),
                             array('admin', 'email_port', ''),
                             array('admin', 'email_security', ''),
                             array('admin', 'email_server_url', ''),
@@ -626,7 +611,7 @@ $SETTINGS = array (';
                             array('admin', 'duo', '0'),
                             array('admin', 'enable_server_password_change', '0'),
                             array('admin', 'bck_script_path', $var['absolute_path'] . '/backups'),
-                            array('admin', 'bck_script_filename', 'bck_teampass'),
+                            array('admin', 'bck_script_filename', 'bck_teampass', '1'),
                             array('admin', 'syslog_enable', '0'),
                             array('admin', 'syslog_host', 'localhost'),
                             array('admin', 'syslog_port', '514'),
@@ -649,13 +634,13 @@ $SETTINGS = array (';
                             array('admin', 'secure_display_image', '1'),
                             array('admin', 'upload_zero_byte_file', '0'),
                             array('admin', 'upload_all_extensions_file', '0'),
-                            array('admin', 'bck_script_passkey', generateRandomKey()),
+                            array('admin', 'bck_script_passkey', generateRandomKey(), '1'),
                             array('admin', 'admin_2fa_required', '1'),
                             array('admin', 'password_overview_delay', '4'),
                             array('admin', 'copy_to_clipboard_small_icons', '1'),
-                            array('admin', 'duo_ikey', ''),
-                            array('admin', 'duo_skey', ''),
-                            array('admin', 'duo_host', ''),
+                            array('admin', 'duo_ikey', '', '1'),
+                            array('admin', 'duo_skey', '', '1'),
+                            array('admin', 'duo_host', '', '1'),
                             array('admin', 'duo_failmode', 'secure'),
                             array('admin', 'roles_allowed_to_print_select', ''),
                             array('admin', 'clipboard_life_duration', '30'),
@@ -671,9 +656,9 @@ $SETTINGS = array (';
                             array('admin', 'ldap_user_dn_attribute', ''),
                             array('admin', 'ldap_dn_additional_user_dn', ''),
                             array('admin', 'ldap_user_object_filter', ''),
-                            array('admin', 'ldap_bdn', ''),
-                            array('admin', 'ldap_hosts', ''),
-                            array('admin', 'ldap_password', ''),
+                            array('admin', 'ldap_bdn', '', '1'),
+                            array('admin', 'ldap_hosts', '', '1'),
+                            array('admin', 'ldap_password', '', '1'),
                             array('admin', 'ldap_username', ''),
                             array('admin', 'api_token_duration', '60'),
                             array('timestamp', 'last_folder_change', ''),
@@ -702,14 +687,14 @@ $SETTINGS = array (';
                             array('admin', 'pwd_default_length', '14'),
                             array('admin', 'tasks_log_retention_delay', '30'),
                             array('admin', 'oauth2_enabled', '0'),
-                            array('admin', 'oauth2_client_id', ''),
-                            array('admin', 'oauth2_client_secret', ''),
+                            array('admin', 'oauth2_client_id', '', '1'),
+                            array('admin', 'oauth2_client_secret', '', '1'),
                             array('admin', 'oauth2_client_endpoint', ''),
-                            array('admin', 'oauth2_client_token', ''),
+                            array('admin', 'oauth2_client_token', '', '1'),
                             array('admin', 'oauth2_client_scopes', 'openid,profile,email,User.Read,Group.Read.All'),
                             array('admin', 'oauth2_client_appname', 'Login with Azure'),
                             array('admin', 'show_item_data', '0'),
-                            array('admin', 'oauth2_tenant_id', ''),
+                            array('admin', 'oauth2_tenant_id', '', '1'),
                             array('admin', 'limited_search_default', '0'),
                             array('admin', 'highlight_selected', '0'),
                             array('admin', 'highlight_favorites', '0'),
@@ -727,26 +712,12 @@ $SETTINGS = array (';
                                 $queryRes = mysqli_query(
                                     $dbTmp,
                                     "INSERT INTO `" . $var['tbl_prefix'] . "misc`
-                                    (`type`, `intitule`, `valeur`) VALUES
+                                    (`type`, `intitule`, `valeur`, `created_at`) VALUES
                                     ('" . $elem[0] . "', '" . $elem[1] . "', '" .
-                                        str_replace("'", '', $elem[2]) . "');"
+                                        str_replace("'", '', $elem[2]) . "', '" . time() . "');"
                                 ); // or die(mysqli_error($dbTmp))
                             }
-
-                            // append new setting in config file
-                            $config_text .= "
-    '" . $elem[1] . "' => '" . str_replace("'", '', $elem[2]) . "',";
                         }
-
-                        // write to config file
-                        $result = fwrite(
-                            $file_handler,
-                            utf8_encode(
-                                $config_text . '
-);'
-                            )
-                        );
-                        fclose($file_handler);
 
                         // --
                     } elseif ($task === 'nested_tree') {

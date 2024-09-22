@@ -37,3 +37,4 @@ EncryptedFile_*
 gitdo.sh
 version-commit.php
 tp_minor_release.txt
+/includes/config/tp.config*
