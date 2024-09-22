@@ -634,7 +634,7 @@ if (null !== $post_type) {
                             array('admin', 'secure_display_image', '1'),
                             array('admin', 'upload_zero_byte_file', '0'),
                             array('admin', 'upload_all_extensions_file', '0'),
-                            array('admin', 'bck_script_passkey', generateRandomKey(), '1'),
+                            array('admin', 'bck_script_passkey', '', '1'),
                             array('admin', 'admin_2fa_required', '1'),
                             array('admin', 'password_overview_delay', '4'),
                             array('admin', 'copy_to_clipboard_small_icons', '1'),
@@ -709,13 +709,14 @@ if (null !== $post_type) {
                                 )
                             );
                             if (intval($tmp) === 0) {
+                                $value = isset($elem[3]) ? $elem[3] : 0;
                                 $queryRes = mysqli_query(
                                     $dbTmp,
                                     "INSERT INTO `" . $var['tbl_prefix'] . "misc`
-                                    (`type`, `intitule`, `valeur`, `created_at`) VALUES
+                                    (`type`, `intitule`, `valeur`, `created_at`, `is_encrypted`) VALUES
                                     ('" . $elem[0] . "', '" . $elem[1] . "', '" .
-                                        str_replace("'", '', $elem[2]) . "', '" . $elem[1] . "');"
-                                ); // or die(mysqli_error($dbTmp))
+                                        str_replace("'", '', $elem[2]) . "', '" . $elem[1] . "', '" . $value . "');"
+                                );
                             }
                         }
 
