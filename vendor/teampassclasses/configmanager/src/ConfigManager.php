@@ -30,6 +30,7 @@ namespace TeampassClasses\ConfigManager;
 
 use TeampassClasses\SessionManager\SessionManager;
 use DB;
+
 class ConfigManager
 {
     private $settings;

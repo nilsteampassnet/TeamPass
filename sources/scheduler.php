@@ -86,16 +86,6 @@ if (isset($SETTINGS['reload_cache_table_task']) === true && empty($SETTINGS['rel
     );
 }
 
-/*
-if (isset($SETTINGS['rebuild_config_file_task']) === true && empty($SETTINGS['rebuild_config_file_task']) === false) {
-    runTask(
-        explode(';', $SETTINGS['rebuild_config_file_task']),
-        __DIR__.'/../scripts/task_maintenance_rebuild_config_file.php',
-        $scheduler
-    );
-}
-*/
-
 // Let the scheduler execute jobs which are due.
 $scheduler->run();
 

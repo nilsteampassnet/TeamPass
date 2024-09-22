@@ -37,7 +37,7 @@ require_once __DIR__.'/../sources/main.functions.php';
 loadClasses('DB');
 $lang = new Language('english');
 
-// Load config if $SETTINGS not defined
+// Load config
 $configManager = new ConfigManager();
 $SETTINGS = $configManager->getAllSettings();
 

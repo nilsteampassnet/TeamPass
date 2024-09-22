@@ -21,30 +21,29 @@ namespace TeampassClasses\FolderServices;
  * Certain components of this file may be under different licenses. For
  * details, see the `licenses` directory or individual file headers.
  * ---
- * @file      FolderComplexityService.php
+ * @file      FolderPermissionChecker.php
  * @author    Nils Laumaillé (nils@teampass.net)
  * @copyright 2009-2024 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
 
+
 use DB;
 
-class FolderComplexityService
+class FolderPermissionChecker
 {
-    public function checkComplexityLevel(int $folderId, int $complexity): bool
+    public function isUserAllowedToCreate(int $userId, int $parentId, bool $isAdmin): bool
     {
-        $parentComplexity = DB::queryFirstField('SELECT valeur FROM complexity_levels WHERE folder_id = %i', $folderId);
-        return $complexity >= $parentComplexity;
+        if ($isAdmin) {
+            return true;
+        }
+        $accessibleFolders = $this->getUserAccessibleFolders($userId);
+        return in_array($parentId, $accessibleFolders);
     }
 
-    public function addComplexity(int $folderId, int $complexity)
+    private function getUserAccessibleFolders(int $userId): array
     {
-        DB::insert(prefixTable('misc'), [
-            'type' => 'complex',
-            'intitule' => $folderId,
-            'valeur' => $complexity,
-            'created_at' => time(),
-        ]);
+        return DB::queryFirstColumn('SELECT folder_id FROM accessible_folders WHERE user_id = %i', $userId);
     }
 }

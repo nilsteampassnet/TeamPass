@@ -1376,9 +1376,6 @@ function sendingStatistics(
         //permits to test only once by session
         $session->set('system-send_stats_done', 1);
         $SETTINGS['send_stats_time'] = time();
-
-        // save change in config file
-        //handleConfigFile('update', $SETTINGS, 'send_stats_time', (string) $SETTINGS['send_stats_time']);
     }
 }
 

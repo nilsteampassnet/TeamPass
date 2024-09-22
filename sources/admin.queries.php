@@ -47,7 +47,7 @@ $request = SymfonyRequest::createFromGlobals();
 loadClasses('DB');
 $lang = new Language($session->get('user-language') ?? 'english');
 
-// Load config if $SETTINGS not defined
+// Load config
 $configManager = new ConfigManager();
 $SETTINGS = $configManager->getAllSettings();
 
@@ -1924,9 +1924,6 @@ switch ($post_type) {
                 );
             }
             $SETTINGS['ga_website_name'] = htmlspecialchars_decode($dataReceived['ga_website_name']);
-
-            // save change in config file
-            //handleConfigFile('update', $SETTINGS, 'ga_website_name', $SETTINGS['ga_website_name']);
         } else {
             $SETTINGS['ga_website_name'] = '';
         }
@@ -2191,16 +2188,6 @@ switch ($post_type) {
         // store in SESSION
         $SETTINGS[$post_field] = $post_value;
 
-        /*
-        // save change in config file
-        handleConfigFile(
-            'update',
-            $SETTINGS,
-            $post_field,
-            $dataReceived['value']
-        );
-        */
-
         // Encrypt data to return
         echo prepareExchangedData(
             array(
@@ -2277,9 +2264,6 @@ switch ($post_type) {
             $SETTINGS['send_stats'] = '0';
         }
 
-        // save change in config file
-        //handleConfigFile('update', $SETTINGS, 'send_stats', $SETTINGS['send_stats']);
-
         // send statistics items
         if (null !== $post_list) {
             DB::query('SELECT * FROM ' . prefixTable('misc') . ' WHERE type = %s AND intitule = %s', 'admin', 'send_statistics_items');
@@ -2310,9 +2294,6 @@ switch ($post_type) {
         } else {
             $SETTINGS['send_statistics_items'] = '';
         }
-
-        // save change in config file
-        //handleConfigFile('update', $SETTINGS, 'send_statistics_items', $SETTINGS['send_statistics_items']);
 
         // send data
         echo '[{"error" : false}]';

@@ -47,7 +47,7 @@ $lang = new Language($session->get('user-language') ?? 'english');
 $antiXSS = new AntiXSS();
 $session = SessionManager::getSession();
 
-// Load config if $SETTINGS not defined
+// Load config
 $configManager = new ConfigManager();
 $SETTINGS = $configManager->getAllSettings();
 

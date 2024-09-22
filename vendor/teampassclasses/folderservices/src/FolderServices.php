@@ -32,7 +32,7 @@ use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\ConfigManager\ConfigManager;
 use TeampassClasses\FolderServices\FolderCreationService;
-use TeampassClasses\FolderServices\PermissionChecker;
+use TeampassClasses\FolderServices\FolderPermissionChecker;
 use TeampassClasses\FolderServices\FolderComplexityService;
 use TeampassClasses\FolderServices\FolderCacheUpdater;
 use DB;
@@ -55,7 +55,7 @@ class FolderManager
         $this->settings = $configManager->getAllSettings();
         $this->lang = $lang;
         $this->folderCreationService = new FolderCreationService($lang, $this->settings);
-        $this->permissionChecker = new PermissionChecker();
+        $this->permissionChecker = new FolderPermissionChecker();
         $this->folderComplexityService = new FolderComplexityService();
         $this->folderCacheUpdater = new FolderCacheUpdater();
     }

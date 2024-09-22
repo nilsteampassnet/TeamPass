@@ -63,7 +63,7 @@ if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 
-// Load config if $SETTINGS not defined
+// Load config
 $configManager = new ConfigManager();
 $SETTINGS = $configManager->getAllSettings();
 
