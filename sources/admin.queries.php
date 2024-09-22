@@ -465,70 +465,8 @@ switch ($post_type) {
         );
         break;
 
-        /*
-       * REBUILD CONFIG FILE
-    */
-    case 'admin_action_rebuild_config_file':
-        // Check KEY
-        if ($post_key !== $session->get('key')) {
-            echo prepareExchangedData(
-                [
-                    'error' => true,
-                    'message' => $lang->get('key_is_not_correct'),
-                ],
-                'encode'
-            );
-            break;
-        }
-        // Is admin?
-        if ($session->get('user-admin') === 1) {
-            echo prepareExchangedData(
-                array(
-                    'error' => true,
-                    'message' => $lang->get('error_not_allowed_to'),
-                ),
-                'encode'
-            );
-            break;
-        }
 
-        // Perform
-        include_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
-        $ret = handleConfigFile('rebuild', $SETTINGS);
-
-        // Log
-        logEvents(
-            $SETTINGS,
-            'system',
-            'admin_action_rebuild_config_file',
-            (string) $session->get('user-id'),
-            $session->get('user-login'),
-            $ret === true ? 'success' : $ret
-        );
-
-        if ($ret !== true) {
-            echo prepareExchangedData(
-                array(
-                    'error' => true,
-                    'message' => $ret,
-                ),
-                'encode'
-            );
-            break;
-        }
-
-        echo prepareExchangedData(
-            array(
-                'error' => false,
-                'message' => $lang->get('last_execution') . ' ' .
-                    date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) time()) .
-                    '<i class="fas fa-check text-success ml-2"></i>',
-            ),
-            'encode'
-        );
-        break;
-
-        /*
+    /*
     * Change SALT Key START
     */
     case 'admin_action_change_salt_key___start':
@@ -1988,7 +1926,7 @@ switch ($post_type) {
             $SETTINGS['ga_website_name'] = htmlspecialchars_decode($dataReceived['ga_website_name']);
 
             // save change in config file
-            handleConfigFile('update', $SETTINGS, 'ga_website_name', $SETTINGS['ga_website_name']);
+            //handleConfigFile('update', $SETTINGS, 'ga_website_name', $SETTINGS['ga_website_name']);
         } else {
             $SETTINGS['ga_website_name'] = '';
         }
@@ -2253,6 +2191,7 @@ switch ($post_type) {
         // store in SESSION
         $SETTINGS[$post_field] = $post_value;
 
+        /*
         // save change in config file
         handleConfigFile(
             'update',
@@ -2260,6 +2199,7 @@ switch ($post_type) {
             $post_field,
             $dataReceived['value']
         );
+        */
 
         // Encrypt data to return
         echo prepareExchangedData(
@@ -2338,7 +2278,7 @@ switch ($post_type) {
         }
 
         // save change in config file
-        handleConfigFile('update', $SETTINGS, 'send_stats', $SETTINGS['send_stats']);
+        //handleConfigFile('update', $SETTINGS, 'send_stats', $SETTINGS['send_stats']);
 
         // send statistics items
         if (null !== $post_list) {
@@ -2372,7 +2312,7 @@ switch ($post_type) {
         }
 
         // save change in config file
-        handleConfigFile('update', $SETTINGS, 'send_statistics_items', $SETTINGS['send_statistics_items']);
+        //handleConfigFile('update', $SETTINGS, 'send_statistics_items', $SETTINGS['send_statistics_items']);
 
         // send data
         echo '[{"error" : false}]';

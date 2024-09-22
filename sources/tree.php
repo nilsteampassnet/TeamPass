@@ -321,9 +321,6 @@ function recursiveTree(
 ) {
     $text = '';
     
-    // Load config
-    include __DIR__.'/../includes/config/tp.config.php';
-
     $displayThisNode = false;
     $nbItemsInSubfolders = $nbSubfolders = $nbItemsInFolder = 0;
     $nodeDescendants = $tree->getDescendants($nodeId, true, false, false);

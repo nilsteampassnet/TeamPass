@@ -45,15 +45,6 @@ $lang = new Language($session->get('user-language') ?? 'english');
 $configManager = new ConfigManager();
 $SETTINGS = $configManager->getAllSettings();
 
-/*
-// Load config if $SETTINGS not defined
-try {
-    include_once __DIR__.'/includes/config/tp.config.php';
-} catch (Exception $e) {
-    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
-}
-*/
-
 // Define Timezone
 date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
 

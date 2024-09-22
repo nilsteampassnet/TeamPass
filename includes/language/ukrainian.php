@@ -1192,5 +1192,12 @@ return array(
     'user_exists_but_not_oauth2' => 'User has to authenticate using Entra/Azure AD',
     'user_not_allowed_to_auth_to_teampass_app' => 'User is not allowed to authenticate with Teampass application',
     'user_is_not_auth_with_oauth2' => 'User should not authenticate with Entra/Azure AD',
+    'highlight_favorites' => 'Highlight favorites',
+    'highlight_favorites_tip' => '',
+    'limited_search_default' => 'Limited search selected by default',
+    'limited_search_default_tip' => '',
+    'highlight_selected_tip' => '',
+    'encryptClientServer' => 'Encrypt client-server exchanges',
+    'encryptClientServer_tip' => 'This setting is not really usefull. It can be disabled.',
 
 );

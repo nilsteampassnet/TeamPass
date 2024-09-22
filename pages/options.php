@@ -233,6 +233,18 @@ $zones = timezone_list();
                             </div>
                         </div>
 
+                        <div class='row mb-2 option' data-keywords="server setting encryption client">
+                            <div class='col-10'>
+                                <?php echo $lang->get('encryptClientServer'); ?>
+                                <small id='passwordHelpBlock' class='form-text text-muted'>
+                                    <?php echo $lang->get('encryptClientServer_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='encryptClientServer' data-toggle-on='<?php echo isset($SETTINGS['encryptClientServer']) && (int) $SETTINGS['encryptClientServer'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='encryptClientServer_input' value='<?php echo isset($SETTINGS['encryptClientServer']) && (int) $SETTINGS['encryptClientServer'] === 1 ? '1' : '0'; ?>' />
+                            </div>
+                        </div>
+
                         <div class='row mb-2 option' data-keywords="server setting ">
                             <div class='col-10'>
                                 <?php echo $lang->get('enable_http_request_login'); ?>

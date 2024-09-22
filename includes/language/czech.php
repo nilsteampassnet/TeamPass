@@ -1197,5 +1197,7 @@ return array(
     'limited_search_default' => 'Limited search selected by default',
     'limited_search_default_tip' => '',
     'highlight_selected_tip' => '',
+    'encryptClientServer' => 'Encrypt client-server exchanges',
+    'encryptClientServer_tip' => 'This setting is not really usefull. It can be disabled.',
 
 );

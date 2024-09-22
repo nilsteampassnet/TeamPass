@@ -30,7 +30,6 @@ use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\ConfigManager\ConfigManager;
 
 // Load config
-require_once __DIR__.'/../includes/config/tp.config.php';
 require_once __DIR__.'/../includes/config/include.php';
 require_once __DIR__.'/../includes/config/settings.php';
 header('Content-type: text/html; charset=utf-8');

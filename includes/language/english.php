@@ -28,6 +28,8 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'encryptClientServer' => 'Encrypt client/server',
+    'encryptClientServer_tip' => 'When enabled, the client encrypts the data before sending it to the server. The server only stores encrypted data. It can be disabled.',
     'limited_search_default' => 'Limited search by default',
     'limited_search_default_tip' => 'When enabled, the search will be limited to the current folder and its subfolders. Otherwise, the search will be performed on all items.',
     'highlight_selected' => 'Highlight selected',

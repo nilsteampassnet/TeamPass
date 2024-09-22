@@ -282,7 +282,7 @@ catch (Exception $e) {
                                             </button>
                                         </div>
                                     </div>
-
+<!--
                                     <div class='row ml-1 mb-2'>
                                         <div class='col-8'>
                                             <i class="fa-solid fa-sliders ml-4 mr-2"></i><span id="rebuild_config_file_task_text"><?php echo $lang->get('rebuild_config_file'); ?></span>
@@ -304,6 +304,7 @@ catch (Exception $e) {
                                             </button>
                                         </div>
                                     </div>
+-->
 
                                     <div class='row ml-1 mb-4'>
                                         <div class='col-8'>

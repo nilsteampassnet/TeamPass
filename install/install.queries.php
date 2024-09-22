@@ -37,6 +37,7 @@ use Hackzilla\PasswordGenerator\RandomGenerator\Php7RandomGenerator;
 use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\Language\Language;
 use TeampassClasses\PasswordManager\PasswordManager;
+use TeampassClasses\ConfigManager\ConfigManager;
 
 // Do initial test
 if (file_exists('../includes/config/settings.php') === false) {
@@ -63,11 +64,8 @@ if (session_status() == PHP_SESSION_NONE) {
 }
 
 // Load config if $SETTINGS not defined
-try {
-    include_once __DIR__.'/../includes/config/tp.config.php';
-} catch (Exception $e) {
-    $SETTINGS = [];
-}
+$configManager = new ConfigManager();
+$SETTINGS = $configManager->getAllSettings();
 
 // Define Timezone
 date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');

@@ -72,7 +72,6 @@ function reloadCacheTable(): void
 {
     // Load expected files
     require_once __DIR__. '/../sources/main.functions.php';
-    include __DIR__. '/../includes/config/tp.config.php';
 
     updateCacheTable('reload', NULL);
 }

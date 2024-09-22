@@ -31,6 +31,7 @@ use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\Language\Language;
 use TeampassClasses\NestedTree\NestedTree;
 use Encryption\Crypt\aesctr;
+use TeampassClasses\ConfigManager\ConfigManager;
 
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
@@ -43,13 +44,16 @@ error_reporting(E_ERROR | E_PARSE);
 set_time_limit(600);
 $_SESSION['CPM'] = 1;
 
+// Load config if $SETTINGS not defined
+$configManager = new ConfigManager();
+$SETTINGS = $configManager->getAllSettings();
+
 //include librairies
 require_once '../includes/language/english.php';
 require_once '../includes/config/include.php';
 require_once '../includes/config/settings.php';
 require_once 'tp.functions.php';
 require_once 'libs/aesctr.php';
-require_once '../includes/config/tp.config.php';
 
 // 3.0.0.23
 $ret = handleSecurefileConstant();

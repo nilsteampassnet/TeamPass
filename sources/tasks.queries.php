@@ -224,10 +224,12 @@ function loadLastTasksExec_getBadge(string $processLabel): string
             'db' => 'do_maintenance - purge-old-files',
             'task' => 'purge_temporary_files_task',
         ],
+        /*
         'do_maintenance - rebuild-config-file' => [
             'db' => 'do_maintenance - rebuild-config-file',
             'task' => 'rebuild_config_file_task',
         ],
+        */
         'do_maintenance - reload-cache-table' => [
             'db' => 'do_maintenance - reload-cache-table',
             'task' => 'reload_cache_table_task',
@@ -298,7 +300,7 @@ function performTask(string $task, string $phpBinaryPath, string $datetimeFormat
             ]);
 
             break;
-
+/*
         case 'rebuild_config_file_task':
 
             $process = new Process([
@@ -307,6 +309,7 @@ function performTask(string $task, string $phpBinaryPath, string $datetimeFormat
             ]);
 
             break;
+            */
 
         case 'reload_cache_table_task':
 

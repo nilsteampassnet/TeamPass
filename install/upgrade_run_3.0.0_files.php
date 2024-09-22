@@ -32,6 +32,7 @@ use TeampassClasses\Language\Language;
 use Defuse\Crypto\File;
 use Defuse\Crypto\Key;
 use Defuse\Crypto\Exception as CryptoException;
+use TeampassClasses\ConfigManager\ConfigManager;
 
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
@@ -44,14 +45,16 @@ error_reporting(E_ERROR | E_PARSE);
 set_time_limit(600);
 $_SESSION['CPM'] = 1;
 
+// Load config if $SETTINGS not defined
+$configManager = new ConfigManager();
+$SETTINGS = $configManager->getAllSettings();
+
 require_once '../includes/language/english.php';
 require_once '../includes/config/include.php';
 require_once '../includes/config/settings.php';
 require_once '../sources/main.functions.php';
-require_once '../includes/config/tp.config.php';
 require_once 'tp.functions.php';
 require_once 'libs/aesctr.php';
-require_once '../includes/config/tp.config.php';
 
 // Prepare POST variables
 $post_nb = filter_input(INPUT_POST, 'nb', FILTER_SANITIZE_NUMBER_INT);

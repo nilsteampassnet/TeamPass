@@ -29,6 +29,7 @@
 use EZimuel\PHPSecureSession;
 use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\Language\Language;
+use TeampassClasses\ConfigManager\ConfigManager;
 
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
@@ -41,13 +42,16 @@ error_reporting(E_ERROR | E_PARSE);
 set_time_limit(600);
 $_SESSION['CPM'] = 1;
 
+// Load config if $SETTINGS not defined
+$configManager = new ConfigManager();
+$SETTINGS = $configManager->getAllSettings();
+
 //include librairies
 require_once __DIR__.'/../includes/language/english.php';
 require_once __DIR__.'/../includes/config/include.php';
 require_once __DIR__.'/../includes/config/settings.php';
 require_once __DIR__.'/tp.functions.php';
 require_once __DIR__.'/libs/aesctr.php';
-require_once __DIR__.'/../includes/config/tp.config.php';
 
 // Prepare POST variables
 $post_nb = filter_input(INPUT_POST, 'nb', FILTER_SANITIZE_NUMBER_INT);
@@ -456,87 +460,4 @@ function installHandleFoldersCategories(
     }
     
     mysqli_close($mysqli2);
-}
-
-/**
- * Permits to handle the Teampass config file
- * $action accepts "rebuild" and "update"
- *
- * @param string $action   Action to perform
- * @param array  $SETTINGS Teampass settings
- * @param string $field    Field to refresh
- * @param string $value    Value to set
- * @param int   $isEncrypted
- *
- * @return string|bool
- */
-function installHandleConfigFile($action, $SETTINGS, $field = null, $value = null, int $isEncrypted = 0)
-{
-    $tp_config_file = $SETTINGS['cpassman_dir'] . '/includes/config/tp.config.php';
-    $filename = '../includes/config/settings.php';
-    include_once '../sources/main.functions.php';
-    $pass = defuse_return_decrypted(DB_PASSWD);
-    $server = DB_HOST;
-    $pre = DB_PREFIX;
-    $database = DB_NAME;
-    $port = intval(DB_PORT);
-    $user = DB_USER;
-    $arr_data = array();
-    $mysqli2 = new mysqli($server, $user, $pass, $database, $port);
-
-    if (file_exists($tp_config_file) === false || $action === 'rebuild') {
-        // perform a copy
-        if (file_exists($tp_config_file)) {
-            if (! copy($tp_config_file, $tp_config_file . '.' . date('Y_m_d_His', time()))) {
-                return "ERROR: Could not copy file '" . $tp_config_file . "'";
-            }
-        }
-
-        // regenerate
-        $data = [];
-        $data[0] = "<?php\n";
-        $data[1] = "global \$SETTINGS;\n";
-        $data[2] = "\$SETTINGS = array (\n";
-
-        $result = $mysqli2->query('SELECT *
-            FROM ' . $pre . 'misc
-            WHERE type = "admin"'
-        );
-        $rowcount = $result->num_rows;
-        if ($rowcount > 0) {
-            while ($row = $result->fetch_assoc()) {
-                $value = getEncryptedValue($row['valeur'], $row['is_encrypted']);
-                array_push($data, "    '" . $row['intitule'] . "' => '" . htmlspecialchars_decode($value, ENT_COMPAT) . "',\n");
-            }
-        }
-        array_push($data, ");\n");
-        $data = array_unique($data);
-    // ---
-    } elseif ($action === 'update' && empty($field) === false) {
-        $data = file($tp_config_file);
-        $inc = 0;
-        $bFound = false;
-        foreach ($data as $line) {
-            if (stristr($line, ');')) {
-                break;
-            }
-
-            if (stristr($line, "'" . $field . "' => '")) {
-                $value = getEncryptedValue($value, $isEncrypted);
-                $data[$inc] = "    '" . $field . "' => '" . htmlspecialchars_decode($value ?? '', ENT_COMPAT) . "',\n";
-                $bFound = true;
-                break;
-            }
-            ++$inc;
-        }
-        if ($bFound === false) {
-            $value = getEncryptedValue($record['valeur'], $isEncrypted);
-            $data[$inc] = "    '" . $field . "' => '" . htmlspecialchars_decode($value ?? '', ENT_COMPAT). "',\n);\n";
-        }
-    }
-    mysqli_close($mysqli2);
-
-    // update file
-    file_put_contents($tp_config_file, implode('', $data ?? []));
-    return true;
 }
