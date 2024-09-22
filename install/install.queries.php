@@ -714,7 +714,7 @@ if (null !== $post_type) {
                                     "INSERT INTO `" . $var['tbl_prefix'] . "misc`
                                     (`type`, `intitule`, `valeur`, `created_at`) VALUES
                                     ('" . $elem[0] . "', '" . $elem[1] . "', '" .
-                                        str_replace("'", '', $elem[2]) . "', '" . time() . "');"
+                                        str_replace("'", '', $elem[2]) . "', '" . $elem[1] . "');"
                                 ); // or die(mysqli_error($dbTmp))
                             }
                         }
@@ -836,7 +836,7 @@ if (null !== $post_type) {
                         if ($tmp === 0) {
                             $mysqli_result = mysqli_query(
                                 $dbTmp,
-                                "INSERT INTO `" . $var['tbl_prefix'] . "users` (`id`, `login`, `pw`, `admin`, `gestionnaire`, `personal_folder`, `groupes_visibles`, `email`, `encrypted_psk`, `last_pw_change`, `name`, `lastname`, `can_create_root_folder`, `public_key`, `private_key`, `is_ready_for_usage`, `otp_provided`) VALUES ('1', 'admin', '" . $hashedPassword . "', '1', '0', '0', '0', '" . $var['admin_email'] . "', '', '" . time() . "', 'Change me', 'Change me', '1', 'none', 'none', '1', '1')"
+                                "INSERT INTO `" . $var['tbl_prefix'] . "users` (`id`, `login`, `pw`, `admin`, `gestionnaire`, `personal_folder`, `groupes_visibles`, `email`, `encrypted_psk`, `last_pw_change`, `name`, `lastname`, `can_create_root_folder`, `public_key`, `private_key`, `is_ready_for_usage`, `otp_provided`, `created_at`) VALUES ('1', 'admin', '" . $hashedPassword . "', '1', '0', '0', '0', '" . $var['admin_email'] . "', '', '" . time() . "', 'Change me', 'Change me', '1', 'none', 'none', '1', '1', '" . time() . "')"
                             );
                         } else {
                             $mysqli_result = mysqli_query($dbTmp, 'UPDATE `' . $var['tbl_prefix'] . "users` SET `pw` = '" . $hashedPassword . "' WHERE login = 'admin' AND id = '1'");
@@ -847,7 +847,7 @@ if (null !== $post_type) {
                         if ($tmp === 0) {
                             $mysqli_result = mysqli_query(
                                 $dbTmp,
-                                "INSERT INTO `" . $var['tbl_prefix'] . "users` (`id`, `login`, `pw`, `groupes_visibles`, `derniers`, `key_tempo`, `last_pw_change`, `last_pw`, `admin`, `fonction_id`, `groupes_interdits`, `last_connexion`, `gestionnaire`, `email`, `favourites`, `latest_items`, `personal_folder`, `is_ready_for_usage`, `otp_provided`) VALUES ('" . API_USER_ID . "', 'API', '', '', '', '', '', '', '1', '', '', '', '0', '', '', '', '0', '0', '1')"
+                                "INSERT INTO `" . $var['tbl_prefix'] . "users` (`id`, `login`, `pw`, `groupes_visibles`, `derniers`, `key_tempo`, `last_pw_change`, `last_pw`, `admin`, `fonction_id`, `groupes_interdits`, `last_connexion`, `gestionnaire`, `email`, `favourites`, `latest_items`, `personal_folder`, `is_ready_for_usage`, `otp_provided`, `created_at`) VALUES ('" . API_USER_ID . "', 'API', '', '', '', '', '', '', '1', '', '', '', '0', '', '', '', '0', '0', '1', '" . time() . "')"
                             );
                         }
 
@@ -856,7 +856,7 @@ if (null !== $post_type) {
                         if ($tmp === 0) {
                             $mysqli_result = mysqli_query(
                                 $dbTmp,
-                                "INSERT INTO `" . $var['tbl_prefix'] . "users` (`id`, `login`, `pw`, `groupes_visibles`, `derniers`, `key_tempo`, `last_pw_change`, `last_pw`, `admin`, `fonction_id`, `groupes_interdits`, `last_connexion`, `gestionnaire`, `email`, `favourites`, `latest_items`, `personal_folder`, `is_ready_for_usage`, `otp_provided`) VALUES ('" . OTV_USER_ID . "', 'OTV', '', '', '', '', '', '', '1', '', '', '', '0', '', '', '', '0', '0', '1')"
+                                "INSERT INTO `" . $var['tbl_prefix'] . "users` (`id`, `login`, `pw`, `groupes_visibles`, `derniers`, `key_tempo`, `last_pw_change`, `last_pw`, `admin`, `fonction_id`, `groupes_interdits`, `last_connexion`, `gestionnaire`, `email`, `favourites`, `latest_items`, `personal_folder`, `is_ready_for_usage`, `otp_provided`, `created_at`) VALUES ('" . OTV_USER_ID . "', 'OTV', '', '', '', '', '', '', '1', '', '', '', '0', '', '', '', '0', '0', '1', '" . time() . "')"
                             );
                         }
                     } elseif ($task === 'tags') {
@@ -1487,7 +1487,7 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
 
                         $mysqli_result = mysqli_query(
                             $dbTmp,
-                            "INSERT INTO `" . $var['tbl_prefix'] . "users` (`id`, `login`, `pw`, `groupes_visibles`, `derniers`, `key_tempo`, `last_pw_change`, `last_pw`, `admin`, `fonction_id`, `groupes_interdits`, `last_connexion`, `gestionnaire`, `email`, `favourites`, `latest_items`, `personal_folder`, `public_key`, `private_key`, `is_ready_for_usage`, `otp_provided`) VALUES ('" . TP_USER_ID . "', 'TP', '".$encrypted_pwd."', '', '', '', '', '', '1', '', '', '', '0', '', '', '', '0', '".$userKeys['public_key']."', '".$userKeys['private_key']."', '1', '1')"
+                            "INSERT INTO `" . $var['tbl_prefix'] . "users` (`id`, `login`, `pw`, `groupes_visibles`, `derniers`, `key_tempo`, `last_pw_change`, `last_pw`, `admin`, `fonction_id`, `groupes_interdits`, `last_connexion`, `gestionnaire`, `email`, `favourites`, `latest_items`, `personal_folder`, `public_key`, `private_key`, `is_ready_for_usage`, `otp_provided`, `created_at`) VALUES ('" . TP_USER_ID . "', 'TP', '".$encrypted_pwd."', '', '', '', '', '', '1', '', '', '', '0', '', '', '', '0', '".$userKeys['public_key']."', '".$userKeys['private_key']."', '1', '1', '" . time() . "')"
                         );
                     }
 
