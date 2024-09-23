@@ -541,6 +541,45 @@ mysqli_query(
     "UPDATE `" . $pre . "misc` SET `is_encrypted` = '1' WHERE `intitule` IN ('onthefly-restore-key', 'onthefly-backup-key', 'bck_script_passkey', 'duo_akey', 'duo_ikey', 'duo_skey', 'oauth2_client_secret', 'ldap_password', 'email_auth_pwd')"
 );
 
+// We will remove tp.config.php file
+// For this, we need first to check if it exists
+// And copy each setting to the database if not already there or if different from the one in the database then update it
+// Then rename it and remove the file
+$configFilePath = __DIR__ . '/../includes/config/tp.config.php';
+if (file_exists($configFilePath)) {
+    include $configFilePath;
+    
+    foreach ($SETTINGS as $key => $value) {
+        $escapedKey = mysqli_real_escape_string($db_link, $key);
+        $escapedValue = mysqli_real_escape_string($db_link, $value);
+
+        $query = "SELECT `valeur` FROM `" . $pre . "misc` WHERE `type` = 'admin' AND `intitule` = '$escapedKey'";
+        $result = mysqli_query($db_link, $query);
+
+        if ($result && mysqli_num_rows($result) > 0) {
+            $row = mysqli_fetch_assoc($result);
+            if ($row['valeur'] !== $escapedValue) {
+                $updateQuery = "UPDATE `" . $pre . "misc` SET `valeur` = '$escapedValue', `updated_at` = '" . time() . "' WHERE `type` = 'admin' AND `intitule` = '$escapedKey'";
+                mysqli_query($db_link, $updateQuery);
+            }
+        } else {
+            $insertQuery = "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`, `updated_at`) VALUES ('admin', '$escapedKey', '$escapedValue', '" . time() . "')";
+            mysqli_query($db_link, $insertQuery);
+        }
+    }
+
+    // Rename the file
+    $newConfigFilePath = $configFilePath . '.bak';
+    if (!rename($configFilePath, $newConfigFilePath)) {
+        // Remove the file
+        unlink($configFilePath);
+    } else {
+        // Remove the file
+        unlink($configFilePath);
+    }    
+}
+
+
 //---<END 3.1.2
 
 //---------------------------------------------------------------------

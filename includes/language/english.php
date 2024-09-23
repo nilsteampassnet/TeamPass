@@ -28,6 +28,8 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'oauth2_client_urlResourceOwnerDetails' => 'URL to get user details',
+    'oauth2_client_urlResourceOwnerDetails_tip' => 'URL to get user details. It is used to get user details after authentication.',
     'encryptClientServer' => 'Encrypt client/server',
     'encryptClientServer_tip' => 'When enabled, the client encrypts the data before sending it to the server. The server only stores encrypted data. It can be disabled.',
     'limited_search_default' => 'Limited search by default',

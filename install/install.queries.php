@@ -690,6 +690,7 @@ if (null !== $post_type) {
                             array('admin', 'oauth2_client_id', '', '1'),
                             array('admin', 'oauth2_client_secret', '', '1'),
                             array('admin', 'oauth2_client_endpoint', ''),
+                            array('admin', 'oauth2_client_urlResourceOwnerDetails', ''),
                             array('admin', 'oauth2_client_token', '', '1'),
                             array('admin', 'oauth2_client_scopes', 'openid,profile,email,User.Read,Group.Read.All'),
                             array('admin', 'oauth2_client_appname', 'Login with Azure'),

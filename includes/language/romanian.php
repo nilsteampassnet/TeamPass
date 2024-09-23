@@ -1198,6 +1198,8 @@ return array(
     'limited_search_default_tip' => '',
     'highlight_selected_tip' => '',
     'encryptClientServer' => 'Encrypt client-server exchanges',
-    'encryptClientServer_tip' => 'This setting is not really usefull. It can be disabled.',
+    'encryptClientServer_tip' => 'When enabled, the client encrypts the data before sending it to the server. The server only stores encrypted data. It can be disabled.',
+    'oauth2_client_urlResourceOwnerDetails' => 'URL to get user details',
+    'oauth2_client_urlResourceOwnerDetails_tip' => 'URL to get user details. It is used to get user details after authentication.',
 
 );
