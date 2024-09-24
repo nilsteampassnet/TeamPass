@@ -310,22 +310,42 @@ if (null !== $post_type) {
             );
 
             // prepare variables
-            $post_title = htmlspecialchars($dataReceived['title']);
-            $post_parent_id = filter_var($dataReceived['parentId'], FILTER_SANITIZE_NUMBER_INT);
-            $post_complexity = filter_var($dataReceived['complexity'], FILTER_SANITIZE_NUMBER_INT);
-            $post_folder_id = filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT);
-            $post_renewal_period = isset($dataReceived['renewalPeriod']) === true ? filter_var($dataReceived['renewalPeriod'], FILTER_SANITIZE_NUMBER_INT) : -1;
-            $post_add_restriction = isset($dataReceived['addRestriction']) === true ? filter_var($dataReceived['addRestriction'], FILTER_SANITIZE_NUMBER_INT) : -1;
-            $post_edit_restriction = isset($dataReceived['editRestriction']) === true ? filter_var($dataReceived['editRestriction'], FILTER_SANITIZE_NUMBER_INT) : -1;
-            $post_icon = filter_var($dataReceived['icon'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-            $post_icon_selected = filter_var($dataReceived['iconSelected'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $data = [
+                'id' => isset($dataReceived['id']) === true ? $dataReceived['id'] : -1,
+                'title' => isset($dataReceived['title']) === true ? $dataReceived['title'] : '',
+                'parentId' => isset($dataReceived['parentId']) === true ? $dataReceived['parentId'] : 0,
+                'complexity' => isset($dataReceived['complexity']) === true ? $dataReceived['complexity'] : '',
+                'duration' => isset($dataReceived['renewalPeriod']) === true ? $dataReceived['renewalPeriod'] : 0,
+                'create_auth_without' => isset($dataReceived['addRestriction']) === true ? $dataReceived['addRestriction'] : 0,
+                'edit_auth_without' => isset($dataReceived['editRestriction']) === true ? $dataReceived['editRestriction'] : 0,
+                'icon' => isset($dataReceived['icon']) === true ? $dataReceived['icon'] : '',
+                'icon_selected' => isset($dataReceived['iconSelected']) === true ? $dataReceived['iconSelected'] : '',
+                'access_rights' => isset($dataReceived['accessRight']) === true ? $dataReceived['accessRight'] : 'W',
+            ];            
+            $filters = [
+                'id' => 'cast:integer',
+                'title' => 'trim|escape',
+                'parentId' => 'cast:integer',
+                'complexity' => 'cast:integer',
+                'duration' => 'cast:integer',
+                'create_auth_without' => 'cast:integer',
+                'edit_auth_without' => 'cast:integer',
+                'icon' => 'trim|escape',
+                'icon_selected' => 'trim|escape',
+                'access_rights' => 'trim|escape',
+            ];            
+            $inputData = dataSanitizer(
+                $data,
+                $filters,
+                $SETTINGS['cpassman_dir']
+            );
 
             // Init
             $error = false;
             $errorMessage = '';
 
             // check if title is numeric
-            if (is_numeric($post_title) === true) {
+            if (is_numeric($inputData['title']) === true) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -341,9 +361,9 @@ if (null !== $post_type) {
                 'SELECT *
                 FROM ' . prefixTable('nested_tree') . '
                 WHERE id = %i',
-                $post_folder_id
+                $inputData['id']
             );
-
+            
             //Check if duplicate folders name are allowed
             if (
                 isset($SETTINGS['duplicate_folder']) === true
@@ -352,7 +372,7 @@ if (null !== $post_type) {
                 if (
                     empty($dataFolder['id']) === false
                     && intval($dataReceived['id']) !== intval($dataFolder['id'])
-                    && $post_title !== $dataFolder['title']
+                    && $inputData['title'] !== $dataFolder['title']
                 ) {
                     echo prepareExchangedData(
                         array(
@@ -366,7 +386,7 @@ if (null !== $post_type) {
             }
 
             // Is the parent folder changed?
-            if ((int) $dataFolder['parent_id'] === (int) $post_parent_id) {
+            if ((int) $dataFolder['parent_id'] === (int) $inputData['parentId']) {
                 $parentChanged = false;
             } else {
                 $parentChanged = true;
@@ -377,7 +397,7 @@ if (null !== $post_type) {
                 'SELECT personal_folder, bloquer_creation, bloquer_modification
                 FROM ' . prefixTable('nested_tree') . '
                 WHERE id = %i',
-                $post_parent_id
+                $inputData['parentId']
             );
 
             // inherit from parent the specific settings it has
@@ -406,11 +426,11 @@ if (null !== $post_type) {
                         'SELECT valeur
                         FROM ' . prefixTable('misc') . '
                         WHERE intitule = %i AND type = %s',
-                        $post_parent_id,
+                        $inputData['parentId'],
                         'complex'
                     );
 
-                    if (isset($data['valeur']) === true && (int) $post_complexity < (int) $data['valeur']) {
+                    if (isset($data['valeur']) === true && (int) $inputData['complexity'] < (int) $data['valeur']) {
                         echo prepareExchangedData(
                             array(
                                 'error' => true,
@@ -448,21 +468,21 @@ if (null !== $post_type) {
 
             // Prepare update parameters
             $folderParameters = array(
-                'parent_id' => $post_parent_id,
-                'title' => $post_title,
+                'parent_id' => $inputData['parentId'],
+                'title' => $inputData['title'],
                 'personal_folder' => $isPersonal,
-                'fa_icon' => empty($post_icon) === true ? TP_DEFAULT_ICON : $post_icon,
-                'fa_icon_selected' => empty($post_icon_selected) === true ? TP_DEFAULT_ICON_SELECTED : $post_icon_selected,
+                'fa_icon' => empty($inputData['icon']) === true ? TP_DEFAULT_ICON : $inputData['icon'],
+                'fa_icon_selected' => empty($inputData['icon_selected']) === true ? TP_DEFAULT_ICON_SELECTED : $inputData['icon_selected'],
             );
             
-            if ($post_renewal_period !== -1 && $dataFolder['renewal_period'] !== $post_renewal_period) {
-                $folderParameters['renewal_period'] = $post_renewal_period;
+            if ($inputData['duration'] !== -1 && $dataFolder['renewal_period'] !== $inputData['duration']) {
+                $folderParameters['renewal_period'] = $inputData['duration'];
             }
-            if ($post_add_restriction !== -1 && $dataFolder['bloquer_creation'] !== $post_add_restriction) {
-                $folderParameters['bloquer_creation'] = $post_add_restriction;
+            if ($inputData['create_auth_without'] !== -1 && $dataFolder['bloquer_creation'] !== $inputData['create_auth_without']) {
+                $folderParameters['bloquer_creation'] = $inputData['create_auth_without'];
             }
-            if ($post_edit_restriction !== -1 && $dataFolder['bloquer_modification'] !== $post_edit_restriction) {
-                $folderParameters['bloquer_modification'] = $post_edit_restriction;
+            if ($inputData['edit_auth_without'] !== -1 && $dataFolder['bloquer_modification'] !== $inputData['edit_auth_without']) {
+                $folderParameters['bloquer_modification'] = $inputData['edit_auth_without'];
             }
             
             // Now update
@@ -489,7 +509,7 @@ if (null !== $post_type) {
             DB::update(
                 prefixTable('misc'),
                 array(
-                    'valeur' => $post_complexity,
+                    'valeur' => $inputData['complexity'],
                     'updated_at' => time(),
                 ),
                 'intitule = %s AND type = %s',
@@ -545,22 +565,40 @@ if (null !== $post_type) {
             );
 
             // prepare variables
-            $post_title = htmlspecialchars($dataReceived['title']);
-            $post_parent_id = isset($dataReceived['parentId']) === true ? filter_var($dataReceived['parentId'], FILTER_SANITIZE_NUMBER_INT) : 0;
-            $post_complexity = filter_var($dataReceived['complexity'], FILTER_SANITIZE_NUMBER_INT);
-            $post_duration = isset($dataReceived['renewalPeriod']) === true ? filter_var($dataReceived['renewalPeriod'], FILTER_SANITIZE_NUMBER_INT) : 0;
-            $post_create_auth_without = isset($dataReceived['renewalPeriod']) === true ? filter_var($dataReceived['addRestriction'], FILTER_SANITIZE_NUMBER_INT) : 0;
-            $post_edit_auth_without = isset($dataReceived['renewalPeriod']) === true ? filter_var($dataReceived['editRestriction'], FILTER_SANITIZE_NUMBER_INT) : 0;
-            $post_icon = filter_var($dataReceived['icon'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-            $post_icon_selected = filter_var($dataReceived['iconSelected'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-            $post_access_rights = isset($dataReceived['accessRight']) === true ? filter_var($dataReceived['accessRight'], FILTER_SANITIZE_FULL_SPECIAL_CHARS) : 'W';
+            $data = [
+                'title' => isset($dataReceived['title']) === true ? $dataReceived['title'] : '',
+                'parentId' => isset($dataReceived['parentId']) === true ? $dataReceived['parentId'] : 0,
+                'complexity' => isset($dataReceived['complexity']) === true ? $dataReceived['complexity'] : '',
+                'duration' => isset($dataReceived['renewalPeriod']) === true ? $dataReceived['renewalPeriod'] : 0,
+                'create_auth_without' => isset($dataReceived['addRestriction']) === true ? $dataReceived['addRestriction'] : 0,
+                'edit_auth_without' => isset($dataReceived['editRestriction']) === true ? $dataReceived['editRestriction'] : 0,
+                'icon' => isset($dataReceived['icon']) === true ? $dataReceived['icon'] : '',
+                'icon_selected' => isset($dataReceived['iconSelected']) === true ? $dataReceived['iconSelected'] : '',
+                'access_rights' => isset($dataReceived['accessRight']) === true ? $dataReceived['accessRight'] : 'W',
+            ];            
+            $filters = [
+                'title' => 'trim|escape',
+                'parentId' => 'cast:integer',
+                'complexity' => 'cast:integer',
+                'duration' => 'cast:integer',
+                'create_auth_without' => 'cast:integer',
+                'edit_auth_without' => 'cast:integer',
+                'icon' => 'trim|escape',
+                'icon_selected' => 'trim|escape',
+                'access_rights' => 'trim|escape',
+            ];            
+            $inputData = dataSanitizer(
+                $data,
+                $filters,
+                $SETTINGS['cpassman_dir']
+            );
 
             // Check if parent folder is personal
             $dataParent = DB::queryfirstrow(
                 'SELECT personal_folder
                 FROM ' . prefixTable('nested_tree') . '
                 WHERE id = %i',
-                $post_parent_id
+                $inputData['parentId']
             );
 
             $isPersonal = (isset($dataParent['personal_folder']) === true && (int) $dataParent['personal_folder'] == 1) ? 1 : 0;
@@ -569,16 +607,16 @@ if (null !== $post_type) {
             require_once 'folders.class.php';
             $folderManager = new FolderManager($lang);
             $params = [
-                'title' => (string) $post_title,
-                'parent_id' => (int) $post_parent_id,
+                'title' => (string) $inputData['title'],
+                'parent_id' => (int) $inputData['parentId'],
                 'personal_folder' => (int) $isPersonal,
-                'complexity' => (int) $post_complexity,
-                'duration' => (int) $post_duration,
-                'create_auth_without' => (int) $post_create_auth_without,
-                'edit_auth_without' => (int) $post_edit_auth_without,
-                'icon' => (string) $post_icon,
-                'icon_selected' => (string) $post_icon_selected,
-                'access_rights' => (string) $post_access_rights,
+                'complexity' => (int) $inputData['complexity'],
+                'duration' => (int) $inputData['duration'],
+                'create_auth_without' => (int) $inputData['create_auth_without'],
+                'edit_auth_without' => (int) $inputData['edit_auth_without'],
+                'icon' => (string) $inputData['icon'],
+                'icon_selected' => (string) $inputData['icon_selected'],
+                'access_rights' => (string) $inputData['access_rights'],
                 'user_is_admin' => (int) $session->get('user-admin'),
                 'user_accessible_folders' => (array) $session->get('user-accessible_folders'),
                 'user_is_manager' => (int) $session->get('user-manager'),
