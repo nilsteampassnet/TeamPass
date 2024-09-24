@@ -575,7 +575,7 @@ if (file_exists($configFilePath)) {
         unlink($configFilePath);
     } else {
         // Remove the file
-        unlink($configFilePath);
+        unlink($newConfigFilePath);
     }    
 }
 
