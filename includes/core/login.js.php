@@ -60,7 +60,6 @@ declare(strict_types=1);
         // Page has beed reloaded due to session key inconsistency
         if (store.get('teampassUser') !== null && typeof store.get('teampassUser') !== 'undefined' && store.get('teampassUser').page_reload === 1) {
             // Set previous values
-            $("#pw").val(store.get('teampassUser').pwd);
             $("#login").val(store.get('teampassUser').login);
             $("#select2fa-otp").prop('checked', store.get('teampassUser').mfaSelector);
             $("#ga_code").val(store.get('teampassUser').mfaCode);
@@ -661,7 +660,6 @@ declare(strict_types=1);
                     store.update(
                         'teampassUser', {},
                         function(teampassUser) {
-                            teampassUser.pwd = $("#pw").val();
                             teampassUser.login = $("#login").val();
                             teampassUser.mfaSelector = $("#select2fa-otp").is(":checked");
                             teampassUser.mfaCode = $("#ga_code").val();
@@ -907,7 +905,6 @@ declare(strict_types=1);
                             teampassUser.sessionStartTimestamp = Date.now();
                             teampassUser.sessionKey = data.session_key;
                             teampassUser.user_id = data.user_id;
-                            teampassUser.pwd = old_data.pw;
                             teampassUser.user_has_psk = data.has_psk;
                             teampassUser.shown_warning_unsuccessful_login = data.shown_warning_unsuccessful_login;
                             teampassUser.nb_unsuccessful_logins = data.nb_unsuccessful_logins;

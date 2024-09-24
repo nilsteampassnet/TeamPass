@@ -218,7 +218,6 @@ $request = SymfonyRequest::createFromGlobals();
                                 // LDAP or local account to OAuth2 account
                                 var info_message = '<?php echo $lang->get('oauth2_need_user_old_password');?>';
                                 $('#new-password-field').hide();
-                                $('#dialog-ldap-user-change-password-current').val(store.get('teampassUser').pwd);
                             } else {
                                 // LDAP password updated
                                 var info_message = '<?php echo $lang->get('ldap_user_has_changed_his_password');?>';
@@ -613,8 +612,6 @@ $request = SymfonyRequest::createFromGlobals();
                     '<?php echo $lang->get('perform'); ?>',
                     '<?php echo $lang->get('close'); ?>'
                 );
-                // XSS protection
-                $('#encryption-otp').val(store.get('teampassUser').pwd);
 
                 // Manage show/hide password
                 $('#show-encryption-otp')
