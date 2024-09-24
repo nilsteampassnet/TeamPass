@@ -2355,7 +2355,7 @@ function shouldUserAuthWithOauth2(
     // Security issue without this return if an user auth_type == oauth2 and
     // oauth2 disabled : we can login as a valid user by using hashUserId(username)
     // as password in the login the form.
-    if ((int) $SETTINGS['oauth2_enabled'] !== 1 && (string) $userInfo['auth_type'] === 'oauth2') {
+    if ((int) $SETTINGS['oauth2_enabled'] !== 1 && (bool) $userInfo['oauth2_login_ongoing'] === true) {
         return [
             'error' => true,
             'message' => 'user_not_allowed_to_auth_to_teampass_app',
