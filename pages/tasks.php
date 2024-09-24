@@ -364,6 +364,18 @@ catch (Exception $e) {
 
                                     <div class='row mb-3 option'>
                                         <div class='col-10'>
+                                        <h5><i class="fa-solid fa-database mr-2"></i><?php echo $lang->get('number_users_build_cache_tree'); ?></h5>
+                                            <small id='passwordHelpBlock' class='form-text text-muted'>
+                                                <?php echo $lang->get('number_users_build_cache_tree_tip'); ?>
+                                            </small>
+                                        </div>
+                                        <div class='col-2'>
+                                            <input type='number' class='form-control form-control-sm' id='number_users_build_cache_tree' value='<?php echo isset($SETTINGS['number_users_build_cache_tree']) === true ? $SETTINGS['number_users_build_cache_tree'] : 10; ?>'>
+                                        </div>
+                                    </div>
+
+                                    <div class='row mb-3 option'>
+                                        <div class='col-10'>
                                         <h5><i class="fa-solid fa-stopwatch-20 mr-2"></i><?php echo $lang->get('refresh_data_every_on_screen'); ?></h5>
                                             <small id='passwordHelpBlock' class='form-text text-muted'>
                                                 <?php echo $lang->get('refresh_data_every_on_screen_tip'); ?>

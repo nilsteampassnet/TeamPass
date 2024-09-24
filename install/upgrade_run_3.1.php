@@ -523,6 +523,15 @@ if (intval($tmp) === 0) {
     );
 }
 
+// Add new setting 'number_users_build_cache_tree'
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'number_users_build_cache_tree'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'number_users_build_cache_tree', '10')"
+    );
+}
+
 // Add field is_encrypted to misc table
 $res = addColumnIfNotExist(
     $pre . 'misc',

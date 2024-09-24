@@ -1012,6 +1012,8 @@ return array(
     'execution_time' => 'Durée d&apos;exécution',
     'maximum_number_of_items_to_treat' => 'Nombre maximum d&apos;objets traités sur un cycle',
     'maximum_number_of_items_to_treat_tip' => 'De façon à s&apos;affranchir d&apos;un possible timeout lors de l&apos;exécution du script, il est possible de définir un temps d&apos;exécution différent.',
+    'number_users_build_cache_tree' => 'Nombre d&apos;utilisateurs traités par build_cache_tree.',
+    'number_users_build_cache_tree_tip' => 'Nombre d&apos;utilisateurs traités par build_cache_tree à chaque lancement du scheduler.',
     'maximum_time_script_allowed_to_run' => 'Temps d&apos;exécution en secondes autorisé pour le script',
     'maximum_time_script_allowed_to_run_tip' => 'Par défaut, un script php ne peut pas s&apos;exécuter sur une durée supérieure à celle définie via le paramètre max_execution_time. Ici nous pouvons définir une durée différente permettant au script de s&apos;exécuter complètement.',
     'refresh_data_every_on_screen' => 'Temps de rafraichissement de l&apos;écran (en secondes)',
