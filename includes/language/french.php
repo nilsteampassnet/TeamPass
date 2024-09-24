@@ -1034,6 +1034,7 @@ return array(
     'sending_emails' => 'Envoi d&apos;emails',
     'tasks_information' => 'Les taches dépendent du cron. Il est donc nécessaire de définir dans le crontab d&apos;un job permettant d&apos;exécuter le scheduler de Teampass chaque minute.<br>La commande à saisir est :<br><code>* * * * * path/to/phpbin #teampass_path#/sources/scheduler.php</code><br><br>Note : Adapter le chemain vers le binaire php.',
     'bad_duo_mfa' => 'Code DUO eronné',
+    'duo_redirect_uri' => 'Redirection vers DUO',
     'creation_date' => 'Date de création',
     'never' => 'Jamais',
     'loading_main_page' => 'La page se charge ...',
