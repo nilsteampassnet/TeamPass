@@ -683,6 +683,7 @@ $SETTINGS = array (';
                             array('admin', 'task_maximum_run_time', '300'),
                             array('admin', 'tasks_manager_refreshing_period', '20'),
                             array('admin', 'maximum_number_of_items_to_treat', '100'),
+                            array('admin', 'number_users_build_cache_tree', '10'),
                             array('admin', 'ldap_tls_certifacte_check', 'LDAP_OPT_X_TLS_NEVER'),
                             array('admin', 'enable_tasks_log', '0'),
                             array('admin', 'upgrade_timestamp', time()),

@@ -58,13 +58,17 @@ require_once __DIR__.'/background_tasks___functions.php';
 // log start
 $logID = doLog('start', 'user_task', (isset($SETTINGS['enable_tasks_log']) === true ? (int) $SETTINGS['enable_tasks_log'] : 0));
 
+// Number of users on each scheduler run
+$number_users_build_cache_tree = $SETTINGS['number_users_build_cache_tree'] ?? 0;
+// Never less than 10
+$number_users_build_cache_tree = max((int) $SETTINGS['number_users_build_cache_tree'] ?? 0, 10);
 
 DB::debugmode(false);
 $rows = DB::query(
     'SELECT *
     FROM ' . prefixTable('background_tasks') . '
     WHERE is_in_progress = %i AND process_type = %s
-    ORDER BY increment_id ASC LIMIT 0,10',
+    ORDER BY increment_id ASC LIMIT 0,' . $number_users_build_cache_tree,
     0,
     'user_build_cache_tree'
 );

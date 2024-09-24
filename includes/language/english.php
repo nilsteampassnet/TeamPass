@@ -241,6 +241,8 @@ return array(
     'execution_time' => 'Execution time',
     'maximum_number_of_items_to_treat' => 'Maximum number of items to treat during one cycle',
     'maximum_number_of_items_to_treat_tip' => 'In order to ensure the completion of the script without timeout, it is possible to define a personnal value.',
+    'number_users_build_cache_tree' => 'Number of users processed for build_cache_tree task.',
+    'number_users_build_cache_tree_tip' => 'Number of users processed for build_cache_tree task at each run of the scheduler.',
     'maximum_time_script_allowed_to_run' => 'Duration in seconds allowed for the script to run in background',
     'maximum_time_script_allowed_to_run_tip' => 'By default, the PHP script cannot run more than the duration defined by max_execution_time parameter in php.ini file. The goal here is to define a more higher value to ensure that the script is performing completely.',
     'refresh_data_every_on_screen' => 'Screen refreshing period (in seconds)',
