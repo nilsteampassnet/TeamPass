@@ -1202,5 +1202,7 @@ return array(
     'oauth2_client_urlResourceOwnerDetails' => 'URL to get user details',
     'oauth2_client_urlResourceOwnerDetails_tip' => 'URL to get user details. It is used to get user details after authentication.',
     'duo_redirect_uri' => 'Redirecting to Duo Prompt',
+    'number_users_build_cache_tree' => '',
+    'number_users_build_cache_tree_tip' => 'Number of users processed for build_cache_tree task at each run of the scheduler.',
 
 );
