@@ -55,12 +55,6 @@ class FolderManager
         // Load config if $SETTINGS not defined
         $configManager = new ConfigManager();
         $this->settings = $configManager->getAllSettings();
-        /*try {
-            include_once TEAMPASS_ROOT_PATH.'/includes/config/tp.config.php';
-            $this->settings = $GLOBALS['SETTINGS'];
-        } catch (Exception $e) {
-            throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
-        }*/
     }
 
     /**

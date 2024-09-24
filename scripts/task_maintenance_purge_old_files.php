@@ -37,7 +37,7 @@ require_once __DIR__.'/../sources/main.functions.php';
 loadClasses('DB');
 $lang = new Language('english');
 
-// Load config if $SETTINGS not defined
+// Load config
 $configManager = new ConfigManager();
 $SETTINGS = $configManager->getAllSettings();
 
@@ -72,7 +72,6 @@ function purgeTemporaryFiles(): void
 {
     // Load expected files
     require_once __DIR__. '/../sources/main.functions.php';
-    include __DIR__. '/../includes/config/tp.config.php';
 
     if (isset($SETTINGS) === true) {
         //read folder

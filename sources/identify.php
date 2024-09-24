@@ -58,7 +58,7 @@ $session = SessionManager::getSession();
 $request = SymfonyRequest::createFromGlobals();
 $lang = new Language($session->get('user-language') ?? 'english');
 
-// Load config if $SETTINGS not defined
+// Load config
 $configManager = new ConfigManager();
 $SETTINGS = $configManager->getAllSettings();
 
@@ -2355,7 +2355,7 @@ function shouldUserAuthWithOauth2(
     // Security issue without this return if an user auth_type == oauth2 and
     // oauth2 disabled : we can login as a valid user by using hashUserId(username)
     // as password in the login the form.
-    if ((int) $SETTINGS['oauth2_enabled'] !== 1) {
+    if ((int) $SETTINGS['oauth2_enabled'] !== 1 && (string) $userInfo['auth_type'] === 'oauth2') {
         return [
             'error' => true,
             'message' => 'user_not_allowed_to_auth_to_teampass_app',

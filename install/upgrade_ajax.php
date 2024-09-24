@@ -31,6 +31,7 @@ use TiBeN\CrontabManager\CrontabRepository;
 use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\Language\Language;
 use TeampassClasses\PasswordManager\PasswordManager;
+use TeampassClasses\ConfigManager\ConfigManager;
 
 
 $_SESSION = [];
@@ -211,6 +212,10 @@ $_SESSION['CPM'] = 1;
 define('MIN_PHP_VERSION', 8.1);
 define('MIN_MYSQL_VERSION', '8.0.13');
 define('MIN_MARIADB_VERSION', '10.2.1');
+
+// Load config
+$configManager = new ConfigManager();
+$SETTINGS = $configManager->getAllSettings();
 
 require_once '../includes/language/english.php';
 require_once '../includes/config/include.php';
@@ -915,36 +920,6 @@ if (isset($post_type)) {
                 );
             }
 
-            // Do tp.config.php file
-            $tp_config_file = '../includes/config/tp.config.php';
-            if (file_exists($tp_config_file) === false) {
-                $settingsFile = '../includes/config/settings.php';
-                include_once $settingsFile;
-                include_once 'upgrade_operations.php';
-                installHandleConfigFile('rebuild', $SETTINGS);
-                
-                array_push(
-                    $returnStatus, 
-                    array(
-                        'id' => 'step5_configFile', 
-                        'html' => '<i class="fa-solid fa-circle-check fa-lg text-success ml-2 mr-2"></i>',
-                    )
-                );
-            } else {
-                // Update config file
-                include_once $settingsFile;
-                include_once 'upgrade_operations.php';
-                installHandleConfigFile('rebuild', $SETTINGS);
-
-                array_push(
-                    $returnStatus, 
-                    array(
-                        'id' => 'step5_configFile', 
-                        'html' => '<i class="fa-solid fa-circle-check fa-lg text-success ml-2 mr-2"></i><span class="text-info font-italic">Nothing done</span>',
-                    )
-                );
-            }
-
             // Do csrfp.config.php file
             $csrfp_file_sample = '../includes/libraries/csrfp/libs/csrfp.config.sample.php';
             if (file_exists($csrfp_file_sample) === true) {
@@ -1022,11 +997,6 @@ if (isset($post_type)) {
                     WHERE intitule = 'teampass_version' AND type = 'admin';"
                 );
             }
-
-            // save change in config file
-            include_once 'upgrade_operations.php';
-            installHandleConfigFile('update', $SETTINGS, 'teampass_version', TP_VERSION);
-
 
             //<-- Add cronjob if not exist
             // get php location

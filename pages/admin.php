@@ -46,7 +46,7 @@ $request = SymfonyRequest::createFromGlobals();
 loadClasses('DB');
 $lang = new Language($session->get('user-language') ?? 'english');
 
-// Load config if $SETTINGS not defined
+// Load config
 $configManager = new ConfigManager();
 $SETTINGS = $configManager->getAllSettings();
 
@@ -244,6 +244,11 @@ catch (Exception $e) {
                                 Some users password are still encrypted with the old one. Please ensure to have them changed before upgrading to future release 3.2.0.<br> They just have to login or change password from users page to have it encrypted with new system.<br>
                                 Remaining users: '.DB::count().'
                             </div>';
+                        }
+
+                        // Check if tp.config.php file is still present
+                        if (file_exists(__DIR__.'/../includes/config/tp.config.php') === true) {
+                            echo '<div class="mt-3 alert alert-warning" role="alert"><i class="fa-solid fa-circle-exclamation mr-2"></i>File tp.config.php requires to be deleted. Please do it and refresh this page. This warning shall not be visible anymore.</div>';
                         }
 ?>
                     </div>

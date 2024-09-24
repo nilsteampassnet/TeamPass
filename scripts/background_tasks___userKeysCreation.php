@@ -42,7 +42,7 @@ $session = SessionManager::getSession();
 $request = SymfonyRequest::createFromGlobals();
 $lang = new Language('english');
 
-// Load config if $SETTINGS not defined
+// Load config
 $configManager = new ConfigManager();
 $SETTINGS = $configManager->getAllSettings();
 

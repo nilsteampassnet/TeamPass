@@ -47,17 +47,9 @@ $lang = new Language($session->get('user-language') ?? 'english');
 $antiXSS = new AntiXSS();
 $session = SessionManager::getSession();
 
-// Load config if $SETTINGS not defined
+// Load config
 $configManager = new ConfigManager();
 $SETTINGS = $configManager->getAllSettings();
-/*
-// Load config if $SETTINGS not defined
-try {
-    include_once __DIR__.'/../../includes/config/tp.config.php';
-} catch (Exception $e) {
-    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
-}
-*/
 
 // Load tree
 $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');

@@ -36,7 +36,7 @@ require_once __DIR__.'/../sources/main.functions.php';
 loadClasses('DB');
 $request = SymfonyRequest::createFromGlobals();
 
-// Load config if $SETTINGS not defined
+// Load config
 $configManager = new ConfigManager();
 $SETTINGS = $configManager->getAllSettings();
 

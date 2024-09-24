@@ -1376,9 +1376,6 @@ function sendingStatistics(
         //permits to test only once by session
         $session->set('system-send_stats_done', 1);
         $SETTINGS['send_stats_time'] = time();
-
-        // save change in config file
-        handleConfigFile('update', $SETTINGS, 'send_stats_time', (string) $SETTINGS['send_stats_time']);
     }
 }
 
@@ -1403,7 +1400,10 @@ function generateBugReport(
         'duo_akey',
         'duo_ikey',
         'duo_skey',
-        'duo_host'
+        'duo_host',
+        'oauth2_client_id',
+        'oauth2_tenant_id',
+        'oauth2_client_secret',
     );
 
     // Load user's language
@@ -1420,40 +1420,36 @@ function generateBugReport(
     $list_of_options = '';
     $url_found = '';
     $anonym_url = '';
-    $tp_config_file = '../includes/config/tp.config.php';
-    $data = file($tp_config_file);
-    foreach ($data as $line) {
-        if (substr($line, 0, 4) === '    ') {
-            // Remove extra spaces
-            $line = str_replace('    ', '', $line);
+    $sortedSettings = $SETTINGS;
+    ksort($sortedSettings);
 
-            // Identify url to anonymize it
-            if (strpos($line, 'cpassman_url') > 0 && empty($url_found) === true) {
-                $url_found = substr($line, 19, strlen($line) - 22);
-                if (empty($url_found) === false) {
-                    $tmp = parse_url($url_found);
-                    $anonym_url = $tmp['scheme'] . '://<anonym_url>' . (isset($tmp['path']) === true ? $tmp['path'] : '');
-                    $line = "'cpassman_url' => '" . $anonym_url . "\n";
-                } else {
-                    $line = "'cpassman_url' => \n";
-                }
+    foreach ($sortedSettings as $key => $value) {
+        // Identify url to anonymize it
+        if ($key === 'cpassman_url' && empty($url_found) === true) {
+            $url_found = $value;
+            if (empty($url_found) === false) {
+                $tmp = parse_url($url_found);
+                $anonym_url = $tmp['scheme'] . '://<anonym_url>' . (isset($tmp['path']) === true ? $tmp['path'] : '');
+                $value = $anonym_url;
+            } else {
+                $value = '';
             }
-
-            // Anonymize all urls
-            if (empty($anonym_url) === false) {
-                $line = str_replace($url_found, $anonym_url, $line);
-            }
-
-            // Clear some vars
-            foreach ($config_exclude_vars as $var) {
-                if (strpos($line, $var) > 0) {
-                    $line = "'".$var."' => '<removed>'\n";
-                }
-            }
-
-            // Complete line to display
-            $list_of_options .= $line;
         }
+
+        // Anonymize all urls
+        if (empty($anonym_url) === false) {
+            $value = str_replace($url_found, $anonym_url, (string) $value);
+        }
+
+        // Clear some vars
+        foreach ($config_exclude_vars as $var) {
+            if ($key === $var) {
+                $value = '<removed>';
+            }
+        }
+
+        // Complete line to display
+        $list_of_options .= "'$key' => '$value'\n";
     }
 
     // Get error

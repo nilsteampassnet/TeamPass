@@ -36,7 +36,7 @@ $session = SessionManager::getSession();
 $request = SymfonyRequest::createFromGlobals();
 $lang = new Language($session->get('user-language') ?? 'english');
 
-// Load config if $SETTINGS not defined
+// Load config
 $configManager = new ConfigManager();
 $SETTINGS = $configManager->getAllSettings();
 
@@ -321,9 +321,6 @@ function recursiveTree(
 ) {
     $text = '';
     
-    // Load config
-    include __DIR__.'/../includes/config/tp.config.php';
-
     $displayThisNode = false;
     $nbItemsInSubfolders = $nbSubfolders = $nbItemsInFolder = 0;
     $nodeDescendants = $tree->getDescendants($nodeId, true, false, false);

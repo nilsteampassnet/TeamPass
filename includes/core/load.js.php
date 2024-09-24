@@ -855,69 +855,6 @@ $request = SymfonyRequest::createFromGlobals();
         $('.content-header, .content').removeClass('hidden');
     });
 
-    /**
-     * When clicking save Personal saltkey
-     */
-    /*
-    $('#button_save_user_psk').click(function() {
-        toastr.remove();
-        toastr.info(
-            '<?php echo $lang->get('in_progress'); ?><i class="fa-solid fa-circle-notch fa-spin fa-2x ml-3"></i>'
-        );
-
-        // Prepare data
-        var data = {
-            "psk": sanitizeString($("#user_personal_saltkey").val()),
-            "complexity": $("#psk_strength_value").val()
-        };
-
-        //
-        $.post(
-            "sources/main.queries.php", {
-                type: "store_personal_saltkey",
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
-                key: '<?php echo $session->get('key'); ?>'
-            },
-            function(data) {
-                data = prepareExchangedData(data, '<?php echo $session->get('key'); ?>');
-
-                // Is there an error?
-                if (data.error === true) {
-                    toastr.remove();
-                    toastr.error(
-                        '<?php echo $lang->get('warning'); ?>',
-                        '<?php echo $lang->get('caution'); ?>', {
-                            timeOut: 5000,
-                            progressBar: true
-                        }
-                    );
-                } else {
-                    store.update(
-                        'teampassUser',
-                        function(teampassUser) {
-                            teampassUser.pskDefinedInDatabase = 1;
-                        }
-                    )
-
-                    store.update(
-                        'teampassUser',
-                        function(teampassUser) {
-                            teampassUser.pskSetForSession = data.encrypted_psk;
-                        }
-                    )
-
-                    toastr.remove();
-                    toastr.success(
-                        '<?php echo $lang->get('alert_page_will_reload'); ?>'
-                    );
-
-                    location.reload();
-                }
-            }
-        );
-    });
-    */
-
     // For Personal Saltkey
     $("#profile-password").simplePassMeter({
         "requirements": {},

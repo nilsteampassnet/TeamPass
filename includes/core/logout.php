@@ -45,18 +45,9 @@ $request = SymfonyRequest::createFromGlobals();
 $lang = new Language($session->get('user-language') ?? 'english');
 $session = SessionManager::getSession();
 
-// Load config if $SETTINGS not defined
+// Load config
 $configManager = new ConfigManager();
 $SETTINGS = $configManager->getAllSettings();
-
-/*
-// Load config if $SETTINGS not defined
-try {
-    include_once __DIR__.'/../../includes/config/tp.config.php';
-} catch (Exception $e) {
-    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
-}
-*/
 
 $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 $get = [];

@@ -32,7 +32,6 @@ use TeampassClasses\ConfigManager\ConfigManager;
 
 
 // Load config
-require_once __DIR__.'/../includes/config/tp.config.php';
 require_once __DIR__.'/../includes/config/include.php';
 require_once __DIR__.'/../includes/config/settings.php';
 
@@ -42,6 +41,10 @@ require_once __DIR__.'/../sources/main.functions.php';
 
 // Create a new scheduler
 $scheduler = new scheduler();
+
+// Load config
+$configManager = new ConfigManager();
+$SETTINGS = $configManager->getAllSettings();
 
 // Build the scheduler jobs
 // https://github.com/peppeocchi/php-cron-scheduler
@@ -79,14 +82,6 @@ if (isset($SETTINGS['reload_cache_table_task']) === true && empty($SETTINGS['rel
     runTask(
         explode(';', $SETTINGS['reload_cache_table_task']),
         __DIR__.'/../scripts/task_maintenance_reload_cache_table.php',
-        $scheduler
-    );
-}
-
-if (isset($SETTINGS['rebuild_config_file_task']) === true && empty($SETTINGS['rebuild_config_file_task']) === false) {
-    runTask(
-        explode(';', $SETTINGS['rebuild_config_file_task']),
-        __DIR__.'/../scripts/task_maintenance_rebuild_config_file.php',
         $scheduler
     );
 }

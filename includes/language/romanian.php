@@ -1192,5 +1192,14 @@ return array(
     'user_exists_but_not_oauth2' => 'User has to authenticate using Entra/Azure AD',
     'user_not_allowed_to_auth_to_teampass_app' => 'User is not allowed to authenticate with Teampass application',
     'user_is_not_auth_with_oauth2' => 'User should not authenticate with Entra/Azure AD',
+    'highlight_favorites' => 'Highlight favorites',
+    'highlight_favorites_tip' => '',
+    'limited_search_default' => 'Limited search selected by default',
+    'limited_search_default_tip' => '',
+    'highlight_selected_tip' => '',
+    'encryptClientServer' => 'Encrypt client-server exchanges',
+    'encryptClientServer_tip' => 'When enabled, the client encrypts the data before sending it to the server. The server only stores encrypted data. It can be disabled.',
+    'oauth2_client_urlResourceOwnerDetails' => 'URL to get user details',
+    'oauth2_client_urlResourceOwnerDetails_tip' => 'URL to get user details. It is used to get user details after authentication.',
 
 );

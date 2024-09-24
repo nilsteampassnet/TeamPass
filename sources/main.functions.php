@@ -4334,7 +4334,6 @@ function loadClasses(string $className = ''): void
             DB::$connect_options = DB_CONNECT_OPTIONS;
         }
     }
-
 }
 
 /**

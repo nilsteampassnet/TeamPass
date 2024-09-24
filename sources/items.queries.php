@@ -51,7 +51,7 @@ $session = SessionManager::getSession();
 $request = SymfonyRequest::createFromGlobals();
 $lang = new Language($session->get('user-language') ?? 'english');
 
-// Load config if $SETTINGS not defined
+// Load config
 $configManager = new ConfigManager();
 $SETTINGS = $configManager->getAllSettings();
 
@@ -7414,21 +7414,6 @@ function fileFormatImage($ext)
     return $image;
 }
 
-/**
- * Returns a cleaned up password.
- *
- * @param string $pwd String for pwd
- *
- * @return string
- */
-function passwordReplacement($pwd)
-{
-    $pwPatterns = array('/ETCOMMERCIAL/', '/SIGNEPLUS/');
-    $pwRemplacements = array('&', '+');
-
-    return preg_replace($pwPatterns, $pwRemplacements, $pwd);
-}
-
 
 /**
  * Get rights of user on specific folder/item.
@@ -7439,138 +7424,162 @@ function passwordReplacement($pwd)
  * 
  * @return array with access rights.
  */
-function getCurrentAccessRights(int $userId, int $itemId, int $treeId): array {
+function getCurrentAccessRights(int $userId, int $itemId, int $treeId): array
+{
     $session = SessionManager::getSession();
+    
+    // Check if the item is locked and whether the current user can edit it
+    $editionLock = isItemLocked($itemId, $session, $userId);
 
-    // Locked Item (if already locked), go back and warn
-    $dataTmp = DB::queryFirstRow(
-        'SELECT timestamp, user_id 
-        FROM ' . prefixTable('items_edition') . ' 
-        WHERE item_id = %i',
+    // Retrieve user's visible folders from the cache_tree table
+    $visibleFolders = getUserVisibleFolders($userId);
+
+    // Check if the folder is in the user's read-only list
+    if (in_array($treeId, $session->get('user-read_only_folders'))) {
+        return getAccessResponse(false, true, false, false);
+    }
+
+    // Check if the folder is personal to the user
+    foreach ($visibleFolders as $folder) {
+        if ($folder['id'] == $treeId && (int) $folder['perso'] === 1) {
+            return getAccessResponse(false, true, true, true);
+        }
+    }
+
+    // Determine the user's access rights based on their roles for this folder
+    [$edit, $delete] = getRoleBasedAccess($session, $treeId);
+
+    // Log access rights information if logging is enabled
+    if (LOG_TO_SERVER === true) {
+        error_log("TEAMPASS - Folder: $treeId - User: $userId - edit: $edit - delete: $delete");
+    }
+
+    return getAccessResponse(false, true, $edit, $delete, $editionLock);
+}
+
+/**
+ * Checks if the item is locked by another user or if there is an ongoing encryption process.
+ * If the item is locked, the function determines if the lock has expired or not.
+ * 
+ * @param int $itemId The ID of the item to check
+ * @param object $session The current session object
+ * @param int $userId The ID of the current user
+ * 
+ * @return bool True if the item is locked, false otherwise
+ */
+function isItemLocked(int $itemId, $session, int $userId): bool
+{
+    global $SETTINGS;
+
+    // Retrieve the current lock information for the item
+    $itemLockInfo = DB::queryFirstRow('SELECT timestamp, user_id FROM ' . prefixTable('items_edition') . ' WHERE item_id = %i', $itemId);
+
+    // Check if the item is locked by another user
+    if ($itemLockInfo && $itemLockInfo['user_id'] !== $userId) {
+        // Determine the delay period, using the setting or a default value
+        $delay = ($SETTINGS['delay_item_edition'] ?? EDITION_LOCK_PERIOD) * 60;
+        $lockExpired = (time() - $itemLockInfo['timestamp']) > $delay;
+
+        // If the lock hasn't expired, mark the item as locked
+        if (!$lockExpired) {
+            return true;
+        }
+
+        // If the lock has expired, remove the lock for the current user
+        DB::delete(prefixTable('items_edition'), 'item_id = %i AND user_id = %i', $itemId, $session->get('user-id'));
+    }
+    
+    // Check if there's an ongoing background encryption process for the item
+    $ongoingProcess = DB::queryFirstRow(
+        'SELECT 1 FROM ' . prefixTable('background_tasks') . ' WHERE item_id = %i AND finished_at = "" LIMIT 1', 
         $itemId
     );
 
-    // if token already exists for this item then no edition is possible
-    if (DB::count() > 0) {
-        // Get if current user is the one who locked the item
-        $userLockedItemQueryResults = DB::queryFirstRow(
-            'SELECT user_id 
-            FROM ' . prefixTable('items_edition') . ' 
-            WHERE item_id = %i AND user_id = %i',
-            $itemId,
-            $session->get('user-id')
-        );
-        $userLockedItem = (DB::count() > 0) ? true : false;
+    // Return true if an ongoing process is found, otherwise false
+    return $ongoingProcess ? true : false;
+}
 
-        // Get if existing process ongoing for this item
-        $dataItemProcessOngoing = DB::queryFirstRow(
-            'SELECT JSON_EXTRACT(p.arguments, "$.all_users_except_id") AS all_users_except_id
-            FROM ' . prefixTable('background_tasks') . ' AS p
-            INNER JOIN ' . prefixTable('items_edition') . ' AS i ON (i.item_id = p.item_id)
-            WHERE p.item_id = %i AND p.finished_at = ""
-            ORDER BY p.increment_id DESC',
-            $itemId
-        );
+/**
+ * Retrieves the list of visible folders for a specific user from the cache_tree table.
+ * 
+ * @param int $userId The ID of the user
+ * 
+ * @return array An array of visible folders for the user
+ */
+function getUserVisibleFolders(int $userId): array
+{
+    // Query to retrieve visible folders for the user
+    $data = DB::queryFirstRow('SELECT visible_folders FROM ' . prefixTable('cache_tree') . ' WHERE user_id = %i', $userId);
+    
+    // Decode JSON data into an array; return an empty array if the data is invalid
+    return json_decode($data['visible_folders'], true) ?? [];
+}
 
-        // Get delay period
-        if (isset($SETTINGS['delay_item_edition']) && $SETTINGS['delay_item_edition'] > 0 && empty($dataTmp['timestamp']) === false) {
-            $delay = $SETTINGS['delay_item_edition']*60;
-        } else {
-            $delay = EDITION_LOCK_PERIOD; // One day delay
-        }
-
-        if ((int) DB::count() === 0) {
-            // CASE where no encryption process is pending
-            if ($session->get('user-id') === $dataTmp['user_id'] || $userLockedItem === true || round(abs(time() - $dataTmp['timestamp']), 0) > $delay) {
-                // CASE where user is the one who locked the item
-                // Delete the existing edition lock and let the user edit
-                DB::delete(
-                    prefixTable('items_edition'), 
-                    'item_id = %i AND user_id = %i', 
-                    $itemId,
-                    $session->get('user-id')
-                );
-            } else {
-                // CASE where user is not the one who locked the item
-                $editionLock = true;
-            }
-        } else {
-            // Case where encryption process is pending
-            // Block any user to edit the item
-            $editionLock = true;
-        }
-    }
-
-    $data = DB::queryFirstRow(
-        'SELECT visible_folders
-        FROM ' . prefixTable('cache_tree') . ' WHERE user_id = %i',
-        $userId
-    );
-    // Check if tree ID is in visible folders.
-    $arr = json_decode($data['visible_folders'], true);
-    $ids = is_null($arr) === true ? [] : array_column($arr, 'id');
-
-    // Is folder in Read Only list for this user?
-    if (in_array($treeId, $session->get('user-read_only_folders')) === true) {
-        return array(
-            'error' => false,
-            'access' => true,
-            'edit' => false,
-            'delete' => false,
-            'edition_locked' => false,
-        );
-    }
-
-    // Check if folder is personal
-    foreach ($arr as $folder) {
-        if ($folder['id'] == $treeId && (int) $folder['perso'] === 1) {
-            return array(
-                'error' => false,
-                'access' => true,
-                'edit' => true,
-                'delete' => true,
-                'edition_locked' => false,
-            );
-        }
-    }
-
-    // Check rights of this role on this folder
-    // Is there no edit or no delete defined
+/**
+ * Determines access rights (edit/delete) based on the user's roles for a given folder.
+ * It checks the roles_values table to see the permissions defined for each role.
+ * 
+ * @param object $session The current session object
+ * @param int $treeId The ID of the folder to check access rights for
+ * 
+ * @return array An array containing edit and delete access rights [edit, delete]
+ */
+function getRoleBasedAccess($session, int $treeId): array
+{
     $edit = $delete = false;
-    $data = DB::queryFirstColumn(
-        'SELECT type
-        FROM ' . prefixTable('roles_values') . '
-        WHERE role_id IN %ls AND folder_id = %i',
-        array_column($session->get('system-array_roles'), 'id'),
-        $treeId,
+    
+    // Retrieve all role IDs assigned to the user
+    $roles = array_column($session->get('system-array_roles'), 'id');
+
+    // Query the access rights for the given roles and folder
+    $accessTypes = DB::queryFirstColumn(
+        'SELECT type FROM ' . prefixTable('roles_values') . ' WHERE role_id IN %ls AND folder_id = %i', 
+        $roles, 
+        $treeId
     );
-    foreach ($data as $access) {
-        if ($access === 'ND') {
-            // No Delete
-            $edit = true;
-            $delete = false;
-        } elseif ($access === 'NE') {
-            // No Edit
-            $edit = false;
-            $delete = true;
-        } elseif ($access === 'NDNE' || $access === 'R') {
-            // No Delete, No Edit or Read only
-            $edit = false;
-            $delete = false;
-        } elseif ($access === 'W') {
-            // Write
-            $edit = true;
-            $delete = true;
+
+    // Determine access rights based on the retrieved types
+    foreach ($accessTypes as $access) {
+        switch ($access) {
+            case 'ND': // No Delete
+                $edit = true;
+                $delete = false;
+                break;
+            case 'NE': // No Edit
+                $edit = false;
+                $delete = true;
+                break;
+            case 'NDNE':
+            case 'R': // Read only
+                $edit = $delete = false;
+                break;
+            case 'W': // Write access
+                $edit = $delete = true;
+                break;
         }
     }
-    if (LOG_TO_SERVER === true) error_log('TEAMPASS - Folder: '.$treeId.' - User: '.$userId.' - access: ' . $access . ' - edit: ' . $edit . ' - delete: ' . $delete);
+    return [$edit, $delete];
+}
 
-    return array(
-        'error' => false,
-        'access' => isset($treeId) === true && in_array($treeId, $ids) === true ? true : false,
+/**
+ * Constructs the final access response array with the given parameters.
+ * 
+ * @param bool $error Indicates if there was an error
+ * @param bool $access Indicates if the user has access
+ * @param bool $edit Indicates if the user has edit rights
+ * @param bool $delete Indicates if the user has delete rights
+ * @param bool $editionLocked Indicates if the edition is locked
+ * 
+ * @return array An array containing the access rights information
+ */
+function getAccessResponse(bool $error, bool $access, bool $edit, bool $delete, bool $editionLocked = false): array
+{
+    return [
+        'error' => $error,
+        'access' => $access,
         'edit' => $edit,
         'delete' => $delete,
-        'edition_locked' => $editionLock,
-        'debug' => 'read_only_folders',
-    );
+        'edition_locked' => $editionLocked,
+    ];
 }
+

@@ -28,34 +28,37 @@ namespace TeampassClasses\ConfigManager;
  * @see       https://www.teampass.net
  */
 
- class ConfigManager
- {
-     private $settings;
+use TeampassClasses\SessionManager\SessionManager;
+use DB;
+class ConfigManager
+{
+    private $settings;
  
-     public function __construct($rootPath = null, $rootUrl = null)
-     {
-         $this->loadConfiguration($rootPath, $rootUrl);
-     }
+    public function __construct( $rootPath = null, $rootUrl = null)
+    {
+        $this->loadConfiguration($rootPath, $rootUrl);
+    }
  
-     private function loadConfiguration($rootPath = null, $rootUrl = null)
-     {
-         $configPath = __DIR__ . '/../../../../includes/config/tp.config.php';
-         global $SETTINGS;
-         
-         // Vérifier si le répertoire de configuration est défini et non vide, et que le fichier de configuration existe.
-         if (file_exists($configPath) === false) {
-            if ($rootPath === null && $rootUrl === null) {
-                $this->settings = [];
-            } else {
-                $this->settings = [
-                    'cpassman_dir' => $rootPath,
-                    'cpassman_url' => $rootUrl,
-                ];
-            }
-         } else {
-             include_once $configPath;
-             $this->settings = $SETTINGS;
-         }
+    private function loadConfiguration($rootPath = null, $rootUrl = null)
+    {
+        $session = SessionManager::getSession();
+
+        // Get the last modification time of a change in the settings
+        $lastModified = $this->getLastModificationTimestamp();
+
+        // Check if the settings have been loaded before and if a setting hasn't been modified since the last load
+        if ($session->has('teampass-settings') && isset($session->get('teampass-settings')['timestamp']) === true && $session->get('teampass-settings')['timestamp'] >= $lastModified && is_null($lastModified) === false) {
+            $this->settings = $session->get('teampass-settings');
+        } else {
+            // Load settings from DB
+            $this->settings = $this->loadSettingsFromDB('DB');
+
+            // Add the timestamp to the settings
+            $this->settings['timestamp'] = time();
+
+            // Save the settings in the session
+            $session->set('teampass-settings', $this->settings);
+        }
      }
  
      public function getSetting($key)
@@ -65,6 +68,76 @@ namespace TeampassClasses\ConfigManager;
  
      public function getAllSettings()
      {
-         return $this->settings;
+        return $this->settings;
      }
- }
+     
+    /**
+     * Returns the decrypted value if needed.
+     *
+     * @param string $value       Value to decrypt.
+     * @param int   $isEncrypted Is the value encrypted?
+     *
+     * @return string
+     */
+    public function getDecryptedValue(string $value, int $isEncrypted): string
+    {
+        return $isEncrypted ? cryption($value, '', 'decrypt')['string'] : $value;
+    }
+
+    /**
+     * Load settings from the database.
+     *
+     * @return array
+     */
+    public function loadSettingsFromDB(): array
+    {
+        // Do we have a settings file?
+        $settingsFile = __DIR__ . '/../../../../includes/config/settings.php';
+        if (!file_exists($settingsFile) || empty(DB_HOST) === true) {
+            return [];
+        }
+
+        // Load the DB library
+        require_once __DIR__.'/../../../sergeytsalkov/meekrodb/db.class.php';
+        $ret = [];
+
+        $result = DB::query(
+            'SELECT intitule, valeur
+            FROM ' . prefixTable('misc') . '
+            WHERE type = %s',
+            'admin'
+        );
+        foreach ($result as $row) {
+            $ret[$row['intitule']] = $row['valeur'];
+        }
+
+        return $ret;
+    }
+
+    /**
+     * Get the last modification timestamp of the settings.
+     *
+     * @return string|null
+     */
+    public function getLastModificationTimestamp(): string|null
+    {
+        // Do we have a settings file?
+        $settingsFile = __DIR__ . '/../../../../includes/config/settings.php';
+        if (!file_exists($settingsFile) || empty(DB_HOST) === true) {
+            return "";
+        }
+
+        // Load the DB library
+        require_once __DIR__.'/../../../sergeytsalkov/meekrodb/db.class.php';
+
+        $maxTimestamp = DB::queryFirstField(
+            'SELECT MAX(GREATEST(created_at, updated_at)) AS timestamp
+            FROM ' . prefixTable('misc') . '
+            WHERE type = %s',
+            'admin'
+        );
+
+        // NULL is returned if no settings are found or if the settings have no created_at value
+        return $maxTimestamp;
+    }
+}

@@ -48,7 +48,7 @@ $request = SymfonyRequest::createFromGlobals();
 $lang = new Language($session->get('user-language') ?? 'english');
 
 
-// Load config if $SETTINGS not defined
+// Load config
 $configManager = new ConfigManager();
 $SETTINGS = $configManager->getAllSettings();
 
@@ -224,10 +224,6 @@ function loadLastTasksExec_getBadge(string $processLabel): string
             'db' => 'do_maintenance - purge-old-files',
             'task' => 'purge_temporary_files_task',
         ],
-        'do_maintenance - rebuild-config-file' => [
-            'db' => 'do_maintenance - rebuild-config-file',
-            'task' => 'rebuild_config_file_task',
-        ],
         'do_maintenance - reload-cache-table' => [
             'db' => 'do_maintenance - reload-cache-table',
             'task' => 'reload_cache_table_task',
@@ -295,15 +291,6 @@ function performTask(string $task, string $phpBinaryPath, string $datetimeFormat
             $process = new Process([
                 $phpBinaryPath,
                 __DIR__.'/../scripts/task_maintenance_purge_old_files.php',
-            ]);
-
-            break;
-
-        case 'rebuild_config_file_task':
-
-            $process = new Process([
-                $phpBinaryPath,
-                __DIR__.'/../scripts/task_maintenance_rebuild_config_file.php',
             ]);
 
             break;

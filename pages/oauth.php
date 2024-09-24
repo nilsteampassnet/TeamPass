@@ -46,7 +46,7 @@ $session = SessionManager::getSession();
 $request = SymfonyRequest::createFromGlobals();
 $lang = new Language($session->get('user-language') ?? 'english');
 
-// Load config if $SETTINGS not defined
+// Load config
 $configManager = new ConfigManager();
 $SETTINGS = $configManager->getAllSettings();
 
@@ -195,6 +195,18 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
                                 </div>
                                 <div class='col-7'>
                                     <input type='text' class='form-control form-control-sm setting-oauth' id='oauth2_tenant_id' value='<?php echo $SETTINGS['oauth2_tenant_id'] ?? ''; ?>'>
+                                </div>
+                            </div>
+
+                            <div class='row mb-2 tr-ldap'>
+                                <div class='col-5'>
+                                    <?php echo $lang->get('oauth2_client_urlResourceOwnerDetails'); ?>
+                                    <small id='passwordHelpBlock' class='form-text text-muted'>
+                                        <?php echo $lang->get('oauth2_client_urlResourceOwnerDetails_tip'); ?>
+                                    </small>
+                                </div>
+                                <div class='col-7'>
+                                    <input type='text' class='form-control form-control-sm setting-oauth' id='oauth2_client_urlResourceOwnerDetails' value='<?php echo $SETTINGS['oauth2_client_urlResourceOwnerDetails'] ?? ''; ?>'>
                                 </div>
                             </div>
 

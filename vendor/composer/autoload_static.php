@@ -53,13 +53,13 @@ class ComposerStaticInite3f3ee27f81ca21f7bd7499d7b935c11
             'TeampassClasses\\SessionManager\\' => 31,
             'TeampassClasses\\PerformChecks\\' => 30,
             'TeampassClasses\\PasswordManager\\' => 32,
+            'TeampassClasses\\OAuth2Controller\\' => 33,
             'TeampassClasses\\NestedTree\\' => 27,
             'TeampassClasses\\LdapExtra\\' => 26,
             'TeampassClasses\\Language\\' => 25,
             'TeampassClasses\\Encryption\\' => 27,
             'TeampassClasses\\EmailService\\' => 29,
             'TeampassClasses\\ConfigManager\\' => 30,
-            'TeampassClasses\\Oauth2AuthController\\' => 36,
         ),
         'S' => 
         array (
@@ -217,6 +217,10 @@ class ComposerStaticInite3f3ee27f81ca21f7bd7499d7b935c11
         array (
             0 => __DIR__ . '/..' . '/teampassclasses/passwordmanager/src',
         ),
+        'TeampassClasses\\OAuth2Controller\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/teampassclasses/oauth2controller/src',
+        ),
         'TeampassClasses\\NestedTree\\' => 
         array (
             0 => __DIR__ . '/..' . '/teampassclasses/nestedtree/src',
@@ -240,10 +244,6 @@ class ComposerStaticInite3f3ee27f81ca21f7bd7499d7b935c11
         'TeampassClasses\\ConfigManager\\' => 
         array (
             0 => __DIR__ . '/..' . '/teampassclasses/configmanager/src',
-        ),
-        'TeampassClasses\\OAuth2Controller\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/teampassclasses/oauth2controller/src',
         ),
         'Symfony\\Polyfill\\Php83\\' => 
         array (
@@ -2619,7 +2619,6 @@ class ComposerStaticInite3f3ee27f81ca21f7bd7499d7b935c11
         'TCPDF_IMPORT' => __DIR__ . '/..' . '/tecnickcom/tcpdf/tcpdf_import.php',
         'TCPDF_PARSER' => __DIR__ . '/..' . '/tecnickcom/tcpdf/tcpdf_parser.php',
         'TCPDF_STATIC' => __DIR__ . '/..' . '/tecnickcom/tcpdf/include/tcpdf_static.php',
-        'TeampassClasses\\OAuth2Controller\\OAuth2Controller' => __DIR__ . '/..' . '/teampassclasses/oauth2controller/src/OAuth2Controller.php',
         'TeampassClasses\\ConfigManager\\ConfigManager' => __DIR__ . '/..' . '/teampassclasses/configmanager/src/ConfigManager.php',
         'TeampassClasses\\EmailService\\EmailService' => __DIR__ . '/..' . '/teampassclasses/emailservice/src/EmailService.php',
         'TeampassClasses\\EmailService\\EmailSettings' => __DIR__ . '/..' . '/teampassclasses/emailservice/src/EmailSettings.php',
@@ -2629,6 +2628,7 @@ class ComposerStaticInite3f3ee27f81ca21f7bd7499d7b935c11
         'TeampassClasses\\LdapExtra\\LdapExtra' => __DIR__ . '/..' . '/teampassclasses/ldapextra/src/LdapExtra.php',
         'TeampassClasses\\LdapExtra\\OpenLdapExtra' => __DIR__ . '/..' . '/teampassclasses/ldapextra/src/OpenLdapExtra.php',
         'TeampassClasses\\NestedTree\\NestedTree' => __DIR__ . '/..' . '/teampassclasses/nestedtree/src/NestedTree.php',
+        'TeampassClasses\\OAuth2Controller\\OAuth2Controller' => __DIR__ . '/..' . '/teampassclasses/oauth2controller/src/OAuth2Controller.php',
         'TeampassClasses\\PasswordManager\\PasswordManager' => __DIR__ . '/..' . '/teampassclasses/passwordmanager/src/PasswordManager.php',
         'TeampassClasses\\PerformChecks\\PerformChecks' => __DIR__ . '/..' . '/teampassclasses/performchecks/src/PerformChecks.php',
         'TeampassClasses\\SessionManager\\SessionManager' => __DIR__ . '/..' . '/teampassclasses/sessionmanager/src/SessionManager.php',

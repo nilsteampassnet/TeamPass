@@ -49,7 +49,7 @@ if ($session->get('key') === null) {
     die('Hacking attempt...');
 }
 
-// Load config if $SETTINGS not defined
+// Load config
 $configManager = new ConfigManager();
 $SETTINGS = $configManager->getAllSettings();
 

@@ -1192,6 +1192,14 @@ return array(
     'user_exists_but_not_oauth2' => 'Vous devez vous authentifier avec votre compte Azure/Entra AD',
     'user_not_allowed_to_auth_to_teampass_app' => 'Vous n&apos;êtes pas autoriser à vous authentifier à l&apos;application Teampass',
     'user_is_not_auth_with_oauth2' => 'Vous ne pouvez pas vous authentifier avec un compte Entra/Azure AD',
-    'oauth2_need_user_old_password' => 'Pour la première connexion en SSO, merci de fournir votre précédent mot de passe.',
+    'highlight_favorites' => 'Mettre en évidence les favoris',
+    'highlight_favorites_tip' => '',
+    'limited_search_default' => 'Recherche limitée par défaut',
+    'limited_search_default_tip' => '',
+    'highlight_selected_tip' => '',
+    'encryptClientServer' => 'Crypter les échanges serveur-client',
+    'encryptClientServer_tip' => 'Cette option n&apos;est pas des plus pertinente et peut être désactivée.',
+    'oauth2_client_urlResourceOwnerDetails' => 'URL de récupération des détails utilisateurs',
+    'oauth2_client_urlResourceOwnerDetails_tip' => 'Utiliser pour récupérer des informations complémentaires après authentification.',
 
 );
