@@ -1201,5 +1201,6 @@ return array(
     'encryptClientServer_tip' => 'When enabled, the client encrypts the data before sending it to the server. The server only stores encrypted data. It can be disabled.',
     'oauth2_client_urlResourceOwnerDetails' => 'URL to get user details',
     'oauth2_client_urlResourceOwnerDetails_tip' => 'URL to get user details. It is used to get user details after authentication.',
+    'duo_redirect_uri' => 'Redirecting to Duo Prompt',
 
 );

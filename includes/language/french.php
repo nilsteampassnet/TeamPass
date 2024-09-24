@@ -1201,5 +1201,6 @@ return array(
     'encryptClientServer_tip' => 'Cette option n&apos;est pas des plus pertinente et peut être désactivée.',
     'oauth2_client_urlResourceOwnerDetails' => 'URL de récupération des détails utilisateurs',
     'oauth2_client_urlResourceOwnerDetails_tip' => 'Utiliser pour récupérer des informations complémentaires après authentification.',
+    'duo_redirect_uri' => 'Redirection vers DUO',
 
 );
