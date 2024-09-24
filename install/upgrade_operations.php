@@ -148,7 +148,7 @@ if (isset($post_operation) === true && empty($post_operation) === false && strpo
         }
         // ----<
     } elseif ($post_operation === 'populateItemsTable_CreatedAt') {
-        $finish = populateItemsTable_CreatedAt($pre, $post_nb);
+        $finish = populateItemsTable_CreatedAt($pre);
     } elseif ($post_operation === 'populateItemsTable_UpdatedAt') {
         $finish = populateItemsTable_UpdatedAt($pre);
     } elseif ($post_operation === 'populateItemsTable_DeletedAt') {
@@ -167,11 +167,9 @@ if (isset($post_operation) === true && empty($post_operation) === false && strpo
 }
 
 
-function populateItemsTable_CreatedAt($pre, $post_nb)
+function populateItemsTable_CreatedAt($pre)
 {
     global $db_link;
-    // Start transaction to avoid autocommit
-    mysqli_begin_transaction($db_link, MYSQLI_TRANS_START_READ_WRITE);
 
     // loop on items - created_at
     $items = mysqli_query(
@@ -179,31 +177,34 @@ function populateItemsTable_CreatedAt($pre, $post_nb)
         "select i.id as id, ls.date as datetime
         from `" . $pre . "items` as i
         inner join `" . $pre . "log_items` as ls on ls.id_item = i.id
-        WHERE ls.action = 'at_creation' AND i.created_at IS NULL
-        LIMIT " . $post_nb.";"
+        WHERE ls.action = 'at_creation' AND i.created_at IS NULL;"
     );
+
+    // Empty lists
+    $updateCases = [];
+    $ids = [];
+
+    // Generate lists of items to update
     while ($item = mysqli_fetch_assoc($items)) {
         if (empty((string) $item['datetime']) === false && is_null($item['datetime']) === false) {
-            // update created_at field
-            mysqli_query(
-                $db_link,
-                "UPDATE `" . $pre . "items` SET created_at = '".$item['datetime']."' WHERE id = ".$item['id']
-            );
+            $ids[] = $item['id'];
+            $updateCases[] = "WHEN id = " . $item['id'] . " THEN '" . $item['datetime'] . "'";
         }
     }
 
-    // Is it finished?
-    $remainingItems = mysqli_num_rows(
-        mysqli_query(
-            $db_link,
-            "SELECT * FROM `" . $pre . "items` WHERE created_at IS NULL"
-        )
-    );
+    // Update table in unique query
+    if (!empty($ids)) {
+        $idsList = implode(',', $ids);
+        $updateQuery = "
+            UPDATE `" . $pre . "items`
+            SET created_at = CASE " . implode(' ', $updateCases) . " END
+            WHERE id IN (" . $idsList . ")
+        ";
+        mysqli_query($db_link, $updateQuery);
+    }
 
-    // Commit transaction.
-    mysqli_commit($db_link);
-
-    return $remainingItems > 0 ? 0 : 1;
+    // All items are processed.
+    return 1;
 }
 
 function populateItemsTable_UpdatedAt($pre)
