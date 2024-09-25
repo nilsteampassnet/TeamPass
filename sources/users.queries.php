@@ -124,6 +124,18 @@ if (null !== $post_type) {
                 break;
             }
 
+            // Check if current user can add a new user
+            if ((int) $session->get('user-admin') === 0 && (int) $session->get('user-can_manage_all_users') === 0 && (int) $session->get('user-manager') === 0) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
             // decrypt and retrieve data in JSON format
             $dataReceived = prepareExchangedData(
                 $post_data,
@@ -133,7 +145,6 @@ if (null !== $post_type) {
             // Prepare variables
             $login = filter_var($dataReceived['login'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $email = filter_var($dataReceived['email'], FILTER_SANITIZE_EMAIL);
-            $password = '';//filter_var($dataReceived['pw'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $lastname = filter_var($dataReceived['lastname'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $name = filter_var($dataReceived['name'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $is_admin = filter_var($dataReceived['admin'], FILTER_SANITIZE_NUMBER_INT);
@@ -172,7 +183,7 @@ if (null !== $post_type) {
 
             if (DB::count() === 0) {
                 // check if admin role is set. If yes then check if originator is allowed
-                if ($dataReceived['admin'] === true && (int) $session->get('user-admin') !== 1) {
+                if ((int) $dataReceived['admin'] === 1 && (int) $session->get('user-admin') !== 1) {
                     echo prepareExchangedData(
                         array(
                             'error' => true,
