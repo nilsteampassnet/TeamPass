@@ -663,8 +663,7 @@ $request = SymfonyRequest::createFromGlobals();
                     } else if ($('#warningModalButtonAction').attr('data-button-confirm') === 'true') {
                         // As reencryption relies on user's password
                         // ensure we have it
-                        if ($('#encryption-otp').val() === '' || 
-                            ($('#recovery-public-key').val() === '' || $('#recovery-private-key').val() === '') && $('#confirm-no-recovery-keys').prop('checked') === false
+                        if (($('#recovery-public-key').val() === '' || $('#recovery-private-key').val() === '') && $('#confirm-no-recovery-keys').prop('checked') === false
                         ) {
                             // No user password provided
                             $('#warningModalButtonAction')
