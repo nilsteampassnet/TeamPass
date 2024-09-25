@@ -1021,7 +1021,8 @@ function getStatisticsData(array $SETTINGS): array
     );
     $counter_items_perso = DB::count();
         DB::query(
-        'SELECT id FROM ' . prefixTable('users') . ''
+        'SELECT id FROM ' . prefixTable('users') . ' WHERE login NOT IN (%s, %s, %s)',
+        'OTV', 'TP', 'API'
     );
     $counter_users = DB::count();
         DB::query(
