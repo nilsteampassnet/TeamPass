@@ -553,6 +553,11 @@ function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived,
                 $userId = $session->get('user-id');
             }
 
+            // Handle the case where no PWD is provided (user reset his own encryption keys).
+            if (empty($dataReceived['user_pwd']) && (int) $userId === $session->get('user-id')) {
+                $dataReceived['user_pwd'] = $session->get('user-password');
+            }
+
             return handleUserKeys(
                 (int) filter_var($userId, FILTER_SANITIZE_NUMBER_INT),
                 (string) filter_var($dataReceived['user_pwd'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),

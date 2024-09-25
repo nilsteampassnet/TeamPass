@@ -217,7 +217,15 @@ $request = SymfonyRequest::createFromGlobals();
                             if (data.queryResults.auth_type === 'oauth2') {
                                 // LDAP or local account to OAuth2 account
                                 var info_message = '<?php echo $lang->get('oauth2_need_user_old_password');?>';
+
+                                // Hide the "new password" field that users can't fill in manually
                                 $('#new-password-field').hide();
+
+                                // Auto-fill this hidden field.
+                                let oauth2_encryption_hash = CryptoJS.SHA256(store.get('teampassUser').login)
+                                                                     .toString(CryptoJS.enc.Hex)
+                                                                     .substring(0, 16);
+                                $('#dialog-ldap-user-change-password-current').val(oauth2_encryption_hash);
                             } else {
                                 // LDAP password updated
                                 var info_message = '<?php echo $lang->get('ldap_user_has_changed_his_password');?>';
@@ -655,8 +663,7 @@ $request = SymfonyRequest::createFromGlobals();
                     } else if ($('#warningModalButtonAction').attr('data-button-confirm') === 'true') {
                         // As reencryption relies on user's password
                         // ensure we have it
-                        if ($('#encryption-otp').val() === '' || 
-                            ($('#recovery-public-key').val() === '' || $('#recovery-private-key').val() === '') && $('#confirm-no-recovery-keys').prop('checked') === false
+                        if (($('#recovery-public-key').val() === '' || $('#recovery-private-key').val() === '') && $('#confirm-no-recovery-keys').prop('checked') === false
                         ) {
                             // No user password provided
                             $('#warningModalButtonAction')
