@@ -1569,7 +1569,7 @@ function logItems(
         ]
     );
     // Timestamp the last change
-    if ($action === 'at_creation' || $action === 'at_modifiation' || $action === 'at_delete' || $action === 'at_import') {
+    if (in_array($action, ['at_creation', 'at_modifiation', 'at_delete', 'at_import'], true)) {
         DB::update(
             prefixTable('misc'),
             [
@@ -1583,7 +1583,7 @@ function logItems(
     }
 
     // SYSLOG
-    if (isset($SETTINGS['syslog_enable']) === true && $SETTINGS['syslog_enable'] === '1') {
+    if (isset($SETTINGS['syslog_enable']) === true && (int) $SETTINGS['syslog_enable'] === 1) {
         // Extract reason
         $attribute = is_null($raison) === true ? Array('') : explode(' : ', $raison);
         // Get item info if not known

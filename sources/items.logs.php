@@ -124,7 +124,12 @@ if (null !== $post_type) {
                 'decode'
             );
             
-            if (is_array($dataReceived) === true && count($dataReceived) > 0 && array_key_exists('id', $dataReceived) === true && null !== filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT)) {
+            if (is_array($dataReceived) === true && count($dataReceived) > 0 && array_key_exists('id', $dataReceived) === true 
+                && null !== filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT)
+                && in_array($dataReceived['action'], ['at_password_shown', 'at_password_copied'], true) // only log these actions
+                && $session->get('user-id') === (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT) // only log actions of the current user
+            ) {
+                // Log the action
                 logItems(
                     $SETTINGS,
                     (int) filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT),
