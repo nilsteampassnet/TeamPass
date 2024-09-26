@@ -1115,7 +1115,6 @@ function prepareSendingEmail(
     $encryptedUserPassword = ''
 ): void 
 {
-    error_log('prepareSendingEmail');
     DB::insert(
         prefixTable('background_tasks'),
         array(
