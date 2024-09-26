@@ -875,10 +875,11 @@ function cronContinueReEncryptingUserSharekeysStep10(
                     '#code#' => cryption($extra_arguments['new_user_code'], '','decrypt', $SETTINGS)['string'],
                     '#lastname#' => isset($userInfo['name']) === true ? $userInfo['name'] : '',
                     '#login#' => isset($userInfo['login']) === true ? $userInfo['login'] : '',
-                    '#password#' => cryption($extra_arguments['new_user_pwd'], '','decrypt', $SETTINGS)['string'],
                 ],
                 FILTER_SANITIZE_FULL_SPECIAL_CHARS
-            )
+            ),
+            false,
+            $extra_arguments['new_user_pwd']
         );
     }
         

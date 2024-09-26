@@ -431,6 +431,7 @@ function mailHandler(string $post_type, /*php8 array|null|string */$dataReceived
         * Send email
         */
         case 'mail_me'://action_mail
+            error_log('mail_me');
             return sendMailToUser(
                 filter_var($dataReceived['receipt'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 $dataReceived['body'],
