@@ -244,7 +244,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                         <?php echo $lang->get('admin_duo_skey'); ?>
                                     </div>
                                     <div class="col-7">
-                                        <input type="text" class="form-control form-control-sm purify" data-field="label" id="duo_skey" value="<?php echo isset($SETTINGS['duo_skey']) === true ? $SETTINGS['duo_skey'] : ''; ?>">
+                                        <input type="password" class="form-control form-control-sm purify" data-field="label" id="duo_skey" value="<?php echo isset($SETTINGS['duo_skey']) === true ? $SETTINGS['duo_skey'] : ''; ?>">
                                     </div>
                                 </div>
                                 <div class="row mb-2">
