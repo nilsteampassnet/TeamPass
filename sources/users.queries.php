@@ -3065,6 +3065,21 @@ if (null !== $post_type) {
                 break;
             }
 
+            // Is this user allowed to do this?
+            if (
+                (int) $session->get('user-admin') !== 1
+                && (int) $session->get('user-can_manage_all_users') !== 1
+            ) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
             // decrypt and retrieve data in JSON format
             $dataReceived = prepareExchangedData(
                 $post_data,

@@ -257,7 +257,6 @@ $theme_navbar = $theme === 'dark' ? 'navbar-dark' : 'navbar-white navbar-light';
     <link rel="stylesheet" href="plugins/adminlte/css/adminlte.min.css?v=<?php echo TP_VERSION; ?>">
     <link rel="stylesheet" href="plugins/pace-progress/themes/corner-indicator.css?v=<?php echo TP_VERSION; ?>" type="text/css" />
     <link rel="stylesheet" href="plugins/select2/css/select2.min.css?v=<?php echo TP_VERSION; ?>" type="text/css" />
-    <!--<link rel="stylesheet" href="plugins/select2/css/select2-bootstrap.min.css?v=<?php echo TP_VERSION; ?>" type="text/css" />-->
     <link rel="stylesheet" href="plugins/select2/theme/select2-bootstrap4.min.css?v=<?php echo TP_VERSION; ?>" type="text/css" />
     <!-- Theme style -->
     <link rel="stylesheet" href="includes/css/teampass.css?v=<?php echo TP_VERSION; ?>">
