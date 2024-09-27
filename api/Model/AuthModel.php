@@ -68,53 +68,12 @@ class AuthModel extends Database
         if (empty($inputData['login']) === true || empty($inputData['apikey']) === true) {
             return ["error" => "Login failed.", "info" => "Empty entry"];
         }
-        
+
         // Check apikey
         if (empty($inputData['password']) === true) {
             // case where it is a generic key
-            $apiInfo = $this->select("SELECT * FROM " . prefixTable('api') . " WHERE value='".$inputData['apikey']."' AND label='".$inputData['login']."'");
-            $apiInfo = $apiInfo[0];
-            if (WIP === true) {
-                if (isset($apiInfo['increment_id']) === false) {
-                    return ["error" => "Login failed.", "info" => "apikey : Not valid"];
-                }
-
-                // Check if user is enabled
-                if ((int) $apiInfo['enabled'] === 0) {
-                    return ["error" => "Login failed.", "info" => "User not allowed to use API"];
-                }
-
-                // Load config
-                $configManager = new ConfigManager();
-                $SETTINGS = $configManager->getAllSettings();
-
-                // Log user
-                logEvents($SETTINGS, 'api', 'user_connection', (string) $apiInfo['increment_id'], stripslashes($inputData['login']));
-
-                // create JWT
-                return $this->createUserJWT(
-                    $apiInfo['increment_id'],
-                    $inputData['login'],
-                    0,
-                    '',
-                    '',
-                    '',
-                    '',
-                    '',
-                    0,
-                    0,
-                    1,
-                    0,
-                    '',
-                    $apiInfo['allowed_folders'],
-                    $apiInfo['allowed_to_create'],
-                    $apiInfo['allowed_to_read'],
-                    $apiInfo['allowed_to_update'],
-                    $apiInfo['allowed_to_delete'],
-                );
-            } else {
-                return ["error" => "Login failed.", "info" => "Not managed."];
-            }
+            // Not allowed to use this API
+            return ["error" => "Login failed.", "info" => "User password is requested"];
         } else {
             // case where it is a user api key
             // Check if user exists
