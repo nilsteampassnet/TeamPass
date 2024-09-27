@@ -23,14 +23,12 @@
  * @see       https://www.teampass.net
  */
 
+use TeampassClasses\ConfigManager\ConfigManager;
 
 define("API_ROOT_PATH", __DIR__ . "/..");
 
 // include main configuration file
 require API_ROOT_PATH . '/../sources/main.functions.php';
-
-// init
-loadClasses('DB');
 
 // include the base controller file
 require API_ROOT_PATH . "/Controller/Api/BaseController.php";
@@ -108,7 +106,9 @@ function checkUSerCRUDRights($userData, $actionToPerform): bool
  */
 function apiIsEnabled(): string
 {
-    include API_ROOT_PATH . '/../includes/config/tp.config.php';
+    // Load config
+    $configManager = new ConfigManager();
+    $SETTINGS = $configManager->getAllSettings();
 
     if (isset($SETTINGS) === true && isset($SETTINGS['api']) === true && (int) $SETTINGS['api'] === 1) {
         return json_encode(
