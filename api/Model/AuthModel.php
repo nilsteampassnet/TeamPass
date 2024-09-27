@@ -65,12 +65,9 @@ class AuthModel extends Database
                 'apikey' => 'trim|escape|strip_tags',
             ]
         );
-        if (empty($inputData['login']) === true || empty($inputData['apikey']) === true) {
-            return ["error" => "Login failed.", "info" => "Empty entry"];
-        }
 
-        // Check apikey
-        if (empty($inputData['password']) === true) {
+        // Check apikey and credentials
+        if (empty($inputData['login']) === true || empty($inputData['apikey']) === true || empty($inputData['password']) === true) {
             // case where it is a generic key
             // Not allowed to use this API
             return ["error" => "Login failed.", "info" => "User password is requested"];
