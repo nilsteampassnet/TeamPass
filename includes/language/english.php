@@ -113,7 +113,7 @@ return array(
     'public_key' => 'Public key',
     'private_key' => 'Private key',
     'download_recovery_keys' => 'Download your recovery keys',
-    'download_recovery_keys_confirmation' => 'You are about to download your recovery keys. Please store them in a safe place as they should be mandatory in case of deasaster.',
+    'download_recovery_keys_confirmation' => 'You are about to download your recovery keys. Please store them in a safe place as they should be mandatory in case of disaster.',
     'recovery_keys_download_date' => 'Recovery keys download date',
     'keys_not_recovered' => 'Public and Private keys not stored',
     'keys_not_recovered_explanation' => 'In order to prevent against any passwords lost, you should store safely your personal Teampass keys',

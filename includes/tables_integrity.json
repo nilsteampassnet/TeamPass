@@ -17,7 +17,7 @@
     },
     {
         "table_name": "background_tasks_logs",
-        "structure_hash": "ba7c1d8058b17ed6d6773ddf45f8b75c0442b3de70408a026f4cade16b91a93d"
+        "structure_hash": "7604d29e5fb4a5f2c1d7f04b49b693ff6081c600faac604e27a5612cd64c85c9"
     },
     {
         "table_name": "cache",
