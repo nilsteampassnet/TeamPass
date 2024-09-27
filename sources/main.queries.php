@@ -441,7 +441,6 @@ function mailHandler(string $post_type, /*php8 array|null|string */$dataReceived
                 ),
                 true
             );
-        
         /*
         * Send emails not sent
         */

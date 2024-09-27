@@ -89,7 +89,13 @@ foreach ($rows as $record) {
         'increment_id = %i',
         $record['increment_id']
     );
-
+    
+    // if email.encryptedUserPassword is set, decrypt it
+    if (isset($email['encryptedUserPassword']) === true) {
+        $userPassword = cryption($email['encryptedUserPassword'], '', 'decrypt', $SETTINGS)['string'];
+        $email['body'] = str_replace('#password#', $userPassword, $email['body']);
+    }
+    
     // send email
     $emailService->sendMail(
         $email['subject'],
@@ -101,6 +107,10 @@ foreach ($rows as $record) {
         true
     );
 
+    // Clear body content and encryptedUserPassword
+    $email['body'] = '<cleared>';
+    $email['encryptedUserPassword'] = '<cleared>';
+
     // update DB
     DB::update(
         prefixTable('background_tasks'),
@@ -108,6 +118,7 @@ foreach ($rows as $record) {
             'updated_at' => time(),
             'finished_at' => time(),
             'is_in_progress' => -1,
+            'arguments' => json_encode($email),
         ),
         'increment_id = %i',
         $record['increment_id']

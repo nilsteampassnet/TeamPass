@@ -1103,7 +1103,7 @@ function getStatisticsData(array $SETTINGS): array
  * @param string $body          email message
  * @param string $email         email
  * @param string $receiverName  Receiver name
- * @param array  $SETTINGS      settings
+ * @param string $encryptedUserPassword      encryptedUserPassword
  *
  * @return void
  */
@@ -1111,7 +1111,8 @@ function prepareSendingEmail(
     $subject,
     $body,
     $email,
-    $receiverName = ''
+    $receiverName = '',
+    $encryptedUserPassword = ''
 ): void 
 {
     DB::insert(
@@ -1124,6 +1125,7 @@ function prepareSendingEmail(
                 'receivers' => $email,
                 'body' => $body,
                 'receiver_name' => $receiverName,
+                'encryptedUserPassword' => $encryptedUserPassword,
             ], JSON_HEX_QUOT | JSON_HEX_TAG),
         )
     );
@@ -4382,6 +4384,7 @@ function returnIfSet($value, $retFalse = '', $retTrue = null): mixed
  * @param string $post_subject
  * @param array $post_replace
  * @param boolean $immediate_email
+ * @param string $encryptedUserPassword
  * @return string
  */
 function sendMailToUser(
@@ -4389,7 +4392,8 @@ function sendMailToUser(
     string $post_body,
     string $post_subject,
     array $post_replace,
-    bool $immediate_email = false
+    bool $immediate_email = false,
+    $encryptedUserPassword = ''
 ): ?string {
     global $SETTINGS;
     $emailSettings = new EmailSettings($SETTINGS);
@@ -4429,7 +4433,8 @@ function sendMailToUser(
             $post_subject,
             $post_body,
             $post_receipt,
-            ""
+            "",
+            $encryptedUserPassword,
         );
     }
 
