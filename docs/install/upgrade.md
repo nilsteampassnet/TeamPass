@@ -49,7 +49,6 @@ git pull
 * Copy next files from `folderv2` to `folderv3`
 ```
 ./includes/config/settings.php
-./includes/config/tp.config.php
 ./includes/libraries/csrfp/libs/csrfp.config.php
 ./includes/teampass-seckey.txt
 ./includes/avatars/*

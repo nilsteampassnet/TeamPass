@@ -163,7 +163,7 @@ function jsonErrorHdl(message)
 function prepareExchangedData(data, type, key, fileName = '', functionName = '')
 {
     if (type === 'decode') {
-        if (parseInt($('#encryptClientServer').val()) === 0) {
+        if (parseInt($('input#encryptClientServer').val()) === 0) {
             try {
                 return $.parseJSON(data);
             }

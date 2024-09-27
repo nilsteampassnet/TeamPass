@@ -1738,36 +1738,6 @@ function noHTML(string $input, string $encoding = 'UTF-8'): string
     return htmlspecialchars($input, ENT_QUOTES | ENT_XHTML, $encoding, false);
 }
 
-
-/**
- * Handles the Teampass config file.
- *
- * @param string $action   Action to perform. Accepts "rebuild" and "update".
- * @param array  $settings Teampass settings.
- * @param string $field    Field to refresh. Optional.
- * @param string $value    Value to set. Optional.
- * @param int   $isEncrypted Is the value encrypted? Optional.
- *
- * @return string|bool
- */
-function handleConfigFile(string $action, array $settings, string $field = null, string $value = null, int $isEncrypted = 0)
-{
-    $configFilePath = $settings['cpassman_dir'] . '/includes/config/tp.config.php';
-
-    // Load class DB
-    loadClasses('DB');
-
-    if (!file_exists($configFilePath) || $action === 'rebuild') {
-        return rebuildConfigFile($configFilePath, $settings);
-    }
-
-    if ($action === 'update' && !empty($field)) {
-        return updateConfigFile($configFilePath, (string) $field, (string) $value, (int) $isEncrypted);
-    }
-
-    return true;
-}
-
 /**
  * Rebuilds the Teampass config file.
  *
@@ -1803,44 +1773,6 @@ function rebuildConfigFile(string $configFilePath, array $settings)
 }
 
 /**
- * Updates the Teampass config file.
- *
- * @param string $configFilePath Path to the config file.
- * @param string $field          Field to refresh.
- * @param string $value          Value to set.
- * @param int   $isEncrypted    Is the value encrypted?
- *
- * @return string|bool
- */
-function updateConfigFile(string $configFilePath, string $field, string $value, int $isEncrypted)
-{
-    $data = file($configFilePath);
-    $lineIndex = null;
-    foreach ($data as $index => $line) {
-        if (stristr($line, ');')) {
-            break;
-        }
-
-        if (stristr($line, "'$field' => '")) {
-            $value = getEncryptedValue($value, $isEncrypted);
-            $data[$index] = "    '$field' => '" . htmlspecialchars_decode($value, ENT_COMPAT) . "',\n";
-            $lineIndex = $index;
-            break;
-        }
-    }
-
-    if ($lineIndex === null) {
-        $value = getEncryptedValue($value, $isEncrypted);
-        $data[] = "    '$field' => '" . htmlspecialchars_decode($value, ENT_COMPAT) . "',\n);\n";
-    }
-
-    // Update the file
-    file_put_contents($configFilePath, implode('', $data));
-
-    return true;
-}
-
-/**
  * Returns the encrypted value if needed.
  *
  * @param string $value       Value to encrypt.
@@ -1852,8 +1784,6 @@ function getEncryptedValue(string $value, int $isEncrypted): string
 {
     return $isEncrypted ? cryption($value, '', 'encrypt')['string'] : $value;
 }
-
-
 
 /**
  * Permits to replace &#92; to permit correct display

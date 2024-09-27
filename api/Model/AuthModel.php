@@ -30,6 +30,7 @@
 
 use TeampassClasses\PasswordManager\PasswordManager;
 use TeampassClasses\NestedTree\NestedTree;
+use TeampassClasses\ConfigManager\ConfigManager;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 
@@ -83,8 +84,11 @@ class AuthModel extends Database
                     return ["error" => "Login failed.", "info" => "User not allowed to use API"];
                 }
 
+                // Load config
+                $configManager = new ConfigManager();
+                $SETTINGS = $configManager->getAllSettings();
+
                 // Log user
-                include API_ROOT_PATH . '/../includes/config/tp.config.php';
                 logEvents($SETTINGS, 'api', 'user_connection', (string) $apiInfo['increment_id'], stripslashes($inputData['login']));
 
                 // create JWT
@@ -153,8 +157,11 @@ class AuthModel extends Database
                 // get user folders list
                 $ret = $this->buildUserFoldersList($userInfo);
 
+                // Load config
+                $configManager = new ConfigManager();
+                $SETTINGS = $configManager->getAllSettings();
+
                 // Log user
-                include API_ROOT_PATH . '/../includes/config/tp.config.php';
                 logEvents($SETTINGS, 'api', 'user_connection', (string) $userInfo['id'], stripslashes($userInfo['login']));
 
                 // create JWT
@@ -228,7 +235,9 @@ class AuthModel extends Database
         int $allowed_to_delete,
     ): array
     {
-        include API_ROOT_PATH . '/../includes/config/tp.config.php';
+        // Load config
+        $configManager = new ConfigManager();
+        $SETTINGS = $configManager->getAllSettings();
         
 		$payload = [
             'username' => $login,

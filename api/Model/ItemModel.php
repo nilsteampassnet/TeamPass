@@ -29,6 +29,7 @@
  */
 
 use TeampassClasses\NestedTree\NestedTree;
+use TeampassClasses\ConfigManager\ConfigManager;
 use ZxcvbnPhp\Zxcvbn;
 
 require_once API_ROOT_PATH . "/Model/Database.php";
@@ -148,7 +149,10 @@ class ItemModel extends Database
     {
         try {
             include_once API_ROOT_PATH . '/../sources/main.functions.php';
-            include API_ROOT_PATH . '/../includes/config/tp.config.php';
+
+            // Load config
+            $configManager = new ConfigManager();
+            $SETTINGS = $configManager->getAllSettings();
 
             // Step 1: Prepare data and sanitize inputs
             $data = $this->prepareData($folderId, $label, $password, $description, $login, $email, $url, $tags, $anyone_can_modify, $icon);
