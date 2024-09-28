@@ -30,12 +30,17 @@
 
 use TeampassClasses\Language\Language;
 
-require_once API_ROOT_PATH . "/Model/Database.php";
-class FolderModel extends Database
+class FolderModel
 {
     public function getFoldersInfo(array $foldersId): array
     {
-        $rows = $this->select( "SELECT id, title FROM " . prefixTable('nested_tree') . " WHERE nlevel=1" );
+        // Get folders
+        $rows = DB::query(
+            'SELECT id, title
+            FROM ' . prefixTable('nested_tree') . '
+            WHERE nlevel = %i',
+            1
+        );
 
         $ret = [];
 
@@ -62,7 +67,12 @@ class FolderModel extends Database
     private function getFoldersChildren(int $parentId, array $foldersId): array
     {
         $ret = [];
-        $childrens = $this->select('SELECT id, title FROM ' . prefixTable('nested_tree') . ' WHERE parent_id=' . $parentId);
+        $childrens = DB::query(
+            'SELECT id, title
+            FROM ' . prefixTable('nested_tree') . '
+            WHERE parent_id = %i',
+            $parentId
+        );
 
         if ( count($childrens) > 0) {
             foreach ($childrens as $children) {
@@ -174,28 +184,6 @@ class FolderModel extends Database
             ];}
 
         // Create folder
-        /*
-        require_once TEAMPASS_ROOT_PATH.'/sources/folders.functions.php';
-        $creationStatus = createNewFolder(
-            (string) $title,
-            (int) $parent_id,
-            (int) $complexity,
-            (int) $duration,
-            (int) $create_auth_without,
-            (int) $edit_auth_without,
-            (string) $icon,
-            (string) $icon_selected,
-            (string) $access_rights,
-            (int) $is_admin,
-            (array) $foldersId,
-            (int) $is_manager,
-            (int) $user_can_create_root_folder,
-            (int) $user_can_manage_all_users,
-            (int) $user_id,
-            (string) $user_roles
-        );
-        */
-
         require_once TEAMPASS_ROOT_PATH.'/sources/folders.class.php';
         $lang = new Language();
         $folderManager = new FolderManager($lang);

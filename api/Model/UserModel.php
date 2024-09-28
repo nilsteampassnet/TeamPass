@@ -22,12 +22,16 @@
  *
  * @see       https://www.teampass.net
  */
-require_once API_ROOT_PATH . "/Model/Database.php";
 
-class UserModel extends Database
+class UserModel
 {
     public function getUsers($limit)
     {
-        return $this->select("SELECT * FROM ".prefixTable('users')." ORDER BY id ASC LIMIT ?", ["i", $limit]);
+        return DB::query(
+            'SELECT * 
+            FROM ' . prefixTable('users') . '
+            ORDER BY id ASC LIMIT %i',
+            $limit
+        );
     }
 }
