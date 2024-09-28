@@ -392,10 +392,10 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         );
         return false;
     }
-   
+    
     // Check user and password
     if ($userLdap['userPasswordVerified'] === false && $userOauth2['userPasswordVerified'] === false
-        && (int) checkCredentials($passwordClear, $userInfo) !== 1
+        && checkCredentials($passwordClear, $userInfo) !== true
     ) {
         echo prepareExchangedData(
             [
@@ -476,7 +476,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             return false;
         }
     }
-    
+
     // Can connect if
     // 1- no LDAP mode + user enabled + pw ok
     // 2- LDAP mode + user enabled + ldap connection ok + user is not admin
@@ -1983,7 +1983,7 @@ function duoMFAPerform(
  *
  * @return bool
  */
-function checkCredentials($passwordClear, $userInfo)
+function checkCredentials($passwordClear, $userInfo): bool
 {
     $passwordManager = new PasswordManager();
     // Migrate password if needed
@@ -1992,7 +1992,9 @@ function checkCredentials($passwordClear, $userInfo)
         $passwordClear,
         (int) $userInfo['id']
     );
-    if (WIP === true) error_log("checkCredentials - User ".$userInfo['id']." | verify pwd: ".$passwordManager->verifyPassword($userInfo['pw'], $passwordClear));
+    /*if (WIP === true) {
+        error_log("checkCredentials - User ".$userInfo['id']." | verify pwd: ".$passwordManager->verifyPassword($userInfo['pw'], $passwordClear));
+    }*/
 
     if ($passwordManager->verifyPassword($userInfo['pw'], $passwordClear) === false) {
         // password is not correct
@@ -2359,6 +2361,8 @@ function shouldUserAuthWithOauth2(
         return [
             'error' => true,
             'message' => 'user_not_allowed_to_auth_to_teampass_app',
+            'oauth2Connection' => false,
+            'userPasswordVerified' => false,
         ];
     }
 
@@ -2385,12 +2389,16 @@ function shouldUserAuthWithOauth2(
                 return [
                     'error' => false,
                     'message' => '',
+                    'oauth2Connection' => true,
+                    'userPasswordVerified' => true,
                 ];
             } elseif ((string) $userInfo['auth_type'] !== 'oauth2') {
                 // Case where auth_type is not managed
                 return [
                     'error' => true,
                     'message' => 'user_not_allowed_to_auth_to_teampass_app',
+                    'oauth2Connection' => false,
+                    'userPasswordVerified' => false,
                 ];
             }
         } else {
@@ -2400,6 +2408,8 @@ function shouldUserAuthWithOauth2(
                 return [
                     'error' => true,
                     'message' => 'user_exists_but_not_oauth2',
+                    'oauth2Connection' => false,
+                    'userPasswordVerified' => false,
                 ];
             }
         }
@@ -2409,6 +2419,8 @@ function shouldUserAuthWithOauth2(
     return [
         'error' => false,
         'message' => '',
+        'oauth2Connection' => false,
+        'userPasswordVerified' => false,
     ];
 }
 
@@ -2488,8 +2500,8 @@ function createOauth2User(
         return [
             'error' => false,
             'retExternalAD' => $userInfo,
-            'oauth2Connection' => true,
-            'userPasswordVerified' => true,
+            'oauth2Connection' => $ret['oauth2Connection'],
+            'userPasswordVerified' => $ret['userPasswordVerified'],
         ];
     }
 
