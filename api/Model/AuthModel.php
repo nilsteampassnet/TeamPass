@@ -272,7 +272,7 @@ class AuthModel
                 }
             }
         }
-        //error_log(print_r($userFunctionId, true));
+        
         // Does this user is allowed to see other items
         $inc = 0;
         $rows = DB::query(

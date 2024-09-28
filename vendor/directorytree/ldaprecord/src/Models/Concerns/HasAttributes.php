@@ -10,6 +10,7 @@ use LdapRecord\Models\Attributes\MbString;
 use LdapRecord\Models\Attributes\Timestamp;
 use LdapRecord\Models\DetectsResetIntegers;
 use LdapRecord\Support\Arr;
+use RuntimeException;
 
 trait HasAttributes
 {
@@ -356,7 +357,9 @@ trait HasAttributes
     protected function getDateCasts(): array
     {
         return array_map(function (string $cast) {
-            return explode(':', $cast, 2)[1];
+            return explode(':', $cast, 2)[1] ?? throw new RuntimeException(
+                "Invalid date cast [$cast]. A date cast must be in the format 'datetime:format'."
+            );
         }, array_filter($this->getCasts(), function ($cast) {
             return $this->isDateTimeCast($cast);
         }));
