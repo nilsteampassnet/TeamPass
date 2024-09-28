@@ -183,5 +183,8 @@
         "thenetworg/oauth2-azure": "^2.2",
         "symfony/console": "^6.4",
         "composer/composer": "^2.7"
+    },
+    "require-dev": {
+        "dominikb/composer-license-checker": "^2.6"
     }
 }

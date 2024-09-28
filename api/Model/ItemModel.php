@@ -32,11 +32,8 @@ use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\ConfigManager\ConfigManager;
 use ZxcvbnPhp\Zxcvbn;
 
-require_once API_ROOT_PATH . "/Model/Database.php";
-
-class ItemModel extends Database
+class ItemModel
 {
-
 
     /**
      * Get the list of items to return
@@ -50,23 +47,26 @@ class ItemModel extends Database
      */
     public function getItems(string $sqlExtra, int $limit, string $userPrivateKey, int $userId): array
     {
-        $rows = $this->select(
-            "SELECT i.id, label, description, i.pw, i.url, i.id_tree, i.login, i.email, i.viewed_no, i.fa_icon, i.inactif, i.perso, t.title as folder_label
-            FROM ".prefixTable('items')." as i
-            LEFT JOIN ".prefixTable('nested_tree')." as t ON (t.id = i.id_tree) ".
+        // Get items
+        $rows = DB::query(
+            'SELECT i.id, label, description, i.pw, i.url, i.id_tree, i.login, i.email, i.viewed_no, i.fa_icon, i.inactif, i.perso, t.title as folder_label
+            FROM ' . prefixTable('items') . ' AS i
+            LEFT JOIN '.prefixTable('nested_tree').' as t ON (t.id = i.id_tree) '.
             $sqlExtra . 
             " ORDER BY i.id ASC" .
-            //($limit > 0 ? " LIMIT ?". ["i", $limit] : '')
             ($limit > 0 ? " LIMIT ". $limit : '')
         );
+
         $ret = [];
         foreach ($rows as $row) {
-            $userKey = $this->select(
+            $userKey = DB::queryfirstrow(
                 'SELECT share_key
                 FROM ' . prefixTable('sharekeys_items') . '
-                WHERE user_id = '.$userId.' AND object_id = '.$row['id']                
+                WHERE user_id = %i AND object_id = %i',
+                $userId,
+                $row['id']
             );
-            if (count($userKey) === 0 || empty($row['pw']) === true) {
+            if (DB::count() === 0 || empty($row['pw']) === true) {
                 // No share key found
                 // Exit this item
                 continue;
@@ -78,7 +78,7 @@ class ItemModel extends Database
                     (string) doDataDecryption(
                         $row['pw'],
                         decryptUserObjectKey(
-                            $userKey[0]['share_key'],
+                            $userKey['share_key'],
                             $userPrivateKey
                         )
                     )

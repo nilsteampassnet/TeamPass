@@ -38,9 +38,9 @@
             'dev_requirement' => false,
         ),
         'composer/ca-bundle' => array(
-            'pretty_version' => '1.5.1',
-            'version' => '1.5.1.0',
-            'reference' => '063d9aa8696582f5a41dffbbaf3c81024f0a604a',
+            'pretty_version' => '1.5.2',
+            'version' => '1.5.2.0',
+            'reference' => '48a792895a2b7a6ee65dd5442c299d7b835b6137',
             'type' => 'library',
             'install_path' => __DIR__ . '/./ca-bundle',
             'aliases' => array(),
@@ -119,9 +119,9 @@
             'dev_requirement' => false,
         ),
         'directorytree/ldaprecord' => array(
-            'pretty_version' => 'v3.7.0',
-            'version' => '3.7.0.0',
-            'reference' => '4113aa08f72bbc76630fad3b05d57cd431fb0839',
+            'pretty_version' => 'v3.7.1',
+            'version' => '3.7.1.0',
+            'reference' => '9b5f53d820a490fdb0c7a098c93f3b83b74455dd',
             'type' => 'library',
             'install_path' => __DIR__ . '/../directorytree/ldaprecord',
             'aliases' => array(),
@@ -153,6 +153,15 @@
             'install_path' => __DIR__ . '/../doctrine/lexer',
             'aliases' => array(),
             'dev_requirement' => false,
+        ),
+        'dominikb/composer-license-checker' => array(
+            'pretty_version' => '2.6.0',
+            'version' => '2.6.0.0',
+            'reference' => '22c2bb46acc5ab71d828ab9589be5a2820f8b221',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../dominikb/composer-license-checker',
+            'aliases' => array(),
+            'dev_requirement' => true,
         ),
         'dragonmantank/cron-expression' => array(
             'pretty_version' => 'v3.3.3',
@@ -352,6 +361,15 @@
             'aliases' => array(),
             'dev_requirement' => false,
         ),
+        'masterminds/html5' => array(
+            'pretty_version' => '2.9.0',
+            'version' => '2.9.0.0',
+            'reference' => 'f5ac2c0b0a2eefca70b2ce32a5809992227e75a6',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../masterminds/html5',
+            'aliases' => array(),
+            'dev_requirement' => true,
+        ),
         'moxiecode/plupload' => array(
             'pretty_version' => 'v3.1.5',
             'version' => '3.1.5.0',
@@ -466,6 +484,12 @@
             'aliases' => array(),
             'dev_requirement' => false,
         ),
+        'psr/cache-implementation' => array(
+            'dev_requirement' => true,
+            'provided' => array(
+                0 => '2.0|3.0',
+            ),
+        ),
         'psr/clock' => array(
             'pretty_version' => '1.0.0',
             'version' => '1.0.0.0',
@@ -574,6 +598,12 @@
             'aliases' => array(),
             'dev_requirement' => false,
         ),
+        'psr/simple-cache-implementation' => array(
+            'dev_requirement' => true,
+            'provided' => array(
+                0 => '1.0|2.0|3.0',
+            ),
+        ),
         'ralouphie/getallheaders' => array(
             'pretty_version' => '3.0.3',
             'version' => '3.0.3.0',
@@ -646,10 +676,25 @@
             'aliases' => array(),
             'dev_requirement' => false,
         ),
+        'symfony/cache' => array(
+            'pretty_version' => 'v6.4.12',
+            'version' => '6.4.12.0',
+            'reference' => 'a463451b7f6ac4a47b98dbfc78ec2d3560c759d8',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../symfony/cache',
+            'aliases' => array(),
+            'dev_requirement' => true,
+        ),
         'symfony/cache-contracts' => array(
             'dev_requirement' => false,
             'replaced' => array(
                 0 => 'v3.5.0',
+            ),
+        ),
+        'symfony/cache-implementation' => array(
+            'dev_requirement' => true,
+            'provided' => array(
+                0 => '1.1|2.0|3.0',
             ),
         ),
         'symfony/console' => array(
@@ -670,11 +715,29 @@
             'aliases' => array(),
             'dev_requirement' => false,
         ),
+        'symfony/css-selector' => array(
+            'pretty_version' => 'v6.4.8',
+            'version' => '6.4.8.0',
+            'reference' => '4b61b02fe15db48e3687ce1c45ea385d1780fe08',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../symfony/css-selector',
+            'aliases' => array(),
+            'dev_requirement' => true,
+        ),
         'symfony/deprecation-contracts' => array(
             'dev_requirement' => false,
             'replaced' => array(
                 0 => 'v3.5.0',
             ),
+        ),
+        'symfony/dom-crawler' => array(
+            'pretty_version' => 'v6.4.12',
+            'version' => '6.4.12.0',
+            'reference' => '9d307ecbcb917001692be333cdc58f474fdb37f0',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../symfony/dom-crawler',
+            'aliases' => array(),
+            'dev_requirement' => true,
         ),
         'symfony/event-dispatcher-contracts' => array(
             'dev_requirement' => false,
@@ -876,6 +939,15 @@
             'provided' => array(
                 0 => '2.3|3.0',
             ),
+        ),
+        'symfony/var-exporter' => array(
+            'pretty_version' => 'v6.4.9',
+            'version' => '6.4.9.0',
+            'reference' => 'f9a060622e0d93777b7f8687ec4860191e16802e',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../symfony/var-exporter',
+            'aliases' => array(),
+            'dev_requirement' => true,
         ),
         'teampassclasses/configmanager' => array(
             'pretty_version' => 'dev-master',
