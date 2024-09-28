@@ -34,10 +34,7 @@ use TeampassClasses\ConfigManager\ConfigManager;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 
-require_once API_ROOT_PATH . "/Model/Database.php";
-
-
-class AuthModel extends Database
+class AuthModel
 {
 
 
@@ -70,20 +67,21 @@ class AuthModel extends Database
         if (empty($inputData['login']) === true || empty($inputData['apikey']) === true || empty($inputData['password']) === true) {
             // case where it is a generic key
             // Not allowed to use this API
+
             return ["error" => "Login failed.", "info" => "User password is requested"];
         } else {
             // case where it is a user api key
             // Check if user exists
-            $userInfoRes = $this->select(
+            $userInfo = DB::queryfirstrow(
                 "SELECT u.id, u.pw, u.login, u.admin, u.gestionnaire, u.can_manage_all_users, u.fonction_id, u.can_create_root_folder, u.public_key, u.private_key, u.personal_folder, u.fonction_id, u.groupes_visibles, u.groupes_interdits, a.value AS user_api_key, a.allowed_folders as user_api_allowed_folders, a.enabled, a.allowed_to_create, a.allowed_to_read, a.allowed_to_update, a.allowed_to_delete
                 FROM " . prefixTable('users') . " AS u
                 INNER JOIN " . prefixTable('api') . " AS a ON (a.user_id=u.id)
-                WHERE login='".$inputData['login']."'");
-            if (count($userInfoRes) === 0) {
+                WHERE login = %s",
+                $inputData['login']
+            );
+            if (DB::count() === 0) {
                 return ["error" => "Login failed.", "info" => "apikey : Not valid"];
             }
-            $userInfoRes[0]['special'] = '';
-            $userInfo = $userInfoRes[0];
 
             // Check if user is enabled
             if ((int) $userInfo['enabled'] === 0) {
@@ -104,10 +102,13 @@ class AuthModel extends Database
 
                 // Update user's key_tempo
                 $keyTempo = bin2hex(random_bytes(16));
-                $this->update(
-                    "UPDATE " . prefixTable('users') . "
-                    SET key_tempo='".$keyTempo."'
-                    WHERE id=".$userInfo['id']
+                DB::update(
+                    prefixTable('users'),
+                    [
+                        'key_tempo' => $keyTempo,
+                    ],
+                    'id = %i',
+                    $userInfo['id']
                 );
                 
                 // get user folders list
@@ -244,11 +245,16 @@ class AuthModel extends Database
         $restrictedItems = [];
         $personalFolders = [];
 
-        $userFunctionId = str_replace(";", ",", $userInfo['fonction_id']);
+        $userFunctionId = explode(";", $userInfo['fonction_id']);
 
         // Get folders from the roles
-        if (empty($userFunctionId) === false) {
-            $rows = $this->select("SELECT * FROM " . prefixTable('roles_values') . " WHERE role_id IN (".$userFunctionId.") AND type IN ('W', 'ND', 'NE', 'NDNE', 'R')");
+        if (count($userFunctionId) > 0) {
+            $rows = DB::query(
+                'SELECT * 
+                FROM ' . prefixTable('roles_values') . '
+                WHERE role_id IN %li  AND type IN ("W", "ND", "NE", "NDNE", "R")',
+                $userFunctionId
+            );
             foreach ($rows as $record) {
                 if ($record['type'] === 'R') {
                     array_push($readOnlyFolders, $record['folder_id']);
@@ -266,11 +272,17 @@ class AuthModel extends Database
                 }
             }
         }
-        
+        //error_log(print_r($userFunctionId, true));
         // Does this user is allowed to see other items
         $inc = 0;
-        $rows = $this->select("SELECT id, id_tree FROM " . prefixTable('items') . " WHERE restricted_to LIKE '".$userInfo['id']."'".
-            (empty($userFunctionId) === false ? ' AND id_tree NOT IN ('.$userFunctionId.')' : ''));
+        $rows = DB::query(
+            'SELECT id, id_tree 
+            FROM ' . prefixTable('items') . '
+            WHERE restricted_to LIKE %s'.
+            (count($userFunctionId) > 0 ? ' AND id_tree NOT IN %li' : ''),
+            $userInfo['id'],
+            count($userFunctionId) > 0 ? $userFunctionId : DB::sqleval('0')
+        );
         foreach ($rows as $record) {
             // Exclude restriction on item if folder is fully accessible
             $restrictedFoldersForItems[$inc] = $record['id_tree'];
@@ -278,11 +290,14 @@ class AuthModel extends Database
         }
 
         // Check for the users roles if some specific rights exist on items
-        $rows = $this->select("SELECT i.id_tree, r.item_id
-            FROM " . prefixTable('items') . " as i
-            INNER JOIN " . prefixTable('restriction_to_roles') . " as r ON (r.item_id=i.id)
-            WHERE ".(empty($userFunctionId) === false ? ' id_tree NOT IN ('.$userFunctionId.') AND ' : '')." i.id_tree != ''
-            ORDER BY i.id_tree ASC");
+        $rows = DB::query(
+            'SELECT i.id_tree, r.item_id
+            FROM ' . prefixTable('items') . ' AS i
+            INNER JOIN ' . prefixTable('restriction_to_roles') . ' AS r ON (r.item_id=i.id)
+            WHERE '.(count($userFunctionId) > 0 ? ' id_tree NOT IN %li AND ' : '').' i.id_tree != ""
+            ORDER BY i.id_tree ASC',
+            count($userFunctionId) > 0 ? $userFunctionId : DB::sqleval('0')
+        );
         foreach ($rows as $record) {
             $foldersLimited[$record['id_tree']][$inc] = $record['item_id'];
             //array_push($foldersLimitedFull, $record['item_id']);
@@ -292,12 +307,13 @@ class AuthModel extends Database
         }
 
         // Add all personal folders
-        $rows = $this->select(
-            'SELECT id
+        $rows = DB::queryFirstRow(
+            'SELECT id 
             FROM ' . prefixTable('nested_tree') . '
-            WHERE title = '.$userInfo['id'].' AND personal_folder = 1'.
-            (empty($userFunctionId) === false ? ' AND id NOT IN ('.$userFunctionId.')' : '').
-            ' LIMIT 0,1'
+            WHERE title = %i AND personal_folder = 1'.
+            (count($userFunctionId) > 0 ? ' AND id NOT IN %li' : ''),
+            $userInfo['id'],
+            count($userFunctionId) > 0 ? $userFunctionId : DB::sqleval('0')
         );
         if (empty($rows['id']) === false) {
             array_push($personalFolders, $rows['id']);
