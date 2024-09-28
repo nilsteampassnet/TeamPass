@@ -33,6 +33,7 @@ use Symfony\Component\HttpFoundation\Request;
 use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use TeampassClasses\PerformChecks\PerformChecks;
+use TeampassClasses\ConfigManager\ConfigManager;
 
 
 // Load functions
