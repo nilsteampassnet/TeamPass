@@ -2078,33 +2078,60 @@ if (null !== $post_type) {
                 'decode'
             );
 
-            $post_source_id = filter_var(htmlspecialchars_decode($dataReceived['source_id']), FILTER_SANITIZE_NUMBER_INT);
-            $post_destination_ids = filter_var_array($dataReceived['destination_ids'], FILTER_SANITIZE_NUMBER_INT);
-            $post_user_functions = filter_var(htmlspecialchars_decode($dataReceived['user_functions']), FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-            $post_user_managedby = filter_var(htmlspecialchars_decode($dataReceived['user_managedby']), FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-            $post_user_fldallowed = filter_var(htmlspecialchars_decode($dataReceived['user_fldallowed']), FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-            $post_user_fldforbid = filter_var(htmlspecialchars_decode($dataReceived['user_fldforbid']), FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-            $post_user_admin = filter_var(htmlspecialchars_decode($dataReceived['user_admin']), FILTER_SANITIZE_NUMBER_INT);
-            $post_user_manager = filter_var(htmlspecialchars_decode($dataReceived['user_manager']), FILTER_SANITIZE_NUMBER_INT);
-            $post_user_hr = filter_var(htmlspecialchars_decode($dataReceived['user_hr']), FILTER_SANITIZE_NUMBER_INT);
-            $post_user_readonly = filter_var(htmlspecialchars_decode($dataReceived['user_readonly']), FILTER_SANITIZE_NUMBER_INT);
-            $post_user_personalfolder = filter_var(htmlspecialchars_decode($dataReceived['user_personalfolder']), FILTER_SANITIZE_NUMBER_INT);
-            $post_user_rootfolder = filter_var(htmlspecialchars_decode($dataReceived['user_rootfolder']), FILTER_SANITIZE_NUMBER_INT);
+            // Prepare variables
+            $data = [
+                'source_id' => isset($dataReceived['source_id']) === true ? $dataReceived['source_id'] : 0,
+                'destination_ids' => isset($dataReceived['destination_ids']) === true ? $dataReceived['destination_ids'] : 0,
+                'user_functions' => isset($dataReceived['user_functions']) === true ? $dataReceived['user_functions'] : '',
+                'user_managedby' => isset($dataReceived['user_managedby']) === true ? $dataReceived['user_managedby'] : '',
+                'user_fldallowed' => isset($dataReceived['user_fldallowed']) === true ? $dataReceived['user_fldallowed'] : '',
+                'user_fldforbid' => isset($dataReceived['user_fldforbid']) === true ? $dataReceived['user_fldforbid'] : '',
+                'user_admin' => isset($dataReceived['user_admin']) === true ? $dataReceived['user_admin'] : 0,
+                'user_manager' => isset($dataReceived['user_manager']) === true ? $dataReceived['user_manager'] : 0,
+                'user_hr' => isset($dataReceived['user_hr']) === true ? $dataReceived['user_hr'] : 0,
+                'user_readonly' => isset($dataReceived['user_readonly']) === true ? $dataReceived['user_readonly'] : 1,
+                'user_personalfolder' => isset($dataReceived['user_personalfolder']) === true ? $dataReceived['user_personalfolder'] : 0,
+                'user_rootfolder' => isset($dataReceived['user_rootfolder']) === true ? $dataReceived['user_rootfolder'] : 0,
+            ];
+            
+            $filters = [
+                'source_id' => 'cast:integer',
+                'destination_ids' => 'trim|escape',
+                'user_functions' => 'trim|escape',
+                'user_managedby' => 'trim|escape',
+                'user_fldallowed' => 'trim|escape',
+                'user_fldforbid' => 'trim|escape',
+                'user_admin' => 'cast:integer',
+                'user_manager' => 'cast:integer',
+                'user_hr' => 'cast:integer',
+                'user_readonly' => 'cast:integer',
+                'user_personalfolder' => 'cast:integer',
+                'user_rootfolder' => 'cast:integer',
+            ];
+            
+            $inputData = dataSanitizer(
+                $data,
+                $filters,
+                $SETTINGS['cpassman_dir']
+            );
 
             // Check send values
-            if (
-                empty($post_source_id) === true
-                || $post_destination_ids === 0
-            ) {
+            if ($inputData['source_id'] === 0 || $inputData['destination_ids'] === 0) {
                 // error
-                exit();
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
             }
 
             // Get info about user
             $data_user = DB::queryfirstrow(
                 'SELECT admin, isAdministratedByRole FROM ' . prefixTable('users') . '
                 WHERE id = %i',
-                $post_source_id
+                $inputData['source_id']
             );
 
             // Is this user allowed to do this?
@@ -2113,7 +2140,7 @@ if (null !== $post_type) {
                 || (in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array')))
                 || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $data_user['admin'] !== 1)
             ) {
-                foreach ($post_destination_ids as $dest_user_id) {
+                foreach ($inputData['destination_ids'] as $dest_user_id) {
                     // Is this user allowed to do this?
                     if (
                         (int) $session->get('user-admin') === 1
@@ -2124,16 +2151,16 @@ if (null !== $post_type) {
                         DB::update(
                             prefixTable('users'),
                             array(
-                                'fonction_id' => $post_user_functions,
-                                'isAdministratedByRole' => $post_user_managedby,
-                                'groupes_visibles' => $post_user_fldallowed,
-                                'groupes_interdits' => $post_user_fldforbid,
-                                'gestionnaire' => $post_user_manager,
-                                'read_only' => $post_user_readonly,
-                                'can_create_root_folder' => $post_user_rootfolder,
-                                'personal_folder' => $post_user_personalfolder,
-                                'can_manage_all_users' => $post_user_hr,
-                                'admin' => $post_user_admin,
+                                'fonction_id' => str_replace(",", ";", (string) $inputData['user_functions']),
+                                'isAdministratedByRole' => $inputData['user_managedby'],
+                                'groupes_visibles' => $inputData['user_fldallowed'],
+                                'groupes_interdits' => $inputData['user_fldforbid'],
+                                'gestionnaire' => $inputData['user_manager'],
+                                'read_only' => $inputData['user_readonly'],
+                                'can_create_root_folder' => $inputData['user_rootfolder'],
+                                'personal_folder' => $inputData['user_personalfolder'],
+                                'can_manage_all_users' => $inputData['user_hr'],
+                                'admin' => $inputData['user_admin'],
                             ),
                             'id = %i',
                             $dest_user_id
@@ -2141,6 +2168,14 @@ if (null !== $post_type) {
                     }
                 }
             }
+
+            echo prepareExchangedData(
+                array(
+                    'error' => false,
+                ),
+                'encode'
+            );
+
             break;
 
             /*
