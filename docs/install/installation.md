@@ -9,7 +9,12 @@ The easiest way to install Teampass is to install LAMP dedicated to the GNU/Linu
 
 This document highlights a basic setup, but you can refer to many other existing tutorials to install Apache, MariaDB (or mySQL) and PHP.
 
-> :bulb: **Note:**  Teampass requires at least PHP 7.4 version.
+> :bulb: **Note:**  Teampass should be installed using the most recent PHP version.
+>The branch `master` is the living one that is improved and comes with new features.
+>It requires __at least__ `PHP 8.1` installed on the server.
+>Nevertheless, Teampass can be used with PHP 7.4 version.
+>The Github Teampass project has a dedicated branch called `PHP_7.4` for this version.
+>Notice that only bug fixing will be performed on this branch.
 
 ### Install the Apache web server and the required PHP extensions
 

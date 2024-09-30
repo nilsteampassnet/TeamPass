@@ -1599,6 +1599,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                 timeOut: 1000
                             }
                         );
+                          
+                        // Rrefresh list of users in Teampass
+                        oTable.ajax.reload();
                     }
                 }
             );
