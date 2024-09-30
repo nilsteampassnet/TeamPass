@@ -295,7 +295,6 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
 ) {
     ?>
     <body class="hold-transition sidebar-mini layout-navbar-fixed layout-fixed <?php echo $theme_body; ?>">
-        <input type="hidden" id="encryptClientServer" value="<?php echo $SETTINGS['encryptClientServer'] ?? 1; ?>" />
         <div class="wrapper">
 
             <!-- Navbar -->
@@ -1309,6 +1308,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
     <!-- functions -->
     <script type="text/javascript" src="includes/js/functions.js?v=<?php echo TP_VERSION; ?>"></script>
     <script type="text/javascript" src="includes/js/CreateRandomString.js?v=<?php echo TP_VERSION; ?>"></script>
+    <input type="hidden" id="encryptClientServerStatus" value="<?php echo $SETTINGS['encryptClientServer'] ?? 1; ?>" />
 
     </body>
 
