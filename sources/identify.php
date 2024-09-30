@@ -1992,9 +1992,6 @@ function checkCredentials($passwordClear, $userInfo): bool
         $passwordClear,
         (int) $userInfo['id']
     );
-    /*if (WIP === true) {
-        error_log("checkCredentials - User ".$userInfo['id']." | verify pwd: ".$passwordManager->verifyPassword($userInfo['pw'], $passwordClear));
-    }*/
 
     if ($passwordManager->verifyPassword($userInfo['pw'], $passwordClear) === false) {
         // password is not correct
@@ -2392,7 +2389,15 @@ function shouldUserAuthWithOauth2(
                     'oauth2Connection' => true,
                     'userPasswordVerified' => true,
                 ];
-            } elseif ((string) $userInfo['auth_type'] !== 'oauth2') {
+            } elseif ((string) $userInfo['auth_type'] === 'oauth2') {
+                // OAuth2 login request on OAuth2 user account.
+                return [
+                    'error' => false,
+                    'message' => '',
+                    'oauth2Connection' => true,
+                    'userPasswordVerified' => true,
+                ];
+            } else {
                 // Case where auth_type is not managed
                 return [
                     'error' => true,
