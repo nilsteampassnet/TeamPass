@@ -3351,13 +3351,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
     // Warn in case of limited search
     $(document).on('click', '#limited-search', function() {
         if ($(this).is(":checked") != "<?php echo $SETTINGS['limited_search_default']; ?>") {
-            $('#find_items').css({
-                "background-color": "#f56954"
-            });
+            $('#find_items').addClass('bg-red');
         } else {
-            $('#find_items').css({
-                "background-color": "#FFF"
-            })
+            $('#find_items').removeClass('bg-red');
         }
     });
 
