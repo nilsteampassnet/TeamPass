@@ -1357,8 +1357,8 @@ if (null !== $post_type) {
 
                 $arrData['error'] = false;
                 $arrData['login'] = $rowUser['login'];
-                $arrData['name'] = empty($rowUser['name']) === false && $rowUser['name'] !== NULL ? html_entity_decode($rowUser['name'], ENT_QUOTES, 'UTF-8') : '';
-                $arrData['lastname'] = empty($rowUser['lastname']) === false && $rowUser['lastname'] !== NULL ? html_entity_decode($rowUser['lastname'], ENT_QUOTES, 'UTF-8') : '';
+                $arrData['name'] = !empty($rowUser['name']) === false && $rowUser['name'] !== NULL ? htmlspecialchars(strip_tags(html_entity_decode($rowUser['name'], ENT_QUOTES | ENT_HTML5, 'UTF-8')), ENT_QUOTES, 'UTF-8') : '';
+                $arrData['lastname'] = !empty($rowUser['lastname']) === false && $rowUser['lastname'] !== NULL ? htmlspecialchars(strip_tags(html_entity_decode($rowUser['lastname'], ENT_QUOTES | ENT_HTML5, 'UTF-8')), ENT_QUOTES, 'UTF-8') : '';
                 $arrData['email'] = $rowUser['email'];
                 $arrData['function'] = $functionsList;
                 $arrData['managedby'] = $managedBy;
