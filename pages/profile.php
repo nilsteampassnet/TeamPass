@@ -396,19 +396,19 @@ foreach ($session->get('user-roles_array') as $role) {
                                     </div>
 
                                     <div class="form-group">
-                                        <label class="col-sm-10 control-label"><?php echo $lang->get('timezone_selection'); ?></label>
+                                        <label class="col-sm-10 control-label"><?php echo $lang->get('timezone_selection');?></label>
                                         <div class="col-sm-10">
                                             <select class="form-control" id="profile-user-timezone">
-                                                <?php
-                                                foreach ($zones as $key => $zone) {
-                                                    echo '
-                                                <option value="' . $key . '"',
-                                                    $session->has('user-timezone') && $session->get('user-timezone') && null !== $session->get('user-timezone') && $session->get('user-timezone') === $key ?
-                                                    ' selected' :
-                                                    (isset($SETTINGS['timezone']) === true && $SETTINGS['timezone'] === $key ? ' selected' : ''),
-                                                '>' . $zone . '</option>';
-                                                }
-                                                ?>
+                                                <?php foreach ($zones as $key => $zone): ?>
+                                                    <option value="<?php echo $key; ?>"<?php 
+                                                        if ($session->has('user-timezone'))
+                                                            if($session->get('user-timezone') === $key)
+                                                                echo ' selected';
+                                                            elseif ($session->get('user-timezone') === 'not_defined')
+                                                                if (isset($SETTINGS['timezone']) && $SETTINGS['timezone'] === $key)
+                                                                    echo ' selected';
+                                                    ?>><?php echo $zone; ?></option>
+                                                <?php endforeach; ?>
                                             </select>
                                         </div>
                                     </div>
