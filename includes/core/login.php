@@ -390,4 +390,5 @@ echo '
     </div>
 
 </div>
-<!-- /.login-box -->';
+<!-- /.login-box -->
+<option class="hidden" id="encryptClientServer" value="'. $SETTINGS['encryptClientServer'] ?? 1 .'"></option>';
