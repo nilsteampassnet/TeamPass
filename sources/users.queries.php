@@ -1357,8 +1357,8 @@ if (null !== $post_type) {
 
                 $arrData['error'] = false;
                 $arrData['login'] = $rowUser['login'];
-                $arrData['name'] = !empty($rowUser['name']) === false && $rowUser['name'] !== NULL ? htmlspecialchars(strip_tags(html_entity_decode($rowUser['name'], ENT_QUOTES | ENT_HTML5, 'UTF-8')), ENT_QUOTES, 'UTF-8') : '';
-                $arrData['lastname'] = !empty($rowUser['lastname']) === false && $rowUser['lastname'] !== NULL ? htmlspecialchars(strip_tags(html_entity_decode($rowUser['lastname'], ENT_QUOTES | ENT_HTML5, 'UTF-8')), ENT_QUOTES, 'UTF-8') : '';
+                $arrData['name'] = empty($rowUser['name']) === false && $rowUser['name'] !== NULL ? $rowUser['name'] : '';
+                $arrData['lastname'] = empty($rowUser['lastname']) === false && $rowUser['lastname'] !== NULL ? $rowUser['lastname'] : '';
                 $arrData['email'] = $rowUser['email'];
                 $arrData['function'] = $functionsList;
                 $arrData['managedby'] = $managedBy;
@@ -2210,7 +2210,7 @@ if (null !== $post_type) {
                 );
 
                 // Prevent LFI.
-                $inputData['language'] = preg_replace('/[^a-z]/', "", $inputData['language']);
+                $inputData['language'] = preg_replace('/[^a-z_]/', "", $inputData['language']);
 
                 // Force english if non-existent language.
                 if (!file_exists(__DIR__."/../includes/language/".$inputData['language'].".php")) {
