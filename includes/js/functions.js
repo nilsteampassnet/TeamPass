@@ -163,7 +163,7 @@ function jsonErrorHdl(message)
 function prepareExchangedData(data, type, key, fileName = '', functionName = '')
 {
     if (type === 'decode') {
-        if (parseInt($('input#encryptClientServer').val()) === 0) {
+        if (parseInt($('#encryptClientServerStatus').val()) === 0) {
             try {
                 return $.parseJSON(data);
             }
@@ -182,7 +182,7 @@ function prepareExchangedData(data, type, key, fileName = '', functionName = '')
             }
         }
     } else if (type === 'encode') {
-        if (parseInt($('#encryptClientServer').val()) === 0) {
+        if (parseInt($('#encryptClientServerStatus').val()) === 0) {
             return data;
         } else {
             let encryption = new Encryption();
