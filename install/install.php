@@ -308,12 +308,17 @@ define('MIN_PHP_VERSION', 8.1);
 					<div class="form-group">
 						<label>Teampass Administrator password</label>
 						<input type="password" class="form-control" id="admin_pwd" class="ui-widget" value=""><span id="res4_check10"></span>
-					</div
+					</div>
 					
 					<div class="form-group">
 						<label>Confirm Administrator password</label>
 						<input type="password" class="form-control" id="admin_pwd_confirm" class="ui-widget" value=""><span id="res4_check11"></span>
-					</div
+					</div>
+					
+					<div class="form-group">
+						<label>Administrator email</label>
+						<input type="text" class="form-control" id="admin_email" class="ui-widget" value=""><span id="res4_check12"></span>
+					</div>
 				</div>
 			</div>
 		</div>

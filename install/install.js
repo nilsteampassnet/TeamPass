@@ -97,6 +97,8 @@ function checkPage()
         }
     } else if (step === "4") {
     // STEP 4
+
+        // Password checks
         if ($("#admin_pwd").val() === "") {
             alertify
                 .error('<i class="fas fa-ban mr-2"></i>You must define a password for Administrator account.', 10)
@@ -112,13 +114,26 @@ function checkPage()
                 .error('<i class="fas fa-ban mr-2"></i>Administrator passwords are not similar.', 10)
                 .dismissOthers();
             return false;
-        } else{
-            $("#hid_db_pre").val($("#tbl_prefix").val());
-            jsonValues = {"tbl_prefix":sanitizeString($("#tbl_prefix").val()), "sk_path":sanitizeString($("#sk_path").val()), "admin_pwd":sanitizeString($("#admin_pwd").val()), "send_stats":""};
-            dataToUse = JSON.stringify(jsonValues);
-            tasks = ["misc*preparation"];
-            multiple = "";
         }
+        
+        // Email checks
+        if ($("#admin_email").val() === "") {
+            alertify
+                .error('<i class="fas fa-ban mr-2"></i>You must define an email for Administrator account.', 10)
+                .dismissOthers();
+            return false;
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test($("#admin_email").val())) {
+            alertify
+                .error('<i class="fas fa-ban mr-2"></i>Administrator email is not valid.', 10)
+                .dismissOthers();
+            return false;
+        }
+
+        $("#hid_db_pre").val($("#tbl_prefix").val());
+        jsonValues = {"tbl_prefix":sanitizeString($("#tbl_prefix").val()), "sk_path":sanitizeString($("#sk_path").val()), "admin_pwd":sanitizeString($("#admin_pwd").val()), "admin_email":sanitizeString($("#admin_email").val()), "send_stats":""};
+        dataToUse = JSON.stringify(jsonValues);
+        tasks = ["misc*preparation"];
+        multiple = "";
     } else if (step === "5") {
     // STEP 5
         dataToUse = "";
