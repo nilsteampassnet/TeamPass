@@ -819,10 +819,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
                     if (data.error === false) {
                         // Prefil with user data
-                        $('#form-login').val(data.login);
-                        $('#form-email').val(data.email);
-                        $('#form-name').val(data.name);
-                        $('#form-lastname').val(data.lastname);
+                        $('#form-login').val($('<div>').html(data.login).text());
+                        $('#form-email').val($('<div>').html(data.email).text());
+                        $('#form-name').val($('<div>').html(data.name).text());
+                        $('#form-lastname').val($('<div>').html(data.lastname).text());
                         $('#form-create-root-folder').iCheck(data.can_create_root_folder === 1 ? 'check' : 'uncheck');
                         $('#form-create-personal-folder').iCheck(data.personal_folder === 1 ? 'check' : 'uncheck');
                         $('#form-create-mfa-enabled').iCheck(data.mfa_enabled === 1 ? 'check' : 'uncheck');
