@@ -270,7 +270,7 @@ $theme_navbar = $theme === 'dark' ? 'navbar-dark' : 'navbar-white navbar-light';
     <!-- favicon -->
     <link rel="shortcut icon" type="image/png" href="<?php echo $favicon;?>"/>
     <!-- manifest (PWA) -->
-    <link rel="manifest" href="includes/manifest.json?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
+    <link rel="manifest" href="manifest.json?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
     <!-- Custom style -->
     <?php
     if (file_exists(__DIR__ . '/includes/css/custom.css') === true) {?>

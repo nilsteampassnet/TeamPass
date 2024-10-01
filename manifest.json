@@ -2,7 +2,7 @@
   "name": "Teampass",
   "short_name": "Teampass",
   "description": "Teampass",
-  "start_url": "/",
+  "start_url": ".",
   "display": "fullscreen",
   "display_override": [
     "window-controls-overlay"
@@ -14,7 +14,7 @@
   "theme_color": " #FFFFFF",
   "icons": [
     {
-      "src": "/includes/images/teampass-pwa.png",
+      "src": "./includes/images/teampass-pwa.png",
       "type": "image/png",
       "sizes": "512x512"
     }
