@@ -5,6 +5,7 @@
 Teampass is a Collaborative Passwords Manager solution installed On-Premise.
 
 [![StandWithUkraine](https://raw.githubusercontent.com/vshymanskyy/StandWithUkraine/main/badges/StandWithUkraine.svg)](https://github.com/vshymanskyy/StandWithUkraine/blob/main/docs/README.md)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fnilsteampassnet%2FTeamPass.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fnilsteampassnet%2FTeamPass?ref=badge_shield)
 
 ![](https://img.shields.io/github/stars/nilsteampassnet/TeamPass?style=social)
 ![](https://img.shields.io/github/license/nilsteampassnet/teampass)
@@ -32,6 +33,9 @@ Teampass is a Collaborative Passwords Manager solution installed On-Premise.
 - [Bugs](#bugs)
 
 <!-- /MDTOC -->
+
+
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fnilsteampassnet%2FTeamPass.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fnilsteampassnet%2FTeamPass?ref=badge_large)
 
 ## Requirements
 
@@ -131,4 +135,3 @@ Visit [Teampass.net](https://teampass.net/)
 ## Bugs
 
 If you discover bugs, please report them in [Github Issues](https://github.com/nilsteampassnet/TeamPass/issues).
-
