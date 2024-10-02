@@ -434,7 +434,7 @@ define('MIN_PHP_VERSION', 8.1);
 	echo '
     <div id="footer">
         <div style="width:500px; font-size:16px;">
-            ' . TP_TOOL_NAME . ' ' . TP_VERSION . ' <i class="far fa-copyright"></i> copyright 2009-2019
+            ' . TP_TOOL_NAME . ' ' . TP_VERSION . ' <i class="far fa-copyright"></i> copyright 2009-'.date('Y').'
         </div>
         <div style="float:right;margin-top:-15px;">
         </div>
