@@ -99,7 +99,7 @@ $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
 if (null !== $post_type) {
     switch ($post_type) {
-            /*
+        /*
          * ADD NEW USER
          */
         case 'add_new_user':
@@ -161,6 +161,20 @@ if (null !== $post_type) {
             $post_root_level = filter_var($dataReceived['form-create-root-folder'], FILTER_SANITIZE_NUMBER_INT);
             $mfa_enabled = filter_var($dataReceived['mfa_enabled'], FILTER_SANITIZE_NUMBER_INT);
 
+            // Only administrators can create managers or administrators accounts.
+            if ((int) $session->get('user-admin') !== 1 
+                && ((int) $is_admin === 1 || (int) $is_manager === 1 || (int) $is_hr === 1)) {
+
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
             // Empty user
             if (empty($login) === true) {
                 echo prepareExchangedData(
@@ -182,18 +196,6 @@ if (null !== $post_type) {
             );
 
             if (DB::count() === 0) {
-                // check if admin role is set. If yes then check if originator is allowed
-                if ((int) $dataReceived['admin'] === 1 && (int) $session->get('user-admin') !== 1) {
-                    echo prepareExchangedData(
-                        array(
-                            'error' => true,
-                            'message' => $lang->get('error_not_allowed_to'),
-                        ),
-                        'encode'
-                    );
-                    break;
-                }
-
                 // Generate pwd
                 $password = generateQuickPassword();
 

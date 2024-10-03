@@ -733,6 +733,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 $('input[type=radio].only-admin').iCheck('enable');
                 $('#privilege-admin').iCheck('disable');
                 $('#privilege-hr').iCheck('disable');
+                $('#privilege-manager').iCheck('disable');
             } else {
                 $('#privilege-admin').iCheck('disable');
                 $('#privilege-hr').iCheck('disable');
