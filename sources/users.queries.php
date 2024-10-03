@@ -2804,8 +2804,6 @@ if (null !== $post_type) {
                     'user_code' => $password,
                     'visible_otp' => ADMIN_VISIBLE_OTP_ON_LDAP_IMPORT,
                     'post_action' => isset($SETTINGS['enable_tasks_manager']) === true && (int) $SETTINGS['enable_tasks_manager'] === 1 ? 'prepare_tasks' : 'encrypt_keys',
-                    //'extra' => decryptPrivateKey($password, $userKeys['private_key']),
-                    //'extra2' => $userKeys['private_key'],
                 ),
                 'encode'
             );
@@ -3540,7 +3538,11 @@ if (null !== $post_type) {
             // Prepare variables
             $user_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
 
-            $userInfos = getFullUserInfos((int) $user_id);
+            $fullUserInfos = getFullUserInfos((int) $user_id);
+
+            // Filter only on useful fields
+            $userInfos['id'] = $fullUserInfos['id'];
+            $userInfos['ongoing_process_id'] = $fullUserInfos['ongoing_process_id'];
 
             echo prepareExchangedData(
                 array(
