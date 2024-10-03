@@ -132,7 +132,7 @@ class ConfigManager
         require_once __DIR__.'/../../../sergeytsalkov/meekrodb/db.class.php';
 
         $maxTimestamp = DB::queryFirstField(
-            'SELECT MAX(GREATEST(created_at, updated_at)) AS timestamp
+            'SELECT GREATEST(MAX(created_at), MAX(updated_at)) AS timestamp
             FROM ' . prefixTable('misc') . '
             WHERE type = %s',
             'admin'

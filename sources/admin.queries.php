@@ -2125,10 +2125,6 @@ switch ($post_type) {
                 $post_field
             );
 
-            // Update session settings
-            $SETTINGS[$post_field] = $post_value;
-            $session->set('teampass-settings', $SETTINGS);
-
             // in case of stats enabled, update the actual time
             if ($post_field === 'send_stats') {
                 // Check if previous time exists, if not them insert this value in DB
