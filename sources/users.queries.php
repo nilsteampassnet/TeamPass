@@ -1443,9 +1443,16 @@ if (null !== $post_type) {
             $post_root_level = filter_var($dataReceived['form-create-root-folder'], FILTER_SANITIZE_NUMBER_INT);
             $post_mfa_enabled = filter_var($dataReceived['mfa_enabled'], FILTER_SANITIZE_NUMBER_INT);
 
-            // If user disables administrator role 
+            // Get info about user to modify
+            $data_user = DB::queryfirstrow(
+                'SELECT admin, gestionnaire, can_manage_all_users, isAdministratedByRole FROM ' . prefixTable('users') . '
+                WHERE id = %i',
+                $post_id
+            );
+
+            // If user removes administrator role on administrator user
             // then ensure that it exists still one administrator
-            if (empty($post_is_admin) === true) {
+            if ((int) $data_user['admin'] === 1 && (int) $post_is_admin !== 1) {
                 // count number of admins
                 $users = DB::query(
                     'SELECT id
@@ -1549,18 +1556,21 @@ if (null !== $post_type) {
                 break;
             }
 
-            // Get info about user to delete
-            $data_user = DB::queryfirstrow(
-                'SELECT admin, isAdministratedByRole FROM ' . prefixTable('users') . '
-                WHERE id = %i',
-                $post_id
-            );
-
             // Is this user allowed to do this?
             if (
+                // Administrator user
                 (int) $session->get('user-admin') === 1
-                || (in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array')))
-                || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $data_user['admin'] !== 1)
+                // Manager of basic/ro users in this role but don't allow promote user to admin or managers roles
+                || ((int) $session->get('user-manager') === 1
+                    && in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array'))
+                    && (int) $post_is_admin !== 1 && (int) $data_user['admin'] !== 1
+                    && (int) $post_is_hr !== 1 && (int) $data_user['can_manage_all_users'] !== 1
+                    && (int) $post_is_manager !== 1 && (int) $data_user['gestionnaire'] !== 1)
+                // Manager of all basic/ro users but don't allow promote user to admin or managers roles
+                || ((int) $session->get('user-can_manage_all_users') === 1
+                    && (int) $post_is_admin !== 1 && (int) $data_user['admin'] !== 1
+                    && (int) $post_is_hr !== 1 && (int) $data_user['can_manage_all_users'] !== 1
+                    && (int) $post_is_manager !== 1 && (int) $data_user['gestionnaire'] !== 1)
             ) {
                 // delete account
                 // delete user in database
