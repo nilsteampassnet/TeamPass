@@ -1473,7 +1473,8 @@ if (null !== $post_type) {
             $adRoles = DB::query(
                 'SELECT roles_from_ad_groups
                 FROM ' . prefixTable('users') . '
-                WHERE id = '. $dataReceived['user_id']
+                WHERE id = %i',
+                $post_id
             )[0]['roles_from_ad_groups'];
             $fonctions = [];
             if (!is_null($post_groups) && !empty($adRoles)) {
