@@ -145,15 +145,6 @@ if (empty($session_db_encoding) === true) {
 $superGlobal->put('CPM', 1, 'SESSION');
 
 // Prepare POST variables
-/*
-$inputData['type'] = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES);
-$post_activity = filter_input(INPUT_POST, 'activity', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-$post_task = filter_input(INPUT_POST, 'task', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-$inputData['index'] = filter_input(INPUT_POST, 'index', FILTER_SANITIZE_NUMBER_INT);
-$inputData['multiple'] = filter_input(INPUT_POST, 'multiple', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-$post_db = filter_input(INPUT_POST, 'db', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-*/
 $postValues = [
     'type' => filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS),
     'data' => filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES),
@@ -169,7 +160,6 @@ require_once 'libs/aesctr.php';
 foreach ($postValues as $key => $value) {
     if ($key === 'data' || $key === 'activity' || $key === 'task' || $key === 'db') {
         $postValues[$key] = aesctr::decrypt($value, 'cpm', 128);
-        //error_log(print_r($postValues[$key], true));
     }
 }
 
@@ -197,9 +187,6 @@ $inputData = dataSanitizer(
     $session_abspath
 );
 
-//error_log('POST TYPE: '.$type.' - POST INDEX: '.$index.' - POST MULTIPLE: '.$multiple.' - POST DB: '.print_r($inputData['db'], true));
-//error_log('POST DATA: '.print_r($db1, true)." -- ".$post_db);
-//error_log($inputData['type']." - ".$inputData['index']." - ".$inputData['multiple']." - ".print_r($inputData['db'], true));
 if (null !== $inputData['type']) {
     switch ($inputData['type']) {
         case 'step_2':
@@ -264,7 +251,6 @@ if (null !== $inputData['type']) {
                 $post_abspath = substr($post_abspath, 0, strlen($post_abspath) - 1);
             }
             
-            error_log(print_r($inputData['db'], true));
             // launch
             try {
                 $dbTmp = mysqli_connect(
@@ -292,27 +278,33 @@ if (null !== $inputData['type']) {
                 
                 // store values
                 foreach ($inputData['data'] as $key => $value) {
+                    // Escape values to prevent SQL injections
+                    $escapedKey = mysqli_real_escape_string($dbTmp, $key);
+                    $escapedValue = mysqli_real_escape_string($dbTmp, $value);
+
                     $superGlobal->put($key, $value, 'SESSION');
-                    $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `_install` WHERE `key` = '" . $key . "'"));
+                    $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `_install` WHERE `key` = '" . $escapedKey . "'"));
                     if (intval($tmp) === 0) {
-                        mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('" . $key . "', '" . $value . "');");
+                        mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('" . $escapedKey . "', '" . $escapedValue . "');");
                     } else {
-                        mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '" . $value . "' WHERE `key` = '" . $key . "';");
+                        mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '" . $escapedValue . "' WHERE `key` = '" . $escapedKey . "';");
                     }
                 }
+
+                // For other queries with `url_path` and `absolute_path`
+                $escapedUrlPath = mysqli_real_escape_string($dbTmp, empty($post_urlpath) ? $inputData['db']['url_path'] : $post_urlpath);
+                $escapedAbsPath = mysqli_real_escape_string($dbTmp, empty($post_abspath) ? $inputData['data']['absolute_path'] : $post_abspath);
+
                 $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `_install` WHERE `key` = 'url_path'"));
                 if (intval($tmp) === 0) {
-                    mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('url_path', '" . empty($post_urlpath) ? $inputData['db']['url_path'] : $post_urlpath . "');");
-                }/* else {
-                    mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '". empty($session_url_path) ? $inputData['data']['url_path'] : $session_url_path. "' WHERE `key` = 'url_path';");
-                }*/
+                    mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('url_path', '" . $escapedUrlPath . "');");
+                }
+
                 $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `_install` WHERE `key` = 'absolute_path'"));
                 if (intval($tmp) === 0) {
-                    mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('absolute_path', '" . empty($post_abspath) ? $inputData['data']['absolute_path'] : $post_abspath . "');");
-                }/* else {
-                    mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '" . empty($session_abspath) ? $inputData['data']['absolute_path'] : $session_abspath . "' WHERE `key` = 'absolute_path';");
-                }*/
-
+                    mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('absolute_path', '" . $escapedAbsPath . "');");
+                }
+                
                 echo '[{"error" : "", "result" : "Connection is successful", "multiple" : ""}]';
             } else {
                 echo '[{"error" : "' . addslashes(str_replace(array("'", "\n", "\r"), array('"', '', ''), mysqli_connect_error())) . '", "result" : "Failed", "multiple" : ""}]';
@@ -331,7 +323,9 @@ if (null !== $inputData['type']) {
 
             // prepare data
             foreach ($inputData['data'] as $key => $value) {
-                $inputData['data'][$key] = str_replace(array('&quot;', '&#92;'), array('""', '\\\\'), $value);
+                $escapedKey = mysqli_real_escape_string($dbTmp, $key);
+                $escapedValue = mysqli_real_escape_string($dbTmp, str_replace(array('&quot;', '&#92;'), array('""', '\\\\'), $value));
+                $inputData['data'][$escapedKey] = $escapedValue;
             }
 
             // check skpath
@@ -348,11 +342,16 @@ if (null !== $inputData['type']) {
                     // store all variables in SESSION
                     foreach ($inputData['data'] as $key => $value) {
                         $superGlobal->put($key, $value, 'SESSION');
-                        $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `_install` WHERE `key` = '" . $key . "'"));
+                
+                        // Use mysqli_real_escape_string to escape keys and values
+                        $escapedKey = mysqli_real_escape_string($dbTmp, $key);
+                        $escapedValue = mysqli_real_escape_string($dbTmp, $value);
+
+                        $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `_install` WHERE `key` = '" . $escapedKey . "'"));
                         if (intval($tmp) === 0) {
-                            mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('" . $key . "', '" . $value . "');");
+                            mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('" . $escapedKey . "', '" . $escapedValue . "');");
                         } else {
-                            mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '" . $value . "' WHERE `key` = '" . $key . "';");
+                            mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '" . $escapedValue . "' WHERE `key` = '" . $escapedKey . "';");
                         }
                     }
                     echo '[{"error" : "", "result" : "Information stored", "multiple" : ""}]';
