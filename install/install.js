@@ -189,19 +189,6 @@ function checkPage()
                         .prop("disabled", true)
                         .addClass("hidden");
                 }
-                
-                /*
-                * Removing automatic action
-                // Go to next step
-                if (step <= 6) {
-                    setTimeout(
-                        function(){
-                            $('#but_next').trigger('click');
-                        },
-                        1000
-                    );
-                }
-                */
             }
         });
     } else if (error === "" && multiple === "") {
@@ -228,7 +215,7 @@ function checkPage()
             complete : function(data){
                 data = $.parseJSON(data.responseText);
                 
-                if (data[0].error !== "" ) {
+                if (data[0].error !== "") {
                     alertify
                         .error('<i class="fas fa-ban mr-2"></i>Next ERROR occurred: <i>' + data[0].error + '</i><br />Please correct and relaunch.', 0)
                         .dismissOthers();
@@ -246,19 +233,6 @@ function checkPage()
                         .prop("disabled", false)
                         .removeClass("hidden");
                 }
-                
-                /*
-                * Removing automatic action
-                // Go to next step
-                if (step <= 6) {
-                    setTimeout(
-                        function(){
-                            $('#but_next').trigger('click');
-                        },
-                        1000
-                    );
-                }
-                */
             }
         });
     } else {
@@ -282,7 +256,7 @@ function doGetJson(task)
         async: false,
         data : {
             type:       "step_"+step,
-            data:  aesEncrypt(dataToUse), //
+            data:       aesEncrypt(dataToUse), //
             activity:   aesEncrypt(tsk[0]),
             task:       aesEncrypt(tsk[1]),
             db:         aesEncrypt(JSON.stringify(dbInfo)),
@@ -292,7 +266,7 @@ function doGetJson(task)
         }
     })
     .complete(function(data) {
-        console.log("\n\n--- RECEPTION---\n"+data+"\n-------\n")
+        console.log("\n\n--- RECEPTION---\n"+JSON.stringify(data, null, 2)+"\n-------\n")
         if (data.responseText === "") {
             alertify
                 .error('<i class="fas fa-ban mr-2">[ERROR] Answer from server is empty.', 10)
@@ -320,8 +294,11 @@ function doGetJson(task)
                 }
             } else {
                 $("#res"+step+"_check"+data[0].index).html('<span class="badge badge-danger"><i class="fas fa-ban text-warning mr-2"></i>' + data[0].error + "</i></span>");
-                                            
-                global_error_on_query = true;
+                
+                // Considere only a warning on GMP extension
+                if (data[0].index !== "16") {
+                    global_error_on_query = true;
+                }
             }
         }
         index++;
