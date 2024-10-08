@@ -98,6 +98,87 @@ $password_do_not_change = 'do_not_change';
 $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
 if (null !== $post_type) {
+
+    // List of post types allowed to all users
+    $all_users_can_access = [
+        'get_generate_keys_progress',
+        'user_profile_update',
+        'save_user_change',
+    ];
+
+    // decrypt and retrieve data in JSON format
+    $dataReceived = [];
+    if (!empty($post_data)) {
+        prepareExchangedData(
+            $post_data,
+            'decode'
+        );
+    }
+
+    // Non-manager use
+    if ((int) $session->get('user-admin') !== 1 &&
+        (int) $session->get('user-manager') !== 1 &&
+        (int) $session->get('user-can_manage_all_users') !== 1) {
+
+        // Administrative type requested -> deny
+        if (!in_array($post_type, $all_users_can_access)) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to'),
+                ),
+                'encode'
+            );
+            exit;
+        } else if (isset($dataReceived['user_id'])) {
+            // If user isn't manager, he can't change user_id
+            $dataReceived['user_id'] = (int) $session->get('user-id');
+        }
+    }
+
+    // For administrative types only, do additional check whether user is manager 
+    // and $dataReceived['user_id'] is defined to ensure that this manager can
+    // modify this user account.
+    if (!in_array($post_type, $all_users_can_access) &&
+        (int) $session->get('user-admin') !== 1 && isset($dataReceived['user_id'])) {
+
+        // Get info about user to modify
+        $targetUserInfos = DB::queryfirstrow(
+            'SELECT admin, gestionnaire, can_manage_all_users, isAdministratedByRole FROM ' . prefixTable('users') . '
+            WHERE id = %i',
+            (int) $dataReceived['user_id']
+        );
+
+        // Managers can't edit administrator or other manager
+        if ((int) $targetUserInfos['admin'] === 1 ||
+            (int) $targetUserInfos['can_manage_all_users'] === 1 ||
+            (int) $targetUserInfos['gestionnaire'] === 1) {
+
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                exit;
+            }
+
+        // Manager of basic/ro users in this role
+        if ((int) $session->get('user-manager') === 1
+            && !in_array($targetUserInfos['isAdministratedByRole'], $session->get('user-roles_array'))) {
+
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to'),
+                ),
+                'encode'
+            );
+            exit;
+        }
+    }
+
     switch ($post_type) {
         /*
          * ADD NEW USER
@@ -135,12 +216,6 @@ if (null !== $post_type) {
                 );
                 break;
             }
-
-            // decrypt and retrieve data in JSON format
-            $dataReceived = prepareExchangedData(
-                $post_data,
-                'decode'
-            );
 
             // Prepare variables
             $login = filter_var($dataReceived['login'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
@@ -402,12 +477,6 @@ if (null !== $post_type) {
                 );
                 break;
             }
-
-            // decrypt and retrieve data in JSON format
-            $dataReceived = prepareExchangedData(
-                $post_data,
-                'decode'
-            );
 
             // Prepare variables
             $post_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
@@ -998,11 +1067,6 @@ if (null !== $post_type) {
         * Migrate the Admin PF to User
         */
         case 'migrate_admin_pf':
-            // decrypt and retreive data in JSON format
-            $dataReceived = prepareExchangedData(
-                filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES),
-                'decode'
-            );
             // Prepare variables
             $user_id = htmlspecialchars_decode($data_received['user_id']);
             $salt_user = htmlspecialchars_decode($data_received['salt_user']);
@@ -1162,12 +1226,6 @@ if (null !== $post_type) {
                 );
                 break;
             }
-
-            // decrypt and retrieve data in JSON format
-            $dataReceived = prepareExchangedData(
-                $post_data,
-                'decode'
-            );
             
             // Prepare variables
             $post_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
@@ -1420,12 +1478,6 @@ if (null !== $post_type) {
                 );
                 break;
             }
-
-            // decrypt and retrieve data in JSON format
-            $dataReceived = prepareExchangedData(
-                $post_data,
-                'decode'
-            );
 
             // Prepare variables
             $post_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
@@ -1702,12 +1754,6 @@ if (null !== $post_type) {
                 );
                 break;
             }
-
-            // decrypt and retrieve data in JSON format
-            $dataReceived = prepareExchangedData(
-                $post_data, 
-                'decode'
-            );
 
             // Prepare variables
             $post_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
@@ -2085,12 +2131,6 @@ if (null !== $post_type) {
                 break;
             }
 
-            // decrypt and retreive data in JSON format
-            $dataReceived = prepareExchangedData(
-                $post_data,
-                'decode'
-            );
-
             // Prepare variables
             $data = [
                 'source_id' => isset($dataReceived['source_id']) === true ? $dataReceived['source_id'] : 0,
@@ -2222,12 +2262,6 @@ if (null !== $post_type) {
                 break;
             }
 
-            // decrypt and retreive data in JSON format
-            $dataReceived = prepareExchangedData(
-                $post_data,
-                'decode'
-            );
-
             if (empty($dataReceived) === false) {
                 // Sanitize
                 $data = [
@@ -2339,12 +2373,6 @@ if (null !== $post_type) {
                 );
                 break;
             }
-
-            // decrypt and retrieve data in JSON format
-            $dataReceived = prepareExchangedData(
-                $post_data,
-                'decode'
-            );
 
             // prepare variables
             $post_user_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
@@ -2649,12 +2677,6 @@ if (null !== $post_type) {
                 break;
             }
 
-            // decrypt and retrieve data in JSON format
-            $dataReceived = prepareExchangedData(
-                $post_data,
-                'decode'
-            );
-
             // Prepare variables
             $post_login = filter_var($dataReceived['login'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $post_name = filter_var($dataReceived['name'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
@@ -2838,12 +2860,6 @@ if (null !== $post_type) {
                 break;
             }
 
-            // decrypt and retrieve data in JSON format
-            $dataReceived = prepareExchangedData(
-                $post_data,
-                'decode'
-            );
-
             // Prepare variables
             $post_userId = filter_var($dataReceived['user_id'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $post_otp = filter_var($dataReceived['user_new_otp'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
@@ -2888,7 +2904,7 @@ if (null !== $post_type) {
 
             break;
 
-            /*
+        /*
          * CHANGE USER AUTHENTICATION TYPE
          */
         case 'change_user_auth_type':
@@ -2904,14 +2920,8 @@ if (null !== $post_type) {
                 break;
             }
 
-            // decrypt and retrieve data in JSON format
-            $dataReceived = prepareExchangedData(
-                $post_data,
-                'decode'
-            );
-
             // Prepare variables
-            $post_id = filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT);
+            $post_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
             $post_auth = filter_var($dataReceived['auth_type'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
 
@@ -2980,12 +2990,6 @@ if (null !== $post_type) {
                 );
                 break;
             }
-
-            // decrypt and retrieve data in JSON format
-            $dataReceived = prepareExchangedData(
-                $post_data,
-                'decode'
-            );
 
             // Prepare variables
             $post_userid = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
@@ -3126,12 +3130,6 @@ if (null !== $post_type) {
                 break;
             }
 
-            // decrypt and retrieve data in JSON format
-            $dataReceived = prepareExchangedData(
-                $post_data,
-                'decode'
-            );
-
             // Prepare variables
             $post_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
             $post_user_disabled = filter_var($dataReceived['disabled_status'], FILTER_SANITIZE_NUMBER_INT);
@@ -3209,12 +3207,6 @@ if (null !== $post_type) {
                 );
                 break;
             }
-
-            // decrypt and retrieve data in JSON format
-            $dataReceived = prepareExchangedData(
-                $post_data,
-                'decode'
-            );
 
             // Prepare variables
             $post_user_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
@@ -3383,12 +3375,6 @@ if (null !== $post_type) {
                 break;
             }
 
-            // decrypt and retrieve data in JSON format
-            $dataReceived = prepareExchangedData(
-                $post_data,
-                'decode'
-            );
-
             // Prepare variables
             $user_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
 
@@ -3461,12 +3447,6 @@ if (null !== $post_type) {
                 );
                 break;
             }
-
-            // decrypt and retrieve data in JSON format
-            $dataReceived = prepareExchangedData(
-                $post_data,
-                'decode'
-            );
 
             if (isset($dataReceived['user_id']) === false) {
                 // Exit nothing to be done
@@ -3542,11 +3522,6 @@ if (null !== $post_type) {
                 break;
             }
 
-            // decrypt and retrieve data in JSON format
-            $dataReceived = prepareExchangedData(
-                $post_data,
-                'decode'
-            );
             // Prepare variables
             $user_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
 
