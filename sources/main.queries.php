@@ -228,6 +228,8 @@ function mainQuery(array $SETTINGS)
  */
 function passwordHandler(string $post_type, /*php8 array|null|string*/ $dataReceived, array $SETTINGS): string
 {
+    $session = SessionManager::getSession();
+
     switch ($post_type) {
         case 'change_pw'://action_password
             return changePassword(
@@ -235,57 +237,45 @@ function passwordHandler(string $post_type, /*php8 array|null|string*/ $dataRece
                 isset($dataReceived['current_pw']) === true ? (string) filter_var($dataReceived['current_pw'], FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '',
                 (int) filter_var($dataReceived['complexity'], FILTER_SANITIZE_NUMBER_INT),
                 (string) filter_var($dataReceived['change_request'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
+                (int) $session->get('user-id'),
                 $SETTINGS
             );
 
         /*
-        * Change user's authenticataion password
-        */
+         * Change user's authentication password
+         */
         case 'change_user_auth_password'://action_password
             return changeUserAuthenticationPassword(
-                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
+                (int) $session->get('user-id'),
                 (string) filter_var($dataReceived['old_password'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 (string) filter_var($dataReceived['new_password'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 $SETTINGS
             );
 
         /*
-        * User's authenticataion password in LDAP has changed
-        */
+         * User's authentication password in LDAP has changed
+         */
         case 'change_user_ldap_auth_password'://action_password
             return /** @scrutinizer ignore-call */ changeUserLDAPAuthenticationPassword(
-                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
+                (int) $session->get('user-id'),
                 filter_var($dataReceived['previous_password'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 filter_var($dataReceived['current_password'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 $SETTINGS
             );
 
         /*
-        * test_current_user_password_is_correct
-        */
+         * test_current_user_password_is_correct
+         */
         case 'test_current_user_password_is_correct'://action_password
             return isUserPasswordCorrect(
-                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
+                (int) $session->get('user-id'),
                 (string) $dataReceived['password'],
                 $SETTINGS
             );
 
         /*
-        * User's password has to be initialized
-        */
-        case 'initialize_user_password'://action_password
-            return initializeUserPassword(
-                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
-                (string) filter_var($dataReceived['special'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                (string) filter_var($dataReceived['password'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                (bool) filter_var($dataReceived['self_change'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                $SETTINGS
-            );
-
-        /*
-        * Default case
-        */
+         * Default case
+         */
         default :
             return prepareExchangedData(
                 array(
