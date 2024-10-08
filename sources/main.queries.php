@@ -309,13 +309,70 @@ function userHandler(string $post_type, array|null|string $dataReceived, array $
 {
     $session = SessionManager::getSession();
 
+    // List of post types allowed to all users
+    $all_users_can_access = [
+        'get_user_info',
+        'increase_session_time',
+        'generate_password',
+        'refresh_list_items_seen',
+        'ga_generate_qr',
+        'user_get_session_time',
+        'save_user_location'
+    ];
+
+    // Default values
+    $filtered_user_id = $session->get('user-id');
+
+    // User can't manage users and requested type is administrative.
+    if ((int) $session->get('user-admin') !== 1 &&
+        (int) $session->get('user-manager') !== 1 &&
+        (int) $session->get('user-can_manage_all_users') !== 1 &&
+        !in_array($post_type, $all_users_can_access)) {
+
+        echo prepareExchangedData(
+            array(
+                'error' => true,
+            ),
+            'encode'
+        );
+        exit;
+    }
+
+    if (isset($dataReceived['user_id'])) {
+        // Get info about user to modify
+        $targetUserInfos = DB::queryfirstrow(
+            'SELECT admin, gestionnaire, can_manage_all_users, isAdministratedByRole FROM ' . prefixTable('users') . '
+            WHERE id = %i',
+            $dataReceived['user_id']
+        );
+
+        if (
+            // Administrator user
+            (int) $session->get('user-admin') === 1
+            // Manager of basic/ro users in this role
+            || ((int) $session->get('user-manager') === 1
+                && in_array($targetUserInfos['isAdministratedByRole'], $session->get('user-roles_array'))
+                && (int) $targetUserInfos['admin'] !== 1
+                && (int) $targetUserInfos['can_manage_all_users'] !== 1
+                && (int) $targetUserInfos['gestionnaire'] !== 1)
+            // Manager of all basic/ro users
+            || ((int) $session->get('user-can_manage_all_users') === 1
+                && (int) $targetUserInfos['admin'] !== 1
+                && (int) $targetUserInfos['can_manage_all_users'] !== 1
+                && (int) $targetUserInfos['gestionnaire'] !== 1)
+        ) {
+            // This user is allowed to modify other users.
+            $filtered_user_id = $dataReceived['user_id'];
+        }
+    }
+
     switch ($post_type) {
         /*
         * Get info 
         */
         case 'get_user_info'://action_user
             return getUserInfo(
-                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
+                (int) $filtered_user_id,
                 (string) filter_var($dataReceived['fields'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 $SETTINGS
             );
@@ -367,7 +424,7 @@ function userHandler(string $post_type, array|null|string $dataReceived, array $
         */
         case 'ga_generate_qr'://action_user
             return generateQRCode(
-                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
+                (int) $filtered_user_id,
                 (string) filter_var($dataReceived['demand_origin'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 (string) filter_var($dataReceived['send_email'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 (string) filter_var($dataReceived['login'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
@@ -382,7 +439,7 @@ function userHandler(string $post_type, array|null|string $dataReceived, array $
         */
         case 'user_is_ready'://action_user
             return userIsReady(
-                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
+                (int) $filtered_user_id,
                 (string) $SETTINGS['cpassman_dir']
             );
 
@@ -391,14 +448,14 @@ function userHandler(string $post_type, array|null|string $dataReceived, array $
         */
         case 'user_get_session_time'://action_user
             return userGetSessionTime(
-                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
+                (int) $session->get('user-id'),
                 (string) $SETTINGS['cpassman_dir'],
                 (int) $SETTINGS['maximum_session_expiration_time'],
             );
 
         case 'save_user_location'://action_user
             return userSaveIp(
-                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
+                (int) $session->get('user-id'),
                 (string) filter_var($dataReceived['action'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
             );
 
