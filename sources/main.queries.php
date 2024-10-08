@@ -425,26 +425,69 @@ function userHandler(string $post_type, array|null|string $dataReceived, array $
  */
 function mailHandler(string $post_type, /*php8 array|null|string */$dataReceived, array $SETTINGS): string
 {
+    $session = SessionManager::getSession();
+
     switch ($post_type) {
         /*
-        * CASE
-        * Send email
-        */
+         * CASE
+         * Send email
+         */
         case 'mail_me'://action_mail
-            return sendMailToUser(
-                filter_var($dataReceived['receipt'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                $dataReceived['body'],
-                (string) filter_var($dataReceived['subject'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                (array) filter_var_array(
-                    $dataReceived['pre_replace'],
-                    FILTER_SANITIZE_FULL_SPECIAL_CHARS
+            // Get info about user to send email
+            $data_user = DB::queryfirstrow(
+                'SELECT admin, gestionnaire, can_manage_all_users, isAdministratedByRole FROM ' . prefixTable('users') . '
+                WHERE email = %s',
+                $post_id
+            );
+
+            // Only administrators and managers can send mails
+            if (
+                // Administrator user
+                (int) $session->get('user-admin') === 1
+                // Manager of basic/ro users in this role but don't allow promote user to admin or managers roles
+                || ((int) $session->get('user-manager') === 1
+                    && in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array'))
+                    && (int) $post_is_admin !== 1 && (int) $data_user['admin'] !== 1
+                    && (int) $post_is_hr !== 1 && (int) $data_user['can_manage_all_users'] !== 1
+                    && (int) $post_is_manager !== 1 && (int) $data_user['gestionnaire'] !== 1)
+                // Manager of all basic/ro users but don't allow promote user to admin or managers roles
+                || ((int) $session->get('user-can_manage_all_users') === 1
+                    && (int) $post_is_admin !== 1 && (int) $data_user['admin'] !== 1
+                    && (int) $post_is_hr !== 1 && (int) $data_user['can_manage_all_users'] !== 1
+                    && (int) $post_is_manager !== 1 && (int) $data_user['gestionnaire'] !== 1)
+            ) {
+                return sendMailToUser(
+                    filter_var($dataReceived['receipt'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                    $dataReceived['body'],
+                    (string) filter_var($dataReceived['subject'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                    (array) filter_var_array(
+                        $dataReceived['pre_replace'],
+                        FILTER_SANITIZE_FULL_SPECIAL_CHARS
+                    ),
+                    true
+                );
+            }
+
+            return prepareExchangedData(
+                array(
+                    'error' => true,
                 ),
-                true
+                'encode'
             );
         /*
         * Send emails not sent
         */
         case 'send_waiting_emails'://mail
+            // Administrative task
+            if ((int) $session->get('user-admin') !== 1) {
+                return prepareExchangedData(
+                    array(
+                        'error' => true,
+                    ),
+                    'encode'
+                );
+            }
+
             sendEmailsNotSent(
                 $SETTINGS
             );
@@ -658,8 +701,8 @@ function systemHandler(string $post_type, array|null|string $dataReceived, array
             );
 
         /*
-        * Sending statistics
-        */
+         * Sending statistics
+         */
         case 'sending_statistics'://action_system
             sendingStatistics(
                 $SETTINGS
@@ -675,6 +718,17 @@ function systemHandler(string $post_type, array|null|string $dataReceived, array
             * Generate BUG report
             */
         case 'generate_bug_report'://action_system
+
+            // Only administrators can see this confidential informations.
+            if ((int) $session->get('user-admin') !== 1) {
+                return prepareExchangedData(
+                    array(
+                        'error' => false,
+                    ),
+                    'encode'
+                );
+            }
+
             return generateBugReport(
                 (array) $dataReceived,
                 $SETTINGS
@@ -684,6 +738,17 @@ function systemHandler(string $post_type, array|null|string $dataReceived, array
         * get_teampass_settings
         */
         case 'get_teampass_settings'://action_system
+
+            // Only administrators can see this confidential informations.
+            if ((int) $session->get('user-admin') !== 1) {
+                return prepareExchangedData(
+                    array(
+                        'error' => false,
+                    ),
+                    'encode'
+                );
+            }
+
             // Encrypt data to return
             return prepareExchangedData(
                 array_intersect_key(
@@ -709,8 +774,8 @@ function systemHandler(string $post_type, array|null|string $dataReceived, array
             );
 
         /*
-            * Generates a TOKEN with CRYPT
-            */
+         * Generates a TOKEN with CRYPT
+         */
         case 'save_token'://action_system
             $token = GenerateCryptKey(
                 null !== filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT) ? (int) filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT) : 20,
@@ -753,8 +818,8 @@ function utilsHandler(string $post_type, array|null|string $dataReceived, array 
 {
     switch ($post_type) {
         /*
-        * generate_an_otp
-        */
+         * generate_an_otp
+         */
         case 'generate_an_otp'://action_utils
             return generateAnOTP(
                 (string) filter_var($dataReceived['label'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
@@ -764,8 +829,8 @@ function utilsHandler(string $post_type, array|null|string $dataReceived, array 
 
 
         /*
-        * Default case
-        */
+         * Default case
+         */
         default :
             return prepareExchangedData(
                 array(
@@ -1441,12 +1506,6 @@ function generateBugReport(
     // Load user's language
     $session = SessionManager::getSession();
     $lang = new Language($session->get('user-language') ?? 'english');
-    
-    // Only administrators can see this confidential informations.
-    if ($session->get('user-admin') !== 1) {
-        http_response_code(403);
-        return "";
-    }
 
     // Read config file
     $list_of_options = '';
