@@ -188,34 +188,6 @@ function mainQuery(array $SETTINGS)
             break;
     }
     
-    // Manage type of action asked
-    //switch ($post_type) {
-        /*
-         * TODO Check if suggestions are existing
-         */
-        /*
-        case 'is_existings_suggestions':
-            if ($_SESSION['user_manager'] === '1' || $_SESSION['is_admin'] === '1') {
-                $count = 0;
-                DB::query('SELECT * FROM ' . prefixTable('items_change'));
-                $count += DB::count();
-                DB::query('SELECT * FROM ' . prefixTable('suggestion'));
-                $count += DB::count();
-
-                echo '[ { "error" : "" , "count" : "' . $count . '" , "show_sug_in_menu" : "0"} ]';
-                break;
-            }
-            
-            if (isset($_SESSION['nb_item_change_proposals']) && $_SESSION['nb_item_change_proposals'] > 0) {
-                echo '[ { "error" : "" , "count" : "' . $_SESSION['nb_item_change_proposals'] . '" , "show_sug_in_menu" : "1"} ]';
-                break;
-            }
-            
-            echo '[ { "error" : "" , "count" : "" , "show_sug_in_menu" : "0"} ]';
-
-            break;
-        */
-    //}
 }
 
 /**
@@ -228,6 +200,8 @@ function mainQuery(array $SETTINGS)
  */
 function passwordHandler(string $post_type, /*php8 array|null|string*/ $dataReceived, array $SETTINGS): string
 {
+    $session = SessionManager::getSession();
+
     switch ($post_type) {
         case 'change_pw'://action_password
             return changePassword(
@@ -235,57 +209,45 @@ function passwordHandler(string $post_type, /*php8 array|null|string*/ $dataRece
                 isset($dataReceived['current_pw']) === true ? (string) filter_var($dataReceived['current_pw'], FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '',
                 (int) filter_var($dataReceived['complexity'], FILTER_SANITIZE_NUMBER_INT),
                 (string) filter_var($dataReceived['change_request'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
+                (int) $session->get('user-id'),
                 $SETTINGS
             );
 
         /*
-        * Change user's authenticataion password
-        */
+         * Change user's authentication password
+         */
         case 'change_user_auth_password'://action_password
             return changeUserAuthenticationPassword(
-                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
+                (int) $session->get('user-id'),
                 (string) filter_var($dataReceived['old_password'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 (string) filter_var($dataReceived['new_password'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 $SETTINGS
             );
 
         /*
-        * User's authenticataion password in LDAP has changed
-        */
+         * User's authentication password in LDAP has changed
+         */
         case 'change_user_ldap_auth_password'://action_password
             return /** @scrutinizer ignore-call */ changeUserLDAPAuthenticationPassword(
-                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
+                (int) $session->get('user-id'),
                 filter_var($dataReceived['previous_password'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 filter_var($dataReceived['current_password'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 $SETTINGS
             );
 
         /*
-        * test_current_user_password_is_correct
-        */
+         * test_current_user_password_is_correct
+         */
         case 'test_current_user_password_is_correct'://action_password
             return isUserPasswordCorrect(
-                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
+                (int) $session->get('user-id'),
                 (string) $dataReceived['password'],
                 $SETTINGS
             );
 
         /*
-        * User's password has to be initialized
-        */
-        case 'initialize_user_password'://action_password
-            return initializeUserPassword(
-                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
-                (string) filter_var($dataReceived['special'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                (string) filter_var($dataReceived['password'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                (bool) filter_var($dataReceived['self_change'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                $SETTINGS
-            );
-
-        /*
-        * Default case
-        */
+         * Default case
+         */
         default :
             return prepareExchangedData(
                 array(
@@ -309,13 +271,70 @@ function userHandler(string $post_type, array|null|string $dataReceived, array $
 {
     $session = SessionManager::getSession();
 
+    // List of post types allowed to all users
+    $all_users_can_access = [
+        'get_user_info',
+        'increase_session_time',
+        'generate_password',
+        'refresh_list_items_seen',
+        'ga_generate_qr',
+        'user_get_session_time',
+        'save_user_location'
+    ];
+
+    // Default values
+    $filtered_user_id = $session->get('user-id');
+
+    // User can't manage users and requested type is administrative.
+    if ((int) $session->get('user-admin') !== 1 &&
+        (int) $session->get('user-manager') !== 1 &&
+        (int) $session->get('user-can_manage_all_users') !== 1 &&
+        !in_array($post_type, $all_users_can_access)) {
+
+        echo prepareExchangedData(
+            array(
+                'error' => true,
+            ),
+            'encode'
+        );
+        exit;
+    }
+
+    if (isset($dataReceived['user_id'])) {
+        // Get info about user to modify
+        $targetUserInfos = DB::queryfirstrow(
+            'SELECT admin, gestionnaire, can_manage_all_users, isAdministratedByRole FROM ' . prefixTable('users') . '
+            WHERE id = %i',
+            $dataReceived['user_id']
+        );
+
+        if (
+            // Administrator user
+            (int) $session->get('user-admin') === 1
+            // Manager of basic/ro users in this role
+            || ((int) $session->get('user-manager') === 1
+                && in_array($targetUserInfos['isAdministratedByRole'], $session->get('user-roles_array'))
+                && (int) $targetUserInfos['admin'] !== 1
+                && (int) $targetUserInfos['can_manage_all_users'] !== 1
+                && (int) $targetUserInfos['gestionnaire'] !== 1)
+            // Manager of all basic/ro users
+            || ((int) $session->get('user-can_manage_all_users') === 1
+                && (int) $targetUserInfos['admin'] !== 1
+                && (int) $targetUserInfos['can_manage_all_users'] !== 1
+                && (int) $targetUserInfos['gestionnaire'] !== 1)
+        ) {
+            // This user is allowed to modify other users.
+            $filtered_user_id = $dataReceived['user_id'];
+        }
+    }
+
     switch ($post_type) {
         /*
         * Get info 
         */
         case 'get_user_info'://action_user
             return getUserInfo(
-                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
+                (int) $filtered_user_id,
                 (string) filter_var($dataReceived['fields'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 $SETTINGS
             );
@@ -367,7 +386,7 @@ function userHandler(string $post_type, array|null|string $dataReceived, array $
         */
         case 'ga_generate_qr'://action_user
             return generateQRCode(
-                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
+                (int) $filtered_user_id,
                 (string) filter_var($dataReceived['demand_origin'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 (string) filter_var($dataReceived['send_email'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 (string) filter_var($dataReceived['login'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
@@ -382,7 +401,7 @@ function userHandler(string $post_type, array|null|string $dataReceived, array $
         */
         case 'user_is_ready'://action_user
             return userIsReady(
-                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
+                (int) $filtered_user_id,
                 (string) $SETTINGS['cpassman_dir']
             );
 
@@ -391,14 +410,14 @@ function userHandler(string $post_type, array|null|string $dataReceived, array $
         */
         case 'user_get_session_time'://action_user
             return userGetSessionTime(
-                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
+                (int) $session->get('user-id'),
                 (string) $SETTINGS['cpassman_dir'],
                 (int) $SETTINGS['maximum_session_expiration_time'],
             );
 
         case 'save_user_location'://action_user
             return userSaveIp(
-                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
+                (int) $session->get('user-id'),
                 (string) filter_var($dataReceived['action'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
             );
 
@@ -425,26 +444,69 @@ function userHandler(string $post_type, array|null|string $dataReceived, array $
  */
 function mailHandler(string $post_type, /*php8 array|null|string */$dataReceived, array $SETTINGS): string
 {
+    $session = SessionManager::getSession();
+
     switch ($post_type) {
         /*
-        * CASE
-        * Send email
-        */
+         * CASE
+         * Send email
+         */
         case 'mail_me'://action_mail
-            return sendMailToUser(
-                filter_var($dataReceived['receipt'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                $dataReceived['body'],
-                (string) filter_var($dataReceived['subject'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                (array) filter_var_array(
-                    $dataReceived['pre_replace'],
-                    FILTER_SANITIZE_FULL_SPECIAL_CHARS
+            // Get info about user to send email
+            $data_user = DB::queryfirstrow(
+                'SELECT admin, gestionnaire, can_manage_all_users, isAdministratedByRole FROM ' . prefixTable('users') . '
+                WHERE email = %s',
+                $post_id
+            );
+
+            // Only administrators and managers can send mails
+            if (
+                // Administrator user
+                (int) $session->get('user-admin') === 1
+                // Manager of basic/ro users in this role but don't allow promote user to admin or managers roles
+                || ((int) $session->get('user-manager') === 1
+                    && in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array'))
+                    && (int) $post_is_admin !== 1 && (int) $data_user['admin'] !== 1
+                    && (int) $post_is_hr !== 1 && (int) $data_user['can_manage_all_users'] !== 1
+                    && (int) $post_is_manager !== 1 && (int) $data_user['gestionnaire'] !== 1)
+                // Manager of all basic/ro users but don't allow promote user to admin or managers roles
+                || ((int) $session->get('user-can_manage_all_users') === 1
+                    && (int) $post_is_admin !== 1 && (int) $data_user['admin'] !== 1
+                    && (int) $post_is_hr !== 1 && (int) $data_user['can_manage_all_users'] !== 1
+                    && (int) $post_is_manager !== 1 && (int) $data_user['gestionnaire'] !== 1)
+            ) {
+                return sendMailToUser(
+                    filter_var($dataReceived['receipt'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                    $dataReceived['body'],
+                    (string) filter_var($dataReceived['subject'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                    (array) filter_var_array(
+                        $dataReceived['pre_replace'],
+                        FILTER_SANITIZE_FULL_SPECIAL_CHARS
+                    ),
+                    true
+                );
+            }
+
+            return prepareExchangedData(
+                array(
+                    'error' => true,
                 ),
-                true
+                'encode'
             );
         /*
         * Send emails not sent
         */
         case 'send_waiting_emails'://mail
+            // Administrative task
+            if ((int) $session->get('user-admin') !== 1) {
+                return prepareExchangedData(
+                    array(
+                        'error' => true,
+                    ),
+                    'encode'
+                );
+            }
+
             sendEmailsNotSent(
                 $SETTINGS
             );
@@ -480,31 +542,69 @@ function mailHandler(string $post_type, /*php8 array|null|string */$dataReceived
 function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived, array $SETTINGS): string
 {
     $session = SessionManager::getSession();
+
+    // List of post types allowed to all users
+    $all_users_can_access = [
+        'change_private_key_encryption_password',
+        'user_new_keys_generation',
+        'user_recovery_keys_download',
+    ];
+
+    // Default values
+    $filtered_user_id = $session->get('user-id');
+
+    if (isset($dataReceived['user_id'])) {
+        // Get info about user to modify
+        $targetUserInfos = DB::queryfirstrow(
+            'SELECT admin, gestionnaire, can_manage_all_users, isAdministratedByRole FROM ' . prefixTable('users') . '
+            WHERE id = %i',
+            $dataReceived['user_id']
+        );
+    
+        if (
+            // Administrator user
+            (int) $session->get('user-admin') === 1
+            // Manager of basic/ro users in this role
+            || ((int) $session->get('user-manager') === 1
+                && in_array($targetUserInfos['isAdministratedByRole'], $session->get('user-roles_array'))
+                && (int) $targetUserInfos['admin'] !== 1
+                && (int) $targetUserInfos['can_manage_all_users'] !== 1
+                && (int) $targetUserInfos['gestionnaire'] !== 1)
+            // Manager of all basic/ro users
+            || ((int) $session->get('user-can_manage_all_users') === 1
+                && (int) $targetUserInfos['admin'] !== 1
+                && (int) $targetUserInfos['can_manage_all_users'] !== 1
+                && (int) $targetUserInfos['gestionnaire'] !== 1)
+        ) {
+            // This user is allowed to modify other users.
+            $filtered_user_id = $dataReceived['user_id'];
+    
+        } else if (!in_array($post_type, $all_users_can_access)) {
+            // User can't manage users and requested type is administrative.
+            return prepareExchangedData(
+                array(
+                    'error' => true,
+                ),
+                'encode'
+            ); 
+        }
+    }
+
     switch ($post_type) {
         /*
-        * Generate a temporary encryption key for user
-        */
+         * Generate a temporary encryption key for user
+         */
         case 'generate_temporary_encryption_key'://action_key
             return generateOneTimeCode(
-                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT)
-            );
-        
-        /*
-        * user_sharekeys_reencryption_start
-        */
-        case 'user_sharekeys_reencryption_start'://action_key
-            return startReEncryptingUserSharekeys(
-                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
-                (bool) filter_var($dataReceived['self_change'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                $SETTINGS
+                (int) filter_var($filtered_user_id, FILTER_SANITIZE_NUMBER_INT)
             );
 
         /*
-        * user_sharekeys_reencryption_next
-        */
+         * user_sharekeys_reencryption_next
+         */
         case 'user_sharekeys_reencryption_next'://action_key
             return continueReEncryptingUserSharekeys(
-                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
+                (int) filter_var($filtered_user_id, FILTER_SANITIZE_NUMBER_INT),
                 (bool) filter_var($dataReceived['self_change'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 (string) filter_var($dataReceived['action'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 (int) filter_var($dataReceived['start'], FILTER_SANITIZE_NUMBER_INT),
@@ -513,11 +613,11 @@ function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived,
             );
 
         /*
-        * user_psk_reencryption
-        */
+         * user_psk_reencryption
+         */
         case 'user_psk_reencryption'://action_key
             return migrateTo3_DoUserPersonalItemsEncryption(
-                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
+                (int) filter_var($filtered_user_id, FILTER_SANITIZE_NUMBER_INT),
                 (int) filter_var($dataReceived['start'], FILTER_SANITIZE_NUMBER_INT),
                 (int) filter_var($dataReceived['length'], FILTER_SANITIZE_NUMBER_INT),
                 (int) filter_var($dataReceived['counterItemsToTreat'], FILTER_SANITIZE_NUMBER_INT),
@@ -526,11 +626,11 @@ function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived,
             );
 
         /*
-        * User's public/private keys change
-        */
+         * User's public/private keys change
+         */
         case 'change_private_key_encryption_password'://action_key
             return changePrivateKeyEncryptionPassword(
-                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
+                (int) filter_var($filtered_user_id, FILTER_SANITIZE_NUMBER_INT),
                 (string) $dataReceived['current_code'],
                 (string) filter_var($dataReceived['new_code'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 (string) filter_var($dataReceived['action_type'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
@@ -538,19 +638,9 @@ function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived,
             );
 
         /*
-        * Launch user keys change on his demand
-        */
+         * Launch user keys change on his demand
+         */
         case 'user_new_keys_generation'://action_key
-
-            // Only admins can reset user password
-            if ($session->get('user-admin') === 1
-                && empty($dataReceived['user_id']) === false) {
-                // Use id requested from user if he is admin.
-                $userId = $dataReceived['user_id'];
-            } else {
-                // Use id from session if user not admin or id not sent.
-                $userId = $session->get('user-id');
-            }
 
             // Handle the case where no PWD is provided (user reset his own encryption keys).
             if (empty($dataReceived['user_pwd']) && (int) $userId === $session->get('user-id')) {
@@ -573,17 +663,17 @@ function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived,
             );
 
         /*
-        * Launch user recovery download
-        */
+         * Launch user recovery download
+         */
         case 'user_recovery_keys_download'://action_key
             return handleUserRecoveryKeysDownload(
-                (int) $session->get('user-id'),
+                (int) $filtered_user_id,
                 (array) $SETTINGS,
             );
 
         /*
-        * Default case
-        */
+         * Default case
+         */
         default :
             return prepareExchangedData(
                 array(
@@ -630,8 +720,8 @@ function systemHandler(string $post_type, array|null|string $dataReceived, array
             );
 
         /*
-        * Sending statistics
-        */
+         * Sending statistics
+         */
         case 'sending_statistics'://action_system
             sendingStatistics(
                 $SETTINGS
@@ -647,6 +737,17 @@ function systemHandler(string $post_type, array|null|string $dataReceived, array
             * Generate BUG report
             */
         case 'generate_bug_report'://action_system
+
+            // Only administrators can see this confidential informations.
+            if ((int) $session->get('user-admin') !== 1) {
+                return prepareExchangedData(
+                    array(
+                        'error' => false,
+                    ),
+                    'encode'
+                );
+            }
+
             return generateBugReport(
                 (array) $dataReceived,
                 $SETTINGS
@@ -656,6 +757,17 @@ function systemHandler(string $post_type, array|null|string $dataReceived, array
         * get_teampass_settings
         */
         case 'get_teampass_settings'://action_system
+
+            // Only administrators can see this confidential informations.
+            if ((int) $session->get('user-admin') !== 1) {
+                return prepareExchangedData(
+                    array(
+                        'error' => false,
+                    ),
+                    'encode'
+                );
+            }
+
             // Encrypt data to return
             return prepareExchangedData(
                 array_intersect_key(
@@ -681,8 +793,8 @@ function systemHandler(string $post_type, array|null|string $dataReceived, array
             );
 
         /*
-            * Generates a TOKEN with CRYPT
-            */
+         * Generates a TOKEN with CRYPT
+         */
         case 'save_token'://action_system
             $token = GenerateCryptKey(
                 null !== filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT) ? (int) filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT) : 20,
@@ -725,8 +837,8 @@ function utilsHandler(string $post_type, array|null|string $dataReceived, array 
 {
     switch ($post_type) {
         /*
-        * generate_an_otp
-        */
+         * generate_an_otp
+         */
         case 'generate_an_otp'://action_utils
             return generateAnOTP(
                 (string) filter_var($dataReceived['label'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
@@ -736,8 +848,8 @@ function utilsHandler(string $post_type, array|null|string $dataReceived, array 
 
 
         /*
-        * Default case
-        */
+         * Default case
+         */
         default :
             return prepareExchangedData(
                 array(
@@ -1413,12 +1525,6 @@ function generateBugReport(
     // Load user's language
     $session = SessionManager::getSession();
     $lang = new Language($session->get('user-language') ?? 'english');
-    
-    // Only administrators can see this confidential informations.
-    if ($session->get('user-admin') !== 1) {
-        http_response_code(403);
-        return "";
-    }
 
     // Read config file
     $list_of_options = '';

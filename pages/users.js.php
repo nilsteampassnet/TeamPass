@@ -2439,7 +2439,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
         // prepare data
         var data = {
-            'id': $('.selected-user').data('user-id'),
+            'user_id': $('.selected-user').data('user-id'),
             'auth_type': auth
         };
         if (debugJavascript === true) console.log(data)
