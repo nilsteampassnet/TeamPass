@@ -480,31 +480,69 @@ function mailHandler(string $post_type, /*php8 array|null|string */$dataReceived
 function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived, array $SETTINGS): string
 {
     $session = SessionManager::getSession();
+
+    // List of post types allowed to all users
+    $all_users_can_access = [
+        'change_private_key_encryption_password',
+        'user_new_keys_generation',
+        'user_recovery_keys_download',
+    ];
+
+    // Default values
+    $filtered_user_id = $session->get('user-id');
+
+    if (isset($dataReceived['user_id'])) {
+        // Get info about user to modify
+        $targetUserInfos = DB::queryfirstrow(
+            'SELECT admin, gestionnaire, can_manage_all_users, isAdministratedByRole FROM ' . prefixTable('users') . '
+            WHERE id = %i',
+            $dataReceived['user_id']
+        );
+    
+        if (
+            // Administrator user
+            (int) $session->get('user-admin') === 1
+            // Manager of basic/ro users in this role
+            || ((int) $session->get('user-manager') === 1
+                && in_array($targetUserInfos['isAdministratedByRole'], $session->get('user-roles_array'))
+                && (int) $targetUserInfos['admin'] !== 1
+                && (int) $targetUserInfos['can_manage_all_users'] !== 1
+                && (int) $targetUserInfos['gestionnaire'] !== 1)
+            // Manager of all basic/ro users
+            || ((int) $session->get('user-can_manage_all_users') === 1
+                && (int) $targetUserInfos['admin'] !== 1
+                && (int) $targetUserInfos['can_manage_all_users'] !== 1
+                && (int) $targetUserInfos['gestionnaire'] !== 1)
+        ) {
+            // This user is allowed to modify other users.
+            $filtered_user_id = $dataReceived['user_id'];
+    
+        } else if (!in_array($post_type, $all_users_can_access)) {
+            // User can't manage users and requested type is administrative.
+            return prepareExchangedData(
+                array(
+                    'error' => true,
+                ),
+                'encode'
+            ); 
+        }
+    }
+
     switch ($post_type) {
         /*
-        * Generate a temporary encryption key for user
-        */
+         * Generate a temporary encryption key for user
+         */
         case 'generate_temporary_encryption_key'://action_key
             return generateOneTimeCode(
-                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT)
-            );
-        
-        /*
-        * user_sharekeys_reencryption_start
-        */
-        case 'user_sharekeys_reencryption_start'://action_key
-            return startReEncryptingUserSharekeys(
-                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
-                (bool) filter_var($dataReceived['self_change'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                $SETTINGS
+                (int) filter_var($filtered_user_id, FILTER_SANITIZE_NUMBER_INT)
             );
 
         /*
-        * user_sharekeys_reencryption_next
-        */
+         * user_sharekeys_reencryption_next
+         */
         case 'user_sharekeys_reencryption_next'://action_key
             return continueReEncryptingUserSharekeys(
-                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
+                (int) filter_var($filtered_user_id, FILTER_SANITIZE_NUMBER_INT),
                 (bool) filter_var($dataReceived['self_change'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 (string) filter_var($dataReceived['action'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 (int) filter_var($dataReceived['start'], FILTER_SANITIZE_NUMBER_INT),
@@ -513,11 +551,11 @@ function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived,
             );
 
         /*
-        * user_psk_reencryption
-        */
+         * user_psk_reencryption
+         */
         case 'user_psk_reencryption'://action_key
             return migrateTo3_DoUserPersonalItemsEncryption(
-                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
+                (int) filter_var($filtered_user_id, FILTER_SANITIZE_NUMBER_INT),
                 (int) filter_var($dataReceived['start'], FILTER_SANITIZE_NUMBER_INT),
                 (int) filter_var($dataReceived['length'], FILTER_SANITIZE_NUMBER_INT),
                 (int) filter_var($dataReceived['counterItemsToTreat'], FILTER_SANITIZE_NUMBER_INT),
@@ -526,11 +564,11 @@ function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived,
             );
 
         /*
-        * User's public/private keys change
-        */
+         * User's public/private keys change
+         */
         case 'change_private_key_encryption_password'://action_key
             return changePrivateKeyEncryptionPassword(
-                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
+                (int) filter_var($filtered_user_id, FILTER_SANITIZE_NUMBER_INT),
                 (string) $dataReceived['current_code'],
                 (string) filter_var($dataReceived['new_code'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 (string) filter_var($dataReceived['action_type'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
@@ -538,19 +576,9 @@ function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived,
             );
 
         /*
-        * Launch user keys change on his demand
-        */
+         * Launch user keys change on his demand
+         */
         case 'user_new_keys_generation'://action_key
-
-            // Only admins can reset user password
-            if ($session->get('user-admin') === 1
-                && empty($dataReceived['user_id']) === false) {
-                // Use id requested from user if he is admin.
-                $userId = $dataReceived['user_id'];
-            } else {
-                // Use id from session if user not admin or id not sent.
-                $userId = $session->get('user-id');
-            }
 
             // Handle the case where no PWD is provided (user reset his own encryption keys).
             if (empty($dataReceived['user_pwd']) && (int) $userId === $session->get('user-id')) {
@@ -573,17 +601,17 @@ function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived,
             );
 
         /*
-        * Launch user recovery download
-        */
+         * Launch user recovery download
+         */
         case 'user_recovery_keys_download'://action_key
             return handleUserRecoveryKeysDownload(
-                (int) $session->get('user-id'),
+                (int) $filtered_user_id,
                 (array) $SETTINGS,
             );
 
         /*
-        * Default case
-        */
+         * Default case
+         */
         default :
             return prepareExchangedData(
                 array(
