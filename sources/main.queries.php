@@ -188,34 +188,6 @@ function mainQuery(array $SETTINGS)
             break;
     }
     
-    // Manage type of action asked
-    //switch ($post_type) {
-        /*
-         * TODO Check if suggestions are existing
-         */
-        /*
-        case 'is_existings_suggestions':
-            if ($_SESSION['user_manager'] === '1' || $_SESSION['is_admin'] === '1') {
-                $count = 0;
-                DB::query('SELECT * FROM ' . prefixTable('items_change'));
-                $count += DB::count();
-                DB::query('SELECT * FROM ' . prefixTable('suggestion'));
-                $count += DB::count();
-
-                echo '[ { "error" : "" , "count" : "' . $count . '" , "show_sug_in_menu" : "0"} ]';
-                break;
-            }
-            
-            if (isset($_SESSION['nb_item_change_proposals']) && $_SESSION['nb_item_change_proposals'] > 0) {
-                echo '[ { "error" : "" , "count" : "' . $_SESSION['nb_item_change_proposals'] . '" , "show_sug_in_menu" : "1"} ]';
-                break;
-            }
-            
-            echo '[ { "error" : "" , "count" : "" , "show_sug_in_menu" : "0"} ]';
-
-            break;
-        */
-    //}
 }
 
 /**
