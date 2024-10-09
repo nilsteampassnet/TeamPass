@@ -222,15 +222,17 @@ if (null !== $post_type) {
                     $post_roleId
                 );
 
-                //Store in DB
-                DB::insert(
-                    prefixTable('roles_values'),
-                    array(
-                        'folder_id' => $folderId,
-                        'role_id' => $post_roleId,
-                        'type' => $post_access,
-                    )
-                );
+                //Store in DB if "access" is not empty (no access to folder)
+                if (!empty($post_access)) {
+                    DB::insert(
+                        prefixTable('roles_values'),
+                        array(
+                            'folder_id' => $folderId,
+                            'role_id' => $post_roleId,
+                            'type' => $post_access,
+                        )
+                    );
+                }
 
                 // Manage descendants
                 if ((int) $post_propagate === 1) {
@@ -244,15 +246,17 @@ if (null !== $post_type) {
                             $post_roleId
                         );
 
-                        //Store in DB
-                        DB::insert(
-                            prefixTable('roles_values'),
-                            array(
-                                'folder_id' => $node->id,
-                                'role_id' => $post_roleId,
-                                'type' => $post_access,
-                            )
-                        );
+                        //Store in DB if "access" is not empty (no access to folder)        
+                        if (!empty($post_access)) {
+                            DB::insert(
+                                prefixTable('roles_values'),
+                                array(
+                                    'folder_id' => $node->id,
+                                    'role_id' => $post_roleId,
+                                    'type' => $post_access,
+                                )
+                            );
+                        }
                     }
                 }
             }
