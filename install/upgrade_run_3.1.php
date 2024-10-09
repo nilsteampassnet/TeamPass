@@ -588,8 +588,14 @@ if (file_exists($configFilePath)) {
     }    
 }
 
-
 //---<END 3.1.2
+
+
+//--->BEGIN 3.1.3
+
+// Remove from roles_values folders without any access
+$deleteQuery = "DELETE FROM `" . $pre . "roles_values` WHERE type = ''";
+mysqli_query($db_link, $deleteQuery);
 
 //---------------------------------------------------------------------
 
