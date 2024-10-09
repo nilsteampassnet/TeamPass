@@ -456,24 +456,35 @@ function mailHandler(string $post_type, /*php8 array|null|string */$dataReceived
             $data_user = DB::queryfirstrow(
                 'SELECT admin, gestionnaire, can_manage_all_users, isAdministratedByRole FROM ' . prefixTable('users') . '
                 WHERE email = %s',
-                $post_id
+                filter_var($dataReceived['receipt'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)
             );
+
+            // Unknown email address
+            if (!$data_user) {
+                return prepareExchangedData(
+                    array(
+                        'error' => true,
+                    ),
+                    'encode'
+                );
+                break;
+            }
 
             // Only administrators and managers can send mails
             if (
                 // Administrator user
                 (int) $session->get('user-admin') === 1
-                // Manager of basic/ro users in this role but don't allow promote user to admin or managers roles
+                // Manager of basic/ro users in this role
                 || ((int) $session->get('user-manager') === 1
                     && in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array'))
-                    && (int) $post_is_admin !== 1 && (int) $data_user['admin'] !== 1
-                    && (int) $post_is_hr !== 1 && (int) $data_user['can_manage_all_users'] !== 1
-                    && (int) $post_is_manager !== 1 && (int) $data_user['gestionnaire'] !== 1)
-                // Manager of all basic/ro users but don't allow promote user to admin or managers roles
+                    && (int) $data_user['admin'] !== 1
+                    && (int) $data_user['can_manage_all_users'] !== 1
+                    && (int) $data_user['gestionnaire'] !== 1)
+                // Manager of all basic/ro users
                 || ((int) $session->get('user-can_manage_all_users') === 1
-                    && (int) $post_is_admin !== 1 && (int) $data_user['admin'] !== 1
-                    && (int) $post_is_hr !== 1 && (int) $data_user['can_manage_all_users'] !== 1
-                    && (int) $post_is_manager !== 1 && (int) $data_user['gestionnaire'] !== 1)
+                    && (int) $data_user['admin'] !== 1
+                    && (int) $data_user['can_manage_all_users'] !== 1
+                    && (int) $data_user['gestionnaire'] !== 1)
             ) {
                 return sendMailToUser(
                     filter_var($dataReceived['receipt'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
@@ -643,12 +654,12 @@ function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived,
         case 'user_new_keys_generation'://action_key
 
             // Handle the case where no PWD is provided (user reset his own encryption keys).
-            if (empty($dataReceived['user_pwd']) && (int) $userId === $session->get('user-id')) {
+            if (empty($dataReceived['user_pwd']) && (int) $filtered_user_id === $session->get('user-id')) {
                 $dataReceived['user_pwd'] = $session->get('user-password');
             }
 
             return handleUserKeys(
-                (int) filter_var($userId, FILTER_SANITIZE_NUMBER_INT),
+                (int) filter_var($filtered_user_id, FILTER_SANITIZE_NUMBER_INT),
                 (string) filter_var($dataReceived['user_pwd'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 (int) isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH,
                 (string) filter_var($dataReceived['encryption_key'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
