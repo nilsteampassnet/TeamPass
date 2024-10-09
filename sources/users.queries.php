@@ -109,7 +109,7 @@ if (null !== $post_type) {
     // decrypt and retrieve data in JSON format
     $dataReceived = [];
     if (!empty($post_data)) {
-        prepareExchangedData(
+        $dataReceived = prepareExchangedData(
             $post_data,
             'decode'
         );
@@ -1257,16 +1257,12 @@ if (null !== $post_type) {
                 $functionsList = array();
                 $selected = '';
                 $users_functions = array_filter(array_unique(explode(';', empty($rowUser['fonction_id'].';'.$rowUser['roles_from_ad_groups']) === true ? '' : $rowUser['fonction_id'].';'.$rowUser['roles_from_ad_groups'])));
-                // array of roles for actual user
-                //$my_functions = explode(';', $rowUser['fonction_id']);
 
                 $rows = DB::query('SELECT id,title,creator_id FROM ' . prefixTable('roles_title'));
                 foreach ($rows as $record) {
                     if (
                         (int) $session->get('user-admin') === 1
-                        || (((int) $session->get('user-manager') === 1 || (int) $session->get('user-can_manage_all_users') === 1)
-                            //&& (in_array($record['id'], $my_functions) || $record['creator_id'] == $session->get('user-id'))
-                            )
+                        || (((int) $session->get('user-manager') === 1 || (int) $session->get('user-can_manage_all_users') === 1))
                     ) {
                         if (in_array($record['id'], $users_functions)) {
                             $selected = 'selected';
@@ -2924,9 +2920,8 @@ if (null !== $post_type) {
             $post_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
             $post_auth = filter_var($dataReceived['auth_type'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
-
             // Empty user
-            if (empty($post_id) === true || empty($post_id) === true) {
+            if (empty($post_id) === true) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
