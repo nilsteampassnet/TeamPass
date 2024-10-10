@@ -769,16 +769,6 @@ function systemHandler(string $post_type, array|null|string $dataReceived, array
         */
         case 'get_teampass_settings'://action_system
 
-            // Only administrators can see this confidential informations.
-            if ((int) $session->get('user-admin') !== 1) {
-                return prepareExchangedData(
-                    array(
-                        'error' => false,
-                    ),
-                    'encode'
-                );
-            }
-
             // Encrypt data to return
             return prepareExchangedData(
                 array_intersect_key(
