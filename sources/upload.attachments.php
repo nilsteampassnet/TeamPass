@@ -484,4 +484,7 @@ function handleAttachmentError($message, $code, $http_code = 400)
 
     // json error message
     echo '{"jsonrpc" : "2.0", "error" : {"code": ' . htmlentities((string) $code, ENT_QUOTES) . ', "message": "' . htmlentities((string) $message, ENT_QUOTES) . '"}, "id" : "id"}';
+    
+    // Force exit to avoid bypass filters.
+    exit;
 }
