@@ -245,7 +245,11 @@ class ItemController extends BaseController
         $sqlExtra = '';
         $responseData = '';
         $strErrorHeader = '';
-        $sql_constraint = ' AND (i.id_tree IN ('.$userData['folders_list'].') OR i.id IN ('.$userData['restricted_items_list'].'))';
+        $sql_constraint = ' AND (i.id_tree IN ('.$userData['folders_list'].')';
+        if (!empty($userData['restricted_items_list'])) {
+            $sql_constraint .= 'OR i.id IN ('.$userData['restricted_items_list'].')';
+        }
+        $sql_constraint .= ')';
 
         // get parameters
         $arrQueryStringParams = $this->getQueryStringParams();
