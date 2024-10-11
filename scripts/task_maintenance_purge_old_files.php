@@ -110,5 +110,4 @@ function purgeTemporaryFiles(): void
             }
         }
     }
-    
 }

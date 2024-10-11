@@ -1285,8 +1285,11 @@ function prepareExchangedData($data, string $type, ?string $key = null)
                 $session->get('key')
             );
         } else {
-            // Double html encoding received
-            $data = html_entity_decode(html_entity_decode($data));
+            // Check if $data is a string before decoding
+            if (is_string($data)) {
+                // Double html encoding received
+                $data = html_entity_decode(html_entity_decode($data));
+            }
         }
 
         // Return data array
@@ -2404,7 +2407,7 @@ function encryptUserObjectKey(string $key, string $publicKey): string
     $rsa->loadKey($decodedPublicKey);
     // Encrypt
     $encrypted = $rsa->encrypt(base64_decode($key));
-    if ($encrypted === false) {
+    if (empty($encrypted)) {  // Check if key is empty or null
         throw new RuntimeException("Error while encrypting key.");
     }
     // Return

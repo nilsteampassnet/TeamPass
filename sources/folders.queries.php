@@ -336,8 +336,7 @@ if (null !== $post_type) {
             ];            
             $inputData = dataSanitizer(
                 $data,
-                $filters,
-                $SETTINGS['cpassman_dir']
+                $filters
             );
 
             // Init

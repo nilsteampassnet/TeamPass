@@ -291,13 +291,12 @@ function userHandler(string $post_type, array|null|string $dataReceived, array $
         (int) $session->get('user-can_manage_all_users') !== 1 &&
         !in_array($post_type, $all_users_can_access)) {
 
-        echo prepareExchangedData(
+        return prepareExchangedData(
             array(
                 'error' => true,
             ),
             'encode'
         );
-        exit;
     }
 
     if (isset($dataReceived['user_id'])) {
@@ -392,8 +391,7 @@ function userHandler(string $post_type, array|null|string $dataReceived, array $
                 (string) filter_var($dataReceived['login'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 (string) filter_var($dataReceived['pwd'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 (string) filter_var($dataReceived['token'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                $SETTINGS,
-                (string) $post_key
+                $SETTINGS
             );
 
         /*
@@ -467,7 +465,6 @@ function mailHandler(string $post_type, /*php8 array|null|string */$dataReceived
                     ),
                     'encode'
                 );
-                break;
             }
 
             // Only administrators and managers can send mails

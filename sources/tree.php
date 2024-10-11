@@ -421,7 +421,6 @@ function handleNode(
         (int) $nbItemsInSubfolders,
         (int) $nbSubfolders,
         $inputData['limitedFolders'],
-        (int) $SETTINGS['show_only_accessible_folders'],
         isset($SETTINGS['tree_counters']) === true && isset($SETTINGS['enable_tasks_manager']) === true && (int) $SETTINGS['enable_tasks_manager'] === 1 && (int) $SETTINGS['tree_counters'] === 1 ? 1 : 0,
         (bool) $inputData['userReadOnly'],
         $listFoldersLimitedKeys,
@@ -575,7 +574,6 @@ function prepareNodeJson(
  * @param integer $nbItemsInSubfolders
  * @param integer $nbSubfolders
  * @param array $session_list_folders_limited
- * @param integer $show_only_accessible_folders
  * @param integer $tree_counters
  * @param bool $session_user_read_only
  * @param array $listFoldersLimitedKeys
@@ -594,7 +592,6 @@ function prepareNodeData(
     int $nbItemsInSubfolders,
     int $nbSubfolders,
     array $session_list_folders_limited,
-    int $show_only_accessible_folders,
     int $tree_counters,
     bool $session_user_read_only,
     array $listFoldersLimitedKeys,

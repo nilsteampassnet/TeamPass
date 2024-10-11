@@ -185,29 +185,38 @@ class ItemController extends BaseController
                 // get parameters
                 $arrQueryStringParams = $this->getQueryStringParams();
 
-                // check parameters
-                $arrCheck = $this->checkNewItemData($arrQueryStringParams, $userData);
-                if ($arrCheck['error'] === true) {
-                    $strErrorDesc = $arrCheck['strErrorDesc'];
-                    $strErrorHeader = $arrCheck['strErrorHeader'];
+                // Check that the parameters are indeed an array before using them
+                if (is_array($arrQueryStringParams)) {
+                    // check parameters
+                    $arrCheck = $this->checkNewItemData($arrQueryStringParams, $userData);
+
+                    if ($arrCheck['error'] === true) {
+                        $strErrorDesc = $arrCheck['strErrorDesc'];
+                        $strErrorHeader = $arrCheck['strErrorHeader'];
+                    } else {
+                        // launch
+                        $itemModel = new ItemModel();
+                        $ret = $itemModel->addItem(
+                            $arrQueryStringParams['folder_id'],
+                            $arrQueryStringParams['label'],
+                            $arrQueryStringParams['password'],
+                            $arrQueryStringParams['description'],
+                            $arrQueryStringParams['login'],
+                            $arrQueryStringParams['email'],
+                            $arrQueryStringParams['url'],
+                            $arrQueryStringParams['tags'],
+                            $arrQueryStringParams['anyone_can_modify'],
+                            $arrQueryStringParams['icon'],
+                            $userData['id'],
+                            $userData['username'],
+                        );
+                        $responseData = json_encode($ret);
+                    }
+                
                 } else {
-                    // launch
-                    $itemModel = new ItemModel();
-                    $ret = $itemModel->addItem(
-                        $arrQueryStringParams['folder_id'],
-                        $arrQueryStringParams['label'],
-                        $arrQueryStringParams['password'],
-                        $arrQueryStringParams['description'],
-                        $arrQueryStringParams['login'],
-                        $arrQueryStringParams['email'],
-                        $arrQueryStringParams['url'],
-                        $arrQueryStringParams['tags'],
-                        $arrQueryStringParams['anyone_can_modify'],
-                        $arrQueryStringParams['icon'],
-                        $userData['id'],
-                        $userData['username'],
-                    );
-                    $responseData = json_encode($ret);
+                    // Gérer le cas où les paramètres ne sont pas un tableau
+                    $strErrorDesc = 'Data not consistent';
+                    $strErrorHeader = 'Expected array, received ' . gettype($arrQueryStringParams);
                 }
             }
         } else {

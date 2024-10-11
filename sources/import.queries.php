@@ -341,9 +341,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
         }
 
         // Clean each array entry
-        if (is_array($post_items) === true) {
-            array_walk_recursive($post_items, 'cleanOutput');
-        }
+        array_walk_recursive($post_items, 'cleanOutput');
         
         // Loop on array
         foreach ($post_items as $item) {
@@ -615,9 +613,6 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
             if (isset($groups['UUID'])) {
                 $groups = [$groups];
             }
-
-            // Save the current folder ID to restore it after recursion
-            $currentFolderId = $previousFolder;
 
             foreach ($groups as $group) {
                 // Add the current group (folder) to the list

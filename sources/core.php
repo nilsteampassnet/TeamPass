@@ -365,16 +365,14 @@ if (
     $server_cert = openssl_x509_parse($server['ssl_server_cert']);
     $cert_name = $server_cert['name'];
     $cert_issuer = '';
-    /** @var array $issuer */
-    $issuer = $server_cert['issuer'];
+    $issuer = (array) $server_cert['issuer']; // $issuer is always an array (according to the structure of $server_cert)
 
-    if (is_array($issuer)) {
-        foreach ($issuer as $key => $value) {
-            if (is_array($value) === false) {
-                $cert_issuer .= "/{$key}={$value}";
-            }
+    foreach ($issuer as $key => $value) {
+        if (is_array($value) === false) {
+            $cert_issuer .= "/{$key}={$value}";
         }
     }
+    
     if (isset($cert_name) === true && empty($cert_name) === false && $cert_name !== $cert_issuer) {
         if (isset($server['https'])) {
             header('Strict-Transport-Security: max-age=500');

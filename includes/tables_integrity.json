@@ -13,19 +13,19 @@
     },
     {
         "table_name": "background_tasks",
-        "structure_hash": "824ea4c3db1b930b8655191a54d6c09415fca3e0c104117da14ecaa924f05c06"
+        "structure_hash": "d31e1bf6f7d08b0f7f327fc5403e7226a0e6ba661c4d60058953b314adf9428f"
     },
     {
         "table_name": "background_tasks_logs",
-        "structure_hash": "8825f1d0e45b66d4245eb0a7d9d8e0937c504110294ff7e2774511ccc67c5c9b"
+        "structure_hash": "63c8be2cbe7e9d672dd8b7d68ed1a710370c134861e29942fc39485954e34a17"
     },
     {
         "table_name": "cache",
-        "structure_hash": "a5988fbb32009d30106453eb5434d90b1f10135fb988fb3736bbf5fa254a39db"
+        "structure_hash": "59952248e90c52b35880b1bb62539d8706407406b1759860d3ed44b5081e07ad"
     },
     {
         "table_name": "cache_tree",
-        "structure_hash": "322846a049a63afa03479daf66c370de76831bde4f0b0cd34e63fc4887b11f1d"
+        "structure_hash": "54a46ee10114cbd70f1199a88dd51c6a25d668919e709283bc915b3d0d6e85c8"
     },
     {
         "table_name": "categories",
@@ -97,15 +97,15 @@
     },
     {
         "table_name": "log_items",
-        "structure_hash": "470b020e4d7578366bf8299b3fd14c9a4681057a77dc018587ba08a24a6be7bb"
+        "structure_hash": "e6284adabbddae673d2fd4e85edaf52adef7418ad42bbd2f185e6fa032964d04"
     },
     {
         "table_name": "log_system",
-        "structure_hash": "8e396ef59c43500907160db66b009e41e29c6ed9d9a6aa8e324abd31be0d5777"
+        "structure_hash": "23229fe42f9dee7df3d95d4718b8d23244e1655aee2d4554d6b37f07892e4613"
     },
     {
         "table_name": "misc",
-        "structure_hash": "3cc8939148fb17fabdabcea7eeef550f261c1b62bcbf863e5f9cb5984ad448d1"
+        "structure_hash": "66fbea921b5ab4f91eec2a157c327c1d17a798a1a7854a2290c6abce5c90975d"
     },
     {
         "table_name": "nested_tree",
@@ -193,7 +193,7 @@
     },
     {
         "table_name": "tokens",
-        "structure_hash": "4c7f59e6e8cc4e8b95626a6c8ef05987e9660b3c8f2ffbb24e7c432d956a6cb7"
+        "structure_hash": "904d889fdbf82770ba0c18eecb834017576dd6631259276c86a50f99c6a4edcf"
     },
     {
         "table_name": "user_requests",
