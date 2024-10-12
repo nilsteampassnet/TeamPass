@@ -90,14 +90,24 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 // --------------------------------- //
 
 // Prepare POST variables
-$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES);
-$post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-$post_task = filter_input(INPUT_POST, 'task', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$inputData = dataSanitizer(
+    [
+        'type' => $request->request->filter('type', '', FILTER_SANITIZE_SPECIAL_CHARS),
+        //'data' => $request->request->filter('data', '', FILTER_SANITIZE_SPECIAL_CHARS),
+        'key' => $request->request->filter('key', '', FILTER_SANITIZE_SPECIAL_CHARS),
+        'task' => $request->request->filter('task', '', FILTER_SANITIZE_SPECIAL_CHARS),
+    ],
+    [
+        'type' => 'trim|escape',
+        //'data' => 'trim|escape',
+        'key' => 'trim|escape',
+        'type_category' => 'trim|escape',
+    ]
+);
 
-if (null !== $post_type) {
+if (null !== $inputData['type']) {
     // Do checks
-    if ($post_key !== $session->get('key')) {
+    if ($inputData['key'] !== $session->get('key')) {
         echo prepareExchangedData(
             array(
                 'error' => true,
@@ -120,9 +130,9 @@ if (null !== $post_type) {
     // Get PHP binary
     $phpBinaryPath = getPHPBinary();
 
-    switch ($post_type) {
+    switch ($inputData['type']) {
         case 'perform_task':
-            echo performTask($post_task, $phpBinaryPath, $SETTINGS['date_format'].' '.$SETTINGS['time_format']);
+            echo performTask($inputData['task'], $phpBinaryPath, $SETTINGS['date_format'].' '.$SETTINGS['time_format']);
 
             break;
 

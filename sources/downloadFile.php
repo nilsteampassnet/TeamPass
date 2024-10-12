@@ -102,8 +102,11 @@ $get_filename = str_replace(array("\r", "\n"), '', $get_filename);
 // Validate the filename to ensure it does not contain unwanted characters
 $get_filename = preg_replace('/[^a-zA-Z0-9_\.-]/', '', basename($get_filename));
 
-// prepare Encryption class calls
-header('Content-disposition: attachment; filename=' . rawurldecode($get_filename));
+// Further escape the filename to prevent header injection issues
+$get_filename = addslashes($get_filename);
+
+// Use Content-Disposition header with double quotes around filename
+header('Content-Disposition: attachment; filename="' . rawurldecode($get_filename) . '"');
 header('Content-Type: application/octet-stream');
 header('Cache-Control: must-revalidate, no-cache, no-store');
 header('Expires: 0');

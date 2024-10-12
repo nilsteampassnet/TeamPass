@@ -1277,6 +1277,7 @@ function prepareExchangedData($data, string $type, ?string $key = null)
 
         return $data;
     }
+
     if ($type === 'decode' && is_array($data) === false) {
         // Decrypt if needed
         if ($session->get('encryptClientServer') === 1) {
@@ -1285,16 +1286,17 @@ function prepareExchangedData($data, string $type, ?string $key = null)
                 $session->get('key')
             );
         } else {
-            // Check if $data is a string before decoding
-            if (is_string($data)) {
-                // Double html encoding received
-                $data = html_entity_decode(html_entity_decode($data));
-            }
+            // Double html encoding received
+            $data = html_entity_decode(html_entity_decode($data));
         }
 
-        // Return data array
-        return json_decode($data, true);
+        // Check if $data is a valid string before json_decode
+        if (is_string($data) && !empty($data)) {
+            // Return data array
+            return json_decode($data, true);
+        }
     }
+
     return '';
 }
 

@@ -197,18 +197,18 @@ class ItemController extends BaseController
                         // launch
                         $itemModel = new ItemModel();
                         $ret = $itemModel->addItem(
-                            $arrQueryStringParams['folder_id'],
-                            $arrQueryStringParams['label'],
-                            $arrQueryStringParams['password'],
-                            $arrQueryStringParams['description'],
-                            $arrQueryStringParams['login'],
-                            $arrQueryStringParams['email'],
-                            $arrQueryStringParams['url'],
-                            $arrQueryStringParams['tags'],
-                            $arrQueryStringParams['anyone_can_modify'],
-                            $arrQueryStringParams['icon'],
-                            $userData['id'],
-                            $userData['username'],
+                            (int) $arrQueryStringParams['folder_id'],
+                            (string) $arrQueryStringParams['label'],
+                            (string) $arrQueryStringParams['password'],
+                            (string) $arrQueryStringParams['description'],
+                            (string) $arrQueryStringParams['login'],
+                            (string) $arrQueryStringParams['email'],
+                            (string) $arrQueryStringParams['url'],
+                            (string) $arrQueryStringParams['tags'],
+                            (string) $arrQueryStringParams['anyone_can_modify'],
+                            (string) $arrQueryStringParams['icon'],
+                            (int) $userData['id'],
+                            (string) $userData['username'],
                         );
                         $responseData = json_encode($ret);
                     }

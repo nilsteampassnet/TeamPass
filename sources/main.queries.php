@@ -136,55 +136,66 @@ function mainQuery(array $SETTINGS)
     // User's language loading
     $session = SessionManager::getSession();
     $lang = new Language($session->get('user-language') ?? 'english');
+    $request = SymfonyRequest::createFromGlobals();
 
-    // Prepare post variables
-    $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-    $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-    $post_type_category = filter_input(INPUT_POST, 'type_category', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-    $post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES);
-
+    // Prepare POST variables
+    $inputData = dataSanitizer(
+        [
+            'type' => $request->request->filter('type', '', FILTER_SANITIZE_SPECIAL_CHARS),
+            'data' => $request->request->filter('data', '', FILTER_SANITIZE_SPECIAL_CHARS),
+            'key' => $request->request->filter('key', '', FILTER_SANITIZE_SPECIAL_CHARS),
+            'type_category' => $request->request->filter('type_category', '', FILTER_SANITIZE_SPECIAL_CHARS),
+        ],
+        [
+            'type' => 'trim|escape',
+            'data' => 'trim|escape',
+            'key' => 'trim|escape',
+            'type_category' => 'trim|escape',
+        ]
+    );
+    
     // Check KEY
-    if (isValueSetNullEmpty($post_key) === true) {
+    if (isValueSetNullEmpty($inputData['key']) === true) {
         echo prepareExchangedData(
             array(
                 'error' => true,
                 'message' => $lang->get('key_is_not_correct'),
             ),
             'encode',
-            $post_key
+            $inputData['key']
         );
         return false;
     }
     // decrypt and retreive data in JSON format
-    $dataReceived = empty($post_data) === false ? prepareExchangedData(
-        $post_data,
+    $dataReceived = empty($inputData['data']) === false ? prepareExchangedData(
+        $inputData['data'],
         'decode'
     ) : '';
     
-    switch ($post_type_category) {
+    switch ($inputData['type_category']) {
         case 'action_password':
-            echo passwordHandler($post_type, $dataReceived, $SETTINGS);
+            echo passwordHandler($inputData['type'], $dataReceived, $SETTINGS);
             break;
 
         case 'action_user':
-            echo userHandler($post_type, $dataReceived, $SETTINGS, $post_key);
+            echo userHandler($inputData['type'], $dataReceived, $SETTINGS, $inputData['key']);
             break;
 
         case 'action_mail':
-            echo mailHandler($post_type, $dataReceived, $SETTINGS);
+            echo mailHandler($inputData['type'], $dataReceived, $SETTINGS);
             break;
 
         case 'action_key':
             // deepcode ignore ServerLeak: All cases handled by keyHandler return an encrypted string that is sent back to the client
-            echo keyHandler($post_type, $dataReceived, $SETTINGS);
+            echo keyHandler($inputData['type'], $dataReceived, $SETTINGS);
             break;
 
         case 'action_system':
-            echo systemHandler($post_type, $dataReceived, $SETTINGS);
+            echo systemHandler($inputData['type'], $dataReceived, $SETTINGS);
             break;
 
         case 'action_utils':
-            echo utilsHandler($post_type, $dataReceived, $SETTINGS);
+            echo utilsHandler($inputData['type'], $dataReceived, $SETTINGS);
             break;
     }
     

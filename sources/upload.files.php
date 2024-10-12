@@ -34,6 +34,7 @@ use voku\helper\AntiXSS;
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\SessionManager\SessionManager;
 use Symfony\Component\HttpFoundation\Request as RequestLocal;
+use Symfony\Component\HttpFoundation\File\Exception\FileException;
 use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
@@ -185,69 +186,71 @@ if ((int) $_SERVER['CONTENT_LENGTH'] > $multiplier * (int) $POST_MAX_SIZE && $PO
     return false;
 }
 
-// Validate the file size (Warning: the largest files supported by this code is 2GB)
-$file_size = @filesize($_FILES['file']['tmp_name']);
-if ($file_size === false || $file_size > $max_file_size_in_bytes) {
-    echo handleUploadError('File exceeds the maximum allowed size');
-    return false;
-}
-if ($file_size <= 0) {
-    echo handleUploadError('File size outside allowed lower bound');
-    return false;
-}
+// Validate file size (Warning: the largest files supported by this code is 2GB)
+$file = $request->files->get('file');
 
-// 5 minutes execution time
-set_time_limit(5 * 60);
+if ($file) {
+    // Get the size of the uploaded file
+    $file_size = $file->getSize();
 
-// Validate the upload
-if (isset($_FILES['file']) === false) {
-    echo handleUploadError('No upload found in $_FILES for Filedata');
-    return false;
-} elseif (
-    isset($_FILES['file']['error']) === true
-    && $_FILES['file']['error'] != 0
-) {
-    echo handleUploadError($uploadErrors[$_FILES['Filedata']['error']]);
-    return false;
-} elseif (
-    isset($_FILES['file']['tmp_name']) === false
-    || @is_uploaded_file($_FILES['file']['tmp_name']) === false
-) {
-    echo handleUploadError('Upload failed is_uploaded_file test.');
-    return false;
-} elseif (isset($_FILES['file']['name']) === false) {
-    echo handleUploadError('File has no name.');
-    return false;
-}
+    if ($file_size === false || $file_size > $max_file_size_in_bytes) {
+        echo handleUploadError('File exceeds the maximum allowed size');
+        return false;
+    }
+    
+    if ($file_size <= 0) {
+        echo handleUploadError('File size outside allowed lower bound');
+        return false;
+    }
 
-// Validate file name (for our purposes we'll just remove invalid characters)
-$file_name = preg_replace('/[^a-zA-Z0-9-_\.]/', '', strtolower(basename($_FILES['file']['name'])));
-if (strlen($file_name) == 0 || strlen($file_name) > $MAX_FILENAME_LENGTH) {
-    echo handleUploadError('Invalid file name: ' . $file_name . '.');
-    return false;
-}
+    // 5 minutes execution time
+    set_time_limit(5 * 60);
 
-// Validate file extension
-$ext = strtolower(
-    getFileExtension(
-        filter_var($_FILES['file']['name'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)
-    )
-);
-if (
-    in_array(
-        $ext,
-        explode(
-            ',',
-            $SETTINGS['upload_docext'] . ',' . $SETTINGS['upload_imagesext'] .
-                ',' . $SETTINGS['upload_pkgext'] . ',' . $SETTINGS['upload_otherext']
-        )
-    ) === false
-    && $post_type_upload !== 'import_items_from_keepass'
-    && $post_type_upload !== 'import_items_from_csv'
-    && $post_type_upload !== 'restore_db'
-    && $post_type_upload !== 'upload_profile_photo'
-) {
-    echo handleUploadError('Invalid file extension.');
+    // Validate upload
+    if ($file->getError() !== UPLOAD_ERR_OK) {
+        echo handleUploadError($uploadErrors[$file->getError()]);
+        return false;
+    }
+
+    // Validate file name (for our purposes we'll just remove invalid characters)
+    $file_name = preg_replace('/[^a-zA-Z0-9-_\.]/', '', strtolower(basename($file->getClientOriginalName())));
+    
+    if (strlen($file_name) == 0 || strlen($file_name) > $MAX_FILENAME_LENGTH) {
+        error_log('Invalid file name: ' . $file_name . '.'); // Log for debugging
+        echo handleUploadError('Invalid file name provided.'); // Generic message for user
+        return false;
+    }
+
+    // Validate file extension
+    $ext = strtolower(pathinfo($file->getClientOriginalName(), PATHINFO_EXTENSION));
+
+    // Optionally, you could validate against a list of allowed extensions
+    $allowed_extensions = explode(
+        ',',
+        $SETTINGS['upload_docext'] . ',' . $SETTINGS['upload_imagesext'] .
+            ',' . $SETTINGS['upload_pkgext'] . ',' . $SETTINGS['upload_otherext']
+    );
+    if (
+        !in_array($ext, $allowed_extensions) 
+        && $post_type_upload !== 'import_items_from_keepass'
+        && $post_type_upload !== 'import_items_from_csv'
+        && $post_type_upload !== 'restore_db'
+        && $post_type_upload !== 'upload_profile_photo'
+    ) {
+        echo handleUploadError('Invalid file extension.');
+        return false;
+    }
+
+    // Move the file to the desired location
+    try {
+        $file->move($destinationPath, $file_name);
+    } catch (FileException $e) {
+        error_log('File upload error: ' . $e->getMessage());
+        echo handleUploadError('File upload failed. Please try again.'); // Generic message for user
+        return false;
+    }
+} else {
+    echo handleUploadError('No upload found for Filedata');
     return false;
 }
 
@@ -256,9 +259,6 @@ if (is_writable($SETTINGS['path_to_files_folder']) === false) {
     echo handleUploadError('Not enough permissions on folder ' . $SETTINGS['path_to_files_folder'] . '.');
     return false;
 }
-
-// Clean the fileName for security reasons
-$fileName = preg_replace('/[^a-zA-Z0-9-_\.]/', '', strtolower(basename($fileName)));
 
 // Make sure the fileName is unique but only if chunking is disabled
 if ($chunks < 2 && file_exists($targetDir . DIRECTORY_SEPARATOR . $fileName)) {
@@ -286,12 +286,12 @@ if (!file_exists($targetDir)) {
 
 // Remove old temp files
 if ($cleanupTargetDir && is_dir($targetDir) && ($dir = opendir($targetDir))) {
-    while (($file = readdir($dir)) !== false) {
-        $tmpfilePath = $targetDir . DIRECTORY_SEPARATOR . $file;
+    while (($fileClean = readdir($dir)) !== false) {
+        $tmpfilePath = $targetDir . DIRECTORY_SEPARATOR . $fileClean;
 
         // Remove temp file if it is older than the max age and is not the current file
         if (
-            preg_match('/\.part$/', $file)
+            preg_match('/\.part$/', $fileClean)
             && (filemtime($tmpfilePath) < time() - $maxFileAge)
             && ($tmpfilePath != "{$filePath}.part")
         ) {
@@ -316,28 +316,41 @@ if (isset($_SERVER['CONTENT_TYPE'])) {
 
 // Handle non multipart uploads older WebKit versions didn't support multipart in HTML5
 if (strpos($contentType, 'multipart') !== false) {
-    if (isset($_FILES['file']['tmp_name']) && is_uploaded_file($_FILES['file']['tmp_name'])) {        
-        // Open temp file
-        // deepcode ignore PT: $filePath is escaped and secured previously
-        $out = fopen("{$filePath}.part", $chunk == 0 ? 'wb' : 'ab');
-        error_log($_FILES['file']['tmp_name']);
-        if ($out !== false) {
-            // Read binary input stream and append it to temp file
-            $in = fopen($_FILES['file']['tmp_name'], 'rb');
-
-            if ($in !== false) {
-                while ($buff = fread($in, 4096)) {
-                    fwrite($out, $buff);
-                }
-            } else {
-                echo handleUploadError('Failed to open input stream ' . $SETTINGS['path_to_files_folder'] . '.');
-                return false;
+    if ($file && $file->isValid()) {
+        // Chemin pour le fichier temporaire
+        $tempFilePath = "{$filePath}.part";
+        
+        // Ouvrir le fichier de sortie
+        try {
+            $out = fopen($tempFilePath, $chunk == 0 ? 'wb' : 'ab');
+            
+            if ($out === false) {
+                throw new FileException('Failed to open output stream.');
             }
+    
+            // Ouvrir le fichier temporaire uploadé
+            $in = fopen($file->getPathname(), 'rb'); // getPathname() récupère le chemin du fichier temporaire
+    
+            if ($in === false) {
+                throw new FileException('Failed to open input stream.');
+            }
+    
+            // Lire et écrire dans le fichier de sortie
+            while ($buff = fread($in, 4096)) {
+                fwrite($out, $buff);
+            }
+    
+            // Fermer les fichiers
             fclose($in);
             fclose($out);
-            fileDelete($_FILES['file']['tmp_name'], $SETTINGS);
-        } else {
-            echo handleUploadError('Failed to open output stream ' . $SETTINGS['path_to_files_folder'] . '.');
+    
+            // Supprimer le fichier temporaire si nécessaire
+            fileDelete($file->getPathname(), $SETTINGS);
+            
+        } catch (FileException $e) {
+            // Log l'erreur pour le débogage
+            error_log($e->getMessage());
+            echo handleUploadError('File processing failed: ' . $e->getMessage());
             return false;
         }
     } else {
