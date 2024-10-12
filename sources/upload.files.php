@@ -224,7 +224,7 @@ if ($file) {
     // Validate file extension
     $ext = strtolower(pathinfo($file->getClientOriginalName(), PATHINFO_EXTENSION));
 
-    // Optionally, you could validate against a list of allowed extensions
+    // Validate against a list of allowed extensions
     $allowed_extensions = explode(
         ',',
         $SETTINGS['upload_docext'] . ',' . $SETTINGS['upload_imagesext'] .
@@ -317,10 +317,10 @@ if (isset($_SERVER['CONTENT_TYPE'])) {
 // Handle non multipart uploads older WebKit versions didn't support multipart in HTML5
 if (strpos($contentType, 'multipart') !== false) {
     if ($file && $file->isValid()) {
-        // Chemin pour le fichier temporaire
+        // Path for the temporary file
         $tempFilePath = "{$filePath}.part";
         
-        // Ouvrir le fichier de sortie
+        // Open the output file
         try {
             $out = fopen($tempFilePath, $chunk == 0 ? 'wb' : 'ab');
             
@@ -328,27 +328,27 @@ if (strpos($contentType, 'multipart') !== false) {
                 throw new FileException('Failed to open output stream.');
             }
     
-            // Ouvrir le fichier temporaire uploadé
-            $in = fopen($file->getPathname(), 'rb'); // getPathname() récupère le chemin du fichier temporaire
+            // Open the uploaded temporary file
+            $in = fopen($file->getPathname(), 'rb'); // getPathname() retrieves the temporary file path
     
             if ($in === false) {
                 throw new FileException('Failed to open input stream.');
             }
     
-            // Lire et écrire dans le fichier de sortie
+            // Read and write to the output file
             while ($buff = fread($in, 4096)) {
                 fwrite($out, $buff);
             }
     
-            // Fermer les fichiers
+            // Close the files
             fclose($in);
             fclose($out);
     
-            // Supprimer le fichier temporaire si nécessaire
+            // Delete temporary file if needed
             fileDelete($file->getPathname(), $SETTINGS);
             
         } catch (FileException $e) {
-            // Log l'erreur pour le débogage
+            // On error log
             error_log($e->getMessage());
             echo handleUploadError('File processing failed: ' . $e->getMessage());
             return false;
