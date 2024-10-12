@@ -221,8 +221,17 @@ if ($file) {
         return false;
     }
 
-    // Validate file extension
-    $ext = strtolower(pathinfo($file->getClientOriginalName(), PATHINFO_EXTENSION));
+    // Check that file is a valid string
+    $originalName = $file->getClientOriginalName();
+    if (is_string($originalName)) {
+        // Get file extension
+        $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+    } else {
+        // Case where the file name is not a string
+        error_log('Invalid file name: ' . $file_name . '.'); // Log for debugging
+        echo handleUploadError('Invalid file.'); // Generic message for user
+        exit(1);
+    }
 
     // Validate against a list of allowed extensions
     $allowed_extensions = explode(

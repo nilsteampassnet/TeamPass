@@ -4334,7 +4334,12 @@ function sendMailToUser(
     $emailSettings = new EmailSettings($SETTINGS);
     $emailService = new EmailService();
 
-    if (count($post_replace) > 0 && is_null($post_replace) === false) {
+    // Sanitize inputs
+    $post_receipt = filter_var($post_receipt, FILTER_SANITIZE_EMAIL);
+    $post_subject = htmlspecialchars($post_subject, ENT_QUOTES, 'UTF-8');
+    $post_body = htmlspecialchars($post_body, ENT_QUOTES, 'UTF-8');
+
+    if (count($post_replace) > 0) {
         $post_body = str_replace(
             array_keys($post_replace),
             array_values($post_replace),
@@ -4342,8 +4347,11 @@ function sendMailToUser(
         );
     }
 
+    // Remove newlines to prevent header injection
+    $post_body = str_replace(array("\r", "\n"), '', $post_body);    
+
     if ($immediate_email === true) {
-        
+        // Send email
         $ret = $emailService->sendMail(
             $post_subject,
             $post_body,
