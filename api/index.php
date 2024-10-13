@@ -44,7 +44,7 @@ require __DIR__ . "/inc/bootstrap.php";
 // sanitize url segments
 $base = new BaseController();
 $uri = $base->getUriSegments();
-if (is_array($uri) === false || is_string($uri) === true) {
+if (!is_array($uri)) {
     $uri = [$uri];  // ensure $uril is table
 }
 

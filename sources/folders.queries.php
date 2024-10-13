@@ -588,8 +588,7 @@ if (null !== $post_type) {
             ];            
             $inputData = dataSanitizer(
                 $data,
-                $filters,
-                $SETTINGS['cpassman_dir']
+                $filters
             );
 
             // Check if parent folder is personal
