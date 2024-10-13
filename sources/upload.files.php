@@ -216,8 +216,8 @@ if ($file) {
     $file_name = preg_replace('/[^a-zA-Z0-9-_\.]/', '', strtolower(basename($file->getClientOriginalName())));
     
     if (strlen($file_name) == 0 || strlen($file_name) > $MAX_FILENAME_LENGTH) {
-        error_log('Invalid file name: ' . $file_name . '.'); // Log for debugging
-        echo handleUploadError('Invalid file name provided.'); // Generic message for user
+        error_log('Invalid file name: ' . $file_name . '.');
+        echo handleUploadError('Invalid file name provided.');
         return false;
     }
 
@@ -225,12 +225,19 @@ if ($file) {
     $originalName = $file->getClientOriginalName();
     if (is_string($originalName)) {
         // Get file extension
-        $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+        $ext = pathinfo($originalName, PATHINFO_EXTENSION);
+        if (is_string($ext)) {
+            $ext = strtolower($ext);
+        } else {
+            // Case where the file extension is not a string
+            error_log('Invalid file name: ' . $file_name . '.');
+            echo handleUploadError('Invalid file extension.');
+        }
     } else {
         // Case where the file name is not a string
-        error_log('Invalid file name: ' . $file_name . '.'); // Log for debugging
-        echo handleUploadError('Invalid file.'); // Generic message for user
-        exit(1);
+        error_log('Invalid file name: ' . $file_name . '.');
+        echo handleUploadError('Invalid file.');
+        return false;
     }
 
     // Validate against a list of allowed extensions
@@ -255,7 +262,7 @@ if ($file) {
         $file->move($destinationPath, $file_name);
     } catch (FileException $e) {
         error_log('File upload error: ' . $e->getMessage());
-        echo handleUploadError('File upload failed. Please try again.'); // Generic message for user
+        echo handleUploadError('File upload failed. Please try again.');
         return false;
     }
 } else {
