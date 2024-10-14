@@ -6435,6 +6435,18 @@ switch ($inputData['type']) {
             decryptUserObjectKey($file_info['share_key'], $session->get('user-private_key'))
         );
 
+        // Check error
+        if (isset($fileContent['error']) === true) {
+            echo (string) prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $fileContent['message'],
+                ),
+                'encode'
+            );
+            break;
+        }
+
         // Encrypt data to return
         echo (string) prepareExchangedData(
             array(
