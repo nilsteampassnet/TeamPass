@@ -140,7 +140,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
             foreach ($aColumns as $column) {
                 $sWhere .= $column . " LIKE '%" . $searchValue . "%' OR ";
             }
-            $sWhere = substr_replace($sWhere, '', -3) . ')';
+            $sWhere = substr_replace((string) $sWhere, '', -3) . ')';
         }
     }
 

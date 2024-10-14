@@ -28,7 +28,7 @@
  */
 
 use TeampassClasses\SessionManager\SessionManager;
-use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Request as RequestLocal;
 use TeampassClasses\Language\Language;
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\PerformChecks\PerformChecks;
@@ -40,7 +40,7 @@ require_once __DIR__.'/../sources/main.functions.php';
 // init
 loadClasses('DB');
 $session = SessionManager::getSession();
-$request = Request::createFromGlobals();
+$request = RequestLocal::createFromGlobals();
 $lang = new Language(); 
 
 // Load config if $SETTINGS not defined

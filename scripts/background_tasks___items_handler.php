@@ -344,7 +344,7 @@ function handleTaskStep(
             0,
             -1,
             (int) $ProcessArguments['item_id'],
-            (string) array_key_exists('pwd', $ProcessArguments) === true ? $ProcessArguments['pwd'] : (array_key_exists('object_key', $ProcessArguments) === true ? $ProcessArguments['object_key'] : ''),
+            (string) (array_key_exists('pwd', $ProcessArguments) === true ? $ProcessArguments['pwd'] : (array_key_exists('object_key', $ProcessArguments) === true ? $ProcessArguments['object_key'] : '')),
             false,
             false,
             [],

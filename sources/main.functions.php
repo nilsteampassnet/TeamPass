@@ -1277,6 +1277,7 @@ function prepareExchangedData($data, string $type, ?string $key = null)
 
         return $data;
     }
+
     if ($type === 'decode' && is_array($data) === false) {
         // Decrypt if needed
         if ($session->get('encryptClientServer') === 1) {
@@ -1289,9 +1290,13 @@ function prepareExchangedData($data, string $type, ?string $key = null)
             $data = html_entity_decode(html_entity_decode($data));
         }
 
-        // Return data array
-        return json_decode($data, true);
+        // Check if $data is a valid string before json_decode
+        if (is_string($data) && !empty($data)) {
+            // Return data array
+            return json_decode($data, true);
+        }
     }
+
     return '';
 }
 
@@ -2404,7 +2409,7 @@ function encryptUserObjectKey(string $key, string $publicKey): string
     $rsa->loadKey($decodedPublicKey);
     // Encrypt
     $encrypted = $rsa->encrypt(base64_decode($key));
-    if ($encrypted === false) {
+    if (empty($encrypted)) {  // Check if key is empty or null
         throw new RuntimeException("Error while encrypting key.");
     }
     // Return
@@ -2505,7 +2510,7 @@ function encryptFile(string $fileInName, string $fileInPath): array
  *
  * @return string
  */
-function decryptFile(string $fileName, string $filePath, string $key): string
+function decryptFile(string $fileName, string $filePath, string $key): string|array
 {
     if (! defined('FILE_BUFFER_SIZE')) {
         define('FILE_BUFFER_SIZE', 128 * 1024);
@@ -2525,7 +2530,15 @@ function decryptFile(string $fileName, string $filePath, string $key): string
     $cipher->disablePadding();
     // Get file content
     $safeFilePath = realpath($filePath . '/' . TP_FILE_PREFIX . $safeFileName);
-    $ciphertext = file_get_contents(filter_var($safeFilePath, FILTER_SANITIZE_URL));
+    if ($safeFilePath !== false && file_exists($safeFilePath)) {
+        $ciphertext = file_get_contents(filter_var($safeFilePath, FILTER_SANITIZE_URL));
+    } else {
+        // Handle the error: file doesn't exist or path is invalid
+        return [
+            'error' => true,
+            'message' => 'This file has not been found.',
+        ];
+    }
 
     if (WIP) error_log('DEBUG: File image url -> '.filter_var($safeFilePath, FILTER_SANITIZE_URL));
 
@@ -4329,7 +4342,12 @@ function sendMailToUser(
     $emailSettings = new EmailSettings($SETTINGS);
     $emailService = new EmailService();
 
-    if (count($post_replace) > 0 && is_null($post_replace) === false) {
+    // Sanitize inputs
+    $post_receipt = filter_var($post_receipt, FILTER_SANITIZE_EMAIL);
+    $post_subject = htmlspecialchars($post_subject, ENT_QUOTES, 'UTF-8');
+    $post_body = htmlspecialchars($post_body, ENT_QUOTES, 'UTF-8');
+
+    if (count($post_replace) > 0) {
         $post_body = str_replace(
             array_keys($post_replace),
             array_values($post_replace),
@@ -4337,8 +4355,11 @@ function sendMailToUser(
         );
     }
 
+    // Remove newlines to prevent header injection
+    $post_body = str_replace(array("\r", "\n"), '', $post_body);    
+
     if ($immediate_email === true) {
-        
+        // Send email
         $ret = $emailService->sendMail(
             $post_subject,
             $post_body,

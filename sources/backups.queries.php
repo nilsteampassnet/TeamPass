@@ -352,7 +352,7 @@ if (null !== $post_type) {
                 $post_totalSize = filesize($post_backupFile);
             }
 
-            if ($handle) {
+            if ($handle !== false) {
                 // Déplacer le pointeur de fichier à l'offset actuel
                 fseek($handle, $post_offset);
 

@@ -306,7 +306,7 @@ catch (Exception $e) {
 
                         // Test internet access
                         $connected = @fsockopen("www.cloudflare.com", 443, $errno, $errstr, 1); // API Duo API (MFA).
-                        if ($connected){
+                        if ($connected !== false) {
                             fclose($connected);
                             $internetAccess = '
                             <p>

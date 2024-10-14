@@ -311,7 +311,6 @@ class FolderManager
      */
     private function rebuildFolderTree($user_is_admin, $title, $parent_id, $isPersonal, $user_id, $newId)
     {
-        $session = SessionManager::getSession();
         $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
         $tree->rebuild();
         

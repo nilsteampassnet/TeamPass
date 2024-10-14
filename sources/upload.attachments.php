@@ -29,7 +29,7 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Request as RequestLocal;
 use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
 use TeampassClasses\PerformChecks\PerformChecks;
@@ -39,7 +39,7 @@ use TeampassClasses\ConfigManager\ConfigManager;
 // Load functions
 require_once 'main.functions.php';
 $session = SessionManager::getSession();
-$request = Request::createFromGlobals();
+$request = RequestLocal::createFromGlobals();
 // init
 loadClasses('DB');
 $lang = new Language();

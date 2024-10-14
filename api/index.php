@@ -23,7 +23,18 @@
  * @see       https://www.teampass.net
  */
 
-header("Access-Control-Allow-Origin: ".$_SERVER['HTTP_HOST']);
+// Determine the protocol used
+$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
+
+// Validate and filter the host
+$host = filter_var($_SERVER['HTTP_HOST'], FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME);
+
+// Allocate the correct CORS header
+if ($host !== false) {
+    header("Access-Control-Allow-Origin: $protocol$host");
+} else {
+    header("Access-Control-Allow-Origin: 'null'");
+}
 header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Methods: POST, GET");
 header("Access-Control-Max-Age: 3600");
@@ -33,7 +44,7 @@ require __DIR__ . "/inc/bootstrap.php";
 // sanitize url segments
 $base = new BaseController();
 $uri = $base->getUriSegments();
-if (is_array($uri) === false || is_string($uri) === true) {
+if (!is_array($uri)) {
     $uri = [$uri];  // ensure $uril is table
 }
 
