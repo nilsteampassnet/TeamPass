@@ -160,19 +160,20 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
         if ($fp = fopen($file, 'r')) {
             // data from CSV
             $valuesToImport = array();
-
+            $header = fgetcsv($fp);
             // Lexer configuration
             $config = new LexerConfig();
             $lexer = new Lexer($config);
             $config->setIgnoreHeaderLine('true');
             $interpreter = new Interpreter();
-            $interpreter->addObserver(function (array $row) use (&$valuesToImport) {
+            $interpreter->addObserver(function (array $row) use (&$valuesToImport,$header) {
+                $rowData = array_combine($header, $row);
                 $valuesToImport[] = array(
-                    'Label' => $row[0],
-                    'Login' => $row[1],
-                    'Password' => $row[2],
-                    'url' => $row[3],
-                    'Comments' => $row[4],
+                    'Label' => $rowData['label'],
+                    'Login' => $rowData['login'],
+                    'Password' => $rowData['pw'],
+                    'url' => $rowData['url'],
+                    'Comments' => $rowData['description'],
                 );
             });
             $lexer->parse($file, $interpreter);
