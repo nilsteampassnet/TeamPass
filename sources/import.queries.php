@@ -818,6 +818,8 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
                     'inactif' => 0,
                     'restricted_to' => '',
                     'perso' => $post_folders[$item['parentFolderId']]['isPF'] === true ? 1 : 0,
+                    'item_key' => uniqidReal(50),
+                    'created_at' => time(),
                 )
             );
             $newId = DB::insertId();
