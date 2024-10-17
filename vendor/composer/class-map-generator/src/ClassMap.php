@@ -12,6 +12,8 @@
 
 namespace Composer\ClassMapGenerator;
 
+use Composer\Pcre\Preg;
+
 /**
  * @author Jordi Boggiano <j.boggiano@seld.be>
  */
@@ -71,11 +73,36 @@ class ClassMap implements \Countable
      *
      * To get the path the class is being mapped to, call getClassPath
      *
+     * By default, paths that contain test(s), fixture(s), example(s) or stub(s) are ignored
+     * as those are typically not problematic when they're dummy classes in the tests folder.
+     * If you want to get these back as well you can pass false to $duplicatesFilter. Or
+     * you can pass your own pattern to exclude if you need to change the default.
+     *
+     * @param non-empty-string|false $duplicatesFilter
+     *
      * @return array<class-string, array<non-empty-string>>
      */
-    public function getAmbiguousClasses(): array
+    public function getAmbiguousClasses($duplicatesFilter = '{/(test|fixture|example|stub)s?/}i'): array
     {
-        return $this->ambiguousClasses;
+        if (false === $duplicatesFilter) {
+            return $this->ambiguousClasses;
+        }
+
+        if (true === $duplicatesFilter) {
+            throw new \InvalidArgumentException('$duplicatesFilter should be false or a string with a valid regex, got true.');
+        }
+
+        $ambiguousClasses = [];
+        foreach ($this->ambiguousClasses as $class => $paths) {
+            $paths = array_filter($paths, function ($path) use ($duplicatesFilter) {
+                return !Preg::isMatch($duplicatesFilter, strtr($path, '\\', '/'));
+            });
+            if (\count($paths) > 0) {
+                $ambiguousClasses[$class] = array_values($paths);
+            }
+        }
+
+        return $ambiguousClasses;
     }
 
     /**
