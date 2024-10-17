@@ -2251,8 +2251,9 @@ switch ($inputData['type']) {
 
             // generate the query to update the new record with the previous values
             $aSet = array();
-            $aSet['created_at'] = time();
             foreach ($originalRecord as $key => $value) {
+                $aSet['item_key'] = uniqidReal(50);
+                $aSet['created_at'] = time();
                 if ($key === 'id_tree') {
                     $aSet['id_tree'] = $post_dest_id;
                 } elseif ($key === 'label') {
