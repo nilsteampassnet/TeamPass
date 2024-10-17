@@ -232,6 +232,7 @@ if ($file) {
             // Case where the file extension is not a string
             error_log('Invalid file name: ' . $file_name . '.');
             echo handleUploadError('Invalid file extension.');
+            return false;
         }
     } else {
         // Case where the file name is not a string

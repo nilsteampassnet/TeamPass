@@ -182,8 +182,12 @@ if (null !== $request->query->get('pathIsFiles') && (int) $get_pathIsFiles === 1
         if (empty($fileContent) === true) {
             // deepcode ignore PT: File and path are secured directly inside the function decryptFile()
             readfile($filePath); // Read the file from disk
-        } else {
+        } else if (is_string($fileContent)) {
             exit(base64_decode($fileContent));
+        } else {
+            // $fileContent is not a string
+            echo 'ERROR_No_file_found';
+        exit;
         }
         exit;
     } else {

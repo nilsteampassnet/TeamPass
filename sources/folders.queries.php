@@ -1287,7 +1287,7 @@ if (null !== $post_type) {
                                 }
                                 fwrite(
                                     $outstream,
-                                    base64_decode($fileContent)
+                                    base64_decode((string) $fileContent)
                                 );
 
                                 // Step3 - encrypt the file

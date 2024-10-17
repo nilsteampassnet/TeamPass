@@ -85,7 +85,8 @@ function purgeTemporaryFiles(): void
             //delete file FILES
             while (false !== ($f = readdir($dir))) {
                 if ($f !== '.' && $f !== '..' && $f !== '.htaccess') {
-                    if (file_exists($dir . $f) && ((time() - filectime($dir . $f)) > 604800)) {
+                    $filePath = $SETTINGS['path_to_files_folder'] . '/' . $f;
+                    if (file_exists($filePath) && ((time() - filectime($filePath)) > 604800)) {
                         fileDelete($dir . '/' . $f, $SETTINGS);
                     }
                 }
