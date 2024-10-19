@@ -2255,8 +2255,9 @@ switch ($inputData['type']) {
 
             // generate the query to update the new record with the previous values
             $aSet = array();
-            $aSet['created_at'] = time();
             foreach ($originalRecord as $key => $value) {
+                $aSet['item_key'] = uniqidReal(50);
+                $aSet['created_at'] = time();
                 if ($key === 'id_tree') {
                     $aSet['id_tree'] = $post_dest_id;
                 } elseif ($key === 'label') {
@@ -4227,7 +4228,12 @@ switch ($inputData['type']) {
             // List all ITEMS
             if ($folderIsPf === false) {
                 $where->add('i.inactif=%i', 0);
-                $where->add('l.date=%l', '(SELECT date FROM ' . prefixTable('log_items') . " WHERE action IN ('at_creation', 'at_modification') AND id_item=i.id ORDER BY date DESC LIMIT 1)");
+                $sql_e='(SELECT date FROM ' . prefixTable('log_items') 
+                    . " WHERE action = 'at_creation' AND id_item=i.id " 
+                    . 'union all SELECT date FROM '. prefixTable('log_items') 
+                    . " WHERE action = 'at_modification' AND raison = 'at_pw'
+                    AND id_item=i.id ORDER BY date DESC LIMIT 1)";
+                $where->add('l.date=%l', $sql_e);
                 if (empty($limited_to_items) === false) {
                     $where->add('i.id IN %ls', explode(',', $limited_to_items));
                 }

@@ -191,7 +191,7 @@ class ClassMapGenerator
             foreach ($classes as $class) {
                 if (!$this->classMap->hasClass($class)) {
                     $this->classMap->addClass($class, $filePath);
-                } elseif ($filePath !== $this->classMap->getClassPath($class) && !Preg::isMatch('{/(test|fixture|example|stub)s?/}i', strtr($this->classMap->getClassPath($class).' '.$filePath, '\\', '/'))) {
+                } elseif ($filePath !== $this->classMap->getClassPath($class)) {
                     $this->classMap->addAmbiguousClass($class, $filePath);
                 }
             }

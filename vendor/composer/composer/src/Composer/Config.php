@@ -84,6 +84,8 @@ class Config
         'gitlab-token' => [],
         'http-basic' => [],
         'bearer' => [],
+        'bump-after-update' => false,
+        'allow-missing-requirements' => false,
     ];
 
     /** @var array<string, mixed> */
@@ -96,7 +98,7 @@ class Config
 
     /** @var array<string, mixed> */
     private $config;
-    /** @var ?string */
+    /** @var ?non-empty-string */
     private $baseDir;
     /** @var array<int|string, mixed> */
     private $repositories;
@@ -135,6 +137,18 @@ class Config
         foreach ($this->repositories as $configKey => $configValue) {
             $this->setSourceOfConfigValue($configValue, 'repositories.' . $configKey, self::SOURCE_DEFAULT);
         }
+    }
+
+    /**
+     * Changing this can break path resolution for relative config paths so do not call this without knowing what you are doing
+     *
+     * The $baseDir should be an absolute path and without trailing slash
+     *
+     * @param non-empty-string|null $baseDir
+     */
+    public function setBaseDir(?string $baseDir): void
+    {
+        $this->baseDir = $baseDir;
     }
 
     public function setConfigSource(ConfigSourceInterface $source): void
@@ -440,9 +454,9 @@ class Config
                 $result = $this->config[$key];
                 $abandonedEnv = $this->getComposerEnv('COMPOSER_AUDIT_ABANDONED');
                 if (false !== $abandonedEnv) {
-                    if (!in_array($abandonedEnv, $validChoices = [Auditor::ABANDONED_IGNORE, Auditor::ABANDONED_REPORT, Auditor::ABANDONED_FAIL], true)) {
+                    if (!in_array($abandonedEnv, $validChoices = Auditor::ABANDONEDS, true)) {
                         throw new \RuntimeException(
-                            "Invalid value for COMPOSER_AUDIT_ABANDONED: {$abandonedEnv}. Expected ".Auditor::ABANDONED_IGNORE.", ".Auditor::ABANDONED_REPORT." or ".Auditor::ABANDONED_FAIL
+                            "Invalid value for COMPOSER_AUDIT_ABANDONED: {$abandonedEnv}. Expected one of ".implode(', ', Auditor::ABANDONEDS)."."
                         );
                     }
                     $result['abandoned'] = $abandonedEnv;
@@ -544,7 +558,7 @@ class Config
             return $path;
         }
 
-        return $this->baseDir ? $this->baseDir . '/' . $path : $path;
+        return $this->baseDir !== null ? $this->baseDir . '/' . $path : $path;
     }
 
     /**

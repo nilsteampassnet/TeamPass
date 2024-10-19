@@ -160,19 +160,20 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
         if ($fp = fopen($file, 'r')) {
             // data from CSV
             $valuesToImport = array();
-
+            $header = fgetcsv($fp);
             // Lexer configuration
             $config = new LexerConfig();
             $lexer = new Lexer($config);
             $config->setIgnoreHeaderLine('true');
             $interpreter = new Interpreter();
-            $interpreter->addObserver(function (array $row) use (&$valuesToImport) {
+            $interpreter->addObserver(function (array $row) use (&$valuesToImport,$header) {
+                $rowData = array_combine($header, $row);
                 $valuesToImport[] = array(
-                    'Label' => $row[0],
-                    'Login' => $row[1],
-                    'Password' => $row[2],
-                    'url' => $row[3],
-                    'Comments' => $row[4],
+                    'Label' => $rowData['label'],
+                    'Login' => $rowData['login'],
+                    'Password' => $rowData['pw'],
+                    'url' => $rowData['url'],
+                    'Comments' => $rowData['description'],
                 );
             });
             $lexer->parse($file, $interpreter);
@@ -374,6 +375,8 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
                     'login' => empty($item['login']) === true ? '' : substr($item['login'], 0, 200),
                     'anyone_can_modify' => $post_edit_all,
                     'encryption_type' => 'teampass_aes',
+                    'item_key' => uniqidReal(50),
+                    'created_at' => time(),
                 )
             );
             $newId = DB::insertId();
@@ -810,6 +813,8 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
                     'inactif' => 0,
                     'restricted_to' => '',
                     'perso' => $post_folders[$item['parentFolderId']]['isPF'] === true ? 1 : 0,
+                    'item_key' => uniqidReal(50),
+                    'created_at' => time(),
                 )
             );
             $newId = DB::insertId();

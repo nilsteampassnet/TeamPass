@@ -12,6 +12,7 @@
 
 namespace Composer\Command;
 
+use Composer\Package\AliasPackage;
 use Composer\Plugin\CommandEvent;
 use Composer\Plugin\PluginEvents;
 use Symfony\Component\Console\Input\InputInterface;
@@ -43,6 +44,7 @@ class DumpAutoloadCommand extends BaseCommand
                 new InputOption('ignore-platform-req', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Ignore a specific platform requirement (php & ext- packages).'),
                 new InputOption('ignore-platform-reqs', null, InputOption::VALUE_NONE, 'Ignore all platform requirements (php & ext- packages).'),
                 new InputOption('strict-psr', null, InputOption::VALUE_NONE, 'Return a failed status code (1) if PSR-4 or PSR-0 mapping errors are present. Requires --optimize to work.'),
+                new InputOption('strict-ambiguous', null, InputOption::VALUE_NONE, 'Return a failed status code (2) if the same class is found in multiple files. Requires --optimize to work.'),
             ])
             ->setHelp(
                 <<<EOT
@@ -66,6 +68,17 @@ EOT
         $package = $composer->getPackage();
         $config = $composer->getConfig();
 
+        $missingDependencies = false;
+        foreach ($localRepo->getCanonicalPackages() as $localPkg) {
+            $installPath = $installationManager->getInstallPath($localPkg);
+            if ($installPath !== null && file_exists($installPath) === false) {
+                $missingDependencies = true;
+                $this->getIO()->write('<warning>Not all dependencies are installed. Make sure to run a "composer install" to install missing dependencies</warning>');
+
+                break;
+            }
+        }
+
         $optimize = $input->getOption('optimize') || $config->get('optimize-autoloader');
         $authoritative = $input->getOption('classmap-authoritative') || $config->get('classmap-authoritative');
         $apcuPrefix = $input->getOption('apcu-prefix');
@@ -73,6 +86,9 @@ EOT
 
         if ($input->getOption('strict-psr') && !$optimize && !$authoritative) {
             throw new \InvalidArgumentException('--strict-psr mode only works with optimized autoloader, use --optimize or --classmap-authoritative if you want a strict return value.');
+        }
+        if ($input->getOption('strict-ambiguous') && !$optimize && !$authoritative) {
+            throw new \InvalidArgumentException('--strict-ambiguous mode only works with optimized autoloader, use --optimize or --classmap-authoritative if you want a strict return value.');
         }
 
         if ($authoritative) {
@@ -108,7 +124,8 @@ EOT
             'composer',
             $optimize,
             null,
-            $composer->getLocker()
+            $composer->getLocker(),
+            $input->getOption('strict-ambiguous')
         );
         $numberOfClasses = count($classMap);
 
@@ -120,8 +137,12 @@ EOT
             $this->getIO()->write('<info>Generated autoload files</info>');
         }
 
-        if ($input->getOption('strict-psr') && count($classMap->getPsrViolations()) > 0) {
+        if ($missingDependencies || ($input->getOption('strict-psr') && count($classMap->getPsrViolations()) > 0)) {
             return 1;
+        }
+
+        if ($input->getOption('strict-ambiguous') && count($classMap->getAmbiguousClasses(false)) > 0) {
+            return 2;
         }
 
         return 0;
