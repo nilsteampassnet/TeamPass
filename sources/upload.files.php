@@ -279,8 +279,9 @@ if (is_writable($SETTINGS['path_to_files_folder']) === false) {
 
 // Make sure the fileName is unique but only if chunking is disabled
 if ($chunks < 2 && file_exists($targetDir . DIRECTORY_SEPARATOR . $fileName)) {
-    $fileNameA = substr($fileName, 0, strlen($ext));
-    $fileNameB = substr($fileName, strlen($ext));
+    // $ext is guaranteed to be a string due to prior checks
+    $fileNameA = substr($fileName, 0, strlen(/** @scrutinizer ignore-type */$ext));
+    $fileNameB = substr($fileName, strlen(/** @scrutinizer ignore-type */$ext));
 
     $count = 1;
     while (file_exists($targetDir . DIRECTORY_SEPARATOR . $fileNameA . '_' . $count . $fileNameB)) {

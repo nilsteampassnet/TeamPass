@@ -2508,7 +2508,7 @@ function encryptFile(string $fileInName, string $fileInPath): array
  * @param string $filePath Path to file
  * @param string $key      Key to use
  *
- * @return string
+ * @return string|array
  */
 function decryptFile(string $fileName, string $filePath, string $key): string|array
 {
