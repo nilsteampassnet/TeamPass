@@ -63,7 +63,10 @@ $arguments = $_SERVER['argv'];
 if (!is_array($arguments)) {
     // Stop the script
     echo "Erreur : Les arguments ne sont pas disponibles ou ne sont pas un tableau.\n";
-    error_log('Error: Arguments are not available or not an array. (background_tasks___userKeysCreation_subtaskHdl.php)');
+    
+    if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+        error_log('Error: Arguments are not available or not an array. (background_tasks___userKeysCreation_subtaskHdl.php)');
+    }
     exit(1);
 }
 array_shift($arguments);

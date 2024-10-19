@@ -151,7 +151,9 @@ try {
     }
 }
 catch (Exception $e) {
-    error_log('TEAMPASS Error - tasks page - '.$e->getMessage());
+    if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+        error_log('TEAMPASS Error - tasks page - '.$e->getMessage());
+    }
     // deepcode ignore ServerLeak: no critical information is provided
     echo "An error occurred.";
 }?>

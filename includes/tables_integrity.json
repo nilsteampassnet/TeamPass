@@ -13,11 +13,11 @@
     },
     {
         "table_name": "background_tasks",
-        "structure_hash": "bdfbc5078cdfe4d92f67aec6827b6f1dbc9c8ffddbfc2b73c84907dff42ca4ab"
+        "structure_hash": "815c06160b84f44936440b5166e199b49d837d843a79660ed4f251b059fa8b8d"
     },
     {
         "table_name": "background_tasks_logs",
-        "structure_hash": "ea5b7254fdc0beccd811fe10a6e94a4a943265b6de126bca98f05deda111b88e"
+        "structure_hash": "ba2d4cf853e8671aabed59ed59d393eb8eadd2e7e03ef234fc6524d36bf65419"
     },
     {
         "table_name": "cache",
@@ -53,7 +53,7 @@
     },
     {
         "table_name": "files",
-        "structure_hash": "153ef36df5b0094b34ff0a610c45cbd4b6a313f0ef48b58b9752f59570addb0c"
+        "structure_hash": "1622108fd8cba8ca53350fa5b2b94fb8bdd710bf9b201eba3d1647e2e40a48dc"
     },
     {
         "table_name": "items",
@@ -65,7 +65,7 @@
     },
     {
         "table_name": "items_edition",
-        "structure_hash": "9636c40fac70ba346a01c57510c79a70b5319c4e48802fa4bba6afb52b3c517c"
+        "structure_hash": "6136a16c129449448ebfc7266ca42e86f020b3892e1c4aa869c2255176bd284e"
     },
     {
         "table_name": "items_otp",
@@ -97,11 +97,11 @@
     },
     {
         "table_name": "log_items",
-        "structure_hash": "dbca92fb747483318fa4efdea4761c40ba25adb5d6ff54971e7d29a3df7012cf"
+        "structure_hash": "a996fd9d5d8a5a0b2f38f8c7c776b1de8468c71bfcdc7668dc05042dc2c5128a"
     },
     {
         "table_name": "log_system",
-        "structure_hash": "3a4d1b038fd99aca40280bb0fc59735cef5570bcbda5f081b052650d23b7dd65"
+        "structure_hash": "a2134e60ecc8055b34f9015692b09672d1c61bc205fbae460344503f0cc6cc21"
     },
     {
         "table_name": "misc",
@@ -165,7 +165,7 @@
     },
     {
         "table_name": "sharekeys_files",
-        "structure_hash": "7a909b59b6b67614313ceccd76b8a2c62dc938dc20ff5cd75c47f97a07b2264f"
+        "structure_hash": "7c9e6963f429c254e9027ba56092ac2c906a2fad18de0e071d0bb91e61e28dda"
     },
     {
         "table_name": "sharekeys_items",
@@ -193,7 +193,7 @@
     },
     {
         "table_name": "tokens",
-        "structure_hash": "15c1c0b51e64d8e07b3a77ff7893d6dcf54cecb8d9faf37818a71afdf82c5036"
+        "structure_hash": "698fd57be1f55099b0b24828cf3bc40bb9565600c1571e73aed3a07a7fc6a0bf"
     },
     {
         "table_name": "user_requests",

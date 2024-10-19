@@ -250,14 +250,12 @@ function getSubTasks($taskId) {
  */
 function updateSubTask($subTaskId, $args) {
     if (empty($subTaskId) === true) {
-        error_log('Subtask ID is empty ... are we lost!?!');
+        if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+            error_log('Subtask ID is empty ... are we lost!?!');
+        }
         return;
     }
     // Convertir les paramètres de la tâche en JSON
-    //$taskParamsJson = json_encode($taskParams);
-
-    //error_log('Subtask update : '.$subTaskId." - ".print_r($taskParams,true));
-
     $query = [
         'updated_at' => time(), // Mettre à jour la date de dernière modification
         'is_in_progress' => 1,
@@ -293,7 +291,6 @@ function reloadSubTask($subTaskId) {
 }
 
 function updateTask($taskId) {
-    //error_log('Task update : '.$taskId);
     // Mettre à jour la tâche dans la base de données
     DB::update(prefixTable('background_tasks'), [
         'updated_at' => time(), // Mettre à jour la date de dernière modification

@@ -262,7 +262,9 @@ if ($file) {
     try {
         $file->move($destinationPath, $file_name);
     } catch (FileException $e) {
-        error_log('File upload error: ' . $e->getMessage());
+        if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+            error_log('File upload error: ' . $e->getMessage());
+        }
         echo handleUploadError('File upload failed. Please try again.');
         return false;
     }
@@ -347,7 +349,39 @@ if (strpos($contentType, 'multipart') !== false) {
             }
     
             // Open the uploaded temporary file
-            $in = fopen($file->getPathname(), 'rb'); // getPathname() retrieves the temporary file path
+            // But before we will move the file to a temporary location
+            // Temporary path of the uploaded file
+            $tmpFilePath = $file->getPathname();
+
+            // Has the file being uploaded via HPPT POST
+            if (is_uploaded_file($tmpFilePath)) {
+                // Clear file name
+                $fileName = basename($file->getClientOriginalName());
+                $fileName = preg_replace('/[^a-zA-Z0-9_\.-]/', '_', $fileName);
+
+                // Safe destination folder
+                $uploadDir = realpath($SETTINGS['path_to_upload_folder']);
+                $destinationPath = $uploadDir . DIRECTORY_SEPARATOR . $fileName;
+                
+                // Check if the destination path is secure
+                if (strpos(realpath($destinationPath), $uploadDir) === 0) {
+                    if (move_uploaded_file($tmpFilePath, $destinationPath)) {
+                        // Open the moved file in read mode
+                        $in = fopen($destinationPath, 'rb');
+                    } else {
+                        // Do we have errors
+                        echo handleUploadError('Error while moving the uploaded file.');
+                    }
+                } else {
+                    // Path is not secure
+                    echo handleUploadError('Error: attempt to reach a non authorized file.');
+                    exit;
+                }
+            } else {
+                // file has not being uploaded via HTTP POST
+                echo handleUploadError('FErreur : fichier non valide.');
+                exit;
+            }
     
             if ($in === false) {
                 throw new FileException('Failed to open input stream.');
@@ -363,12 +397,14 @@ if (strpos($contentType, 'multipart') !== false) {
             fclose($out);
     
             // Delete temporary file if needed
-            fileDelete($file->getPathname(), $SETTINGS);
+            fileDelete($destinationPath, $SETTINGS);
             
         } catch (FileException $e) {
             // On error log
-            error_log($e->getMessage());
-            echo handleUploadError('File processing failed: ' . $e->getMessage());
+            if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                error_log($e->getMessage());
+            }
+            echo handleUploadError('File processing failed.');
             return false;
         }
     } else {

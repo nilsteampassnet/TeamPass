@@ -2454,7 +2454,9 @@ function decryptUserObjectKey(string $key, string $privateKey): string
             return '';
         }
     } catch (Exception $e) {
-        error_log('TEAMPASS Error - ldap - '.$e->getMessage());
+        if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+            error_log('TEAMPASS Error - ldap - '.$e->getMessage());
+        }
         return 'Exception: could not decrypt object';
     }
 }
@@ -2657,7 +2659,6 @@ function storeUsersShareKey(
         }
     } else {
         // Create sharekey for each user
-        //error_log('Building QUERY - all_users_except_id: '. $all_users_except_id);
         //DB::debugmode(true);
         $users = DB::query(
             'SELECT id, public_key
@@ -2786,10 +2787,8 @@ function ldapCheckUserPassword(string $login, string $password, array $SETTINGS)
         $connection->connect();
     } catch (\LdapRecord\Auth\BindException $e) {
         $error = $e->getDetailedError();
-        if ($error) {
+        if ($error && defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
             error_log('TEAMPASS Error - LDAP - '.$error->getErrorCode()." - ".$error->getErrorMessage(). " - ".$error->getDiagnosticMessage());
-        } else {
-            error_log('TEAMPASS Error - LDAP - Code: '.$e->getCode().' - Message: '.$e->getMessage());
         }
         // deepcode ignore ServerLeak: No important data is sent
         echo 'An error occurred.';
@@ -2805,10 +2804,8 @@ function ldapCheckUserPassword(string $login, string $password, array $SETTINGS)
         }
     } catch (\LdapRecord\Auth\BindException $e) {
         $error = $e->getDetailedError();
-        if ($error) {
+        if ($error && defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
             error_log('TEAMPASS Error - LDAP - '.$error->getErrorCode()." - ".$error->getErrorMessage(). " - ".$error->getDiagnosticMessage());
-        } else {
-            error_log('TEAMPASS Error - LDAP - Code: '.$e->getCode().' - Message: '.$e->getMessage());
         }
         // deepcode ignore ServerLeak: No important data is sent
         echo 'An error occurred.';
@@ -3539,16 +3536,12 @@ function upgradeRequired(): bool
         'admin',
         'upgrade_timestamp'
     );
-    
-    // if not exists then error
-    if (is_null($val) === true || count($val) === 0 || defined('UPGRADE_MIN_DATE') === false) return true;
 
-    // if empty or too old then error
-    if (empty($val['valeur']) === true || (int) $val['valeur'] < (int) UPGRADE_MIN_DATE) {
-        return true;
-    }
-
-    return false;
+    // Check if upgrade is required
+    return (
+        is_null($val) || count($val) === 0 || !defined('UPGRADE_MIN_DATE') || 
+        empty($val['valeur']) || (int) $val['valeur'] < (int) UPGRADE_MIN_DATE
+    );
 }
 
 /**
@@ -3637,8 +3630,9 @@ function handleUserKeys(
             }
         } catch (Exception $e) {
             // Show error message to user and log event
-            error_log('ERROR: User '.$userId.' - '.$e->getMessage());
-
+            if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                error_log('ERROR: User '.$userId.' - '.$e->getMessage());
+            }
             return prepareExchangedData([
                     'error' => true,
                     'message' => $lang->get('pw_encryption_error'),
@@ -4015,7 +4009,7 @@ function createTaskForItem(
         $taskName = [$taskName];
     }
     foreach($taskName as $task) {
-        error_log('createTaskForItem - task: '.$task);
+        if (WIP === true) error_log('createTaskForItem - task: '.$task);
         switch ($task) {
             case 'item_password':
                 

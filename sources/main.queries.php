@@ -1810,7 +1810,9 @@ function changePrivateKeyEncryptionPassword(
 
             // Should fail here to avoid break user private key.
             if (strlen($privateKey) === 0 || strlen($hashedPrivateKey) < 30) {
-                error_log("Error reencrypt user private key. User ID: {$post_user_id}, Given OTP: '{$post_current_code}'");
+                if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                    error_log("Error reencrypt user private key. User ID: {$post_user_id}, Given OTP: '{$post_current_code}'");
+                }
                 return prepareExchangedData(
                     array(
                         'error' => true,
