@@ -1561,9 +1561,9 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                     }
                     unlink($csrfp_file); // delete existing csrfp.config file
                     copy($csrfp_file_sample, $csrfp_file); // make a copy of csrfp.config.sample file
-                    $inputData['data'] = file_get_contents($csrfp_file);
-                    $newdata = str_replace('"CSRFP_TOKEN" => ""', '"CSRFP_TOKEN" => "' . bin2hex(openssl_random_pseudo_bytes(25)) . '"', $inputData['data']);
-                    $jsUrl = $data_sent['url_path'] . '/includes/libraries/csrfp/js/csrfprotector.js';
+                    $data = file_get_contents($csrfp_file);
+                    $newdata = str_replace('"CSRFP_TOKEN" => ""', '"CSRFP_TOKEN" => "' . bin2hex(openssl_random_pseudo_bytes(25)) . '"', $data);
+                    $jsUrl = $inputData['data']['url_path'] . '/includes/libraries/csrfp/js/csrfprotector.js';
                     $newdata = str_replace('"jsUrl" => ""', '"jsUrl" => "' . $jsUrl . '"', $newdata);
                     file_put_contents('../includes/libraries/csrfp/libs/csrfp.config.php', $newdata);
 
