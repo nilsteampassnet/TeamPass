@@ -13,15 +13,15 @@
     },
     {
         "table_name": "background_tasks",
-        "structure_hash": "815c06160b84f44936440b5166e199b49d837d843a79660ed4f251b059fa8b8d"
+        "structure_hash": "cf4df81ed284839530fad60aca62c0877273a60199a648840116763949fc0de3"
     },
     {
         "table_name": "background_tasks_logs",
-        "structure_hash": "ba2d4cf853e8671aabed59ed59d393eb8eadd2e7e03ef234fc6524d36bf65419"
+        "structure_hash": "ebbae6acfb6ba2df19c1a1d3b09cdf725b007763c9b56b79a9fb7060a85be160"
     },
     {
         "table_name": "cache",
-        "structure_hash": "a5988fbb32009d30106453eb5434d90b1f10135fb988fb3736bbf5fa254a39db"
+        "structure_hash": "a42189363fa630ce50aa709ac271020e710dc46949eb102ef33fba59a9bb625a"
     },
     {
         "table_name": "cache_tree",
@@ -57,7 +57,7 @@
     },
     {
         "table_name": "items",
-        "structure_hash": "af8b6e0e7bf0fe17a709bba14dca6c7833ddf2f6e0a1e91acd0a5cf5ffb4e22d"
+        "structure_hash": "5e157cc138f056349dca650057ca2ba8eea21fedc5b3f2a29cde43cd20378e10"
     },
     {
         "table_name": "items_change",
@@ -97,15 +97,15 @@
     },
     {
         "table_name": "log_items",
-        "structure_hash": "a996fd9d5d8a5a0b2f38f8c7c776b1de8468c71bfcdc7668dc05042dc2c5128a"
+        "structure_hash": "45e3f52f657b61f890a123395999319f3b3967aee41ce4a126b49ce1c817abf6"
     },
     {
         "table_name": "log_system",
-        "structure_hash": "a2134e60ecc8055b34f9015692b09672d1c61bc205fbae460344503f0cc6cc21"
+        "structure_hash": "88d277f0daba59bf4b506dc8770b5bee9978f39424c4f435fc7b6ebf96cf3b9f"
     },
     {
         "table_name": "misc",
-        "structure_hash": "66fbea921b5ab4f91eec2a157c327c1d17a798a1a7854a2290c6abce5c90975d"
+        "structure_hash": "d3f4410ec4c37c578fb9486f889c7c714e6434d956d5d44c9049fb33d994bf0b"
     },
     {
         "table_name": "nested_tree",
@@ -145,7 +145,7 @@
     },
     {
         "table_name": "restriction_to_roles",
-        "structure_hash": "0726559346164ca2b7222f69f4080b325c3eb5d71e9e9d2e50bb2231986b4a93"
+        "structure_hash": "abb09363fe79997ed4e9d8563cb70da357cd9ba06322b91ede72554b883a2e52"
     },
     {
         "table_name": "rights",
@@ -169,7 +169,7 @@
     },
     {
         "table_name": "sharekeys_items",
-        "structure_hash": "55967b16b132e739d0437fd9e006c37559d9a123c2979aaab72637614c145a4c"
+        "structure_hash": "6b6d714ea462093c90d2ae16970cc7b3753c130611fca3830fa03c6a4dca44da"
     },
     {
         "table_name": "sharekeys_logs",
@@ -193,7 +193,7 @@
     },
     {
         "table_name": "tokens",
-        "structure_hash": "698fd57be1f55099b0b24828cf3bc40bb9565600c1571e73aed3a07a7fc6a0bf"
+        "structure_hash": "33d70cb41a8742d39628d926bc175f9eb23343c128998f7116c99ae7b0c542a9"
     },
     {
         "table_name": "user_requests",

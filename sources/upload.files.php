@@ -29,14 +29,10 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-
-use voku\helper\AntiXSS;
-use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\SessionManager\SessionManager;
 use Symfony\Component\HttpFoundation\Request as RequestLocal;
 use Symfony\Component\HttpFoundation\File\Exception\FileException;
 use TeampassClasses\Language\Language;
-use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\ConfigManager\ConfigManager;
 
@@ -220,7 +216,7 @@ if ($file) {
         echo handleUploadError('Invalid file name provided.');
         return false;
     }
-
+    
     // Check that file is a valid string
     $originalName = $file->getClientOriginalName();
     if (is_string($originalName)) {
@@ -255,17 +251,6 @@ if ($file) {
         && $post_type_upload !== 'upload_profile_photo'
     ) {
         echo handleUploadError('Invalid file extension.');
-        return false;
-    }
-
-    // Move the file to the desired location
-    try {
-        $file->move($destinationPath, $file_name);
-    } catch (FileException $e) {
-        if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
-            error_log('File upload error: ' . $e->getMessage());
-        }
-        echo handleUploadError('File upload failed. Please try again.');
         return false;
     }
 } else {
@@ -363,18 +348,12 @@ if (strpos($contentType, 'multipart') !== false) {
                 $uploadDir = realpath($SETTINGS['path_to_upload_folder']);
                 $destinationPath = $uploadDir . DIRECTORY_SEPARATOR . $fileName;
                 
-                // Check if the destination path is secure
-                if (strpos(realpath($destinationPath), $uploadDir) === 0) {
-                    if (move_uploaded_file($tmpFilePath, $destinationPath)) {
-                        // Open the moved file in read mode
-                        $in = fopen($destinationPath, 'rb');
-                    } else {
-                        // Do we have errors
-                        echo handleUploadError('Error while moving the uploaded file.');
-                    }
+                if (move_uploaded_file($tmpFilePath, $destinationPath)) {
+                    // Open the moved file in read mode
+                    $in = fopen($destinationPath, 'rb');
                 } else {
-                    // Path is not secure
-                    echo handleUploadError('Error: attempt to reach a non authorized file.');
+                    // Do we have errors
+                    echo handleUploadError('Error while moving the uploaded file.');
                     exit;
                 }
             } else {
