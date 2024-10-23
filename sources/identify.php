@@ -1157,15 +1157,22 @@ function checkUserPasswordValidity($userInfo, $numDaysBeforePwExpiration, $lastP
                 'user_force_relog' => 'infinite',
                 'numDaysBeforePwExpiration' => '',
             ];
+        } elseif ((int) $SETTINGS['pw_life_duration']  >0){
+            return [
+                'validite_pw' => $numDaysBeforePwExpiration <= 0 ? false : true,
+                'last_pw_change' => $userInfo['last_pw_change'],
+                'user_force_relog' => 'infinite',
+                'numDaysBeforePwExpiration' => $SETTINGS['pw_life_duration'] - round(
+                    (mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y')) - $lastPwChange) / (24 * 60 * 60)),
+            ];
+        } else {
+            return [
+                'validite_pw' => false,
+                'last_pw_change' => '',
+                'user_force_relog' => '',
+                'numDaysBeforePwExpiration' => '',
+            ];
         }
-        
-        return [
-            'validite_pw' => $numDaysBeforePwExpiration <= 0 ? false : true,
-            'last_pw_change' => $userInfo['last_pw_change'],
-            'user_force_relog' => 'infinite',
-            'numDaysBeforePwExpiration' => $SETTINGS['pw_life_duration'] - round(
-                (mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y')) - $lastPwChange) / (24 * 60 * 60)),
-        ];
     } else {
         return [
             'validite_pw' => false,
