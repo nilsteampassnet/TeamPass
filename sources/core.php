@@ -539,7 +539,7 @@ if (isset($SETTINGS['ldap_mode']) === true && (int) $SETTINGS['ldap_mode'] === 1
             $session->set('user-num_days_before_exp', 'infinite');
             $session->set('user-validite_pw', 1);
         } else {
-            $session->set('user-num_days_before_exp', $SETTINGS['pw_life_duration'] - round((mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y')) - $session->get('user-last_pw_change')) / (24 * 60 * 60)));
+            $session->set('user-num_days_before_exp', (int) $SETTINGS['pw_life_duration'] - round((mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y')) - (int) $session->get('user-last_pw_change')) / (24 * 60 * 60)));
             if ($session->get('user-num_days_before_exp') <= 0) {
                 $session->set('user-validite_pw', 0);
             } else {
