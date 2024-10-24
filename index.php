@@ -283,15 +283,14 @@ $theme_navbar = $theme === 'dark' ? 'navbar-dark' : 'navbar-white navbar-light';
 
 
 <?php
-//error_log(print_r($session->all(), true));
 // display an item in the context of OTV link
 if ((null === $session->get('user-validite_pw') || empty($session->get('user-validite_pw')) === true || empty($session->get('user-id')) === true)
     && empty($get['otv']) === false)
 {
     include './includes/core/otv.php';
     exit;
-} elseif ($session->has('user-validite_pw') && $session->get('user-validite_pw') && null !== $session->get('user-validite_pw') && $session->get('user-validite_pw') === 1 && 
-    empty($get['page']) === false && empty($session->get('user-id')) === false
+} elseif ($session->has('user-validite_pw') && null !== $session->get('user-validite_pw') && ($session->get('user-validite_pw') === 0 || $session->get('user-validite_pw') === 1)
+    && empty($get['page']) === false && empty($session->get('user-id')) === false
 ) {
     ?>
     <body class="hold-transition sidebar-mini layout-navbar-fixed layout-fixed <?php echo $theme_body; ?>">
@@ -995,6 +994,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                 
 
                 <?php
+                    // Case where user is allowed to see the page
                     if ($get['page'] === 'items') {
                         // SHow page with Items
                         if ((int) $session_user_admin !== 1) {
@@ -1064,7 +1064,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                     <?php echo $lang->get('version_alone'); ?>&nbsp;<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>
                 </div>
                 <!-- Default to the left -->
-                <strong>Copyright &copy; <?php echo TP_COPYRIGHT; ?> <a href="<?php echo TEAMPASS_URL; ?>"><?php echo TP_TOOL_NAME; ?></a>.</strong> All rights reserved.
+                <strong>Copyright &copy; <?php echo TP_COPYRIGHT; ?> <a href="<?php echo TEAMPASS_URL; ?>"><?php echo TP_TOOL_NAME." - ".$session->get('user-num_days_before_exp'); ?></a>.</strong> All rights reserved.
             </footer>
         </div>
         <!-- ./wrapper -->
@@ -1113,13 +1113,6 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
         // REDIRECTION PAGE ERREUR
         echo '
             <script language="javascript" type="text/javascript">
-            /*
-                sessionStorage.clear();
-                store.set(
-                    "teampassSettings", {},
-                    function(teampassSettings) {}
-                );
-            */
                 window.location.href = "./index.php";
             </script>';
         exit;

@@ -310,6 +310,20 @@ $request = SymfonyRequest::createFromGlobals();
                         }
                     );
                 }
+
+                // Is the user password expired?
+                if (store.get('teampassUser').validite_pw !== 1) {                    
+                    // HIde
+                    $('.content-header, .content, #button_do_user_change_password').addClass('hidden');
+
+                    // Add DoCheck button
+                    $('#button_do_user_change_password').after('<button class="btn btn-primary" id="button_do_pwds_checks"><?php echo $lang->get('perform_checks'); ?></button>');
+
+                    // Show passwords inputs and form
+                    $('#dialog-user-change-password-info').html('<i class="icon fa-solid fa-info mr-2"></i><?php echo $lang->get('user_password_expired'); ?>').removeClass('hidden');
+                    $('#dialog-user-change-password-progress').html('<i class="icon fa-solid fa-info mr-2"></i><?php echo $lang->get('change_your_password_info_message'); ?>');
+                    $('#dialog-user-change-password').removeClass('hidden');
+                }
             });
         });
     }
@@ -1025,6 +1039,15 @@ $request = SymfonyRequest::createFromGlobals();
                     } else {
                         // SUCCESS
                         $('#dialog-user-change-password-close').removeAttr('disabled');
+
+                        // update local storage
+                        store.update(
+                                'teampassUser', {},
+                                function(teampassUser) {
+                                    teampassUser.validite_pw = 1;
+                                }
+                            );
+
                         toastr.remove();
                         toastr.success(
                             data.message,

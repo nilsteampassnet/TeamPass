@@ -599,9 +599,22 @@ mysqli_query($db_link, $deleteQuery);
 
 //---------------------------------------------------------------------
 
-
-
 //---< END 3.1.X upgrade steps
+
+
+// Save timestamp
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'upgrade_timestamp'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'upgrade_timestamp', ".time().")"
+    );
+} else {
+    mysqli_query(
+        $db_link,
+        "UPDATE `" . $pre . "misc` SET valeur = ".time()." WHERE type = 'admin' AND intitule = 'upgrade_timestamp'"
+    );
+}
 
 // Close connection
 mysqli_close($db_link);
