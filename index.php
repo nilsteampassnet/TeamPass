@@ -1064,7 +1064,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                     <?php echo $lang->get('version_alone'); ?>&nbsp;<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>
                 </div>
                 <!-- Default to the left -->
-                <strong>Copyright &copy; <?php echo TP_COPYRIGHT; ?> <a href="<?php echo TEAMPASS_URL; ?>"><?php echo TP_TOOL_NAME." - ".$session->get('user-num_days_before_exp'); ?></a>.</strong> All rights reserved.
+                <strong>Copyright &copy; <?php echo TP_COPYRIGHT; ?> <a href="<?php echo TEAMPASS_URL; ?>"><?php echo TP_TOOL_NAME; ?></a>.</strong> All rights reserved.
             </footer>
         </div>
         <!-- ./wrapper -->
