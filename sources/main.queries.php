@@ -3076,6 +3076,7 @@ function changeUserAuthenticationPassword(
                         'private_key' => $hashedPrivateKey,
                         'pw' => $newPw,
                         'special' => 'none',
+                        'last_pw_change' => time(),
                     ),
                     'id = %i',
                     $post_user_id

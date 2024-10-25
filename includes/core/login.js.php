@@ -915,6 +915,8 @@ declare(strict_types=1);
                             teampassUser.mfaCode = '';
                             teampassUser.page_reload = 0;
                             teampassUser.split_view_mode = data.split_view_mode;
+                            teampassUser.validite_pw = data.validite_pw === true ? 1 : 0;
+                            teampassUser.num_days_before_exp = data.num_days_before_exp;
                         }
                     );
 
