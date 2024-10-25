@@ -445,8 +445,8 @@ if (
     null !== ($post_type_upload)
     && $post_type_upload === 'upload_profile_photo'
 ) {
-    // get file extension
-    $ext = (string) pathinfo($filePath, PATHINFO_EXTENSION);
+    // PNG is the only supported extension
+    $ext = "png";
 
     // rename the file
     rename(
