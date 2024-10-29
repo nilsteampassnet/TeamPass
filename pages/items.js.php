@@ -5463,8 +5463,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 // Show restrictions with Badges
                 var html_restrictions = '';
                 $.each(store.get('teampassItem').id_restricted_to, function(i, value) {
-                    html_restrictions +=https://github.com/rcruz-pntlb/TeamPass/edit/bugfix/4422-fix-item-edit-after-csv-import/pages/items.js.php
-                        '<span class="badge badge-info mr-2 mb-1"><i class="fa-solid fa-group fa-sm mr-1"></i>' +
+                    html_restrictions +='<span class="badge badge-info mr-2 mb-1"><i class="fa-solid fa-group fa-sm mr-1"></i>' +
                         data.users_list.find(x => x.id === parseInt(value)).name + '</span>';
                 });
                 /*BEGIN modification for issue #4422 bugfix/4422-fix-item-edit-after-csv-import
