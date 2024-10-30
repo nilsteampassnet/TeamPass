@@ -77,7 +77,7 @@ if (isset($_GET['code']) === true && isset($_GET['state']) === true && $get['pos
         exit;
     } else {
         // Gérer les erreurs
-        echo 'Erreur lors de la récupération des informations utilisateur : ' . $userInfo['message'];
+        echo 'Erreur lors de la récupération des informations utilisateur : ' . htmlspecialchars($userInfo['message'], ENT_QUOTES, 'UTF-8');
     };
 }
 
@@ -87,7 +87,6 @@ if (null !== $session->get('userOauth2Info') && empty($session->get('userOauth2I
     // Check if user exists in Teampass
     if (WIP === true) {
         error_log('---- CALLBACK LOGIN ----');
-        //error_log('Info : ' . print_r($session->get('userOauth2Info'), true));
     }
 
     $session->set('user-login', strstr($session->get('userOauth2Info')['userPrincipalName'], '@', true));

@@ -336,8 +336,7 @@ if (null !== $post_type) {
             ];            
             $inputData = dataSanitizer(
                 $data,
-                $filters,
-                $SETTINGS['cpassman_dir']
+                $filters
             );
 
             // Init
@@ -589,8 +588,7 @@ if (null !== $post_type) {
             ];            
             $inputData = dataSanitizer(
                 $data,
-                $filters,
-                $SETTINGS['cpassman_dir']
+                $filters
             );
 
             // Check if parent folder is personal
@@ -1271,6 +1269,17 @@ if (null !== $post_type) {
                                     $SETTINGS['path_to_upload_folder'],
                                     decryptUserObjectKey($file['share_key'], $session->get('user-private_key'))
                                 );
+                                if (!is_string($fileContent)) {
+                                    // Case where $fileContent is not a string
+                                    echo prepareExchangedData(
+                                        array(
+                                            'error' => true,
+                                            'message' => 'Invalid file content',
+                                        ),
+                                        'encode'
+                                    );
+                                    break;
+                                }
 
                                 // Step2 - create file
                                 // deepcode ignore InsecureHash: Is not a password, just a random string for a file name
@@ -1289,7 +1298,7 @@ if (null !== $post_type) {
                                 }
                                 fwrite(
                                     $outstream,
-                                    base64_decode($fileContent)
+                                    base64_decode((string) $fileContent)
                                 );
 
                                 // Step3 - encrypt the file

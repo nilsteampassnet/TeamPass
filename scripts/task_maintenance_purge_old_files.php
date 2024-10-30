@@ -73,42 +73,45 @@ function purgeTemporaryFiles(): void
     // Load expected files
     require_once __DIR__. '/../sources/main.functions.php';
 
-    if (isset($SETTINGS) === true) {
-        //read folder
-        if (is_dir($SETTINGS['path_to_files_folder']) === true) {
-            $dir = opendir($SETTINGS['path_to_files_folder']);
-            if ($dir !== false) {
-                //delete file FILES
-                while (false !== ($f = readdir($dir))) {
-                    if ($f !== '.' && $f !== '..' && $f !== '.htaccess') {
-                        if (file_exists($dir . $f) && ((time() - filectime($dir . $f)) > 604800)) {
-                            fileDelete($dir . '/' . $f, $SETTINGS);
-                        }
+    // Verify if $SETTINGS is defined
+    if (isset($SETTINGS) === false) {
+        throw new \RuntimeException('Settings are not defined.');
+    }
+
+    // $SETTINGS is set then read folder
+    if (is_dir($SETTINGS['path_to_files_folder']) === true) {
+        $dir = opendir($SETTINGS['path_to_files_folder']);
+        if ($dir !== false) {
+            //delete file FILES
+            while (false !== ($f = readdir($dir))) {
+                if ($f !== '.' && $f !== '..' && $f !== '.htaccess') {
+                    $filePath = $SETTINGS['path_to_files_folder'] . '/' . $f;
+                    if (file_exists($filePath) && ((time() - filectime($filePath)) > 604800)) {
+                        fileDelete($dir . '/' . $f, $SETTINGS);
                     }
                 }
-
-                //Close dir
-                closedir($dir);
             }
-        }
 
-        //read folder  UPLOAD
-        if (is_dir($SETTINGS['path_to_upload_folder']) === true) {
-            $dir = opendir($SETTINGS['path_to_upload_folder']);
-
-            if ($dir !== false) {
-                //delete file
-                while (false !== ($f = readdir($dir))) {
-                    if ($f !== '.' && $f !== '..') {
-                        if (strpos($f, '_delete.') > 0) {
-                            fileDelete($SETTINGS['path_to_upload_folder'] . '/' . $f, $SETTINGS);
-                        }
-                    }
-                }
-                //Close dir
-                closedir($dir);
-            }
+            //Close dir
+            closedir($dir);
         }
     }
-    
+
+    //read folder  UPLOAD
+    if (is_dir($SETTINGS['path_to_upload_folder']) === true) {
+        $dir = opendir($SETTINGS['path_to_upload_folder']);
+
+        if ($dir !== false) {
+            //delete file
+            while (false !== ($f = readdir($dir))) {
+                if ($f !== '.' && $f !== '..') {
+                    if (strpos($f, '_delete.') > 0) {
+                        fileDelete($SETTINGS['path_to_upload_folder'] . '/' . $f, $SETTINGS);
+                    }
+                }
+            }
+            //Close dir
+            closedir($dir);
+        }
+    }
 }

@@ -726,7 +726,9 @@ if (null !== $post_type) {
                         throw new Exception("Unsupported LDAP type: " . $SETTINGS['ldap_type']);
                 }
             } catch (Exception $e) {
-                error_log('TEAMPASS Error - ldap - '.$e->getMessage());
+                if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                    error_log('TEAMPASS Error - ldap - '.$e->getMessage());
+                }
                 // deepcode ignore ServerLeak: No important data is sent and it is encrypted before sending
                 echo prepareExchangedData(array(
                     'error' => true,
@@ -741,7 +743,6 @@ if (null !== $post_type) {
             } else {
                 // Handle successful retrieval of groups
                 // exists in Teampass
-                //error_log("Error: " . print_r($groupsData['userGroups'], true));
                 foreach($groupsData['userGroups'] as $key => $group) {
                     $role_detail = DB::queryfirstrow(
                         'SELECT a.increment_id as increment_id, a.role_id as role_id, r.title as title

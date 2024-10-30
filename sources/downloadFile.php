@@ -92,15 +92,33 @@ set_time_limit(0);
 // --------------------------------- //
 
 // Prepare GET variables
-$get_filename = (string) $antiXss->xss_clean($request->query->get('name'));
-$get_fileid = $antiXss->xss_clean($request->query->get('fileid'));
-$get_pathIsFiles = (string) $antiXss->xss_clean($request->query->get('pathIsFiles'));
+$getData = dataSanitizer(
+    [
+        'filename' => $request->query->get('name'),
+        'fileid' => $request->query->get('fileid'),
+        'pathIsFiles' => $request->query->get('pathIsFiles'),
+    ],
+    [
+        'filename' => 'trim|escape',
+        'fileid' => 'cast:integer',
+        'pathIsFiles' => 'trim|escape',
+    ]
+);
+$get_filename = (string) $antiXss->xss_clean($getData['filename']);
+$get_fileid = (int) $antiXss->xss_clean($getData['fileid']);
+$get_pathIsFiles = (string) $antiXss->xss_clean($getData['pathIsFiles']);
 
 // Remove newline characters from the filename
 $get_filename = str_replace(array("\r", "\n"), '', $get_filename);
 
-// prepare Encryption class calls
-header('Content-disposition: attachment; filename=' . rawurldecode(basename($get_filename)));
+// Validate the filename to ensure it does not contain unwanted characters
+$get_filename = preg_replace('/[^a-zA-Z0-9_\.-]/', '', basename($get_filename));
+
+// Escape quotes to prevent header injection
+$get_filename = str_replace('"', '\"', $get_filename);
+
+// Use Content-Disposition header with double quotes around filename
+header('Content-Disposition: attachment; filename="' . rawurldecode($get_filename) . '"');
 header('Content-Type: application/octet-stream');
 header('Cache-Control: must-revalidate, no-cache, no-store');
 header('Expires: 0');
@@ -164,8 +182,12 @@ if (null !== $request->query->get('pathIsFiles') && (int) $get_pathIsFiles === 1
         if (empty($fileContent) === true) {
             // deepcode ignore PT: File and path are secured directly inside the function decryptFile()
             readfile($filePath); // Read the file from disk
-        } else {
+        } else if (is_string($fileContent)) {
             exit(base64_decode($fileContent));
+        } else {
+            // $fileContent is not a string
+            echo 'ERROR_No_file_found';
+        exit;
         }
         exit;
     } else {

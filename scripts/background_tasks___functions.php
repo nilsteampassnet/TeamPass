@@ -101,7 +101,9 @@ function clearTasksLog()
  */
 function provideLog(string $message, array $SETTINGS)
 {
-    error_log((string) date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], time()) . ' - '.$message);
+    if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+        error_log((string) date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], time()) . ' - '.$message);
+    }
 }
 
 function performVisibleFoldersHtmlUpdate (int $user_id)

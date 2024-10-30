@@ -1277,6 +1277,7 @@ function prepareExchangedData($data, string $type, ?string $key = null)
 
         return $data;
     }
+
     if ($type === 'decode' && is_array($data) === false) {
         // Decrypt if needed
         if ($session->get('encryptClientServer') === 1) {
@@ -1289,9 +1290,13 @@ function prepareExchangedData($data, string $type, ?string $key = null)
             $data = html_entity_decode(html_entity_decode($data));
         }
 
-        // Return data array
-        return json_decode($data, true);
+        // Check if $data is a valid string before json_decode
+        if (is_string($data) && !empty($data)) {
+            // Return data array
+            return json_decode($data, true);
+        }
     }
+
     return '';
 }
 
@@ -2404,7 +2409,7 @@ function encryptUserObjectKey(string $key, string $publicKey): string
     $rsa->loadKey($decodedPublicKey);
     // Encrypt
     $encrypted = $rsa->encrypt(base64_decode($key));
-    if ($encrypted === false) {
+    if (empty($encrypted)) {  // Check if key is empty or null
         throw new RuntimeException("Error while encrypting key.");
     }
     // Return
@@ -2449,7 +2454,9 @@ function decryptUserObjectKey(string $key, string $privateKey): string
             return '';
         }
     } catch (Exception $e) {
-        error_log('TEAMPASS Error - ldap - '.$e->getMessage());
+        if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+            error_log('TEAMPASS Error - ldap - '.$e->getMessage());
+        }
         return 'Exception: could not decrypt object';
     }
 }
@@ -2503,9 +2510,9 @@ function encryptFile(string $fileInName, string $fileInPath): array
  * @param string $filePath Path to file
  * @param string $key      Key to use
  *
- * @return string
+ * @return string|array
  */
-function decryptFile(string $fileName, string $filePath, string $key): string
+function decryptFile(string $fileName, string $filePath, string $key): string|array
 {
     if (! defined('FILE_BUFFER_SIZE')) {
         define('FILE_BUFFER_SIZE', 128 * 1024);
@@ -2525,7 +2532,15 @@ function decryptFile(string $fileName, string $filePath, string $key): string
     $cipher->disablePadding();
     // Get file content
     $safeFilePath = realpath($filePath . '/' . TP_FILE_PREFIX . $safeFileName);
-    $ciphertext = file_get_contents(filter_var($safeFilePath, FILTER_SANITIZE_URL));
+    if ($safeFilePath !== false && file_exists($safeFilePath)) {
+        $ciphertext = file_get_contents(filter_var($safeFilePath, FILTER_SANITIZE_URL));
+    } else {
+        // Handle the error: file doesn't exist or path is invalid
+        return [
+            'error' => true,
+            'message' => 'This file has not been found.',
+        ];
+    }
 
     if (WIP) error_log('DEBUG: File image url -> '.filter_var($safeFilePath, FILTER_SANITIZE_URL));
 
@@ -2644,7 +2659,6 @@ function storeUsersShareKey(
         }
     } else {
         // Create sharekey for each user
-        //error_log('Building QUERY - all_users_except_id: '. $all_users_except_id);
         //DB::debugmode(true);
         $users = DB::query(
             'SELECT id, public_key
@@ -2773,10 +2787,8 @@ function ldapCheckUserPassword(string $login, string $password, array $SETTINGS)
         $connection->connect();
     } catch (\LdapRecord\Auth\BindException $e) {
         $error = $e->getDetailedError();
-        if ($error) {
+        if ($error && defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
             error_log('TEAMPASS Error - LDAP - '.$error->getErrorCode()." - ".$error->getErrorMessage(). " - ".$error->getDiagnosticMessage());
-        } else {
-            error_log('TEAMPASS Error - LDAP - Code: '.$e->getCode().' - Message: '.$e->getMessage());
         }
         // deepcode ignore ServerLeak: No important data is sent
         echo 'An error occurred.';
@@ -2792,10 +2804,8 @@ function ldapCheckUserPassword(string $login, string $password, array $SETTINGS)
         }
     } catch (\LdapRecord\Auth\BindException $e) {
         $error = $e->getDetailedError();
-        if ($error) {
+        if ($error && defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
             error_log('TEAMPASS Error - LDAP - '.$error->getErrorCode()." - ".$error->getErrorMessage(). " - ".$error->getDiagnosticMessage());
-        } else {
-            error_log('TEAMPASS Error - LDAP - Code: '.$e->getCode().' - Message: '.$e->getMessage());
         }
         // deepcode ignore ServerLeak: No important data is sent
         echo 'An error occurred.';
@@ -3526,16 +3536,12 @@ function upgradeRequired(): bool
         'admin',
         'upgrade_timestamp'
     );
-    
-    // if not exists then error
-    if (is_null($val) === true || count($val) === 0 || defined('UPGRADE_MIN_DATE') === false) return true;
 
-    // if empty or too old then error
-    if (empty($val['valeur']) === true || (int) $val['valeur'] < (int) UPGRADE_MIN_DATE) {
-        return true;
-    }
-
-    return false;
+    // Check if upgrade is required
+    return (
+        is_null($val) || count($val) === 0 || !defined('UPGRADE_MIN_DATE') || 
+        empty($val['valeur']) || (int) $val['valeur'] < (int) UPGRADE_MIN_DATE
+    );
 }
 
 /**
@@ -3624,8 +3630,9 @@ function handleUserKeys(
             }
         } catch (Exception $e) {
             // Show error message to user and log event
-            error_log('ERROR: User '.$userId.' - '.$e->getMessage());
-
+            if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                error_log('ERROR: User '.$userId.' - '.$e->getMessage());
+            }
             return prepareExchangedData([
                     'error' => true,
                     'message' => $lang->get('pw_encryption_error'),
@@ -4002,7 +4009,7 @@ function createTaskForItem(
         $taskName = [$taskName];
     }
     foreach($taskName as $task) {
-        error_log('createTaskForItem - task: '.$task);
+        if (WIP === true) error_log('createTaskForItem - task: '.$task);
         switch ($task) {
             case 'item_password':
                 
@@ -4329,7 +4336,12 @@ function sendMailToUser(
     $emailSettings = new EmailSettings($SETTINGS);
     $emailService = new EmailService();
 
-    if (count($post_replace) > 0 && is_null($post_replace) === false) {
+    // Sanitize inputs
+    $post_receipt = filter_var($post_receipt, FILTER_SANITIZE_EMAIL);
+    $post_subject = htmlspecialchars($post_subject, ENT_QUOTES, 'UTF-8');
+    $post_body = htmlspecialchars($post_body, ENT_QUOTES, 'UTF-8');
+
+    if (count($post_replace) > 0) {
         $post_body = str_replace(
             array_keys($post_replace),
             array_values($post_replace),
@@ -4337,8 +4349,11 @@ function sendMailToUser(
         );
     }
 
+    // Remove newlines to prevent header injection
+    $post_body = str_replace(array("\r", "\n"), '', $post_body);    
+
     if ($immediate_email === true) {
-        
+        // Send email
         $ret = $emailService->sendMail(
             $post_subject,
             $post_body,

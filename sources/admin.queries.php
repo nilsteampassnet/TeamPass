@@ -1800,7 +1800,9 @@ switch ($post_type) {
                 $SETTINGS['cpassman_url'].'/'.DUO_CALLBACK
             );
         } catch (DuoException $e) {
-            error_log('TEAMPASS Error - duo config - '.$e->getMessage());
+            if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                error_log('TEAMPASS Error - duo config - '.$e->getMessage());
+            }
             // deepcode ignore ServerLeak: Data is encrypted before being sent
             echo prepareExchangedData(
                     array(
@@ -1816,16 +1818,9 @@ switch ($post_type) {
         try {
             $duo_client->healthCheck();
         } catch (DuoException $e) {
-            /*if ($SETTINGS['duo_failmode'] == "OPEN") {
-                # If we're failing open, errors in 2FA still allow for success
-                $duo_error = $lang->get('duo_error_failopen');
-                $data["duo_check"] = "open";
-            } else {
-                # Duo has failed and is unavailable, redirect user to the login page
-                $duo_error = $lang->get('duo_error_secure');
-                $data["duo_check"] = "failed";
-            }*/
-            error_log('TEAMPASS Error - duo config - '.$e->getMessage());
+            if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                error_log('TEAMPASS Error - duo config - '.$e->getMessage());
+            }
             // deepcode ignore ServerLeak: Data is encrypted before being sent
             echo prepareExchangedData(
                     array(

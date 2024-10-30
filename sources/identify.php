@@ -2448,7 +2448,6 @@ function createOauth2User(
     int $userLdapHasBeenCreated
 ): array
 {
-    //error_log($SETTINGS['oauth2_enabled']." -- ".$username." -- ".$userInfo['oauth2_user_to_be_created']." -- ".$userLdapHasBeenCreated);
     // Prepare creating the new oauth2 user in Teampass
     if ((int) $SETTINGS['oauth2_enabled'] === 1
         && $username !== 'admin'
@@ -2487,7 +2486,7 @@ function createOauth2User(
         // Complete $userInfo
         $userInfo['has_been_created'] = 1;
 
-        error_log("--- USER CREATED ---");
+        if (WIP === true) error_log("--- USER CREATED ---");
 
         return [
             'error' => false,
@@ -2511,7 +2510,7 @@ function createOauth2User(
         }
         
         // Oauth2 user already exists and authenticated
-        error_log("--- USER AUTHENTICATED ---");
+        if (WIP === true) error_log("--- USER AUTHENTICATED ---");
         $userInfo['has_been_created'] = 0;
         return [
             'error' => false,

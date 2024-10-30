@@ -88,7 +88,8 @@ function get_authorization_header()
 	$authorizationHeader = $request->headers->get('Authorization');
 	$headers = null;
 	
-	if (null !== $authorizationHeader) {
+	// Check if the authorization header is not empty
+	if (!empty($authorizationHeader)) {
 		$headers = trim($authorizationHeader);
 	} else if (function_exists('apache_request_headers') === true) {
 		$requestHeaders = (array) apache_request_headers();

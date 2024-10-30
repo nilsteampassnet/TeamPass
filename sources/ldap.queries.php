@@ -157,7 +157,9 @@ switch ($post_type) {
                     throw new Exception("Unsupported LDAP type: " . $SETTINGS['ldap_type']);
             }
         } catch (Exception $e) {
-            error_log('TEAMPASS Error - ldap - '.$e->getMessage());
+            if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                error_log('TEAMPASS Error - ldap - '.$e->getMessage());
+            }
             // deepcode ignore ServerLeak: No important data is sent and is encrypted before being sent
             echo  prepareExchangedData(
                 array(
@@ -191,11 +193,9 @@ switch ($post_type) {
     
         } catch (\LdapRecord\Query\ObjectNotFoundException $e) {
             $error = $e->getDetailedError();
-            if ($error) {
+            if ($error && defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
                 error_log('TEAMPASS Error - LDAP - '.$error->getErrorCode()." - ".$error->getErrorMessage(). " - ".$error->getDiagnosticMessage());
-            } else {
-                error_log('TEAMPASS Error - LDAP - Code: '.$e->getCode().' - Message: '.$e->getMessage());
-            }
+            } 
             // deepcode ignore ServerLeak: No important data is sent and is encrypted before being sent
             echo prepareExchangedData(
                 array(
@@ -231,10 +231,8 @@ switch ($post_type) {
             }
         } catch (\LdapRecord\Query\ObjectNotFoundException $e) {
             $error = $e->getDetailedError();
-            if ($error) {
+            if ($error && defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
                 error_log('TEAMPASS Error - LDAP - '.$error->getErrorCode()." - ".$error->getErrorMessage(). " - ".$error->getDiagnosticMessage());
-            } else {
-                error_log('TEAMPASS Error - LDAP - Code: '.$e->getCode().' - Message: '.$e->getMessage());
             }
             // deepcode ignore ServerLeak: No important data is sent and is encrypted before being sent
             echo prepareExchangedData(

@@ -686,9 +686,9 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                     <!-- /.sidebar-menu -->
                 <div class="menu-footer">
                     <div class="" id="sidebar-footer">
-                        <i class="fa-solid fa-clock-o mr-2 infotip text-info pointer" title="<?php echo $lang->get('server_time') . ' ' .
+                        <i class="fa-solid fa-clock-o mr-2 infotip text-info pointer" title="<?php echo htmlspecialchars($lang->get('server_time') . ' ' .
                             date($date_format, (int) $server['request_time']) . ' - ' .
-                            date($time_format, (int) $server['request_time']); ?>"></i>
+                            date($time_format, (int) $server['request_time']), ENT_QUOTES, 'UTF-8'); ?>"></i>
                         <i class="fa-solid fa-users mr-2 infotip text-info pointer" title="<?php echo $session_nb_users_online . ' ' . $lang->get('users_online'); ?>"></i>
                         <a href="<?php echo DOCUMENTATION_URL; ?>" target="_blank" class="text-info"><i class="fa-solid fa-book mr-2 infotip" title="<?php echo $lang->get('documentation_canal'); ?>"></i></a>
                         <a href="<?php echo HELP_URL; ?>" target="_blank" class="text-info"><i class="fa-solid fa-life-ring mr-2 infotip" title="<?php echo $lang->get('admin_help'); ?>"></i></a>

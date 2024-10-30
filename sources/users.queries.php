@@ -2160,8 +2160,7 @@ if (null !== $post_type) {
             
             $inputData = dataSanitizer(
                 $data,
-                $filters,
-                $SETTINGS['cpassman_dir']
+                $filters
             );
 
             // Check send values
@@ -2529,10 +2528,8 @@ if (null !== $post_type) {
             
             } catch (\LdapRecord\Auth\BindException $e) {
                 $error = $e->getDetailedError();
-                if ($error) {
+                if ($error && defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
                     error_log('TEAMPASS Error - LDAP - '.$error->getErrorCode()." - ".$error->getErrorMessage(). " - ".$error->getDiagnosticMessage());
-                } else {
-                    error_log('TEAMPASS Error - LDAP - Code: '.$e->getCode().' - Message: '.$e->getMessage());
                 }
                 // deepcode ignore ServerLeak: No important data is sent and it is encrypted before sending
                 echo prepareExchangedData(
@@ -2561,10 +2558,8 @@ if (null !== $post_type) {
                     ->paginate(100);
             } catch (\LdapRecord\Auth\BindException $e) {
                 $error = $e->getDetailedError();
-                if ($error) {
+                if ($error && defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
                     error_log('TEAMPASS Error - LDAP - '.$error->getErrorCode()." - ".$error->getErrorMessage(). " - ".$error->getDiagnosticMessage());
-                } else {
-                    error_log('TEAMPASS Error - LDAP - Code: '.$e->getCode().' - Message: '.$e->getMessage());
                 }
                 // deepcode ignore ServerLeak: No important data is sent and it is encrypted before sending
                 echo prepareExchangedData(

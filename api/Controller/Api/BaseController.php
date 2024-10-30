@@ -80,8 +80,7 @@ class BaseController
         
         return dataSanitizer(
             $array,
-            $filters,
-            __DIR__.'/../../..'
+            $filters
         );
     }
 

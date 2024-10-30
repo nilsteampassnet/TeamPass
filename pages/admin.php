@@ -224,7 +224,9 @@ try {
     }
 }
 catch (Exception $e) {
-    error_log('TEAMPASS Error - admin page - '.$e->getMessage());
+    if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+        error_log('TEAMPASS Error - admin page - '.$e->getMessage());
+    }
     // deepcode ignore ServerLeak: no critical information is provided
     echo 'An error occurred. Please refer to server logs.';
 }
@@ -306,7 +308,7 @@ catch (Exception $e) {
 
                         // Test internet access
                         $connected = @fsockopen("www.cloudflare.com", 443, $errno, $errstr, 1); // API Duo API (MFA).
-                        if ($connected){
+                        if ($connected !== false) {
                             fclose($connected);
                             $internetAccess = '
                             <p>

@@ -58,9 +58,20 @@ set_time_limit($SETTINGS['task_maximum_run_time']);
 // Once all items are processed, the subtask is marked as FINISHED
 
 $arguments = $_SERVER['argv'];
+
+// Is there any arguments in array ?
+if (!is_array($arguments)) {
+    // Stop the script
+    echo "Erreur : Les arguments ne sont pas disponibles ou ne sont pas un tableau.\n";
+    
+    if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+        error_log('Error: Arguments are not available or not an array. (background_tasks___userKeysCreation_subtaskHdl.php)');
+    }
+    exit(1);
+}
 array_shift($arguments);
 
-
+// Get the arguments
 $inputData = [
     'subTaskId' => $_SERVER['argv'][1],
     'index' => $_SERVER['argv'][2],

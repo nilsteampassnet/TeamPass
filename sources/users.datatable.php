@@ -99,7 +99,6 @@ $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
 // Build FUNCTIONS list
 $params = $request->query->all();
-//error_log(print_r($params, true));
 $rolesList = [];
 $titles = DB::query('SELECT id,title FROM '.prefixTable('roles_title').' ORDER BY title ASC');
 foreach ($titles as $title) {

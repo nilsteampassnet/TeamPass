@@ -1089,7 +1089,9 @@ switch ($inputData['type']) {
             $session->get('user-id')
         );
         if (DB::count() === 0) {
-            if (LOG_TO_SERVER === true) error_log('TEAMPASS | user '.$session->get('user-id').' has no sharekey for item '.$inputData['itemId']);
+            if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                error_log('TEAMPASS | user '.$session->get('user-id').' has no sharekey for item '.$inputData['itemId']);
+            }
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -2081,7 +2083,9 @@ switch ($inputData['type']) {
 
             // Remove the edition lock if no  encryption steps are needed
             if ($encryptionTaskIsRequested === false) {
-                error_log('Remove the edition lock if no  encryption steps are needed');
+                if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                    error_log('Remove the edition lock if no  encryption steps are needed');
+                }
                 DB::delete(
                     prefixTable('items_edition'), 
                     'item_id = %i AND user_id = %i', 
@@ -2453,7 +2457,6 @@ switch ($inputData['type']) {
             // Create new task for the new item
             // If it is not a personnal one
             if ((int) $dataDestination['personal_folder'] !== 1) {
-                //error_log('item_copy' . print_r($itemDataArray, true));
                 storeTask(
                     'item_copy',
                     $session->get('user-id'),
@@ -2744,7 +2747,6 @@ switch ($inputData['type']) {
             }
         } else {
             $pwIsEmptyNormal == true;
-            //error_log('userKey: ' . print_r($userKey, true));
             $decryptedObject = decryptUserObjectKey($userKey['share_key'], $session->get('user-private_key'));
             // if null then we have an error.
             // suspecting bad password
@@ -6440,6 +6442,18 @@ switch ($inputData['type']) {
             $SETTINGS['path_to_upload_folder'],
             decryptUserObjectKey($file_info['share_key'], $session->get('user-private_key'))
         );
+
+        // Check error
+        if (isset($fileContent['error']) === true) {
+            echo (string) prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $fileContent['message'],
+                ),
+                'encode'
+            );
+            break;
+        }
 
         // Encrypt data to return
         echo (string) prepareExchangedData(
