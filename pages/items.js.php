@@ -5465,17 +5465,12 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 $.each(store.get('teampassItem').id_restricted_to, function(i, value) {
                     html_restrictions +='<span class="badge badge-info mr-2 mb-1"><i class="fa-solid fa-group fa-sm mr-1"></i>' +
                         data.users_list.find(x => x.id === parseInt(value)).name + '</span>';
-                });
-                /*BEGIN modification for issue #4422 bugfix/4422-fix-item-edit-after-csv-import
-                  original post: https://github.com/nilsteampassnet/TeamPass/issues/4422
-                    @Author:     rcruz@pintaluba.com
-                    @Date:       10/29/2024                                            
-                */
+                }); 
+                        
                 $.each(store.get('teampassItem').id_restricted_to_roles, function(i, value) {                   
                     const role = data.roles_list.find(x => x.id === parseInt(value));
                     html_restrictions += (role ? '<span class="badge badge-info mr-2 mb-1"><i class="fa-solid fa-group fa-sm mr-1"></i>' + role.title  + '</span>' : '');
-                });
-                /*END modification for issue #4422 bugfix/4422-fix-item-edit-after-csv-import*/
+                });     
                         
                 if (html_restrictions === '') {
                     $('#card-item-restrictedto').html('<?php echo $lang->get('no_special_restriction'); ?>');
