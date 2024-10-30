@@ -225,7 +225,7 @@ class Dispatcher implements DispatcherInterface
     {
         [$class, $method] = $this->parseListenerCallback($listener);
 
-        return [new $class(), $method];
+        return [new $class, $method];
     }
 
     /**

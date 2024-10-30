@@ -92,7 +92,7 @@ class Grammar
     {
         $filter = '';
 
-        foreach ($builder->filters[$type] as $where) {
+        foreach ($builder->filters[$type] ?? [] as $where) {
             $filter .= $this->compileWhere($where);
         }
 
@@ -169,7 +169,7 @@ class Grammar
         $filters = 0;
 
         foreach ($types as $type) {
-            $filters += count($query->filters[$type]);
+            $filters += count($query->filters[$type] ?? []);
         }
 
         return match ($operator) {

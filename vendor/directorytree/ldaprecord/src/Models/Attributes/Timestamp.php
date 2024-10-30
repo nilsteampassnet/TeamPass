@@ -184,7 +184,7 @@ class Timestamp
             return (int) $value;
         }
 
-        return (new DateTime())->setTimestamp(
+        return (new DateTime)->setTimestamp(
             round($value / 10000000) - 11644473600
         );
     }
