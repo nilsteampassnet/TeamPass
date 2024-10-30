@@ -305,7 +305,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         toastr.remove();
         toastr.info('<?php echo $lang->get('reading_file'); ?><i class="fa-solid fa-ellipsis fa-2x fa-fade ml-2"></i>');
 
-        console.log("file: "+store.get('teampassApplication').uploadedFileId+" -- Folder id: "+$('#import-csv-target-folder').val())
+        if (debugJavascript === true) {
+            console.log("file: "+store.get('teampassApplication').uploadedFileId+" -- Folder id: "+$('#import-csv-target-folder').val());
+        }
 
         // Perform query
         $.post(
@@ -317,7 +319,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             },
             function(data) {
                 data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
-                console.log(data)
+                if (debugJavascript === true) {
+                    console.log(data);
+                }
 
                 // CLear
                 store.update(
@@ -392,6 +396,19 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
     //get list of items checked by user
     function launchCSVItemsImport() {
+        // IS the folder selected?
+        if (parseInt($("#import-csv-target-folder").val()) === 0) {
+            toastr.remove();
+            toastr.error(
+                '<i class="fas fa-ban fa-lg mr-2"></i><?php echo $lang->get('please_select_a_folder'); ?>',
+                '', {
+                    timeOut: 10000,
+                    closeButton: true,
+                    progressBar: true
+                }
+            );
+            return false;
+        }
         // Show spinner
         toastr.remove();
         toastr.info('<i class="fas fa-cog fa-spin fa-2x"></i><?php echo $lang->get('please_wait'); ?>');
@@ -439,7 +456,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             'edit-role': $('#import-csv-edit-role-checkbox').prop('checked') === true ? 1 : 0,
             'folder-id' : parseInt($("#import-csv-target-folder").val()),
         }
-        console.log(data);
+        if (debugJavascript === true) {
+            console.log(data);
+        }
         // Lauchn ajax query that will insert items into DB
         $.post(
             "sources/import.queries.php", {
@@ -449,7 +468,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             },
             function(data) {
                 data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
-                console.log(data)
+                if (debugJavascript === true) {
+                    console.log(data);
+                }
 
                 if (data.error === true) {
                     toastr.remove();
