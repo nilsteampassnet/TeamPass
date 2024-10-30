@@ -577,8 +577,8 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         // check feedback regarding user password validity
         $return = checkUserPasswordValidity(
             $userInfo,
-            $session->get('user-num_days_before_exp'),
-            $session->get('user-last_pw_change'),
+            (int) $session->get('user-num_days_before_exp'),
+            (int) $session->get('user-last_pw_change'),
             $SETTINGS
         );
         $session->set('user-validite_pw', $return['validite_pw']);
@@ -814,7 +814,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                 );
             }
         }
-
+        
         // Ensure Complexity levels are translated
         defineComplexity();
         echo prepareExchangedData(
@@ -839,6 +839,8 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                 'upgrade_needed' => isset($userInfo['upgrade_needed']) === true ? (int) $userInfo['upgrade_needed'] : 0,
                 'special' => isset($userInfo['special']) === true ? (int) $userInfo['special'] : 0,
                 'split_view_mode' => isset($userInfo['split_view_mode']) === true ? (int) $userInfo['split_view_mode'] : 0,
+                'validite_pw' => $session->get('user-validite_pw') !== null ? $session->get('user-validite_pw') : '',
+                'num_days_before_exp' => $session->get('user-num_days_before_exp') !== null ? (int) $session->get('user-num_days_before_exp') : '',
             ],
             'encode'
         );
@@ -1138,9 +1140,9 @@ function prepareUserEncryptionKeys($userInfo, $passwordClear) : array
  *
  * @return array
  */
-function checkUserPasswordValidity($userInfo, $numDaysBeforePwExpiration, $lastPwChange, $SETTINGS)
+function checkUserPasswordValidity(array $userInfo, int $numDaysBeforePwExpiration, int $lastPwChange, array $SETTINGS)
 {
-    if (isKeyExistingAndEqual('ldap_mode', 1, $SETTINGS) === true) {
+    if (isKeyExistingAndEqual('ldap_mode', 1, $SETTINGS) === true && $userInfo['auth_type'] !== 'local') {
         return [
             'validite_pw' => true,
             'last_pw_change' => $userInfo['last_pw_change'],
@@ -1148,7 +1150,7 @@ function checkUserPasswordValidity($userInfo, $numDaysBeforePwExpiration, $lastP
             'numDaysBeforePwExpiration' => '',
         ];
     }
-
+    
     if (isset($userInfo['last_pw_change']) === true) {
         if ((int) $SETTINGS['pw_life_duration'] === 0) {
             return [
@@ -1157,15 +1159,24 @@ function checkUserPasswordValidity($userInfo, $numDaysBeforePwExpiration, $lastP
                 'user_force_relog' => 'infinite',
                 'numDaysBeforePwExpiration' => '',
             ];
+        } elseif ((int) $SETTINGS['pw_life_duration'] > 0) {
+            $numDaysBeforePwExpiration = (int) $SETTINGS['pw_life_duration'] - round(
+                (mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y')) - $userInfo['last_pw_change']) / (24 * 60 * 60)
+            );
+            return [
+                'validite_pw' => $numDaysBeforePwExpiration <= 0 ? false : true,
+                'last_pw_change' => $userInfo['last_pw_change'],
+                'user_force_relog' => 'infinite',
+                'numDaysBeforePwExpiration' => (int) $numDaysBeforePwExpiration,
+            ];
+        } else {
+            return [
+                'validite_pw' => false,
+                'last_pw_change' => '',
+                'user_force_relog' => '',
+                'numDaysBeforePwExpiration' => '',
+            ];
         }
-        
-        return [
-            'validite_pw' => $numDaysBeforePwExpiration <= 0 ? false : true,
-            'last_pw_change' => $userInfo['last_pw_change'],
-            'user_force_relog' => 'infinite',
-            'numDaysBeforePwExpiration' => $SETTINGS['pw_life_duration'] - round(
-                (mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y')) - $lastPwChange) / (24 * 60 * 60)),
-        ];
     } else {
         return [
             'validite_pw' => false,

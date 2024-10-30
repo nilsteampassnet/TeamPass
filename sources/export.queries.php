@@ -632,7 +632,7 @@ if (null !== $post_type) {
                     if ($prev_path !== $record['path']) {
                         $html_table .= '
                             <tr>
-                                <td colspan="6">'.$record['path'].'</td>
+                                <td colspan="6">'.htmlspecialchars($record['path']).'</td>
                             </tr>';
                     }
                     $prev_path = $record['path'];
@@ -640,12 +640,12 @@ if (null !== $post_type) {
                     // build
                     $html_table .= '
                     <tr>
-                        <td>'.$record['label'].'</td>
-                        <td>'.$record['login'].'</td>
-                        <td>'.$record['pw'].'</td>
-                        <td>'.$record['url'].'</td>
-                        <td>'.$record['description'].'</td>
-                        <td>'.$record['email'].'</td>
+                        <td>'.htmlspecialchars($record['label']).'</td>
+                        <td>'.htmlspecialchars($record['login']).'</td>
+                        <td>'.htmlspecialchars($record['pw']).'</td>
+                        <td>'.htmlspecialchars($record['url']).'</td>
+                        <td>'.htmlspecialchars($record['description']).'</td>
+                        <td>'.htmlspecialchars($record['email']).'</td>
                     </tr>';
                 }
                 $html_table .= '

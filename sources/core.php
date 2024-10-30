@@ -387,7 +387,7 @@ if (
 if ($session->has('user-timezone') && null !== $session->get('user-id') && empty($session->get('user-id')) === false) {
     // query on user
     $data = DB::queryfirstrow(
-        'SELECT login, admin, gestionnaire, can_manage_all_users, groupes_visibles, groupes_interdits, fonction_id, last_connexion, roles_from_ad_groups FROM ' . prefixTable('users') . ' WHERE id=%i',
+        'SELECT login, admin, gestionnaire, can_manage_all_users, groupes_visibles, groupes_interdits, fonction_id, last_connexion, roles_from_ad_groups, auth_type, last_pw_change FROM ' . prefixTable('users') . ' WHERE id=%i',
         $session->get('user-id')
     );
     //Check if user has been deleted or unlogged
@@ -406,6 +406,8 @@ if ($session->has('user-timezone') && null !== $session->get('user-id') && empty
         $session->set('user-admin', $data['admin']);
         $session->set('user-manager', $data['gestionnaire']);
         $session->set('user-can_manage_all_users', $data['can_manage_all_users']);
+        $session->set('user-auth_type', $data['auth_type']);
+        $session->set('user-last_pw_change', $data['last_pw_change']);
 
         $session->set('user-accessible_folders', []);
         $session->set('user-no_access_folders', []);
@@ -528,7 +530,7 @@ if (
 */
 $session->set('user-num_days_before_exp', '');
 //initiliaze variable
-if (isset($SETTINGS['ldap_mode']) === true && (int) $SETTINGS['ldap_mode'] === 1) {
+if (isset($SETTINGS['ldap_mode']) === true && (int) $SETTINGS['ldap_mode'] === 1 && $session->has('user-auth_type') && $session->get('user-auth_type') !== 'local') {
     $session->set('user-last_pw_change', 1);
     $session->set('user-validite_pw', 1);
 } else {
@@ -537,7 +539,7 @@ if (isset($SETTINGS['ldap_mode']) === true && (int) $SETTINGS['ldap_mode'] === 1
             $session->set('user-num_days_before_exp', 'infinite');
             $session->set('user-validite_pw', 1);
         } else {
-            $session->set('user-num_days_before_exp', $SETTINGS['pw_life_duration'] - round((mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y')) - $session->get('user-last_pw_change')) / (24 * 60 * 60)));
+            $session->set('user-num_days_before_exp', (int) $SETTINGS['pw_life_duration'] - round((mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y')) - $session->get('user-last_pw_change')) / (24 * 60 * 60)));
             if ($session->get('user-num_days_before_exp') <= 0) {
                 $session->set('user-validite_pw', 0);
             } else {

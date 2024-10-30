@@ -1204,5 +1204,6 @@ return array(
     'duo_redirect_uri' => 'Redirection vers DUO',
     'number_users_build_cache_tree' => 'Nombre d&apos;utilisateurs traités par build_cache_tree.',
     'number_users_build_cache_tree_tip' => 'Nombre d&apos;utilisateurs traités par build_cache_tree à chaque lancement du scheduler.',
+    'user_password_expired' => 'Ton mot de passe est expiré. Merci de le changer.',
 
 );
