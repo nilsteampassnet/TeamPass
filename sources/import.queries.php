@@ -171,13 +171,13 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
                 $valuesToImport[] = array(
                     'Label' => $rowData['label'],
                     'Login' => $rowData['login'],
-                    'Password' => $rowData['pw'],
+                    'Password' => $rowData['password'],
                     'url' => $rowData['url'],
                     'Comments' => $rowData['description'],
                 );
             });
             $lexer->parse($file, $interpreter);
-
+            
             // extract one line
             foreach ($valuesToImport as $key => $row) {
                 //increment number of lines found
@@ -194,7 +194,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
                 }
 
                 //If any comment is on several lines, then replace 'lf' character
-                $row['Comments'] = str_replace(array("\r\n", "\n", "\r"), '<br>', $row['Comments']);
+                $row['Comments'] = isset($row['Comments']) ? str_replace(array("\r\n", "\n", "\r"), '<br>', $row['Comments']) : '';
 
                 // Check if current line contains a "<br>" character in order to identify an ITEM on several CSV lines
                 if (substr_count($row['Comments'], '<br>') > 0 || substr_count($row['Label'], '<br>') > 0) {
@@ -221,13 +221,13 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
                         }
                     }
                 }
-
+                
                 // Get values of current line
                 if ($account === '' && $continue_on_next_line === false) {
-                    $account = trim(htmlspecialchars($row['Label'], ENT_QUOTES, 'UTF-8'));
-                    $login = trim(htmlspecialchars($row['Login'], ENT_QUOTES, 'UTF-8'));
-                    $pwd = trim(str_replace('"', '&quot;', $row['Password']));
-                    $url = trim($row['url']);
+                    $account = isset($row['Label']) && is_string($row['Label']) ? trim(htmlspecialchars($row['Label'], ENT_QUOTES, 'UTF-8')) : '';
+                    $login = isset($row['Login']) && is_string($row['Login']) ? trim(htmlspecialchars($row['Login'], ENT_QUOTES, 'UTF-8')) : '';
+                    $pwd = isset($row['Password']) && is_string($row['Password']) ? trim(str_replace('"', '&quot;', $row['Password'])) : '';
+                    $url = isset($row['url']) && is_string($row['url']) ? trim($row['url']) : '';
                     $to_find = array('"', "'");
                     $to_ins = array('&quot', '&#39;');
                     $comment = htmlentities(
@@ -361,7 +361,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
                 $cryptedStuff['encrypted'] = '';
             }
             $post_password = $cryptedStuff['encrypted'];
-
+            
             // Insert new item in table ITEMS
             DB::insert(
                 prefixTable('items'),
