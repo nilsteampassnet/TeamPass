@@ -11,8 +11,7 @@ class DetailedError
         protected int $errorCode,
         protected string $errorMessage,
         protected ?string $diagnosticMessage
-    ) {
-    }
+    ) {}
 
     /**
      * Get the LDAP error code.

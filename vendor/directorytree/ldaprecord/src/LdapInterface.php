@@ -4,15 +4,13 @@ namespace LdapRecord;
 
 use LDAP\Connection;
 
+/**
+ * @see https://ldap.com/ldap-oid-reference-guide
+ * @see http://msdn.microsoft.com/en-us/library/cc223359.aspx
+ * @see https://help.univention.com/t/openldap-debug-level/19301
+ */
 interface LdapInterface
 {
-    /**
-     * The SSL LDAP protocol string.
-     *
-     * @var string
-     */
-    public const PROTOCOL_SSL = 'ldaps://';
-
     /**
      * The standard LDAP protocol string.
      *
@@ -21,11 +19,11 @@ interface LdapInterface
     public const PROTOCOL = 'ldap://';
 
     /**
-     * The LDAP SSL port number.
+     * The SSL LDAP protocol string.
      *
-     * @var int
+     * @var string
      */
-    public const PORT_SSL = 636;
+    public const PROTOCOL_SSL = 'ldaps://';
 
     /**
      * The standard LDAP port number.
@@ -35,51 +33,252 @@ interface LdapInterface
     public const PORT = 389;
 
     /**
-     * Various useful server control OID's.
+     * The LDAP SSL port number.
      *
-     * @see https://ldap.com/ldap-oid-reference-guide/
-     * @see http://msdn.microsoft.com/en-us/library/cc223359.aspx
+     * @var int
+     */
+    public const PORT_SSL = 636;
+
+    /**
+     * Print entry and exit from routines.
+     *
+     * @var int
+     */
+    public const DEBUG_TRACE = 1;
+
+    /**
+     * Print packet activity.
+     *
+     * @var int
+     */
+    public const DEBUG_PACKETS = 2;
+
+    /**
+     * Print data arguments from requests.
+     *
+     * @var int
+     */
+    public const DEBUG_ARGS = 4;
+
+    /**
+     * Print connection activity.
+     *
+     * @var int
+     */
+    public const DEBUG_CONNS = 8;
+
+    /**
+     * Print encoding and decoding of data.
+     *
+     * @var int
+     */
+    public const DEBUG_BER = 16;
+
+    /**
+     * Print search filters.
+     *
+     * @var int
+     */
+    public const DEBUG_FILTER = 32;
+
+    /**
+     * Print configuration file processing.
+     *
+     * @var int
+     */
+    public const DEBUG_CONFIG = 64;
+
+    /**
+     * Print Access Control List activities.
+     *
+     * @var int
+     */
+    public const DEBUG_ACL = 128;
+
+    /**
+     * Print operational statistics.
+     *
+     * @var int
+     */
+    public const DEBUG_STATS = 256;
+
+    /**
+     * Print more detailed statistics.
+     *
+     * @var int
+     */
+    public const DEBUG_STATS2 = 512;
+
+    /**
+     * Print communication with shell backends.
+     *
+     * @var int
+     */
+    public const DEBUG_SHELL = 1024;
+
+    /**
+     * Print entry parsing.
+     *
+     * @var int
+     */
+    public const DEBUG_PARSE = 2048;
+
+    /**
+     * Print LDAPSync replication.
+     *
+     * @var int
+     */
+    public const DEBUG_SYNC = 16384;
+
+    /**
+     * Print referral activities.
+     *
+     * @var int
+     */
+    public const DEBUG_REFERRAL = 32768;
+
+    /**
+     * Print error conditions.
+     *
+     * @var int
+     */
+    public const DEBUG_ERROR = 32768;
+
+    /**
+     * Print all levels of debug.
+     *
+     * @var int
+     */
+    public const DEBUG_ANY = 65535;
+
+    /**
+     * OID for StartTLS extended operation. Signals the server to initiate a TLS connection.
+     *
+     * @var string
      */
     public const OID_SERVER_START_TLS = '1.3.6.1.4.1.1466.20037';
 
+    /**
+     * OID for Paged Results Control. Used to retrieve search results in pages.
+     *
+     * @var string
+     */
     public const OID_SERVER_PAGED_RESULTS = '1.2.840.113556.1.4.319';
 
+    /**
+     * OID for Show Deleted Control. Includes deleted entries in the search results.
+     *
+     * @var string
+     */
     public const OID_SERVER_SHOW_DELETED = '1.2.840.113556.1.4.417';
 
+    /**
+     * OID for Server Side Sort Control. Requests the server to sort the search results.
+     *
+     * @var string
+     */
     public const OID_SERVER_SORT = '1.2.840.113556.1.4.473';
 
+    /**
+     * OID for Cross-Domain Move Target Control. Used in cross-domain move operations.
+     *
+     * @var string
+     */
     public const OID_SERVER_CROSSDOM_MOVE_TARGET = '1.2.840.113556.1.4.521';
 
+    /**
+     * OID for LDAP Notification Control. Used to register for change notifications.
+     *
+     * @var string
+     */
     public const OID_SERVER_NOTIFICATION = '1.2.840.113556.1.4.528';
 
+    /**
+     * OID for Extended DN Control. Requests extended DN information in search results.
+     *
+     * @var string
+     */
     public const OID_SERVER_EXTENDED_DN = '1.2.840.113556.1.4.529';
 
+    /**
+     * OID for Lazy Commit Control. Delays the actual commit of changes until requested.
+     *
+     * @var string
+     */
     public const OID_SERVER_LAZY_COMMIT = '1.2.840.113556.1.4.619';
 
+    /**
+     * OID for Security Descriptor Flags Control. Used to manipulate security descriptor flags.
+     *
+     * @var string
+     */
     public const OID_SERVER_SD_FLAGS = '1.2.840.113556.1.4.801';
 
+    /**
+     * OID for Tree Delete Control. Enables the deletion of an entire subtree.
+     *
+     * @var string
+     */
     public const OID_SERVER_TREE_DELETE = '1.2.840.113556.1.4.805';
 
+    /**
+     * OID for DirSync Control. Used for directory synchronization operations.
+     *
+     * @var string
+     */
     public const OID_SERVER_DIRSYNC = '1.2.840.113556.1.4.841';
 
+    /**
+     * OID for Verify Name Control. Allows verification of an entry without retrieving attributes.
+     *
+     * @var string
+     */
     public const OID_SERVER_VERIFY_NAME = '1.2.840.113556.1.4.1338';
 
+    /**
+     * OID for Domain Scope Control. Limits a search to the current domain.
+     *
+     * @var string
+     */
     public const OID_SERVER_DOMAIN_SCOPE = '1.2.840.113556.1.4.1339';
 
+    /**
+     * OID for Search Options Control. Used to set various search options.
+     *
+     * @var string
+     */
     public const OID_SERVER_SEARCH_OPTIONS = '1.2.840.113556.1.4.1340';
 
+    /**
+     * OID for Permissive Modify Control. Allows modifications even if some attributes are missing.
+     *
+     * @var string
+     */
     public const OID_SERVER_PERMISSIVE_MODIFY = '1.2.840.113556.1.4.1413';
 
+    /**
+     * OID for Authentication Service Queries (ASQ) Control. Used to perform ASQ operations.
+     *
+     * @var string
+     */
     public const OID_SERVER_ASQ = '1.2.840.113556.1.4.1504';
 
+    /**
+     * OID for Fast Bind Control. Optimizes the bind process for faster authentication.
+     *
+     * @var string
+     */
     public const OID_SERVER_FAST_BIND = '1.2.840.113556.1.4.1781';
 
+    /**
+     * OID for Virtual List View (VLV) Request Control. Used to request a specific range of entries.
+     *
+     * @var string
+     */
     public const OID_SERVER_CONTROL_VLVREQUEST = '2.16.840.1.113730.3.4.9';
 
     /**
-     * Query OID's.
-     *
-     * @see https://ldapwiki.com/wiki/LDAP_MATCHING_RULE_IN_CHAIN
+     * OID for the 'matchingRuleInChain' matching rule. Used for substring searches in multi-valued attributes.
      */
     public const OID_MATCHING_RULE_IN_CHAIN = '1.2.840.113556.1.4.1941';
 

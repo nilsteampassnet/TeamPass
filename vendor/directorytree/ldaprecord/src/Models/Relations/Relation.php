@@ -234,7 +234,7 @@ abstract class Relation
      */
     public function getNewDefaultModel(): Model
     {
-        $model = new $this->default();
+        $model = new $this->default;
 
         $model->setConnection($this->parent->getConnectionName());
 

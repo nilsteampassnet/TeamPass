@@ -58,7 +58,7 @@ class ActiveDirectoryExtra extends BaseGroup
         }
         try {
             // perform query and get data
-            $groups = $query->get();
+            $groups = $query->paginate();
 
             $groupsArr = [];
             foreach($groups as $key => $group) {
@@ -103,7 +103,7 @@ class ActiveDirectoryExtra extends BaseGroup
 
             // Get user groups from AD
             $user = User::find($userDN);
-            $groups = $user->groups()->get();
+            $groups = $user->groups()->paginate();
             foreach ($groups as $group) {
                 array_push(
                     $groupsArr,

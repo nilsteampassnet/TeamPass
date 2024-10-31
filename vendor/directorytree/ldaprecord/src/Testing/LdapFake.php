@@ -413,7 +413,7 @@ class LdapFake implements LdapInterface
     {
         return $this->hasExpectations(__FUNCTION__)
             ? $this->resolveExpectation(__FUNCTION__, func_get_args())
-            : new LdapResultResponse();
+            : new LdapResultResponse;
     }
 
     /**
