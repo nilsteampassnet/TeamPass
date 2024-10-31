@@ -5463,15 +5463,15 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 // Show restrictions with Badges
                 var html_restrictions = '';
                 $.each(store.get('teampassItem').id_restricted_to, function(i, value) {
-                    html_restrictions +=
-                        '<span class="badge badge-info mr-2 mb-1"><i class="fa-solid fa-group fa-sm mr-1"></i>' +
+                    html_restrictions +='<span class="badge badge-info mr-2 mb-1"><i class="fa-solid fa-group fa-sm mr-1"></i>' +
                         data.users_list.find(x => x.id === parseInt(value)).name + '</span>';
-                });
-                $.each(store.get('teampassItem').id_restricted_to_roles, function(i, value) {
-                    html_restrictions +=
-                        '<span class="badge badge-info mr-2 mb-1"><i class="fa-solid fa-group fa-sm mr-1"></i>' +
-                        data.roles_list.find(x => x.id === parseInt(value)).title + '</span>';
-                });
+                }); 
+                        
+                $.each(store.get('teampassItem').id_restricted_to_roles, function(i, value) {                   
+                    const role = data.roles_list.find(x => x.id === parseInt(value));
+                    html_restrictions += (role ? '<span class="badge badge-info mr-2 mb-1"><i class="fa-solid fa-group fa-sm mr-1"></i>' + role.title  + '</span>' : '');
+                });     
+                        
                 if (html_restrictions === '') {
                     $('#card-item-restrictedto').html('<?php echo $lang->get('no_special_restriction'); ?>');
                 } else {
