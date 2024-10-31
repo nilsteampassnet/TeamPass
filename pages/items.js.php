@@ -3197,8 +3197,10 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                             );
                             return false;
                         }
-                        if (debugJavascript === true) console.log('RETURNED DATA');
-                        if (debugJavascript === true) console.log(data);
+                        if (debugJavascript === true) {
+                            console.log('RETURNED DATA');
+                            console.log(data);
+                        }
                         if (data.error === true) {
                             toastr.remove();
                             toastr.error(
@@ -3259,7 +3261,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                             // Close edit form and reopen folders-tree-card with refreshed item.
                             $('.form-item, #form-item-attachments-zone').addClass('hidden');
                             $('#folders-tree-card').removeClass('hidden');
-                            item_id = store.get('teampassItem').id !== '' ? store.get('teampassItem').id : data.item_id;
+                            item_id = store.get('teampassItem').id !== '' ? store.get('teampassItem').id : data.item_id;                         
                             Details(item_id, 'show', true);
                         }
                     }
@@ -4850,7 +4852,6 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                         }
                     );
 
-                    //$('#items-list-container');
                     if (actionType === 'show') {
                         // Prepare Views
                         $('.item-details-card, #item-details-card-categories').removeClass('hidden');
@@ -4878,7 +4879,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                             $('#items-list-container').removeClass('col-md-7').addClass('hidden');
                             $('#items-details-container').removeClass('col-md-5').addClass('col-md-12');
                         }
-
+                        
                         // Show item details
                         $('#items-details-container').removeClass('hidden');
 
@@ -4984,7 +4985,6 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                                         if (debugJavascript === true) console.log('onChange:', contents, $editable);
                                         userDidAChange = true;
                                         if (debugJavascript === true) console.log('User did a change on #form-item-suggestion-description > ' + userDidAChange);
-                                        //$('#form-item-suggestion-description').attr('data-change-ongoing', true);;
                                     }
                                 }
                             }
@@ -5346,10 +5346,10 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                             .attr('data-next-item-id', dataItemKey.next('.list-item-row').attr('data-item-id'))
                             .removeClass('hidden');
                     }
-                    */
                     if (debugJavascript === true) {
-                        //console.log("PREV: " + dataItemKey.attr('data-item-key') + " - NEXT: " + $('#list-item-row_'+data.id).next('.list-item-row').attr('data-item-id'));
+                        console.log("PREV: " + dataItemKey.attr('data-item-key') + " - NEXT: " + $('#list-item-row_'+data.id).next('.list-item-row').attr('data-item-id'));
                     }
+                    */
 
                     // Inform user
                     toastr.remove();
@@ -5510,8 +5510,10 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     $.when(
                         getPrivilegesOnItem(selectedFolderId, 1)
                     ).then(function(retData) {
-                        console.log('getPrivilegesOnItem 3')
-                        console.log(retData)
+                        if (debugJavascript === true) {
+                            console.log('getPrivilegesOnItem 3');
+                            console.log(retData);
+                        }
                         if (retData.error === true) {
                             toastr.remove();
                             toastr.error(
@@ -5655,9 +5657,10 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                             );
                             e.clearSelection();
                         });
-
-                        console.log("-------------");
-                        console.log(data);
+                        if (debugJavascript === true) {
+                            console.log("-------------");
+                            console.log(data);
+                        }
 
                         // Prepare recursive call to get new OTP code
                         var replayDelayInMilliseconds = data.otp_expires_in*1000;
