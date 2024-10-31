@@ -13,11 +13,11 @@
     },
     {
         "table_name": "background_tasks",
-        "structure_hash": "7d44ed3b957b46d0a7dac33bef74e81e7026c78b9ad1ef2bf4fc1073385bb296"
+        "structure_hash": "fd4c4b736e7a42a996ed71f50e41e689ad12e8671af8fc500181fad9bdc55023"
     },
     {
         "table_name": "background_tasks_logs",
-        "structure_hash": "9d8e61a39bf729e574b720ef2080425120ae07d8e85068c4c74c8125d2c53de2"
+        "structure_hash": "5b2ed5c4868ef98b73ef00615d92f12f592f8ee531bef5dfe57d33e7fa399498"
     },
     {
         "table_name": "cache",
@@ -101,11 +101,11 @@
     },
     {
         "table_name": "log_system",
-        "structure_hash": "bc3daa63811989d99e0ea575a78b637da9943abd5d2e3d6b7d1a68aa6a626843"
+        "structure_hash": "439acf7691d2f021a6362472ec0f44c49de1262348ef7b2aa3292d24da2e354c"
     },
     {
         "table_name": "misc",
-        "structure_hash": "afa0861208c6ee4ca461338508fd57f2c2ee6c0c2f81a9e3d591cb1550652c23"
+        "structure_hash": "11a5697b1fe86a163b2a018ea12376a4b9aeb900aee35b6ca6e780cd80a6048f"
     },
     {
         "table_name": "nested_tree",
@@ -193,7 +193,7 @@
     },
     {
         "table_name": "tokens",
-        "structure_hash": "75fbcb4913406a504a7d4f7c4af941469840aaa26db1a9bf3689a05774787d6c"
+        "structure_hash": "69e5cd80e698c2fcb10d413e0964b275f34977f19f934274b4e81ca26f958b69"
     },
     {
         "table_name": "user_requests",

@@ -77,7 +77,7 @@ class TSPropertyArray
             $tsPropertyArray = $tsPropertyArray ?: self::DEFAULTS;
 
             foreach ($tsPropertyArray as $key => $value) {
-                $tsProperty = new TSProperty();
+                $tsProperty = new TSProperty;
 
                 $this->tsProperty[$key] = $tsProperty->setName($key)->setValue($value);
             }

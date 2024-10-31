@@ -43,7 +43,7 @@ class ConnectionManager
     /**
      * Constructor.
      */
-    public function __construct($dispatcher = new Dispatcher())
+    public function __construct($dispatcher = new Dispatcher)
     {
         $this->dispatcher = $dispatcher;
     }

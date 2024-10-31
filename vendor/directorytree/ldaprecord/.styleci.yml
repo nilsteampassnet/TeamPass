@@ -1,3 +1,0 @@
-preset: laravel
-enabled:
-  - no_superfluous_phpdoc_tags
