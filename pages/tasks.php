@@ -124,7 +124,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 // Instantiate the adapter and repository
 try {
     // Get last cron execution timestamp
-    $result = DB::query(
+    DB::query(
         'SELECT valeur
         FROM ' . prefixTable('misc') . '
         WHERE type = %s AND intitule = %s and valeur >= %d',
