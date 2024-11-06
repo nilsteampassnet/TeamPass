@@ -361,35 +361,6 @@ function identAdmin($idFonctions, $SETTINGS, $tree)
     }
     $session->set('user-accessible_folders', $groupesVisibles);
     $session->set('user-all_non_personal_folders', $groupesVisibles);
-    // Exclude all PF
-    $where = new WhereClause('and');
-    // create a WHERE statement of pieces joined by ANDs
-    $where->add('personal_folder=%i', 1);
-    if (
-        isset($SETTINGS['enable_pf_feature']) === true
-        && (int) $SETTINGS['enable_pf_feature'] === 1
-    ) {
-        $where->add('title=%s', $globalsUserId);
-        $where->negateLast();
-    }
-    // Get ID of personal folder
-    $persfld = DB::queryfirstrow(
-        'SELECT id FROM ' . prefixTable('nested_tree') . ' WHERE title = %s',
-        $globalsUserId
-    );
-    if (empty($persfld['id']) === false) {
-        if (in_array($persfld['id'], $globalsVisibleFolders) === false) {
-            array_push($globalsVisibleFolders, $persfld['id']);
-            array_push($globalsPersonalVisibleFolders, $persfld['id']);
-            // get all descendants
-            $tree->rebuild();
-            $tst = $tree->getDescendants($persfld['id']);
-            foreach ($tst as $t) {
-                array_push($globalsVisibleFolders, $t->id);
-                array_push($globalsPersonalVisibleFolders, $t->id);
-            }
-        }
-    }
 
     // get complete list of ROLES
     $tmp = explode(';', $idFonctions);
