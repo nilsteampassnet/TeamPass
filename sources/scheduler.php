@@ -57,9 +57,9 @@ $updated = DB::update(
 if ($updated === 0) {
     DB::insert(
         prefixTable('misc'), [
-        'type' => 'admin',
-        'intitule' => 'last_cron_exec',
-        'valeur' => time()
+            'type' => 'admin',
+            'intitule' => 'last_cron_exec',
+            'valeur' => time()
     ]);
 }
 

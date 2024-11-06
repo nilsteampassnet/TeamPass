@@ -197,7 +197,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 // Instantiate the adapter and repository
 try {
     // Get last cron execution timestamp
-    $result = DB::query(
+    DB::query(
         'SELECT valeur
         FROM ' . prefixTable('misc') . '
         WHERE type = %s AND intitule = %s and valeur >= %d',
@@ -217,13 +217,9 @@ try {
                             </div>
         <?php
     } else {
-        $job = (array) $results[0];
         ?>
                             <div>
                                 <i class="fa-solid fa-circle-check text-success mr-2"></i><?php echo $lang->get('tasks_cron_running'); ?>
-                                <div class="ml-3 mt-1">
-                                    <span class=""><code><?php echo $job['taskCommandLine']; ?></code></span>
-                                </div>
                             </div>
         <?php
     }
