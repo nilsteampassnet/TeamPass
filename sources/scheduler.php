@@ -46,6 +46,23 @@ $scheduler = new scheduler();
 $configManager = new ConfigManager();
 $SETTINGS = $configManager->getAllSettings();
 
+// Update row if exists
+$updated = DB::update(
+    prefixTable('misc'),
+    ['valeur' => time()],
+    'type = "admin" AND intitule = "last_cron_exec"'
+);
+
+// Insert row if not exists
+if ($updated === 0) {
+    DB::insert(
+        prefixTable('misc'), [
+        'type' => 'admin',
+        'intitule' => 'last_cron_exec',
+        'valeur' => time()
+    ]);
+}
+
 // Build the scheduler jobs
 // https://github.com/peppeocchi/php-cron-scheduler
 $scheduler->php(__DIR__.'/../scripts/background_tasks___userKeysCreation.php')->everyMinute($SETTINGS['user_keys_job_frequency'] ?? '1');

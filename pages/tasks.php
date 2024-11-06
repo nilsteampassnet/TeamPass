@@ -28,9 +28,6 @@ declare(strict_types=1);
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
-use TiBeN\CrontabManager\CrontabJob;
-use TiBeN\CrontabManager\CrontabAdapter;
-use TiBeN\CrontabManager\CrontabRepository;
 use TeampassClasses\SessionManager\SessionManager;
 use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use TeampassClasses\Language\Language;
@@ -126,9 +123,17 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 
 // Instantiate the adapter and repository
 try {
-    $crontabRepository = new CrontabRepository(new CrontabAdapter());
-    $results = $crontabRepository->findJobByRegex('/Teampass\ scheduler/');
-    if (count($results) === 0) {
+    // Get last cron execution timestamp
+    $result = DB::query(
+        'SELECT valeur
+        FROM ' . prefixTable('misc') . '
+        WHERE type = %s AND intitule = %s and valeur >= %d',
+        'admin',
+        'last_cron_exec',
+        time() - 600 // max 10 minutes
+    );
+
+    if (DB::count() === 0) {
         ?>
                                             <div class="callout callout-info alert-dismissible mt-3">
                                                 <h5><i class="fa-solid fa-info mr-2"></i><?php echo $lang->get('information'); ?></h5>
