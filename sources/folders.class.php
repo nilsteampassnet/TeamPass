@@ -418,14 +418,33 @@ class FolderManager
     {
         $usersWithSimilarRoles = getUsersWithRoles(explode(";", $user_roles));
         foreach ($usersWithSimilarRoles as $user) {
+
+            // Arguments field
+            $arguments = json_encode([
+                'user_id' => (int) $user,
+            ], JSON_HEX_QUOT | JSON_HEX_TAG);
+
+            // Search for existing job
+            $count = DB::queryFirstRow(
+                'SELECT COUNT(*) AS count
+                FROM ' . prefixTable('background_tasks') . '
+                WHERE is_in_progress = %i AND process_type = %s AND arguments = %s',
+                0,
+                'user_build_cache_tree',
+                $arguments
+            )['count'];
+
+            // Don't insert duplicates
+            if ($count > 0)
+                continue;
+
+            // Insert new background task
             DB::insert(
                 prefixTable('background_tasks'),
                 array(
                     'created_at' => time(),
                     'process_type' => 'user_build_cache_tree',
-                    'arguments' => json_encode([
-                        'user_id' => (int) $user,
-                    ], JSON_HEX_QUOT | JSON_HEX_TAG),
+                    'arguments' => $arguments,
                     'updated_at' => '',
                     'finished_at' => '',
                     'output' => '',
