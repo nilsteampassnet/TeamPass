@@ -69,6 +69,22 @@
 
 .list-item-description {
     position: relative;
+    height: 50px;
+    width: 100%;
+    line-height: 50px;
+}
+
+.list-item-description .dragndrop {
+    line-height: 50px;
+}
+
+.list-item-clicktoshow.d-inline-flex {
+    max-width: 100%;
+    flex: 1;
+}
+
+.list-item-row-description-extend {
+    flex: 1;
 }
 
 .list-item-actions {
