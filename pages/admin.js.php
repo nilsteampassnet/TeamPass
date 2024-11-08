@@ -206,7 +206,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
             "field": field,
             "value": value,
         }
-        console.log(data);
+        //console.log(data);
 
         // Store in DB   
         $.post(
@@ -231,7 +231,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                     );
                     return false;
                 }
-                console.log(data)
+                //console.log(data)
                 if (data.error === false) {
                     toastr.remove();
                     toastr.success(
