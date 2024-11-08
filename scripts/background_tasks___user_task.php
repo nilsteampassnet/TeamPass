@@ -58,29 +58,37 @@ require_once __DIR__.'/background_tasks___functions.php';
 // log start
 $logID = doLog('start', 'user_task', (isset($SETTINGS['enable_tasks_log']) === true ? (int) $SETTINGS['enable_tasks_log'] : 0));
 
-// Number of users on each scheduler run
-$number_users_build_cache_tree = $SETTINGS['number_users_build_cache_tree'] ?? 0;
 // Never less than 10
 $number_users_build_cache_tree = max((int) $SETTINGS['number_users_build_cache_tree'] ?? 0, 10);
 
 DB::debugmode(false);
-$rows = DB::query(
-    'SELECT *
-    FROM ' . prefixTable('background_tasks') . '
-    WHERE is_in_progress = %i AND process_type = %s
-    ORDER BY increment_id ASC LIMIT 0,' . $number_users_build_cache_tree,
-    0,
-    'user_build_cache_tree'
-);
-foreach ($rows as $record) {
+
+for ($i = 0; $i < $number_users_build_cache_tree; $i++) {
+
+    // Get one task at a time so we don't duplicate them if the scheduler is
+    // launched several times.
+    $record = DB::queryFirstRow(
+        'SELECT *
+        FROM ' . prefixTable('background_tasks') . '
+        WHERE is_in_progress = %i AND process_type = %s
+        ORDER BY increment_id ASC LIMIT 1',
+        0,
+        'user_build_cache_tree'
+    );
+
+    // No more pending user_build_cache_tree tasks
+    if (DB::count() === 0)
+        exit;
+
     // get email properties
     $arguments = json_decode($record['arguments'], true);
 
-    // update DB - started_at
+    // Update started_at time and is_in_progress state
     DB::update(
         prefixTable('background_tasks'),
         array(
             'started_at' => time(),
+            'is_in_progress' => 1,
         ),
         'increment_id = %i',
         $record['increment_id']
