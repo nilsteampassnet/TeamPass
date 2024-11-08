@@ -139,19 +139,42 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
      * On page loaded
      */
     $(function() {
-        // Click on log in button with Azure Entra
-        $('#oauth2_tenant_id').change(function(event) {
-            var tenantId = $(this).val();
+        let isProgrammaticChange = false;
+        // Function to update oauth2_client_endpoint
+        function updateClientEndpoint(tenantId) {
             var endpointUrl = $('#oauth2_client_endpoint').val();
-            var tokenUrl = $('#oauth2_client_token').val();
-
-            // Remplace l'identifiant de locataire dans l'URL du point de terminaison
             endpointUrl = endpointUrl.replace(/([^\/]*)\/oauth2\/v2.0\/authorize/, tenantId + '/oauth2/v2.0/authorize');
-            $('#oauth2_client_endpoint').val(endpointUrl);
+            $('#oauth2_client_endpoint').val(endpointUrl).trigger('change');
+        }
 
-            // Remplace l'identifiant de locataire dans l'URL du jeton
+        // Function to update oauth2_client_token
+        function updateClientToken(tenantId) {
+            var tokenUrl = $('#oauth2_client_token').val();
             tokenUrl = tokenUrl.replace(/([^\/]*)\/oauth2\/v2.0\/token/, tenantId + '/oauth2/v2.0/token');
-            $('#oauth2_client_token').val(tokenUrl);
+            $('#oauth2_client_token').val(tokenUrl).trigger('change');
+        }
+
+        // Fonction pour mettre à jour oauth2_tenant_id
+        // L'utilisation des précédents triggers bloque la propagation des événements
+        function updateTenantId() {
+            $('#oauth2_tenant_id').trigger('change');
+        }
+
+        // Launch the change event in DB
+        $('#oauth2_tenant_id').change(function(event) {
+            if (isProgrammaticChange) return;
+            var tenantId = $(this).val();
+            updateClientEndpoint(tenantId);
+            setTimeout(function() {
+                updateClientToken(tenantId);
+
+                isProgrammaticChange = true;
+                setTimeout(function() {
+                    updateTenantId();
+                    isProgrammaticChange = false;
+                }, 100);
+                
+            }, 100);
         });
     });
 
