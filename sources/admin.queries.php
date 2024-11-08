@@ -2177,8 +2177,6 @@ switch ($post_type) {
                 'admin',
                 'restricted_to_roles'
             );
-        } elseif ($post_field === 'oauth2_tenant_id') {
-            
         }
 
         // Avoid break tp.config.php file with ' in parameter.
