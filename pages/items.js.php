@@ -6485,7 +6485,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 $(this).addClass('bg-warning');
             },
             helper: function(event) {
-                return $('<div class="bg-gray p-2 font-weight-light">' + $(this).find('.list-item-row-description').text() + '</div>');
+                return $('<div>')
+                            .addClass('bg-gray p-2 font-weight-light')
+                            .text($(this).find('.list-item-row-description').text());
             }
         });
         $('.folder').droppable({
