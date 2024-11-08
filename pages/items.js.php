@@ -4334,11 +4334,11 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     (value.rights === 10 ? '<i class="fa-regular fa-eye-slash fa-xs mr-2 text-primary infotip" title="<?php echo $lang->get('item_with_restricted_access'); ?>"></i>' : '') +
                     // Show user that password is badly encrypted
                     (value.pw_status === 'encryption_error' ? '<i class="fa-solid fa-exclamation-triangle fa-xs text-danger infotip mr-1" title="<?php echo $lang->get('pw_encryption_error'); ?>"></i>' : '') +
-                    // Show item fa_icon if set
-                    (value.fa_icon !== '' ? '<i class="'+value.fa_icon+' mr-1"></i>' : '') +
                     // Prepare item info
                     '<span class="list-item-clicktoshow d-inline-flex' + (value.rights === 10 ? '' : ' pointer') + '" data-item-id="' + value.item_id + '" data-item-key="' + value.item_key + '">' +
-                    '<span class="list-item-row-description d-inline-block text-truncate' + (value.rights === 10 ? ' font-weight-light' : '') + '"><i class="item-favorite-star fa-solid' + ((store.get('teampassApplication').highlightFavorites === 1 && value.is_favourited === 1) ? ' fa-star mr-1' : '') + '"></i>' + value.label + '</span>' + (value.rights === 10 ? '' : description) +
+                    // Show item fa_icon if set
+                    (value.fa_icon !== '' ? '<i class="'+value.fa_icon+' mr-1 user-fa-icon"></i>' : '') +
+                    '<span class="list-item-row-description d-inline-block' + (value.rights === 10 ? ' font-weight-light' : '') + '"><i class="item-favorite-star fa-solid' + ((store.get('teampassApplication').highlightFavorites === 1 && value.is_favourited === 1) ? ' fa-star mr-1' : '') + '"></i>' + value.label + '</span>' + (value.rights === 10 ? '' : description) +
                     '<span class="list-item-row-description-extend"></span>' +
                     '</span>' +
                     '<span class="list-item-actions hidden">' +
