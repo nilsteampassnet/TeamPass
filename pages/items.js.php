@@ -4320,12 +4320,12 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 description = (value.desc.replace(/<.*>/gi, '').trim() !== '' ? '<i>'+itemLabel + '</i><i class="fa-solid fa-heading mr-1 ml-2"></i>' + value.desc : '<i>'+itemLabel + '</i>');
                 // Consolidate item label
                 if (description !== '') {
-                    description = '<span class="text-secondary small">' + description + '</span>';
+                    description = '<span class="text-secondary small d-inline-block text-truncate">' + description + '</span>';
                 }
 
                 $('#teampass_items_list').append(
                     '<tr class="list-item-row' + (value.canMove === 1 ? ' is-draggable' : '') + ((store.get('teampassApplication').highlightFavorites === 1 && value.is_favourited === 1) ? ' bg-yellow' : '') + '" id="list-item-row_' + value.item_id + '" data-item-key="' + value.item_key + '" data-item-edition="' + value.open_edit + '" data-item-id="' + value.item_id + '" data-item-sk="' + value.sk + '" data-item-expired="' + value.expired + '" data-item-rights="' + value.rights + '" data-item-display="' + value.display + '" data-item-open-edit="' + value.open_edit + '" data-item-tree-id="' + value.tree_id + '" data-is-search-result="' + value.is_result_of_search + '" data-label="' + escape(value.label) + '">' +
-                    '<td class="list-item-description" style="width: 100%;">' +
+                    '<td class="list-item-description px-3 py-0 align-middle d-flex">' +
                     // Show user a grippy bar to move item
                     (value.canMove === 1  ? '<i class="fa-solid fa-ellipsis-v mr-2 dragndrop"></i>' : '') + //&& value.is_result_of_search === 0
                     // Show user a ban icon if expired
@@ -4334,11 +4334,12 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     (value.rights === 10 ? '<i class="fa-regular fa-eye-slash fa-xs mr-2 text-primary infotip" title="<?php echo $lang->get('item_with_restricted_access'); ?>"></i>' : '') +
                     // Show user that password is badly encrypted
                     (value.pw_status === 'encryption_error' ? '<i class="fa-solid fa-exclamation-triangle fa-xs text-danger infotip mr-1" title="<?php echo $lang->get('pw_encryption_error'); ?>"></i>' : '') +
-                    // Show item fa_icon if set
-                    (value.fa_icon !== '' ? '<i class="'+value.fa_icon+' mr-1"></i>' : '') +
                     // Prepare item info
-                    '<span class="list-item-clicktoshow' + (value.rights === 10 ? '' : ' pointer') + '" data-item-id="' + value.item_id + '" data-item-key="' + value.item_key + '">' +
-                    '<span class="list-item-row-description' + (value.rights === 10 ? ' font-weight-light' : '') + '"><i class="item-favorite-star fa-solid' + ((store.get('teampassApplication').highlightFavorites === 1 && value.is_favourited === 1) ? ' fa-star mr-1' : '') + '"></i>' + value.label + '</span>' + (value.rights === 10 ? '' : description) +
+                    '<span class="list-item-clicktoshow d-inline-flex' + (value.rights === 10 ? '' : ' pointer') + '" data-item-id="' + value.item_id + '" data-item-key="' + value.item_key + '">' +
+                    // Show item fa_icon if set
+                    (value.fa_icon !== '' ? '<i class="'+value.fa_icon+' mr-1 user-fa-icon"></i>' : '') +
+                    '<span class="list-item-row-description d-inline-block' + (value.rights === 10 ? ' font-weight-light' : '') + '"><i class="item-favorite-star fa-solid' + ((store.get('teampassApplication').highlightFavorites === 1 && value.is_favourited === 1) ? ' fa-star mr-1' : '') + '"></i>' + value.label + '</span>' + (value.rights === 10 ? '' : description) +
+                    '<span class="list-item-row-description-extend"></span>' +
                     '</span>' +
                     '<span class="list-item-actions hidden">' +
                     (value.rights === 10 ?
@@ -6484,7 +6485,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 $(this).addClass('bg-warning');
             },
             helper: function(event) {
-                return $('<div class="bg-gray p-2 font-weight-light">' + $(this).find('.list-item-row-description').text() + '</div>');
+                return $('<div>')
+                            .addClass('bg-gray p-2 font-weight-light')
+                            .text($(this).find('.list-item-row-description').text());
             }
         });
         $('.folder').droppable({
