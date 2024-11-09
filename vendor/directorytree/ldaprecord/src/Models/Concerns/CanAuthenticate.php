@@ -14,6 +14,16 @@ trait CanAuthenticate
     }
 
     /**
+     * Get the unique identifier for the user.
+     */
+    public function getAuthIdentifier(): string
+    {
+        return $this->getConvertedGuid(
+            $this->getFirstAttribute($this->getAuthIdentifierName())
+        );
+    }
+
+    /**
      * Get the password for the user.
      */
     public function getAuthPassword(): string
@@ -40,7 +50,10 @@ trait CanAuthenticate
     /**
      * Set the token value for the "remember me" session.
      */
-    public function setRememberToken($value): void {}
+    public function setRememberToken($value): void
+    {
+        // Do nothing.
+    }
 
     /**
      * Get the column name for the "remember me" token.
