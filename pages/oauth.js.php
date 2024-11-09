@@ -139,19 +139,90 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
      * On page loaded
      */
     $(function() {
-        // Click on log in button with Azure Entra
-        $('#oauth2_tenant_id').change(function(event) {
-            var tenantId = $(this).val();
-            var endpointUrl = $('#oauth2_client_endpoint').val();
-            var tokenUrl = $('#oauth2_client_token').val();
-
-            // Remplace l'identifiant de locataire dans l'URL du point de terminaison
+        /**
+         * Update fields with tenant ID
+         * 
+         * @param {string} tenantId 
+         */
+        function updateFieldsWithTenantId(tenantId) {
+            // Update field oauth2_client_endpoint
+            let endpointUrl = $('#oauth2_client_endpoint').val();
             endpointUrl = endpointUrl.replace(/([^\/]*)\/oauth2\/v2.0\/authorize/, tenantId + '/oauth2/v2.0/authorize');
             $('#oauth2_client_endpoint').val(endpointUrl);
 
-            // Remplace l'identifiant de locataire dans l'URL du jeton
+            // Update field oauth2_client_token
+            let tokenUrl = $('#oauth2_client_token').val();
             tokenUrl = tokenUrl.replace(/([^\/]*)\/oauth2\/v2.0\/token/, tenantId + '/oauth2/v2.0/token');
             $('#oauth2_client_token').val(tokenUrl);
+        }
+
+        /**
+         * Update a setting in DB
+         * 
+         * @param {string} field 
+         * @param {string} value 
+         * @returns {Promise}
+         */
+        function updateTeampassSetting(field, value)
+        {
+            // Check if field and value are not empty
+            if (field === '' || value === '') {
+                return false;
+            }
+            
+            // Launch the request
+            return $.Deferred(function(defer) {
+                $.post(
+                    "sources/admin.queries.php", {
+                        type: "save_option_change",
+                        data: prepareExchangedData(
+                            JSON.stringify({"field": field, "value": value}),
+                            "encode",
+                            "<?php echo $session->get('key'); ?>"
+                        ),
+                        key: "<?php echo $session->get('key'); ?>"
+                    },
+                    function(data) {
+                        // Handle server answer
+                        try {
+                            data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
+                        } catch (e) {
+                            // error
+                            defer.reject(e.error);
+                        }
+                        
+                        if (data.error === false) {
+                            defer.resolve(data);
+                        } else {
+                            defer.reject(data.error);
+                        }
+                    }
+                );
+            }).promise();
+        }
+
+        $('#oauth2_tenant_id').change(function() {
+            let tenantId = $(this).val();
+            
+            // Update the fields
+            updateFieldsWithTenantId(tenantId);
+            
+            // Update settings in DB
+            $.when(
+                updateTeampassSetting('oauth2_client_endpoint', $('#oauth2_client_endpoint').val())
+            ).then(function() {
+                return updateTeampassSetting('oauth2_client_token', $('#oauth2_client_token').val());
+            }).fail(function(error) {
+                toastr.remove();
+                toastr.error(
+                    '<?php echo $lang->get('server_answer_error') . '<br />' . $lang->get('server_returned_data') . ':<br />'; ?>' + error,
+                    '', {
+                        closeButton: true,
+                        positionClass: 'toast-bottom-right'
+                    }
+                );
+                return false;
+            });
         });
     });
 

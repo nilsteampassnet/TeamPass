@@ -50,7 +50,7 @@ class Container
     /**
      * Constructor.
      */
-    public function __construct(ConnectionManager $manager = new ConnectionManager())
+    public function __construct(ConnectionManager $manager = new ConnectionManager)
     {
         $this->manager = $manager;
     }

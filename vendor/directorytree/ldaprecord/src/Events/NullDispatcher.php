@@ -44,9 +44,7 @@ class NullDispatcher implements DispatcherInterface
     /**
      * Fire an event and call the listeners.
      */
-    public function fire(string|object $event, mixed $payload = [], bool $halt = false): void
-    {
-    }
+    public function fire(string|object $event, mixed $payload = [], bool $halt = false): void {}
 
     /**
      * Fire an event and call the listeners.

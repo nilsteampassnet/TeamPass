@@ -1529,6 +1529,8 @@ function generateBugReport(
         'oauth2_client_id',
         'oauth2_tenant_id',
         'oauth2_client_secret',
+        'oauth2_client_token',
+        'oauth2_client_endpoint',
     );
 
     // Load user's language
@@ -1620,9 +1622,9 @@ Tell us what happens instead
 
 **PHP version:** ' . PHP_VERSION . '
 
-**Teampass version:** ' . TP_VERSION . '
+**Teampass version:** ' . TP_VERSION . '.' . TP_VERSION_MINOR . '
 
-**Teampass configuration file:**
+**Teampass configuration variables:**
 ```
 ' . $list_of_options . '
 ```
