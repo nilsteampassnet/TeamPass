@@ -28,7 +28,7 @@
 
 define('TP_VERSION', '3.1.2');
 define("UPGRADE_MIN_DATE", "1727110744");
-define('TP_VERSION_MINOR', '147');
+define('TP_VERSION_MINOR', '148');
 define('TP_TOOL_NAME', 'Teampass');
 define('TP_ONE_DAY_SECONDS', 86400);
 define('TP_ONE_WEEK_SECONDS', 604800);
@@ -87,6 +87,7 @@ define('DEBUG', false);
 define('DEBUGLDAP', false); //Can be used in order to debug LDAP authentication
 
 define("ADMIN_VISIBLE_OTP_ON_LDAP_IMPORT", true);
+define('SERVER_HAS_INTERNET_ACCESS', false);
 
 // Management Pages
 $mngPages = array(

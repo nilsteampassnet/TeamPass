@@ -588,6 +588,52 @@ if (file_exists($configFilePath)) {
     }    
 }
 
+// Remove all duplicated entries in table 'misc'
+$sql = "
+    SELECT increment_id
+    FROM ".$pre."misc AS t1
+    WHERE EXISTS (
+        SELECT 1
+        FROM ".$pre."misc AS t2
+        WHERE t1.type = t2.type
+        AND t1.intitule = t2.intitule
+        AND t1.increment_id < t2.increment_id
+    )
+";
+$result = mysqli_query(
+    $db_link,
+    $sql
+);
+// Group all ids to delete
+$idsToDelete = [];
+while ($row = $result->fetch_assoc()) {
+    $idsToDelete[] = $row['increment_id'];
+}
+// Delete all duplicated entries
+if (!empty($idsToDelete)) {
+    $idsToDeleteStr = implode(',', $idsToDelete);
+    $deleteQuery = "DELETE FROM ".$pre."misc WHERE increment_id IN ($idsToDeleteStr)";
+    if (!mysqli_query(
+        $db_link,
+        $deleteQuery
+    )) {
+        echo '[{"finish":"1", "msg":"", "error":"An error appears when removing duplicated entries is_encrypted to table misc! ' . mysqli_error($db_link) . '!"}]';
+        mysqli_close($db_link);
+        exit();
+    }
+}
+
+// Add index on table misc.
+try {
+    $alter_table_query = "ALTER TABLE ".$pre."misc ADD UNIQUE (type, intitule);";
+    mysqli_begin_transaction($db_link);
+    mysqli_query($db_link, $alter_table_query);
+    mysqli_commit($db_link);
+} catch (Exception $e) {
+    // Rollback transaction if index already exists.
+    mysqli_rollback($db_link);
+}
+
 //---<END 3.1.2
 
 
