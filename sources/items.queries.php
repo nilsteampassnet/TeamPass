@@ -253,7 +253,7 @@ switch ($inputData['type']) {
                 FILTER_SANITIZE_FULL_SPECIAL_CHARS
             );
             $post_restricted_to_roles = $post_restricted_to_roles !== false ? json_decode($post_restricted_to_roles) : '';
-            $post_tags = htmlspecialchars_decode($dataReceived['tags']);
+            $post_tags = htmlspecialchars($dataReceived['tags']);
             $post_template_id = filter_var($dataReceived['template_id'], FILTER_SANITIZE_NUMBER_INT);
             $post_url = filter_var(htmlspecialchars_decode($dataReceived['url']), FILTER_SANITIZE_URL);
             $post_uploaded_file_id = filter_var($dataReceived['uploaded_file_id'], FILTER_SANITIZE_NUMBER_INT);
@@ -879,7 +879,7 @@ switch ($inputData['type']) {
         $post_url = isset($dataReceived['url'])=== true ? filter_var(htmlspecialchars_decode($dataReceived['url']), FILTER_SANITIZE_URL) : '';
         $post_password = $original_pw = isset($dataReceived['pw']) && is_string($dataReceived['pw']) ? htmlspecialchars_decode($dataReceived['pw']) : '';
         $post_login = isset($dataReceived['login']) && is_string($dataReceived['login']) ? filter_var(htmlspecialchars_decode($dataReceived['login']), FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '';
-        $post_tags = isset($dataReceived['tags'])=== true ? htmlspecialchars_decode($dataReceived['tags']) : '';
+        $post_tags = isset($dataReceived['tags'])=== true ? htmlspecialchars($dataReceived['tags']) : '';
         $post_email = isset($dataReceived['email'])=== true ? filter_var(htmlspecialchars_decode($dataReceived['email']), FILTER_SANITIZE_EMAIL) : '';
         $post_template_id = (int) filter_var($dataReceived['template_id'], FILTER_SANITIZE_NUMBER_INT);
         $inputData['itemId'] = (int) filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT);
@@ -1212,14 +1212,6 @@ switch ($inputData['type']) {
                 // Create a task to create sharekeys for users
                 if (WIP=== true) error_log('createTaskForItem - new password for this item - '.$post_password ." -- ". $pw);
                 $tasksToBePerformed = ['item_password'];
-                /*createTaskForItem(
-                    'item_update_create_keys',
-                    'item_password',
-                    (int) $inputData['itemId'],
-                    (int) $session->get('user-id'),
-                    $cryptedStuff['objectKey'],
-                    (int) $inputData['itemId'],
-                );*/
                 $encryptionTaskIsRequested = true;
             } else {
                 $encrypted_password = $data['pw'];
@@ -2644,30 +2636,6 @@ switch ($inputData['type']) {
         $listeRestriction = is_null($dataItem['restricted_to']) === false ? array_filter(explode(';', $dataItem['restricted_to'])) : [];
         $session->set('system-emails_list_for_notif', '');
 
-        /*$user_in_restricted_list_of_item = false;
-        $rows = DB::query(
-            'SELECT id, login, email, admin, name, lastname
-            FROM ' . prefixTable('users') .'
-            WHERE id in %ls',
-            replace(';', ',', $dataItem['restricted_to'])
-        );
-        $listeRestriction = [];
-        foreach ($rows as $user) {
-            // Get auhtor
-            if ($user['id'] === $dataItem['id_user']) {
-                $arrData['author'] = $user['login'];
-                $arrData['author_email'] = $user['email'];
-                $arrData['id_user'] = (int) $dataItem['id_user'];
-            }
-
-            // Get restriction list for users
-            if (in_array($user['id'], $listRest) === true) {
-                array_push($listeRestriction, $user['id']);
-                if ($session->get('user-id') === $user['id']) {
-                    $user_in_restricted_list_of_item = true;
-                }
-            }
-        }*/
         $user_in_restricted_list_of_item = in_array($session->get('user-id'), $listeRestriction) === true ? true : false;
 
         // manage case of API user
@@ -2792,18 +2760,6 @@ switch ($inputData['type']) {
             // Check if actual USER can see this ITEM
             // Allow show details
             $arrData['show_details'] = 1;
-
-            // Regarding user's roles, what type of modification is allowed?
-            /*$rows = DB::query(
-                'SELECT r.type
-                FROM '.prefixTable('roles_values').' AS r
-                WHERE r.folder_id = %i AND r.role_id IN %ls',
-                $dataItem['id_tree'],
-                $session->get('user-accessible_folders')
-            );
-            foreach ($rows as $record) {
-                // TODO
-            }*/
 
             // Display menu icon for deleting if user is allowed
             if (
