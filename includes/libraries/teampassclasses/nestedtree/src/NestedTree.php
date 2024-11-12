@@ -457,6 +457,18 @@ class NestedTree
         // give it an initial nleft value of 0 and an nlevel of 0.
         $this->generateTreeData($data, 0, 0, $n_tally);
 
+        // Get current nlevel, nright and nleft
+        $folder_ids_str = implode(',', array_map('intval', array_keys($data)));
+        $query = "SELECT id, nlevel, nright, nleft 
+                  FROM " . $this->table . "
+                  WHERE id IN(" . $folder_ids_str . ")";
+        $result = mysqli_query($this->link, $query);
+
+        // Array with folders current nlevel, nright and nleft values.
+        $folders_infos = [];
+        while ($result && $row = mysqli_fetch_assoc($result))
+            $folders_infos[$row['id']] = $row;
+
         // at this point the the root node will have nleft of 0, nlevel of 0
         // and nright of (tree size * 2 + 1)
 
@@ -466,6 +478,15 @@ class NestedTree
                 || isset($row->nlevel) === false
                 || isset($row->nleft) === false
                 || isset($row->nright) === false
+            ) {
+                continue;
+            }
+
+            // Don't update if no change (better performances)
+            if (!empty($folders_infos[$folder_id])
+                && (int) $row->nlevel === (int) $folders_infos[$folder_id]['nlevel']
+                && (int) $row->nleft  === (int) $folders_infos[$folder_id]['nleft']
+                && (int) $row->nright === (int) $folders_infos[$folder_id]['nright']
             ) {
                 continue;
             }
