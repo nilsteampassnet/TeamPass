@@ -513,7 +513,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         $session->set('user-name', empty($userInfo['name']) === false ? stripslashes($userInfo['name']) : '');
         $session->set('user-lastname', empty($userInfo['lastname']) === false ? stripslashes($userInfo['lastname']) : '');
         $session->set('user-id', (int) $userInfo['id']);
-        $session->set('user-password', $passwordClear);
         $session->set('user-admin', (int) $userInfo['admin']);
         $session->set('user-manager', (int) $userInfo['gestionnaire']);
         $session->set('user-can_manage_all_users', $userInfo['can_manage_all_users']);
