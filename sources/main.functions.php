@@ -4189,7 +4189,7 @@ function handleUserRecoveryKeysDownload(int $userId, array $SETTINGS):string
     $session = SessionManager::getSession();
     // Check if user exists
     $userInfo = DB::queryFirstRow(
-        'SELECT pw, public_key, private_key, login, name
+        'SELECT login
         FROM ' . prefixTable('users') . '
         WHERE id = %i',
         $userId
@@ -4201,8 +4201,8 @@ function handleUserRecoveryKeysDownload(int $userId, array $SETTINGS):string
         $export_value = file_get_contents(__DIR__."/../includes/core/teampass_ascii.txt")."\n".
             "Generation date: ".date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], $now)."\n\n".
             "RECOVERY KEYS - Not to be shared - To be store safely\n\n".
-            "Public Key:\n".$userInfo['public_key']."\n\n".
-            "Private Key:\n".decryptPrivateKey($session->get('user-password'), $userInfo['private_key'])."\n\n";
+            "Public Key:\n".$session->get('user-public_key')."\n\n".
+            "Private Key:\n".$session->get('user-private_key')."\n\n";
 
         // Update user's keys_recovery_time
         DB::update(
