@@ -2500,6 +2500,21 @@ function createOauth2User(
         // Oauth2 user already exists and authenticated
         error_log("--- USER AUTHENTICATED ---");
         $userInfo['has_been_created'] = 0;
+
+        $passwordManager = new PasswordManager();
+
+        // Update user hash un database if needed
+        if (!$passwordManager->verifyPassword($userInfo['pw'], $passwordClear)) {
+            DB::update(
+                prefixTable('users'),
+                [
+                    'pw' => $passwordManager->hashPassword($passwordClear),
+                ],
+                'id = %i',
+                $userInfo['id']
+            );
+        }
+
         return [
             'error' => false,
             'retExternalAD' => $userInfo,
@@ -2508,7 +2523,7 @@ function createOauth2User(
         ];
     }
 
-    // return if no addmin
+    // return if no admin
     return [
         'error' => false,
         'retLDAP' => [],
