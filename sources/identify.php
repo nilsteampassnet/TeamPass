@@ -1443,20 +1443,19 @@ function finalizeAuthentication(
             'id = %i',
             $userInfo['id']
         );
-    } elseif ($passwordManager->verifyPassword($userInfo['pw'], $passwordClear) === false) {
+    } elseif ($passwordManager->verifyPassword($hashedPassword, $passwordClear) === false) {
         // Case where user is auth by LDAP but his password in Teampass is not synchronized
         // For example when user has changed his password in AD.
         // So we need to update it in Teampass and ask for private key re-encryption
         DB::update(
             prefixTable('users'),
             [
-                'pw' => $hashedPassword,
+                'pw' => $passwordManager->hashPassword($passwordClear),
             ],
             'id = %i',
             $userInfo['id']
         );
     }
-    if (WIP === true) error_log("finalizeAuthentication - hashedPassword: " . $hashedPassword. " | ".$passwordManager->verifyPassword($userInfo['pw'], $passwordClear)." || ".$passwordClear);
 }
 
 /**
