@@ -3330,6 +3330,8 @@ if (null !== $post_type) {
                     'otp_provided' => 0,
                     'ongoing_process_id' => $processId,
                     'special' => 'generate-keys',
+                    // Notify user that he must re download his keys:
+                    'keys_recovery_time' => NULL,
                 ),
                 'id = %i',
                 $post_user_id

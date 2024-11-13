@@ -3653,6 +3653,7 @@ function handleUserKeys(
             'pw' => $hashedPassword,
             'public_key' => $userKeys['public_key'],
             'private_key' => $userKeys['private_key'],
+            'keys_recovery_time' => NULL,
         ),
         'id=%i',
         $userId
@@ -3662,6 +3663,8 @@ function handleUserKeys(
     if ($userId === $session->get('user-id')) {
         $session->set('user-private_key', $userKeys['private_key_clear']);
         $session->set('user-public_key', $userKeys['public_key']);
+        // Notify user that he must re download his keys:
+        $session->set('user-keys_recovery_time', NULL);
     }
 
     // Manage empty encryption key
