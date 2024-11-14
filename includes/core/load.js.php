@@ -1365,7 +1365,15 @@ $request = SymfonyRequest::createFromGlobals();
     * NEW LDAP USER HAS TO BUILD THE ITEMS DATABASE
      */
     $(document).on('click', '#dialog-ldap-user-build-keys-database-do', function() {
-        if ($('#dialog-ldap-user-build-keys-database-code').val() === '') {
+
+        // Add OAuth password in hidden field.
+        if (store.get('teampassUser').auth_type === 'oauth2') {
+            $('#dialog-ldap-user-build-keys-database-userpassword')
+                .val(hashUserId(store.get('userOauth2Info').sub));
+        }
+
+        if ($('#dialog-ldap-user-build-keys-database-code').val() === ''
+            || $('#dialog-ldap-user-build-keys-database-userpassword').val() === '') {
 
             return false;
         }
@@ -1423,7 +1431,7 @@ $request = SymfonyRequest::createFromGlobals();
                     data = {
                         'user_id': store.get('teampassUser').user_id,
                         'current_code': $('#dialog-ldap-user-build-keys-database-code').val(),
-                        'new_code': '',
+                        'new_code': $('#dialog-ldap-user-build-keys-database-userpassword').val(),
                         'action_type' : '',
                     }
                     if (debugJavascript === true) console.log(data);

@@ -665,10 +665,33 @@ function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived,
          * User's public/private keys change
          */
         case 'change_private_key_encryption_password'://action_key
+
+            // Users passwords are html escaped
+            $newPassword = filter_var($dataReceived['new_code'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+
+            // Get current user hash
+            $userHash = DB::queryFirstRow(
+                "SELECT pw FROM " . prefixtable('users') . " WHERE id = %d;",
+                $session->get('user-id')
+            )['pw'];
+
+            $passwordManager = new PasswordManager();
+
+            // Verify provided user password
+            if (!$passwordManager->verifyPassword($userHash, $newPassword)) {
+                return prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_bad_credentials'),
+                    ),
+                    'encode'
+                );
+            }
+
             return changePrivateKeyEncryptionPassword(
                 (int) filter_var($filtered_user_id, FILTER_SANITIZE_NUMBER_INT),
                 (string) $dataReceived['current_code'],
-                (string) filter_var($dataReceived['new_code'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                (string) $newPassword,
                 (string) filter_var($dataReceived['action_type'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 $SETTINGS
             );
