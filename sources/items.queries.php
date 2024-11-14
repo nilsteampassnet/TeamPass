@@ -4055,6 +4055,13 @@ switch ($inputData['type']) {
                                 array_push($arrTmp, 0);
                             }
                         }
+                    } else {
+                        // Ensure to give access Right if allowed folder
+                        if (in_array($inputData['id'], $session->get('user-accessible_folders')) === true) {
+                            array_push($arrTmp, 50);
+                        } else {
+                            array_push($arrTmp, 0);
+                        }
                     }
                 }
                 // 3.0.0.0 - changed  MIN to MAX
@@ -4446,11 +4453,11 @@ switch ($inputData['type']) {
                         // ----- END CASE 6 -----
                     } elseif (
                         (int) $record['perso'] !== 1
-                        && (int) $session->get('user-read_only') === 1
+                        && in_array($record['tree_id'], $session->get('user-allowed_folders_by_definition'))
                     ) {
-                        // Case 7 - Is user readonly?
+                        // Case 7 - Is folder allowed by definition for this user?
                         // Allow limited rights
-                        $right = 10;
+                        $right = 70;
                         // ---
                         // ----- END CASE 7 -----
                     } elseif (
@@ -7457,6 +7464,11 @@ function getCurrentAccessRights(int $userId, int $itemId, int $treeId): array
     // Check if the folder is in the user's read-only list
     if (in_array($treeId, $session->get('user-read_only_folders'))) {
         return getAccessResponse(false, true, false, false);
+    }
+    
+    // Check if the folder is in the user's allowed folders list defined by admin
+    if (in_array($treeId, $session->get('user-allowed_folders_by_definition'))) {
+        return getAccessResponse(false, true, true, true);
     }
 
     // Check if the folder is personal to the user

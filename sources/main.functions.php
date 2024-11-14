@@ -423,7 +423,6 @@ function identUser(
     array $SETTINGS,
     object $tree
 ) {
-    
     $session = SessionManager::getSession();
     // Init
     $session->set('user-accessible_folders', []);
@@ -447,6 +446,7 @@ function identUser(
     $noAccessFolders = convertToArray($noAccessFolders);
     $userRoles = convertToArray($userRoles);
     $allowedFolders = convertToArray($allowedFolders);
+    $session->set('user-allowed_folders_by_definition', $allowedFolders);
     
     // Get list of folders depending on Roles
     $arrays = identUserGetFoldersFromRoles(
