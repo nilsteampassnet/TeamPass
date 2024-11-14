@@ -34,9 +34,15 @@ use Symfony\Component\HttpFoundation\Session\Storage\Proxy\SessionHandlerProxy;
 
 class EncryptedSessionProxy extends SessionHandlerProxy
 {
-    protected $handler; // Changé de private à protected
+    protected $handler;
     private $key;
 
+    /**
+     * Constructor.
+     *
+     * @param \SessionHandlerInterface $handler
+     * @param Key $key
+     */
     public function __construct(
         \SessionHandlerInterface $handler,
         Key $key
@@ -45,6 +51,13 @@ class EncryptedSessionProxy extends SessionHandlerProxy
         $this->key = $key;
     }
 
+    /**
+     * Decrypt the session data after reading it from the session handler.
+     *
+     * @param string $id
+     *
+     * @return string
+     */
     public function read($id): string
     {
         $data = parent::read($id);
@@ -56,6 +69,14 @@ class EncryptedSessionProxy extends SessionHandlerProxy
         return '';
     }
 
+    /**
+     * Encrypt the session data before writing it to the session handler.
+     *
+     * @param string $id
+     * @param string $data
+     *
+     * @return bool
+     */
     public function write($id, $data): bool
     {
         $data = Crypto::encrypt($data, $this->key);

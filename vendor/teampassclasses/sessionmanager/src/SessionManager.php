@@ -49,8 +49,6 @@ class SessionManager
             // Create a new session with the encrypted session handler
             self::$session = new Session(new \Symfony\Component\HttpFoundation\Session\Storage\NativeSessionStorage([], $handler));
 
-            //self::$session = new Session();
-
             if (session_status() === PHP_SESSION_NONE) {
                 $request = Request::createFromGlobals();
                 $isSecure = $request->isSecure();
