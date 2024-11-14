@@ -79,12 +79,11 @@ require_once __DIR__.'/sources/main.functions.php';
 // init
 loadClasses();
 $session = SessionManager::getSession();
-$session->set('key', SessionManager::getCookieValue('PHPSESSID'));
-// PHPSESSID isn't sent on first query.
-if ($session->get('key') == null) {
-    header('Refresh: 0');
-    exit;
-}
+
+// Random encryption key
+if ($session->get('key') === null)
+    $session->set('key', generateQuickPassword(30, false));
+
 $request = SymfonyRequest::createFromGlobals();
 $configManager = new ConfigManager(__DIR__, $request->getRequestUri());
 $SETTINGS = $configManager->getAllSettings();

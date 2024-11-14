@@ -808,7 +808,7 @@ declare(strict_types=1);
                 
                 if (debugJavascript === true) {
                     console.info('Identification answer:')
-                    console.log('SESSION KEY is: <?php echo $session->get('key'); ?>');
+                    console.log('SESSION KEY is: ' + data.session_key);
                     console.log(data);
                 }
                 
