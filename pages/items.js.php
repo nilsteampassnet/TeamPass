@@ -4925,7 +4925,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     $('#form-item-restrictedToUsers').val(JSON.stringify(data.id_restricted_to));
                     $('#form-item-restrictedToRoles').val(JSON.stringify(data.id_restricted_to_roles));
                     $('#form-item-folder').val(data.folder);
-                    $('#form-item-tags').val(data.tags.join(' '));
+                    $('#form-item-tags').val($('<div>').html(data.tags.join(' ')).text());
                     $('#form-item-icon').val(data.fa_icon);
                     $('#form-item-icon-show').html(itemIcon);
 

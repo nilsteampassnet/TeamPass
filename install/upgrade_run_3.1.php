@@ -588,6 +588,22 @@ if (file_exists($configFilePath)) {
     }    
 }
 
+// Clean a potential XSS payload present in the tags table
+$replacements = [
+    "&" => "&amp;",
+    "<" => "&lt;",
+    ">" => "&gt;",
+    '"' => "&quot;",
+    "'" => "&#39;"
+];
+
+foreach ($replacements as $search => $replace) {
+    mysqli_query($db_link,
+        "UPDATE `" . $pre. "tags` 
+        SET `tag` = REPLACE(`tag`, '{$search}', '{$replace}')
+        WHERE `tag` LIKE '%{$search}%'");
+}
+
 //---<END 3.1.2
 
 

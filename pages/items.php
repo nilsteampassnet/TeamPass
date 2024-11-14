@@ -310,7 +310,6 @@ foreach ($rows as $reccord) {
                                 <div class="input-group mb-3">
                                     <div class="input-group">
                                         <div class="input-group-prepend input-group-text"><?php echo $lang->get('tags'); ?></div>
-                                        <!--<select id="form-item-tags" class="form-control form-item-control select2-hidden-accessible select2 no-root" multiple="multiple" data-change-ongoing=""></select>-->
                                         <input id="form-item-tags" type="text" class="form-control form-item-control autocomplete purify" data-change-ongoing="" data-field-name="tags">
                                     </div>
                                     <!---->
