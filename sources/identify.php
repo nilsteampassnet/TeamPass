@@ -499,12 +499,19 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             $username,
             $SETTINGS,
         );
+
         // Avoid unlimited session.
         $max_time = isset($SETTINGS['maximum_session_expiration_time']) ? (int) $SETTINGS['maximum_session_expiration_time'] : 60;
         $session_time = max(60, min($dataReceived['duree_session'], $max_time));
         $lifetime = time() + ($session_time * 60);
 
-        
+        // Save old key
+        $old_key = $session->get('key');
+
+        // Good practice: reset PHPSESSID and key after successful authentication
+        $session->migrate();
+        $session->set('key', generateQuickPassword(30, false));
+
         // Save account in SESSION
         $session->set('user-unsuccessfull_login_attempts_list', $attemptsInfos['attemptsList'] === 0 ? true : false);
         $session->set('user-unsuccessfull_login_attempts_shown', $attemptsInfos['attemptsCount'] === 0 ? true : false);
@@ -840,7 +847,8 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                 'special' => isset($userInfo['special']) === true ? (int) $userInfo['special'] : 0,
                 'split_view_mode' => isset($userInfo['split_view_mode']) === true ? (int) $userInfo['split_view_mode'] : 0,
             ],
-            'encode'
+            'encode',
+            $old_key
         );
     
         return true;

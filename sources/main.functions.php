@@ -1258,6 +1258,7 @@ function utf8Converter(array $array): array
 function prepareExchangedData($data, string $type, ?string $key = null)
 {
     $session = SessionManager::getSession();
+    $key = empty($key) ? $session->get('key') : $key;
     
     // Perform
     if ($type === 'encode' && is_array($data) === true) {
@@ -1271,7 +1272,7 @@ function prepareExchangedData($data, string $type, ?string $key = null)
         if ($session->get('encryptClientServer') === 1) {
             $data = Encryption::encrypt(
                 $data,
-                $session->get('key')
+                $key
             );
         }
 
@@ -1282,7 +1283,7 @@ function prepareExchangedData($data, string $type, ?string $key = null)
         if ($session->get('encryptClientServer') === 1) {
             $data = (string) Encryption::decrypt(
                 (string) $data,
-                $session->get('key')
+                $key
             );
         } else {
             // Double html encoding received
