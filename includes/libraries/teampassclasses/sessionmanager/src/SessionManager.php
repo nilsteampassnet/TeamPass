@@ -30,6 +30,8 @@ namespace TeampassClasses\SessionManager;
 
 use Symfony\Component\HttpFoundation\Session\Session;
 use Symfony\Component\HttpFoundation\Request;
+use Defuse\Crypto\Key;
+use TeampassClasses\SessionManager\EncryptedSessionProxy;
 
 class SessionManager
 {
@@ -37,8 +39,18 @@ class SessionManager
 
     public static function getSession()
     {
-        if (null === self::$session) {
-            self::$session = new Session();
+        if (null === self::$session) {            
+            // Load the encryption key
+            $key = Key::loadFromAsciiSafeString(file_get_contents(SECUREPATH . "/" . SECUREFILE));
+
+            // Create an instance of EncryptedSessionProxy
+            $handler = new EncryptedSessionProxy(new \SessionHandler(), $key);
+
+            // Create a new session with the encrypted session handler
+            self::$session = new Session(new \Symfony\Component\HttpFoundation\Session\Storage\NativeSessionStorage([], $handler));
+
+            //self::$session = new Session();
+
             if (session_status() === PHP_SESSION_NONE) {
                 $request = Request::createFromGlobals();
                 $isSecure = $request->isSecure();
@@ -58,65 +70,65 @@ class SessionManager
     }
 
     public static function addRemoveFromSessionArray($key, $values = [], $action = 'add') {
-        // Récupérer le tableau de la session
+        // Retrieve the array from the session
         $sessionArray = self::getSession()->get($key, []);
 
         foreach ($values as $value) {
             if ($action === 'add') {
-                // Ajouter la valeur au tableau
+                // Add the value to the array
                 $sessionArray[] = $value;
             } elseif ($action === 'remove') {
-                // Trouver l'index de la valeur dans le tableau
+                // Find the index of the value in the array
                 $index = array_search($value, $sessionArray);
     
-                // Si la valeur est trouvée dans le tableau, la supprimer
+                // If the value is found in the array, remove it
                 if ($index !== false) {
                     unset($sessionArray[$index]);
                 }
             }
         }
 
-        // Réaffecter le tableau à la session
+        // Reassign the array to the session
         self::getSession()->set($key, $sessionArray);
     }
 
     public static function specificOpsOnSessionArray($key, $action = 'pop', $value = null) {
-        // Récupérer le tableau de la session
+        // Retrieve the array from the session
         $sessionArray = self::getSession()->get($key, []);
 
         if ($action === 'pop') {
-            // Supprimer la dernière valeur du tableau
+            // Remove the last value from the array
             array_pop($sessionArray);
         } elseif ($action === 'shift') {
-            // Supprimer la première valeur du tableau
+            // Remove the first value from the array
             array_shift($sessionArray);
         } elseif ($action === 'reset') {
-            // Réinitialiser le tableau
+            // Reset the array
             $sessionArray = [];
         } elseif ($action === 'unshift' && is_null($value) === false) {
-            // Ajouter une valeur au début du tableau
+            // Add a value to the beginning of the array
             array_unshift($sessionArray, $value);
         }
 
-        // Réaffecter le tableau à la session
+        // Reassign the array to the session
         self::getSession()->set($key, $sessionArray);
     }
 
     public static function addRemoveFromSessionAssociativeArray($key, $values = [], $action = 'add') {
-        // Récupérer le tableau de la session
+        // Retrieve the array from the session
         $sessionArray = self::getSession()->get($key, []);
 
         if ($action === 'add') {
-            // Ajouter la valeur au tableau
+            // Add the value to the array
             array_push($sessionArray, $values);
         } elseif ($action === 'remove') {
-            // Si la valeur existe dans le tableau, la supprimer
+            // If the value exists in the array, remove it
             if (($key = array_search($values, $sessionArray)) !== false) {
                 unset($sessionArray[$key]);
             }
         }
 
-        // Réaffecter le tableau à la session
+        // Reassign the array to the session
         self::getSession()->set($key, $sessionArray);
     }
 
@@ -124,7 +136,7 @@ class SessionManager
     {
         $request = Request::createFromGlobals();
 
-        // Vérifier si le cookie existe
+        // Check if the cookie exists
         if ($request->cookies->has($cookieName)) {
             return $request->cookies->get($cookieName);
         }

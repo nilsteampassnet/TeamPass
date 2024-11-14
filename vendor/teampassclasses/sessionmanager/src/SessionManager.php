@@ -30,7 +30,6 @@ namespace TeampassClasses\SessionManager;
 
 use Symfony\Component\HttpFoundation\Session\Session;
 use Symfony\Component\HttpFoundation\Request;
-use Defuse\Crypto\Crypto;
 use Defuse\Crypto\Key;
 use TeampassClasses\SessionManager\EncryptedSessionProxy;
 
