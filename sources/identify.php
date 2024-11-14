@@ -520,7 +520,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         $session->set('user-name', empty($userInfo['name']) === false ? stripslashes($userInfo['name']) : '');
         $session->set('user-lastname', empty($userInfo['lastname']) === false ? stripslashes($userInfo['lastname']) : '');
         $session->set('user-id', (int) $userInfo['id']);
-        $session->set('user-password', $passwordClear);
         $session->set('user-admin', (int) $userInfo['admin']);
         $session->set('user-manager', (int) $userInfo['gestionnaire']);
         $session->set('user-can_manage_all_users', $userInfo['can_manage_all_users']);
@@ -1463,20 +1462,19 @@ function finalizeAuthentication(
             'id = %i',
             $userInfo['id']
         );
-    } elseif ($passwordManager->verifyPassword($userInfo['pw'], $passwordClear) === false) {
+    } elseif ($passwordManager->verifyPassword($hashedPassword, $passwordClear) === false) {
         // Case where user is auth by LDAP but his password in Teampass is not synchronized
         // For example when user has changed his password in AD.
         // So we need to update it in Teampass and ask for private key re-encryption
         DB::update(
             prefixTable('users'),
             [
-                'pw' => $hashedPassword,
+                'pw' => $passwordManager->hashPassword($passwordClear),
             ],
             'id = %i',
             $userInfo['id']
         );
     }
-    if (WIP === true) error_log("finalizeAuthentication - hashedPassword: " . $hashedPassword. " | ".$passwordManager->verifyPassword($userInfo['pw'], $passwordClear)." || ".$passwordClear);
 }
 
 /**
@@ -2520,6 +2518,21 @@ function createOauth2User(
         // Oauth2 user already exists and authenticated
         if (WIP === true) error_log("--- USER AUTHENTICATED ---");
         $userInfo['has_been_created'] = 0;
+
+        $passwordManager = new PasswordManager();
+
+        // Update user hash un database if needed
+        if (!$passwordManager->verifyPassword($userInfo['pw'], $passwordClear)) {
+            DB::update(
+                prefixTable('users'),
+                [
+                    'pw' => $passwordManager->hashPassword($passwordClear),
+                ],
+                'id = %i',
+                $userInfo['id']
+            );
+        }
+
         return [
             'error' => false,
             'retExternalAD' => $userInfo,
@@ -2528,7 +2541,7 @@ function createOauth2User(
         ];
     }
 
-    // return if no addmin
+    // return if no admin
     return [
         'error' => false,
         'retLDAP' => [],

@@ -491,64 +491,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         );
     });
 
-
-    function userTasksCreation(userId, userPassword, userTemporaryCode)
-    {
-        var data = {
-            user_id: userId,
-            user_pwd: userPassword,
-            user_code: userTemporaryCode,
-        }
-
-        // Do query
-        $.post(
-            "sources/users.queries.php", {
-                type: "create_new_user_tasks",
-                data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $session->get('key'); ?>'),
-                key: '<?php echo $session->get('key'); ?>'
-            },
-            function(data) {
-                data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
-                if (debugJavascript === true)  {
-                    console.info("Réception des données :")
-                    console.log(data);
-                }
-                
-                if (data.error === true) {
-                    // error
-                    toastr.remove();
-                    toastr.error(
-                        data.message,
-                        '<?php echo $lang->get('caution'); ?>', {
-                            timeOut: 5000,
-                            progressBar: true
-                        }
-                    );
-
-                    dfd.reject();
-                } else {
-                    // show message to user
-                    $('#warningModal').modal('hide');
-
-                    // Inform user
-                    toastr.success(
-                        '<?php echo $lang->get('done'); ?>',
-                        '', {
-                            timeOut: 2000
-                        }
-                    );
-
-                    // Reload list of users
-                    oTable.ajax.reload();
-
-                    // Prepare UI
-                    $('#row-list, #group-create-special-folder, #group-delete-user').removeClass('hidden');
-                    $('#row-form').addClass('hidden');
-                }
-            }
-        );
-    }
-
     /**
      * 
      */

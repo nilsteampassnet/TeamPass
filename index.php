@@ -941,6 +941,13 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                                         <span class="input-group-text"><?php echo $lang->get('temporary_encryption_code'); ?></span>
                                     </div>
                                     <input type="password" class="form-control" id="dialog-ldap-user-build-keys-database-code">
+                                    <br/>
+                                </div>
+                                <div class="input-group mb-3<?php if ($session_auth_type === 'oauth2') echo ' hidden'; ?>">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><?php echo $lang->get('provide_your_current_password'); ?></span>
+                                    </div>
+                                    <input type="password" class="form-control" id="dialog-ldap-user-build-keys-database-userpassword">
                                 </div>
                                 
                                 <div class="form-control mt-3 font-weight-light grey" id="dialog-ldap-user-build-keys-database-progress">

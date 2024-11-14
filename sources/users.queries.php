@@ -3203,6 +3203,23 @@ if (null !== $post_type) {
             $post_user_pwd = isset($dataReceived['user_pwd']) === true ? ($dataReceived['user_pwd']) : '';
             $post_user_code = ($dataReceived['user_code']);
 
+            // Search TP_USER in db        
+            $userTP = DB::queryFirstRow(
+                'SELECT pw
+                FROM ' . prefixTable('users') . '
+                WHERE id = %i',
+                TP_USER_ID
+            );
+            if (DB::count() === 0) {
+                return prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => 'User not exists',
+                    ),
+                    'encode'
+                );
+            }
+
             // Create process
             DB::insert(
                 prefixTable('background_tasks'),
@@ -3213,8 +3230,8 @@ if (null !== $post_type) {
                         'new_user_id' => (int) $post_user_id,
                         'new_user_pwd' => empty($post_user_pwd) === true ? '' : cryption($post_user_pwd, '','encrypt', $SETTINGS)['string'],
                         'new_user_code' => cryption($post_user_code, '','encrypt', $SETTINGS)['string'],
-                        'owner_id' => (int) $session->get('user-id'),
-                        'creator_pwd' => cryption($session->get('user-password'), '','encrypt', $SETTINGS)['string'],
+                        'owner_id' => (int) TP_USER_ID,
+                        'creator_pwd' => $userTP['pw'],
                         'email_body' => $lang->get('email_body_user_config_5'),
                         'send_email' => 1,
                     ]),
@@ -3325,6 +3342,8 @@ if (null !== $post_type) {
                     'otp_provided' => 0,
                     'ongoing_process_id' => $processId,
                     'special' => 'generate-keys',
+                    // Notify user that he must re download his keys:
+                    'keys_recovery_time' => NULL,
                 ),
                 'id = %i',
                 $post_user_id

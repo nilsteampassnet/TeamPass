@@ -596,7 +596,7 @@ $request = SymfonyRequest::createFromGlobals();
                     '</div>' +
                     '<div class="hidden" id="new-encryption-div">' +
                      
-                        '<div class="row'+((store.get('teampassUser').auth_type !== 'ldap' && store.get('teampassUser').auth_type !== 'oauth2') ? '' : ' hidden') + '">' +
+                        '<div class="row' + ((store.get('teampassUser').auth_type !== 'oauth2') ? '' : ' hidden') + '">' +
                             '<div class="input-group mb-2">' +
                                 '<div class="input-group-prepend">' +
                                     '<span class="input-group-text"><?php echo $lang->get('confirm_password'); ?></span>' +
@@ -660,8 +660,6 @@ $request = SymfonyRequest::createFromGlobals();
                     if ($('#recovery-public-key').val() !== '' && $('#recovery-private-key').val() !== '') {
                         $('#confirm-no-recovery-keys-div').removeClass('alert-danger');
                         $('#confirm-no-recovery-keys').prop('checked', false);
-                    } else {
-                        
                     }
                 });
 
@@ -691,10 +689,14 @@ $request = SymfonyRequest::createFromGlobals();
                                 .html('<i class="fa-solid fa-spinner fa-spin"></i>');
                             $('#warningModalButtonClose').addClass('disabled');
 
+                            const user_pwd = store.get('teampassUser').auth_type !== 'oauth2'
+                                    ? $('#encryption-otp').val() // User password (local or ldap)
+                                    : hashUserId(store.get('userOauth2Info').sub); // Oauth
+
                             // update the process
                             // add all tasks
                             var parameters = {
-                                'user_pwd': $('#encryption-otp').val(),
+                                'user_pwd': user_pwd,
                                 'encryption_key': '',
                                 'delete_existing_keys': true,
                                 'encrypt_with_user_pwd': true,
@@ -1386,7 +1388,15 @@ $request = SymfonyRequest::createFromGlobals();
     * NEW LDAP USER HAS TO BUILD THE ITEMS DATABASE
      */
     $(document).on('click', '#dialog-ldap-user-build-keys-database-do', function() {
-        if ($('#dialog-ldap-user-build-keys-database-code').val() === '') {
+
+        // Add OAuth password in hidden field.
+        if (store.get('teampassUser').auth_type === 'oauth2') {
+            $('#dialog-ldap-user-build-keys-database-userpassword')
+                .val(hashUserId(store.get('userOauth2Info').sub));
+        }
+
+        if ($('#dialog-ldap-user-build-keys-database-code').val() === ''
+            || $('#dialog-ldap-user-build-keys-database-userpassword').val() === '') {
 
             return false;
         }
@@ -1444,7 +1454,7 @@ $request = SymfonyRequest::createFromGlobals();
                     data = {
                         'user_id': store.get('teampassUser').user_id,
                         'current_code': $('#dialog-ldap-user-build-keys-database-code').val(),
-                        'new_code': '',
+                        'new_code': $('#dialog-ldap-user-build-keys-database-userpassword').val(),
                         'action_type' : '',
                     }
                     if (debugJavascript === true) console.log(data);
@@ -2114,5 +2124,11 @@ $request = SymfonyRequest::createFromGlobals();
 
         // Store new theme value
         $.cookie('teampass_theme', mode, { expires: 365, secure: true});
+    }
+
+    // manage cryto ID
+    function hashUserId(userId) {
+        const hash = CryptoJS.SHA256(userId);
+        return hash.toString(CryptoJS.enc.Hex).substring(0, 16);
     }
 </script>

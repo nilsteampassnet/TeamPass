@@ -84,13 +84,11 @@ declare(strict_types=1);
             // get the Teampass login from userPrincipalName
             userOauth2Info['login'] = userOauth2Info['userPrincipalName'].split("@")[0];
 
-            // manage cryto ID
-            function hashUserId(userId) {
-                const hash = CryptoJS.SHA256(userId);
-                return hash.toString(CryptoJS.enc.Hex).substring(0, 16);
-            }
+            // ID exists only with azure. Use the sub with generic oauth provider.
+            const user_id = userOauth2Info['id'] ?? userOauth2Info['sub'];
+
             $("#login").val(userOauth2Info['login']);
-            $("#pw").val(hashUserId(userOauth2Info['id']));
+            $("#pw").val(hashUserId(user_id));
             
             // store userOauth2Info   
             store.set(

@@ -212,6 +212,7 @@ function mainQuery(array $SETTINGS)
 function passwordHandler(string $post_type, /*php8 array|null|string*/ $dataReceived, array $SETTINGS): string
 {
     $session = SessionManager::getSession();
+    $lang = new Language($session->get('user-language') ?? 'english');
 
     switch ($post_type) {
         case 'change_pw'://action_password
@@ -239,10 +240,33 @@ function passwordHandler(string $post_type, /*php8 array|null|string*/ $dataRece
          * User's authentication password in LDAP has changed
          */
         case 'change_user_ldap_auth_password'://action_password
+
+            // Users passwords are html escaped
+            $userPassword = filter_var($dataReceived['current_password'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+
+            // Get current user hash
+            $userHash = DB::queryFirstRow(
+                "SELECT pw FROM " . prefixtable('users') . " WHERE id = %d;",
+                $session->get('user-id')
+            )['pw'];
+
+            $passwordManager = new PasswordManager();
+
+            // Verify provided user password
+            if (!$passwordManager->verifyPassword($userHash, $userPassword)) {
+                return prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_bad_credentials'),
+                    ),
+                    'encode'
+                );
+            }
+
             return /** @scrutinizer ignore-call */ changeUserLDAPAuthenticationPassword(
                 (int) $session->get('user-id'),
                 filter_var($dataReceived['previous_password'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                filter_var($dataReceived['current_password'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                filter_var($userPassword),
                 $SETTINGS
             );
 
@@ -561,6 +585,7 @@ function mailHandler(string $post_type, /*php8 array|null|string */$dataReceived
 function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived, array $SETTINGS): string
 {
     $session = SessionManager::getSession();
+    $lang = new Language($session->get('user-language') ?? 'english');
 
     // List of post types allowed to all users
     $all_users_can_access = [
@@ -648,10 +673,33 @@ function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived,
          * User's public/private keys change
          */
         case 'change_private_key_encryption_password'://action_key
+
+            // Users passwords are html escaped
+            $newPassword = filter_var($dataReceived['new_code'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+
+            // Get current user hash
+            $userHash = DB::queryFirstRow(
+                "SELECT pw FROM " . prefixtable('users') . " WHERE id = %d;",
+                $session->get('user-id')
+            )['pw'];
+
+            $passwordManager = new PasswordManager();
+
+            // Verify provided user password
+            if (!$passwordManager->verifyPassword($userHash, $newPassword)) {
+                return prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_bad_credentials'),
+                    ),
+                    'encode'
+                );
+            }
+
             return changePrivateKeyEncryptionPassword(
                 (int) filter_var($filtered_user_id, FILTER_SANITIZE_NUMBER_INT),
                 (string) $dataReceived['current_code'],
-                (string) filter_var($dataReceived['new_code'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                (string) $newPassword,
                 (string) filter_var($dataReceived['action_type'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 $SETTINGS
             );
@@ -661,14 +709,35 @@ function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived,
          */
         case 'user_new_keys_generation'://action_key
 
-            // Handle the case where no PWD is provided (user reset his own encryption keys).
-            if (empty($dataReceived['user_pwd']) && (int) $filtered_user_id === $session->get('user-id')) {
-                $dataReceived['user_pwd'] = $session->get('user-password');
+            // Users passwords are html escaped
+            $userPassword = filter_var($dataReceived['user_pwd'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+
+            // Don't generate new user password -> verify it
+            if ($dataReceived['generate_user_new_password'] !== true) {
+
+                // Get current user hash
+                $userHash = DB::queryFirstRow(
+                    "SELECT pw FROM " . prefixtable('users') . " WHERE id = %d;",
+                    $session->get('user-id')
+                )['pw'];
+
+                $passwordManager = new PasswordManager();
+
+                // Verify provided user password
+                if (!$passwordManager->verifyPassword($userHash, $userPassword)) {
+                    return prepareExchangedData(
+                        array(
+                            'error' => true,
+                            'message' => $lang->get('error_bad_credentials'),
+                        ),
+                        'encode'
+                    );
+                }
             }
 
             return handleUserKeys(
                 (int) filter_var($filtered_user_id, FILTER_SANITIZE_NUMBER_INT),
-                (string) filter_var($dataReceived['user_pwd'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                (string) $userPassword,
                 (int) isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH,
                 (string) filter_var($dataReceived['encryption_key'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 (bool) filter_var($dataReceived['delete_existing_keys'], FILTER_VALIDATE_BOOLEAN),
@@ -1776,19 +1845,15 @@ function changePrivateKeyEncryptionPassword(
     $lang = new Language($session->get('user-language') ?? 'english');
     
     if (empty($post_new_code) === true) {
-        if (empty($session->get('user-password')) === false) {
-            $post_new_code = $session->get('user-password');
-        } else {
-            // no user password???
-            return prepareExchangedData(
-                array(
-                    'error' => true,
-                    'message' => $lang->get('error_no_user_password_exists'),
-                    'debug' => '',
-                ),
-                'encode'
-            );
-        }
+        // no user password
+        return prepareExchangedData(
+            array(
+                'error' => true,
+                'message' => $lang->get('error_bad_credentials'),
+                'debug' => '',
+            ),
+            'encode'
+        );
     }
 
     if (isUserIdValid($post_user_id) === true) {

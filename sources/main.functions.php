@@ -3632,6 +3632,7 @@ function handleUserKeys(
             'pw' => $hashedPassword,
             'public_key' => $userKeys['public_key'],
             'private_key' => $userKeys['private_key'],
+            'keys_recovery_time' => NULL,
         ),
         'id=%i',
         $userId
@@ -3641,6 +3642,8 @@ function handleUserKeys(
     if ($userId === $session->get('user-id')) {
         $session->set('user-private_key', $userKeys['private_key_clear']);
         $session->set('user-public_key', $userKeys['public_key']);
+        // Notify user that he must re download his keys:
+        $session->set('user-keys_recovery_time', NULL);
     }
 
     // Manage empty encryption key
@@ -4165,7 +4168,7 @@ function handleUserRecoveryKeysDownload(int $userId, array $SETTINGS):string
     $session = SessionManager::getSession();
     // Check if user exists
     $userInfo = DB::queryFirstRow(
-        'SELECT pw, public_key, private_key, login, name
+        'SELECT login
         FROM ' . prefixTable('users') . '
         WHERE id = %i',
         $userId
@@ -4177,8 +4180,8 @@ function handleUserRecoveryKeysDownload(int $userId, array $SETTINGS):string
         $export_value = file_get_contents(__DIR__."/../includes/core/teampass_ascii.txt")."\n".
             "Generation date: ".date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], $now)."\n\n".
             "RECOVERY KEYS - Not to be shared - To be store safely\n\n".
-            "Public Key:\n".$userInfo['public_key']."\n\n".
-            "Private Key:\n".decryptPrivateKey($session->get('user-password'), $userInfo['private_key'])."\n\n";
+            "Public Key:\n".$session->get('user-public_key')."\n\n".
+            "Private Key:\n".$session->get('user-private_key')."\n\n";
 
         // Update user's keys_recovery_time
         DB::update(
