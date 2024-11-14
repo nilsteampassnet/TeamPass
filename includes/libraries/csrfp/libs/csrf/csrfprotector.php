@@ -132,14 +132,6 @@ if (!defined('__CSRF_PROTECTOR__')) {
             }
 
             
-            //SessionManager::getSession();
-            // Start session in case its not, and unit test is not going on
-            if (session_id() == '' && !defined('__CSRFP_UNIT_TEST__')) {
-                //session_name('teampass_session');
-                session_start();
-                //$_SESSION['CPM'] = 1;
-            }
-
             // Load configuration file and properties & Check locally for a 
             // config.php then check for a config/csrf_config.php file in the
             // root folder for composer installations

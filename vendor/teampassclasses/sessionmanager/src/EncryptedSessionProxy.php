@@ -1,4 +1,5 @@
 <?php
+namespace TeampassClasses\SessionManager;
 
 /**
  * Teampass - a collaborative passwords manager.
@@ -20,35 +21,45 @@
  * Certain components of this file may be under different licenses. For
  * details, see the `licenses` directory or individual file headers.
  * ---
- * @file      migrate_users_to_v3.php
+ * @file      EncryptedSessionProxy.php
  * @author    Nils Laumaillé (nils@teampass.net)
  * @copyright 2009-2024 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
 
-set_time_limit(600);
+use Defuse\Crypto\Crypto;
+use Defuse\Crypto\Key;
+use Symfony\Component\HttpFoundation\Session\Storage\Proxy\SessionHandlerProxy;
 
+class EncryptedSessionProxy extends SessionHandlerProxy
+{
+    protected $handler; // Changé de private à protected
+    private $key;
 
-require_once './libs/SecureHandler.php';
-session_name('teampass_session');
-session_start();
-error_reporting(E_ERROR | E_PARSE);
-$_SESSION['db_encoding'] = 'utf8';
-$_SESSION['CPM'] = 1;
+    public function __construct(
+        \SessionHandlerInterface $handler,
+        Key $key
+    ) {
+        parent::__construct($handler);
+        $this->key = $key;
+    }
 
-// Prepare POST variables
-$post_file_number = filter_input(INPUT_POST, 'file_number', FILTER_SANITIZE_NUMBER_INT);
+    public function read($id): string
+    {
+        $data = parent::read($id);
 
-$scripts_list = array(
-    array('upgrade_run_3.0.0_users.php', 'user_id'),
-);
-$param = '';
+        if ($data !== '') {
+            return Crypto::decrypt($data, $this->key);
+        }
 
-// test if finished
-if (intval($post_file_number) >= count($scripts_list)) {
-    $finished = 1;
-} else {
-    $finished = 0;
+        return '';
+    }
+
+    public function write($id, $data): bool
+    {
+        $data = Crypto::encrypt($data, $this->key);
+
+        return parent::write($id, $data);
+    }
 }
-echo '[{"finish":"' . $finished . '", "scriptname":"' . $scripts_list[$post_file_number][0] . '", "parameter":"' . $scripts_list[$post_file_number][1] . '"}]';

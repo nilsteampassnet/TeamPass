@@ -129,11 +129,6 @@ if (!defined('__CSRF_PROTECTOR__')) {
                 return;
             }
 
-            // Start session in case its not, and unit test is not going on
-            if (session_id() == '' && !defined('__CSRFP_UNIT_TEST__')) {
-                session_start();
-            }
-
             // Load configuration file and properties & Check locally for a 
             // config.php then check for a config/csrf_config.php file in the
             // root folder for composer installations
