@@ -4849,7 +4849,7 @@ switch ($inputData['type']) {
         }
         
         // Get access level for this folder
-        $accessLevel = 20;
+        $accessLevel = 0;
         if ($folder_is_personal === 0) {
             $arrTmp = [];
             foreach ($session->get('user-roles_array') as $role) {
@@ -4886,7 +4886,29 @@ switch ($inputData['type']) {
             // 3.0.0.0 - changed  MIN to MAX
             $accessLevel = count($arrTmp) > 0 ? max($arrTmp) : $accessLevel;
         } elseif ($folder_is_personal === 1) {
-            $accessLevel = 30;
+
+            // Check if personal folder is owned by user
+            $folder_title = DB::queryFirstRow(
+                'SELECT title
+                FROM ' . prefixTable('nested_tree') . '
+                WHERE id = %s AND title = %s',
+                $inputData['folderId'],
+                $session->get('user-id'),
+            );
+
+            if ($folder_title) $accessLevel = 30;
+        }
+
+        // Access is not allowed to this folder
+        if ($accessLevel === 0) {
+            echo (string) prepareExchangedData(
+                [
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to_access_this_folder'),
+                ],
+                'encode'
+            );
+            break;
         }
 
         $returnValues = array(
