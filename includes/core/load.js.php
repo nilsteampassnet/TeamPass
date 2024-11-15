@@ -1003,9 +1003,9 @@ $request = SymfonyRequest::createFromGlobals();
             $('#dialog-user-change-password-do, #dialog-user-change-password-close').attr('disabled', 'disabled');
             
             data = {
-                'user_id': store.get('teampassUser').user_id,
                 'old_password': $('#profile-current-password').val(),
                 'new_password': $('#profile-password').val(),
+                'new_password_confirm': $('#profile-password-confirm').val(),
             }
             if (debugJavascript === true) console.log(data);
 

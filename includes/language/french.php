@@ -54,6 +54,7 @@ return array(
     'settings_ldap_additional_user_dn_tip' => 'Cette valeur est utilisée en plus de la base DN lors de la recherche et du chargement des utilisateurs. Si aucune valeur n&apos;est fournie, la recherche des sous-arbres commencera à partir de la base. Exemples: ou=Users ; cn=users',
     'settings_ldap_additional_user_dn' => 'Identifiant DN utilisateur supplémentaire',
     'ldap_user_has_changed_his_password' => 'Votre mot de passe d&apos;authentification a été changé dans votre annuaire LDAP depuis votre dernière connexion à Teampass. Nous devons adapter votre clé de chiffrement. Veuillez fournir votre précédent mot de passe et l&apos;actuel.',
+    'user_password_policy_tip' => 'Le nouveau mot de passe doit :<br/> - Etre différent du précédent<br/> - Contenir au moins 10 caractères<br/> - Contenir au moins une lettre en majuscule et une en minuscule<br/> - Contenir au moins un chiffre ou caractère spécial<br/> - Ne pas contenir votre nom/prénom/identifiant/mail.',
     'provide_your_previous_password' => 'Votre précédent mot de passe',
     'admin_change_user_password_info' => 'Cette opération réinitialisera le mot de passe actuel de l&apos;utilisateur sélectionné.',
     'sending_email_message' => 'Envoi de l&apos;email à l&apos;utilisateur, veuillez patienter',

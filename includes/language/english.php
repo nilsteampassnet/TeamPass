@@ -318,6 +318,7 @@ return array(
     'settings_ldap_additional_user_dn_tip' => 'This value is used in addition to the base DN when searching and loading users. If no value is supplied, the subtree search will start from the base DN. Examples: ou=Users ; cn=users',
     'settings_ldap_additional_user_dn' => 'Additional User DN',
     'ldap_user_has_changed_his_password' => 'Your authentication password has been changed in your AD since you last get logged in in Teampass. We need to adapt your encryption key. Please provide your previous password and the current one.',
+    'user_password_policy_tip' => 'The new password must:<br/> - Be different from the previous one<br/> - Contain at least 10 characters<br/> - Contain at least one uppercase letter and one lowercase letter<br/> - Contain at least one number or special character<br/> - Not contain your name, first name, username, or email.',
     'provide_your_previous_password' => 'Your previous password',
     'admin_change_user_password_info' => 'This operation will reset the selected user current password.',
     'sending_email_message' => 'Now sending email to user, please wait',

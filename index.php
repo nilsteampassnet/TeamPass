@@ -742,7 +742,9 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                     <div class="card-body">
                         <div class="row">
                             <div class="col-sm-12 col-md-12">
-                                <div class="mb-5 alert alert-info hidden" id="dialog-user-change-password-info">
+                                <div class="mb-5 alert alert-info" id="dialog-user-change-password-info">
+                                    <i class="icon fa-solid fa-info mr-2"></i>
+                                    <?php echo $lang->get('user_password_policy_tip'); ?>
                                 </div>
                                 <div class="input-group mb-3">
                                     <div class="input-group-prepend">
