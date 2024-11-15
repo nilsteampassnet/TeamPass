@@ -850,19 +850,23 @@ class Builder
     /**
      * Add an order by control to the query.
      */
-    public function orderBy(string $attribute, string $direction = 'asc'): static
+    public function orderBy(string $attribute, string $direction = 'asc', array $options = []): static
     {
         return $this->addControl(LDAP_CONTROL_SORTREQUEST, true, [
-            ['attr' => $attribute, 'reverse' => $direction === 'desc'],
+            [
+                ...$options,
+                'attr' => $attribute,
+                'reverse' => $direction === 'desc',
+            ],
         ]);
     }
 
     /**
      * Add an order by descending control to the query.
      */
-    public function orderByDesc(string $attribute): static
+    public function orderByDesc(string $attribute, array $options = []): static
     {
-        return $this->orderBy($attribute, 'desc');
+        return $this->orderBy($attribute, 'desc', $options);
     }
 
     /**

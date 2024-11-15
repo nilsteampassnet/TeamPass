@@ -1205,5 +1205,7 @@ return array(
     'number_users_build_cache_tree' => 'Number of users processed for build_cache_tree task.',
     'number_users_build_cache_tree_tip' => 'Number of users processed for build_cache_tree task at each run of the scheduler.',
     'user_password_expired' => 'Your password has expired. Please change it.',
+    'user_password_policy_tip' => 'Th
+e new password must:<br/> - Be different from the previous one<br/> - Contain at least 10 characters<br/> - Contain at least one uppercase letter and one lowercase letter<br/> - Contain at least one number or special character<br/> - Not contain your name, first name, username, or email.',
 
 );

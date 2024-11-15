@@ -2239,6 +2239,7 @@ return array(
     'TeampassClasses\\OAuth2Controller\\OAuth2Controller' => $vendorDir . '/teampassclasses/oauth2controller/src/OAuth2Controller.php',
     'TeampassClasses\\PasswordManager\\PasswordManager' => $vendorDir . '/teampassclasses/passwordmanager/src/PasswordManager.php',
     'TeampassClasses\\PerformChecks\\PerformChecks' => $vendorDir . '/teampassclasses/performchecks/src/PerformChecks.php',
+    'TeampassClasses\\SessionManager\\EncryptedSessionProxy' => $vendorDir . '/teampassclasses/sessionmanager/src/EncryptedSessionProxy.php',
     'TeampassClasses\\SessionManager\\SessionManager' => $vendorDir . '/teampassclasses/sessionmanager/src/SessionManager.php',
     'TeampassClasses\\SuperGlobal\\SuperGlobal' => $vendorDir . '/teampassclasses/superglobal/src/SuperGlobal.php',
     'TheNetworg\\OAuth2\\Client\\Grant\\JwtBearer' => $vendorDir . '/thenetworg/oauth2-azure/src/Grant/JwtBearer.php',
