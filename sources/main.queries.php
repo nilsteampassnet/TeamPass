@@ -229,6 +229,29 @@ function passwordHandler(string $post_type, /*php8 array|null|string*/ $dataRece
          * Change user's authentication password
          */
         case 'change_user_auth_password'://action_password
+
+            // Check new password and confirm match server side
+            if ($dataReceived['new_password'] !== $dataReceived['new_password_confirm']) {
+                return prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_bad_credentials'),
+                    ),
+                    'encode'
+                );
+            }
+
+            // Check if new password is strong
+            if (!isPasswordStrong($dataReceived['new_password'])) {
+                return prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('complexity_level_not_reached'),
+                    ),
+                    'encode'
+                );
+            }
+
             return changeUserAuthenticationPassword(
                 (int) $session->get('user-id'),
                 (string) filter_var($dataReceived['old_password'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
@@ -3109,7 +3132,7 @@ function changeUserAuthenticationPassword(
 {
     $session = SessionManager::getSession();
     $lang = new Language($session->get('user-language') ?? 'english');
-    
+ 
     if (isUserIdValid($post_user_id) === true) {
         // Get user info
         $userData = DB::queryFirstRow(

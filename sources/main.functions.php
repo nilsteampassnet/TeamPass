@@ -4412,3 +4412,71 @@ function checkIdsExist(array $ids, string $tableName, string $fieldName) : array
 
     return $missingIds; // Renvoie les IDs qui n'existent pas dans la table
 }
+
+/**
+ * Check that a password is strong. The password needs to have at least :
+ *   - length >= 10.
+ *   - Uppercase and lowercase chars.
+ *   - Number or special char.
+ *   - Not contain username, name or mail part.
+ *   - Different from previous password.
+ * 
+ * @param string $password - Password to ckeck.
+ * @return bool - true if the password is strong, false otherwise.
+ */
+function isPasswordStrong($password) {
+    $session = SessionManager::getSession();
+
+    // Password can't contain login, name or lastname
+    $forbiddenWords = [
+        $session->get('user-login'),
+        $session->get('user-name'),
+        $session->get('user-lastname'),
+    ];
+
+    // Cut out the email
+    if ($email = $session->get('user-email')) {
+        $emailParts = explode('@', $email);
+
+        if (count($emailParts) === 2) {
+            // Mail username (removed @domain.tld)
+            $forbiddenWords[] = $emailParts[0];
+
+            // Organisation name (removed username@ and .tld)
+            $domain = explode('.', $emailParts[1]);
+            if (count($domain) > 1)
+                $forbiddenWords[] = $domain[0];
+        }
+    }
+
+    // Search forbidden words in password
+    foreach ($forbiddenWords as $word) {
+        if (empty($word))
+            continue;
+
+        // Stop if forbidden word found in password
+        if (stripos($password, $word) !== false)
+            return false;
+    }
+
+    // Get password complexity
+    $length = strlen($password);
+    $hasUppercase = preg_match('/[A-Z]/', $password);
+    $hasLowercase = preg_match('/[a-z]/', $password);
+    $hasNumber = preg_match('/[0-9]/', $password);
+    $hasSpecialChar = preg_match('/[\W_]/', $password);
+
+    // Get current user hash
+    $userHash = DB::queryFirstRow(
+        "SELECT pw FROM " . prefixtable('users') . " WHERE id = %d;",
+        $session->get('user-id')
+    )['pw'];
+
+    $passwordManager = new PasswordManager();
+    
+    return $length >= 8
+           && $hasUppercase
+           && $hasLowercase
+           && ($hasNumber || $hasSpecialChar)
+           && !$passwordManager->verifyPassword($userHash, $password);
+}
