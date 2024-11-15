@@ -26,12 +26,16 @@
  * @see       https://www.teampass.net
  */
 
+use TeampassClasses\SessionManager\SessionManager;
 set_time_limit(600);
 
-
 require_once './libs/SecureHandler.php';
-session_name('teampass_session');
-session_start();
+require_once '../sources/main.functions.php';
+
+// init
+loadClasses();
+$session = SessionManager::getSession();
+
 error_reporting(E_ERROR | E_PARSE);
 $_SESSION['db_encoding'] = 'utf8';
 $_SESSION['CPM'] = 1;

@@ -31,13 +31,13 @@ use TiBeN\CrontabManager\CrontabRepository;
 use Defuse\Crypto\Key;
 use Defuse\Crypto\Crypto;
 use Defuse\Crypto\Exception as CryptoException;
-use EZimuel\PHPSecureSession;
 use Hackzilla\PasswordGenerator\Generator\ComputerPasswordGenerator;
 use Hackzilla\PasswordGenerator\RandomGenerator\Php7RandomGenerator;
 use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\Language\Language;
 use TeampassClasses\PasswordManager\PasswordManager;
 use TeampassClasses\ConfigManager\ConfigManager;
+use TeampassClasses\SessionManager\SessionManager;
 use Encryption\Crypt\aesctr;
 
 // Do initial test
@@ -58,11 +58,9 @@ require_once __DIR__.'/../sources/main.functions.php';
 
 // init
 loadClasses('DB');
+$session = SessionManager::getSession();
 $superGlobal = new SuperGlobal();
 $lang = new Language(); 
-if (session_status() == PHP_SESSION_NONE) {
-    session_start();
-}
 
 // Load config
 $configManager = new ConfigManager();

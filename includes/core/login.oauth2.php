@@ -30,13 +30,14 @@ declare(strict_types=1);
  */
 
 use TeampassClasses\OAuth2Controller\OAuth2Controller;
+use TeampassClasses\SessionManager\SessionManager;
 
-session_start();
 require_once __DIR__. '/../../includes/config/include.php';
 require_once __DIR__.'/../../sources/main.functions.php';
 
 // init
 loadClasses();
+$session = SessionManager::getSession();
 
 // Création d'une instance du contrôleur
 $OAuth2 = new OAuth2Controller($SETTINGS);

@@ -26,6 +26,7 @@
  * @see       https://www.teampass.net
  */
 
+use TeampassClasses\SessionManager\SessionManager;
 
 header('X-XSS-Protection: 1; mode=block');
 header('X-Frame-Options: SameOrigin');
@@ -42,7 +43,12 @@ ini_set('session.use_only_cookies', 1);
 ini_set('session.cookie_secure', 0);
 
 require_once './libs/SecureHandler.php';
-session_start();
+require_once '../sources/main.functions.php';
+
+// init
+loadClasses();
+$session = SessionManager::getSession();
+
 //Session teampass tag
 $_SESSION['CPM'] = 1;
 define('MIN_PHP_VERSION', 8.1);

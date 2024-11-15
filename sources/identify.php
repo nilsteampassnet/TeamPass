@@ -30,15 +30,11 @@ declare(strict_types=1);
  */
 
 use voku\helper\AntiXSS;
-use EZimuel\PHPSecureSession;
 use TeampassClasses\SessionManager\SessionManager;
 use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use TeampassClasses\Language\Language;
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\ConfigManager\ConfigManager;
-use LdapRecord\Connection;
-use LdapRecord\Container;
-use LdapRecord\Auth\Events\Failed;
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\PasswordManager\PasswordManager;
 use Duo\DuoUniversal\Client;
