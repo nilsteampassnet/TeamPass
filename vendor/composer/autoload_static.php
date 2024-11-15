@@ -442,9 +442,9 @@ class ComposerStaticInite3f3ee27f81ca21f7bd7499d7b935c11
         ),
         'Illuminate\\Support\\' => 
         array (
-            0 => __DIR__ . '/..' . '/illuminate/collections',
+            0 => __DIR__ . '/..' . '/illuminate/macroable',
             1 => __DIR__ . '/..' . '/illuminate/conditionable',
-            2 => __DIR__ . '/..' . '/illuminate/macroable',
+            2 => __DIR__ . '/..' . '/illuminate/collections',
             3 => __DIR__ . '/..' . '/illuminate/support',
         ),
         'Illuminate\\Filesystem\\' => 
@@ -2859,6 +2859,7 @@ class ComposerStaticInite3f3ee27f81ca21f7bd7499d7b935c11
         'TeampassClasses\\OAuth2Controller\\OAuth2Controller' => __DIR__ . '/..' . '/teampassclasses/oauth2controller/src/OAuth2Controller.php',
         'TeampassClasses\\PasswordManager\\PasswordManager' => __DIR__ . '/..' . '/teampassclasses/passwordmanager/src/PasswordManager.php',
         'TeampassClasses\\PerformChecks\\PerformChecks' => __DIR__ . '/..' . '/teampassclasses/performchecks/src/PerformChecks.php',
+        'TeampassClasses\\SessionManager\\EncryptedSessionProxy' => __DIR__ . '/..' . '/teampassclasses/sessionmanager/src/EncryptedSessionProxy.php',
         'TeampassClasses\\SessionManager\\SessionManager' => __DIR__ . '/..' . '/teampassclasses/sessionmanager/src/SessionManager.php',
         'TeampassClasses\\SuperGlobal\\SuperGlobal' => __DIR__ . '/..' . '/teampassclasses/superglobal/src/SuperGlobal.php',
         'TheNetworg\\OAuth2\\Client\\Grant\\JwtBearer' => __DIR__ . '/..' . '/thenetworg/oauth2-azure/src/Grant/JwtBearer.php',

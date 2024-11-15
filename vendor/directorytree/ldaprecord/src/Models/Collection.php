@@ -21,8 +21,10 @@ class Collection extends QueryCollection
 
     /**
      * Determine if the collection contains all the given models, or any models.
+     *
+     * @param  QueryCollection|Model|array|string|null  $models
      */
-    public function exists($models = null): bool
+    public function exists(mixed $models = null): bool
     {
         $models = $this->getArrayableModels($models);
 
@@ -56,10 +58,7 @@ class Collection extends QueryCollection
     public function contains($key, $operator = null, $value = null): bool
     {
         if (func_num_args() > 1 || $key instanceof Closure) {
-            // If we are supplied with more than one argument, or
-            // we were passed a closure, we will utilize the
-            // parents contains method, for compatibility.
-            return parent::contains($key, $operator, $value);
+            return parent::contains(...func_get_args());
         }
 
         foreach ($this->getArrayableModels($key) as $model) {
@@ -78,7 +77,7 @@ class Collection extends QueryCollection
     /**
      * Get the provided models as an array.
      */
-    protected function getArrayableModels($models = null): array
+    protected function getArrayableModels(mixed $models = null): array
     {
         if ($models instanceof QueryCollection) {
             return $models->all();

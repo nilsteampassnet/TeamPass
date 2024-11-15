@@ -557,6 +557,8 @@ abstract class Model implements Arrayable, ArrayAccess, JsonSerializable, String
     public function is(?Model $model = null): bool
     {
         return ! is_null($model)
+            && ! empty($this->dn)
+            && ! empty($model->getDn())
             && $this->dn == $model->getDn()
             && $this->getConnectionName() == $model->getConnectionName();
     }

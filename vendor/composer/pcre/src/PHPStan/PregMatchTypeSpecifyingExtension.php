@@ -93,10 +93,24 @@ final class PregMatchTypeSpecifyingExtension implements StaticMethodTypeSpecifyi
             $context = $context->negate();
         }
 
+        // @phpstan-ignore function.alreadyNarrowedType
+        if (method_exists('PHPStan\Analyser\SpecifiedTypes', 'setRootExpr')) {
+            $typeSpecifier = $this->typeSpecifier->create(
+                $matchesArg->value,
+                $matchedType,
+                $context,
+                $scope
+            )->setRootExpr($node);
+
+            return $overwrite ? $typeSpecifier->setAlwaysOverwriteTypes() : $typeSpecifier;
+        }
+
+        // @phpstan-ignore arguments.count
         return $this->typeSpecifier->create(
             $matchesArg->value,
             $matchedType,
             $context,
+            // @phpstan-ignore argument.type
             $overwrite,
             $scope,
             $node

@@ -1204,6 +1204,8 @@ return array(
     'duo_redirect_uri' => 'Перенаправлення до Duo Prompt',
     'number_users_build_cache_tree' => 'Кількість користувачів для обробки завдання build_cache_tree під час кожного запуску планувальника.',
     'number_users_build_cache_tree_tip' => 'Порада щодо кількості користувачів для обробки завдання build_cache_tree під час кожного запуску планувальника.',
-    'user_password_expired' => 'Your password has expired. Please change it.',
+    'user_password_expired' => 'Термін дії вашого пароля закінчився. Будь ласка, змініть його.',
+    'user_password_policy_tip' => 'Th
+e new password must:<br/> - Be different from the previous one<br/> - Contain at least 10 characters<br/> - Contain at least one uppercase letter and one lowercase letter<br/> - Contain at least one number or special character<br/> - Not contain your name, first name, username, or email.',
 
 );
