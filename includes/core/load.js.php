@@ -126,20 +126,10 @@ $request = SymfonyRequest::createFromGlobals();
                 // Refresh list of last items shopwn
                 refreshListLastSeenItems()
             ).then(function() {
-                // Check if new privatekey needs to be adapted
-                var data = {
-                    'user_id': store.get('teampassUser').user_id,
-                    'fields' : 'special, auth_type, is_ready_for_usage, ongoing_process_id, otp_provided, keys_recovery_time',
-                }
-                if (debugJavascript === true) {
-                    console.info('Sending request for:');
-                    console.log(data);
-                }
                 $.post(
                     "sources/main.queries.php", {
                         type: "get_user_info",
                         type_category: 'action_user',
-                        data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $session->get('key'); ?>'),
                         key: "<?php echo $session->get('key'); ?>"
                     },
                     function(data) {

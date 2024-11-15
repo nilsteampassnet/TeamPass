@@ -4388,36 +4388,6 @@ function convertPasswordStrength($passwordStrength): int
 }
 
 /**
- * Vérifie si les IDs d'un tableau existent bien dans la table.
- *
- * @param array $ids - Tableau d'IDs à vérifier
- * @param string $tableName - Nom de la table dans laquelle vérifier les IDs
- * @param string $fieldName - Nom du champ dans lequel vérifier les IDs
- * @return array - IDs qui n'existent pas dans la table
- */
-function checkIdsExist(array $ids, string $tableName, string $fieldName) : array
-{
-    // Assure-toi que le tableau d'IDs n'est pas vide
-    if (empty($ids)) {
-        return [];
-    }
-
-    // Nettoyage des IDs pour éviter les injections SQL
-    $ids = array_map('intval', $ids);  // Assure que chaque ID est un entier
-
-    // Construction de la requête SQL pour vérifier les IDs dans la table
-    $result = DB::query('SELECT id FROM ' . prefixTable($tableName) . ' WHERE ' . $fieldName . ' IN %li', $ids);
-
-    // Extraire les IDs existants de la table
-    $existingIds = array_column($result, 'id');
-
-    // Trouver les IDs manquants en comparant les deux tableaux
-    $missingIds = array_diff($ids, $existingIds);
-
-    return $missingIds; // Renvoie les IDs qui n'existent pas dans la table
-}
-
-/**
  * Check that a password is strong. The password needs to have at least :
  *   - length >= 10.
  *   - Uppercase and lowercase chars.

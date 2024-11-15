@@ -392,7 +392,6 @@ function userHandler(string $post_type, array|null|string $dataReceived, array $
         case 'get_user_info'://action_user
             return getUserInfo(
                 (int) $filtered_user_id,
-                (string) filter_var($dataReceived['fields'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 $SETTINGS
             );
 
@@ -3064,7 +3063,6 @@ function migrateTo3_DoUserPersonalItemsEncryption(
 
 function getUserInfo(
     int $post_user_id,
-    string $post_fields,
     array $SETTINGS
 )
 {
@@ -3075,7 +3073,7 @@ function getUserInfo(
     if (isUserIdValid($post_user_id) === true) {
         // Get user info
         $userData = DB::queryFirstRow(
-            'SELECT '.$post_fields.'
+            'SELECT special, auth_type, is_ready_for_usage, ongoing_process_id, otp_provided, keys_recovery_time
             FROM ' . prefixTable('users') . '
             WHERE id = %i',
             $post_user_id
