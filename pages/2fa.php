@@ -138,11 +138,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                         $arrRolesMFA = [];
                                     }
                                     // Get full list
-                                    $roles = performDBQuery(
-                                        $SETTINGS,
-                                        'id, title',
-                                        'roles_title'
-                                    );
+                                    $roles = getRolesTitles();
                                     foreach ($roles as $role) {
                                         echo '
                                     <option value="' . $role['id'] . '"', in_array($role['id'], $arrRolesMFA) === true ? ' selected' : '', '>' . addslashes($role['title']) . '</option>';

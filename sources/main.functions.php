@@ -2174,26 +2174,19 @@ function obfuscateEmail(string $email): string
 }
 
 /**
- * Perform a Query.
- *
- * @param array  $SETTINGS Teamapss settings
- * @param string $fields   Fields to use
- * @param string $table    Table to use
+ * Get id and title from role_titles table.
  *
  * @return array
  */
-function performDBQuery(array $SETTINGS, string $fields, string $table): array
+function getRolesTitles(): array
 {
-    // include librairies & connect to DB
-    //include_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
-
     // Load class DB
     loadClasses('DB');
     
     // Insert log in DB
     return DB::query(
-        'SELECT ' . $fields . '
-        FROM ' . prefixTable($table)
+        'SELECT id, title
+        FROM ' . prefixTable('roles_title')
     );
 }
 
