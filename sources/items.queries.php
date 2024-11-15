@@ -3170,7 +3170,7 @@ switch ($inputData['type']) {
             'SELECT i.*, n.title AS folder_title, o.enabled AS otp_for_item_enabled, o.phone_number AS otp_phone_number, o.secret AS otp_secret
             FROM ' . prefixTable('items') . ' AS i
             INNER JOIN ' . prefixTable('nested_tree') . ' AS n ON (i.id_tree = n.id)
-            INNER JOIN ' . prefixTable('items_otp') . ' AS o ON (o.item_id = i.id)
+            LEFT JOIN ' . prefixTable('items_otp') . ' AS o ON (o.item_id = i.id)
             WHERE i.id = %i',
             $inputData['id']
         );
