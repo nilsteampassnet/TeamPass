@@ -33,7 +33,7 @@ use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\ConfigManager\ConfigManager;
 
-class FolderManager1
+class FolderManager
 {
     private $lang;
     private $settings;

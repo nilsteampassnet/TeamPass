@@ -2599,8 +2599,9 @@ function storeUsersShareKey(
         $user = DB::queryFirstRow(
             'SELECT public_key
             FROM ' . prefixTable('users') . '
-            WHERE id = ' . $userId . '
-            AND public_key != ""'
+            WHERE id = %i
+            AND public_key != ""',
+            $userId
         );
 
         if (empty($objectKey) === false) {
@@ -2635,8 +2636,9 @@ function storeUsersShareKey(
         $users = DB::query(
             'SELECT id, public_key
             FROM ' . prefixTable('users') . '
-            WHERE id NOT IN ("' . OTV_USER_ID . '","' . SSH_USER_ID . '","' . API_USER_ID . '"'.($all_users_except_id === -1 ? '' : ', "'.$all_users_except_id.'"').')
-            AND public_key != ""'
+            WHERE id NOT IN (%li)
+            AND public_key != ""',
+            [OTV_USER_ID, SSH_USER_ID, API_USER_ID, ($all_users_except_id === -1 ? '' : $all_users_except_id.'"')]
         );
         //DB::debugmode(false);
         foreach ($users as $user) {

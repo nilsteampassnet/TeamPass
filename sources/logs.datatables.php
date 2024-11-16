@@ -213,7 +213,8 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     $sSearch = $params['sSearch'] ?? '';
     if ($sSearch !== '') {
         $sWhere .= ' AND (';
-        $sanitizedSearch = filter_var($sSearch, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        // Get the sanitized search value
+        $sanitizedSearch = $request->query->getString('sSearch', '');
 
         foreach ($aColumns as $i => $column) {
             $sWhere .= $column . " LIKE '%" . $sanitizedSearch . "%' OR ";
