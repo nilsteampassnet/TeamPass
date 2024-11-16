@@ -1181,7 +1181,6 @@ if (null !== $post_type) {
                         storeUsersShareKey(
                             prefixTable('sharekeys_items'),
                             (int) $record['perso'],
-                            (int) $newFolderId,
                             (int) $newItemId,
                             $cryptedStuff['objectKey'],
                         );
@@ -1239,7 +1238,6 @@ if (null !== $post_type) {
                                 storeUsersShareKey(
                                     prefixTable('sharekeys_fields'),
                                     (int) $record['id'],
-                                    (int) $newFolderId,
                                     (int) $newFieldId,
                                     $cryptedStuff['objectKey'],
                                 );
@@ -1324,7 +1322,6 @@ if (null !== $post_type) {
                                 storeUsersShareKey(
                                     prefixTable('sharekeys_files'),
                                     (int) $record['perso'],
-                                    (int) $newFolderId,
                                     (int) $newFileId,
                                     $newFile['objectKey'],
                                 );

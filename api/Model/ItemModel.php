@@ -443,7 +443,6 @@ class ItemModel
         storeUsersShareKey(
             prefixTable('sharekeys_items'),
             (int) $itemInfos['personal_folder'],
-            (int) $folderId,
             (int) $newID,
             $passwordKey,
             true,
