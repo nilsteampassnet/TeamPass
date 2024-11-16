@@ -608,82 +608,9 @@ if (null !== $post_type) {
             );
             break;
 
-        case 'load_rights_for_compare':
-            // Check KEY
-            if ($post_key !== $session->get('key')) {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => $lang->get('key_is_not_correct'),
-                    ),
-                    'encode'
-                );
-                break;
-            } elseif ($session->get('user-read_only') === 1) {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => $lang->get('error_not_allowed_to'),
-                    ),
-                    'encode'
-                );
-                break;
-            }
-
-            // Prepare variables
-            $post_role_id = filter_input(INPUT_POST, 'role_id', FILTER_SANITIZE_NUMBER_INT);
-            $arrData = array();
-
-            //Display each folder with associated rights by role
-            $descendants = $tree->getDescendants();
-            foreach ($descendants as $node) {
-                if (in_array($node->id, $session->get('user-accessible_folders')) === true
-                    && in_array($node->id, $session->get('user-personal_visible_folders')) === false
-                ) {
-                    $arrNode = array();
-                    $arrNode['ident'] = (int) $node->nlevel;
-                    $arrNode['title'] = $node->title;
-                    $arrNode['id'] = $node->id;
-
-                    $arbo = $tree->getPath($node->id, false);
-                    $parentClass = array();
-                    foreach ($arbo as $elem) {
-                        array_push($parentClass, $elem->title);
-                    }
-                    $arrNode['path'] = $parentClass;
-
-                    // Role access
-                    $role_detail = DB::queryfirstrow(
-                        'SELECT *
-                        FROM '.prefixTable('roles_values').'
-                        WHERE folder_id = %i AND role_id = %i',
-                        $node->id,
-                        $post_role_id
-                    );
-
-                    if (DB::count() > 0) {
-                        $arrNode['access'] = $role_detail['type'];
-                    } else {
-                        $arrNode['access'] = 'none';
-                    }
-
-                    array_push($arrData, $arrNode);
-                }
-            }
-
-            // send data
-            echo prepareExchangedData(
-                array(
-                    'error' => false,
-                    'message' => '',
-                ),
-                'encode'
-            );
-            break;
-
         /*
-        * GET LDAP LIST OF GROUPS
-        */
+         * GET LDAP LIST OF GROUPS
+         */
         case 'get_list_of_groups_in_ldap':
             // Check KEY
             if ($post_key !== $session->get('key')) {

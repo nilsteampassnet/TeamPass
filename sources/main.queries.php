@@ -817,20 +817,6 @@ function systemHandler(string $post_type, array|null|string $dataReceived, array
             );
 
         /*
-        * refresh_folders_categories
-        */
-        case 'refresh_folders_categories'://action_system
-            handleFoldersCategories(
-                []
-            );
-            return prepareExchangedData(
-                array(
-                    'error' => false,
-                ),
-                'encode'
-            );
-
-        /*
          * Sending statistics
          */
         case 'sending_statistics'://action_system
@@ -844,9 +830,9 @@ function systemHandler(string $post_type, array|null|string $dataReceived, array
                 'encode'
             );
 
-        /*
-            * Generate BUG report
-            */
+         /*
+         * Generate BUG report
+         */
         case 'generate_bug_report'://action_system
 
             // Only administrators can see this confidential informations.
@@ -865,8 +851,8 @@ function systemHandler(string $post_type, array|null|string $dataReceived, array
             );
 
         /*
-        * get_teampass_settings
-        */
+         * get_teampass_settings
+         */
         case 'get_teampass_settings'://action_system
 
             // Encrypt data to return

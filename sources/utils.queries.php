@@ -197,54 +197,6 @@ if (null !== $post_type) {
             }
             break;
 
-        //CASE start user personal pwd re-encryption
-        case 'reencrypt_personal_pwd_start':
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== $session->get('key')) {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => $lang->get('key_is_not_correct'),
-                    ),
-                    'encode'
-                );
-                break;
-            }
-
-            // check if psk is set
-            if (null === $session->get('user-encrypted_psk')
-                || empty($session->get('user-encrypted_psk')) === true
-            ) {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => $lang->get('error_personal_saltkey_is_not_set'),
-                    ),
-                    'encode'
-                );
-                break;
-            }
-
-            $currentID = '';
-            $pws_list = array();
-            $rows = DB::query(
-                'SELECT i.id AS id
-                FROM  '.prefixTable('nested_tree').' AS n
-                LEFT JOIN '.prefixTable('items').' AS i ON i.id_tree = n.id
-                WHERE i.perso = %i AND n.title = %i',
-                '1',
-                $post_user_id
-            );
-            foreach ($rows as $record) {
-                if (empty($currentID)) {
-                    $currentID = $record['id'];
-                } else {
-                    array_push($pws_list, $record['id']);
-                }
-            }
-
-            echo '[{"error" : "" , "pws_list" : "'.implode(',', $pws_list).'" , "currentId" : "'.$currentID.'" , "nb" : "'.count($pws_list).'"}]';
-            break;
-
         //CASE auto update server password
         case 'server_auto_update_password':
             if ($post_key !== $session->get('key')) {
