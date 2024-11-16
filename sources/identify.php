@@ -1136,10 +1136,10 @@ function prepareUserEncryptionKeys($userInfo, $passwordClear) : array
  * CHECK PASSWORD VALIDITY
  * Don't take into consideration if LDAP in use
  * 
- * @param array $userInfo                       User account information
- * @param int $numDaysBeforePwExpiration
- * @param int $lastPwChange
- * @param array $SETTINGS                       Teampass settings
+ * @param array $userInfo User account information
+ * @param int $numDaysBeforePwExpiration Number of days before password expiration
+ * @param int $lastPwChange Last password change
+ * @param array $SETTINGS Teampass settings
  *
  * @return array
  */
@@ -1192,7 +1192,7 @@ function checkUserPasswordValidity(array $userInfo, int $numDaysBeforePwExpirati
 
 
 /**
- * Authenticate a user through AD.
+ * Authenticate a user through AD/LDAP.
  *
  * @param string $username      Username
  * @param array $userInfo       User account information
@@ -1205,163 +1205,217 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
 {
     $session = SessionManager::getSession();
     $lang = new Language($session->get('user-language') ?? 'english');
-
-    // Initialize variables
-    $ldapExtra = null;
-    $ldapConnection = null;
-    $activeDirectoryExtra = null;
-    $openLdapExtra = null;
-
-    // 1- Connect to LDAP
+    
     try {
-        switch ($SETTINGS['ldap_type']) {
-            case 'ActiveDirectory':
-                $ldapExtra = new LdapExtra($SETTINGS);
-                $ldapConnection = $ldapExtra->establishLdapConnection();
-                $activeDirectoryExtra = new ActiveDirectoryExtra();
-                break;
-            case 'OpenLDAP':
-                // Establish connection for OpenLDAP
-                $ldapExtra = new LdapExtra($SETTINGS);
-                $ldapConnection = $ldapExtra->establishLdapConnection();
-
-                // Create an instance of OpenLdapExtra and configure it
-                $openLdapExtra = new OpenLdapExtra();
-                break;
-            default:
-                throw new Exception("Unsupported LDAP type: " . $SETTINGS['ldap_type']);
+        // Get LDAP connection and handler
+        $ldapHandler = initializeLdapConnection($SETTINGS);
+        
+        // Authenticate user
+        $authResult = authenticateUser($username, $passwordClear, $ldapHandler, $SETTINGS, $lang);
+        if ($authResult['error']) {
+            return $authResult;
         }
+        
+        $userADInfos = $authResult['user_info'];
+        
+        // Verify account expiration
+        if (isAccountExpired($userADInfos)) {
+            return [
+                'error' => true,
+                'message' => $lang->get('error_ad_user_expired'),
+            ];
+        }
+        
+        // Handle user creation if needed
+        if ($userInfo['ldap_user_to_be_created']) {
+            $userInfo = handleNewUser($username, $passwordClear, $userADInfos, $userInfo, $SETTINGS, $lang);
+        }
+        
+        // Get and handle user groups
+        $userGroupsData = getUserGroups($userADInfos, $ldapHandler, $SETTINGS);
+        handleUserADGroups($username, $userInfo, $userGroupsData['userGroups'], $SETTINGS);
+        
+        // Finalize authentication
+        finalizeAuthentication($userInfo, $passwordClear, $SETTINGS);
+        
+        return [
+            'error' => false,
+            'message' => '',
+            'user_info' => $userInfo,
+        ];
+        
     } catch (Exception $e) {
         return [
             'error' => true,
-            'message' => "Error:".$e->getMessage(),
+            'message' => "Error: " . $e->getMessage(),
         ];
     }
+}
+
+/**
+ * Initialize LDAP connection based on type
+ * 
+ * @param array $SETTINGS Teampass settings
+ * @return array Contains connection and type-specific handler
+ * @throws Exception
+ */
+function initializeLdapConnection(array $SETTINGS): array
+{
+    $ldapExtra = new LdapExtra($SETTINGS);
+    $ldapConnection = $ldapExtra->establishLdapConnection();
     
+    switch ($SETTINGS['ldap_type']) {
+        case 'ActiveDirectory':
+            return [
+                'connection' => $ldapConnection,
+                'handler' => new ActiveDirectoryExtra(),
+                'type' => 'ActiveDirectory'
+            ];
+        case 'OpenLDAP':
+            return [
+                'connection' => $ldapConnection,
+                'handler' => new OpenLdapExtra(),
+                'type' => 'OpenLDAP'
+            ];
+        default:
+            throw new Exception("Unsupported LDAP type: " . $SETTINGS['ldap_type']);
+    }
+}
+
+/**
+ * Authenticate user against LDAP
+ * 
+ * @param string $username Username
+ * @param string $passwordClear Password
+ * @param array $ldapHandler LDAP connection and handler
+ * @param array $SETTINGS Teampass settings
+ * @param Language $lang Language instance
+ * @return array Authentication result
+ */
+function authenticateUser(string $username, string $passwordClear, array $ldapHandler, array $SETTINGS, Language $lang): array
+{
     try {
-        // 2- Get user info from AD
-        // We want to isolate attribute ldap_user_attribute or mostly samAccountName
-        $userADInfos = $ldapConnection->query()
-            ->where((isset($SETTINGS['ldap_user_attribute']) ===true && empty($SETTINGS['ldap_user_attribute']) === false) ? $SETTINGS['ldap_user_attribute'] : 'samaccountname', '=', $username)
+        $userAttribute = $SETTINGS['ldap_user_attribute'] ?? 'samaccountname';
+        $userADInfos = $ldapHandler['connection']->query()
+            ->where($userAttribute, '=', $username)
             ->firstOrFail();
-
-        // Is user enabled? Only ActiveDirectory
-        if ($SETTINGS['ldap_type'] === 'ActiveDirectory' && isset($activeDirectoryExtra) === true && $activeDirectoryExtra instanceof ActiveDirectoryExtra) {
-            if ($activeDirectoryExtra->userIsEnabled((string) $userADInfos['dn'], $ldapConnection) === false) {
-                return [
-                    'error' => true,
-                    'message' => "Error : User is not enabled",
-                ];
-            }
-        }
-
-        // 3- User auth attempt
-        // For AD, we use attribute userPrincipalName
-        // For OpenLDAP and others, we use attribute dn
-        $userAuthAttempt = $ldapConnection->auth()->attempt(
-            $SETTINGS['ldap_type'] === 'ActiveDirectory' ?
-                $userADInfos['userprincipalname'][0] :  // refering to https://ldaprecord.com/docs/core/v2/authentication#basic-authentication
-                $userADInfos['dn'],
-            $passwordClear
-        );
-
-        // User is not auth then return error
-        if ($userAuthAttempt === false) {
+        
+        // Verify user status for ActiveDirectory
+        if ($ldapHandler['type'] === 'ActiveDirectory' && !$ldapHandler['handler']->userIsEnabled((string) $userADInfos['dn'], $ldapHandler['connection'])) {
             return [
                 'error' => true,
-                'message' => "Error: User is not authenticated",
+                'message' => "Error: User is not enabled"
             ];
         }
-
+        
+        // Attempt authentication
+        $authIdentifier = $ldapHandler['type'] === 'ActiveDirectory' 
+            ? $userADInfos['userprincipalname'][0] 
+            : $userADInfos['dn'];
+            
+        if (!$ldapHandler['connection']->auth()->attempt($authIdentifier, $passwordClear)) {
+            return [
+                'error' => true,
+                'message' => "Error: User is not authenticated"
+            ];
+        }
+        
+        return [
+            'error' => false,
+            'user_info' => $userADInfos
+        ];
+        
     } catch (\LdapRecord\Query\ObjectNotFoundException $e) {
-        $error = $e->getDetailedError();
         return [
             'error' => true,
-            'message' => $lang->get('error_bad_credentials'),
+            'message' => $lang->get('error_bad_credentials')
         ];
     }
+}
 
-    // 4- Check shadowexpire attribute
-    // if === 1 then user disabled
-    if (
-        (isset($userADInfos['shadowexpire'][0]) === true && (int) $userADInfos['shadowexpire'][0] === 1)
-        ||
-        (isset($userADInfos['accountexpires'][0]) === true && (int) $userADInfos['accountexpires'][0] < time() && (int) $userADInfos['accountexpires'][0] != 0)
-    ) {
-        return [
-            'error' => true,
-            'message' => $lang->get('error_ad_user_expired'),
-        ];
-    }
+/**
+ * Check if user account is expired
+ * 
+ * @param array $userADInfos User AD information
+ * @return bool
+ */
+function isAccountExpired(array $userADInfos): bool
+{
+    return (isset($userADInfos['shadowexpire'][0]) && (int) $userADInfos['shadowexpire'][0] === 1)
+        || (isset($userADInfos['accountexpires'][0]) 
+            && (int) $userADInfos['accountexpires'][0] < time() 
+            && (int) $userADInfos['accountexpires'][0] !== 0);
+}
 
-    // Create LDAP user if not exists and tasks enabled
-    if ($userInfo['ldap_user_to_be_created'] === true) {
-        $userInfo = externalAdCreateUser(
-            $username,
-            $passwordClear,
-            $userADInfos['mail'][0],
-            $userADInfos['givenname'][0],
-            $userADInfos['sn'][0],
-            'ldap',
-            [],
-            $SETTINGS
-        );
-
-        // prepapre background tasks for item keys generation  
-        handleUserKeys(
-            (int) $userInfo['id'],
-            (string) $passwordClear,
-            (int) (isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH),
-            uniqidReal(20),
-            true,
-            true,
-            true,
-            false,
-            $lang->get('email_body_user_config_2'),
-        );
-
-        // Complete $userInfo
-        $userInfo['has_been_created'] = 1;
-    } else {
-        $userInfo['has_been_created'] = 0;
-    }
-
-    // Update user info with his AD groups
-    if ($SETTINGS['ldap_type'] === 'ActiveDirectory' && isset($activeDirectoryExtra) && $activeDirectoryExtra instanceof ActiveDirectoryExtra) {
-        $userGroupsData = $activeDirectoryExtra->getUserADGroups(
-            $userADInfos[(isset($SETTINGS['ldap_user_dn_attribute']) === true && empty($SETTINGS['ldap_user_dn_attribute']) === false) ? $SETTINGS['ldap_user_dn_attribute'] : 'distinguishedname'][0], 
-            $ldapConnection, 
-            $SETTINGS
-        );
-    } elseif ($SETTINGS['ldap_type'] == 'OpenLDAP' && isset($openLdapExtra) && $openLdapExtra instanceof OpenLdapExtra) {
-        $userGroupsData = $openLdapExtra->getUserADGroups(
-            $userADInfos['dn'],
-            $ldapConnection,
-            $SETTINGS
-        );
-    } else {
-        // error
-        return [
-            'error' => true,
-            'message' => "Error: Unsupported LDAP type: " . $SETTINGS['ldap_type'],
-        ];
-    }
-    
-    handleUserADGroups(
+/**
+ * Handle creation of new user
+ * 
+ * @param string $username Username
+ * @param string $passwordClear Password
+ * @param array $userADInfos User AD information
+ * @param array $userInfo User information
+ * @param array $SETTINGS Teampass settings
+ * @param Language $lang Language instance
+ * @return array User information
+ */
+function handleNewUser(string $username, string $passwordClear, array $userADInfos, array $userInfo, array $SETTINGS, Language $lang): array
+{
+    $userInfo = externalAdCreateUser(
         $username,
-        $userInfo,
-        $userGroupsData['userGroups'],
+        $passwordClear,
+        $userADInfos['mail'][0],
+        $userADInfos['givenname'][0],
+        $userADInfos['sn'][0],
+        'ldap',
+        [],
         $SETTINGS
     );
 
-    // Finalize authentication
-    finalizeAuthentication($userInfo, $passwordClear, $SETTINGS);
+    handleUserKeys(
+        (int) $userInfo['id'],
+        $passwordClear,
+        (int) ($SETTINGS['maximum_number_of_items_to_treat'] ?? NUMBER_ITEMS_IN_BATCH),
+        uniqidReal(20),
+        true,
+        true,
+        true,
+        false,
+        $lang->get('email_body_user_config_2')
+    );
 
-    return [
-        'error' => false,
-        'message' => '',
-        'user_info' => $userInfo,
-    ];
+    $userInfo['has_been_created'] = 1;
+    return $userInfo;
+}
+
+/**
+ * Get user groups based on LDAP type
+ * 
+ * @param array $userADInfos User AD information
+ * @param array $ldapHandler LDAP connection and handler
+ * @param array $SETTINGS Teampass settings
+ * @return array User groups
+ */
+function getUserGroups(array $userADInfos, array $ldapHandler, array $SETTINGS): array
+{
+    $dnAttribute = $SETTINGS['ldap_user_dn_attribute'] ?? 'distinguishedname';
+    
+    if ($ldapHandler['type'] === 'ActiveDirectory') {
+        return $ldapHandler['handler']->getUserADGroups(
+            $userADInfos[$dnAttribute][0],
+            $ldapHandler['connection'],
+            $SETTINGS
+        );
+    }
+    
+    if ($ldapHandler['type'] === 'OpenLDAP') {
+        return $ldapHandler['handler']->getUserADGroups(
+            $userADInfos['dn'],
+            $ldapHandler['connection'],
+            $SETTINGS
+        );
+    }
+    
+    throw new Exception("Unsupported LDAP type: " . $ldapHandler['type']);
 }
 
 /**
