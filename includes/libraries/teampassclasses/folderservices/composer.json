@@ -1,0 +1,22 @@
+{
+    "name": "teampassclasses/folderservices",
+    "description": "Handle the folder management.",
+    "type": "library",
+    "license": "GPL-3.0-only",
+    "keywords": [
+        "folder"
+    ],
+    "authors": [
+        {
+            "name": "Nils Laumaillé"
+        }
+    ],
+    "require": {
+        "php": "^8.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "TeampassClasses\\FolderServices\\": "src/"
+        }
+    }
+}
