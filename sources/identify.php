@@ -1206,6 +1206,12 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
     $session = SessionManager::getSession();
     $lang = new Language($session->get('user-language') ?? 'english');
 
+    // Initialize variables
+    $ldapExtra = null;
+    $ldapConnection = null;
+    $activeDirectoryExtra = null;
+    $openLdapExtra = null;
+
     // 1- Connect to LDAP
     try {
         switch ($SETTINGS['ldap_type']) {

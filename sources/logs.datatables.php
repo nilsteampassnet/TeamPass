@@ -161,9 +161,8 @@ if (isset($params['action']) && $params['action'] === 'connections') {
             $sLimit
     );
     $iFilteredTotal = DB::count();
-    /*
-           * Output
-        */
+    
+    // Output
     $sOutput = '{';
     $sOutput .= '"sEcho": '. $request->query->filter('draw', FILTER_SANITIZE_NUMBER_INT) . ', ';
     $sOutput .= '"iTotalRecords": '.$iTotal.', ';
@@ -214,10 +213,15 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     $sSearch = $params['sSearch'] ?? '';
     if ($sSearch !== '') {
         $sWhere .= ' AND (';
+        $sanitizedSearch = filter_var($sSearch, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+
         foreach ($aColumns as $i => $column) {
-            $sWhere .= $column . " LIKE '%". filter_var($sSearch, FILTER_SANITIZE_FULL_SPECIAL_CHARS) . "%' OR ";
+            $sWhere .= $column . " LIKE '%" . $sanitizedSearch . "%' OR ";
         }
-        $sWhere = substr_replace($sWhere, '', -3) . ')';
+
+        // Remove the last "OR " and add closing parenthesis
+        $sWhere = (string) substr_replace($sWhere, '', -3);
+        $sWhere .= ')';
     }
 
     $iTotal = DB::queryFirstField(
