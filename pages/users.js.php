@@ -1187,9 +1187,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             );
             // ---
         } else if ($(this).data('action') === 'new-password') {
-            var userId = $(this).data('id');
+            const userId = $(this).data('id');
             // Check if no tasks on-going for this user
-            data_to_send = {
+            const data_to_send = {
                 'user_id': userId,
             }
             $.post(
@@ -1710,9 +1710,12 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             // --- END
             //
         } else if ($(this).data('action') === 'new-otp') {// Check if no tasks on-going for this user
-            data_to_send = {
-                'user_id': $(this).data('id'),
+            const userID = $(this).data('id');
+
+            const data_to_send = {
+                'user_id': userID,
             }
+
             $.post(
                 "sources/users.queries.php", {
                     type: "get-user-infos",
@@ -1744,7 +1747,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                 }
                             ); 
                         } else {  
-                            var userID = data.user_infos.id;
                             showModalDialogBox(
                                 '#warningModal',
                                 '<i class="fas fa-exclamation-circle fa-lg warning mr-2"></i><?php echo $lang->get('your_attention_please'); ?>',
@@ -1755,7 +1757,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                 '<?php echo $lang->get('cancel'); ?>'
                             );
                             
-                            $(document).on('click', '#warningModalButtonAction', function() {                
+                            $(document).one('click', '#warningModalButtonAction', function() {
                                 // prepare user
 
                                 // Show spinner
@@ -2328,7 +2330,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
         
         // If expected to create new encryption key
-        var parameters = {
+        const parameters = {
             'user_id': data.user_id,
         };
 
@@ -2371,7 +2373,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
                     // update the process
                     // add all tasks
-                    var data_to_send = {
+                    const data_to_send = {
                         user_id: data.user_id,
                         user_code: data_otc.code,
                     }
