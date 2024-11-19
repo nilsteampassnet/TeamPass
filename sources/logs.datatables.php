@@ -110,7 +110,19 @@ if ($request->query->filter('action', FILTER_SANITIZE_SPECIAL_CHARS) !== null) {
     }
 }
 
+// Get the data
 $params = $request->query->all();
+$searchValue = '';
+
+// Check search parameters
+if (isset($params['search']['value'])) {
+    // Case 1: search[value]
+    $searchValue = (string) $params['search']['value'];
+} elseif (isset($params['sSearch'])) {
+    // Case 2: sSearch
+    $searchValue = (string) $params['sSearch'];
+}
+
 
 if (isset($params['action']) && $params['action'] === 'connections') {
     //Columns name
@@ -133,14 +145,16 @@ if (isset($params['action']) && $params['action'] === 'connections') {
 
     // Filtering
     $sWhere = "WHERE l.type = 'user_connection'";
-    if (isset($params['search']) && isset($params['search']['value'])) {
-        $searchValue = filter_var($params['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-        if ($searchValue !== '') {
-            $sWhere .= ' AND (';
-            foreach ($aColumns as $column) {
-                $sWhere .= $column . " LIKE '%" . $searchValue . "%' OR ";
-            }
-            $sWhere = substr_replace((string) $sWhere, '', -3) . ')';
+    if ($searchValue !== '') {
+        $conditions = [];
+        
+        foreach ($aColumns as $column) {
+            $conditions[] = DB::sqleval("?? LIKE %ss", $column, '%'.$searchValue.'%');
+        }
+        
+        // If conditions have been added
+        if (!empty($conditions)) {
+            $sWhere .= ' AND (' . implode(' OR ', array_map('strval', $conditions)) . ')';
         }
     }
 
@@ -210,19 +224,17 @@ if (isset($params['action']) && $params['action'] === 'connections') {
 
     // Filtering
     $sWhere = "WHERE l.action = 'at_shown'";
-    $sSearch = $params['sSearch'] ?? '';
-    if ($sSearch !== '') {
-        $sWhere .= ' AND (';
-        // Get the sanitized search value
-        $sanitizedSearch = $request->query->getString('sSearch', '');
-
-        foreach ($aColumns as $i => $column) {
-            $sWhere .= $column . " LIKE '%" . $sanitizedSearch . "%' OR ";
+    if ($searchValue !== '') {
+        $conditions = [];
+        
+        foreach ($aColumns as $column) {
+            $conditions[] = DB::sqleval("?? LIKE %ss", $column, '%'.$searchValue.'%');
         }
-
-        // Remove the last "OR " and add closing parenthesis
-        $sWhere = (string) substr_replace($sWhere, '', -3);
-        $sWhere .= ')';
+        
+        // If conditions have been added
+        if (!empty($conditions)) {
+            $sWhere .= ' AND (' . implode(' OR ', $conditions) . ')';
+        }
     }
 
     $iTotal = DB::queryFirstField(
@@ -640,7 +652,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
 
     // Filtering
     $sWhere = "WHERE l.type = 'error'";
-    $searchValue = $params['search']['value'] ?? '';
+    $searchValue = $params['search']['value'] ?? '';error_log('searchValue2: '.$searchValue);
     if ($searchValue !== '') {
         $sWhere .= ' AND (';
         foreach ($aColumns as $column) {

@@ -2633,12 +2633,16 @@ function storeUsersShareKey(
         }
     } else {
         // Create sharekey for each user
+        $user_ids = [OTV_USER_ID, SSH_USER_ID, API_USER_ID];
+        if ($all_users_except_id !== -1) {
+            array_push($user_ids, $all_users_except_id . '"');
+        }
         $users = DB::query(
             'SELECT id, public_key
             FROM ' . prefixTable('users') . '
             WHERE id NOT IN (%li)
             AND public_key != ""',
-            [OTV_USER_ID, SSH_USER_ID, API_USER_ID, ($all_users_except_id === -1 ? '' : $all_users_except_id.'"')]
+            $user_ids
         );
         //DB::debugmode(false);
         foreach ($users as $user) {
