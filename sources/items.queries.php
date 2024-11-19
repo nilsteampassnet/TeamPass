@@ -186,9 +186,9 @@ $inputData = dataSanitizer(
 // Do asked action
 switch ($inputData['type']) {
     /*
-    * CASE
-    * creating a new ITEM
-    */
+     * CASE
+     * creating a new ITEM
+     */
     case 'new_item':
         // Check KEY and rights
         if ($inputData['key'] !== $session->get('key')) {
@@ -826,10 +826,10 @@ switch ($inputData['type']) {
         );
         break;
 
-        /*
-    * CASE
-    * update an ITEM
-    */
+    /*
+     * CASE
+     * update an ITEM
+     */
     case 'update_item':
         // Check KEY and rights
         if ($inputData['key'] !== $session->get('key')) {
@@ -2112,10 +2112,10 @@ switch ($inputData['type']) {
         );
         break;
 
-        /*
-        * CASE
-        * Copy an Item
-    */
+    /*
+     * CASE
+     * Copy an Item
+     */
     case 'copy_item':
         // Check KEY and rights
         if ($inputData['key'] !== $session->get('key')) {
@@ -2528,10 +2528,10 @@ switch ($inputData['type']) {
         }
         break;
 
-        /*
-        * CASE
-        * Display informations of selected item
-    */
+    /*
+     * CASE
+     * Display informations of selected item
+     */
     case 'show_details_item':
         // Check KEY and rights
         if ($inputData['key'] !== $session->get('key')) {
@@ -3120,10 +3120,10 @@ switch ($inputData['type']) {
         );
         break;
 
-        /*
-        * CASE
-        * Display History of the selected Item
-    */
+    /*
+     * CASE
+     * Display History of the selected Item
+     */
     case 'showDetailsStep2':
         // Is this query expected (must be run after a step1 and not standalone)
         if ($session->get('system-show_step2') !== true) {
@@ -3410,10 +3410,10 @@ switch ($inputData['type']) {
         }
         break;
 
-        /*
-        * CASE
-        * Delete an item
-    */
+    /*
+     * CASE
+     * Delete an item
+     */
     case 'delete_item':
         // Check KEY and rights
         if ($inputData['key'] !== $session->get('key')) {
@@ -3553,9 +3553,9 @@ switch ($inputData['type']) {
 
         
     /*
-    * CASE
-    * Display OTP of the selected Item
-    */
+     * CASE
+     * Display OTP of the selected Item
+     */
     case 'show_opt_code':
         // Check KEY and rights
         if ($inputData['key'] !== $session->get('key')) {
@@ -3626,10 +3626,10 @@ switch ($inputData['type']) {
         );
         break;
 
-        /*
-    * CASE
-    * Update a Group
-    */
+    /*
+     * CASE
+     * Update a Group
+     */
     case 'update_folder':
         // Check KEY and rights
         if ($inputData['key'] !== $session->get('key')) {
@@ -3744,121 +3744,10 @@ switch ($inputData['type']) {
         echo '[{"error" : ""}]';
         break;
 
-        /*
-    * CASE
-    * Move a Group including sub-folders
-    */
-    case 'move_folder':
-        // Check KEY and rights
-        if ($inputData['key'] !== $session->get('key')) {
-            echo (string) prepareExchangedData(
-                array(
-                    'error' => true,
-                    'message' => $lang->get('key_is_not_correct'),
-                ),
-                'encode'
-            );
-            break;
-        }
-        if ($session->get('user-read_only') === 1) {
-            echo (string) prepareExchangedData(
-                array(
-                    'error' => true,
-                    'message' => $lang->get('error_not_allowed_to'),
-                ),
-                'encode'
-            );
-            break;
-        }
-        // decrypt and retreive data in JSON format
-        $dataReceived = prepareExchangedData(
-            $inputData['data'],
-            'decode'
-        );
-        $post_source_folder_id = filter_var(htmlspecialchars_decode($dataReceived['source_folder_id']), FILTER_SANITIZE_NUMBER_INT);
-        $post_target_folder_id = filter_var(htmlspecialchars_decode($dataReceived['target_folder_id']), FILTER_SANITIZE_NUMBER_INT);
-
-        // Check that user can access this folder
-        if ((in_array($post_source_folder_id, $session->get('user-accessible_folders')) === false ||
-                in_array($post_target_folder_id, $session->get('user-accessible_folders')) === false) && ($post_target_folder_id === '0' &&
-                isset($SETTINGS['can_create_root_folder']) === true && (int) $SETTINGS['can_create_root_folder'] === 1)
-        ) {
-            $returnValues = '[{"error" : "' . $lang->get('error_not_allowed_to') . '"}]';
-            echo $returnValues;
-            break;
-        }
-
-        $tmp_source = DB::queryFirstRow(
-            'SELECT title, parent_id, personal_folder
-            FROM ' . prefixTable('nested_tree') . '
-            WHERE id = %i',
-            $post_source_folder_id
-        );
-
-        $tmp_target = DB::queryFirstRow(
-            'SELECT title, parent_id, personal_folder
-            FROM ' . prefixTable('nested_tree') . '
-            WHERE id = %i',
-            $post_target_folder_id
-        );
-
-        // check if target is not a child of source
-        if ($tree->isChildOf($post_target_folder_id, $post_source_folder_id) === true) {
-            $returnValues = '[{"error" : "' . $lang->get('error_not_allowed_to') . '"}]';
-            echo $returnValues;
-            break;
-        }
-
-        // check if source or target folder is PF. If Yes, then cancel operation
-        if ((int) $tmp_source['personal_folder'] === 1 || (int) $tmp_target['personal_folder'] === 1) {
-            $returnValues = '[{"error" : "' . $lang->get('error_not_allowed_to') . '"}]';
-            echo $returnValues;
-            break;
-        }
-
-        // check if source or target folder is PF. If Yes, then cancel operation
-        if ($tmp_source['title'] === $session->get('user-id') || $tmp_target['title'] === $session->get('user-id')) {
-            $returnValues = '[{"error" : "' . $lang->get('error_not_allowed_to') . '"}]';
-            echo $returnValues;
-            break;
-        }
-
-        // moving SOURCE folder
-        DB::update(
-            prefixTable('nested_tree'),
-            array(
-                'parent_id' => $post_target_folder_id,
-            ),
-            'id=%s',
-            $post_source_folder_id
-        );
-        $tree->rebuild();
-
-        // send data
-        echo '[{"error" : ""}]';
-        break;
-
-        /*
-    * CASE
-    * Store hierarchic position of Group
-    */
-    case 'save_position':
-        DB::update(
-            prefixTable('nested_tree'),
-            array(
-                'parent_id' => $inputData['destination'],
-            ),
-            'id = %i',
-            $inputData['source']
-        );
-        $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
-        $tree->rebuild();
-        break;
-
-        /*
-    * CASE
-    * List items of a group
-    */
+    /*
+     * CASE
+     * List items of a group
+     */
     case 'do_items_list_in_folder':
         // Check KEY and rights
         if ($inputData['key'] !== $session->get('key')) {
@@ -4596,10 +4485,10 @@ switch ($inputData['type']) {
         );
         break;
 
-        /*
-    * CASE
-    * Get complexity level of a group
-    */
+    /*
+     * CASE
+     * Get complexity level of a group
+     */
     case 'get_complixity_level':
         // get some info about ITEM
         if (null !== $inputData['itemId'] && empty($inputData['itemId']) === false) {
@@ -4962,10 +4851,10 @@ switch ($inputData['type']) {
         
         break;
 
-        /*
-    * CASE
-    * DELETE attached file from an item
-    */
+    /*
+     * CASE
+     * DELETE attached file from an item
+     */
     case 'delete_attached_file':
         // Check KEY
         if ($inputData['key'] !== $session->get('key')) {
@@ -5054,12 +4943,12 @@ switch ($inputData['type']) {
         );
         break;
 
-        /*
-    * FUNCTION
-    * Launch an action when clicking on a quick icon
-    * $action = 0 => Make not favorite
-    * $action = 1 => Make favorite
-    */
+    /*
+     * FUNCTION
+     * Launch an action when clicking on a quick icon
+     * $action = 0 => Make not favorite
+     * $action = 1 => Make favorite
+     */
     case 'action_on_quick_icon':
         // Check KEY and rights
         if (
@@ -5132,10 +5021,10 @@ switch ($inputData['type']) {
         }
         break;
 
-        /*
-    * CASE
-    * Move an ITEM
-    */
+    /*
+     * CASE
+     * Move an ITEM
+     */
     case 'move_item':
         // Check KEY and rights
         if ($inputData['key'] !== $session->get('key')) {
@@ -5479,10 +5368,10 @@ switch ($inputData['type']) {
         );
         break;
 
-        /*
-    * CASE
-    * MASSIVE Move an ITEM
-    */
+    /*
+     * CASE
+     * MASSIVE Move an ITEM
+     */
     case 'mass_move_items':
         // Check KEY and rights
         if ($inputData['key'] !== $session->get('key')) {
@@ -5803,10 +5692,10 @@ switch ($inputData['type']) {
         );
         break;
 
-        /*
-        * CASE
-        * MASSIVE Delete an item
-    */
+    /*
+     * CASE
+     * MASSIVE Delete an item
+     */
     case 'mass_delete_items':
         // Check KEY and rights
         if ($inputData['key'] !== $session->get('key')) {
@@ -6158,10 +6047,10 @@ switch ($inputData['type']) {
         }
         break;
 
-        /*
-    * CASE
-    * Free Item for Edition
-    */
+    /*
+     * CASE
+     * Free Item for Edition
+     */
     case 'free_item_for_edition':
         // Check KEY
         if ($inputData['key'] !== $session->get('key')) {
@@ -6452,112 +6341,10 @@ switch ($inputData['type']) {
         );
         break;
 
-        /*
-    * CASE
-    * Free Item for Edition
-    */
     /*
-    case 'delete_file':
-        // Check KEY
-        if ($inputData['key'] !== $session->get('key')) {
-            echo '[ { "error" : "key_not_conform" } ]';
-            break;
-        }
-
-        // get file info
-        $result = DB::queryfirstrow(
-            'SELECT file FROM ' . prefixTable('files') . ' WHERE id=%i',
-            intval(substr(filter_input(INPUT_POST, 'uri', FILTER_SANITIZE_FULL_SPECIAL_CHARS), 1))
-        );
-
-        fileDelete($SETTINGS['path_to_upload_folder'] . '/' . $result['file'] . $inputData['fileSuffix'], $SETTINGS);
-
-        break;
-        */
-
-        /*
-    * CASE
-    * Get list of users that have access to the folder
-    */
-    case 'check_for_title_duplicate':
-        // Check KEY
-        if ($inputData['key'] !== $session->get('key')) {
-            echo '[ { "error" : "key_not_conform" } ]';
-            break;
-        }
-        $duplicate = 0;
-
-        // decrypt and retreive data in JSON format
-        $dataReceived = prepareExchangedData(
-            $inputData['data'],
-            'decode'
-        );
-        // Prepare variables
-        $label = htmlspecialchars_decode($dataReceived['label']);
-        $idFolder = $dataReceived['idFolder'];
-
-        // don't check if Personal Folder
-        $data = DB::queryFirstRow('SELECT title FROM ' . prefixTable('nested_tree') . ' WHERE id = %i', $idFolder);
-        if ($data['title'] === $session->get('user-id')) {
-            // send data
-            echo '[{"duplicate" : "' . $duplicate . '" , error" : ""}]';
-        } else {
-            if ($inputData['option'] === 'same_folder') {
-                // case unique folder
-                DB::query(
-                    'SELECT label
-                    FROM ' . prefixTable('items') . '
-                    WHERE id_tree = %i AND label = %s',
-                    $idFolder,
-                    $label
-                );
-            } else {
-                // case complete database
-
-                //get list of personal folders
-                $arrayPf = array();
-                if (empty($row['id']) === false) {
-                    $rows = DB::query(
-                        'SELECT id FROM ' . prefixTable('nested_tree') . ' WHERE personal_folder = %i',
-                        '1'
-                    );
-                    foreach ($rows as $record) {
-                        if (!in_array($record['id'], $arrayPf)) {
-                            array_push($arrayPf, $record['id']);
-                        }
-                    }
-                }
-
-                // build WHERE condition
-                $where = new WhereClause('and');
-                $where->add('id_tree = %i', $idFolder);
-                $where->add('label = %s', $label);
-                if (empty($arrayPf) === false) {
-                    $where->add('id_tree NOT IN (' . implode(',', $arrayPf) . ')');
-                }
-
-                DB::query(
-                    'SELECT label
-                    FROM ' . prefixTable('items') . '
-                    WHERE %l',
-                    $where
-                );
-            }
-
-            // count results
-            if (DB::count() > 0) {
-                $duplicate = 1;
-            }
-
-            // send data
-            echo '[{"duplicate" : "' . $duplicate . '" , "error" : ""}]';
-        }
-        break;
-
-        /*
-    * CASE
-    * Get list of users that have access to the folder
-    */
+     * CASE
+     * Get list of users that have access to the folder
+     */
     case 'refresh_visible_folders':
         // Check KEY
         if ($inputData['key'] !== $session->get('key')) {
@@ -6707,10 +6494,10 @@ switch ($inputData['type']) {
 
         break;
 
-        /*
-    * CASE
-    * Get list of users that have access to the folder
-    */
+    /*
+     * CASE
+     * Get list of users that have access to the folder
+     */
     case 'refresh_folders_other_info':
         // Check KEY
         if ($inputData['key'] !== $session->get('key')) {
@@ -7007,38 +6794,6 @@ switch ($inputData['type']) {
         );
         break;
 
-    case 'build_list_of_users':
-        // Check KEY
-        if ($inputData['key'] !== $session->get('key')) {
-            echo '[ { "error" : "key_not_conform" } ]';
-            break;
-        }
-
-        // Get list of users
-        $usersList = array();
-        $usersString = '';
-        $rows = DB::query('SELECT id,login,email FROM ' . prefixTable('users') . ' ORDER BY login ASC');
-        foreach ($rows as $record) {
-            $usersList[$record['login']] = array(
-                'id' => $record['id'],
-                'login' => $record['login'],
-                'email' => $record['email'],
-            );
-            $usersString .= $record['id'] . '#' . $record['login'] . ';';
-        }
-
-        $data = array(
-            'error' => '',
-            'list' => $usersString,
-        );
-
-        // send data
-        echo (string) prepareExchangedData(
-            $data,
-            'encode'
-        );
-        break;
-
     case 'send_request_access':
         // Check KEY
         if ($inputData['key'] !== $session->get('key')) {
@@ -7090,10 +6845,10 @@ switch ($inputData['type']) {
 
         break;
 
-        /*
-    * CASE
-    * save_notification_status
-    */
+    /*
+     * CASE
+     * save_notification_status
+     */
     case 'save_notification_status':
         // Check KEY
         if ($inputData['key'] !== $session->get('key')) {
@@ -7161,10 +6916,10 @@ switch ($inputData['type']) {
 
         break;
 
-        /*
-    * CASE
-    * delete_uploaded_files_but_not_saved
-    */
+    /*
+     * CASE
+     * delete_uploaded_files_but_not_saved
+     */
     case 'delete_uploaded_files_but_not_saved':
         // Check KEY
         if ($inputData['key'] !== $session->get('key')) {

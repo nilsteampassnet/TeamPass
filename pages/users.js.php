@@ -1136,7 +1136,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             }
             $.post(
                 "sources/users.queries.php", {
-                    type: "get-user-infos",
+                    type: "get_user_infos",
                     data: prepareExchangedData(JSON.stringify(data_to_send), 'encode', '<?php echo $session->get('key'); ?>'),
                     key: '<?php echo $session->get('key'); ?>'
                 },
@@ -1657,7 +1657,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             }
             $.post(
                 "sources/users.queries.php", {
-                    type: "get-user-infos",
+                    type: "get_user_infos",
                     data: prepareExchangedData(JSON.stringify(data_to_send), 'encode', '<?php echo $session->get('key'); ?>'),
                     key: '<?php echo $session->get('key'); ?>'
                 },

@@ -100,7 +100,7 @@ if (defined('TP_PW_COMPLEXITY') === false) {
 
 if (null !== $post_type) {
     switch ($post_type) {
-            /*
+        /*
          * BUILD liste of folders
          */
         case 'build_matrix':
