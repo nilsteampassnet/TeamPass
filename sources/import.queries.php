@@ -49,6 +49,7 @@ loadClasses('DB');
 $session = SessionManager::getSession();
 $request = SymfonyRequest::createFromGlobals();
 $lang = new Language($session->get('user-language') ?? 'english');
+$antiXss = new AntiXSS();
 
 // Load config
 $configManager = new ConfigManager();
@@ -315,6 +316,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
         foreach ($dataReceived['items'] as $item) {
             $filtered_item = [];
             foreach ($item as $key => $value) {
+                $value = $antiXss->xss_clean($value);
                 if ($key !== 'pwd') {
                     $value = filter_var($value, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
                 }
