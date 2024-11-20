@@ -96,23 +96,18 @@ $antiXss->removeEvilHtmlTags(['script', 'iframe', 'embed', 'object', 'applet', '
 // Load tree
 $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
-// prepare the queries
-if ($request->query->filter('action', FILTER_SANITIZE_SPECIAL_CHARS) !== null) {
-    //init SQL variables
-    $sWhere = $sOrder = $sLimit = '';
-    $aSortTypes = ['asc', 'desc'];
-    /* BUILD QUERY */
-    //Paging
-    if ($request->query->has('length') && (int) $request->query->filter('length', null, FILTER_SANITIZE_NUMBER_INT) !== -1) {
-        $start = $request->query->filter('start', 0, FILTER_SANITIZE_NUMBER_INT);
-        $length = $request->query->filter('length', 0, FILTER_SANITIZE_NUMBER_INT);
-        $sLimit = " LIMIT $start, $length";
-    }
-}
-
 // Get the data
 $params = $request->query->all();
-$searchValue = '';
+
+// Init
+$searchValue = $sWhere = $sOrder = '';
+$aSortTypes = ['asc', 'desc'];
+$sLimitStart = $request->query->has('start') 
+    ? $request->query->filter('start', 0, FILTER_VALIDATE_INT, ['options' => ['default' => 0, 'min_range' => 0]]) 
+    : 0;
+$sLimitLength = $request->query->has('length') 
+    ? $request->query->filter('length', 0, FILTER_VALIDATE_INT, ['options' => ['default' => 0, 'min_range' => 0]]) 
+    : 0;
 
 // Check search parameters
 if (isset($params['search']['value'])) {
@@ -123,57 +118,61 @@ if (isset($params['search']['value'])) {
     $searchValue = (string) $params['sSearch'];
 }
 
+// Ordering
+$order = $params['order'][0] ?? [];
+if (isset($order['dir'], $order['column']) 
+    && in_array($order['dir'], $aSortTypes, true)
+    && (int) $order['column'] !== 0
+    && $order['column'] !== 'asc'
+) {
+    $orderDirection = $order['dir'];
+} else {
+    $orderDirection = 'DESC';
+}
+
 
 if (isset($params['action']) && $params['action'] === 'connections') {
     //Columns name
     $aColumns = ['l.date', 'l.label', 'l.qui', 'u.login', 'u.name', 'u.lastname'];
-    //Ordering
-    if (isset($params['order']) && is_array($params['order'])) {
-        $order = $params['order'][0] ?? [];
-        if (isset($order['dir'], $order['column']) 
-            && in_array($order['dir'], $aSortTypes, true) 
-            && (int) $order['column'] !== 0
-            && $order['column'] !== 'asc') {
 
-            $columnIndex = filter_var($order['column'], FILTER_SANITIZE_NUMBER_INT);
-            $dir = filter_var($order['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-            $sOrder = 'ORDER BY ' . $aColumns[$columnIndex] . ' ' . $dir . ' ';
-        } else {
-            $sOrder = 'ORDER BY ' . $aColumns[0] . ' DESC';
-        }
+    // Ordering
+    if (isset($aColumns[$order['column']]) === true) {
+        $orderColumn = $aColumns[$order['column']];
+    } else {
+        $orderColumn = $aColumns[0];
     }
 
     // Filtering
-    $sWhere = "WHERE l.type = 'user_connection'";
-    if ($searchValue !== '') {
-        $conditions = [];
-        
+    $sWhere = new WhereClause('AND');
+    if ($searchValue !== '') {        
+        $subclause = $sWhere->addClause('OR');
         foreach ($aColumns as $column) {
-            $conditions[] = DB::sqleval("?? LIKE %ss", $column, '%'.$searchValue.'%');
-        }
-        
-        // If conditions have been added
-        if (!empty($conditions)) {
-            $sWhere .= ' AND (' . implode(' OR ', array_map('strval', $conditions)) . ')';
+            $subclause->add($column.' LIKE %ss', $searchValue);
         }
     }
+    $sWhere->add('l.type = %s', 'user_connection');
 
+    // Get the total number of records
     $iTotal = DB::queryFirstField(
         'SELECT COUNT(*)
-            FROM '.prefixTable('log_system').' as l
-            INNER JOIN '.prefixTable('users').' as u ON (l.qui=u.id)'.
-            $sWhere.
-            $sOrder
+        FROM '.prefixTable('log_system').' as l
+        INNER JOIN '.prefixTable('users').' as u ON (l.qui=u.id) 
+        WHERE %l ORDER BY %s %s',
+        $sWhere,
+        $orderColumn,
+        $orderDirection
     );
-    $rows = DB::query(
-        'SELECT l.date as date, l.label as label, l.qui as who, 
-            u.login as login, u.name AS name, u.lastname AS lastname
-            FROM '.prefixTable('log_system').' as l
-            INNER JOIN '.prefixTable('users').' as u ON (l.qui=u.id)'.
-            $sWhere.
-            $sOrder.
-            $sLimit
-    );
+
+    // Prepare the SQL query
+    $sql = 'SELECT l.date as date, l.label as label, l.qui as who, 
+    u.login as login, u.name AS name, u.lastname AS lastname
+    FROM '.prefixTable('log_system').' as l
+    INNER JOIN '.prefixTable('users').' as u ON (l.qui=u.id)
+    WHERE %l ORDER BY %s %s LIMIT %i, %i';
+    $params = [$sWhere, $orderColumn, $orderDirection, $sLimitStart, $sLimitLength];
+
+    // Get the records
+    $rows = DB::query($sql, ...$params);
     $iFilteredTotal = DB::count();
     
     // Output
@@ -208,53 +207,48 @@ if (isset($params['action']) && $params['action'] === 'connections') {
 } elseif (isset($params['action']) && $params['action'] === 'access') {
     //Columns name
     $aColumns = ['l.date', 'i.label', 'u.login'];
-    //Ordering
-    $order = $params['order'][0] ?? [];
-    if (isset($order['dir'], $order['column'])
-        && in_array($order['dir'], $aSortTypes, true)
-        && (int) $order['column'] !== 0
-        && $order['column'] !== 'asc') {
 
-        $columnIndex = filter_var($order['column'], FILTER_SANITIZE_NUMBER_INT);
-        $dir = filter_var($order['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-        $sOrder = 'ORDER BY ' . $aColumns[$columnIndex] . ' ' . $dir . ' ';
+    // Ordering
+    if (isset($aColumns[$order['column']]) === true) {
+        $orderColumn = $aColumns[$order['column']];
     } else {
-        $sOrder = 'ORDER BY ' . $aColumns[0] . ' DESC';
+        $orderColumn = $aColumns[0];
     }
 
     // Filtering
-    $sWhere = "WHERE l.action = 'at_shown'";
-    if ($searchValue !== '') {
-        $conditions = [];
-        
+    $sWhere = new WhereClause('AND');
+    if ($searchValue !== '') {        
+        $subclause = $sWhere->addClause('OR');
         foreach ($aColumns as $column) {
-            $conditions[] = DB::sqleval("?? LIKE %ss", $column, '%'.$searchValue.'%');
-        }
-        
-        // If conditions have been added
-        if (!empty($conditions)) {
-            $sWhere .= ' AND (' . implode(' OR ', $conditions) . ')';
+            $subclause->add($column.' LIKE %ss', $searchValue);
         }
     }
+    $sWhere->add('l.action = %s', 'at_shown');
 
+    // Get the total number of records
     $iTotal = DB::queryFirstField(
         'SELECT COUNT(*)
-            FROM '.prefixTable('log_items').' as l
-            INNER JOIN '.prefixTable('items').' as i ON (l.id_item=i.id)
-            INNER JOIN '.prefixTable('users').' as u ON (l.id_user=u.id)'.
-            $sWhere
+        FROM '.prefixTable('log_items').' as l
+        INNER JOIN '.prefixTable('items').' as i ON (l.id_item=i.id)
+        INNER JOIN '.prefixTable('users').' as u ON (l.id_user=u.id)
+        WHERE %l ORDER BY %s %s',
+        $sWhere,
+        $orderColumn,
+        $orderDirection
     );
 
-    $rows = DB::query(
-        'SELECT l.date as date, u.login as login, i.label as label
-            FROM '.prefixTable('log_items').' as l
-            INNER JOIN '.prefixTable('items').' as i ON (l.id_item=i.id)
-            INNER JOIN '.prefixTable('users').' as u ON (l.id_user=u.id)
-            '.$sWhere.'
-            '.$sOrder.'
-            '.$sLimit
-    );
+    // Prepare the SQL query
+    $sql = 'SELECT l.date as date, u.login as login, i.label as label
+    FROM '.prefixTable('log_items').' as l
+    INNER JOIN '.prefixTable('items').' as i ON (l.id_item=i.id)
+    INNER JOIN '.prefixTable('users').' as u ON (l.id_user=u.id)
+    WHERE %l ORDER BY %s %s LIMIT %i, %i';
+    $params = [$sWhere, $orderColumn, $orderDirection, $sLimitStart, $sLimitLength];
+
+    // Get the records
+    $rows = DB::query($sql, ...$params);
     $iFilteredTotal = DB::count();
+
     // Output
     $sOutput = '{';
     $sOutput .= '"sEcho": '. $request->query->filter('draw', FILTER_SANITIZE_NUMBER_INT) . ', ';
@@ -287,49 +281,48 @@ if (isset($params['action']) && $params['action'] === 'connections') {
 } elseif (isset($params['action']) && $params['action'] === 'copy') {
     //Columns name
     $aColumns = ['l.date', 'i.label', 'u.login'];
-    //Ordering
-    $order = $params['order'][0] ?? [];
-    if (isset($order['dir'], $order['column'])
-        && in_array($order['dir'], $aSortTypes, true)
-        && (int) $order['column'] !== 0
-        && $order['column'] !== 'asc') {
 
-        $columnIndex = filter_var($order['column'], FILTER_SANITIZE_NUMBER_INT);
-        $dir = filter_var($order['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-        $sOrder = 'ORDER BY ' . $aColumns[$columnIndex] . ' ' . $dir . ' ';
+    // Ordering
+    if (isset($aColumns[$order['column']]) === true) {
+        $orderColumn = $aColumns[$order['column']];
     } else {
-        $sOrder = 'ORDER BY ' . $aColumns[0] . ' DESC';
+        $orderColumn = $aColumns[0];
     }
 
     // Filtering
-    $sWhere = "WHERE l.action = 'at_copy'";
-    $searchValue = $params['search']['value'] ?? '';
-    if ($searchValue !== '') {
-        $sWhere .= ' AND (';
+    $sWhere = new WhereClause('AND');
+    if ($searchValue !== '') {        
+        $subclause = $sWhere->addClause('OR');
         foreach ($aColumns as $column) {
-            $sWhere .= $column . " LIKE '%" . filter_var($searchValue, FILTER_SANITIZE_FULL_SPECIAL_CHARS) . "%' OR ";
+            $subclause->add($column.' LIKE %ss', $searchValue);
         }
-        $sWhere = substr_replace($sWhere, '', -3) . ')';
     }
+    $sWhere->add('l.action = %s', 'at_copy');
 
+    // Get the total number of records
     $iTotal = DB::queryFirstField(
         'SELECT COUNT(*)
-            FROM '.prefixTable('log_items').' as l
-            INNER JOIN '.prefixTable('items').' as i ON (l.id_item=i.id)
-            INNER JOIN '.prefixTable('users').' as u ON (l.id_user=u.id) '.
-            $sWhere.
-            $sOrder
+        FROM '.prefixTable('log_items').' as l
+        INNER JOIN '.prefixTable('items').' as i ON (l.id_item=i.id)
+        INNER JOIN '.prefixTable('users').' as u ON (l.id_user=u.id)
+        WHERE %l ORDER BY %s %s',
+        $sWhere,
+        $orderColumn,
+        $orderDirection
     );
-    $rows = DB::query(
-        'SELECT l.date as date, u.login as login, u.name AS name, u.lastname AS lastname, i.label as label
-            FROM '.prefixTable('log_items').' as l
-            INNER JOIN '.prefixTable('items').' as i ON (l.id_item=i.id)
-            INNER JOIN '.prefixTable('users').' as u ON (l.id_user=u.id) '.
-            $sWhere.
-            $sOrder.
-            $sLimit
-    );
+
+    // Prepare the SQL query
+    $sql = 'SELECT l.date as date, u.login as login, u.name AS name, u.lastname AS lastname, i.label as label
+    FROM '.prefixTable('log_items').' as l
+    INNER JOIN '.prefixTable('items').' as i ON (l.id_item=i.id)
+    INNER JOIN '.prefixTable('users').' as u ON (l.id_user=u.id)
+    WHERE %l ORDER BY %s %s LIMIT %i, %i';
+    $params = [$sWhere, $orderColumn, $orderDirection, $sLimitStart, $sLimitLength];
+
+    // Get the records
+    $rows = DB::query($sql, ...$params);
     $iFilteredTotal = DB::count();
+
     // Output
     $sOutput = '{';
     $sOutput .= '"sEcho": '. (int) $request->query->filter('draw', FILTER_SANITIZE_NUMBER_INT) . ', ';
@@ -364,47 +357,47 @@ if (isset($params['action']) && $params['action'] === 'connections') {
 } elseif (isset($params['action']) && $params['action'] === 'admin') {
     //Columns name
     $aColumns = ['l.date', 'u.login', 'l.label', 'l.field_1'];
-    //Ordering
-    $order = $params['order'][0] ?? [];
-    if (isset($order['dir'], $order['column']) 
-        && in_array($order['dir'], $aSortTypes, true)) {
-        
-        $columnIndex = filter_var($order['column'], FILTER_SANITIZE_NUMBER_INT);
-        $dir = filter_var($order['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-        $sOrder = 'ORDER BY ' . $aColumns[$columnIndex] . ' ' . $dir . ' ';
+
+    // Ordering
+    if (isset($aColumns[$order['column']]) === true) {
+        $orderColumn = $aColumns[$order['column']];
     } else {
-        $sOrder = 'ORDER BY ' . $aColumns[0] . ' DESC';
+        $orderColumn = $aColumns[0];
     }
 
     // Filtering
-    $sWhere = "WHERE l.type IN ('admin_action', 'user_mngt')";
-    $searchValue = $params['search']['value'] ?? '';
-    if ($searchValue !== '') {
-        $sWhere .= ' AND (';
+    $sWhere = new WhereClause('AND');
+    if ($searchValue !== '') {        
+        $subclause = $sWhere->addClause('OR');
         foreach ($aColumns as $column) {
-            $sWhere .= $column . " LIKE '%" . filter_var($searchValue, FILTER_SANITIZE_FULL_SPECIAL_CHARS) . "%' OR ";
+            $subclause->add($column.' LIKE %ss', $searchValue);
         }
-        $sWhere = substr_replace($sWhere, '', -3) . ')';
     }
+    $sWhere->add('l.type IN %ls', ['admin_action', 'user_mngt']);
 
+    // Get the total number of records
     $iTotal = DB::queryFirstField(
         'SELECT COUNT(*)
         FROM '.prefixTable('log_system').' as l
-        INNER JOIN '.prefixTable('users').' as u ON (l.qui=u.id) '.
-        $sWhere
+        INNER JOIN '.prefixTable('users').' as u ON (l.qui=u.id)
+        WHERE %l ORDER BY %s %s',
+        $sWhere,
+        $orderColumn,
+        $orderDirection
     );
-    $rows = DB::query(
-        'SELECT l.date as date, u.login as login, u.name AS name, u.lastname AS lastname, l.label as label, l.field_1 as field_1
-            FROM '.prefixTable('log_system').' as l
-            INNER JOIN '.prefixTable('users').' as u ON (l.qui=u.id) '.
-            $sWhere.
-            $sOrder.
-            $sLimit
-    );
+
+    // Prepare the SQL query
+    $sql = 'SELECT l.date as date, u.login as login, u.name AS name, u.lastname AS lastname, l.label as label, l.field_1 as field_1
+    FROM '.prefixTable('log_system').' as l
+    INNER JOIN '.prefixTable('users').' as u ON (l.qui=u.id)
+    WHERE %l ORDER BY %s %s LIMIT %i, %i';
+    $params = [$sWhere, $orderColumn, $orderDirection, $sLimitStart, $sLimitLength];
+
+    // Get the records
+    $rows = DB::query($sql, ...$params);    
     $iFilteredTotal = DB::count();
-    /*
-         * Output
-        */
+
+    // Output
     $sOutput = '{';
     $sOutput .= '"sEcho": '. (int) $request->query->filter('draw', FILTER_SANITIZE_NUMBER_INT) . ', ';
     $sOutput .= '"iTotalRecords": '.$iTotal.', ';
@@ -465,59 +458,49 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
     //Columns name
     $aColumns = ['l.date', 'i.label', 'u.login', 'l.action', 'i.perso', 'i.id', 't.title'];
-    //Ordering
-    $order = $params['order'][0] ?? [];
-    if (isset($order['dir'], $order['column']) 
-        && in_array($order['dir'], $aSortTypes, true)
-        && (int) $order['column'] !== 0
-        && $order['column'] !== 'asc') {
 
-        $columnIndex = filter_var($order['column'], FILTER_SANITIZE_NUMBER_INT);
-        $dir = filter_var($order['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-        $sOrder = 'ORDER BY ' . $aColumns[$columnIndex] . ' ' . $dir . ' ';
+    // Ordering
+    if (isset($aColumns[$order['column']]) === true) {
+        $orderColumn = $aColumns[$order['column']];
     } else {
-        $sOrder = 'ORDER BY ' . $aColumns[0] . ' DESC';
+        $orderColumn = $aColumns[0];
     }
 
     // Filtering
-    $sWhere = '';
-    $search = $params['search'] ?? [];
-    $searchValue = $search['value'] ?? '';
-    if ($searchValue !== '') {
-        $sWhere .= ' WHERE (';
-        if (isset($search['column']) && $search['column'] !== 'all') {
-            $sWhere .= $search['column'] . " LIKE '%" . filter_var($searchValue, FILTER_SANITIZE_FULL_SPECIAL_CHARS) . "%') ";
-        } else {
-            foreach ($aColumns as $column) {
-                $sWhere .= $column . " LIKE '%" . filter_var($searchValue, FILTER_SANITIZE_FULL_SPECIAL_CHARS) . "%' OR ";
-            }
-            $sWhere = substr($sWhere, 0, -3) . ') ';
+    $sWhere = new WhereClause('OR');
+    if ($searchValue !== '') {        
+        foreach ($aColumns as $column) {
+            $sWhere->add($column.' LIKE %ss', $searchValue);
         }
     }
-    
+
+    // Get the total number of records
     $iTotal = DB::queryFirstField(
         'SELECT COUNT(*)
-            FROM '.prefixTable('log_items').' AS l
-            INNER JOIN '.prefixTable('items').' AS i ON (l.id_item=i.id)
-            INNER JOIN '.prefixTable('users').' AS u ON (l.id_user=u.id)
-            INNER JOIN '.prefixTable('nested_tree').' AS t ON (i.id_tree=t.id) '.
-            $sWhere.
-            $sOrder
+        FROM '.prefixTable('log_items').' AS l
+        INNER JOIN '.prefixTable('items').' AS i ON (l.id_item=i.id)
+        INNER JOIN '.prefixTable('users').' AS u ON (l.id_user=u.id)
+        INNER JOIN '.prefixTable('nested_tree').' AS t ON (i.id_tree=t.id)
+        WHERE %l ORDER BY %s %s',
+        $sWhere,
+        $orderColumn,
+        $orderDirection
     );
 
-    $rows = DB::query(
-        'SELECT l.date AS date, u.login AS login, u.name AS name, u.lastname AS lastname, i.label AS label,
-            i.perso AS perso, l.action AS action, t.title AS folder,
-            i.id AS id
-            FROM '.prefixTable('log_items').' AS l
-            INNER JOIN '.prefixTable('items').' AS i ON (l.id_item=i.id)
-            INNER JOIN '.prefixTable('users').' AS u ON (l.id_user=u.id)
-            INNER JOIN '.prefixTable('nested_tree').' AS t ON (i.id_tree=t.id) '.
-            $sWhere.
-            $sOrder.
-            $sLimit
-    );
+    // Prepare the SQL query
+    $sql = 'SELECT l.date AS date, u.login AS login, u.name AS name, u.lastname AS lastname, i.label AS label,
+    i.perso AS perso, l.action AS action, t.title AS folder, i.id AS id
+    FROM '.prefixTable('log_items').' AS l
+    INNER JOIN '.prefixTable('items').' AS i ON (l.id_item=i.id)
+    INNER JOIN '.prefixTable('users').' AS u ON (l.id_user=u.id)
+    INNER JOIN '.prefixTable('nested_tree').' AS t ON (i.id_tree=t.id)
+    WHERE %l ORDER BY %s %s LIMIT %i, %i';
+    $params = [$sWhere, $orderColumn, $orderDirection, $sLimitStart, $sLimitLength];
+
+    // Get the records
+    $rows = DB::query($sql, ...$params);
     $iFilteredTotal = DB::count();
+
     // Output
     $sOutput = '{';
     $sOutput .= '"sEcho": '. (int) $request->query->filter('draw', FILTER_SANITIZE_NUMBER_INT) . ', ';
@@ -560,44 +543,44 @@ if (isset($params['action']) && $params['action'] === 'connections') {
 } elseif (isset($params['action']) && $params['action'] === 'failed_auth') {
     //Columns name
     $aColumns = ['l.date', 'l.label', 'l.qui', 'l.field_1'];
-    //Ordering
-    $order = $params['order'][0] ?? [];
-    if (isset($order['dir'], $order['column']) 
-        && in_array($order['dir'], $aSortTypes, true)
-        && (int) $order['column'] !== 0
-        && $order['column'] !== 'asc') {
 
-        $columnIndex = filter_var($order['column'], FILTER_SANITIZE_NUMBER_INT);
-        $dir = filter_var($order['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-        $sOrder = 'ORDER BY ' . $aColumns[$columnIndex] . ' ' . $dir . ' ';
+    // Ordering
+    if (isset($aColumns[$order['column']]) === true) {
+        $orderColumn = $aColumns[$order['column']];
     } else {
-        $sOrder = 'ORDER BY ' . $aColumns[0] . ' DESC';
+        $orderColumn = $aColumns[0];
     }
 
     // Filtering
-    $sWhere = "WHERE l.type = 'failed_auth'";
-    $searchValue = $params['search']['value'] ?? '';
-    if ($searchValue !== '') {
-        $sWhere .= ' AND (';
+    $sWhere = new WhereClause('AND');
+    if ($searchValue !== '') {        
+        $subclause = $sWhere->addClause('OR');
         foreach ($aColumns as $column) {
-            $sWhere .= $column . " LIKE '%" . filter_var($searchValue, FILTER_SANITIZE_FULL_SPECIAL_CHARS) . "%' OR ";
+            $subclause->add($column.' LIKE %ss', $searchValue);
         }
-        $sWhere = substr_replace($sWhere, '', -3) . ')';
     }
+    $sWhere->add('l.type = %s', 'failed_auth');
 
+    // Get the total number of records
     $iTotal = DB::queryFirstField(
         'SELECT COUNT(*)
-            FROM '.prefixTable('log_system').' as l '.
-            $sWhere
+        FROM '.prefixTable('log_system').' as l
+        WHERE %l ORDER BY %s %s',
+        $sWhere,
+        $orderColumn,
+        $orderDirection
     );
-    $rows = DB::query(
-        'SELECT l.date as auth_date, l.label as label, l.qui as who, l.field_1
-            FROM '.prefixTable('log_system').' as l '.
-            $sWhere.
-            $sOrder.
-            $sLimit
-    );
+
+    // Prepare the SQL query
+    $sql = 'SELECT l.date as auth_date, l.label as label, l.qui as who, l.field_1
+    FROM '.prefixTable('log_system').' as l
+    WHERE %l ORDER BY %s %s LIMIT %i, %i';
+    $params = [$sWhere, $orderColumn, $orderDirection, $sLimitStart, $sLimitLength];
+
+    // Get the records
+    $rows = DB::query($sql, ...$params);
     $iFilteredTotal = DB::count();
+
     // Output
     if ($iTotal === '') {
         $iTotal = 0;
@@ -636,48 +619,48 @@ if (isset($params['action']) && $params['action'] === 'connections') {
 } elseif (isset($params['action']) && $params['action'] === 'errors') {
     //Columns name
     $aColumns = ['l.date', 'l.label', 'l.qui', 'u.login', 'u.name', 'u.lastname'];
-    //Ordering
-    $order = $params['order'][0] ?? [];
-    if (isset($order['dir'], $order['column']) 
-        && in_array($order['dir'], $aSortTypes, true)
-        && (int) $order['column'] !== 0
-        && $order['column'] !== 'asc') {
 
-        $columnIndex = filter_var($order['column'], FILTER_SANITIZE_NUMBER_INT);
-        $dir = filter_var($order['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-        $sOrder = 'ORDER BY ' . $aColumns[$columnIndex] . ' ' . $dir . ' ';
+    // Ordering
+    if (isset($aColumns[$order['column']]) === true) {
+        $orderColumn = $aColumns[$order['column']];
     } else {
-        $sOrder = 'ORDER BY ' . $aColumns[0] . ' DESC';
+        $orderColumn = $aColumns[0];
     }
 
     // Filtering
-    $sWhere = "WHERE l.type = 'error'";
-    $searchValue = $params['search']['value'] ?? '';error_log('searchValue2: '.$searchValue);
-    if ($searchValue !== '') {
-        $sWhere .= ' AND (';
+    $sWhere = new WhereClause('AND');
+    if ($searchValue !== '') {        
+        $subclause = $sWhere->addClause('OR');
         foreach ($aColumns as $column) {
-            $sWhere .= $column . " LIKE '%" . filter_var($searchValue, FILTER_SANITIZE_FULL_SPECIAL_CHARS) . "%' OR ";
+            $subclause->add($column.' LIKE %ss', $searchValue);
         }
-        $sWhere = substr_replace($sWhere, '', -3) . ')';
     }
+    $sWhere->add('l.type = %s', 'error');
 
+    // Get the total number of records
     $iTotal = DB::queryFirstField(
         'SELECT COUNT(*)
             FROM '.prefixTable('log_system').' as l
-            INNER JOIN '.prefixTable('users').' as u ON (l.qui=u.id) '.
-            $sWhere.
-            $sOrder
+            INNER JOIN '.prefixTable('users').' as u ON (l.qui=u.id) 
+            WHERE %l ORDER BY %s %s',
+            $sWhere,
+            $orderColumn,
+            $orderDirection
     );
-    $rows = DB::query(
-        'SELECT l.date as date, l.label as label, l.qui as who,
-            u.login as login, u.name AS name, u.lastname AS lastname
-            FROM '.prefixTable('log_system').' as l
-            INNER JOIN '.prefixTable('users').' as u ON (l.qui=u.id) '.
-            $sWhere.
-            $sOrder.
-            $sLimit
-    );
+    $iTotal = DB::count();
+
+    // Prepare the SQL query
+    $sql = 'SELECT l.date as date, l.label as label, l.qui as who,
+    u.login as login, u.name AS name, u.lastname AS lastname
+    FROM '.prefixTable('log_system').' as l
+    INNER JOIN '.prefixTable('users').' as u ON (l.qui=u.id) 
+    WHERE %l ORDER BY %s %s LIMIT %i, %i';
+    $params = [$sWhere, $orderColumn, $orderDirection, $sLimitStart, $sLimitLength];
+
+    // Get the records
+    $rows = DB::query($sql, ...$params);
     $iFilteredTotal = DB::count();
+
     // Output
     $sOutput = '{';
     $sOutput .= '"sEcho": '. (int) $request->query->filter('draw', FILTER_SANITIZE_NUMBER_INT) . ', ';
@@ -708,49 +691,46 @@ if (isset($params['action']) && $params['action'] === 'connections') {
 } elseif (isset($params['action']) && $params['action'] === 'items_in_edition') {
     //Columns name
     $aColumns = ['e.timestamp', 'u.login', 'i.label', 'u.name', 'u.lastname'];
-    //Ordering
-    $order = $params['order'][0] ?? [];
-    if (isset($order['dir'], $order['column']) 
-        && in_array($order['dir'], $aSortTypes, true)
-        && (int) $order['column'] !== 0
-        && $order['column'] !== 'asc') {
 
-        $columnIndex = filter_var($order['column'], FILTER_SANITIZE_NUMBER_INT);
-        $dir = filter_var($order['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-        $sOrder = 'ORDER BY ' . $aColumns[$columnIndex] . ' ' . $dir . ' ';
+    // Ordering
+    if (isset($aColumns[$order['column']]) === true) {
+        $orderColumn = $aColumns[$order['column']];
     } else {
-        $sOrder = 'ORDER BY ' . $aColumns[0] . ' DESC';
+        $orderColumn = $aColumns[0];
     }
 
     // Filtering
-    $sWhere = '';
-    $searchValue = $params['search']['value'] ?? '';
-    if ($searchValue !== '') {
-        $sWhere = ' WHERE (';
+    $sWhere = new WhereClause('OR');
+    if ($searchValue !== '') {        
         foreach ($aColumns as $column) {
-            $sWhere .= $column . " LIKE '%" . filter_var($searchValue, FILTER_SANITIZE_FULL_SPECIAL_CHARS) . "%' OR ";
+            $sWhere->add($column.' LIKE %ss', $searchValue);
         }
-        $sWhere = substr_replace($sWhere, '', -3) . ')';
     }
 
+    // Get the total number of records
     $iTotal = DB::queryFirstField(
-        'SELECT COUNT(e.timestamp)
-            FROM '.prefixTable('items_edition').' AS e
-            INNER JOIN '.prefixTable('items').' as i ON (e.item_id=i.id)
-            INNER JOIN '.prefixTable('users').' as u ON (e.user_id=u.id) '.
-            $sWhere.
-            $sOrder
+        'SELECT COUNT(*)
+        FROM '.prefixTable('items_edition').' AS e
+        INNER JOIN '.prefixTable('items').' as i ON (e.item_id=i.id)
+        INNER JOIN '.prefixTable('users').' as u ON (e.user_id=u.id)
+        WHERE %l ORDER BY %s %s',
+        $sWhere,
+        $orderColumn,
+        $orderDirection
     );
-    $rows = DB::query(
-        'SELECT e.timestamp, e.item_id, e.user_id, u.login, u.name, u.lastname, i.label
-            FROM '.prefixTable('items_edition').' AS e
-            INNER JOIN '.prefixTable('items').' as i ON (e.item_id=i.id)
-            INNER JOIN '.prefixTable('users').' as u ON (e.user_id=u.id) '.
-            $sWhere.
-            $sOrder.
-            $sLimit
-    );
+
+    // Prepare the SQL query
+    $sql = 'SELECT e.timestamp, e.item_id, e.user_id, u.login, u.name, u.lastname, i.label
+    FROM '.prefixTable('items_edition').' AS e
+    INNER JOIN '.prefixTable('items').' as i ON (e.item_id=i.id)
+    INNER JOIN '.prefixTable('users').' as u ON (e.user_id=u.id)
+    WHERE %l ORDER BY %s %s LIMIT %i, %i';
+    $params = [$sWhere, $orderColumn, $orderDirection, $sLimitStart, $sLimitLength];
+
+    // Get the records
+    $rows = DB::query($sql, ...$params);
     $iFilteredTotal = DB::count();
+
     // Output
     $sOutput = '{';
     $sOutput .= '"sEcho": '. (int) $request->query->filter('draw', FILTER_SANITIZE_NUMBER_INT) . ', ';
@@ -786,44 +766,46 @@ if (isset($params['action']) && $params['action'] === 'connections') {
 } elseif (isset($params['action']) && $params['action'] === 'users_logged_in') {
     //Columns name
     $aColumns = ['login', 'name', 'lastname', 'timestamp', 'last_connexion'];
-    //Ordering
-    $order = $params['order'][0] ?? [];
-    if (isset($order['dir'], $order['column']) 
-        && in_array($order['dir'], $aSortTypes, true)
-        && (int) $order['column'] !== 0
-        && $order['column'] !== 'asc') {
 
-        $columnIndex = filter_var($order['column'], FILTER_SANITIZE_NUMBER_INT);
-        $dir = filter_var($order['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-        $sOrder = 'ORDER BY ' . $aColumns[$columnIndex] . ' ' . $dir . ' ';
+    // Ordering
+    if (isset($aColumns[$order['column']]) === true) {
+        $orderColumn = $aColumns[$order['column']];
     } else {
-        $sOrder = 'ORDER BY ' . $aColumns[0] . ' DESC';
-    }
+        $orderColumn = $aColumns[0];
+    }    
 
-    // Where clause
-    $sWhere = ' WHERE ((timestamp != "" AND session_end >= "'.time().'")';
-    $searchValue = $params['search']['value'] ?? '';
-    if ($searchValue !== '') {
-        $sWhere .= ' AND (';
+    // Filtering
+    $sWhere = new WhereClause('AND');
+    if ($searchValue !== '') {        
+        $subclause = $sWhere->addClause('OR');
         foreach ($aColumns as $column) {
-            $sWhere .= $column . " LIKE '%" . filter_var($searchValue, FILTER_SANITIZE_FULL_SPECIAL_CHARS) . "%' OR ";
+            $subclause->add($column.' LIKE %ss', $searchValue);
         }
-        $sWhere = substr_replace($sWhere, '', -3) . ') ';
     }
-    $sWhere .= ') ';
+    $subclause2 = $sWhere->addClause('OR');
+    $subclause2->add('timestamp = ""');
+    $subclause2->add('session_end >= %i', time());
+
+    // Get the total number of records
     $iTotal = DB::queryFirstField(
-        'SELECT COUNT(timestamp)
-            FROM '.prefixTable('users').' '.
-            $sWhere
+        'SELECT COUNT(*)
+        FROM '.prefixTable('users').'
+        WHERE %l ORDER BY %s %s',
+        $sWhere,
+        $orderColumn,
+        $orderDirection
     );
-    $rows = DB::query(
-        'SELECT *
-            FROM '.prefixTable('users').' '.
-            $sWhere.
-            $sOrder.
-            $sLimit
-    );
+
+    // Prepare the SQL query
+    $sql = 'SELECT *
+    FROM '.prefixTable('users').'
+    WHERE %l ORDER BY %s %s LIMIT %i, %i';
+    $params = [$sWhere, $orderColumn, $orderDirection, $sLimitStart, $sLimitLength];
+
+    // Get the records
+    $rows = DB::query($sql, ...$params);
     $iFilteredTotal = DB::count();
+
     // Output
     $sOutput = '{';
     $sOutput .= '"sEcho": '. (int) $request->query->filter('draw', FILTER_SANITIZE_NUMBER_INT) . ', ';
@@ -849,7 +831,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         }
         $sOutput .= '"'.$user_role.'", ';
         //col4
-        $time_diff = intval(time() - $record['timestamp']);
+        $time_diff = time() - strtotime($record['timestamp']);
         $hoursDiff = round($time_diff / 3600, 0, PHP_ROUND_HALF_DOWN);
         $minutesDiffRemainder = floor($time_diff % 3600 / 60);
         $sOutput .= '"'.$hoursDiff.'h '.$minutesDiffRemainder.'m" ';
@@ -866,47 +848,49 @@ if (isset($params['action']) && $params['action'] === 'connections') {
 } elseif (isset($params['action']) && $params['action'] === 'tasks_in_progress') {
     //Columns name
     $aColumns = ['p.increment_id', 'p.created_at', 'p.updated_at', 'p.process_type', 'p.is_in_progress'];
-    //Ordering
-    $order = $params['order'][0] ?? [];
-    if (isset($order['dir'], $order['column']) 
-        && in_array($order['dir'], $aSortTypes, true)
-        && (int) $order['column'] !== 0
-        && $order['column'] !== 'asc') {
 
-        $columnIndex = filter_var($order['column'], FILTER_SANITIZE_NUMBER_INT);
-        $dir = filter_var($order['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-        $sOrder = 'ORDER BY ' . $aColumns[$columnIndex] . ' ' . $dir . ' ';
+    // Ordering
+    if (isset($aColumns[$order['column']]) === true) {
+        $orderColumn = $aColumns[$order['column']];
     } else {
-        $sOrder = 'ORDER BY ' . $aColumns[0] . ' DESC';
-    }
+        $orderColumn = $aColumns[0];
+    }    
 
-    // Where clause
-    $sWhere = ' WHERE ((p.finished_at = "" OR p.finished_at IS NULL)';
-    $searchValue = $params['search']['value'] ?? '';
-    if ($searchValue !== '') {
-        $sWhere .= ' AND (';
+    // Filtering
+    $sWhere = new WhereClause('AND');
+    if ($searchValue !== '') {        
+        $subclause = $sWhere->addClause('OR');
         foreach ($aColumns as $column) {
-            $sWhere .= $column . " LIKE '%" . filter_var($searchValue, FILTER_SANITIZE_FULL_SPECIAL_CHARS) . "%' OR ";
+            $subclause->add($column.' LIKE %ss', $searchValue);
         }
-        $sWhere = substr_replace($sWhere, '', -3) . ')';
     }
-    $sWhere .= ') ';
-    DB::debugmode(false);
+    $subclause2 = $sWhere->addClause('OR');
+    $subclause2->add('p.finished_at = ""');
+    $subclause2->add('p.finished_at IS NULL');
+
+    // Get the total number of records
     $iTotal = DB::queryFirstField(
-    'SELECT COUNT(p.increment_id)
+        'SELECT COUNT(*)
         FROM '.prefixTable('background_tasks').' AS p 
-        LEFT JOIN '.prefixTable('users').' AS u ON u.id = json_extract(p.arguments, "$[0]")'.
-        $sWhere
+        LEFT JOIN '.prefixTable('users').' AS u ON %l
+        WHERE %l ORDER BY %s %s',
+        'u.id = json_extract(p.arguments, "$[0]")',
+        $sWhere,
+        $orderColumn,
+        $orderDirection
     );
-    $rows = DB::query(
-        'SELECT p.*
-            FROM '.prefixTable('background_tasks').' AS p 
-            LEFT JOIN '.prefixTable('users').' AS u ON u.id = json_extract(p.arguments, "$[0]")'.
-            $sWhere.
-            $sOrder.
-            $sLimit
-    );
+
+    // Prepare the SQL query
+    $sql = 'SELECT p.increment_id, p.created_at, p.updated_at, p.process_type, p.is_in_progress
+    FROM '.prefixTable('background_tasks').' AS p 
+    LEFT JOIN '.prefixTable('users').' AS u ON %l
+    WHERE %l ORDER BY %s %s LIMIT %i, %i';
+    $params = ['u.id = json_extract(p.arguments, "$[0]")',$sWhere, $orderColumn, $orderDirection, $sLimitStart, $sLimitLength];
+
+    // Get the records
+    $rows = DB::query($sql, ...$params);
     $iFilteredTotal = DB::count();
+
     // Output
     $sOutput = '{';
     $sOutput .= '"sEcho": '. (int) $request->query->filter('draw', FILTER_SANITIZE_NUMBER_INT) . ', ';
@@ -957,49 +941,46 @@ if (isset($params['action']) && $params['action'] === 'connections') {
 } elseif (isset($params['action']) && $params['action'] === 'tasks_finished') {
     //Columns name
     $aColumns = ['p.created_at', 'p.finished_at', 'p.process_type', 'u.name'];
-    //Ordering
-    $order = $params['order'][0] ?? [];
-    if (isset($order['dir'], $order['column']) 
-        && in_array($order['dir'], $aSortTypes, true)
-        && (int) $order['column'] !== 0
-        && $order['column'] !== 'asc') {
 
-        $columnIndex = filter_var($order['column'], FILTER_SANITIZE_NUMBER_INT);
-        $dir = filter_var($order['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-        $sOrder = 'ORDER BY ' . $aColumns[$columnIndex] . ' ' . $dir . ' ';
+    // Ordering
+    if (isset($aColumns[$order['column']]) === true) {
+        $orderColumn = $aColumns[$order['column']];
     } else {
-        $sOrder = 'ORDER BY ' . $aColumns[0] . ' DESC';
+        $orderColumn = $aColumns[0];
     }
 
-    // Where clause
-    $sWhere = ' WHERE ((finished_at != "")';
-    $searchValue = $params['search']['value'] ?? '';
-    if ($searchValue !== '') {
-        $sWhere .= ' AND (';
+    // Filtering
+    $sWhere = new WhereClause('AND');
+    if ($searchValue !== '') {        
+        $subclause = $sWhere->addClause('OR');
         foreach ($aColumns as $column) {
-            $sWhere .= $column . " LIKE '%" . filter_var($searchValue, FILTER_SANITIZE_FULL_SPECIAL_CHARS) . "%' OR ";
+            $subclause->add($column.' LIKE %ss', $searchValue);
         }
-        $sWhere = substr_replace($sWhere, '', -3) . ')';
     }
-    $sWhere .= ') ';
-    
-    DB::debugmode(false);
+    $sWhere->add('finished_at != ""');
+
+    // Get the total number of records
     $iTotal = DB::queryFirstField(
-        'SELECT COUNT(p.increment_id)
-            FROM '.prefixTable('background_tasks').' AS p 
-            LEFT JOIN '.prefixTable('users').' AS u ON u.id = json_extract(p.arguments, "$[0]")'.
-            $sWhere
+        'SELECT COUNT(*)
+        FROM '.prefixTable('background_tasks').' AS p 
+        LEFT JOIN '.prefixTable('users').' AS u ON u.id = json_extract(p.arguments, "$[0]")
+        WHERE %l ORDER BY %s %s',
+        $sWhere,
+        $orderColumn,
+        $orderDirection
     );
 
-    $rows = DB::query(
-        'SELECT p.*
-            FROM '.prefixTable('background_tasks').' AS p 
-            LEFT JOIN '.prefixTable('users').' AS u ON u.id = json_extract(p.arguments, "$[0]")'.
-            $sWhere.
-            $sOrder.
-            $sLimit
-    );
+    // Prepare the SQL query
+    $sql = 'SELECT p.*
+    FROM '.prefixTable('background_tasks').' AS p 
+    LEFT JOIN '.prefixTable('users').' AS u ON %l
+    WHERE %l ORDER BY %s %s LIMIT %i, %i';
+    $params = ['u.id = json_extract(p.arguments, "$[0]")',$sWhere, $orderColumn, $orderDirection, $sLimitStart, $sLimitLength];
+
+    // Get the records
+    $rows = DB::query($sql, ...$params);
     $iFilteredTotal = DB::count();
+
     // Output
     $sOutput = '{';
     $sOutput .= '"sEcho": '. (int) $request->query->filter('draw', FILTER_SANITIZE_NUMBER_INT) . ', ';
