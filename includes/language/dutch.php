@@ -891,7 +891,6 @@ return array(
     'ssh_scheduled_change' => 'Schema veranderen',
     'ssh_one_shot_change' => 'Eenmalige kans verandering',
     'server_password_change_enable_tip' => 'Deze optie zorgt ervoor dat gebruikers automatisch het wachtwoord op de server kunnen updaten via SSH.<br>Let op dat het automatisch ',
-    'error_bad_credentials_more_than_3_times' => 'Login gegevens fout!<br>Wacht 10 seconden voor een nieuwe poging!',
     'settings_ldap_object_class' => 'Class om te dorzoeken',
     'settings_ldap_object_class_tip' => 'LDAP class om te doorzoeken, zoals gebruikers account of POSIX account',
     'rebuild_config_file' => 'Reconstrueer het configuratiebestand',

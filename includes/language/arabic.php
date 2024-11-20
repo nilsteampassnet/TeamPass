@@ -1002,7 +1002,6 @@ $LANG = array(
     'server_auto_update_password_enabled_tip' => 'Automatic user password change enabled',
     'server_password_change_enable_tip' => 'This setting adds an option in the password item to automatically change the user password on a server address listed in the url. This requires the remote UNIX server to allow username and password login via SSH. Automatic scheduled password changes can be performed after adding <i>/files/script.ssh.php</i> to crontab to run once a day on the password manager webserver.',
     'can_manage_all_users' => 'Human Resources - User can manage all other users (except administrators) regardless of group membership. HR user will also have manager rights added to their account.',
-    'error_bad_credentials_more_than_3_times' => 'Login credentials incorrect!<br>Please wait 10 seconds before next attempt',
     'settings_ldap_object_class' => 'Class to search',
     'settings_ldap_object_class_tip' => 'LDAP class to search, such as user account or POSIX account',
     'rebuild_config_file' => 'Rebuild the configuration file',

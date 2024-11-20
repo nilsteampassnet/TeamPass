@@ -891,7 +891,6 @@ return array(
     'ssh_scheduled_change' => 'Ajastatud muudatus',
     'ssh_one_shot_change' => 'Ühekorraga muutmine',
     'server_password_change_enable_tip' => 'This setting adds an option in the password item to automatically change the user password on a server address listed in the url. This requires the remote UNIX server to allow username and password login via SSH. Automatic scheduled password changes can be performed after adding <i>/files/script.ssh.php</i> to crontab to run once a day on the password manager webserver.',
-    'error_bad_credentials_more_than_3_times' => 'Kasutajanimi ja parool ei sobi!<br />Palun oota 10 sekundit enne uut katset',
     'settings_ldap_object_class' => 'LDAP otsingu objektiklass',
     'settings_ldap_object_class_tip' => 'LDAP kasutaja päringu klass, näiteks Person või posixAccount',
     'rebuild_config_file' => 'Genereeri konfiguratsioonifail uuesti',

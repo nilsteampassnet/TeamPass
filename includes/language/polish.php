@@ -891,7 +891,6 @@ return array(
     'ssh_scheduled_change' => 'Zaplanowana zmiana',
     'ssh_one_shot_change' => 'Jednorazowa zmiana',
     'server_password_change_enable_tip' => 'Ta opcja pozwala użytkownikom na automatyczna zmianę hasła użytkownika na serwerze z pola URL używając połączenia SSH.<br>Zauważ, że automatyczna zmiana z określoną częstotliwością może być wykonywana gdy plik <i>/files/script.ssh.php</i> jest dodany do listy zadań crona na serwerze. Dobrym pomysłem jest uruchamianie automatycznej zmiany raz dziennie.',
-    'error_bad_credentials_more_than_3_times' => 'Dane logowania są niepoprawne!<br>Proszę zaczekaj 10 sekund przed kolejną próbą',
     'settings_ldap_object_class' => 'Klasa do wyszukiwania',
     'settings_ldap_object_class_tip' => 'Klasa LDAP do wyszukiwania np. Osoba lub konto posix',
     'rebuild_config_file' => 'Przebuduj plik konfiguracyjny',

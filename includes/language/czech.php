@@ -891,7 +891,6 @@ return array(
     'ssh_scheduled_change' => 'Plánovaná změna',
     'ssh_one_shot_change' => 'Jednorázová změna',
     'server_password_change_enable_tip' => 'Toto nastavení přidá k položce hesla možnost automaticky změnit uživatelské heslo na serveru udaném adresou URL. Zadaný vzdálený server musí umožnit přihlášení do systému přes SSH pomocí uživatelského jména a hesla. Automaticky naplánované změny hesla budou prováděny až po začlenění <i>/files/script.ssh.php</i> do systému crontab na webovém serveru Teampassu (provedení jednou denně).',
-    'error_bad_credentials_more_than_3_times' => 'Přihlašovací údaje jsou chybné!<br>Prosím před dalším pokusem vyčkejte 10 sekund ',
     'settings_ldap_object_class' => 'Prohledat třídu',
     'settings_ldap_object_class_tip' => 'Třída adresáře LDAP k prohledání (např. uživatelský účet nebo účet POSIX)',
     'rebuild_config_file' => 'Nově vygenerovat konfigurační soubor',

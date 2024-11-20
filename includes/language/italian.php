@@ -891,7 +891,6 @@ return array(
     'ssh_scheduled_change' => 'Modifica pianificata',
     'ssh_one_shot_change' => 'Cambio una tantum',
     'server_password_change_enable_tip' => 'Questa impostazione aggiunge un’opzione nella voce password per cambiare automaticamente la password utente su un indirizzo server elencato nell’url. Ciò richiede che il server UNIX remoto consenta l’accesso con nome utente e password tramite SSH. Le modifiche programmate automatiche della password possono essere eseguite dopo aver aggiunto <i>/files/script.ssh.php</i> a crontab in modo che venga eseguito una volta al giorno sul server web del gestore delle password.',
-    'error_bad_credentials_more_than_3_times' => 'Credenziali di accesso errate!<br>Attendi 10 secondi prima del prossimo tentativo',
     'settings_ldap_object_class' => 'Classe da cercare',
     'settings_ldap_object_class_tip' => 'Classe LDAP da cercare, ad esempio account utente o account POSIX',
     'rebuild_config_file' => 'Ricostruisci il file di configurazione',

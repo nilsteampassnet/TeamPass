@@ -891,7 +891,6 @@ return array(
     'ssh_scheduled_change' => 'Canvi programat',
     'ssh_one_shot_change' => 'Canvi únic',
     'server_password_change_enable_tip' => 'Aquesta configuració afegeix una opció a l&apos;element de la contrasenya per canviar automàticament la contrasenya d&apos;usuari en una adreça del servidor que figura a l&apos;URL. Això requereix que el servidor unix remot permeti iniciar la sessió d&apos;usuari i contrasenya mitjançant SSH. Els canvis automàtics de contrasenya programats es poden realitzar després d’afegir <i> /files/script.ssh.php </i> a Crontab per executar-se un cop al dia al servidor web de gestor de contrasenyes.',
-    'error_bad_credentials_more_than_3_times' => 'Credencials d’inici de sessió incorrectes! <br> Si us plau, espereu 10 segons abans del següent intent',
     'settings_ldap_object_class' => 'Classe a cercar',
     'settings_ldap_object_class_tip' => 'Classe LDAP per cercar, com ara el compte d&apos;usuari o el compte POSIX',
     'rebuild_config_file' => 'Reconstruir el fitxer de configuració',

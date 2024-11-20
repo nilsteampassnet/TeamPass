@@ -891,7 +891,6 @@ return array(
     'ssh_scheduled_change' => 'Regelmäßige Änderung',
     'ssh_one_shot_change' => 'Einmalige Änderung',
     'server_password_change_enable_tip' => 'Diese Option erlaubt die automatische, regelmäßige Änderung der Benutzer-Passworte des Servers im `URL`-Feld unter Verwendung einer SSH-Verbindung.<br />Beachten Sie, dass für diese regelmäßige Änderung die Datei <i>/files/script.ssh.php</i> in der crontab dieses Servers eingetragen ist. Sie sollte einmal täglich laufen.',
-    'error_bad_credentials_more_than_3_times' => 'Login-Daten sind nicht korrekt! !<br>Warten Sie 10 Sekunden bevor Sie diese neu eingeben können.',
     'settings_ldap_object_class' => 'Klasse für die Suche',
     'settings_ldap_object_class_tip' => 'LDAP Klasse für die Suche, wie zum Beispiel ein User Account oder POSIX Account',
     'rebuild_config_file' => 'Konfigurationsdatei neu aufbauen',

@@ -892,7 +892,6 @@ return array(
     'ssh_scheduled_change' => 'Planifier un changement',
     'ssh_one_shot_change' => 'Changement direct',
     'server_password_change_enable_tip' => 'Cette option permet aux utilisateurs de réaliser automatiquement le changement de mot de passe d&apos;un utilisateur sur le serveur localisé à l&apos;URL indiquée, en utilisant une connexion SSH.<br>Notez que le changement automatique à la fréquence indiquée n&apos;est possible que si le fichier <i>/files/script.ssh.php</i> est ajouté au crontab de ce serveur. La recommandation serait que celui-ci s’exécute une fois par jour.',
-    'error_bad_credentials_more_than_3_times' => 'Informations de connexion erronées !<br>Merci de patienter 10 secondes avant de faire une nouvelle tentative',
     'settings_ldap_object_class' => 'Recherche de la Classe',
     'settings_ldap_object_class_tip' => 'Rechercher dans la CLasse LDAP, par exemple, une Personne ou un posixAccount',
     'rebuild_config_file' => 'Reconstruire le ficher de configuration',

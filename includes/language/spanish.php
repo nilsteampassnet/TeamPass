@@ -891,7 +891,6 @@ return array(
     'ssh_scheduled_change' => 'Cambio programado',
     'ssh_one_shot_change' => 'Cambio de una sola vez',
     'server_password_change_enable_tip' => 'Esta configuración agrega una opción en el elemento de contraseña para cambiar automáticamente la contraseña del usuario en una dirección del servidor listada en la URL. Esto requiere que el servidor UNIX remoto permita el inicio de sesión por nombre de usuario y contraseña a través de SSH. Los cambios automáticos programados de contraseña pueden realizarse después de agregar <i>/files/script.ssh.php</i> a la crontab para ejecutarse una vez al día en el servidor web del gestor de contraseñas.',
-    'error_bad_credentials_more_than_3_times' => '¡Credenciales de inicio de sesión incorrectas!<br />Por favor, espera 10 segundos antes del siguiente intento',
     'settings_ldap_object_class' => 'Clase para buscar',
     'settings_ldap_object_class_tip' => 'Clase LDAP para buscar, como cuenta de usuario o cuenta POSIX',
     'rebuild_config_file' => 'Reconstruir archivo de configuración',

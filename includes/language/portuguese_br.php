@@ -891,7 +891,6 @@ return array(
     'ssh_scheduled_change' => 'Mudança programada',
     'ssh_one_shot_change' => 'Mudança única',
     'server_password_change_enable_tip' => 'Essa configuração adiciona uma opção no item senha para trocar automaticamente a senha de usuário em um endereço de servidor listado na url. Isso requer um servidor UNIX remoto para permitir login de um usuário e senha via SSH. Programar mudanças automáticas podem ser realizadas após adicionar <i>/files/script.ssh.php</i> para a crontab para executar uma vez por dia o webserver de gerenciador de senhas',
-    'error_bad_credentials_more_than_3_times' => 'Credenciais de login incorretos!<br>Por favor, aguarde 10 segundos antes da próxima tentativa',
     'settings_ldap_object_class' => 'Classe de pesquisa',
     'settings_ldap_object_class_tip' => 'A classe de pesquisa do LDAP deve conter uma conta de usuário ou uma conta POSIX',
     'rebuild_config_file' => 'Recriar o arquivo de configuração',

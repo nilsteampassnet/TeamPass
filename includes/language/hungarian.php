@@ -891,7 +891,6 @@ return array(
     'ssh_scheduled_change' => 'Ütemezett változtatás',
     'ssh_one_shot_change' => 'Egyszeri változtatás',
     'server_password_change_enable_tip' => 'Ez a beállítás lehetővé teszi a hivatkozásban szereplő szerver felhasználói jelszavának automatikus megváltoztatását. Ehhez szükség van arra, hogy a távoli UNIX szerver megengedje a jelszavak módosítását SSH-n keresztül. Az automatikusan ütemezett jelszó módosításhoz be kell állítani a crontab segítségével a <i>/files/script.ssh.php</i> napi egyszeri futtatását a jelszó menedzser szerveren.',
-    'error_bad_credentials_more_than_3_times' => 'A megadott bejelentkezési adatok helytelenek!<br>Várjon 10 másodpercet az ismételt próbálkozás előtt.',
     'settings_ldap_object_class' => 'Osztály keresése',
     'settings_ldap_object_class_tip' => 'LDAP osztály keresése, úgymint felhasználói, vagy POSIX fiók',
     'rebuild_config_file' => 'Konfigurációs fájl újragenerálása',
