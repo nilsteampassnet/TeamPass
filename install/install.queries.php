@@ -817,7 +817,6 @@ if (null !== $inputData['type']) {
                             `latest_items` varchar(1000) NULL DEFAULT NULL,
                             `personal_folder` int(1) NOT null DEFAULT '0',
                             `disabled` tinyint(1) NOT null DEFAULT '0',
-                            `no_bad_attempts` tinyint(1) NOT null DEFAULT '0',
                             `can_create_root_folder` tinyint(1) NOT null DEFAULT '0',
                             `read_only` tinyint(1) NOT null DEFAULT '0',
                             `timestamp` varchar(30) NOT null DEFAULT '0',
@@ -1366,6 +1365,18 @@ if (null !== $inputData['type']) {
                             `phone_number` varchar(25) NOT NULL,
                             PRIMARY KEY (`increment_id`),
                             KEY `ITEM` (`item_id`)
+                            ) CHARSET=utf8;"
+                        );
+                    } else if ($inputData['task'] === 'items_otp') {
+                        $mysqli_result = mysqli_query(
+                            $dbTmp,
+                            "CREATE TABLE IF NOT EXISTS `" . $var['tbl_prefix'] . "auth_failures` (
+                            `id` int(12) NOT NULL AUTO_INCREMENT,
+                            `source` ENUM('login', 'remote_ip') NOT NULL,
+                            `value` VARCHAR(500) NOT NULL,
+                            `date` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                            `unlock_at` TIMESTAMP NULL DEFAULT NULL,
+                            PRIMARY KEY (`id`)
                             ) CHARSET=utf8;"
                         );
                     }

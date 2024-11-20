@@ -880,6 +880,7 @@ return array(
     'syslog_host' => 'Serveur Syslog',
     'syslog_port' => 'Port Syslog',
     'error_bad_credentials' => 'Informations de connexion erronées',
+    'bruteforce_wait' => 'Trop de tentatives échouées, votre compte est bloqué jusqu&apos;à : ',
     'settings_ldap_usergroup' => 'Groupe LDAP dans lequel faire la recherche',
     'settings_ldap_usergroup_tip' => 'Groupe LDAP dans lequel les utilisateurs doivent être membre pour pouvoir se connecter. Exemple : cn=sysadmins,ou=groups,dc=example,dc=com',
     'server_password_change_enable' => 'Activer le changement automatique du mot de passe du compte du serveur (en utilisant une connexion SSH)',

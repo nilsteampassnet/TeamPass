@@ -378,45 +378,6 @@ $request = SymfonyRequest::createFromGlobals();
         
         // ---
     } else if (store.get('teampassUser') !== undefined &&
-        store.get('teampassUser').shown_warning_unsuccessful_login === false
-    ) {
-        // If login attempts experimented
-        // Prepare modal
-        showModalDialogBox(
-            '#warningModal',
-            '<i class="fa-solid fa-user-shield fa-lg warning mr-2"></i><?php echo $lang->get('caution'); ?>',
-            '<?php echo $lang->get('login_attempts_identified_since_last_connection'); ?>',
-            '<?php echo $lang->get('see_detail'); ?>',
-            '<?php echo $lang->get('close'); ?>',
-            false,
-            false,
-            false
-        );
-
-        // Actions on modal buttons
-        $(document).on('click', '#warningModalButtonClose', function() {
-            store.update(
-                'teampassUser', {},
-                function(teampassUser) {
-                    teampassUser.shown_warning_unsuccessful_login = true;
-                }
-            );
-        });
-        $(document).on('click', '#warningModalButtonAction', function() {
-            // SHow user
-            toastr.remove();
-            toastr.info('<?php echo $lang->get('in_progress'); ?><i class="fa-solid fa-circle-notch fa-spin fa-2x ml-3"></i>');
-
-            // Action
-            store.update(
-                'teampassUser', {},
-                function(teampassUser) {
-                    teampassUser.shown_warning_unsuccessful_login = true;
-                }
-            );
-            document.location.href = "index.php?page=profile&tab=timeline";
-        });
-    } else if (store.get('teampassUser') !== undefined &&
         store.get('teampassUser').special === 'private_items_to_encrypt'
     ) {
         // If user has to re-encrypt his personal item passwords

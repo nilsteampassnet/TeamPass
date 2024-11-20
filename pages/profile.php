@@ -344,26 +344,6 @@ foreach ($session->get('user-roles_array') as $role) {
 
                             <!-- TIMELINE -->
                             <div class="tab-pane<?php echo $get['tab'] === 'timeline' ? ' active' : ''; ?>" id="tab_timeline">
-                                <?php
-                                if (
-                                    $session->has('user-unsuccessfull_login_attempts_list') && null !== $session->get('user-unsuccessfull_login_attempts_list')
-                                    && $session->get('user-unsuccessfull_login_attempts_nb') !== 0
-                                    && $session->get('user-unsuccessfull_login_attempts_shown') === false
-                                ) {
-                                    ?>
-                                    <div class="alert alert-warning mt-4">
-                                        <span class="text-bold"><?php echo $lang->get('last_login_attempts'); ?></span>
-                                        <ul class="">
-                                            <?php
-                                                foreach ($session->get('user-unsuccessfull_login_attempts_list') as $entry) {
-                                                    echo '<li class="">' . $entry . '</li>';
-                                                } ?>
-                                        </ul>
-                                    </div>
-                                <?php
-                                    $session->set('user-unsuccessfull_login_attempts_shown', true);
-                                }
-                                ?>
                                 <div class="mt-4">
                                     <ul class="list-group list-group-flush">
                                         <?php

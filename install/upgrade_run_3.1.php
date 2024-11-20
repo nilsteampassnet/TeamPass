@@ -604,6 +604,32 @@ foreach ($replacements as $search => $replace) {
         WHERE `tag` LIKE '%{$search}%'");
 }
 
+// Remove unused no_bad_attempts field
+try {
+    $alter_table_query = "
+        ALTER TABLE `" . $var['tbl_prefix'] . "users`
+        DROP COLUMN `no_bad_attempts`";
+    mysqli_begin_transaction($db_link);
+    mysqli_query($db_link, $alter_table_query);
+    mysqli_commit($db_link);
+} catch (Exception $e) {
+    // Rollback transaction if index already exists.
+    mysqli_rollback($db_link);
+}
+
+// Table used to store authentication failures
+mysqli_query(
+    $db_link,
+    "CREATE TABLE IF NOT EXISTS `" . $var['tbl_prefix'] . "auth_failures` (
+    `id` int(12) NOT NULL AUTO_INCREMENT,
+    `source` ENUM('login', 'remote_ip') NOT NULL,
+    `value` VARCHAR(500) NOT NULL,
+    `date` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `unlock_at` TIMESTAMP NULL DEFAULT NULL,
+    PRIMARY KEY (`id`)
+    ) CHARSET=utf8;"
+);
+
 //---<END 3.1.2
 
 

@@ -579,15 +579,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             false
         );
 
-        // Actions on modal buttons
-        $(document).on('click', '#warningModalButtonClose', function() {
-            store.update(
-                'teampassUser', {},
-                function(teampassUser) {
-                    teampassUser.shown_warning_unsuccessful_login = true;
-                }
-            );
-        });
         let RequestOnGoing = false;
         $(document).on('click', '#warningModalButtonAction', function(event) {
             event.preventDefault();
@@ -653,14 +644,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     $('#warningModalButtonAction').removeClass('disabled')
                 }
             );
-
-            // Action
-            store.update(
-                'teampassUser', {},
-                function(teampassUser) {
-                    teampassUser.shown_warning_unsuccessful_login = true;
-                }
-            );
         });        
     });
 
@@ -675,7 +658,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 '', {
                     timeOut: 2000,
                     progressBar: true,
-                    positionClass: 'toast-top-right'
+                    positionClass: 'toast-bottom-right'
                 }
             );
         }, function(err) {

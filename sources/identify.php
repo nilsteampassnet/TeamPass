@@ -58,37 +58,6 @@ $lang = new Language($session->get('user-language') ?? 'english');
 $configManager = new ConfigManager();
 $SETTINGS = $configManager->getAllSettings();
 
-// Do checks
-// Instantiate the class with posted data
-$checkUserAccess = new PerformChecks(
-    dataSanitizer(
-        [
-            'type' => $request->request->get('type', '') !== '' ? htmlspecialchars($request->request->get('type')) : '',
-        ],
-        [
-            'type' => 'trim|escape',
-        ],
-    ),
-    [
-        'user_id' => returnIfSet($session->get('user-id'), null),
-        'user_key' => returnIfSet($session->get('key'), null),
-        'login' => isset($_POST['login']) === false ? null : $_POST['login'],
-        'oauth2' => returnIfSet($session->get('userOauth2Info'), null),
-    ]
-);
-
-// Handle the case
-echo $checkUserAccess->caseHandler();
-if ($checkUserAccess->checkSession() === false) {
-    // Not allowed page
-    $session->set('system-error_code', ERR_NOT_ALLOWED);
-    echo json_encode([
-        'error' => true,
-        'message' => $lang->get('error_bad_credentials'),
-    ]);
-    exit;
-}
-
 // Define Timezone
 date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
 
@@ -112,78 +81,8 @@ if ($post_type === 'identify_user') {
     // Ensure Complexity levels are translated
     defineComplexity();
 
-    /**
-     * Permits to handle login attempts
-     *
-     * @param string $post_data
-     * @param array $SETTINGS
-     * @return bool|string
-     */
-    function handleAuthAttempts($post_data, $SETTINGS): bool|string
-    {
-        $session = SessionManager::getSession();
-        $lang = new Language($session->get('user-language') ?? 'english');
-        $sessionPwdAttempts = $session->get('pwd_attempts');
-        $nextPossibleAttempts = (int) $session->get('next_possible_pwd_attempts');
-
-        // Check if the user is currently within the waiting period
-        if ($nextPossibleAttempts > 0 && time() < $nextPossibleAttempts) {
-            // Brute force wait
-            $remainingSeconds = $nextPossibleAttempts - time();
-            $errorResponse = prepareExchangedData([
-                'value' => 'bruteforce_wait',
-                'user_admin' => null !== $session->get('user-admin') ? (int) $session->get('user-admin') : 0,
-                'initial_url' => null !== $session->get('user-initial_url') ? $session->get('user-initial_url') : '',
-                'pwd_attempts' => 0,
-                'error' => true,
-                'message' => $lang->get('error_bad_credentials_more_than_3_times'),
-                'remaining_seconds' => $remainingSeconds,
-            ], 'encode');
-
-            echo $errorResponse;
-            return false;
-        }
-
-        // Increment the counter of login attempts
-        $sessionPwdAttempts = ($sessionPwdAttempts === '') ? 1 : ++$sessionPwdAttempts;
-        $session->set('pwd_attempts', $sessionPwdAttempts);
-
-        // Check for brute force attempts
-        if ($sessionPwdAttempts <= 3) {
-            // Identify the user through Teampass process
-            identifyUser($post_data, $SETTINGS);
-        } else {
-            // Reset attempts and set waiting period on the fourth consecutive attempt
-            $session->set('pwd_attempts', 0);
-
-            if ($sessionPwdAttempts === 4) {
-                // On the fourth consecutive attempt, trigger the waiting period
-                $nextPossibleAttempts = time() + 10;
-                $session->set('next_possible_pwd_attempts', $nextPossibleAttempts);
-
-                // Send an error response indicating the waiting period
-                $errorResponse = prepareExchangedData([
-                    'value' => 'bruteforce_wait',
-                    'user_admin' => null !== $session->get('user-admin') ? (int) $session->get('user-admin') : 0,
-                    'initial_url' => null !== $session->get('user-initial_url') ? $session->get('user-initial_url') : '',
-                    'pwd_attempts' => 0,
-                    'error' => true,
-                    'message' => $lang->get('error_bad_credentials_more_than_3_times'),
-                    'remaining_seconds' => 10,
-                ], 'encode');
-
-                echo $errorResponse;
-                return false;
-            }
-            
-            // Identify the user through Teampass process
-            identifyUser($post_data, $SETTINGS);
-        }
-
-        return true;
-    }
-
-    handleAuthAttempts($post_data, $SETTINGS);
+    // Identify the user through Teampass process
+    identifyUser($post_data, $SETTINGS);
 
     // ---
     // ---
@@ -274,7 +173,10 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         $duo_data_dec = openssl_decrypt(base64_decode($session->get('user-duo_data')), 'AES-256-CBC', $key, 0, $iv);
         // Clear the data from the Duo process to continue clean with the standard login process
         $session->set('user-duo_data','');
-        if($duo_data_dec === false){
+        if($duo_data_dec === false) {
+            // Add failed authentication log
+            addFailedAuthentication($username, getClientIpServer());
+
             echo prepareExchangedData(
                 [
                     'error' => true,
@@ -313,7 +215,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     );
     $username = $userCredentials['username'];
     $passwordClear = $userCredentials['passwordClear'];
-    
+
     // DO initial checks
     $userInitialData = identifyDoInitialChecks(
         $SETTINGS,
@@ -323,8 +225,19 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         (string) $sessionUrl,
         (string) filter_var($dataReceived['user_2fa_selection'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)
     );
+
     // if user doesn't exist in Teampass then return error
     if ($userInitialData['error'] === true) {
+        // Add log on error unless skip_anti_bruteforce flag is set to true
+        if (empty($userInitialData['skip_anti_bruteforce'])
+            || !$userInitialData['skip_anti_bruteforce']) {
+
+                error_log('test');
+
+            // Add failed authentication log
+            addFailedAuthentication($username, getClientIpServer());
+        }
+
         echo prepareExchangedData(
             $userInitialData['array'],
             'encode'
@@ -346,6 +259,9 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         (int) $sessionPwdAttempts
     );
     if ($userLdap['error'] === true) {
+        // Add failed authentication log
+        addFailedAuthentication($username, getClientIpServer());
+
         // deepcode ignore ServerLeak: File and path are secured directly inside the function decryptFile()
         echo prepareExchangedData(
             $userLdap['array'],
@@ -354,6 +270,9 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         return false;
     }
     if (isset($userLdap['user_info']) === true && (int) $userLdap['user_info']['has_been_created'] === 1) {
+        // Add failed authentication log
+        addFailedAuthentication($username, getClientIpServer());
+
         echo json_encode([
             'data' => prepareExchangedData(
                 [
@@ -378,6 +297,10 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     );
     if ($userOauth2['error'] === true) {
         $session->set('userOauth2Info', '');
+
+        // Add failed authentication log
+        addFailedAuthentication($username, getClientIpServer());
+
         // deepcode ignore ServerLeak: File and path are secured directly inside the function decryptFile()        
         echo prepareExchangedData(
             [
@@ -388,17 +311,17 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         );
         return false;
     }
-    
+
     // Check user and password
     if ($userLdap['userPasswordVerified'] === false && $userOauth2['userPasswordVerified'] === false
         && checkCredentials($passwordClear, $userInfo) !== true
     ) {
+        // Add failed authentication log
+        addFailedAuthentication($username, getClientIpServer());
+
         echo prepareExchangedData(
             [
                 'value' => '',
-                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
-                'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
-                'pwd_attempts' => (int) $sessionPwdAttempts,
                 'error' => true,
                 'message' => $lang->get('error_bad_credentials'),
             ],
@@ -428,6 +351,9 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             (string) $username
         );
         if ($userMfa['error'] === true) {
+            // Add failed authentication log
+            addFailedAuthentication($username, getClientIpServer());
+
             echo prepareExchangedData(
                 [
                     'error' => true,
@@ -438,6 +364,9 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             );
             return false;
         } elseif ($userMfa['mfaQRCodeInfos'] === true) {
+            // Add failed authentication log
+            addFailedAuthentication($username, getClientIpServer());
+
             // Case where user has initiated Google Auth
             // Return QR code
             echo prepareExchangedData(
@@ -454,6 +383,9 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             );
             return false;
         } elseif ($userMfa['duo_url_ready'] === true) {
+            // Add failed authentication log
+            addFailedAuthentication($username, getClientIpServer());
+
             // Case where user has initiated Duo Auth
             // Return the DUO redirect URL
             echo prepareExchangedData(
@@ -509,9 +441,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         $session->set('key', generateQuickPassword(30, false));
 
         // Save account in SESSION
-        $session->set('user-unsuccessfull_login_attempts_list', $attemptsInfos['attemptsList'] === 0 ? true : false);
-        $session->set('user-unsuccessfull_login_attempts_shown', $attemptsInfos['attemptsCount'] === 0 ? true : false);
-        $session->set('user-unsuccessfull_login_attempts_nb', DB::count());
         $session->set('user-login', stripslashes($username));
         $session->set('user-name', empty($userInfo['name']) === false ? stripslashes($userInfo['name']) : '');
         $session->set('user-lastname', empty($userInfo['lastname']) === false ? stripslashes($userInfo['lastname']) : '');
@@ -695,7 +624,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                     'last_connexion' => time(),
                     'timestamp' => time(),
                     'disabled' => 0,
-                    'no_bad_attempts' => 0,
                     'session_end' => $session->get('user-session_duration'),
                     'user_ip' => $dataReceived['client'],
                 ],
@@ -836,8 +764,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                     && $session->get('user-private_key') !== 'none' ? true : false,
                 'session_key' => $session->get('key'),
                 'can_create_root_folder' => null !== $session->get('user-can_create_root_folder') ? (int) $session->get('user-can_create_root_folder') : '',
-                'shown_warning_unsuccessful_login' => $session->get('user-unsuccessfull_login_attempts_shown'),
-                'nb_unsuccessful_logins' => $session->get('user-unsuccessfull_login_attempts_nb'),
                 'upgrade_needed' => isset($userInfo['upgrade_needed']) === true ? (int) $userInfo['upgrade_needed'] : 0,
                 'special' => isset($userInfo['special']) === true ? (int) $userInfo['special'] : 0,
                 'split_view_mode' => isset($userInfo['split_view_mode']) === true ? (int) $userInfo['split_view_mode'] : 0,
@@ -869,48 +795,12 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                     && $session->get('user-private_key') !== 'none' ? true : false,
                 'session_key' => $session->get('key'),
                 'can_create_root_folder' => null !== $session->get('user-can_create_root_folder') ? (int) $session->get('user-can_create_root_folder') : '',
-                'shown_warning_unsuccessful_login' => $session->get('user-unsuccessfull_login_attempts_shown'),
-                'nb_unsuccessful_logins' => $session->get('user-unsuccessfull_login_attempts_nb'),
             ],
             'encode'
         );
         return false;
     }
 
-    // DEFAULT CASE
-    // User exists in the DB but Password is false
-    // check if user is locked
-    if (isUserLocked(
-            (int) $userInfo['no_bad_attempts'],
-            $userInfo['id'],
-            $username,
-            $SETTINGS
-        ) === true
-    ) {
-        echo prepareExchangedData(
-            [
-                'value' => $return,
-                'user_id' => $session->get('user-id') !== null ? (int) $session->get('user-id') : '',
-                'user_admin' => null !== $session->get('user-admin') ? $session->get('user-admin') : 0,
-                'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
-                'pwd_attempts' => 0,
-                'error' => 'user_is_locked',
-                'message' => $lang->get('account_is_locked'),
-                'first_connection' => $session->get('user-validite_pw') === 0 ? true : false,
-                'password_complexity' => TP_PW_COMPLEXITY[$session->get('user-pw_complexity')][1],
-                'password_change_expected' => $userInfo['special'] === 'password_change_expected' ? true : false,
-                'private_key_conform' => $session->get('user-id') !== null
-                    && empty($session->get('user-private_key')) === false
-                    && $session->get('user-private_key') !== 'none' ? true : false,
-                'session_key' => $session->get('key'),
-                'can_create_root_folder' => null !== $session->get('user-can_create_root_folder') ? (int) $session->get('user-can_create_root_folder') : '',
-                'shown_warning_unsuccessful_login' => $session->get('user-unsuccessfull_login_attempts_shown'),
-                'nb_unsuccessful_logins' => $session->get('user-unsuccessfull_login_attempts_nb'),
-            ],
-            'encode'
-        );
-        return false;
-    }
     echo prepareExchangedData(
         [
             'value' => $return,
@@ -928,8 +818,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                     && $session->get('user-private_key') !== 'none' ? true : false,
             'session_key' => $session->get('key'),
             'can_create_root_folder' => null !== $session->get('user-can_create_root_folder') ? (int) $session->get('user-can_create_root_folder') : '',
-            'shown_warning_unsuccessful_login' => $session->get('user-unsuccessfull_login_attempts_shown'),
-            'nb_unsuccessful_logins' => $session->get('user-unsuccessfull_login_attempts_nb'),
         ],
         'encode'
     );
@@ -1032,53 +920,6 @@ function canUserGetLog(
 
     return false;
 }
-
-/**
- * Manages if user is locked or not
- *
- * @param int       $nbAttempts
- * @param int       $userId
- * @param string    $username
- * @param string    $key
- * @param array     $SETTINGS
- *
- * @return boolean
- */
-function isUserLocked(
-    $nbAttempts,
-    $userId,
-    $username,
-    $SETTINGS
-) : bool 
-{
-    $userIsLocked = false;
-    $nbAttempts++;
-    if (
-        (int) $SETTINGS['nb_bad_authentication'] > 0
-        && (int) $SETTINGS['nb_bad_authentication'] < $nbAttempts
-    ) {
-        // User is now locked as too many attempts
-        $userIsLocked = true;
-
-        // log it
-        if (isKeyExistingAndEqual('log_connections', 1, $SETTINGS) === true) {
-            logEvents($SETTINGS, 'user_locked', 'connection', (string) $userId, stripslashes($username));
-        }
-    }
-    
-    DB::update(
-        prefixTable('users'),
-        [
-            'disabled' => $userIsLocked,
-            'no_bad_attempts' => $nbAttempts,
-        ],
-        'id=%i',
-        $userId
-    );
-
-    return $userIsLocked;
-}
-
 
 /**
  * 
@@ -2139,12 +1980,31 @@ class initialChecks {
     // Properties
     public $login;
 
-    // Methods
-    public function isTooManyPasswordAttempts($attempts) {
-        if ($attempts > 30) {
-            throw new Exception(
-                "error" 
-            );
+    /**
+     * Check if the user or his IP address is blocked due to a high number of
+     * failed attempts.
+     * 
+     * @param string $username - The login tried to login.
+     * @param string $ip - The remote address of the user.
+     */
+    public function isTooManyPasswordAttempts($username, $ip) {
+
+        // Check for existing lock
+        $unlock_at = DB::queryFirstField(
+            'SELECT MAX(unlock_at)
+             FROM ' . prefixTable('auth_failures') . '
+             WHERE unlock_at > %s
+             AND ((source = %s AND value = %s) OR (source = %s AND value = %s))',
+            date('Y-m-d H:i:s', time()),
+            'login',
+            $username,
+            'remote_ip',
+            $ip
+        );
+
+        // Account or remote address locked
+        if ($unlock_at) {
+            throw new Exception((string) $unlock_at);
         }
     }
 
@@ -2249,45 +2109,7 @@ function identifyDoInitialChecks(
     $enableAdUserAutoCreation = $SETTINGS['enable_ad_user_auto_creation'] ?? false;
     $oauth2Enabled = $SETTINGS['oauth2_enabled'] ?? false;
     $lang = new Language($session->get('user-language') ?? 'english');
-    
-    // Brute force management
-    try {
-        $checks->isTooManyPasswordAttempts($sessionPwdAttempts);
-    } catch (Exception $e) {
-        $session->set('next_possible_pwd_attempts', (time() + 10));
-        $session->set('pwd_attempts', 0);
-        $session->set('userOauth2Info', '');
-        logEvents($SETTINGS, 'failed_auth', 'user_not_exists', '', stripslashes($username), stripslashes($username));
-        return [
-            'error' => true,
-            'array' => [
-                'value' => 'bruteforce_wait',
-                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
-                'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
-                'pwd_attempts' => 0,
-                'error' => true,
-                'message' => $lang->get('error_bad_credentials_more_than_3_times'),
-            ]
-        ];
-    }
-    // Check if user exists
-    try {
-        $userInfo = $checks->getUserInfo($username, $enableAdUserAutoCreation, $oauth2Enabled);
-    } catch (Exception $e) {
-        logEvents($SETTINGS, 'failed_auth', 'user_not_exists', '', stripslashes($username), stripslashes($username));
-        return [
-            'error' => true,
-            'array' => [
-                'value' => 'user_not_exists',
-                'error' => true,
-                'message' => $lang->get('error_bad_credentials'),
-                'pwd_attempts' => (int) $sessionPwdAttempts,
-                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
-                'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
-            ]
-        ];
-    }
-    
+
     // Manage Maintenance mode
     try {
         $checks->isMaintenanceModeEnabled(
@@ -2297,21 +2119,52 @@ function identifyDoInitialChecks(
     } catch (Exception $e) {
         return [
             'error' => true,
+            'skip_anti_bruteforce' => true,
             'array' => [
                 'value' => '',
-                'user_admin' => (int) $userInfo['admin'],
-                'initial_url' => '',
-                'pwd_attempts' => '',
                 'error' => 'maintenance_mode_enabled',
                 'message' => '',
             ]
         ];
     }
+
+    // Brute force management
+    try {
+        $checks->isTooManyPasswordAttempts($username, getClientIpServer());
+    } catch (Exception $e) {
+        $session->set('userOauth2Info', '');
+        logEvents($SETTINGS, 'failed_auth', 'user_not_exists', '', stripslashes($username), stripslashes($username));
+        return [
+            'error' => true,
+            'skip_anti_bruteforce' => true,
+            'array' => [
+                'value' => 'bruteforce_wait',
+                'error' => true,
+                'message' => $lang->get('bruteforce_wait') . (string) $e->getMessage(),
+            ]
+        ];
+    }
+
+    // Check if user exists
+    try {
+        $userInfo = $checks->getUserInfo($username, $enableAdUserAutoCreation, $oauth2Enabled);
+    } catch (Exception $e) {
+        logEvents($SETTINGS, 'failed_auth', 'user_not_exists', '', stripslashes($username), stripslashes($username));
+        return [
+            'error' => true,
+            'array' => [
+                'error' => true,
+                'message' => $lang->get('error_bad_credentials'),
+            ]
+        ];
+    }
+
     // user should use MFA?
     $userInfo['mfa_auth_requested_roles'] = mfa_auth_requested_roles(
         (string) $userInfo['fonction_id'],
         is_null($SETTINGS['mfa_for_roles']) === true ? '' : (string) $SETTINGS['mfa_for_roles']
     );
+
     // Check if 2FA code is requested
     try {
         $checks->is2faCodeRequired(
@@ -2440,7 +2293,7 @@ function shouldUserAuthWithOauth2(
     if ($username !== 'admin') {
         // User has started to auth with oauth2
         if ((bool) $userInfo['oauth2_login_ongoing'] === true) {
-            // Case where user exists in Teampass password login type        
+            // Case where user exists in Teampass password login type
             if ((string) $userInfo['auth_type'] === 'ldap' || (string) $userInfo['auth_type'] === 'local') {
                 // Update user in database:
                 DB::update(
@@ -2755,4 +2608,68 @@ function identifyDoAzureChecks(
         'mfaData' => ['message' => $lang->get('wrong_mfa_code')],
         'mfaQRCodeInfos' => false,
     ];
+}
+
+/**
+ * Add a failed authentication attempt to the database.
+ * If the number of failed attempts exceeds the limit, a lock is triggered.
+ * 
+ * @param string $source - The source of the failed attempt (login or remote_ip).
+ * @param string $value  - The value for this source (username or IP address).
+ * @param int    $limit  - The failure attempt limit after which the account/IP
+ *                     will be locked.
+ */
+function handleFailedAttempts($source, $value, $limit) {
+    // Count failed attempts from this source
+    $count = DB::queryFirstField(
+        'SELECT COUNT(*)
+        FROM ' . prefixTable('auth_failures') . '
+        WHERE source = %s AND value = %s',
+        $source,
+        $value
+    );
+
+    // Add this attempt
+    $count++;
+
+    // Calculate unlock time if number of attempts exceeds limit
+    $unlock_at = $count >= $limit 
+        ? date('Y-m-d H:i:s', time() + (($count - $limit + 1) * 600))
+        : NULL;
+
+    // Insert the new failure into the database
+    DB::insert(
+        prefixTable('auth_failures'),
+        [
+            'source' => $source,
+            'value' => $value,
+            'unlock_at' => $unlock_at,
+        ]
+    );
+}
+
+/**
+ * Add failed authentication attempts for both user login and IP address.
+ * This function will check the number of attempts for both the username and IP,
+ * and will trigger a lock if the number exceeds the defined limits.
+ * It also deletes logs older than 24 hours.
+ * 
+ * @param string $username - The username that was attempted to login.
+ * @param string $ip       - The IP address from which the login attempt was made.
+ */
+function addFailedAuthentication($username, $ip) {
+    $user_limit = 10;
+    $ip_limit = 20;
+
+    // Remove old logs (more than 24 hours)
+    DB::delete(
+        prefixTable('auth_failures'),
+        'date < %s AND (unlock_at < %s OR unlock_at IS NULL)',
+        date('Y-m-d H:i:s', time() - (24 * 3600)),
+        date('Y-m-d H:i:s', time())
+    );
+
+    // Add attempts in database
+    handleFailedAttempts('login', $username, $user_limit);
+    handleFailedAttempts('remote_ip', $ip, $ip_limit);
 }

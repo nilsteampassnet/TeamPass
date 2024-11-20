@@ -1182,6 +1182,7 @@ return array(
     'syslog_host' => 'Syslog server name or IP address',
     'syslog_port' => 'Syslog port (default 514)',
     'error_bad_credentials' => 'Login credentials do not correspond!',
+    'bruteforce_wait' => 'Too many failed attempts, your account is blocked until: ',
     'settings_ldap_usergroup' => 'LDAP group to search',
     'settings_ldap_usergroup_tip' => 'Enter the LDAP group in the directory where allowed user logins are stored. Example: cn=sysadmins,ou=groups,dc=example,dc=com',
     'server_password_change_enable' => 'Enable changing password on distant server (using ssh connection)',

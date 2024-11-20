@@ -644,7 +644,7 @@ declare(strict_types=1);
                         '<?php echo $lang->get('caution'); ?>', {
                             timeOut: 5000,
                             progressBar: true,
-                            positionClass: "toast-top-right"
+                            positionClass: "toast-bottom-right"
                         }
                     );
                     return false;
@@ -904,8 +904,6 @@ declare(strict_types=1);
                             teampassUser.sessionKey = data.session_key;
                             teampassUser.user_id = data.user_id;
                             teampassUser.user_has_psk = data.has_psk;
-                            teampassUser.shown_warning_unsuccessful_login = data.shown_warning_unsuccessful_login;
-                            teampassUser.nb_unsuccessful_logins = data.nb_unsuccessful_logins;
                             teampassUser.special = data.special;
                             teampassUser.auth_type = '';
                             teampassUser.location_stored = 0;

@@ -1040,14 +1040,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                         include $SETTINGS['cpassman_dir'].'/error.php';
                     }
 
-    // Case where login attempts have been identified
-    if ((int) $session->get('user-unsuccessfull_login_attempts_nb') !== 0
-        && (bool) $session->get('user-unsuccessfull_login_attempts_shown') === false
-    ) {
-        ?>
-                    <input type="hidden" id="user-login-attempts" value="1">
-                <?php
-    } ?>
+?>
 
             </div>
             <!-- /.content-wrapper -->
