@@ -2510,7 +2510,19 @@ function createOauth2User(
                 'message' => $ret['message'],
             ];
         }
-        
+
+        // login/password attempt on a local account:
+        // Return to avoid overwrite of user password that can allow a user
+        // to steal a local account.
+        if (!$ret['oauth2Connection'] || !$ret['userPasswordVerified']) {
+            return [
+                'error' => false,
+                'message' => $ret['message'],
+                'ldapConnection' => false,
+                'userPasswordVerified' => false,        
+            ];
+        }
+
         // Oauth2 user already exists and authenticated
         if (WIP === true) error_log("--- USER AUTHENTICATED ---");
         $userInfo['has_been_created'] = 0;
