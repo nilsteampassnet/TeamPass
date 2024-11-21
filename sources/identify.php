@@ -2111,7 +2111,7 @@ class initialChecks {
         $oauth2LoginOngoing = isset($session->get('userOauth2Info')['oauth2LoginOngoing']) ? $session->get('userOauth2Info')['oauth2LoginOngoing'] : false;
         $data['oauth2_login_ongoing'] = $oauth2LoginOngoing;
         $data['ldap_user_to_be_created'] = $enable_ad_user_auto_creation === true && DB::count() === 0 && $oauth2LoginOngoing !== true ? true : false;
-        $data['oauth2_user_to_be_created'] = $oauth2_enabled === true && DB::count() === 0 && $oauth2LoginOngoing === true ? true : false;
+        $data['oauth2_user_to_be_created'] = (bool)$oauth2_enabled === true && DB::count() === 0 && $oauth2LoginOngoing === true ? true : false;
 
         return $data;
     }
