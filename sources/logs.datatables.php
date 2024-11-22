@@ -101,13 +101,13 @@ $params = $request->query->all();
 
 // Init
 $searchValue = $sWhere = $sOrder = '';
-$aSortTypes = ['asc', 'desc'];
+$aSortTypes = ['ASC', 'DESC'];
 $sLimitStart = $request->query->has('start') 
     ? $request->query->filter('start', 0, FILTER_VALIDATE_INT, ['options' => ['default' => 0, 'min_range' => 0]]) 
     : 0;
 $sLimitLength = $request->query->has('length') 
     ? $request->query->filter('length', 0, FILTER_VALIDATE_INT, ['options' => ['default' => 0, 'min_range' => 0]]) 
-    : 0;
+    : 10;
 
 // Check search parameters
 if (isset($params['search']['value'])) {
@@ -119,29 +119,20 @@ if (isset($params['search']['value'])) {
 }
 
 // Ordering
-$order = $params['order'][0] ?? [];
-if (isset($order['dir'], $order['column']) 
-    && in_array($order['dir'], $aSortTypes, true)
-    && (int) $order['column'] !== 0
-    && $order['column'] !== 'asc'
-) {
-    $orderDirection = $order['dir'];
-} else {
-    $orderDirection = 'DESC';
-}
-
-
+$order = strtoupper($params['order'][0]['dir'] ?? null);
+$orderDirection = in_array($order, $aSortTypes, true) ? $order : 'DESC';
+    
+// Start building the query and output depending on the action
 if (isset($params['action']) && $params['action'] === 'connections') {
     //Columns name
     $aColumns = ['l.date', 'l.label', 'l.qui', 'u.login', 'u.name', 'u.lastname'];
 
     // Ordering
-    if (isset($aColumns[$order['column']]) === true) {
-        $orderColumn = $aColumns[$order['column']];
-    } else {
-        $orderColumn = $aColumns[0];
+    $orderColumn = $aColumns[0];
+    if (isset($aColumns[$params['order'][0]['column']]) === true) {
+        $orderColumn = $aColumns[$params['order'][0]['column']];
     }
-
+    
     // Filtering
     $sWhere = new WhereClause('AND');
     if ($searchValue !== '') {        
@@ -168,7 +159,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     u.login as login, u.name AS name, u.lastname AS lastname
     FROM '.prefixTable('log_system').' as l
     INNER JOIN '.prefixTable('users').' as u ON (l.qui=u.id)
-    WHERE %l ORDER BY %s %s LIMIT %i, %i';
+    WHERE %l ORDER BY %l %l LIMIT %i, %i';
     $params = [$sWhere, $orderColumn, $orderDirection, $sLimitStart, $sLimitLength];
 
     // Get the records
@@ -209,10 +200,9 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     $aColumns = ['l.date', 'i.label', 'u.login'];
 
     // Ordering
-    if (isset($aColumns[$order['column']]) === true) {
-        $orderColumn = $aColumns[$order['column']];
-    } else {
-        $orderColumn = $aColumns[0];
+    $orderColumn = $aColumns[0];
+    if (isset($aColumns[$params['order'][0]['column']]) === true) {
+        $orderColumn = $aColumns[$params['order'][0]['column']];
     }
 
     // Filtering
@@ -242,7 +232,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     FROM '.prefixTable('log_items').' as l
     INNER JOIN '.prefixTable('items').' as i ON (l.id_item=i.id)
     INNER JOIN '.prefixTable('users').' as u ON (l.id_user=u.id)
-    WHERE %l ORDER BY %s %s LIMIT %i, %i';
+    WHERE %l ORDER BY %l %l LIMIT %i, %i';
     $params = [$sWhere, $orderColumn, $orderDirection, $sLimitStart, $sLimitLength];
 
     // Get the records
@@ -283,12 +273,11 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     $aColumns = ['l.date', 'i.label', 'u.login'];
 
     // Ordering
-    if (isset($aColumns[$order['column']]) === true) {
-        $orderColumn = $aColumns[$order['column']];
-    } else {
-        $orderColumn = $aColumns[0];
+    $orderColumn = $aColumns[0];
+    if (isset($aColumns[$params['order'][0]['column']]) === true) {
+        $orderColumn = $aColumns[$params['order'][0]['column']];
     }
-
+    
     // Filtering
     $sWhere = new WhereClause('AND');
     if ($searchValue !== '') {        
@@ -316,7 +305,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     FROM '.prefixTable('log_items').' as l
     INNER JOIN '.prefixTable('items').' as i ON (l.id_item=i.id)
     INNER JOIN '.prefixTable('users').' as u ON (l.id_user=u.id)
-    WHERE %l ORDER BY %s %s LIMIT %i, %i';
+    WHERE %l ORDER BY %l %l LIMIT %i, %i';
     $params = [$sWhere, $orderColumn, $orderDirection, $sLimitStart, $sLimitLength];
 
     // Get the records
@@ -359,10 +348,9 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     $aColumns = ['l.date', 'u.login', 'l.label', 'l.field_1'];
 
     // Ordering
-    if (isset($aColumns[$order['column']]) === true) {
-        $orderColumn = $aColumns[$order['column']];
-    } else {
-        $orderColumn = $aColumns[0];
+    $orderColumn = $aColumns[0];
+    if (isset($aColumns[$params['order'][0]['column']]) === true) {
+        $orderColumn = $aColumns[$params['order'][0]['column']];
     }
 
     // Filtering
@@ -390,7 +378,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     $sql = 'SELECT l.date as date, u.login as login, u.name AS name, u.lastname AS lastname, l.label as label, l.field_1 as field_1
     FROM '.prefixTable('log_system').' as l
     INNER JOIN '.prefixTable('users').' as u ON (l.qui=u.id)
-    WHERE %l ORDER BY %s %s LIMIT %i, %i';
+    WHERE %l ORDER BY %l %l LIMIT %i, %i';
     $params = [$sWhere, $orderColumn, $orderDirection, $sLimitStart, $sLimitLength];
 
     // Get the records
@@ -460,10 +448,9 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     $aColumns = ['l.date', 'i.label', 'u.login', 'l.action', 'i.perso', 'i.id', 't.title'];
 
     // Ordering
-    if (isset($aColumns[$order['column']]) === true) {
-        $orderColumn = $aColumns[$order['column']];
-    } else {
-        $orderColumn = $aColumns[0];
+    $orderColumn = $aColumns[0];
+    if (isset($aColumns[$params['order'][0]['column']]) === true) {
+        $orderColumn = $aColumns[$params['order'][0]['column']];
     }
 
     // Filtering
@@ -494,7 +481,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     INNER JOIN '.prefixTable('items').' AS i ON (l.id_item=i.id)
     INNER JOIN '.prefixTable('users').' AS u ON (l.id_user=u.id)
     INNER JOIN '.prefixTable('nested_tree').' AS t ON (i.id_tree=t.id)
-    WHERE %l ORDER BY %s %s LIMIT %i, %i';
+    WHERE %l ORDER BY %l %l LIMIT %i, %i';
     $params = [$sWhere, $orderColumn, $orderDirection, $sLimitStart, $sLimitLength];
 
     // Get the records
@@ -545,10 +532,9 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     $aColumns = ['l.date', 'l.label', 'l.qui', 'l.field_1'];
 
     // Ordering
-    if (isset($aColumns[$order['column']]) === true) {
-        $orderColumn = $aColumns[$order['column']];
-    } else {
-        $orderColumn = $aColumns[0];
+    $orderColumn = $aColumns[0];
+    if (isset($aColumns[$params['order'][0]['column']]) === true) {
+        $orderColumn = $aColumns[$params['order'][0]['column']];
     }
 
     // Filtering
@@ -574,12 +560,12 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     // Prepare the SQL query
     $sql = 'SELECT l.date as auth_date, l.label as label, l.qui as who, l.field_1
     FROM '.prefixTable('log_system').' as l
-    WHERE %l ORDER BY %s %s LIMIT %i, %i';
+    WHERE %l ORDER BY %l %l LIMIT %i, %i';
     $params = [$sWhere, $orderColumn, $orderDirection, $sLimitStart, $sLimitLength];
 
     // Get the records
     $rows = DB::query($sql, ...$params);
-    $iFilteredTotal = DB::count();
+    $iFilteredTotal = DB::count(); 
 
     // Output
     if ($iTotal === '') {
@@ -621,10 +607,9 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     $aColumns = ['l.date', 'l.label', 'l.qui', 'u.login', 'u.name', 'u.lastname'];
 
     // Ordering
-    if (isset($aColumns[$order['column']]) === true) {
-        $orderColumn = $aColumns[$order['column']];
-    } else {
-        $orderColumn = $aColumns[0];
+    $orderColumn = $aColumns[0];
+    if (isset($aColumns[$params['order'][0]['column']]) === true) {
+        $orderColumn = $aColumns[$params['order'][0]['column']];
     }
 
     // Filtering
@@ -654,7 +639,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     u.login as login, u.name AS name, u.lastname AS lastname
     FROM '.prefixTable('log_system').' as l
     INNER JOIN '.prefixTable('users').' as u ON (l.qui=u.id) 
-    WHERE %l ORDER BY %s %s LIMIT %i, %i';
+    WHERE %l ORDER BY %l %l LIMIT %i, %i';
     $params = [$sWhere, $orderColumn, $orderDirection, $sLimitStart, $sLimitLength];
 
     // Get the records
@@ -693,10 +678,9 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     $aColumns = ['e.timestamp', 'u.login', 'i.label', 'u.name', 'u.lastname'];
 
     // Ordering
-    if (isset($aColumns[$order['column']]) === true) {
-        $orderColumn = $aColumns[$order['column']];
-    } else {
-        $orderColumn = $aColumns[0];
+    $orderColumn = $aColumns[0];
+    if (isset($aColumns[$params['order'][0]['column']]) === true) {
+        $orderColumn = $aColumns[$params['order'][0]['column']];
     }
 
     // Filtering
@@ -724,7 +708,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     FROM '.prefixTable('items_edition').' AS e
     INNER JOIN '.prefixTable('items').' as i ON (e.item_id=i.id)
     INNER JOIN '.prefixTable('users').' as u ON (e.user_id=u.id)
-    WHERE %l ORDER BY %s %s LIMIT %i, %i';
+    WHERE %l ORDER BY %l %l LIMIT %i, %i';
     $params = [$sWhere, $orderColumn, $orderDirection, $sLimitStart, $sLimitLength];
 
     // Get the records
@@ -768,10 +752,9 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     $aColumns = ['login', 'name', 'lastname', 'timestamp', 'last_connexion'];
 
     // Ordering
-    if (isset($aColumns[$order['column']]) === true) {
-        $orderColumn = $aColumns[$order['column']];
-    } else {
-        $orderColumn = $aColumns[0];
+    $orderColumn = $aColumns[0];
+    if (isset($aColumns[$params['order'][0]['column']]) === true) {
+        $orderColumn = $aColumns[$params['order'][0]['column']];
     }    
 
     // Filtering
@@ -799,7 +782,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     // Prepare the SQL query
     $sql = 'SELECT *
     FROM '.prefixTable('users').'
-    WHERE %l ORDER BY %s %s LIMIT %i, %i';
+    WHERE %l ORDER BY %l %l LIMIT %i, %i';
     $params = [$sWhere, $orderColumn, $orderDirection, $sLimitStart, $sLimitLength];
 
     // Get the records
@@ -850,10 +833,9 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     $aColumns = ['p.increment_id', 'p.created_at', 'p.updated_at', 'p.process_type', 'p.is_in_progress'];
 
     // Ordering
-    if (isset($aColumns[$order['column']]) === true) {
-        $orderColumn = $aColumns[$order['column']];
-    } else {
-        $orderColumn = $aColumns[0];
+    $orderColumn = $aColumns[0];
+    if (isset($aColumns[$params['order'][0]['column']]) === true) {
+        $orderColumn = $aColumns[$params['order'][0]['column']];
     }    
 
     // Filtering
@@ -943,10 +925,9 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     $aColumns = ['p.created_at', 'p.finished_at', 'p.process_type', 'u.name'];
 
     // Ordering
-    if (isset($aColumns[$order['column']]) === true) {
-        $orderColumn = $aColumns[$order['column']];
-    } else {
-        $orderColumn = $aColumns[0];
+    $orderColumn = $aColumns[0];
+    if (isset($aColumns[$params['order'][0]['column']]) === true) {
+        $orderColumn = $aColumns[$params['order'][0]['column']];
     }
 
     // Filtering
