@@ -1188,7 +1188,6 @@ return array(
     'show_item_data_tip' => 'Permits to display extra information in the items list (username, email and url). This could be useful to have a quick view of the item content.',
     'items_page_split_view_mode' => 'Show item details in page split view mode',
     'replace_tenant_id' => 'Adapt the URL but keep {tenant-id} as is. It will be replaced live by the tenant ID.',
-    'user_exists_but_not_oauth2' => 'User has to authenticate using Entra/Azure AD',
     'user_not_allowed_to_auth_to_teampass_app' => 'User is not allowed to authenticate with Teampass application',
     'user_is_not_auth_with_oauth2' => 'User should not authenticate with Entra/Azure AD',
     'highlight_favorites' => 'Highlight favorites',

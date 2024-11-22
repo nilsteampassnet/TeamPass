@@ -39,7 +39,6 @@ return array(
     'highlight_selected_tip' => 'When enabled, the selected item will be highlighted in the list.',
     'highlight_favorites' => 'Highlight favorites',
     'highlight_favorites_tip' => 'When enabled, the favorite items will be highlighted in the list.',
-    'user_exists_but_not_oauth2' => 'User has to authenticate using Entra/Azure AD',
     'user_not_allowed_to_auth_to_teampass_app' => 'User is not allowed to authenticate with Teampass application',
     'user_is_not_auth_with_oauth2' => 'User should not authenticate with Entra/Azure AD',
     'oauth2_need_user_old_password' => 'For the first SSO connection, please provide your previous password',

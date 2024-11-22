@@ -1193,7 +1193,6 @@ return array(
     'show_item_data_tip' => 'Permet d&apos;afficher des informations supplémentaires dans la liste des éléments (nom d&apos;utilisateur, e-mail et URL). Cela peut être utile pour avoir un aperçu rapide du contenu de l&apos;élément.',
     'items_page_split_view_mode' => 'Afficher le détail d&apos;un objet sur la page des objets',
     'replace_tenant_id' => 'Adapter l&apos;url tout en laissant {tenant-id}. Il sera remplacer lors de l&apos;appel.',
-    'user_exists_but_not_oauth2' => 'Vous devez vous authentifier avec votre compte Azure/Entra AD',
     'user_not_allowed_to_auth_to_teampass_app' => 'Vous n&apos;êtes pas autoriser à vous authentifier à l&apos;application Teampass',
     'user_is_not_auth_with_oauth2' => 'Vous ne pouvez pas vous authentifier avec un compte Entra/Azure AD',
     'highlight_favorites' => 'Mettre en évidence les favoris',
