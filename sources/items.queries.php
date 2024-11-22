@@ -183,6 +183,14 @@ $inputData = dataSanitizer(
     $filters
 );
 
+// List of teampass users ids (and current user id).
+$tpUsersIDs = [
+    OTV_USER_ID,
+    SSH_USER_ID,
+    API_USER_ID,
+    $session->get('user-id'),
+];
+
 // Do asked action
 switch ($inputData['type']) {
     /*
@@ -5355,12 +5363,9 @@ switch ($inputData['type']) {
                 $users = DB::query(
                     'SELECT id, public_key
                     FROM ' . prefixTable('users') . '
-                    WHERE id NOT IN (%i, %i, %i, %i)
+                    WHERE id NOT IN %li
                     AND public_key != ""',
-                    OTV_USER_ID,
-                    SSH_USER_ID,
-                    API_USER_ID,
-                    $session->get('user-id')
+                    $tpUsersIDs
                 );
 
                 foreach ($users as $user) {
@@ -5399,12 +5404,9 @@ switch ($inputData['type']) {
                     $users = DB::query(
                         'SELECT id, public_key
                         FROM ' . prefixTable('users') . '
-                        WHERE id NOT IN (%i, %i, %i, %i)
+                        WHERE id NOT IN %li
                         AND public_key != ""',
-                        OTV_USER_ID,
-                        SSH_USER_ID,
-                        API_USER_ID,
-                        $session->get('user-id')
+                        $tpUsersIDs
                     );
                     foreach ($users as $user) {
                         // Insert in DB the new object key for this item by user
@@ -5443,12 +5445,9 @@ switch ($inputData['type']) {
                     $users = DB::query(
                         'SELECT id, public_key
                         FROM ' . prefixTable('users') . '
-                        WHERE id NOT IN (%i, %i, %i, %i)
+                        WHERE id NOT IN %li
                         AND public_key != ""',
-                        OTV_USER_ID,
-                        SSH_USER_ID,
-                        API_USER_ID,
-                        $session->get('user-id')
+                        $tpUsersIDs
                     );
 
                     foreach ($users as $user) {
@@ -5694,12 +5693,9 @@ switch ($inputData['type']) {
                         $users = DB::query(
                             'SELECT id, public_key
                             FROM ' . prefixTable('users') . '
-                            WHERE id NOT IN (%i, %i, %i, %i)
+                            WHERE id NOT IN %li
                             AND public_key != ""',
-                            OTV_USER_ID,
-                            SSH_USER_ID,
-                            API_USER_ID,
-                            $session->get('user-id')
+                            $tpUsersIDs
                         );
 
                         foreach ($users as $user) {
@@ -5738,12 +5734,9 @@ switch ($inputData['type']) {
                             $users = DB::query(
                                 'SELECT id, public_key
                                 FROM ' . prefixTable('users') . '
-                                WHERE id NOT IN (%i, %i, %i, %i)
+                                WHERE id NOT IN %li
                                 AND public_key != ""',
-                                OTV_USER_ID,
-                                SSH_USER_ID,
-                                API_USER_ID,
-                                $session->get('user-id')
+                                $tpUsersIDs
                             );
 
                             foreach ($users as $user) {
@@ -5783,12 +5776,9 @@ switch ($inputData['type']) {
                             $users = DB::query(
                                 'SELECT id, public_key
                                 FROM ' . prefixTable('users') . '
-                                WHERE id NOT IN (%i, %i, %i, %i)
+                                WHERE id NOT IN %li
                                 AND public_key != ""',
-                                OTV_USER_ID,
-                                SSH_USER_ID,
-                                API_USER_ID,
-                                $session->get('user-id')
+                                $tpUsersIDs
                             );
 
                             foreach ($users as $user) {
