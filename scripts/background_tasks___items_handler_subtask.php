@@ -77,7 +77,6 @@ if ($args['step'] === 'create_users_files_key') {
         storeUsersShareKey(
             prefixTable('sharekeys_items'),
             0,
-            -1,
             (int) $file['object_id'],
             (string) $file['object_key'],
             false,
@@ -94,7 +93,6 @@ if ($args['step'] === 'create_users_files_key') {
         storeUsersShareKey(
             prefixTable('sharekeys_fields'),
             0,
-            -1,
             (int) $field['object_id'],
             (string) $field['object_key'],
             false,
@@ -107,7 +105,6 @@ if ($args['step'] === 'create_users_files_key') {
     storeUsersShareKey(
         prefixTable('sharekeys_items'),
         0,
-        -1,
         (int) $ProcessArguments['item_id'],
         (string) (array_key_exists('pwd', $ProcessArguments) === true ? $ProcessArguments['pwd'] : (array_key_exists('object_key', $ProcessArguments) === true ? $ProcessArguments['object_key'] : '')),
         false,

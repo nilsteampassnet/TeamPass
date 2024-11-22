@@ -387,7 +387,6 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
             storeUsersShareKey(
                 prefixTable('sharekeys_items'),
                 (int) $personalFolder,
-                (int) $post_folder,
                 (int) $newId,
                 $cryptedStuff['objectKey'],
             );
@@ -825,7 +824,6 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
             storeUsersShareKey(
                 prefixTable('sharekeys_items'),
                 $post_folders[$item['parentFolderId']]['isPF'] === true ? 1 : 0,
-                (int) $post_folders[$item['parentFolderId']]['id'],
                 (int) $newId,
                 $cryptedStuff['objectKey'],
             );

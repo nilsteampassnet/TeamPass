@@ -319,31 +319,34 @@ function recursiveTree(
     array $inputData,
     array &$ret_json = array()
 ) {
-    $text = '';
-    
+    // Initialize variables
+    $text = '';    
     $displayThisNode = false;
     $nbItemsInSubfolders = $nbSubfolders = $nbItemsInFolder = 0;
     $nodeDescendants = $tree->getDescendants($nodeId, true, false, false);
+    // On combine les tableaux une seule fois pour optimiser
+    $allowedFolders = array_merge($inputData['personalFolders'], $inputData['visibleFolders']);
     
     foreach ($nodeDescendants as $node) {
-        if (
-            in_array($node->id, array_merge($inputData['personalFolders'], $inputData['visibleFolders'])) === true
-        ) {
-            // Final check - is PF allowed?
-            if (
-                (int) $node->personal_folder === 1
-                && (int) $SETTINGS['enable_pf_feature'] === 1
-                && in_array($node->id, $inputData['personalFolders']) === false
-            ) {
-                $displayThisNode = false;
-            } else {
-                $displayThisNode = true;
-                $nbItemsInSubfolders = (int) $node->nb_items_in_subfolders;
-                $nbItemsInFolder = (int) $node->nb_items_in_folder;
-                $nbSubfolders = (int) $node->nb_subfolders;
-                break;
-            }
+        if (!in_array($node->id, $allowedFolders)) {
+            continue;
         }
+
+        // If it is a personal folder, we check the specific conditions
+        if (
+            (int) $node->personal_folder === 1 
+            && (int) $SETTINGS['enable_pf_feature'] === 1 
+            && !in_array($node->id, $inputData['personalFolders'])
+        ) {
+            continue;
+        }
+        
+        // If we are here, the node must be displayed
+        $displayThisNode = true;
+        $nbItemsInSubfolders = (int) $node->nb_items_in_subfolders;
+        $nbItemsInFolder = (int) $node->nb_items_in_folder;
+        $nbSubfolders = (int) $node->nb_subfolders;
+        break;  // Get out as soon as we find a valid node.
     }
     
     if ($displayThisNode === true) {

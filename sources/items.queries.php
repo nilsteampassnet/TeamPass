@@ -477,7 +477,6 @@ switch ($inputData['type']) {
                 storeUsersShareKey(
                     prefixTable('sharekeys_items'),
                     (int) $post_folder_is_personal,
-                    (int) $inputData['folderId'],
                     (int) $newID,
                     $cryptedStuff['objectKey'],
                     true,   // only for the item creator
@@ -521,7 +520,6 @@ switch ($inputData['type']) {
                                 storeUsersShareKey(
                                     prefixTable('sharekeys_fields'),
                                     (int) $post_folder_is_personal,
-                                    (int) $inputData['folderId'],
                                     (int) $newObjectId,
                                     $cryptedStuff['objectKey'],
                                     true,   // only for the item creator
@@ -1202,7 +1200,6 @@ switch ($inputData['type']) {
                 storeUsersShareKey(
                     prefixTable('sharekeys_items'),
                     (int) $post_folder_is_personal,
-                    (int) $inputData['folderId'],
                     (int) $inputData['itemId'],
                     $encrypted_password_key,
                     true,   // only for the item creator
@@ -1352,7 +1349,6 @@ switch ($inputData['type']) {
                                 storeUsersShareKey(
                                     prefixTable('sharekeys_fields'),
                                     (int) $post_folder_is_personal,
-                                    (int) $inputData['folderId'],
                                     (int) $newId,
                                     $cryptedStuff['objectKey'],
                                     true,   // only for the item creator
@@ -1450,7 +1446,6 @@ switch ($inputData['type']) {
                                     storeUsersShareKey(
                                         prefixTable('sharekeys_fields'),
                                         (int) $post_folder_is_personal,
-                                        (int) $inputData['folderId'],
                                         (int) $dataTmpCat['field_item_id'],
                                         $cryptedStuff['objectKey'],
                                         true,   // only for the item creator
@@ -2277,7 +2272,6 @@ switch ($inputData['type']) {
             storeUsersShareKey(
                 prefixTable('sharekeys_items'),
                 (int) $dataDestination['personal_folder'],
-                (int) $post_dest_id,
                 (int) $newItemId,
                 $itemDataArray['pwd'],
                 true,
@@ -2343,7 +2337,6 @@ switch ($inputData['type']) {
                     storeUsersShareKey(
                         prefixTable('sharekeys_fields'),
                         (int) $dataDestination['personal_folder'],
-                        (int) $post_dest_id,
                         (int) $newFieldId,
                         $cryptedStuff['objectKey'],
                         true,
@@ -2437,7 +2430,6 @@ switch ($inputData['type']) {
                     storeUsersShareKey(
                         prefixTable('sharekeys_files'),
                         (int) $dataDestination['personal_folder'],
-                        (int) $post_dest_id,
                         (int) $newFileId,
                         $newFile['objectKey'],
                         true
@@ -6753,7 +6745,6 @@ switch ($inputData['type']) {
         storeUsersShareKey(
             prefixTable('sharekeys_items'),
             0,
-            (int) $folder,
             (int) $newID,
             $cryptedStuff['objectKey'],
         );

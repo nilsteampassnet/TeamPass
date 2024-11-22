@@ -351,9 +351,7 @@ function identAdmin($idFonctions, $SETTINGS, $tree)
     $session->set('system-list_folders_editable_by_role', []);
     $session->set('user-list_folders_limited', []);
     $session->set('user-forbiden_personal_folders', []);
-    $globalsUserId = $session->get('user-id');
-    $globalsVisibleFolders = $session->get('user-accessible_folders');
-    $globalsPersonalVisibleFolders = $session->get('user-personal_visible_folders');
+    
     // Get list of Folders
     $rows = DB::query('SELECT id FROM ' . prefixTable('nested_tree') . ' WHERE personal_folder = %i', 0);
     foreach ($rows as $record) {
@@ -1259,7 +1257,7 @@ function prepareExchangedData($data, string $type, ?string $key = null)
             );
         } else {
             // Double html encoding received
-            $data = html_entity_decode(html_entity_decode($data));
+            $data = html_entity_decode(html_entity_decode(/** @scrutinizer ignore-type */$data)); // @codeCoverageIgnore Is always a string (not an array)
         }
 
         // Check if $data is a valid string before json_decode
@@ -2419,6 +2417,7 @@ function decryptUserObjectKey(string $key, string $privateKey): string
             throw new InvalidArgumentException("Error while decoding key.");
         }
 
+        // This check is needed as decrypt() in version 2 can return false in case of error
         $tmpValue = $rsa->decrypt($decodedKey);
         if ($tmpValue !== false) {
             return base64_encode($tmpValue);
@@ -2553,23 +2552,21 @@ function generateQuickPassword(int $length = 16, bool $symbolsincluded = true): 
  *
  * @param string $object_name             Type for table selection
  * @param int    $post_folder_is_personal Personal
- * @param int    $post_folder_id          Folder
  * @param int    $post_object_id          Object
  * @param string $objectKey               Object key
  * @param array  $SETTINGS                Teampass settings
  * @param int    $user_id                 User ID if needed
- * @param bool   $onlyForUser                 User ID if needed
- * @param bool   $deleteAll                 User ID if needed
- * @param array  $objectKeyArray                 User ID if needed
- * @param int    $all_users_except_id                 User ID if needed
- * @param int   $apiUserId                 User ID if needed
+ * @param bool   $onlyForUser             If is TRUE, then the sharekey is only for the user
+ * @param bool   $deleteAll               If is TRUE, then all existing entries are deleted
+ * @param array  $objectKeyArray          Array of objects
+ * @param int    $all_users_except_id     All users except this one
+ * @param int    $apiUserId               API User ID
  *
  * @return void
  */
 function storeUsersShareKey(
     string $object_name,
     int $post_folder_is_personal,
-    int $post_folder_id,
     int $post_object_id,
     string $objectKey,
     bool $onlyForUser = false,
@@ -2590,7 +2587,11 @@ function storeUsersShareKey(
             $post_object_id
         );
     }
+
+    // Get the user ID
+    $userId = ($apiUserId === -1) ? (int) $session->get('user-id') : $apiUserId;
     
+    // $onlyForUser is only dynamically set by external calls
     if (
         $onlyForUser === true || (int) $post_folder_is_personal === 1
     ) {
@@ -2598,8 +2599,9 @@ function storeUsersShareKey(
         $user = DB::queryFirstRow(
             'SELECT public_key
             FROM ' . prefixTable('users') . '
-            WHERE id = ' . ($apiUserId === -1 ? (int) $session->get('user-id') : $apiUserId) . '
-            AND public_key != ""'
+            WHERE id = %i
+            AND public_key != ""',
+            $userId
         );
 
         if (empty($objectKey) === false) {
@@ -2607,7 +2609,7 @@ function storeUsersShareKey(
                 $object_name,
                 [
                     'object_id' => (int) $post_object_id,
-                    'user_id' => (int) ($apiUserId === -1 ? (int) $session->get('user-id') : $apiUserId),
+                    'user_id' => $userId,
                     'share_key' => encryptUserObjectKey(
                         $objectKey,
                         $user['public_key']
@@ -2620,7 +2622,7 @@ function storeUsersShareKey(
                     $object_name,
                     [
                         'object_id' => (int) $object['objectId'],
-                        'user_id' => (int) ($apiUserId === -1 ? (int) $session->get('user-id') : $apiUserId),
+                        'user_id' => $userId,
                         'share_key' => encryptUserObjectKey(
                             $object['objectKey'],
                             $user['public_key']
@@ -2631,14 +2633,16 @@ function storeUsersShareKey(
         }
     } else {
         // Create sharekey for each user
-        //DB::debugmode(true);
+        $user_ids = [OTV_USER_ID, SSH_USER_ID, API_USER_ID];
+        if ($all_users_except_id !== -1) {
+            array_push($user_ids, $all_users_except_id . '"');
+        }
         $users = DB::query(
             'SELECT id, public_key
             FROM ' . prefixTable('users') . '
-            WHERE ' . ($onlyForUser === true ? 
-                'id IN ("' . TP_USER_ID . '","' . ($apiUserId === -1 ? (int) $session->get('user-id') : $apiUserId) . '") ' : 
-                'id NOT IN ("' . OTV_USER_ID . '","' . SSH_USER_ID . '","' . API_USER_ID . '"'.($all_users_except_id === -1 ? '' : ', "'.$all_users_except_id.'"').') ') . '
-            AND public_key != ""'
+            WHERE id NOT IN (%li)
+            AND public_key != ""',
+            $user_ids
         );
         //DB::debugmode(false);
         foreach ($users as $user) {

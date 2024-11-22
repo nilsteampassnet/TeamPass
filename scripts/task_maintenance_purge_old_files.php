@@ -73,11 +73,6 @@ function purgeTemporaryFiles(): void
     // Load expected files
     require_once __DIR__. '/../sources/main.functions.php';
 
-    // Verify if $SETTINGS is defined
-    if (isset($SETTINGS) === false) {
-        throw new \RuntimeException('Settings are not defined.');
-    }
-
     // $SETTINGS is set then read folder
     if (is_dir($SETTINGS['path_to_files_folder']) === true) {
         $dir = opendir($SETTINGS['path_to_files_folder']);
@@ -87,7 +82,7 @@ function purgeTemporaryFiles(): void
                 if ($f !== '.' && $f !== '..' && $f !== '.htaccess') {
                     $filePath = $SETTINGS['path_to_files_folder'] . '/' . $f;
                     if (file_exists($filePath) && ((time() - filectime($filePath)) > 604800)) {
-                        fileDelete($dir . '/' . $f, $SETTINGS);
+                        fileDelete($filePath, $SETTINGS);
                     }
                 }
             }

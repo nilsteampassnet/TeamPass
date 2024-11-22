@@ -73,9 +73,9 @@ $processToPerform = DB::queryfirstrow(
     'create_user_keys'
 );
 
-// Vérifie s'il y a une tâche à exécuter
+// Check if there is a task to execute
 if (DB::count() > 0) {
-    // Exécute ou continue la tâche
+    // Execute or continue the task
     subtasksHandler($processToPerform['increment_id'], $processToPerform['arguments']);
 }
 
@@ -99,11 +99,6 @@ function subtasksHandler($taskId, $taskArguments)
         // Exit
         return;
     }
-/*
-    $fichier = fopen(__DIR__.'/log.txt', 'a');
-    fwrite($fichier, 'Nouvelle iteration : '.count($subTasks)."\n");
-    fclose($fichier);
-    */
 
     foreach ($subTasks as $subTask) {
         // Launch the process for this subtask
@@ -113,12 +108,9 @@ function subtasksHandler($taskId, $taskArguments)
             // Extract the subtask parameters
             $subTaskParams = json_decode($subTask['task'], true);
 
-            error_log('Subtask in progress: '.$subTask['increment_id']." (".$taskId.") - ".print_r($subTaskParams,true));
-/*
-            $fichier = fopen(__DIR__.'/log.txt', 'a');
-            fwrite($fichier, 'Step : '.$subTaskParams['step']." - index : ".$subTaskParams['index']."\n");
-            fclose($fichier);
-            */
+            if (WIP === true) {
+                error_log('Subtask in progress: '.$subTask['increment_id']." (".$taskId.") - "./** @scrutinizer ignore-type */ print_r($subTaskParams,true));
+            }
             
             // Build all subtasks if first one
             if ((int) $subTaskParams['index'] === 0) {
@@ -169,7 +161,7 @@ function subtasksHandler($taskId, $taskArguments)
                 }
             }
             
-            // Lance la sous-tâche avec les paramètres actuels
+            // Launch the subtask with the current parameters
             $process = new Process(['php', __DIR__.'/background_tasks___userKeysCreation_subtaskHdl.php', $subTask['increment_id'], $subTaskParams['index'], $subTaskParams['nb'], $subTaskParams['step'], $taskArguments, $taskId]);
             $process->start();
             $pid = $process->getPid();
@@ -179,7 +171,7 @@ function subtasksHandler($taskId, $taskArguments)
             updateTask($taskId);
         }
     }
-    sleep(10); // Wait 20 seconds before continuing
+    sleep(10); // Wait 10 seconds before continuing
 
     // Recursively call this function until all subtasks are finished
     subtasksHandler($taskId, $taskArguments);
@@ -195,10 +187,6 @@ function createAllSubTasks($action, $totalElements, $elementsPerIteration, $task
         $taskId,
         $action
     );
-/*
-    $fichier = fopen(__DIR__.'/log.txt', 'a');
-    fwrite($fichier, 'Nombre records: SELECT * FROM ' . prefixTable('background_subtasks') . ' WHERE task LIKE "%%s%" - '.$action.' - '.DB::count()."\n");
-    fclose($fichier);*/
 
     if (DB::count() > 1) {
         return;
@@ -220,7 +208,7 @@ function createAllSubTasks($action, $totalElements, $elementsPerIteration, $task
 }
 
 function countActiveSymfonyProcesses() {
-    // Compter le nombre de processus actifs
+    // Count the number of active processes
     return DB::queryFirstField(
         'SELECT COUNT(*) FROM ' . prefixTable('background_subtasks') . 
         ' WHERE process_id IS NOT NULL AND finished_at IS NULL'
@@ -228,7 +216,7 @@ function countActiveSymfonyProcesses() {
 }
 
 /**
- * Fonction pour obtenir les sous-tâches d'une tâche
+ * Function to get the subtasks of a task
  */
 function getSubTasks($taskId) {
     $task_to_perform = DB::query(
@@ -243,10 +231,10 @@ function getSubTasks($taskId) {
 
 
 /**
- * Mise à jour d'une sous-tâche
+ * Update a subtask
  * 
- * @param int $subTaskId Identifiant de la sous-tâche
- * @param array $taskParams Paramètres de la tâche à mettre à jour
+ * @param int $subTaskId Subtask identifier
+ * @param array $taskParams Task parameters to update
  */
 function updateSubTask($subTaskId, $args) {
     if (empty($subTaskId) === true) {
@@ -255,9 +243,9 @@ function updateSubTask($subTaskId, $args) {
         }
         return;
     }
-    // Convertir les paramètres de la tâche en JSON
+    // Convert task parameters to JSON
     $query = [
-        'updated_at' => time(), // Mettre à jour la date de dernière modification
+        'updated_at' => time(), // Update the last modification date
         'is_in_progress' => 1,
         'sub_task_in_progress' => 1,
     ];
@@ -268,44 +256,44 @@ function updateSubTask($subTaskId, $args) {
         $query['process_id'] = $args['pid'];
     }
 
-    // Mettre à jour la sous-tâche dans la base de données
+    // Update the subtask in the database
     DB::update(prefixTable('background_subtasks'), $query, 'increment_id=%i', $subTaskId);
 }
 
 
 /**
- * Recharger les informations d'une sous-tâche depuis la base de données
+ * Reload subtask information from the database
  * 
- * @param int $subTaskId Identifiant de la sous-tâche
- * @return array Informations mises à jour de la sous-tâche
+ * @param int $subTaskId Subtask identifier
+ * @return array Updated subtask information
  */
 function reloadSubTask($subTaskId) {
-    // Récupérer les informations de la sous-tâche de la base de données
+    // Retrieve subtask information from the database
     $subTask = DB::queryFirstRow(
         'SELECT * FROM ' . prefixTable('background_subtasks') . ' WHERE increment_id = %i', 
         $subTaskId
     );
 
-    // Retourner les informations de la sous-tâche
+    // Return subtask information
     return $subTask;
 }
 
 function updateTask($taskId) {
-    // Mettre à jour la tâche dans la base de données
+    // Update the task in the database
     DB::update(prefixTable('background_tasks'), [
-        'updated_at' => time(), // Mettre à jour la date de dernière modification
-        'is_in_progress' => 1, // Mettre à jour le statut de la tâche
+        'updated_at' => time(), // Update the last modification date
+        'is_in_progress' => 1, // Update the task status
     ], 'increment_id=%i', $taskId);
 }
 
 
 /**
- * Marquer une tâche principale comme terminée
+ * Mark a main task as finished
  * 
- * @param int $taskId Identifiant de la tâche
+ * @param int $taskId Task identifier
  */
 function markTaskAsFinished($taskId, $userId = null) {
-    // Mettre à jour la tâche dans la base de données
+    // Update the task in the database
     DB::update(prefixTable('background_tasks'), [
         'finished_at' => time(),
         'arguments' => '{"new_user_id":'.$userId.'}',
@@ -314,7 +302,7 @@ function markTaskAsFinished($taskId, $userId = null) {
 }
 
 function markSubTaskAsFinished($subTaskId) {
-    // Mettre à jour la sous-tâche dans la base de données
+    // Update the subtask in the database
     DB::update(prefixTable('background_subtasks'), [
         'finished_at' => time(),
         'is_in_progress' => -1,
@@ -335,26 +323,18 @@ function serverProcessesHandler()
     foreach ($subtasks as $subtask) {
         $command = ['ps', '-p', $subtask['process_id']];
 
-        // Créer un nouveau processus pour exécuter la commande
+        // Create a new process to execute the command
         $process = new Process($command);
 
-        // Exécuter la commande
+        // Execute the command
         $process->run();
 
-        // Récupérer la sortie du processus
+        // Retrieve the process output
         $output = $process->getOutput();
-/*
-        $fichier = fopen(__DIR__.'/log.txt', 'a');
-        fwrite($fichier, 'Processs existe : '.strpos($output, $subtask['process_id'].' ')." \n");
-        fclose($fichier);*/
 
-        // Vérifier si le processus est en cours d'exécution en vérifiant le code de sortie
+        // Check if the process is still running by checking the exit code
         if (strpos($output, $subtask['process_id'].' ') === false) {
             markSubTaskAsFinished($subtask['increment_id']);
-/*
-            $fichier = fopen(__DIR__.'/log.txt', 'a');
-            fwrite($fichier, 'Killing process: '.$subtask['increment_id']." \n");
-            fclose($fichier);*/
         }
     }
 }
