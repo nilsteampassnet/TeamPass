@@ -183,6 +183,14 @@ $inputData = dataSanitizer(
     $filters
 );
 
+// List of teampass users ids (and current user id).
+$tpUsersIDs = [
+    OTV_USER_ID,
+    SSH_USER_ID,
+    API_USER_ID,
+    $session->get('user-id'),
+];
+
 // Do asked action
 switch ($inputData['type']) {
     /*
@@ -647,7 +655,13 @@ switch ($inputData['type']) {
                     if (empty($data['restricted_to']) === false) {
                         foreach (explode(';', $data['restricted_to']) as $userRest) {
                             if (empty($userRest) === false) {
-                                $dataTmp = DB::queryfirstrow('SELECT login FROM ' . prefixTable('users') . ' WHERE id= ' . $userRest);
+                                $dataTmp = DB::queryfirstrow(
+                                    'SELECT login
+                                    FROM ' . prefixTable('users') . '
+                                    WHERE id= %i',
+                                    $userRest
+                                );
+
                                 if (empty($oldRestrictionList) === true) {
                                     $oldRestrictionList = $dataTmp['login'];
                                 } else {
@@ -3082,7 +3096,12 @@ switch ($inputData['type']) {
             if (empty($dataItem['restricted_to']) === false) {
                 foreach (explode(';', $dataItem['restricted_to']) as $userRest) {
                     if (empty($userRest) === false) {
-                        $dataTmp = DB::queryfirstrow('SELECT login FROM ' . prefixTable('users') . ' WHERE id= ' . $userRest);
+                        $dataTmp = DB::queryfirstrow(
+                            'SELECT login
+                            FROM ' . prefixTable('users') . '
+                            WHERE id= %i',
+                            $userRest
+                        );
                         if (empty($listOfRestricted)) {
                             $listOfRestricted = $dataTmp['login'];
                         } else {
@@ -5225,9 +5244,11 @@ switch ($inputData['type']) {
                 $users = DB::query(
                     'SELECT id, public_key
                     FROM ' . prefixTable('users') . '
-                    WHERE id NOT IN ("' . OTV_USER_ID . '","' . SSH_USER_ID . '","' . API_USER_ID . '","' . $session->get('user-id') . '")
-                    AND public_key != ""'
+                    WHERE id NOT IN %li
+                    AND public_key != ""',
+                    $tpUsersIDs
                 );
+
                 foreach ($users as $user) {
                     // Insert in DB the new object key for this item by user
                     DB::insert(
@@ -5264,8 +5285,9 @@ switch ($inputData['type']) {
                     $users = DB::query(
                         'SELECT id, public_key
                         FROM ' . prefixTable('users') . '
-                        WHERE id NOT IN ("' . OTV_USER_ID . '","' . SSH_USER_ID . '","' . API_USER_ID . '","' . $session->get('user-id') . '")
-                        AND public_key != ""'
+                        WHERE id NOT IN %li
+                        AND public_key != ""',
+                        $tpUsersIDs
                     );
                     foreach ($users as $user) {
                         // Insert in DB the new object key for this item by user
@@ -5304,9 +5326,11 @@ switch ($inputData['type']) {
                     $users = DB::query(
                         'SELECT id, public_key
                         FROM ' . prefixTable('users') . '
-                        WHERE id NOT IN ("' . OTV_USER_ID . '","' . SSH_USER_ID . '","' . API_USER_ID . '","' . $session->get('user-id') . '")
-                        AND public_key != ""'
+                        WHERE id NOT IN %li
+                        AND public_key != ""',
+                        $tpUsersIDs
                     );
+
                     foreach ($users as $user) {
                         // Insert in DB the new object key for this item by user
                         DB::insert(
@@ -5550,9 +5574,11 @@ switch ($inputData['type']) {
                         $users = DB::query(
                             'SELECT id, public_key
                             FROM ' . prefixTable('users') . '
-                            WHERE id NOT IN ("' . OTV_USER_ID . '","' . SSH_USER_ID . '","' . API_USER_ID . '","' . $session->get('user-id') . '")
-                            AND public_key != ""'
+                            WHERE id NOT IN %li
+                            AND public_key != ""',
+                            $tpUsersIDs
                         );
+
                         foreach ($users as $user) {
                             // Insert in DB the new object key for this item by user
                             DB::insert(
@@ -5589,9 +5615,11 @@ switch ($inputData['type']) {
                             $users = DB::query(
                                 'SELECT id, public_key
                                 FROM ' . prefixTable('users') . '
-                                WHERE id NOT IN ("' . OTV_USER_ID . '","' . SSH_USER_ID . '","' . API_USER_ID . '","' . $session->get('user-id') . '")
-                                AND public_key != ""'
+                                WHERE id NOT IN %li
+                                AND public_key != ""',
+                                $tpUsersIDs
                             );
+
                             foreach ($users as $user) {
                                 // Insert in DB the new object key for this item by user
                                 DB::insert(
@@ -5629,9 +5657,11 @@ switch ($inputData['type']) {
                             $users = DB::query(
                                 'SELECT id, public_key
                                 FROM ' . prefixTable('users') . '
-                                WHERE id NOT IN ("' . OTV_USER_ID . '","' . SSH_USER_ID . '","' . API_USER_ID . '","' . $session->get('user-id') . '")
-                                AND public_key != ""'
+                                WHERE id NOT IN %li
+                                AND public_key != ""',
+                                $tpUsersIDs
                             );
+
                             foreach ($users as $user) {
                                 // Insert in DB the new object key for this item by user
                                 DB::insert(
@@ -5835,8 +5865,19 @@ switch ($inputData['type']) {
         }
         if ($inputData['cat'] === 'request_access_to_author') {
             // Variables
-            $dataAuthor = DB::queryfirstrow('SELECT email,login FROM ' . prefixTable('users') . ' WHERE id = ' . $post_content[1]);
-            $dataItem = DB::queryfirstrow('SELECT label, id_tree FROM ' . prefixTable('items') . ' WHERE id = ' . $post_content[0]);
+            $dataAuthor = DB::queryfirstrow(
+                'SELECT email,login
+                FROM ' . prefixTable('users') . '
+                WHERE id = %i',
+                $post_content[1]
+            );
+
+            $dataItem = DB::queryfirstrow(
+                'SELECT label, id_tree
+                FROM ' . prefixTable('items') . '
+                WHERE id = %i',
+                $post_content[0]
+            );
 
             // Get path
             $path = geItemReadablePath(
@@ -5903,60 +5944,9 @@ switch ($inputData['type']) {
         break;
 
     /*
-    * CASE
-    * manage notification of an Item
-    */
-    /*
-    case 'notify_a_user':
-        if ($inputData['key'] !== $session->get('key')) {
-            echo '[{"error" : "something_wrong"}]';
-            break;
-        }
-        if ($inputData['notifyType'] === 'on_show') {
-            // Check if values already exist
-            $data = DB::queryfirstrow(
-                'SELECT notification FROM ' . prefixTable('items') . ' WHERE id = %i',
-                $inputData['itemId']
-            );
-            $notifiedUsers = explode(';', $data['notification']);
-            // User is not in actual notification list
-            if ($inputData['status'] === 'true' && !in_array($inputData['userId'], $notifiedUsers)) {
-                // User is not in actual notification list and wants to be notified
-                DB::update(
-                    prefixTable('items'),
-                    array(
-                        'notification' => empty($data['notification']) ?
-                            $inputData['userId'] . ';'
-                            : $data['notification'] . $inputData['userId'] ,
-                    ),
-                    'id=%i',
-                    $inputData['itemId']
-                );
-                echo '[{"error" : "", "new_status":"true"}]';
-                break;
-            }
-            if ($inputData['status'] === 'false' && in_array($inputData['userId'], $notifiedUsers)) {
-                // TODO : delete user from array and store in DB
-                // User is in actual notification list and doesn't want to be notified
-                DB::update(
-                    prefixTable('items'),
-                    array(
-                        'notification' => empty($data['notification']) ?
-                        $inputData['userId']
-                            : $data['notification'] . ';' . $inputData['userId'],
-                    ),
-                    'id=%i',
-                    $inputData['itemId']
-                );
-            }
-        }
-        break;
-    */
-
-        /*
-    * CASE
-    * Item History Log - add new entry
-    */
+     * CASE
+     * Item History Log - add new entry
+     */
     case 'history_entry_add':
         if ($inputData['key'] !== $session->get('key')) {
             $data = array('error' => 'key_is_wrong');
@@ -6057,30 +6047,10 @@ switch ($inputData['type']) {
         );
         break;
 
-        /*
-    * CASE
-    * Check if Item has been changed since loaded
-    */
     /*
-    case 'is_item_changed':
-        $data = DB::queryFirstRow(
-            'SELECT date FROM ' . prefixTable('log_items') . ' WHERE action = %s AND id_item = %i ORDER BY date DESC',
-            'at_modification',
-            $inputData['itemId']
-        );
-        // Check if it's in a personal folder. If yes, then force complexity overhead.
-        if ((int) $data['date'] > (int) $inputData['timestamp']) {
-            echo '{ "modified" : "1" }';
-        } else {
-            echo '{ "modified" : "0" }';
-        }
-        break;
-        */
-
-        /*
-    * CASE
-    * Check if Item has been changed since loaded
-    */
+     * CASE
+     * Check if Item has been changed since loaded
+     */
     case 'generate_OTV_url':
         // Check KEY
         if ($inputData['key'] !== $session->get('key')) {
@@ -6095,10 +6065,11 @@ switch ($inputData['type']) {
         );
 
         // delete all existing old otv codes
-        $rows = DB::query('SELECT id FROM ' . prefixTable('otv') . ' WHERE time_limit < ' . time());
-        foreach ($rows as $record) {
-            DB::delete(prefixTable('otv'), 'id=%i', $record['id']);
-        }
+        DB::delete(
+            prefixTable('otv'),
+            'time_limit < %i',
+            time()
+        );
 
         // generate session
         $otv_code = GenerateCryptKey(32, false, true, true, false, true);

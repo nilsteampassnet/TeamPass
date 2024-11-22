@@ -99,21 +99,46 @@ if ($session->get('user-admin') === 1) {
 // prepare list of timezones
 $zones = timezone_list();
 // prepare list of languages
-$languages = DB::query('SELECT label, name FROM ' . prefixTable('languages') . ' ORDER BY label ASC');
+$languages = DB::query(
+    'SELECT label, name FROM ' . prefixTable('languages') . ' ORDER BY label ASC'
+);
+
 // Do some stats
-DB::query('SELECT id_item FROM ' . prefixTable('log_items') . ' WHERE action = "at_creation" AND  id_user = "' . $session->get('user-id') . '"');
-$userItemsNumber = DB::count();
-DB::query('SELECT id_item FROM ' . prefixTable('log_items') . ' WHERE action = "at_modification" AND  id_user = "' . $session->get('user-id') . '"');
-$userModificationNumber = DB::count();
-DB::query('SELECT id_item FROM ' . prefixTable('log_items') . ' WHERE action = "at_shown" AND  id_user = "' . $session->get('user-id') . '"');
-$userSeenItemsNumber = DB::count();
-DB::query('SELECT id_item FROM ' . prefixTable('log_items') . ' WHERE action = "at_password_shown" AND  id_user = "' . $session->get('user-id') . '"');
-$userSeenPasswordsNumber = DB::count();
+$userItemsNumber = DB::queryFirstField(
+    'SELECT COUNT(id_item) as count
+    FROM ' . prefixTable('log_items') . '
+    WHERE action = "at_creation" AND  id_user = %i',
+    $session->get('user-id')
+);
+
+$userModificationNumber = DB::queryFirstField(
+    'SELECT COUNT(id_item) as count
+    FROM ' . prefixTable('log_items') . '
+    WHERE action = "at_modification" AND  id_user = %i',
+    $session->get('user-id')
+);
+
+$userSeenItemsNumber = DB::queryFirstField(
+    'SELECT COUNT(id_item) as count
+    FROM ' . prefixTable('log_items') . '
+    WHERE action = "at_shown" AND  id_user = %i',
+    $session->get('user-id')
+);
+
+$userSeenPasswordsNumber = DB::queryFirstField(
+    'SELECT COUNT(id_item)
+    FROM ' . prefixTable('log_items') . '
+    WHERE action = "at_password_shown" AND  id_user = %i',
+    $session->get('user-id')
+);
+
 $userInfo = DB::queryFirstRow(
     'SELECT avatar, last_pw_change
     FROM ' . prefixTable('users') . ' 
-    WHERE id = "' . $session->get('user-id') . '"'
+    WHERE id = %i',
+    $session->get('user-id')
 );
+
 if (empty($userInfo['avatar']) === true) {
     $avatar = $SETTINGS['cpassman_url'] . '/includes/images/photo.jpg';
 } else {
@@ -126,7 +151,8 @@ foreach ($session->get('user-roles_array') as $role) {
     $tmp = DB::queryFirstRow(
         'SELECT title 
         FROM ' . prefixTable('roles_title') . ' 
-        WHERE id = "' . $role . '"'
+        WHERE id = %i',
+        $role
     );
     if ($tmp !== null) {
         array_push($userParOfGroups, $tmp['title']);
