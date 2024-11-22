@@ -607,7 +607,7 @@ foreach ($replacements as $search => $replace) {
 // Remove unused no_bad_attempts field
 try {
     $alter_table_query = "
-        ALTER TABLE `" . $var['tbl_prefix'] . "users`
+        ALTER TABLE `" . $pre . "users`
         DROP COLUMN `no_bad_attempts`";
     mysqli_begin_transaction($db_link);
     mysqli_query($db_link, $alter_table_query);
@@ -620,7 +620,7 @@ try {
 // Table used to store authentication failures
 mysqli_query(
     $db_link,
-    "CREATE TABLE IF NOT EXISTS `" . $var['tbl_prefix'] . "auth_failures` (
+    "CREATE TABLE IF NOT EXISTS `" . $pre . "auth_failures` (
     `id` int(12) NOT NULL AUTO_INCREMENT,
     `source` ENUM('login', 'remote_ip') NOT NULL,
     `value` VARCHAR(500) NOT NULL,
