@@ -799,11 +799,7 @@ $zones = timezone_list();
                                             $arrRolesToPrint = [];
                                         }
                                         // Get full list
-                                        $roles = performDBQuery(
-                                            $SETTINGS,
-                                            'id, title',
-                                            'roles_title'
-                                        );
+                                        $roles = getRolesTitles();
                                         foreach ($roles as $role) {
                                             echo '
                                     <option value="' . htmlspecialchars($role['id']) . '"', in_array($role['id'], $arrRolesToPrint) === true ? ' selected' : '', '>' . htmlspecialchars(addslashes($role['title'])) . '</option>';

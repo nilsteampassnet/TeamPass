@@ -2174,26 +2174,19 @@ function obfuscateEmail(string $email): string
 }
 
 /**
- * Perform a Query.
- *
- * @param array  $SETTINGS Teamapss settings
- * @param string $fields   Fields to use
- * @param string $table    Table to use
+ * Get id and title from role_titles table.
  *
  * @return array
  */
-function performDBQuery(array $SETTINGS, string $fields, string $table): array
+function getRolesTitles(): array
 {
-    // include librairies & connect to DB
-    //include_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
-
     // Load class DB
     loadClasses('DB');
     
     // Insert log in DB
     return DB::query(
-        'SELECT ' . $fields . '
-        FROM ' . prefixTable($table)
+        'SELECT id, title
+        FROM ' . prefixTable('roles_title')
     );
 }
 
@@ -4385,36 +4378,6 @@ function convertPasswordStrength($passwordStrength): int
     } else {
         return TP_PW_STRENGTH_5;
     }
-}
-
-/**
- * Vérifie si les IDs d'un tableau existent bien dans la table.
- *
- * @param array $ids - Tableau d'IDs à vérifier
- * @param string $tableName - Nom de la table dans laquelle vérifier les IDs
- * @param string $fieldName - Nom du champ dans lequel vérifier les IDs
- * @return array - IDs qui n'existent pas dans la table
- */
-function checkIdsExist(array $ids, string $tableName, string $fieldName) : array
-{
-    // Assure-toi que le tableau d'IDs n'est pas vide
-    if (empty($ids)) {
-        return [];
-    }
-
-    // Nettoyage des IDs pour éviter les injections SQL
-    $ids = array_map('intval', $ids);  // Assure que chaque ID est un entier
-
-    // Construction de la requête SQL pour vérifier les IDs dans la table
-    $result = DB::query('SELECT id FROM ' . prefixTable($tableName) . ' WHERE ' . $fieldName . ' IN %li', $ids);
-
-    // Extraire les IDs existants de la table
-    $existingIds = array_column($result, 'id');
-
-    // Trouver les IDs manquants en comparant les deux tableaux
-    $missingIds = array_diff($ids, $existingIds);
-
-    return $missingIds; // Renvoie les IDs qui n'existent pas dans la table
 }
 
 /**
