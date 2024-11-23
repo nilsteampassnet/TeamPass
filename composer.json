@@ -126,6 +126,13 @@
             "options": {
                 "symlink": false
             }
+        },
+        {
+            "type": "path",
+            "url": "includes/libraries/teampassclasses/folderservices",
+            "options": {
+                "symlink": false
+            }
         }
     ],
     "require": {
@@ -149,7 +156,7 @@
         "teampassclasses/oauth2controller": "dev-master",
         "teampassclasses/configmanager": "dev-master",
         "teampassclasses/emailservice": "dev-master",
-        "teampassclasses/FolderServices": "dev-master",
+        "teampassclasses/folderservices": "dev-master",
         "illuminate/contracts": "^10.32",
         "illuminate/collections": "^10.48",
         "nesbot/carbon": "^2.71",

@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace ZxcvbnPhp\Matchers;
 
-use JetBrains\PhpStorm\ArrayShape;
-
+/** @phpstan-consistent-constructor */
 class SequenceMatch extends BaseMatch
 {
     public const MAX_DELTA = 5;
@@ -87,7 +86,9 @@ class SequenceMatch extends BaseMatch
         }
     }
 
-    #[ArrayShape(['warning' => 'string', 'suggestions' => 'string[]'])]
+    /**
+     * @return array{'warning': string, "suggestions": string[]}
+     */
     public function getFeedback(bool $isSoleMatch): array
     {
         return [

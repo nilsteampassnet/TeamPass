@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace ZxcvbnPhp\Matchers;
 
-use JetBrains\PhpStorm\ArrayShape;
 use ZxcvbnPhp\Matcher;
 use ZxcvbnPhp\Math\Binomial;
 
+/** @phpstan-consistent-constructor */
 class DictionaryMatch extends BaseMatch
 {
     public $pattern = 'dictionary';
@@ -88,10 +88,8 @@ class DictionaryMatch extends BaseMatch
     }
 
     /**
-     * @param bool $isSoleMatch
-     * @return array
+     * @return array{'warning': string, "suggestions": string[]}
      */
-    #[ArrayShape(['warning' => 'string', 'suggestions' => 'string[]'])]
     public function getFeedback(bool $isSoleMatch): array
     {
         $startUpper = '/^[A-Z][^A-Z]+$/u';

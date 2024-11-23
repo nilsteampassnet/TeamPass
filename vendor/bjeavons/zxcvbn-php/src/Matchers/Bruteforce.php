@@ -4,16 +4,9 @@ declare(strict_types=1);
 
 namespace ZxcvbnPhp\Matchers;
 
-use JetBrains\PhpStorm\ArrayShape;
 use ZxcvbnPhp\Scorer;
 
-/**
- * Class Bruteforce
- * @package ZxcvbnPhp\Matchers
- *
- * Intentionally not named with Match suffix to prevent autoloading from Matcher.
- */
-class Bruteforce extends BaseMatch
+final class Bruteforce extends BaseMatch
 {
     public const BRUTEFORCE_CARDINALITY = 10;
 
@@ -32,7 +25,9 @@ class Bruteforce extends BaseMatch
     }
 
 
-    #[ArrayShape(['warning' => 'string', 'suggestions' => 'string[]'])]
+    /**
+     * @return array{'warning': string, "suggestions": string[]}
+     */
     public function getFeedback(bool $isSoleMatch): array
     {
         return [

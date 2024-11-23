@@ -7,7 +7,7 @@ $baseDir = dirname($vendorDir);
 
 return array(
     'voku\\helper\\' => array($vendorDir . '/voku/anti-xss/src/voku/helper'),
-    'voku\\' => array($vendorDir . '/voku/portable-ascii/src/voku', $vendorDir . '/voku/portable-utf8/src/voku'),
+    'voku\\' => array($vendorDir . '/voku/portable-utf8/src/voku', $vendorDir . '/voku/portable-ascii/src/voku'),
     'ZxcvbnPhp\\' => array($vendorDir . '/bjeavons/zxcvbn-php/src'),
     'Webmozart\\Assert\\' => array($vendorDir . '/webmozart/assert/src'),
     'TiBeN\\' => array($vendorDir . '/tiben/crontab-manager/src'),
@@ -20,6 +20,7 @@ return array(
     'TeampassClasses\\NestedTree\\' => array($vendorDir . '/teampassclasses/nestedtree/src'),
     'TeampassClasses\\LdapExtra\\' => array($vendorDir . '/teampassclasses/ldapextra/src'),
     'TeampassClasses\\Language\\' => array($vendorDir . '/teampassclasses/language/src'),
+    'TeampassClasses\\FolderServices\\' => array($vendorDir . '/teampassclasses/folderservices/src'),
     'TeampassClasses\\Encryption\\' => array($vendorDir . '/teampassclasses/encryption/src'),
     'TeampassClasses\\EmailService\\' => array($vendorDir . '/teampassclasses/emailservice/src'),
     'TeampassClasses\\ConfigManager\\' => array($vendorDir . '/teampassclasses/configmanager/src'),

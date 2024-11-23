@@ -58,6 +58,7 @@ class ComposerStaticInite3f3ee27f81ca21f7bd7499d7b935c11
             'TeampassClasses\\NestedTree\\' => 27,
             'TeampassClasses\\LdapExtra\\' => 26,
             'TeampassClasses\\Language\\' => 25,
+            'TeampassClasses\\FolderServices\\' => 31,
             'TeampassClasses\\Encryption\\' => 27,
             'TeampassClasses\\EmailService\\' => 29,
             'TeampassClasses\\ConfigManager\\' => 30,
@@ -192,8 +193,8 @@ class ComposerStaticInite3f3ee27f81ca21f7bd7499d7b935c11
         ),
         'voku\\' => 
         array (
-            0 => __DIR__ . '/..' . '/voku/portable-ascii/src/voku',
-            1 => __DIR__ . '/..' . '/voku/portable-utf8/src/voku',
+            0 => __DIR__ . '/..' . '/voku/portable-utf8/src/voku',
+            1 => __DIR__ . '/..' . '/voku/portable-ascii/src/voku',
         ),
         'ZxcvbnPhp\\' => 
         array (
@@ -242,6 +243,10 @@ class ComposerStaticInite3f3ee27f81ca21f7bd7499d7b935c11
         'TeampassClasses\\Language\\' => 
         array (
             0 => __DIR__ . '/..' . '/teampassclasses/language/src',
+        ),
+        'TeampassClasses\\FolderServices\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/teampassclasses/folderservices/src',
         ),
         'TeampassClasses\\Encryption\\' => 
         array (
@@ -2851,6 +2856,10 @@ class ComposerStaticInite3f3ee27f81ca21f7bd7499d7b935c11
         'TeampassClasses\\EmailService\\EmailService' => __DIR__ . '/..' . '/teampassclasses/emailservice/src/EmailService.php',
         'TeampassClasses\\EmailService\\EmailSettings' => __DIR__ . '/..' . '/teampassclasses/emailservice/src/EmailSettings.php',
         'TeampassClasses\\Encryption\\Encryption' => __DIR__ . '/..' . '/teampassclasses/encryption/src/Encryption.php',
+        'TeampassClasses\\FolderServices\\FolderCacheUpdater' => __DIR__ . '/..' . '/teampassclasses/folderservices/src/FolderCacheUpdater.php',
+        'TeampassClasses\\FolderServices\\FolderComplexityService' => __DIR__ . '/..' . '/teampassclasses/folderservices/src/FolderComplexityService.php',
+        'TeampassClasses\\FolderServices\\FolderCreationService' => __DIR__ . '/..' . '/teampassclasses/folderservices/src/FolderCreationService.php',
+        'TeampassClasses\\FolderServices\\FolderPermissionChecker' => __DIR__ . '/..' . '/teampassclasses/folderservices/src/FolderPermissionChecker.php',
         'TeampassClasses\\Language\\Language' => __DIR__ . '/..' . '/teampassclasses/language/src/Language.php',
         'TeampassClasses\\LdapExtra\\ActiveDirectoryExtra' => __DIR__ . '/..' . '/teampassclasses/ldapextra/src/ActiveDirectoryExtra.php',
         'TeampassClasses\\LdapExtra\\LdapExtra' => __DIR__ . '/..' . '/teampassclasses/ldapextra/src/LdapExtra.php',

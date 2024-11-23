@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace ZxcvbnPhp\Matchers;
 
-use JetBrains\PhpStorm\ArrayShape;
 use ZxcvbnPhp\Matcher;
 use ZxcvbnPhp\Math\Binomial;
 
@@ -98,7 +97,9 @@ class L33tMatch extends DictionaryMatch
         }
     }
 
-    #[ArrayShape(['warning' => 'string', 'suggestions' => 'string[]'])]
+    /**
+     * @return array{'warning': string, "suggestions": string[]}
+     */
     public function getFeedback(bool $isSoleMatch): array
     {
         $feedback = parent::getFeedback($isSoleMatch);

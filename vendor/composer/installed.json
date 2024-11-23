@@ -2,17 +2,17 @@
     "packages": [
         {
             "name": "bjeavons/zxcvbn-php",
-            "version": "1.3.1",
-            "version_normalized": "1.3.1.0",
+            "version": "1.4.1",
+            "version_normalized": "1.4.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/bjeavons/zxcvbn-php.git",
-                "reference": "994928ae5b17ecff8baa2406832d37bdf01116c0"
+                "reference": "603e015f2c81118a8f42930140311d125eba6f8a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/bjeavons/zxcvbn-php/zipball/994928ae5b17ecff8baa2406832d37bdf01116c0",
-                "reference": "994928ae5b17ecff8baa2406832d37bdf01116c0",
+                "url": "https://api.github.com/repos/bjeavons/zxcvbn-php/zipball/603e015f2c81118a8f42930140311d125eba6f8a",
+                "reference": "603e015f2c81118a8f42930140311d125eba6f8a",
                 "shasum": ""
             },
             "require": {
@@ -22,13 +22,14 @@
             },
             "require-dev": {
                 "php-coveralls/php-coveralls": "*",
+                "phpstan/phpstan": "^2.0",
                 "phpunit/phpunit": "^8.5",
                 "squizlabs/php_codesniffer": "3.*"
             },
             "suggest": {
                 "ext-gmp": "Required for optimized binomial calculations (also requires PHP >= 7.3)"
             },
-            "time": "2021-12-21T18:37:02+00:00",
+            "time": "2024-11-21T22:10:41+00:00",
             "type": "library",
             "installation-source": "dist",
             "autoload": {
@@ -54,7 +55,7 @@
             ],
             "support": {
                 "issues": "https://github.com/bjeavons/zxcvbn-php/issues",
-                "source": "https://github.com/bjeavons/zxcvbn-php/tree/1.3.1"
+                "source": "https://github.com/bjeavons/zxcvbn-php/tree/1.4.1"
             },
             "install-path": "../bjeavons/zxcvbn-php"
         },
@@ -350,17 +351,17 @@
         },
         {
             "name": "composer/composer",
-            "version": "2.8.2",
-            "version_normalized": "2.8.2.0",
+            "version": "2.8.3",
+            "version_normalized": "2.8.3.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/composer/composer.git",
-                "reference": "6e543d03187c882ea1c6ba43add2467754427803"
+                "reference": "2a7c71266b2545a3bed9f4860734081963f6e688"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/composer/composer/zipball/6e543d03187c882ea1c6ba43add2467754427803",
-                "reference": "6e543d03187c882ea1c6ba43add2467754427803",
+                "url": "https://api.github.com/repos/composer/composer/zipball/2a7c71266b2545a3bed9f4860734081963f6e688",
+                "reference": "2a7c71266b2545a3bed9f4860734081963f6e688",
                 "shasum": ""
             },
             "require": {
@@ -374,7 +375,7 @@
                 "justinrainbow/json-schema": "^5.3",
                 "php": "^7.2.5 || ^8.0",
                 "psr/log": "^1.0 || ^2.0 || ^3.0",
-                "react/promise": "^3.2",
+                "react/promise": "^2.11 || ^3.2",
                 "seld/jsonlint": "^1.4",
                 "seld/phar-utils": "^1.2",
                 "seld/signal-handler": "^2.0",
@@ -399,7 +400,7 @@
                 "ext-zip": "Enabling the zip extension allows you to unzip archives",
                 "ext-zlib": "Allow gzip compression of HTTP requests"
             },
-            "time": "2024-10-29T15:12:11+00:00",
+            "time": "2024-11-17T12:13:04+00:00",
             "bin": [
                 "bin/composer"
             ],
@@ -447,7 +448,7 @@
                 "irc": "ircs://irc.libera.chat:6697/composer",
                 "issues": "https://github.com/composer/composer/issues",
                 "security": "https://github.com/composer/composer/security/policy",
-                "source": "https://github.com/composer/composer/tree/2.8.2"
+                "source": "https://github.com/composer/composer/tree/2.8.3"
             },
             "funding": [
                 {
@@ -2104,8 +2105,8 @@
         },
         {
             "name": "illuminate/collections",
-            "version": "v10.48.23",
-            "version_normalized": "10.48.23.0",
+            "version": "v10.48.24",
+            "version_normalized": "10.48.24.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/collections.git",
@@ -2162,8 +2163,8 @@
         },
         {
             "name": "illuminate/conditionable",
-            "version": "v10.48.23",
-            "version_normalized": "10.48.23.0",
+            "version": "v10.48.24",
+            "version_normalized": "10.48.24.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/conditionable.git",
@@ -2211,8 +2212,8 @@
         },
         {
             "name": "illuminate/container",
-            "version": "v10.48.23",
-            "version_normalized": "10.48.23.0",
+            "version": "v10.48.24",
+            "version_normalized": "10.48.24.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/container.git",
@@ -2265,8 +2266,8 @@
         },
         {
             "name": "illuminate/contracts",
-            "version": "v10.48.23",
-            "version_normalized": "10.48.23.0",
+            "version": "v10.48.24",
+            "version_normalized": "10.48.24.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/contracts.git",
@@ -2316,8 +2317,8 @@
         },
         {
             "name": "illuminate/filesystem",
-            "version": "v10.48.23",
-            "version_normalized": "10.48.23.0",
+            "version": "v10.48.24",
+            "version_normalized": "10.48.24.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/filesystem.git",
@@ -2386,8 +2387,8 @@
         },
         {
             "name": "illuminate/macroable",
-            "version": "v10.48.23",
-            "version_normalized": "10.48.23.0",
+            "version": "v10.48.24",
+            "version_normalized": "10.48.24.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/macroable.git",
@@ -2435,8 +2436,8 @@
         },
         {
             "name": "illuminate/support",
-            "version": "v10.48.23",
-            "version_normalized": "10.48.23.0",
+            "version": "v10.48.24",
+            "version_normalized": "10.48.24.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/support.git",
@@ -2509,8 +2510,8 @@
         },
         {
             "name": "illuminate/translation",
-            "version": "v10.48.23",
-            "version_normalized": "10.48.23.0",
+            "version": "v10.48.24",
+            "version_normalized": "10.48.24.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/translation.git",
@@ -2563,8 +2564,8 @@
         },
         {
             "name": "illuminate/validation",
-            "version": "v10.48.23",
-            "version_normalized": "10.48.23.0",
+            "version": "v10.48.24",
+            "version_normalized": "10.48.24.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/validation.git",
@@ -6670,6 +6671,43 @@
             "install-path": "../teampassclasses/encryption"
         },
         {
+            "name": "teampassclasses/folderservices",
+            "version": "dev-master",
+            "version_normalized": "dev-master",
+            "dist": {
+                "type": "path",
+                "url": "includes/libraries/teampassclasses/folderservices",
+                "reference": "737c43b0e11b6d6f15ae63fda23d87548cc87fc9"
+            },
+            "require": {
+                "php": "^8.1"
+            },
+            "type": "library",
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "TeampassClasses\\FolderServices\\": "src/"
+                }
+            },
+            "license": [
+                "GPL-3.0-only"
+            ],
+            "authors": [
+                {
+                    "name": "Nils Laumaillé"
+                }
+            ],
+            "description": "Handle the folder management.",
+            "keywords": [
+                "folder"
+            ],
+            "transport-options": {
+                "symlink": false,
+                "relative": true
+            },
+            "install-path": "../teampassclasses/folderservices"
+        },
+        {
             "name": "teampassclasses/language",
             "version": "dev-master",
             "version_normalized": "dev-master",
@@ -7246,17 +7284,17 @@
         },
         {
             "name": "voku/portable-ascii",
-            "version": "2.0.1",
-            "version_normalized": "2.0.1.0",
+            "version": "2.0.3",
+            "version_normalized": "2.0.3.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/voku/portable-ascii.git",
-                "reference": "b56450eed252f6801410d810c8e1727224ae0743"
+                "reference": "b1d923f88091c6bf09699efcd7c8a1b1bfd7351d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/voku/portable-ascii/zipball/b56450eed252f6801410d810c8e1727224ae0743",
-                "reference": "b56450eed252f6801410d810c8e1727224ae0743",
+                "url": "https://api.github.com/repos/voku/portable-ascii/zipball/b1d923f88091c6bf09699efcd7c8a1b1bfd7351d",
+                "reference": "b1d923f88091c6bf09699efcd7c8a1b1bfd7351d",
                 "shasum": ""
             },
             "require": {
@@ -7268,7 +7306,7 @@
             "suggest": {
                 "ext-intl": "Use Intl for transliterator_transliterate() support"
             },
-            "time": "2022-03-08T17:03:00+00:00",
+            "time": "2024-11-21T01:49:47+00:00",
             "type": "library",
             "installation-source": "dist",
             "autoload": {
@@ -7283,7 +7321,7 @@
             "authors": [
                 {
                     "name": "Lars Moelleken",
-                    "homepage": "http://www.moelleken.org/"
+                    "homepage": "https://www.moelleken.org/"
                 }
             ],
             "description": "Portable ASCII library - performance optimized (ascii) string functions for php.",
@@ -7295,7 +7333,7 @@
             ],
             "support": {
                 "issues": "https://github.com/voku/portable-ascii/issues",
-                "source": "https://github.com/voku/portable-ascii/tree/2.0.1"
+                "source": "https://github.com/voku/portable-ascii/tree/2.0.3"
             },
             "funding": [
                 {

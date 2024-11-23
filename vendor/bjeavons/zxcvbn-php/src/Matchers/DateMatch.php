@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace ZxcvbnPhp\Matchers;
 
-use JetBrains\PhpStorm\ArrayShape;
 use ZxcvbnPhp\Matcher;
 
+/** @phpstan-consistent-constructor */
 class DateMatch extends BaseMatch
 {
     public const NUM_YEARS = 119; // Years match against 1900 - 2019
@@ -108,7 +108,9 @@ class DateMatch extends BaseMatch
         return $matches;
     }
 
-    #[ArrayShape(['warning' => 'string', 'suggestions' => 'string[]'])]
+    /**
+     * @return array{'warning': string, "suggestions": string[]}
+     */
     public function getFeedback(bool $isSoleMatch): array
     {
         return [

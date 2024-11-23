@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace ZxcvbnPhp\Matchers;
 
-use JetBrains\PhpStorm\ArrayShape;
 use ZxcvbnPhp\Math\Binomial;
 use ZxcvbnPhp\Scorer;
 
@@ -48,10 +47,8 @@ abstract class BaseMatch implements MatchInterface
      *
      * @param  bool $isSoleMatch
      *   Whether this is the only match in the password
-     * @return array
-     *   Associative array with warning (string) and suggestions (array of strings)
+     * @return array{'warning': string, "suggestions": string[]}
      */
-    #[ArrayShape(['warning' => 'string', 'suggestions' => 'string[]'])]
     abstract public function getFeedback(bool $isSoleMatch): array;
 
     /**

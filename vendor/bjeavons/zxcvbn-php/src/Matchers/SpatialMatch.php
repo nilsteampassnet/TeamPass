@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace ZxcvbnPhp\Matchers;
 
-use JetBrains\PhpStorm\ArrayShape;
 use ZxcvbnPhp\Matcher;
 use ZxcvbnPhp\Math\Binomial;
 
+/** @phpstan-consistent-constructor */
 class SpatialMatch extends BaseMatch
 {
     public const SHIFTED_CHARACTERS = '~!@#$%^&*()_+QWERTYUIOP{}|ASDFGHJKL:"ZXCVBNM<>?';
@@ -58,7 +58,9 @@ class SpatialMatch extends BaseMatch
         return $matches;
     }
 
-    #[ArrayShape(['warning' => 'string', 'suggestions' => 'string[]'])]
+    /**
+     * @return array{'warning': string, "suggestions": string[]}
+     */
     public function getFeedback(bool $isSoleMatch): array
     {
         $warning = $this->turns == 1
@@ -93,7 +95,7 @@ class SpatialMatch extends BaseMatch
     /**
      * Match spatial patterns in a adjacency graph.
      * @param string $password
-     * @param array  $graph
+     * @param array $graph
      * @param string $graphName
      * @return array
      */
