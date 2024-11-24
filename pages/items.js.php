@@ -2760,6 +2760,8 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
     var mime_types = <?php echo json_encode($mime_types); ?>;
     var prevent_empty = <?php echo json_encode($prevent_empty); ?>;
     var resize = <?php echo json_encode($resize); ?>;
+    let toastrElement;
+    let fileId;
 
     var uploader_attachments = new plupload.Uploader({
         runtimes: 'html5,flash,silverlight,html4',
@@ -2778,12 +2780,11 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         resize: resize,
         init: {
             BeforeUpload: function(up, file) {
-                toastr.info(
-                    '<i class="fa-solid fa-cloud-arrow-up fa-bounce mr-2"></i><?php echo $lang->get('uploading'); ?>',
-                    '', {
-                        timeOut: 0
-                    }
-                );
+                fileId = file.id;
+                toastr.remove();         
+                toastrElement = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <span id="plupload-progress" class="mr-2 ml-2 strong">0%</span><i class="fas fa-cloud-arrow-up fa-bounce fa-2x"></i>');
+                // Show file name
+                $('#upload-file_' + file.id).html('<i class="fa-solid fa-file fa-sm mr-2"></i>' + htmlEncode(file.name) + '<span id="fileStatus_'+file.id+'"><i class="fa-solid fa-circle-notch fa-spin  ml-2"></i></span>');
 
                 // Get random number
                 if (store.get('teampassApplication').uploadedFileId === '') {
@@ -2807,17 +2808,23 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     files_number: $('#form-item-hidden-pickFilesNumber').val(),
                     file_size: file.size
                 });
+            },
+            UploadProgress: function(up, file) {
+                // Update only the percentage inside the Toastr message
+                $('#plupload-progress').text(file.percent + '%');
+            },
+            UploadComplete: function(up, files) {
+                // Inform user
+                toastr.remove();
+            },
+            Error: function(up, args) {
+                console.log("ERROR arguments:");
+                console.log(args);
             }
         }
     });
 
-    // Uploader options
-    uploader_attachments.bind('UploadProgress', function(up, file) {
-        //console.log('uploader_attachments.bind')
-        $('#upload-file_' + file.id).html('<i class="fa-solid fa-file fa-sm mr-2"></i>' + htmlEncode(file.name) + '<span id="fileStatus_'+file.id+'"><i class="fa-solid fa-circle-notch fa-spin  ml-2"></i></span>');
-    });
     uploader_attachments.bind('FileUploaded', function(up, file) {
-        //console.log('File '+file.name+' uploaded');
         $('#fileStatus_'+file.id).html('<i class="fa-solid fa-circle-check text-success ml-2 fa-1x"></i>');
         userUploadedFile = true;
         userDidAChange = true;
@@ -2825,15 +2832,39 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
     });
     uploader_attachments.bind('Error', function(up, err) {
         toastr.remove();
-        toastr.error(
-            err.message + (err.file ? ', File: ' + err.file.name : ''),
-            '', {
-                timeOut: 5000,
-                progressBar: true
+        // Extraire le message d'erreur
+        let errorMessage = 'An unknown error occurred.';
+        if (err.response) {
+            try {
+                const response = JSON.parse(err.response);
+                if (response.error && response.error.message) {
+                    errorMessage = response.error.message;
+                }
+            } catch (e) {
+                errorMessage = err.response; // Si la réponse n'est pas JSON
             }
-        );
+        }
 
-        up.refresh(); // Reposition Flash/Silverlight
+        // Vérifie si l'erreur est due à un dépassement de taille ou une autre erreur critique
+        if (err.code === -200 || err.status === 413) {
+            // Arrêter l'upload des chunks
+            up.stop();
+            errorMessage += ' - Upload stopped.';
+
+            // Affiche l'erreur dans l'interface utilisateur
+            toastr.error(
+                errorMessage + (err.file ? ', File: ' + err.file.name : ''),
+                '', {
+                    timeOut: 10000,
+                    progressBar: true
+                }
+            );
+
+            $('#fileStatus_'+fileId).html('<i class="fa-solid fa-circle-xmark text-danger ml-2 fa-1x"></i>');
+            return false;
+        } else {
+            up.refresh(); // Reposition Flash/Silverlight
+        }
     });
 
     $("#form-item-upload-pickfiles").click(function(e) {
