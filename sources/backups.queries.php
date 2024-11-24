@@ -173,7 +173,7 @@ if (null !== $post_type) {
                         while ($row = $result->fetch_row()) {
                             $return .= 'INSERT INTO ' . $table . ' VALUES(';
                             for ($j = 0; $j < $numFields; ++$j) {
-                                // Gestion des valeurs NULL
+                                // Manage NULL values
                                 $value = $row[$j] === null ? 'NULL' : '"' . addslashes(preg_replace("/\n/", '\\n', $row[$j])) . '"';                    
                                 $return .= $value;
                                 if ($j < ($numFields - 1)) {
@@ -199,7 +199,7 @@ if (null !== $post_type) {
                     fwrite($handle, $return);
                     fclose($handle);
                 }
-
+                
                 // Encrypt the file
                 if (empty($post_key) === false) {
                     // Encrypt the file
@@ -207,7 +207,6 @@ if (null !== $post_type) {
                         'encrypt',
                         $SETTINGS['path_to_files_folder'] . '/' . $filename,
                         $SETTINGS['path_to_files_folder'] . '/defuse_temp_' . $filename,
-                        $SETTINGS,
                         $post_key
                     );
 
@@ -287,10 +286,22 @@ if (null !== $post_type) {
             $post_backupFile = filter_var($dataReceived['backupFile'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $post_clearFilename = filter_var($dataReceived['clearFilename'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $post_offset = (int) filter_var($dataReceived['offset'], FILTER_SANITIZE_NUMBER_INT);
-            $post_totalSize = (int) filter_var($dataReceived['post_totalSize'], FILTER_SANITIZE_NUMBER_INT);
+            $post_totalSize = (int) filter_var($dataReceived['totalSize'], FILTER_SANITIZE_NUMBER_INT);
             $batchSize = 500;
 
-            if (WIP === true) error_log('DEBUG: Offset -> '.$post_offset.' | File -> '.$post_clearFilename.' | key -> '.$post_key);
+            // Check if the offset is greater than the total size
+            if (empty($post_offset) === false && $post_offset >= $post_totalSize) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => false,
+                        'message' => 'operation_finished',
+                    ),
+                    'encode'
+                );
+                break;
+            }
+            
+            if (WIP === true) error_log('DEBUG: Offset -> '.$post_offset.'/'.$post_totalSize.' | File -> '.$post_clearFilename.' | key -> '.$post_key);
 
             include_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
 
@@ -311,19 +322,19 @@ if (null !== $post_type) {
                 );
 
                 $post_backupFile = $data['valeur'];
-
-                // Uncrypt the file
+                
+                // Decrypt the file
                 if (empty($post_key) === false) {
                     // Decrypt the file
+                    
                     $ret = prepareFileWithDefuse(
                         'decrypt',
                         $SETTINGS['path_to_files_folder'] . '/' . $post_backupFile,
                         $SETTINGS['path_to_files_folder'] . '/defuse_temp_' . $post_backupFile,
-                        $SETTINGS,
                         $post_key
                     );
-
-                    if (empty($ret) === false) {
+                    
+                    if (empty($ret) === false && $ret !== true) {
                         echo prepareExchangedData(
                             array(
                                 'error' => true,
@@ -338,11 +349,19 @@ if (null !== $post_type) {
                     fileDelete($SETTINGS['path_to_files_folder'] . '/' . $post_backupFile, $SETTINGS);
                     $post_backupFile = $SETTINGS['path_to_files_folder'] . '/defuse_temp_' . $post_backupFile;
                 } else {
-                    $post_backupFile = $SETTINGS['path_to_files_folder'] . '/' . $post_backupFile;
+                    echo prepareExchangedData(
+                        array(
+                            'error' => true,
+                            'message' => 'An error occurred. No encryption key provided.',
+                        ),
+                        'encode'
+                    );
+                    break;
                 }
             } else {
                 $post_backupFile = $post_clearFilename;
             }
+                 
 
             //read sql file
             $handle = fopen($post_backupFile, 'r');
@@ -353,20 +372,19 @@ if (null !== $post_type) {
             }
 
             if ($handle !== false) {
-                // Déplacer le pointeur de fichier à l'offset actuel
+                // Move the file pointer to the current offset
                 fseek($handle, $post_offset);
-
                 $query = '';
                 $executedQueries = 0;
                 while (!feof($handle) && $executedQueries < $batchSize) {
                     $line = fgets($handle);
                     // Check if not false
                     if ($line !== false) {
-                        // Vérifier si la ligne est une partie d'une instruction SQL
+                        // Check if the line is part of an SQL statement
                         if (substr(trim($line), -1) != ';') {
                             $query .= $line;
                         } else {
-                            // Exécuter l'instruction SQL complète
+                            // Execute the complete SQL statement
                             $query .= $line;
                             DB::queryRaw($query);
                             $query = '';
@@ -375,14 +393,14 @@ if (null !== $post_type) {
                     }
                 }
 
-                // Calculer le nouvel offset
+                // Calculate the new offset
                 $newOffset = ftell($handle);
 
-                // Vérifier si la fin du fichier a été atteinte
+                // Check if the end of the file has been reached
                 $isEndOfFile = feof($handle);
                 fclose($handle);
 
-                // Répondre avec le nouvel offset
+                // Respond with the new offset
                 echo prepareExchangedData(
                     array(
                         'error' => false,
@@ -393,12 +411,13 @@ if (null !== $post_type) {
                     'encode'
                 );
 
-                // Vérifier si la fin du fichier a été atteinte pour supprimer le fichier
+                // Check if the end of the file has been reached to delete the file
                 if ($isEndOfFile) {
+                    error_log('DEBUG: End of file reached. Deleting file '.$post_backupFile);
                     unlink($post_backupFile);
                 }
             } else {
-                // Gérer l'erreur d'ouverture du fichier
+                // Handle file opening error
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -410,3 +429,4 @@ if (null !== $post_type) {
             break;
     }
 }
+

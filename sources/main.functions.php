@@ -1865,7 +1865,6 @@ function prepareFileWithDefuse(
     string $type,
     string $source_file,
     string $target_file,
-    array $SETTINGS,
     string $password = null
 ) {
     // Load AntiXSS
@@ -1890,7 +1889,6 @@ function prepareFileWithDefuse(
         $err = defuseFileDecrypt(
             $source_file,
             $target_file,
-            $SETTINGS, /** @scrutinizer ignore-type */
             $password
         );
     } elseif ($type === 'encrypt') {
@@ -1898,7 +1896,6 @@ function prepareFileWithDefuse(
         $err = defuseFileEncrypt(
             $source_file,
             $target_file,
-            $SETTINGS, /** @scrutinizer ignore-type */
             $password
         );
     }
@@ -1920,9 +1917,9 @@ function prepareFileWithDefuse(
 function defuseFileEncrypt(
     string $source_file,
     string $target_file,
-    array $SETTINGS,
     string $password = null
 ) {
+    $err = '';
     try {
         CryptoFile::encryptFileWithPassword(
             $source_file,
@@ -1932,9 +1929,9 @@ function defuseFileEncrypt(
     } catch (CryptoException\WrongKeyOrModifiedCiphertextException $ex) {
         $err = 'wrong_key';
     } catch (CryptoException\EnvironmentIsBrokenException $ex) {
-        $err = $ex;
+        $err = print_r($ex, true);
     } catch (CryptoException\IOException $ex) {
-        $err = $ex;
+        $err = print_r($ex, true);
     }
 
     // return error
@@ -1954,9 +1951,9 @@ function defuseFileEncrypt(
 function defuseFileDecrypt(
     string $source_file,
     string $target_file,
-    array $SETTINGS,
     string $password = null
 ) {
+    $err = '';
     try {
         CryptoFile::decryptFileWithPassword(
             $source_file,
@@ -1966,9 +1963,9 @@ function defuseFileDecrypt(
     } catch (CryptoException\WrongKeyOrModifiedCiphertextException $ex) {
         $err = 'wrong_key';
     } catch (CryptoException\EnvironmentIsBrokenException $ex) {
-        $err = $ex;
+        $err = print_r($ex, true);
     } catch (CryptoException\IOException $ex) {
-        $err = $ex;
+        $err = print_r($ex, true);
     }
 
     // return error

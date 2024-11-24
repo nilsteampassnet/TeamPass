@@ -2968,7 +2968,6 @@ function migrateTo3_DoUserPersonalItemsEncryption(
                             'decrypt',
                             $SETTINGS['path_to_upload_folder'] . '/' . $record2['file'],
                             $SETTINGS['path_to_upload_folder'] . '/' . $record2['file'] . '.delete',
-                            $SETTINGS,
                             $post_user_psk
                         );
 

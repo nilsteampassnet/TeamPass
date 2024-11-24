@@ -294,8 +294,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 function updateProgressBar(offset, totalSize) {
                     // Show progress to user
                     var percentage = Math.round((offset / totalSize) * 100);
-                    //var message = '<i class="mr-2 fa-solid fa-rocket fa-beat"></i><?php echo $lang->get('restore_in_progress');?> <b>' + percentage  + '%</b>';
-                    //console.log(message)
                     $('#onthefly-restore-progress-text').text(percentage);
                 }
 
@@ -314,13 +312,14 @@ $maxFileSize = (strrpos($SETTINGS['upload_maxfilesize'], 'mb') === false)
     : $SETTINGS['upload_maxfilesize'];
 ?>
 
+    let toastrElement;
     var restoreOperationId = '',
         uploader_restoreDB = new plupload.Uploader({
             runtimes: "gears,html5,flash,silverlight,browserplus",
             browse_button: "onthefly-restore-file-select",
             container: "onthefly-restore-file",
             max_file_size: "<?php echo $maxFileSize; ?>",
-            chunk_size: "5mb",
+            chunk_size: "2mb",  // adapted to standard PHP configuration
             unique_names: true,
             dragdrop: true,
             multiple_queues: false,
@@ -364,8 +363,7 @@ $maxFileSize = (strrpos($SETTINGS['upload_maxfilesize'], 'mb') === false)
                 BeforeUpload: function(up, file) {
                     // Show cog
                     toastr.remove();
-                    toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
-                    console.log("Upload token: "+store.get('teampassUser').uploadToken);
+                    toastrElement = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <span id="plupload-progress" class="mr-2 ml-2 strong">0%</span><i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
                     up.setOption('multipart_params', {
                         PHPSESSID: '<?php echo $session->get('user-id'); ?>',
@@ -373,6 +371,10 @@ $maxFileSize = (strrpos($SETTINGS['upload_maxfilesize'], 'mb') === false)
                         File: file.name,
                         user_token: store.get('teampassUser').uploadToken
                     });
+                },
+                UploadProgress: function(up, file) {
+                    // Update only the percentage inside the Toastr message
+                    $('#plupload-progress').text(file.percent + '%');
                 },
                 UploadComplete: function(up, files) {
                     store.update(
