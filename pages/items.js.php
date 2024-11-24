@@ -4328,6 +4328,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 $('#teampass_items_list').append(
                     '<tr class="list-item-row' + (value.canMove === 1 ? ' is-draggable' : '') + ((store.get('teampassApplication').highlightFavorites === 1 && value.is_favourited === 1) ? ' bg-yellow' : '') + '" id="list-item-row_' + value.item_id + '" data-item-key="' + value.item_key + '" data-item-edition="' + value.open_edit + '" data-item-id="' + value.item_id + '" data-item-sk="' + value.sk + '" data-item-expired="' + value.expired + '" data-item-rights="' + value.rights + '" data-item-display="' + value.display + '" data-item-open-edit="' + value.open_edit + '" data-item-tree-id="' + value.tree_id + '" data-is-search-result="' + value.is_result_of_search + '" data-label="' + escape(value.label) + '">' +
                     '<td class="list-item-description px-3 py-0 align-middle d-flex">' +
+                    '<span class="icon-container">' +
                     // Show user a grippy bar to move item
                     (value.canMove === 1  ? '<i class="fa-solid fa-ellipsis-v mr-2 dragndrop"></i>' : '') + //&& value.is_result_of_search === 0
                     // Show user a ban icon if expired
@@ -4340,6 +4341,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     '<span class="list-item-clicktoshow d-inline-flex' + (value.rights === 10 ? '' : ' pointer') + '" data-item-id="' + value.item_id + '" data-item-key="' + value.item_key + '">' +
                     // Show item fa_icon if set
                     (value.fa_icon !== '' ? '<i class="'+value.fa_icon+' mr-1 user-fa-icon"></i>' : '') +
+                    '</span>' +
                     '<span class="list-item-row-description d-inline-block' + (value.rights === 10 ? ' font-weight-light' : '') + '"><i class="item-favorite-star fa-solid' + ((store.get('teampassApplication').highlightFavorites === 1 && value.is_favourited === 1) ? ' fa-star mr-1' : '') + '"></i>' + value.label + '</span>' + (value.rights === 10 ? '' : description) +
                     '<span class="list-item-row-description-extend"></span>' +
                     '</span>' +

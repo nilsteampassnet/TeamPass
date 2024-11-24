@@ -74,6 +74,12 @@
     line-height: 50px;
 }
 
+.icon-container {
+    display: inline-flex;
+    align-items: center;
+    height: 100%;
+  }
+
 .list-item-clicktoshow .user-fa-icon,
 .list-item-description .dragndrop {
     line-height: 50px;
