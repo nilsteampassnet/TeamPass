@@ -54,12 +54,18 @@ if (file_exists('../includes/config/settings.php') === false) {
     }
 }
 
+
+// Load settings
 include_once '../includes/config/settings.php';
 
-// 
-if (defined('SECUREPATH') === false || defined('SECUREFILE') === false) {
-    define('SECUREFILE', generateRandomKey());
+// Check if SECUREPATH and SECUREFILE are defined
+if (defined('SECUREPATH') === false) {
     define('SECUREPATH', __DIR__.'/../includes/config');
+    error_log("TEST1");
+}
+if (defined('SECUREFILE') === false) {
+    define('SECUREFILE', generateRandomKey());
+    error_log("TEST2");
 
     // 1- generate saltkey
     $key = Key::createNewRandomKey();
@@ -70,6 +76,13 @@ if (defined('SECUREPATH') === false || defined('SECUREFILE') === false) {
         SECUREPATH.'/'.SECUREFILE,
         $new_salt
     );
+
+    //3 - add to settings
+    $newLine = '
+define("SECUREPATH", "' . SECUREPATH. '");
+define("SECUREFILE", "' . SECUREFILE. '");
+';
+    file_put_contents('../includes/config/settings.php', $newLine, FILE_APPEND);
 }
 
 // Load functions
