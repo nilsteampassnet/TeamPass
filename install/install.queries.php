@@ -25,6 +25,7 @@
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
+require '../vendor/autoload.php';
 use TiBeN\CrontabManager\CrontabJob;
 use TiBeN\CrontabManager\CrontabAdapter;
 use TiBeN\CrontabManager\CrontabRepository;
@@ -53,8 +54,27 @@ if (file_exists('../includes/config/settings.php') === false) {
     }
 }
 
+include_once '../includes/config/settings.php';
+
+// 
+if (defined('SECUREPATH') === false || defined('SECUREFILE') === false) {
+    define('SECUREFILE', generateRandomKey());
+    define('SECUREPATH', __DIR__.'/../includes/config');
+
+    // 1- generate saltkey
+    $key = Key::createNewRandomKey();
+    $new_salt = $key->saveToAsciiSafeString();
+
+    // 2- store key in file
+    file_put_contents(
+        SECUREPATH.'/'.SECUREFILE,
+        $new_salt
+    );
+}
+
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
+
 
 // init
 loadClasses('DB');
@@ -1429,10 +1449,8 @@ if (null !== $inputData['type']) {
             if ($inputData['activity'] === 'file') {
                 if ($inputData['task'] === 'settings.php') {
                     // first is to create teampass-seckey.txt
-                    // 0- check if exists
-                    $filesecure = generateRandomKey();
-                    define('SECUREFILE', $filesecure);
-                    $filename_seckey = $securePath . '/' . $filesecure;
+                    // MOVE FILE TO DESTINATION PATH
+                    $filename_seckey = $securePath . '/' . SECUREFILE;
 
                     if (file_exists($filename_seckey)) {
                         if (!copy($filename_seckey, $filename_seckey . '.' . date('Y_m_d', mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'))))) {
@@ -1441,17 +1459,13 @@ if (null !== $inputData['type']) {
                         } else {
                             unlink($filename);
                         }
+                    } else {
+                        // Move file
+                        if (!copy(__DIR__.'/../includes/config/'.SECUREFILE, $filename_seckey)) {
+                            echo '[{"error" : "File `'.__DIR__.'/../includes/config/'.SECUREFILE.'` could not be copied to `'.$filename_seckey.'`. Please check the path and the rights", "result":"", "index" : "' . $inputData['index'] . '", "multiple" : "' . $inputData['multiple'] . '"}]';
+                            break;
+                        }
                     }
-
-                    // 1- generate saltkey
-                    $key = Key::createNewRandomKey();
-                    $new_salt = $key->saveToAsciiSafeString();
-
-                    // 2- store key in file
-                    file_put_contents(
-                        $filename_seckey,
-                        $new_salt
-                    );
 
                     // Now create settings file
                     $filename = '../includes/config/settings.php';
@@ -1498,7 +1512,7 @@ define("DB_CONNECT_OPTIONS", array(
     MYSQLI_OPT_CONNECT_TIMEOUT => 10
 ));
 define("SECUREPATH", "' . $securePath . '");
-define("SECUREFILE", "' . $filesecure. '");
+define("SECUREFILE", "' . SECUREFILE. '");
 
 if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
     date_default_timezone_set($_SESSION[\'settings\'][\'timezone\']);
