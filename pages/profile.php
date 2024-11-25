@@ -466,25 +466,6 @@ foreach ($session->get('user-roles_array') as $role) {
                                         </div>
                                     </div>
 
-                                    <?php
-                                    /*if (
-                                        isset($SETTINGS['agses_authentication_enabled']) === true
-                                        && (int) $SETTINGS['agses_authentication_enabled'] === 1
-                                    ) {
-                                        ?>
-                                        <div class="form-group">
-                                            <label class="col-sm-10 control-label"><?php echo $lang->get('user_profile_agses_card_id'); ?></label>
-                                            <div class="col-sm-10">
-                                                <input type="numeric" class="form-control" id="profile-user-agsescardid" placeholder="name@domain.com" value="<?php
-                                                if (isset($_SESSION['user_agsescardid']) === true) {
-                                                    echo $_SESSION['user_agsescardid'];
-                                                } ?>">
-                                            </div>
-                                        </div>
-                                    <?php
-                                    }*/
-                                    ?>
-
                                     <div class="form-group">
                                         <div class="row">
                                             <div class="col-sm-offset-2 col-sm-2">
