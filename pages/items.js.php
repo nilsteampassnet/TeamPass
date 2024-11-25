@@ -383,14 +383,13 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
     $(document).on('click', '#card-item-pwd-show-button', function() {
         if ($(this).hasClass('pwd-shown') === false) {
             $(this).addClass('pwd-shown');
-            // Prepare data to show
-            // Is data crypted?
-            var data = unCryptData($('#hidden-item-pwd').val(), '<?php echo $session->get('key'); ?>');
-            if (data !== false && data !== undefined) {
-                $('#hidden-item-pwd').val(
-                    data.password
-                );
-            }
+
+            // Get item password from server
+            const item_pwd = getItemPassword(
+                'at_password_shown',
+                'item_id',
+                store.get('teampassItem').id
+            );
 
             // Change class and show spinner
             $('.pwd-show-spinner')
@@ -399,15 +398,8 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
             // display raw password
             $('#card-item-pwd')
-                .text($('#hidden-item-pwd').val())
+                .text(item_pwd)
                 .addClass('pointer_none');
-
-            // log password is shown
-            itemLog(
-                'at_password_shown',
-                store.get('teampassItem').id,
-                $('#card-item-label').text()
-            );
 
             // Autohide
             setTimeout(() => {
@@ -2581,34 +2573,24 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             mouseStillDown = false;
             showPwdContinuous();
         });
-    var showPwdContinuous = function() {
-        if (mouseStillDown === true) {
-            // Prepare data to show
-            // Is data crypted?
-            var data = unCryptData($('#hidden-item-pwd').val(), '<?php echo $session->get('key'); ?>');
-            if (data !== false && data !== undefined) {
-                $('#hidden-item-pwd').val(
-                    data.password
-                );
-            }
 
-            $('#card-item-pwd')
-                .html(
-                    // XSS Filtering
-                    $('<span span style="cursor:none;">').text($('#hidden-item-pwd').val()).html()
-                );
+    const showPwdContinuous = function() {
+        if (mouseStillDown === true 
+            && !$('#card-item-pwd').hasClass('pwd-shown')) {
 
+            // Get item password from server
+            const item_pwd = getItemPassword(
+                'at_password_shown',
+                'item_id',
+                store.get('teampassItem').id
+            );
+
+            $('#card-item-pwd').text(item_pwd);
+            $('#card-item-pwd').addClass('pwd-shown');
+
+            // Auto hide password
             setTimeout('showPwdContinuous("card-item-pwd")', 50);
-            // log password is shown
-            if ($('#card-item-pwd').hasClass('pwd-shown') === false) {
-                itemLog(
-                    'at_password_shown',
-                    store.get('teampassItem').id,
-                    $('#card-item-label').text()
-                );
-                $('#card-item-pwd').addClass('pwd-shown');
-            }
-        } else {
+        } else if(mouseStillDown !== true) {
             $('#card-item-pwd')
                 .html('<?php echo $var['hidden_asterisk']; ?>')
                 .removeClass('pwd-shown');
@@ -3380,6 +3362,14 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 }
             );
         } else {
+            // Get password and fill the field.
+            const item_pwd = getItemPassword(
+                'at_password_shown_edit_form',
+                'item_id',
+                store.get('teampassItem').id
+            );
+            $('#form-item-password').val(item_pwd);
+
             $('#card-item-visibility').html(store.get('teampassItem').itemVisibility);
             $('#card-item-minimum-complexity').html(store.get('teampassItem').itemMinimumComplexity);
 
@@ -3980,57 +3970,18 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                                 // Send query and get password
                                 var result = '',
                                     error = false;
-                                
-                                $.ajax({
-                                    type: "POST",
-                                    async: false,
-                                    url: 'sources/items.queries.php',
-                                    data: 'type=show_item_password&item_key=' + trigger.getAttribute('data-item-key') +
-                                        '&key=<?php echo $session->get('key'); ?>',
-                                    dataType: "",
-                                    success: function(data) {
-                                        //decrypt data
-                                        try {
-                                            data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
-                                        } catch (e) {
-                                            // error
-                                            toastr.remove();
-                                            toastr.warning(
-                                                '<?php echo $lang->get('no_item_to_display'); ?>'
-                                            );
-                                            return false;
-                                        }
-                                        if (data.error === true) {
-                                            error = true;
-                                        } else {
-                                            if (data.password_error !== '') {
-                                                error = true;
-                                            } else {
-                                                result = simplePurifier(atob(data.password), false, false, false, false).utf8Decode();
-                                            }
-                                            if (result === '') {
-                                                toastr.info(
-                                                    '<?php echo $lang->get('password_is_empty'); ?>',
-                                                    '', {
-                                                        timeOut: 2000,
-                                                        positionClass: 'toast-bottom-right',
-                                                        progressBar: true
-                                                    }
-                                                );
-                                            }
-                                        }
-                                    }
-                                });
-                                return result;
+
+                                // Get item password from server
+                                const item_pwd = getItemPassword(
+                                    'at_password_copied',
+                                    'item_key',
+                                    trigger.getAttribute('data-item-key')
+                                );
+
+                                return item_pwd;
                             }
                         });
-                        clipboardForPassword.on('success', function(e) {
-                            itemLog(
-                                'at_password_copied',
-                                e.trigger.dataset.itemId,
-                                e.trigger.dataset.itemLabel
-                            );
-                            
+                        clipboardForPassword.on('success', function(e) {                            
                             // Warn user about clipboard clear
                             if (store.get('teampassSettings').clipboard_life_duration === undefined || parseInt(store.get('teampassSettings').clipboard_life_duration) === 0) {
                                 toastr.remove();
@@ -4834,11 +4785,6 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                         $('#card-item-pwd').after('<i class="fa-solid fa-bell text-orange fa-shake ml-3 delete-after-usage infotip" title="'+data.pwd_encryption_error_message+'"></i>');
                     }
 
-                    // Uncrypt the pwd
-                    if (data.pw !== undefined) {
-                        data.pw = simplePurifier(atob(data.pw), false, false, false, false).utf8Decode();
-                    }
-
                     // Update hidden variables
                     store.update(
                         'teampassItem',
@@ -4901,7 +4847,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                         $('.form-item').removeClass('hidden');
                         $('#folders-tree-card').addClass('hidden');
                     }
-                    $('#pwd-definition-size').val(data.pw.length);
+                    $('#pwd-definition-size').val(data.pw_length);
 
                     // Prepare card
                     const itemIcon = (data.fa_icon !== "") ? '<i class="'+data.fa_icon+' mr-1"></i>' : '';
@@ -4914,8 +4860,6 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                         $('#card-item-description').removeClass('hidden');
                     }
                     $('#card-item-pwd').html('<?php echo $var['hidden_asterisk']; ?>');
-                    $('#hidden-item-pwd, #form-item-suggestion-password').val(data.pw);
-                    $('#form-item-password, #form-item-password-confirmation, #form-item-server-old-password').val(data.pw);
                     $('#card-item-login').html(data.login);
                     $('#form-item-login, #form-item-suggestion-login, #form-item-server-login').val(data.login);
 
@@ -5179,7 +5123,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     }
 
                     // Prepare clipboard - COPY PASSWORD
-                    if (data.pw !== '' && store.get('teampassItem').readyToUse === true) {
+                    if (data.pw_length > 0 && store.get('teampassItem').readyToUse === true) {
                         // Delete existing clipboard
                         if (clipboardForPasswordListItems) {
                             clipboardForPasswordListItems.destroy();
@@ -5187,16 +5131,17 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                         // New clipboard
                         clipboardForPasswordListItems = new ClipboardJS('#card-item-pwd-button', {
                                 text: function() {
-                                    return (data.pw);
+                                    // Get item password from server
+                                    const item_pwd = getItemPassword(
+                                        'at_password_copied',
+                                        'item_id',
+                                        data.id
+                                    );
+
+                                    return item_pwd;
                                 }
                             })
                             .on('success', function(e) {
-                                itemLog(
-                                    'at_password_copied',
-                                    store.get('teampassItem').id,
-                                    $('#card-item-label').text()
-                                );
-
                                 // Warn user about clipboard clear
                                 if (store.get('teampassSettings').clipboard_life_duration === undefined || parseInt(store.get('teampassSettings').clipboard_life_duration) === 0) {
                                     toastr.remove();
@@ -6425,10 +6370,6 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 }
             }
         );
-    });
-
-    $('#item-button-password-copy').click(function() {
-        $('#form-item-password-confirmation').val($('#form-item-password').val());
     });
 
     /**
