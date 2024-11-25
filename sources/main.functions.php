@@ -134,15 +134,20 @@ function cryption(string $message, string $ascii_key, string $type, ?array $SETT
             $text = Crypto::decrypt($message, $key);
         }
     } catch (CryptoException\WrongKeyOrModifiedCiphertextException $ex) {
-        $err = 'an attack! either the wrong key was loaded, or the ciphertext has changed since it was created either corrupted in the database or intentionally modified by someone trying to carry out an attack.';
+        error_log('TEAMPASS-Error-Wrong key or modified ciphertext: ' . $ex->getMessage());
+        $err = 'wrong_key_or_modified_ciphertext';
     } catch (CryptoException\BadFormatException $ex) {
-        $err = $ex;
+        error_log('TEAMPASS-Error-Bad format exception: ' . $ex->getMessage());
+        $err = 'bad_format';
     } catch (CryptoException\EnvironmentIsBrokenException $ex) {
-        $err = $ex;
-    } catch (CryptoException\CryptoException $ex) {
-        $err = $ex;
+        error_log('TEAMPASS-Error-Environment: ' . $ex->getMessage());
+        $err = 'environment_error';
     } catch (CryptoException\IOException $ex) {
-        $err = $ex;
+        error_log('TEAMPASS-Error-IO: ' . $ex->getMessage());
+        $err = 'io_error';
+    } catch (Exception $ex) {
+        error_log('TEAMPASS-Error-Unexpected exception: ' . $ex->getMessage());
+        $err = 'unexpected_error';
     }
 
     return [
@@ -1929,9 +1934,11 @@ function defuseFileEncrypt(
     } catch (CryptoException\WrongKeyOrModifiedCiphertextException $ex) {
         $err = 'wrong_key';
     } catch (CryptoException\EnvironmentIsBrokenException $ex) {
-        $err = print_r($ex, true);
+        error_log('TEAMPASS-Error-Environment: ' . $ex->getMessage());
+        $err = 'environment_error';
     } catch (CryptoException\IOException $ex) {
-        $err = print_r($ex, true);
+        error_log('TEAMPASS-Error-General: ' . $ex->getMessage());
+        $err = 'general_error';
     }
 
     // return error
@@ -1963,9 +1970,11 @@ function defuseFileDecrypt(
     } catch (CryptoException\WrongKeyOrModifiedCiphertextException $ex) {
         $err = 'wrong_key';
     } catch (CryptoException\EnvironmentIsBrokenException $ex) {
-        $err = print_r($ex, true);
+        error_log('TEAMPASS-Error-Environment: ' . $ex->getMessage());
+        $err = 'environment_error';
     } catch (CryptoException\IOException $ex) {
-        $err = print_r($ex, true);
+        error_log('TEAMPASS-Error-General: ' . $ex->getMessage());
+        $err = 'general_error';
     }
 
     // return error
