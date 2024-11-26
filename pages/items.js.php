@@ -758,6 +758,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             // > END <
             //
         } else if ($(this).data('item-action') === 'edit') {
+            const item_tree_id = store.get('teampassItem').tree_id;
             if (debugJavascript === true) console.info('SHOW EDIT ITEM');
             // Reset item
             store.update(
@@ -782,7 +783,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             }
 
             $.when(
-                getPrivilegesOnItem(selectedFolderId, 1)
+                getPrivilegesOnItem(item_tree_id, 1)
             ).then(function(retData) {
                 console.log('getPrivilegesOnItem 2')
                 console.log(retData)
@@ -830,7 +831,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 $('#form-item').removeClass('was-validated');
 
                 // Now manage edtion
-                showItemEditForm(selectedFolderId);
+                showItemEditForm(item_tree_id);
             });
 
             //
@@ -4821,6 +4822,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                         'teampassItem',
                         function(teampassItem) {
                             teampassItem.id = parseInt(data.id),
+                            teampassItem.tree_id = parseInt(data.folder),
                             teampassItem.folderId = parseInt(data.folder),
                             teampassItem.timestamp = data.timestamp,
                             teampassItem.user_can_modify = data.user_can_modify,
