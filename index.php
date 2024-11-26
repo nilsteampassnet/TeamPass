@@ -92,6 +92,7 @@ $session->set('encryptClientServer', (int) $SETTINGS['encryptClientServer'] ?? 1
 
 // Quick major version check -> upgrade needed?
 if (isset($SETTINGS['teampass_version']) === true && version_compare(TP_VERSION, $SETTINGS['teampass_version']) > 0) {
+    $session->invalidate();
     // Perform redirection
     if (headers_sent()) {
         echo '<script language="javascript" type="text/javascript">document.location.replace("install/install.php");</script>';
