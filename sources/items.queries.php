@@ -4835,15 +4835,21 @@ switch ($inputData['type']) {
         } elseif ($folder_is_personal === 1) {
 
             // Check if personal folder is owned by user
-            $folder_title = DB::queryFirstRow(
-                'SELECT title
+            $folder = DB::queryFirstRow(
+                'SELECT id
                 FROM ' . prefixTable('nested_tree') . '
-                WHERE id = %s AND title = %s',
-                $inputData['folderId'],
+                WHERE title = %s',
                 $session->get('user-id'),
             );
 
-            if ($folder_title) $accessLevel = 30;
+            if ($folder) {
+                // Get all subfolders of user personal folder
+                $ids = $tree->getDescendants($folder['id'], true, false, true);
+
+                // This folder is owned by user
+                if (in_array($inputData['folderId'], $ids))
+                    $accessLevel = 30;
+            }
         }
 
         // Access is not allowed to this folder
@@ -7356,4 +7362,3 @@ function getAccessResponse(bool $error, bool $access, bool $edit, bool $delete, 
         'edition_locked' => $editionLocked,
     ];
 }
-
