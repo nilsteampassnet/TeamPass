@@ -1376,6 +1376,7 @@ if (null !== $inputData['type']) {
                             `value` VARCHAR(500) NOT NULL,
                             `date` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                             `unlock_at` TIMESTAMP NULL DEFAULT NULL,
+                            `unlock_code` VARCHAR(50) NULL DEFAULT NULL,
                             PRIMARY KEY (`id`)
                             ) CHARSET=utf8;"
                         );
