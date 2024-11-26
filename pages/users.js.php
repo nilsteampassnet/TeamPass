@@ -159,6 +159,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="new-otp"><i class="fas fa-mask mr-2"></i><?php echo $lang->get('generate_new_otp'); ?></li>' :
                             ''
                         ) +
+                        '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '" data-action="reset-antibruteforce"><i class="fas fa-lock mr-2"></i><?php echo $lang->get('bruteforce_reset_account'); ?></li>' +
                         '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '" data-action="logs"><i class="fas fa-newspaper mr-2"></i><?php echo $lang->get('see_logs'); ?></li>' +
                         '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="qrcode"><i class="fas fa-qrcode mr-2"></i><?php echo $lang->get('user_ga_code'); ?></li>' +
                         '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '"data-action="access-rights"><i class="fas fa-sitemap mr-2"></i><?php echo $lang->get('user_folders_rights'); ?></li>' +
@@ -1182,7 +1183,35 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 }
             );
 
-            // ---
+        } else if ($(this).data('action') === 'reset-antibruteforce') {
+            toastr.remove();
+            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+
+            const data = {
+                'user_id': $(this).data('id'),
+            };
+
+            $.post(
+                "sources/users.queries.php", {
+                    type: "reset_antibruteforce",
+                    data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $session->get('key'); ?>'),
+                    key: "<?php echo $session->get('key'); ?>"
+                },
+                function(data) {
+                    // Inform user
+                    toastr.remove();
+                    toastr.success(
+                        '<?php echo $lang->get('done'); ?>',
+                        '', {
+                            timeOut: 1000
+                        }
+                    );
+
+                    // refresh table content
+                    oTable.ajax.reload();
+                }
+            );
+        
         } else if ($(this).data('action') === 'new-enc-code') {
             // HIde
             $('.content-header, .content').addClass('hidden');
@@ -1268,7 +1297,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             $('input[type="checkbox"].flat-blue').iCheck({
                 checkboxClass: 'icheckbox_flat-blue',
             });
-            $(document).on('click', '#warningModalButtonAction', function() {                
+            $(document).one('click', '#warningModalButtonAction', function() {                
 
                 // Show spinner
                 toastr.remove();
@@ -1344,7 +1373,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             $('input[type="checkbox"].flat-blue').iCheck({
                 checkboxClass: 'icheckbox_flat-blue',
             });
-            $(document).on('click', '#warningModalButtonAction', function() {
+            $(document).one('click', '#warningModalButtonAction', function() {
                 if ($('#user-to-delete').prop('checked') === false) {
                     $('#warningModal').modal('hide');
                     return false;
@@ -2443,7 +2472,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 '<?php echo $lang->get('perform'); ?>',
                 '<?php echo $lang->get('cancel'); ?>'
             );
-            $(document).on('click', '#warningModalButtonAction', function(event) {
+            $(document).one('click', '#warningModalButtonAction', function(event) {
                 event.preventDefault();
                 event.stopPropagation();
                 if ($('#ldap-user-name').val() !== "" && $('#ldap-user-roles :selected').length > 0) {

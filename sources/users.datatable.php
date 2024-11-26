@@ -221,13 +221,6 @@ foreach ($rows as $record) {
 
     // Display Grid
     if ($showUserFolders === true) {
-        /*
-        // Build list of available users
-        if ((int) $record['admin'] !== 1 && (int) $record['disabled'] !== 1) {
-            $listAvailableUsers .= '<option value="'.$record['id'].'">'.$record['login'].'</option>';
-        }
-        */
-
         // Get list of allowed functions
         $listAlloFcts = '';
         if ((int) $record['admin'] !== 1) {
@@ -251,6 +244,16 @@ foreach ($rows as $record) {
             $record['id']
         );
 
+        // Check for existing lock
+        $unlock_at = DB::queryFirstField(
+            'SELECT MAX(unlock_at)
+             FROM ' . prefixTable('auth_failures') . '
+             WHERE unlock_at > %s AND source = %s AND value = %s',
+            date('Y-m-d H:i:s', time()),
+            'login',
+            $record['login']
+        );
+
         // Get some infos about user
         $userDisplayInfos = 
             (isset($userDate['date']) ? '<i class=\"fas fa-calendar-day infotip text-info ml-2\" title=\"'.$lang->get('creation_date').': '.date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $userDate['date']).'\"></i>' : '')
@@ -265,7 +268,9 @@ foreach ($rows as $record) {
             ((in_array($record['id'], [OTV_USER_ID, TP_USER_ID, SSH_USER_ID, API_USER_ID]) === false && (int) $record['admin'] !== 1 && ((int) $SETTINGS['duo'] === 1 || (int) $SETTINGS['google_authentication'] === 1)) ?
                 ((int) $record['mfa_enabled'] === 1 ? '' : '<i class=\"fa-solid fa-fingerprint infotip ml-1\" style=\"color:Tomato\" title=\"'.$lang->get('mfa_disabled_for_user').'\"></i>') :
                 ''
-                );
+                )
+            .
+            (($unlock_at) ? '<i class=\"fas fa-solid text-red fa-lock infotip text-info ml-1\" title=\"'.$lang->get('bruteforce_unlock_at').$unlock_at.'\"></i>' : '');
         if ($request->query->filter('display_warnings', '', FILTER_VALIDATE_BOOLEAN) === true) {
             $userDisplayInfos .= '<br>'.
                 ((in_array($record['id'], [OTV_USER_ID, TP_USER_ID, SSH_USER_ID, API_USER_ID]) === false && (int) $record['admin'] !== 1 && is_null($record['keys_recovery_time']) === true) ? 
