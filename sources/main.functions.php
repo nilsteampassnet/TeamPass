@@ -4317,7 +4317,6 @@ function sendMailToUser(
     // Sanitize inputs
     $post_receipt = filter_var($post_receipt, FILTER_SANITIZE_EMAIL);
     $post_subject = htmlspecialchars($post_subject, ENT_QUOTES, 'UTF-8');
-    $post_body = htmlspecialchars($post_body, ENT_QUOTES, 'UTF-8');
 
     if (count($post_replace) > 0) {
         $post_body = str_replace(
