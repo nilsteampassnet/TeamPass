@@ -1185,6 +1185,8 @@ return array(
     'bruteforce_wait' => 'Too many failed attempts, your account is blocked until: ',
     'bruteforce_unlock_at' => 'Account unlocked at (anti bruteforce): ',
     'bruteforce_reset_account' => 'Reset anti bruteforce of user',
+    'bruteforce_reset_mail_subject' => 'TEAMPASS - Your account is disabled',
+    'bruteforce_reset_mail_body' => 'Hello #name#,<br/><br/>Your teampass account has been locked due to a large number of authentication failures.<br/><br/>You can unblock it by clicking on this link <a href="#reset_url#" target="_blank">#reset_url#</a><br/><br/>Automatic unlock: #unlock_at#',
     'settings_ldap_usergroup' => 'LDAP group to search',
     'settings_ldap_usergroup_tip' => 'Enter the LDAP group in the directory where allowed user logins are stored. Example: cn=sysadmins,ou=groups,dc=example,dc=com',
     'server_password_change_enable' => 'Enable changing password on distant server (using ssh connection)',

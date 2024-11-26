@@ -883,6 +883,8 @@ return array(
     'bruteforce_wait' => 'Trop de tentatives échouées, votre compte est bloqué jusqu&apos;à : ',
     'bruteforce_unlock_at' => 'Déblocage du compte (anti bruteforce) : ',
     'bruteforce_reset_account' => 'Réinitialiser l&apos;anti bruteforce de l&apos;utilisateur',
+    'bruteforce_reset_mail_subject' => 'TEAMPASS - Votre compte est désactivé',
+    'bruteforce_reset_mail_body' => 'Bonjour #name#,<br/><br/>Votre compte teampass a été verouillé en raison d&apos;un grand nombre d&apos;échecs d&apos;authentification.<br/><br/>Vous pouvez le débloquer en cliquant sur ce lien <a href="#reset_url#" target="_blank">#reset_url#</a><br/><br/>Déblocage automatique : #unlock_at#',
     'settings_ldap_usergroup' => 'Groupe LDAP dans lequel faire la recherche',
     'settings_ldap_usergroup_tip' => 'Groupe LDAP dans lequel les utilisateurs doivent être membre pour pouvoir se connecter. Exemple : cn=sysadmins,ou=groups,dc=example,dc=com',
     'server_password_change_enable' => 'Activer le changement automatique du mot de passe du compte du serveur (en utilisant une connexion SSH)',
