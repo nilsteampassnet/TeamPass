@@ -142,20 +142,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             PHPSESSID: '<?php echo $session->get('key'); ?>',
                             type_upload: "import_items_from_csv",
                             user_token: data[0].token
-                            /*itemId: store.get('teampassItem').id,
-                            type_upload: 'item_attachments',
-                            isNewItem: store.get('teampassItem').isNewItem,
-                            isPersonal: store.get('teampassItem').folderIsPersonal,
-                            edit_item: false,
-                            user_upload_token: store.get('teampassApplication').attachmentToken,
-                            randomId: store.get('teampassApplication').uploadedFileId,
-                            files_number: $('#form-item-hidden-pickFilesNumber').val(),
-                            file_size: file.size*/
                         });
-
-                        /*up.settings.multipart_params.PHPSESSID = "<?php echo session_id(); ?>";
-                        up.settings.multipart_params.type_upload = "import_items_from_csv";
-                        up.settings.multipart_params.user_token = data[0].token;*/
 
                         up.start();
                     },
