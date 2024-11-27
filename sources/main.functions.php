@@ -2365,6 +2365,9 @@ function doDataDecryption(string $data, string $key): string
  */
 function encryptUserObjectKey(string $key, string $publicKey): string
 {
+    // Empty password
+    if (empty($key)) return '';
+
     // Sanitize
     $antiXss = new AntiXSS();
     $publicKey = $antiXss->xss_clean($publicKey);
