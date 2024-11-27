@@ -863,10 +863,11 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     );
 
     // Prepare the SQL query
-    $sql = 'SELECT p.increment_id, p.created_at, p.updated_at, p.process_type, p.is_in_progress
-    FROM '.prefixTable('background_tasks').' AS p 
-    LEFT JOIN '.prefixTable('users').' AS u ON %l
-    WHERE %l ORDER BY %l %l LIMIT %i, %i';
+    $sql = 'SELECT p.increment_id, p.created_at, p.updated_at, p.process_type,
+                p.is_in_progress, p.arguments
+            FROM '.prefixTable('background_tasks').' AS p 
+            LEFT JOIN '.prefixTable('users').' AS u ON %l
+            WHERE %l ORDER BY %l %l LIMIT %i, %i';
     $params = ['u.id = json_extract(p.arguments, "$[0]")',$sWhere, $orderColumn, $orderDirection, $sLimitStart, $sLimitLength];
 
     // Get the records
