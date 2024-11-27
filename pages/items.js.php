@@ -419,6 +419,22 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
     // Manage folders action
     $('.tp-action').click(function() {
+        // Ensure that the local storage data is consistent with what is
+        // displayed on the screen.
+        const item_dom_id = parseInt($('#items-details-container').data('id'));
+        const item_storage_id = parseInt(store.get('teampassItem').id);
+        if (item_dom_id !== item_storage_id) {
+            toastr.remove();
+            toastr.error(
+                '<?php echo $lang->get('data_inconsistency'); ?>',
+                '', {
+                    timeOut: 5000,
+                    progressBar: true
+                }
+            );
+            return false;
+        }
+
         // SHow user
         toastr.remove();
         toastr.info('<?php echo $lang->get('in_progress'); ?><i class="fa-solid fa-circle-notch fa-spin fa-2x ml-3"></i>');
@@ -4881,6 +4897,10 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                         $('#folders-tree-card').addClass('hidden');
                     }
                     $('#pwd-definition-size').val(data.pw_length);
+
+                    // Store current item id in the DOM (cannot be updated in
+                    // an other tab or window)
+                    $('#items-details-container').data('id', data.id);
 
                     // Prepare card
                     const itemIcon = (data.fa_icon !== "") ? '<i class="'+data.fa_icon+' mr-1"></i>' : '';
