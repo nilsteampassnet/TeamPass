@@ -85,6 +85,11 @@ define("SECUREFILE", "' . SECUREFILE. '");
     file_put_contents('../includes/config/settings.php', $newLine, FILE_APPEND);
 }
 
+if (session_status() === PHP_SESSION_ACTIVE) {
+    session_unset();
+    session_destroy();
+}
+
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
 
@@ -218,26 +223,54 @@ $inputData = dataSanitizer(
     $session_abspath
 );
 
+// Prepare variables
+$session_abspath = rtrim($inputData['data']['absolute_path'], '/');
+$session_url_path = rtrim($inputData['data']['url_path'], '/');
+$session_sk_path = rtrim($inputData['data']['sk_path'], '/');
+
 if (null !== $inputData['type']) {
     switch ($inputData['type']) {
-        case 'step_2':
-            $abspath = str_replace('\\', '/', $inputData['data']['absolute_path']);
-            if (substr($abspath, strlen($abspath) - 1) == '/') {
-                $abspath = substr($abspath, 0, strlen($abspath) - 1);
-            }
-            $session_abspath = $abspath;
-            $session_url_path = $inputData['data']['url_path'];
-
+        case 'step_2':   
+            // Check FOLDERS
             if (isset($inputData['activity']) && $inputData['activity'] === 'folder') {
-                $targetPath = $abspath . '/' . $inputData['task'] . '/';
-                if (is_writable($targetPath) === true) {
+                // Handle specific case of "secure path"
+                if ($inputData['task'] === 'secure') {
+                    // Is SK path a folder?
+                    if (!is_dir($session_sk_path)) {
+                        echo '[{"error" : " Path ' . $session_sk_path . ' is not a folder!", "index" : "' . $inputData['index'] . '", "multiple" : "' . $inputData['multiple'] . '"}]';
+                        break;
+                    }
+
+                    // Is SK path writable?
+                    if (is_writable($session_sk_path) === false) {
+                        echo '[{"error" : " Path ' . $session_sk_path . ' is not writable!", "index" : "' . $inputData['index'] . '", "multiple" : "' . $inputData['multiple'] . '"}]';
+                        break;
+                    }         
+
+                    // Handle the SK file to correct folder
+                    $filename_seckey = $session_sk_path . '/' . SECUREFILE;
+        
+                    if (!file_exists($filename_seckey)) {
+                        // Move file
+                        if (!copy(__DIR__.'/../includes/config/'.SECUREFILE, $filename_seckey)) {
+                            echo '[{"error" : "File `'.__DIR__.'/../includes/config/'.SECUREFILE.'` could not be copied to `'.$filename_seckey.'`. Please check the path and the rights", "result":"", "index" : "' . $inputData['index'] . '", "multiple" : "' . $inputData['multiple'] . '"}]';
+                            break;
+                        }
+                    }
                     echo '[{"error" : "", "index" : "' . $inputData['index'] . '", "multiple" : "' . $inputData['multiple'] . '"}]';
                 } else {
-                    echo '[{"error" : " Path ' . $targetPath . ' is not writable!", "index" : "' . $inputData['index'] . '", "multiple" : "' . $inputData['multiple'] . '"}]';
+                    $targetPath = $session_abspath . '/' . $inputData['task'] . '/';
+                    error_log("PATH: ".$targetPath);
+                    if (is_writable($targetPath) === true) {
+                        echo '[{"error" : "", "index" : "' . $inputData['index'] . '", "multiple" : "' . $inputData['multiple'] . '"}]';
+                    } else {
+                        echo '[{"error" : " Path ' . $targetPath . ' is not writable!", "index" : "' . $inputData['index'] . '", "multiple" : "' . $inputData['multiple'] . '"}]';
+                    }
                 }
                 break;
             }
 
+            // Check EXTENSIONS
             if (isset($inputData['activity']) && $inputData['activity'] === 'extension') {
                 if (extension_loaded($inputData['task'])) {
                     echo '[{"error" : "", "index" : "' . $inputData['index'] . '", "multiple" : "' . $inputData['multiple'] . '"}]';
@@ -247,6 +280,7 @@ if (null !== $inputData['type']) {
                 break;
             }
 
+            // Check FUNCTION
             if (isset($inputData['activity']) && $inputData['activity'] === 'function') {
                 if (function_exists($inputData['task'])) {
                     echo '[{"error" : "", "index" : "' . $inputData['index'] . '", "multiple" : "' . $inputData['multiple'] . '"}]';
@@ -256,6 +290,7 @@ if (null !== $inputData['type']) {
                 break;
             }
 
+            // Check VERSIONS
             if (isset($inputData['activity']) && $inputData['activity'] === 'version') {
                 if (version_compare(phpversion(), MIN_PHP_VERSION, '>=')) {
                     echo '[{"error" : "", "index" : "' . $inputData['index'] . '", "multiple" : "' . $inputData['multiple'] . '"}]';
@@ -265,6 +300,7 @@ if (null !== $inputData['type']) {
                 break;
             }
 
+            // Check INI
             if (isset($inputData['activity']) && $inputData['activity'] === 'ini') {
                 if (ini_get($inputData['task']) >= 30) {
                     echo '[{"error" : "", "index" : "' . $inputData['index'] . '"}]';
@@ -276,12 +312,7 @@ if (null !== $inputData['type']) {
 
             break;
 
-        case 'step_3':
-            $post_abspath = str_replace('\\', '/', $inputData['data']['absolute_path']);
-            if (substr($abspath, strlen($post_abspath) - 1) == '/') {
-                $post_abspath = substr($post_abspath, 0, strlen($post_abspath) - 1);
-            }
-            
+        case 'step_3':            
             // launch
             try {
                 $dbTmp = mysqli_connect(
@@ -323,17 +354,14 @@ if (null !== $inputData['type']) {
                 }
 
                 // For other queries with `url_path` and `absolute_path`
-                $escapedUrlPath = mysqli_real_escape_string($dbTmp, empty($post_urlpath) ? $inputData['db']['url_path'] : $post_urlpath);
-                $escapedAbsPath = mysqli_real_escape_string($dbTmp, empty($post_abspath) ? $inputData['data']['absolute_path'] : $post_abspath);
-
                 $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `_install` WHERE `key` = 'url_path'"));
                 if (intval($tmp) === 0) {
-                    mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('url_path', '" . $escapedUrlPath . "');");
+                    mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('url_path', '" . $session_url_path . "');");
                 }
 
                 $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `_install` WHERE `key` = 'absolute_path'"));
                 if (intval($tmp) === 0) {
-                    mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('absolute_path', '" . $escapedAbsPath . "');");
+                    mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('absolute_path', '" . $session_abspath . "');");
                 }
                 
                 echo '[{"error" : "", "result" : "Connection is successful", "multiple" : ""}]';
@@ -344,14 +372,7 @@ if (null !== $inputData['type']) {
             break;
 
         case 'step_4':
-            $dbTmp = mysqli_connect(
-                $inputData['db']['db_host'], 
-                $inputData['db']['db_login'], 
-                $inputData['db']['db_pw'], 
-                $inputData['db']['db_bdd'], 
-                $inputData['db']['db_port']
-            );
-
+            
             // prepare data
             foreach ($inputData['data'] as $key => $value) {
                 $escapedKey = mysqli_real_escape_string($dbTmp, $key);
@@ -359,40 +380,25 @@ if (null !== $inputData['type']) {
                 $inputData['data'][$escapedKey] = $escapedValue;
             }
 
-            // check skpath
-            if (empty($inputData['data']['sk_path'])) {
-                $inputData['data']['sk_path'] = $session_abspath . '/includes';
-            } else {
-                $inputData['data']['sk_path'] = str_replace('&#92;', '/', $inputData['data']['sk_path']);
-            }
-            if (substr($inputData['data']['sk_path'], strlen($inputData['data']['sk_path']) - 1) == '/' || substr($inputData['data']['sk_path'], strlen($inputData['data']['sk_path']) - 1) == '"') {
-                $inputData['data']['sk_path'] = substr($inputData['data']['sk_path'], 0, strlen($inputData['data']['sk_path']) - 1);
-            }
-            if (is_dir($inputData['data']['sk_path'])) {
-                if (is_writable($inputData['data']['sk_path'])) {
-                    // store all variables in SESSION
-                    foreach ($inputData['data'] as $key => $value) {
-                        $superGlobal->put($key, $value, 'SESSION');
-                
-                        // Use mysqli_real_escape_string to escape keys and values
-                        $escapedKey = mysqli_real_escape_string($dbTmp, $key);
-                        $escapedValue = mysqli_real_escape_string($dbTmp, $value);
+            // store all variables in SESSION
+            foreach ($inputData['data'] as $key => $value) {
+                $superGlobal->put($key, $value, 'SESSION');
+        
+                // Use mysqli_real_escape_string to escape keys and values
+                $escapedKey = mysqli_real_escape_string($dbTmp, $key);
+                $escapedValue = mysqli_real_escape_string($dbTmp, $value);
 
-                        $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `_install` WHERE `key` = '" . $escapedKey . "'"));
-                        if (intval($tmp) === 0) {
-                            mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('" . $escapedKey . "', '" . $escapedValue . "');");
-                        } else {
-                            mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '" . $escapedValue . "' WHERE `key` = '" . $escapedKey . "';");
-                        }
-                    }
-                    echo '[{"error" : "", "result" : "Information stored", "multiple" : ""}]';
+                $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `_install` WHERE `key` = '" . $escapedKey . "'"));
+                if (intval($tmp) === 0) {
+                    mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('" . $escapedKey . "', '" . $escapedValue . "');");
                 } else {
-                    echo '[{"error" : "The Directory must be writable!", "result" : "Information stored", "multiple" : ""}]';
+                    mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '" . $escapedValue . "' WHERE `key` = '" . $escapedKey . "';");
                 }
-            } else {
-                echo '[{"error" : "' . $inputData['data']['sk_path'] . ' is not a Directory!", "result" : "Information stored", "multiple" : ""}]';
             }
             mysqli_close($dbTmp);
+
+            echo '[{"error" : "", "result" : "Information stored", "multiple" : ""}]';            
+
             break;
 
         case 'step_5':
@@ -1449,37 +1455,10 @@ if (null !== $inputData['type']) {
             }
 
             // launch
-            if (empty($var['sk_path'])) {
-                $securePath = $var['absolute_path'];
-            } else {
-                //ensure $var['sk_path'] has no trailing slash
-                $var['sk_path'] = rtrim(str_replace('\/', '//', $var['sk_path']), '/\\');
-                $securePath = $var['sk_path'];
-            }
-
             $events = '';
 
             if ($inputData['activity'] === 'file') {
                 if ($inputData['task'] === 'settings.php') {
-                    // first is to create teampass-seckey.txt
-                    // MOVE FILE TO DESTINATION PATH
-                    $filename_seckey = $securePath . '/' . SECUREFILE;
-
-                    if (file_exists($filename_seckey)) {
-                        if (!copy($filename_seckey, $filename_seckey . '.' . date('Y_m_d', mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'))))) {
-                            echo '[{"error" : "File `'.$filename_seckey.'` already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "' . $inputData['index'] . '", "multiple" : "' . $inputData['multiple'] . '"}]';
-                            break;
-                        } else {
-                            unlink($filename);
-                        }
-                    } else {
-                        // Move file
-                        if (!copy(__DIR__.'/../includes/config/'.SECUREFILE, $filename_seckey)) {
-                            echo '[{"error" : "File `'.__DIR__.'/../includes/config/'.SECUREFILE.'` could not be copied to `'.$filename_seckey.'`. Please check the path and the rights", "result":"", "index" : "' . $inputData['index'] . '", "multiple" : "' . $inputData['multiple'] . '"}]';
-                            break;
-                        }
-                    }
-
                     // Now create settings file
                     $filename = '../includes/config/settings.php';
 
@@ -1491,7 +1470,12 @@ if (null !== $inputData['type']) {
                             unlink($filename);
                         }
                     }
-                    //echo ">". $inputData['db']['db_pw']." -- ".$new_salt." ;; ";
+
+                    //
+                    if (file_exists(__DIR__.'/../includes/config/'.SECUREFILE)) {
+                        unlink(__DIR__.'/../includes/config/'.SECUREFILE);
+                    }
+                    
                     // Encrypt the DB password
                     $encrypted_text = encryptFollowingDefuse(
                         $inputData['db']['db_pw'],
@@ -1524,7 +1508,7 @@ define("DB_SSL", false); // if DB over SSL then comment this line
 define("DB_CONNECT_OPTIONS", array(
     MYSQLI_OPT_CONNECT_TIMEOUT => 10
 ));
-define("SECUREPATH", "' . $securePath . '");
+define("SECUREPATH", "' . $session_sk_path . '");
 define("SECUREFILE", "' . SECUREFILE. '");
 
 if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
