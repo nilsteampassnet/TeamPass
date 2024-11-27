@@ -2229,6 +2229,9 @@ function identifyDoLDAPChecks(
     int $sessionPwdAttempts
 ): array
 {
+    $session = SessionManager::getSession();
+    $lang = new Language($session->get('user-language') ?? 'english');
+
     // Prepare LDAP connection if set up
     if ((int) $SETTINGS['ldap_mode'] === 1
         && $username !== 'admin'
@@ -2249,7 +2252,7 @@ function identifyDoLDAPChecks(
                     'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
                     'pwd_attempts' => (int) $sessionPwdAttempts,
                     'error' => true,
-                    'message' => "LDAP error: ".$retLDAP['message'],
+                    'message' => $lang->get('error_bad_credentials'),
                 ]
             ];
         }
@@ -2338,7 +2341,7 @@ function shouldUserAuthWithOauth2(
                 // Case where user exists in Teampass but not allowed to auth with Oauth2
                 return [
                     'error' => true,
-                    'message' => 'user_exists_but_not_oauth2',
+                    'message' => 'error_bad_credentials',
                     'oauth2Connection' => false,
                     'userPasswordVerified' => false,
                 ];
