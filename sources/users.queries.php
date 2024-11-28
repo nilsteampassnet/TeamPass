@@ -1712,32 +1712,57 @@ if (null !== $post_type) {
                     $inputData['language'] = 'english';
                 }
 
+                // Data to update
+                $update_fields = [
+                    'split_view_mode' => $inputData['split_view_mode'],
+                ];
+
+                // Update SETTINGS
+                $session->set('user-split_view_mode', (int) $inputData['split_view_mode']);
+
+                // User profile edit enabled
+                if (($SETTINGS['disable_user_edit_profile'] ?? '0') === '0') {
+                    // Update database
+                    $update_fields['email']    = $inputData['email'];
+                    $update_fields['name']     = $inputData['name'];
+                    $update_fields['lastname'] = $inputData['lastname'];
+                    // Update session
+                    $session->set('user-email', $inputData['email']);
+                    $session->set('user-name', $inputData['name']);
+                    $session->set('user-lastname', $inputData['lastname']);    
+                }
+
+                // User language edit enabled
+                if (($SETTINGS['disable_user_edit_language'] ?? '0') === '0') {
+                    // Update database
+                    $update_fields['user_language'] = $inputData['language'];
+                    // Update session
+                    $session->set('user-language', $inputData['language']);
+                }
+
+                // User timezone edit enabled
+                if (($SETTINGS['disable_user_edit_timezone'] ?? '0') === '0') {
+                    // Update database
+                    $update_fields['usertimezone'] = $inputData['timezone'];
+                    // Update session
+                    $session->set('user-timezone', $inputData['timezone']);
+                }
+
+                // User can edit tree load strategy
+                if (($SETTINGS['disable_user_edit_tree_load_strategy'] ?? '0') === '0') {
+                    // Update database
+                    $update_fields['treeloadstrategy'] = $inputData['treeloadstrategy'];
+                    // Update session
+                    $session->set('user-tree_load_strategy', $inputData['treeloadstrategy']);
+                }
+
                 // update user
                 DB::update(
                     prefixTable('users'),
-                    array(
-                        'email' => $inputData['email'],
-                        'usertimezone' => $inputData['timezone'],
-                        'user_language' => $inputData['language'],
-                        'treeloadstrategy' => $inputData['treeloadstrategy'],
-                        //'agses-usercardid' => $inputData['agsescardid'],
-                        'name' => $inputData['name'],
-                        'lastname' => $inputData['lastname'],
-                        'split_view_mode' => $inputData['split_view_mode'],
-                    ),
+                    $update_fields,
                     'id = %i',
                     $session->get('user-id')
                 );
-
-                // Update SETTINGS
-                $session->set('user-timezone', $inputData['timezone']);
-                $session->set('user-name', $inputData['name']);
-                $session->set('user-lastname', $inputData['lastname']);
-                $session->set('user-email', $inputData['email']);
-                $session->set('user-tree_load_strategy', $inputData['treeloadstrategy']);
-                //$_SESSION['user_agsescardid'] = $inputData['agsescardid'];
-                $session->set('user-language', $inputData['language']);
-                $session->set('user-split_view_mode', (int) $inputData['split_view_mode']);
 
             } else {
                 // An error appears on JSON format

@@ -326,18 +326,6 @@ foreach ($session->get('user-roles_array') as $role) {
                                         '</a>
                                     </li>';
                                     }
-                                    /*if (
-                                        isset($SETTINGS['agses_authentication_enabled']) === true
-                                        && (int) $SETTINGS['agses_authentication_enabled'] === 1
-                                    ) {
-                                        echo '
-                                    <li class="list-group-item">
-                                        <b><i class="fas fa-id-card-o fa-fw fa-lg mr-2"></i>' . $lang->get('user_profile_agses_card_id') . '</b>
-                                        <a class="float-right">',
-                                            $_SESSION['user_agsescardid'] ?? '',
-                                            '</a>
-                                    </li>';
-                                    }*/
                                     ?>
                                 </ul>
                             </div>
@@ -380,6 +368,7 @@ foreach ($session->get('user-roles_array') as $role) {
                             <!-- SETTINGS -->
                             <div class="tab-pane<?php echo $get['tab'] === 'settings' ? ' active' : ''; ?>" id="tab_settings">
                                 <form class="needs-validation" novalidate onsubmit="return false;">
+                                <?php if (($SETTINGS['disable_user_edit_profile'] ?? '0') === '0') : ?>
                                     <div class="form-group">
                                         <label for="profile-name" class="col-sm-2 control-label"><?php echo $lang->get('name'); ?></label>
                                         <div class="col-sm-10">
@@ -400,7 +389,8 @@ foreach ($session->get('user-roles_array') as $role) {
                                             <input type="email" class="form-control" id="profile-user-email" placeholder="name@domain.com" value="<?php echo $session->get('user-email'); ?>">
                                         </div>
                                     </div>
-
+                                <?php endif; /* disable_user_edit_profile */
+                                if (($SETTINGS['disable_user_edit_timezone'] ?? '0') === '0') : ?>
                                     <div class="form-group">
                                         <label class="col-sm-10 control-label"><?php echo $lang->get('timezone_selection');?></label>
                                         <div class="col-sm-10">
@@ -418,6 +408,8 @@ foreach ($session->get('user-roles_array') as $role) {
                                             </select>
                                         </div>
                                     </div>
+                                <?php endif; /* disable_user_edit_timezone */
+                                if (($SETTINGS['disable_user_edit_language'] ?? '0') === '0') : ?>
                                     <div class="form-group">
                                         <label class="col-sm-10 control-label"><?php echo $lang->get('language'); ?></label>
                                         <div class="col-sm-10">
@@ -433,7 +425,8 @@ foreach ($session->get('user-roles_array') as $role) {
                                             </select>
                                         </div>
                                     </div>
-
+                                <?php endif; /* disable_user_edit_language */
+                                if (($SETTINGS['disable_user_edit_tree_load_strategy'] ?? '0') === '0') : ?>
                                     <div class="form-group">
                                         <label class="col-sm-10 control-label"><?php echo $lang->get('tree_load_strategy'); ?></label>
                                         <div class="col-sm-10">
@@ -449,6 +442,7 @@ foreach ($session->get('user-roles_array') as $role) {
                                             </select>
                                         </div>
                                     </div>
+                                <?php endif; /* disable_user_edit_tree_load_strategy */ ?>
 
                                     <div class="form-group">
                                         <label class="col-sm-10 control-label"><?php echo $lang->get('items_page_split_view_mode'); ?></label>
@@ -472,8 +466,10 @@ foreach ($session->get('user-roles_array') as $role) {
                                                 <button type="button" class="btn btn-info" id="profile-user-save-settings"><?php echo $lang->get('save'); ?></button>
                                             </div>
                                             <div class="col-sm-8">
-                                                <button type="button" class="btn btn-warning float-right ml-2" id="profile-avatar-file"><?php echo $lang->get('upload_new_avatar'); ?></button>
-                                                <?php
+                                                <?php if (($SETTINGS['disable_user_edit_profile'] ?? '0') === '0') { ?>
+                                                    <button type="button" class="btn btn-warning float-right ml-2" id="profile-avatar-file"><?php echo $lang->get('upload_new_avatar'); ?></button>
+                                                <?php 
+                                                }
                                                 if (isset($SETTINGS['api']) === true && (int) $SETTINGS['api'] === 1) {
                                                     echo '<button type="button" class="btn btn-warning float-right" id="profile-button-api_token">' . $lang->get('generate_api_token') . '</button>';
                                                 }
