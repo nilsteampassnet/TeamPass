@@ -354,12 +354,12 @@ if (null !== $inputData['type']) {
                 // For other queries with `url_path` and `absolute_path`
                 $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `_install` WHERE `key` = 'url_path'"));
                 if (intval($tmp) === 0) {
-                    mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('url_path', '" . $session_url_path . "');");
+                    mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('url_path', '" . mysqli_real_escape_string($dbTmp, $session_url_path) . "');");
                 }
 
                 $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `_install` WHERE `key` = 'absolute_path'"));
                 if (intval($tmp) === 0) {
-                    mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('absolute_path', '" . $session_abspath . "');");
+                    mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('absolute_path', '" . mysqli_real_escape_string($dbTmp, $session_abspath) . "');");
                 }
                 
                 echo '[{"error" : "", "result" : "Connection is successful", "multiple" : ""}]';
@@ -1557,7 +1557,7 @@ define("DB_SSL", false); // if DB over SSL then comment this line
 define("DB_CONNECT_OPTIONS", array(
     MYSQLI_OPT_CONNECT_TIMEOUT => 10
 ));
-define("SECUREPATH", "' . $session_sk_path . '");
+define("SECUREPATH", "' . str_replace('"', '', $session_sk_path) . '");
 define("SECUREFILE", "' . SECUREFILE. '");
 
 if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
