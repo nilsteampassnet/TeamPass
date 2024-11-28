@@ -339,8 +339,8 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                 ],
                 1
             ) === true)
-        && (((int) $userInfo['admin'] !== 1 && (int) $userInfo['mfa_enabled'] === 1) || ((int) $SETTINGS['admin_2fa_required'] === 1 && (int) $userInfo['admin'] === 1))
-        && $userInfo['mfa_auth_requested_roles'] === true
+        && (((int) $userInfo['admin'] !== 1 && (int) $userInfo['mfa_enabled'] === 1 && $userInfo['mfa_auth_requested_roles'] === true)
+        || ((int) $SETTINGS['admin_2fa_required'] === 1 && (int) $userInfo['admin'] === 1))
     ) {
         // Check user against MFA method if selected
         $userMfa = identifyDoMFAChecks(
