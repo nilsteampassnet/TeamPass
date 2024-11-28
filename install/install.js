@@ -26,14 +26,6 @@ $(function() {
         alert("Paste option is disabled !!");
         e.preventDefault();
     });
-    
-    /*
-    * Removing automatic action
-    // Auto start
-    if ($("#step").val() == 5) {
-        $('#but_launch').trigger('click');
-    }
-    */
 });
 
 function aesEncrypt(text)
@@ -47,7 +39,9 @@ var global_error_on_query = false,
     dbInfo = "",
     index = "",
     multiple = "",
-    jsonValues = "";
+    jsonValues = "",
+    skFile = "";
+let progressNotification;
 
 function checkPage()
 {
@@ -57,26 +51,25 @@ function checkPage()
     index = "";
     tasks = [];
     dbInfo = [];
+    skFile = [];
     multiple = "";
     tsk = "";
     $("#step_error").addClass("hidden").html("");
     $("#res_"+step).html("");
     
-    alertify
-        .message('Working on it... <i class="fas fa-cog fa-spin fa-2x"></i>', 0)
-        .dismissOthers();
-
+        
     if (step === "2") {
     // STEP 2
-        if ($("#url_path").val() === "" || $("#absolute_path").val() === "") {
+        if ($("#url_path").val() === "" || $("#absolute_path").val() === "" || $("#sk_path").val() === "") {
             error = "Fields need to be filled in!";
         } else {
-            jsonValues = {"absolute_path":$("#absolute_path").val(), "url_path":$("#url_path").val()};
+            jsonValues = {"absolute_path":sanitizeString($("#absolute_path").val()), "url_path":sanitizeString($("#url_path").val()), "sk_path":sanitizeString($("#sk_path").val())};
             dataToUse = JSON.stringify(jsonValues);
-            tasks = ["folder*install", "folder*includes", "folder*includes/config", "folder*includes/avatars", "folder*includes/libraries/csrfp/libs", "folder*includes/libraries/csrfp/js", "folder*includes/libraries/csrfp/log",  "extension*mbstring", "extension*openssl", "extension*bcmath", "extension*iconv", "extension*gd", "extension*xml", "extension*curl", "version*php", "ini*max_execution_time", "extension*gmp", "folder*files", "folder*upload"];
+            tasks = ["folder*install", "folder*includes", "folder*includes/config", "folder*includes/avatars", "folder*includes/libraries/csrfp/libs", "folder*includes/libraries/csrfp/js", "folder*includes/libraries/csrfp/log",  "extension*mbstring", "extension*openssl", "extension*bcmath", "extension*iconv", "extension*gd", "extension*xml", "extension*curl", "version*php", "ini*max_execution_time", "extension*gmp", "folder*files", "folder*upload", "folder*secure"];
             multiple = true;
             $("#hid_absolute_path").val($("#absolute_path").val());
             $("#hid_url_path").val($("#url_path").val());
+            $("#hid_sk_path").val($("#sk_path").val());
         }
     } else if (step === "3") {
     // STEP 3
@@ -130,7 +123,7 @@ function checkPage()
         }
 
         $("#hid_db_pre").val($("#tbl_prefix").val());
-        jsonValues = {"tbl_prefix":sanitizeString($("#tbl_prefix").val()), "sk_path":sanitizeString($("#sk_path").val()), "admin_pwd":sanitizeString($("#admin_pwd").val()), "admin_email":sanitizeString($("#admin_email").val()), "send_stats":""};
+        jsonValues = {"tbl_prefix":sanitizeString($("#tbl_prefix").val()), "admin_pwd":sanitizeString($("#admin_pwd").val()), "admin_email":sanitizeString($("#admin_email").val()), "send_stats":""};
         dataToUse = JSON.stringify(jsonValues);
         tasks = ["misc*preparation"];
         multiple = "";
@@ -139,11 +132,12 @@ function checkPage()
         dataToUse = "";
         tasks = ["table*utf8", "table*api", "table*automatic_del", "table*cache", "table*cache_tree", "table*categories", "table*categories_folders", "table*categories_items", "table*defuse_passwords", "table*emails", "table*export", "table*files", "table*items", "table*items_change", "table*items_edition", "table*items_otp", "table*kb", "table*kb_categories", "table*kb_items", "table*ldap_groups_roles", "table*languages", "table*log_items", "table*log_system", "table*misc", "table*nested_tree", "table*notification", "table*otv", "table*background_tasks", "table*background_subtasks", "table*background_tasks_logs", "table*restriction_to_roles", "table*rights", "table*roles_title", "table*roles_values", "table*sharekeys_fields", "table*sharekeys_files", "table*sharekeys_items", "table*sharekeys_logs", "table*sharekeys_suggestions", "table*suggestion", "table*tags", "table*templates", "table*tokens", "table*users", "table*auth_failures"];
         multiple = true;
+        $('#step5_wip').removeClass('hidden');
     } else if (step === "6") {
     // STEP 6
         jsonValues = {"url_path":sanitizeString($("#hid_url_path").val())};
         dataToUse = JSON.stringify(jsonValues);
-        tasks = ["install*init", "file*security", "file*settings.php", "file*csrfp-token", "install*cleanup", "install*cronJob"];
+        tasks = [ "file*settings.php","install*init", "file*security", "file*settings.php", "file*csrfp-token", "install*cleanup", "install*cronJob"];
         multiple = true;
     }
 
@@ -152,9 +146,13 @@ function checkPage()
         global_error_on_query = false;
         index = 0;
         dbInfo = {"db_host" : $("#hid_db_host").val(), "db_bdd" : $("#hid_db_bdd").val(), "db_login" : $("#hid_db_login").val(), "db_pw" : $("#hid_db_pwd").val(), "db_port" : $("#hid_db_port").val(), "db_pre" : $("#hid_db_pre").val()};
+        skFile = {"sk_path" : $("#hid_sk_path").val(), "sk_filename" : $("#hid_sk_filename").val(), "sk_key" : $("#hid_sk_key").val()};
 
         $("#step_res").val("true");
         $("#pop_db").html("");
+        
+        progressNotification = alertify.message('<i class="fas fa-spinner fa-spin"></i> Processing tasks...', 0); // Timeout = 0 means persistent
+
 
         var promise = tasks.slice(1)
             .reduce(
@@ -167,12 +165,15 @@ function checkPage()
         promise.then(function(){
             // do something when all requests are ready
             // all requests are complete
+            $('.progress').addClass('hidden');
             if ($("#step_res").val() === "false" || global_error_on_query === true) {
+                progressNotification.dismiss();
                 alertify
                     .error('<i class="fas fa-ban mr-2"></i>At least one task has failed! Please correct and relaunch.', 0)
                     .dismissOthers();
                 return false;
             } else {
+                progressNotification.dismiss();
                 alertify
                     .success('<i class="fas fa-check text-success mr-2"></i><b>Done</b>.<br>Click next to continue', 1)
                     .dismissOthers();
@@ -190,11 +191,16 @@ function checkPage()
                         .addClass("hidden");
                 }
             }
+            
         });
     } else if (error === "" && multiple === "") {
+
+        progressNotification = alertify.message('<i class="fas fa-spinner fa-spin"></i> Processing tasks...', 0);
+
         tsk = tasks[0].split("*");
 
         dbInfo = {"db_host" : $("#hid_db_host").val(), "db_bdd" : $("#hid_db_bdd").val(), "db_login" : $("#hid_db_login").val(), "db_pw" : $("#hid_db_pwd").val(), "db_port" : $("#hid_db_port").val()};
+        skFile = {"sk_path" : $("#hid_sk_path").val(), "sk_filename" : $("#hid_sk_filename").val(), "sk_key" : $("#hid_sk_key").val()};
 
         dataToUse = {
             type:       "step_"+step,
@@ -202,6 +208,7 @@ function checkPage()
             activity:   aesEncrypt(tsk[0]),
             task:       aesEncrypt(tsk[1]),
             db:         aesEncrypt(JSON.stringify(dbInfo)),
+            skFile:     aesEncrypt(JSON.stringify(skFile)),
             index:      index,
             multiple:   multiple,
             info:       tsk[0]+"-"+tsk[1],
@@ -236,7 +243,9 @@ function checkPage()
             }
         });
     } else {
-        $("#step_error").removeClass("hidden").html(error);
+        alertify
+            .error('<i class="fas fa-ban mr-2"></i>' + error + '</i><br />Please correct and relaunch.', 10)
+            .dismissOthers();
     }
 }
 
@@ -246,9 +255,8 @@ function checkPage()
  */
 function doGetJson(task)
 {
-    console.log("\n\n--- PREPARATION---\n"+step+"\n"+dataToUse+"\n"+dbInfo+"\n"+index+"\n"+multiple+"\n"+task+"\n-------\n")
     tsk = task.split("*");
-
+    
     return $.ajax({
         url: "install.queries.php",
         type : "POST",
@@ -260,22 +268,22 @@ function doGetJson(task)
             activity:   aesEncrypt(tsk[0]),
             task:       aesEncrypt(tsk[1]),
             db:         aesEncrypt(JSON.stringify(dbInfo)),
+            skFile:     aesEncrypt(JSON.stringify(skFile)),
             index:      index,
             multiple:   multiple,
             info:       tsk[0]+"-"+tsk[1]
         }
     })
     .complete(function(data) {
-        console.log("\n\n--- RECEPTION---\n"+JSON.stringify(data, null, 2)+"\n-------\n")
         if (data.responseText === "") {
             alertify
                 .error('<i class="fas fa-ban mr-2">[ERROR] Answer from server is empty.', 10)
                 .dismissOthers();
         } else {
             data = $.parseJSON(data.responseText);
-            console.log("RETOUR:");
-            console.log(data)
+            
             if (data[0].error === "") {
+                progressNotification.setContent(`<i class="fas fa-spinner fa-spin"></i> Task ${tsk[1]} completed successfully.`);
                 if (step === "5") {
                     if (data[0].activity === "table") {
                         $("#pop_db").append("<li>Table <b>"+data[0].task+"</b> created</li>");
@@ -293,11 +301,17 @@ function doGetJson(task)
                         .dismissOthers();
                 }
             } else {
-                $("#res"+step+"_check"+data[0].index).html('<span class="badge badge-danger"><i class="fas fa-ban text-warning mr-2"></i>' + data[0].error + "</i></span>");
+                progressNotification.setContent(`<i class="fas fa-ban text-danger"></i> Task ${tsk[1]} failed: ${data[0].error}`);
                 
                 // Considere only a warning on GMP extension
-                if (data[0].index !== "16") {
+                if (step !== "5" && data[0].index !== "16") {
                     global_error_on_query = true;
+                }
+
+                if (step === "5") {
+                    if (data[0].activity === "table" && data[0].error.includes("Duplicate key name") === false) {
+                        global_error_on_query = true;
+                    }
                 }
             }
         }

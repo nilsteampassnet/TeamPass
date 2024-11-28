@@ -102,6 +102,21 @@ define('MIN_PHP_VERSION', 8.1);
 	if (empty($post_sk_path) === true) {
 		$post_sk_path = filter_input(INPUT_POST, 'hid_sk_path', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 	}
+	if (empty($post_sk_filename) === true) {
+		$post_sk_filename = filter_input(INPUT_POST, 'hid_sk_filename', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+	}
+	if (empty($post_sk_key) === true) {
+		$post_sk_key= filter_input(INPUT_POST, 'hid_sk_key', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+	}
+	
+	if (isset($_COOKIE['PHPSESSID'])) {
+		setcookie('PHPSESSID', '', time() - 10, '/', '', false, true);
+	}
+	if (session_status() === PHP_SESSION_ACTIVE) {
+		session_unset();
+		session_destroy();
+	}
+
 
 	// Get some data
 	include "../includes/config/include.php";
@@ -133,6 +148,8 @@ define('MIN_PHP_VERSION', 8.1);
 			<input type="hidden" name="hid_absolute_path" id="hid_absolute_path" value="', isset($post_absolute_path) ? $post_absolute_path : '', '" />
 			<input type="hidden" name="hid_url_path" id="hid_url_path" value="', isset($post_url_path) ? $post_url_path : '', '" />
 			<input type="hidden" name="hid_sk_path" id="hid_sk_path" value="', isset($post_sk_path) ? $post_sk_path : '', '" />
+			<input type="hidden" name="hid_sk_filename" id="hid_sk_filename" value="', isset($post_sk_path) ? $post_sk_path : '', '" />
+			<input type="hidden" name="hid_sk_key" id="hid_sk_key" value="', isset($post_sk_path) ? $post_sk_path : '', '" />
 			
 		    <div class="card card-default color-palette-box">
             <div class="card-header">
@@ -191,6 +208,13 @@ define('MIN_PHP_VERSION', 8.1);
 						<label>Full URL to TeamPass</label>
 						<input type="text" class="form-control" name="url_path" id="url_path" class="ui-widget" value="' . $protocol . $_SERVER['HTTP_HOST'] . substr($_SERVER['PHP_SELF'], 0, strrpos($_SERVER['PHP_SELF'], '/') - 8) . '">
 					</div>
+					<div class="form-group">
+						<label>Absolute path to secure path</label>
+						<small class="form-text text-muted">
+							For security reasons, the secure path shall be defined outside the WWW folder of your server (example: /var/teampass/). It will host an encryption key used for several Teampass features.
+						</small>
+						<input type="text" class="form-control" name="sk_path" id="sk_path" class="ui-widget" value="">
+					</div>
 				</div>
 			</div>
 		</div>
@@ -206,7 +230,8 @@ define('MIN_PHP_VERSION', 8.1);
 				<div class="card-body">
 
 					<ul>
-					<li>File "/includes/config/settings.php is available"&nbsp;<span id="res2_check99"></span></li>
+					<li>Secure folder is available&nbsp;<span id="res2_check19"></span></li>
+					<li>File "/includes/config/settings.php is available&nbsp;<span id="res2_check99"></span></li>
 					<li>Directory "/install/" is writable&nbsp;<span id="res2_check0"></span></li>
 					<li>Directory "/includes/" is writable&nbsp;<span id="res2_check1"></span></li>
 					<li>Directory "/includes/config/" is writable&nbsp;<span id="res2_check2"></span></li>
@@ -298,14 +323,6 @@ define('MIN_PHP_VERSION', 8.1);
 					</div>
 		
 					<div class="form-group">
-						<label>Absolute path to SaltKey</label>
-						<input type="text" class="form-control" name="sk_path" id="sk_path" class="ui-widget" value=""><span id="res4_check2"></span>
-						<small class="form-text text-muted">
-							The SaltKey is stored in a file called teampass-seckey.txt and hashed for security purpose. For security reasons, this file should be stored in a folder outside the WWW folder of your server (example: /var/teampass/). This key will be used to encrypt data when sharing information with users without any Teampass account. If this field remains empty, this file will be stored in folder <path to Teampass>/includes/.
-						</small>
-					</div>
-		
-					<div class="form-group">
 						<label>Teampass Administrator password</label>
 						<input type="password" class="form-control" id="admin_pwd" class="ui-widget" value=""><span id="res4_check10"></span>
 					</div>
@@ -341,6 +358,9 @@ define('MIN_PHP_VERSION', 8.1);
 				<div class="card-body">
 					<ul id="pop_db"></ul>
 				</div>
+			</div>
+			<div class="card card-info hidden progress" id="step5_wip">
+				Work in progress... <i class="fas fa-cog fa-spin fa-2x"></i>
 			</div>
 		</div>
 	</div>';

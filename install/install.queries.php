@@ -42,6 +42,7 @@ use TeampassClasses\SessionManager\SessionManager;
 use Encryption\Crypt\aesctr;
 
 // Do initial test
+// Ensure that the file settings.php exists
 if (file_exists('../includes/config/settings.php') === false) {
     $settings_sample = 'includes/config/settings.sample.php';
     $settings = 'includes/config/settings.php';
@@ -52,20 +53,9 @@ if (file_exists('../includes/config/settings.php') === false) {
             'Then click START button.", "index" : "99", "multiple" : "' . $inputData['multiple'] . '"}]';
         exit();
     }
-}
 
-
-// Load settings
-include_once '../includes/config/settings.php';
-
-// Check if SECUREPATH and SECUREFILE are defined
-if (defined('SECUREPATH') === false) {
-    define('SECUREPATH', __DIR__.'/../includes/config');
-    error_log("TEST1");
-}
-if (defined('SECUREFILE') === false) {
-    define('SECUREFILE', generateRandomKey());
-    error_log("TEST2");
+    $SECUREPATH = __DIR__.'/../includes/config';
+    $SECUREFILE = generateRandomKey();
 
     // 1- generate saltkey
     $key = Key::createNewRandomKey();
@@ -73,18 +63,25 @@ if (defined('SECUREFILE') === false) {
 
     // 2- store key in file
     file_put_contents(
-        SECUREPATH.'/'.SECUREFILE,
+        $SECUREPATH.'/'.$SECUREFILE,
         $new_salt
     );
 
     //3 - add to settings
     $newLine = '
-define("SECUREPATH", "' . SECUREPATH. '");
-define("SECUREFILE", "' . SECUREFILE. '");
+define("SECUREPATH", "' . $SECUREPATH. '");
+define("SECUREFILE", "' . $SECUREFILE. '");
 ';
     file_put_contents('../includes/config/settings.php', $newLine, FILE_APPEND);
 }
 
+// Load settings
+include_once '../includes/config/settings.php';
+
+// Reset SESSION
+if (isset($_COOKIE['PHPSESSID'])) {
+    setcookie('PHPSESSID', '', time() - 10, '/', '', false, true);
+}
 if (session_status() === PHP_SESSION_ACTIVE) {
     session_unset();
     session_destroy();
@@ -92,7 +89,6 @@ if (session_status() === PHP_SESSION_ACTIVE) {
 
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
-
 
 // init
 loadClasses('DB');
@@ -115,9 +111,6 @@ error_reporting(E_ERROR | E_PARSE);
 set_time_limit(600);
 $session_db_encoding = 'utf8';
 define('MIN_PHP_VERSION', 8.1);
-
-$superGlobal = new SuperGlobal();
-$lang = new Language(); 
 
 /**
  * Generates a random key.
@@ -189,12 +182,13 @@ $postValues = [
     'index' => filter_input(INPUT_POST, 'index', FILTER_SANITIZE_NUMBER_INT),
     'multiple' => filter_input(INPUT_POST, 'multiple', FILTER_SANITIZE_FULL_SPECIAL_CHARS),
     'db' => filter_input(INPUT_POST, 'db', FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+    'skFile' => filter_input(INPUT_POST, 'skFile', FILTER_SANITIZE_FULL_SPECIAL_CHARS),
 ];
 
 // Decrypt POST values
 require_once 'libs/aesctr.php';
 foreach ($postValues as $key => $value) {
-    if ($key === 'data' || $key === 'activity' || $key === 'task' || $key === 'db') {
+    if ($key === 'data' || $key === 'activity' || $key === 'task' || $key === 'db' || $key === 'skFile') {
         $postValues[$key] = aesctr::decrypt($value, 'cpm', 128);
     }
 }
@@ -207,6 +201,7 @@ $inputData['data'] = [
     'index' => isset($postValues['index']) === true ? (int) $postValues['index'] : 0,
     'multiple' => isset($postValues['multiple']) === true ? $postValues['multiple'] : '',
     'db' => isset($postValues['db']) === true ? $postValues['db'] : '',
+    'skFile' => isset($postValues['skFile']) === true ? $postValues['skFile'] : '',
 ];
 $filters = [
     'type' => 'trim|escape',
@@ -216,6 +211,7 @@ $filters = [
     'index' => 'cast:integer',
     'multiple' => 'trim|escape',
     'db' => 'cast:array',
+    'skFile' => 'cast:array',
 ];
 $inputData = dataSanitizer(
     $inputData['data'],
@@ -226,7 +222,9 @@ $inputData = dataSanitizer(
 // Prepare variables
 $session_abspath = rtrim($inputData['data']['absolute_path'], '/');
 $session_url_path = rtrim($inputData['data']['url_path'], '/');
-$session_sk_path = rtrim($inputData['data']['sk_path'], '/');
+$session_sk_path = rtrim($inputData['skFile']['sk_path'], '/');
+$session_sk_filename = $inputData['skFile']['sk_filename'];
+$session_sk_key = $inputData['skFile']['sk_key'];
 
 if (null !== $inputData['type']) {
     switch ($inputData['type']) {
@@ -257,10 +255,10 @@ if (null !== $inputData['type']) {
                             break;
                         }
                     }
+                    define('SECUREPATH', $session_sk_path);
                     echo '[{"error" : "", "index" : "' . $inputData['index'] . '", "multiple" : "' . $inputData['multiple'] . '"}]';
                 } else {
                     $targetPath = $session_abspath . '/' . $inputData['task'] . '/';
-                    error_log("PATH: ".$targetPath);
                     if (is_writable($targetPath) === true) {
                         echo '[{"error" : "", "index" : "' . $inputData['index'] . '", "multiple" : "' . $inputData['multiple'] . '"}]';
                     } else {
@@ -371,7 +369,20 @@ if (null !== $inputData['type']) {
             mysqli_close($dbTmp);
             break;
 
-        case 'step_4':
+        case 'step_4':          
+            // launch
+            try {
+                $dbTmp = mysqli_connect(
+                    $inputData['db']['db_host'], 
+                    $inputData['db']['db_login'], 
+                    $inputData['db']['db_pw'], 
+                    $inputData['db']['db_bdd'], 
+                    $inputData['db']['db_port']
+                );
+            } catch (Exception $e) {
+                echo '[{"error" : "Cannot connect to Database - '.$e->getMessage().'"}]';
+                break;
+            }
             
             // prepare data
             foreach ($inputData['data'] as $key => $value) {
@@ -457,12 +468,27 @@ if (null !== $inputData['type']) {
                                 INDEX idx_object_user (`object_id`, `user_id`)
 							) CHARSET=utf8;'
                         );
-                        $mysqli_result = mysqli_query(
-                            $dbTmp,
-                            'ALTER TABLE `' . $var['tbl_prefix'] . 'sharekeys_items`
-                                ADD KEY `object_id_idx` (`object_id`),
-                                ADD KEY `user_id_idx` (`user_id`);'
-                        );
+                        
+                        // Requête pour vérifier si les clés existent
+                        $keyCheckQuery = "
+                        SELECT COUNT(1) as key_exists 
+                        FROM information_schema.STATISTICS 
+                        WHERE table_schema = DATABASE() 
+                        AND table_name = '" . $var['tbl_prefix'] . "sharekeys_items' 
+                        AND index_name IN ('object_id_idx', 'user_id_idx')
+                        ";
+                        $result = mysqli_query($dbTmp, $keyCheckQuery);
+                        if ($result) {
+                            $row = mysqli_fetch_assoc($result);
+                            if ($row['key_exists'] == 0) {
+                                // Les clés n'existent pas, exécutez la requête ALTER TABLE
+                                $alterQuery = "
+                                    ALTER TABLE `" . $var['tbl_prefix'] . "sharekeys_items` 
+                                        ADD KEY `object_id_idx` (`object_id`),
+                                        ADD KEY `user_id_idx` (`user_id`);
+                                ";
+                            }
+                        }
                     } elseif ($inputData['task'] === 'sharekeys_logs') {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
@@ -474,12 +500,26 @@ if (null !== $inputData['type']) {
 								PRIMARY KEY (`increment_id`)
 							) CHARSET=utf8;'
                         );
-                        $mysqli_result = mysqli_query(
-                            $dbTmp,
-                            'ALTER TABLE `' . $var['tbl_prefix'] . 'sharekeys_logs`
-                                ADD KEY `object_id_idx` (`object_id`),
-                                ADD KEY `user_id_idx` (`user_id`);'
-                        );
+                        // Requête pour vérifier si les clés existent
+                        $keyCheckQuery = "
+                        SELECT COUNT(1) as key_exists 
+                        FROM information_schema.STATISTICS 
+                        WHERE table_schema = DATABASE() 
+                        AND table_name = '" . $var['tbl_prefix'] . "sharekeys_logs' 
+                        AND index_name IN ('object_id_idx', 'user_id_idx')
+                        ";
+                        $result = mysqli_query($dbTmp, $keyCheckQuery);
+                        if ($result) {
+                            $row = mysqli_fetch_assoc($result);
+                            if ($row['key_exists'] == 0) {
+                                // Les clés n'existent pas, exécutez la requête ALTER TABLE
+                                $alterQuery = "
+                                    ALTER TABLE `" . $var['tbl_prefix'] . "sharekeys_logs` 
+                                        ADD KEY `object_id_idx` (`object_id`),
+                                        ADD KEY `user_id_idx` (`user_id`);
+                                ";
+                            }
+                        }
                     } elseif ($inputData['task'] === 'sharekeys_fields') {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
@@ -1342,11 +1382,26 @@ if (null !== $inputData['type']) {
                             PRIMARY KEY (`increment_id`)
                             ) CHARSET=utf8;"
                         );
-                        $mysqli_result = mysqli_query(
-                            $dbTmp,
-                            'ALTER TABLE `' . $var['tbl_prefix'] . 'background_subtasks`
-                                ADD KEY `task_id_idx` (`task_id`);'
-                        );
+
+                        // Requête pour vérifier si les clés existent
+                        $keyCheckQuery = "
+                        SELECT COUNT(1) as key_exists 
+                        FROM information_schema.STATISTICS 
+                        WHERE table_schema = DATABASE() 
+                        AND table_name = '" . $var['tbl_prefix'] . "background_subtasks' 
+                        AND index_name IN ('task_id_idx')
+                        ";
+                        $result = mysqli_query($dbTmp, $keyCheckQuery);
+                        if ($result) {
+                            $row = mysqli_fetch_assoc($result);
+                            if ($row['key_exists'] == 0) {
+                                // Les clés n'existent pas, exécutez la requête ALTER TABLE
+                                $alterQuery = "
+                                    ALTER TABLE `" . $var['tbl_prefix'] . "background_subtasks` 
+                                        ADD KEY `task_id_idx` (`task_id`);
+                                ";
+                            }
+                        }
                     } else if ($inputData['task'] === 'background_tasks') {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
@@ -1462,24 +1517,18 @@ if (null !== $inputData['type']) {
                     // Now create settings file
                     $filename = '../includes/config/settings.php';
 
-                    if (file_exists($filename)) {
-                        if (!copy($filename, $filename . '.' . date('Y_m_d', mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'))))) {
-                            echo '[{"error" : "Setting.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "' . $inputData['index'] . '", "multiple" : "' . $inputData['multiple'] . '"}]';
-                            break;
-                        } else {
-                            unlink($filename);
-                        }
+                    if (!copy($filename, $filename . '.' . date('Y_m_d', mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y')))."_".time())) {
+                        echo '[{"error" : "Setting.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "' . $inputData['index'] . '", "multiple" : "' . $inputData['multiple'] . '"}]';
+                        break;
                     }
 
-                    //
-                    if (file_exists(__DIR__.'/../includes/config/'.SECUREFILE)) {
-                        unlink(__DIR__.'/../includes/config/'.SECUREFILE);
-                    }
+                    // get key
+                    $encryptionKey = file_get_contents(SECUREPATH . "/" . SECUREFILE);
                     
                     // Encrypt the DB password
                     $encrypted_text = encryptFollowingDefuse(
                         $inputData['db']['db_pw'],
-                        $new_salt
+                        $encryptionKey
                     )['string'];
 
                     // Open and write Settings file
@@ -1519,6 +1568,11 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                     );
                     fclose($file_handler);
 
+                    // NOw remove old file
+                    if (file_exists(__DIR__.'/../includes/config/'.SECUREFILE)) {
+                        unlink(__DIR__.'/../includes/config/'.SECUREFILE);
+                    }
+
                     // Create TP USER
                     require_once '../includes/config/include.php';
                     $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `" . $var['tbl_prefix'] . "users` WHERE id = '" . TP_USER_ID . "'"));
@@ -1527,7 +1581,7 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                         $pwd = GenerateCryptKey(25, true, true, true, true);
                         $encrypted_pwd = cryption(
                             $pwd,
-                            $new_salt,
+                            $encryptionKey,
                             'encrypt'
                         )['string'];
 
@@ -1538,6 +1592,16 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                             $dbTmp,
                             "INSERT INTO `" . $var['tbl_prefix'] . "users` (`id`, `login`, `pw`, `groupes_visibles`, `derniers`, `key_tempo`, `last_pw_change`, `last_pw`, `admin`, `fonction_id`, `groupes_interdits`, `last_connexion`, `gestionnaire`, `email`, `favourites`, `latest_items`, `personal_folder`, `public_key`, `private_key`, `is_ready_for_usage`, `otp_provided`, `created_at`) VALUES ('" . TP_USER_ID . "', 'TP', '".$encrypted_pwd."', '', '', '', '', '', '1', '', '', '', '0', '', '', '', '0', '".$userKeys['public_key']."', '".$userKeys['private_key']."', '1', '1', '" . time() . "')"
                         );
+                    }
+
+                    // Destroy session without writing to disk
+                    // Requested to reset CONST values
+                    if (isset($_COOKIE['PHPSESSID'])) {
+                        setcookie('PHPSESSID', '', time() - 10, '/', '', false, true);
+                    }
+                    if (session_status() === PHP_SESSION_ACTIVE) {
+                        session_unset();
+                        session_destroy();
                     }
 
                     if ($result === false) {
