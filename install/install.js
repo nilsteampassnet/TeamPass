@@ -20,12 +20,6 @@ $(function() {
         $("#step").val($(this).attr("target_id"));
         document.upgrade.submit();
     });
-
-    // no paste
-    $("#admin_pwd").bind("paste",function(e) {
-        alert("Paste option is disabled !!");
-        e.preventDefault();
-    });
 });
 
 function aesEncrypt(text)
@@ -137,7 +131,7 @@ function checkPage()
     // STEP 6
         jsonValues = {"url_path":sanitizeString($("#hid_url_path").val())};
         dataToUse = JSON.stringify(jsonValues);
-        tasks = [ "file*settings.php","install*init", "file*security", "file*settings.php", "file*csrfp-token", "install*cleanup", "install*cronJob"];
+        tasks = ["file*settings.php","install*init", "file*security", "file*settings.php", "file*csrfp-token", "install*cleanup", "install*cronJob"];
         multiple = true;
     }
 
@@ -347,10 +341,6 @@ function GotoNextStep()
         $("#step_result").html("");
         $("#step_name").html($("#menu_step"+nextStep).html());
         $("#step_content").html($("#text_step"+nextStep).html());
-        $('#admin_pwd').live("paste",function(e) {
-            alert("Paste option is disabled !!");
-            e.preventDefault();
-        });
         $("#admin_pwd").live("keypress", function(e){
             var key = e.charCode || e.keyCode || 0;
             // allow backspace, tab, delete, arrows, letters, numbers and keypad numbers ONLY

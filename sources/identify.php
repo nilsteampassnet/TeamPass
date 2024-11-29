@@ -2110,24 +2110,6 @@ function identifyDoInitialChecks(
     $oauth2Enabled = $SETTINGS['oauth2_enabled'] ?? false;
     $lang = new Language($session->get('user-language') ?? 'english');
 
-    // Manage Maintenance mode
-    try {
-        $checks->isMaintenanceModeEnabled(
-            $SETTINGS['maintenance_mode'],
-            $userInfo['admin']
-        );
-    } catch (Exception $e) {
-        return [
-            'error' => true,
-            'skip_anti_bruteforce' => true,
-            'array' => [
-                'value' => '',
-                'error' => 'maintenance_mode_enabled',
-                'message' => '',
-            ]
-        ];
-    }
-
     // Brute force management
     try {
         $checks->isTooManyPasswordAttempts($username, getClientIpServer());
@@ -2159,6 +2141,24 @@ function identifyDoInitialChecks(
         ];
     }
 
+    // Manage Maintenance mode
+    try {
+        $checks->isMaintenanceModeEnabled(
+            $SETTINGS['maintenance_mode'],
+            $userInfo['admin']
+        );
+    } catch (Exception $e) {
+        return [
+            'error' => true,
+            'skip_anti_bruteforce' => true,
+            'array' => [
+                'value' => '',
+                'error' => 'maintenance_mode_enabled',
+                'message' => '',
+            ]
+        ];
+    }
+    
     // user should use MFA?
     $userInfo['mfa_auth_requested_roles'] = mfa_auth_requested_roles(
         (string) $userInfo['fonction_id'],
