@@ -965,6 +965,7 @@ return array(
     'disable_user_edit_language' => 'Users can no longer change language',
     'disable_user_edit_timezone' => 'Users can no longer change time zones',
     'disable_user_edit_tree_load_strategy' => 'Users can no longer change tree loading strategy',
+    'disable_drag_drop' => 'Disable item drag and drop',
     'encrypt_key' => 'Encryption key',
     'errors' => 'errors',
     'error_group_exist' => 'This folder already exists!',

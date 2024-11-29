@@ -232,8 +232,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         if (empty($userInitialData['skip_anti_bruteforce'])
             || !$userInitialData['skip_anti_bruteforce']) {
 
-                error_log('test');
-
             // Add failed authentication log
             addFailedAuthentication($username, getClientIpServer());
         }
