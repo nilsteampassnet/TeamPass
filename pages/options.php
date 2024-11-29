@@ -695,6 +695,42 @@ $zones = timezone_list();
                             </div>
                         </div>
 
+                        <div class='row mb-2 option' data-keywords="profile">
+                            <div class='col-10'>
+                                <?php echo $lang->get('disable_user_edit_profile'); ?>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='disable_user_edit_profile' data-toggle-on='<?php echo isset($SETTINGS['disable_user_edit_profile']) === true && $SETTINGS['disable_user_edit_profile'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='disable_user_edit_profile_input' value='<?php echo isset($SETTINGS['disable_user_edit_profile']) && $SETTINGS['disable_user_edit_profile'] === '1' ? '1' : '0'; ?>' />
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option' data-keywords="language lang">
+                            <div class='col-10'>
+                                <?php echo $lang->get('disable_user_edit_language'); ?>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='disable_user_edit_language' data-toggle-on='<?php echo isset($SETTINGS['disable_user_edit_language']) === true && $SETTINGS['disable_user_edit_language'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='disable_user_edit_language_input' value='<?php echo isset($SETTINGS['disable_user_edit_language']) && $SETTINGS['disable_user_edit_language'] === '1' ? '1' : '0'; ?>' />
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option' data-keywords="timezone">
+                            <div class='col-10'>
+                                <?php echo $lang->get('disable_user_edit_timezone'); ?>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='disable_user_edit_timezone' data-toggle-on='<?php echo isset($SETTINGS['disable_user_edit_timezone']) === true && $SETTINGS['disable_user_edit_timezone'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='disable_user_edit_timezone_input' value='<?php echo isset($SETTINGS['disable_user_edit_timezone']) && $SETTINGS['disable_user_edit_timezone'] === '1' ? '1' : '0'; ?>' />
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option' data-keywords="tree load strategy">
+                            <div class='col-10'>
+                                <?php echo $lang->get('disable_user_edit_tree_load_strategy'); ?>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='disable_user_edit_tree_load_strategy' data-toggle-on='<?php echo isset($SETTINGS['disable_user_edit_tree_load_strategy']) === true && $SETTINGS['disable_user_edit_tree_load_strategy'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='disable_user_edit_tree_load_strategy_input' value='<?php echo isset($SETTINGS['disable_user_edit_tree_load_strategy']) && $SETTINGS['disable_user_edit_tree_load_strategy'] === '1' ? '1' : '0'; ?>' />
+                            </div>
+                        </div>
+
                         <div class='row mb-2 option' data-keywords="favorite">
                             <div class='col-10'>
                                 <?php echo $lang->get('enable_favourites'); ?>

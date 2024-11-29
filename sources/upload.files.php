@@ -159,6 +159,13 @@ header('Cache-Control: no-store, no-cache, must-revalidate');
 header('Cache-Control: post-check=0, pre-check=0', false);
 
 if (null !== $post_type_upload && $post_type_upload === 'upload_profile_photo') {
+    // User profile edit disabled
+    if (($SETTINGS['disable_user_edit_profile'] ?? '0') === '1') {
+        echo handleUploadError('Avatar upload not allowed.');
+        return false;
+    }
+
+    // Set directory used to store file
     $targetDir = realpath($SETTINGS['cpassman_dir'] . '/includes/avatars');
 } else {
     $targetDir = realpath($SETTINGS['path_to_files_folder']);

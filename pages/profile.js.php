@@ -225,19 +225,16 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         }
 
         // Prepare data
-        var data = {
+        const data = {
             'name': formName,
             'lastname': formLastname,
             'email': formEmail,
-            'timezone': $('#profile-user-timezone').val(),
-            'language': $('#profile-user-language').val().toLowerCase(),
-            'treeloadstrategy': $('#profile-user-treeloadstrategy').val().toLowerCase(),
-            'agsescardid': $('#profile-user-agsescardid').length > 0 ? $('#profile-user-agsescardid').val() : '',
+            'timezone': $('#profile-user-timezone').val() ?? '',
+            'language': ($('#profile-user-language').val() ?? '').toLowerCase(),
+            'treeloadstrategy': ($('#profile-user-treeloadstrategy').val() ?? '').toLowerCase(),
             'split_view_mode': $('#profile-user-split_view_mode').val(),
         }
-        console.log(data);
-        //return false;
-        // " onmouseover="confirm(document.cookie)"
+        if (debugJavascript === true) console.log(data);
         // Inform user
         toastr.remove();
         toastr.info('<i class="fas fa-cog fa-spin fa-2x"></i>');
@@ -297,7 +294,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     console.log(store.get('teampassUser'));
 
                     // reload page in case of language change
-                    if ($('#profile-user-language').val().toLowerCase() !== '<?php echo $session->get('user-language');?>') {
+                    if ($('#profile-user-language').val()
+                        && $('#profile-user-language').val().toLowerCase() !== '<?php echo $session->get('user-language');?>') {
                         // prepare reload
                         $(this).delay(3000).queue(function() {
                             document.location.href = "index.php?page=profile";
