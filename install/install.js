@@ -20,12 +20,6 @@ $(function() {
         $("#step").val($(this).attr("target_id"));
         document.upgrade.submit();
     });
-
-    // no paste
-    $("#admin_pwd").bind("paste",function(e) {
-        alert("Paste option is disabled !!");
-        e.preventDefault();
-    });
 });
 
 function aesEncrypt(text)
@@ -347,10 +341,6 @@ function GotoNextStep()
         $("#step_result").html("");
         $("#step_name").html($("#menu_step"+nextStep).html());
         $("#step_content").html($("#text_step"+nextStep).html());
-        $('#admin_pwd').live("paste",function(e) {
-            alert("Paste option is disabled !!");
-            e.preventDefault();
-        });
         $("#admin_pwd").live("keypress", function(e){
             var key = e.charCode || e.keyCode || 0;
             // allow backspace, tab, delete, arrows, letters, numbers and keypad numbers ONLY
