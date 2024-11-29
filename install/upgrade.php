@@ -332,7 +332,7 @@ if (!isset($_GET['step']) && !isset($post_step)) {
                         
                         <div class="form-group">
                             <label>Password</label>
-                            <input type="text" class="form-control" name="db_pw" id="db_pw" class="ui-widget" value="'.DB_PASSWD_CLEAR.'">
+                            <input type="password" class="form-control" name="db_pw" id="db_pw" class="ui-widget" value="'.DB_PASSWD_CLEAR.'">
                         </div>
                         
                         <div class="form-group">
