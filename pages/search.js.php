@@ -251,7 +251,6 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                         '<button type="button" class="btn btn-secondary ml-2" id="btn-copy-pwd" data-id="' + data.id + '" data-label="' + data.label + '"><i class="fas fa-copy"></i></button>' +
                         '<button type="button" class="btn btn-secondary btn-show-pwd ml-2" data-id="' + data.id + '"><i class="fas fa-eye pwd-show-spinner"></i></button>' +
                         '<span id="pwd-show_' + data.id + '" class="unhide_masked_data ml-2" style="height: 20px;"><?php echo $var['hidden_asterisk']; ?></span>' +
-                        '<input id="pwd-hidden_' + data.id + '" class="pwd-clear" type="hidden" value="' + atob(data.pw).utf8Decode() + '">' +
                         '<input type="hidden" id="pwd-is-shown_' + data.id + '" value="0">' +
                         '</div>' +
                         (data.login === '' ? '' :
@@ -292,18 +291,18 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
                 // Manage buttons --> PASSWORD
                 new ClipboardJS('#btn-copy-pwd', {
-                        text: function(trigger) {                           
-                            // Read password
-                            return $('#pwd-hidden_' + $('#btn-copy-pwd').data('id')).val();
+                        text: function(trigger) {   
+                            // Get item password from server
+                            const item_pwd = getItemPassword(
+                                'at_password_copied',
+                                'item_id',
+                                $('#btn-copy-pwd').data('id')
+                            );
+
+                            return item_pwd;
                         }
                     })
                     .on('success', function(e) {
-                        itemLog(
-                            'at_password_copied',
-                            e.trigger.dataset.id,
-                            e.trigger.dataset.label
-                        );
-
                         // Warn user about clipboard clear
                         if (store.get('teampassSettings').clipboard_life_duration === undefined || parseInt(store.get('teampassSettings').clipboard_life_duration) === 0) {
                             toastr.remove();
@@ -381,8 +380,9 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
     }
 
     // show password during longpress
-    var mouseStillDown = false;
-    $('#search-results-items').on('mousedown', '.unhide_masked_data', function(event) {
+    let mouseStillDown = false;
+    $('#search-results-items')
+        .on('mousedown', '.unhide_masked_data', function(event) {
             mouseStillDown = true;
 
             showPwdContinuous($(this).attr('id'));
@@ -396,37 +396,23 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
             showPwdContinuous($(this).attr('id'));
         });
 
-    var showPwdContinuous = function(elem_id) {
-        var itemId = elem_id.split('_')[1];
-        if (mouseStillDown === true) {
-            // Prepare data to show
-            // Is data crypted?
-            var data = unCryptData($('#pwd-hidden_' + itemId).val(), '<?php echo $session->get('key'); ?>');
+    const showPwdContinuous = function showPwdContinuous(elem_id) {
+        const itemId = elem_id.split('_')[1];
+        if (mouseStillDown === true 
+            && !$('#pwd-show_' + itemId).hasClass('pwd-shown')) {
 
-            if (data !== false) {
-                $('#pwd-hidden_' + itemId).val(
-                    data.password
-                );
-            }
-
-            $('#pwd-show_' + itemId).html(
-                '<span style="cursor:none;">' +
-                $('#pwd-hidden_' + simplePurifier(itemId).val(), false, false, false, false) +
-                '</span>'
+            const item_pwd = getItemPassword(
+                'at_password_shown',
+                'item_id',
+                itemId
             );
 
+            $('#pwd-show_' + itemId).text(item_pwd);
+            $('#pwd-show_' + itemId).addClass('pwd-shown');
+
+            // Auto hide password
             setTimeout('showPwdContinuous("pwd-show_' + itemId + '")', 50);
-            
-            // log password is shown
-            if ($("#pwd-show_" + itemId).hasClass('pwd-shown') === false) {
-                itemLog(
-                    'at_password_shown',
-                    itemId,
-                    $('#pwd-label_' + itemId).text()
-                );
-                $('#pwd-show_' + itemId).addClass('pwd-shown');
-            }
-        } else {
+        } else if(mouseStillDown !== true) {
             $('#pwd-show_' + itemId)
                 .html('<?php echo $var['hidden_asterisk']; ?>')
                 .removeClass('pwd-shown');
@@ -437,34 +423,21 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
     // including autohide after a couple of seconds
     $(document).on('click', '.btn-show-pwd', function() {
         if ($(this).hasClass('pwd-shown') === false) {
-            var itemId = $(this).data('id');
+            const itemId = $(this).data('id');
             $(this).addClass('pwd-shown');
-            // Prepare data to show
-            // Is data crypted?
-            var data = unCryptData($('#pwd-hidden_' + itemId).val(), '<?php echo $session->get('key'); ?>');
-            if (data !== false && data !== undefined) {
-                $('#pwd-hidden_' + itemId).val(
-                    data.password
-                );
-            }
             
+            const item_pwd = getItemPassword(
+                'at_password_shown',
+                'item_id',
+                itemId
+            );
+
+            $('#pwd-show_' + itemId).text(item_pwd);
+
             // Change class and show spinner
             $('.pwd-show-spinner')
                 .removeClass('far fa-eye')
                 .addClass('fas fa-circle-notch fa-spin text-warning');
-
-
-            $('#pwd-show_' + itemId)
-                .html(
-                    $('<span style="cursor:none;">').text($('#pwd-hidden_' + itemId).val()).html()
-                );
-
-            // log password is shown
-            itemLog(
-                'at_password_shown',
-                itemId,
-                $('#item-label').text()
-            );
 
             // Autohide
             setTimeout(() => {

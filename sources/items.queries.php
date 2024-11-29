@@ -152,6 +152,7 @@ $data = [
     'notifyType' => $request->request->filter('notify_type', '', FILTER_SANITIZE_SPECIAL_CHARS),
     'timestamp' => $request->request->filter('timestamp', '', FILTER_SANITIZE_SPECIAL_CHARS),
     'itemKey' => $request->request->filter('item_key', '', FILTER_SANITIZE_SPECIAL_CHARS),
+    'action' => $request->request->filter('action', '', FILTER_SANITIZE_SPECIAL_CHARS),
 ];
 
 $filters = [
@@ -176,6 +177,7 @@ $filters = [
     'notifyType' => 'trim|escape',
     'timestamp' => 'cast:integer',
     'itemKey' => 'trim|escape',
+    'action' => 'trim|escape',
 ];
 
 $inputData = dataSanitizer(
@@ -2836,7 +2838,7 @@ switch ($inputData['type']) {
             }
 
             $arrData['label'] = $dataItem['label'] === '' ? '' : $dataItem['label'];
-            $arrData['pw'] = $pw;
+            $arrData['pw_length'] = strlen($pw);
             $arrData['pw_decrypt_info'] = empty($pw) === true && $pwIsEmptyNormal === false ? 'error_no_sharekey_yet' : '';
             $arrData['email'] = empty($dataItem['email']) === true || $dataItem['email'] === null ? '' : $dataItem['email'];
             $arrData['url'] = empty($dataItem['url']) === true ? '' : $dataItem['url'];
@@ -4438,7 +4440,7 @@ switch ($inputData['type']) {
 
         break;
 
-    case 'show_item_password':
+    case 'get_item_password':
         // Check KEY
         if ($inputData['key'] !== $session->get('key')) {
             echo (string) prepareExchangedData(
@@ -4451,21 +4453,74 @@ switch ($inputData['type']) {
             break;
         }
 
-        // Run query
+        // Get item details and its sharekey
         $dataItem = DB::queryfirstrow(
-            'SELECT i.pw AS pw, s.share_key AS share_key
+            'SELECT i.pw AS pw, s.share_key AS share_key, i.id AS id,
+                    i.label AS label, i.id_tree AS id_tree
             FROM ' . prefixTable('items') . ' AS i
             INNER JOIN ' . prefixTable('sharekeys_items') . ' AS s ON (s.object_id = i.id)
-            WHERE user_id = %i AND i.item_key = %s',
+            WHERE user_id = %i AND (i.item_key = %s OR i.id = %i)',
             $session->get('user-id'),
-            $inputData['itemKey']
+            $inputData['itemKey'] ?? '',
+            $inputData['itemId'] ?? 0
         );
-        
-        // Uncrypt PW
+
+        // Check user access rights
         if (DB::count() === 0) {
-            // No share key found
-            $pw = '';
-        } else {
+            echo (string) prepareExchangedData(
+                [
+                    'error' => true,
+                    'password' => '',
+                    'password_error' => $lang->get('password_is_empty'),
+                ],
+                'encode'
+            );
+            break;
+        }
+
+        // Get user access rights
+        $userAccess = getCurrentAccessRights(
+            (int) $session->get('user-id'),
+            (int) $dataItem['id'],
+            (int) $dataItem['id_tree']
+        )['access'];
+
+        // List of allowed actions
+        $allowedActions = [
+            'at_password_copied',
+            'at_password_shown',
+            'at_password_shown_edit_form',
+        ];
+
+        // User not allowed to see this password or invalid action provided
+        if ($userAccess !== true
+            || empty($inputData['action'])
+            || !in_array($inputData['action'], $allowedActions, true)) {
+
+            echo (string) prepareExchangedData(
+                [
+                    'error' => true,
+                    'password' => '',
+                    'password_error' => $lang->get('not_allowed_to_see_pw'),
+                ],
+                'encode'
+            );
+            break;
+        }
+
+        // Log the action on password
+        logItems(
+            $SETTINGS,
+            (int) $dataItem['id'],
+            $dataItem['label'],
+            (int) $session->get('user-id'),
+            $inputData['action'], // Filtered by array of allowed values
+            $session->get('user-login')
+        );
+
+        // Uncrypt PW if sharekey is available (empty password otherwise)
+        $pw = '';
+        if (!empty($dataItem['share_key'])) {
             $pw = doDataDecryption(
                 $dataItem['pw'],
                 decryptUserObjectKey(
@@ -4473,14 +4528,6 @@ switch ($inputData['type']) {
                     $session->get('user-private_key')
                 )
             );
-            
-            $log = 'Used user ID: '.$session->get('user-id')."\n";
-            $log .= 'Used user Private key: '.$session->get('user-private_key')."\n";
-            $log .= '$currentUserKey: '.$dataItem['share_key']."\n";
-            $log .= 'itemKey: '.decryptUserObjectKey(
-                $dataItem['share_key'],
-                $session->get('user-private_key')
-            )."\n\n";
         }
 
         $returnValues = array(
@@ -4788,15 +4835,21 @@ switch ($inputData['type']) {
         } elseif ($folder_is_personal === 1) {
 
             // Check if personal folder is owned by user
-            $folder_title = DB::queryFirstRow(
-                'SELECT title
+            $folder = DB::queryFirstRow(
+                'SELECT id
                 FROM ' . prefixTable('nested_tree') . '
-                WHERE id = %s AND title = %s',
-                $inputData['folderId'],
+                WHERE title = %s',
                 $session->get('user-id'),
             );
 
-            if ($folder_title) $accessLevel = 30;
+            if ($folder) {
+                // Get all subfolders of user personal folder
+                $ids = $tree->getDescendants($folder['id'], true, false, true);
+
+                // This folder is owned by user
+                if (in_array($inputData['folderId'], $ids))
+                    $accessLevel = 30;
+            }
         }
 
         // Access is not allowed to this folder
@@ -7309,4 +7362,3 @@ function getAccessResponse(bool $error, bool $access, bool $edit, bool $delete, 
         'edition_locked' => $editionLocked,
     ];
 }
-

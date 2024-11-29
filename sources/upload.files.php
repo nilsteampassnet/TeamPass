@@ -422,6 +422,14 @@ if (!$chunks || $chunk == $chunks - 1) {
     rename("{$filePath}.part", $filePath);
 } else {
     // continue uploading other chunks
+    echo prepareExchangedData(
+        array(
+            'error' => false,
+            'chunk' => (int) $chunk + 1,
+            'chunks' => $chunks,
+        ),
+        'encode'
+    );
     die();
 }
 

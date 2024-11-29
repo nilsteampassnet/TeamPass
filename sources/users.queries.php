@@ -2713,6 +2713,32 @@ if (null !== $post_type) {
             );
 
             break;
+        
+        case "reset_antibruteforce":
+            // Check KEY
+            if ($post_key !== $session->get('key')) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // Prepare variables
+            $login = getFullUserInfos((int) $dataReceived['user_id'])['login'];
+
+            // Delete all logs for this user
+            DB::delete(
+                prefixTable('auth_failures'),
+                'source = %s AND value = %s',
+                'login',
+                $login
+            );
+            
+            break;
     }
     // # NEW LOGIN FOR USER HAS BEEN DEFINED ##
 } elseif (!empty(filter_input(INPUT_POST, 'newValue', FILTER_SANITIZE_FULL_SPECIAL_CHARS))) {

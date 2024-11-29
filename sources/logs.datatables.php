@@ -148,7 +148,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         'SELECT COUNT(*)
         FROM '.prefixTable('log_system').' as l
         INNER JOIN '.prefixTable('users').' as u ON (l.qui=u.id) 
-        WHERE %l ORDER BY %s %s',
+        WHERE %l ORDER BY %l %l',
         $sWhere,
         $orderColumn,
         $orderDirection
@@ -221,7 +221,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         FROM '.prefixTable('log_items').' as l
         INNER JOIN '.prefixTable('items').' as i ON (l.id_item=i.id)
         INNER JOIN '.prefixTable('users').' as u ON (l.id_user=u.id)
-        WHERE %l ORDER BY %s %s',
+        WHERE %l ORDER BY %l %l',
         $sWhere,
         $orderColumn,
         $orderDirection
@@ -294,7 +294,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         FROM '.prefixTable('log_items').' as l
         INNER JOIN '.prefixTable('items').' as i ON (l.id_item=i.id)
         INNER JOIN '.prefixTable('users').' as u ON (l.id_user=u.id)
-        WHERE %l ORDER BY %s %s',
+        WHERE %l ORDER BY %l %l',
         $sWhere,
         $orderColumn,
         $orderDirection
@@ -368,7 +368,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         'SELECT COUNT(*)
         FROM '.prefixTable('log_system').' as l
         INNER JOIN '.prefixTable('users').' as u ON (l.qui=u.id)
-        WHERE %l ORDER BY %s %s',
+        WHERE %l ORDER BY %l %l',
         $sWhere,
         $orderColumn,
         $orderDirection
@@ -468,7 +468,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         INNER JOIN '.prefixTable('items').' AS i ON (l.id_item=i.id)
         INNER JOIN '.prefixTable('users').' AS u ON (l.id_user=u.id)
         INNER JOIN '.prefixTable('nested_tree').' AS t ON (i.id_tree=t.id)
-        WHERE %l ORDER BY %s %s',
+        WHERE %l ORDER BY %l %l',
         $sWhere,
         $orderColumn,
         $orderDirection
@@ -551,7 +551,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     $iTotal = DB::queryFirstField(
         'SELECT COUNT(*)
         FROM '.prefixTable('log_system').' as l
-        WHERE %l ORDER BY %s %s',
+        WHERE %l ORDER BY %l %l',
         $sWhere,
         $orderColumn,
         $orderDirection
@@ -627,7 +627,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         'SELECT COUNT(*)
             FROM '.prefixTable('log_system').' as l
             INNER JOIN '.prefixTable('users').' as u ON (l.qui=u.id) 
-            WHERE %l ORDER BY %s %s',
+            WHERE %l ORDER BY %l %l',
             $sWhere,
             $orderColumn,
             $orderDirection
@@ -697,7 +697,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         FROM '.prefixTable('items_edition').' AS e
         INNER JOIN '.prefixTable('items').' as i ON (e.item_id=i.id)
         INNER JOIN '.prefixTable('users').' as u ON (e.user_id=u.id)
-        WHERE %l ORDER BY %s %s',
+        WHERE %l ORDER BY %l %l',
         $sWhere,
         $orderColumn,
         $orderDirection
@@ -773,7 +773,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     $iTotal = DB::queryFirstField(
         'SELECT COUNT(*)
         FROM '.prefixTable('users').'
-        WHERE %l ORDER BY %s %s',
+        WHERE %l ORDER BY %l %l',
         $sWhere,
         $orderColumn,
         $orderDirection
@@ -855,7 +855,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         'SELECT COUNT(*)
         FROM '.prefixTable('background_tasks').' AS p 
         LEFT JOIN '.prefixTable('users').' AS u ON %l
-        WHERE %l ORDER BY %s %s',
+        WHERE %l ORDER BY %l %l',
         'u.id = json_extract(p.arguments, "$[0]")',
         $sWhere,
         $orderColumn,
@@ -863,10 +863,11 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     );
 
     // Prepare the SQL query
-    $sql = 'SELECT p.increment_id, p.created_at, p.updated_at, p.process_type, p.is_in_progress
-    FROM '.prefixTable('background_tasks').' AS p 
-    LEFT JOIN '.prefixTable('users').' AS u ON %l
-    WHERE %l ORDER BY %s %s LIMIT %i, %i';
+    $sql = 'SELECT p.increment_id, p.created_at, p.updated_at, p.process_type,
+                p.is_in_progress, p.arguments
+            FROM '.prefixTable('background_tasks').' AS p 
+            LEFT JOIN '.prefixTable('users').' AS u ON %l
+            WHERE %l ORDER BY %l %l LIMIT %i, %i';
     $params = ['u.id = json_extract(p.arguments, "$[0]")',$sWhere, $orderColumn, $orderDirection, $sLimitStart, $sLimitLength];
 
     // Get the records
@@ -945,7 +946,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         'SELECT COUNT(*)
         FROM '.prefixTable('background_tasks').' AS p 
         LEFT JOIN '.prefixTable('users').' AS u ON u.id = json_extract(p.arguments, "$[0]")
-        WHERE %l ORDER BY %s %s',
+        WHERE %l ORDER BY %l %l',
         $sWhere,
         $orderColumn,
         $orderDirection
@@ -955,7 +956,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     $sql = 'SELECT p.*
     FROM '.prefixTable('background_tasks').' AS p 
     LEFT JOIN '.prefixTable('users').' AS u ON %l
-    WHERE %l ORDER BY %s %s LIMIT %i, %i';
+    WHERE %l ORDER BY %l %l LIMIT %i, %i';
     $params = ['u.id = json_extract(p.arguments, "$[0]")',$sWhere, $orderColumn, $orderDirection, $sLimitStart, $sLimitLength];
 
     // Get the records

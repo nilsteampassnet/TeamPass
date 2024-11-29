@@ -776,6 +776,31 @@ function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived,
          * Launch user recovery download
          */
         case 'user_recovery_keys_download'://action_key
+            // Validate user password on local and LDAP accounts before download
+            if ($session->get('user-auth_type') !== 'oauth2') {
+                // Users passwords are html escaped
+                $userPassword = filter_var($dataReceived['password'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+
+                // Get current user hash
+                $userHash = DB::queryFirstRow(
+                    "SELECT pw FROM " . prefixtable('users') . " WHERE id = %i;",
+                    $session->get('user-id')
+                )['pw'];
+
+                $passwordManager = new PasswordManager();
+
+                // Verify provided user password
+                if (!$passwordManager->verifyPassword($userHash, $userPassword)) {
+                    return prepareExchangedData(
+                        array(
+                            'error' => true,
+                            'message' => $lang->get('error_bad_credentials'),
+                        ),
+                        'encode'
+                    );
+                }
+            }
+
             return handleUserRecoveryKeysDownload(
                 (int) $filtered_user_id,
                 (array) $SETTINGS,
@@ -2968,7 +2993,6 @@ function migrateTo3_DoUserPersonalItemsEncryption(
                             'decrypt',
                             $SETTINGS['path_to_upload_folder'] . '/' . $record2['file'],
                             $SETTINGS['path_to_upload_folder'] . '/' . $record2['file'] . '.delete',
-                            $SETTINGS,
                             $post_user_psk
                         );
 

@@ -383,14 +383,13 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
     $(document).on('click', '#card-item-pwd-show-button', function() {
         if ($(this).hasClass('pwd-shown') === false) {
             $(this).addClass('pwd-shown');
-            // Prepare data to show
-            // Is data crypted?
-            var data = unCryptData($('#hidden-item-pwd').val(), '<?php echo $session->get('key'); ?>');
-            if (data !== false && data !== undefined) {
-                $('#hidden-item-pwd').val(
-                    data.password
-                );
-            }
+
+            // Get item password from server
+            const item_pwd = getItemPassword(
+                'at_password_shown',
+                'item_id',
+                store.get('teampassItem').id
+            );
 
             // Change class and show spinner
             $('.pwd-show-spinner')
@@ -399,15 +398,8 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
             // display raw password
             $('#card-item-pwd')
-                .text($('#hidden-item-pwd').val())
+                .text(item_pwd)
                 .addClass('pointer_none');
-
-            // log password is shown
-            itemLog(
-                'at_password_shown',
-                store.get('teampassItem').id,
-                $('#card-item-label').text()
-            );
 
             // Autohide
             setTimeout(() => {
@@ -427,6 +419,22 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
     // Manage folders action
     $('.tp-action').click(function() {
+        // Ensure that the local storage data is consistent with what is
+        // displayed on the screen.
+        const item_dom_id = parseInt($('#items-details-container').data('id'));
+        const item_storage_id = parseInt(store.get('teampassItem').id);
+        if (item_dom_id !== item_storage_id) {
+            toastr.remove();
+            toastr.error(
+                '<?php echo $lang->get('data_inconsistency'); ?>',
+                '', {
+                    timeOut: 5000,
+                    progressBar: true
+                }
+            );
+            return false;
+        }
+
         // SHow user
         toastr.remove();
         toastr.info('<?php echo $lang->get('in_progress'); ?><i class="fa-solid fa-circle-notch fa-spin fa-2x ml-3"></i>');
@@ -766,6 +774,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             // > END <
             //
         } else if ($(this).data('item-action') === 'edit') {
+            const item_tree_id = store.get('teampassItem').tree_id;
             if (debugJavascript === true) console.info('SHOW EDIT ITEM');
             // Reset item
             store.update(
@@ -790,7 +799,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             }
 
             $.when(
-                getPrivilegesOnItem(selectedFolderId, 1)
+                getPrivilegesOnItem(item_tree_id, 1)
             ).then(function(retData) {
                 console.log('getPrivilegesOnItem 2')
                 console.log(retData)
@@ -838,7 +847,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 $('#form-item').removeClass('was-validated');
 
                 // Now manage edtion
-                showItemEditForm(selectedFolderId);
+                showItemEditForm(item_tree_id);
             });
 
             //
@@ -2581,34 +2590,24 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             mouseStillDown = false;
             showPwdContinuous();
         });
-    var showPwdContinuous = function() {
-        if (mouseStillDown === true) {
-            // Prepare data to show
-            // Is data crypted?
-            var data = unCryptData($('#hidden-item-pwd').val(), '<?php echo $session->get('key'); ?>');
-            if (data !== false && data !== undefined) {
-                $('#hidden-item-pwd').val(
-                    data.password
-                );
-            }
 
-            $('#card-item-pwd')
-                .html(
-                    // XSS Filtering
-                    $('<span span style="cursor:none;">').text($('#hidden-item-pwd').val()).html()
-                );
+    const showPwdContinuous = function() {
+        if (mouseStillDown === true 
+            && !$('#card-item-pwd').hasClass('pwd-shown')) {
 
+            // Get item password from server
+            const item_pwd = getItemPassword(
+                'at_password_shown',
+                'item_id',
+                store.get('teampassItem').id
+            );
+
+            $('#card-item-pwd').text(item_pwd);
+            $('#card-item-pwd').addClass('pwd-shown');
+
+            // Auto hide password
             setTimeout('showPwdContinuous("card-item-pwd")', 50);
-            // log password is shown
-            if ($('#card-item-pwd').hasClass('pwd-shown') === false) {
-                itemLog(
-                    'at_password_shown',
-                    store.get('teampassItem').id,
-                    $('#card-item-label').text()
-                );
-                $('#card-item-pwd').addClass('pwd-shown');
-            }
-        } else {
+        } else if(mouseStillDown !== true) {
             $('#card-item-pwd')
                 .html('<?php echo $var['hidden_asterisk']; ?>')
                 .removeClass('pwd-shown');
@@ -2760,6 +2759,8 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
     var mime_types = <?php echo json_encode($mime_types); ?>;
     var prevent_empty = <?php echo json_encode($prevent_empty); ?>;
     var resize = <?php echo json_encode($resize); ?>;
+    let toastrElement;
+    let fileId;
 
     var uploader_attachments = new plupload.Uploader({
         runtimes: 'html5,flash,silverlight,html4',
@@ -2778,12 +2779,11 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         resize: resize,
         init: {
             BeforeUpload: function(up, file) {
-                toastr.info(
-                    '<i class="fa-solid fa-cloud-arrow-up fa-bounce mr-2"></i><?php echo $lang->get('uploading'); ?>',
-                    '', {
-                        timeOut: 0
-                    }
-                );
+                fileId = file.id;
+                toastr.remove();         
+                toastrElement = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <span id="plupload-progress" class="mr-2 ml-2 strong">0%</span><i class="fas fa-cloud-arrow-up fa-bounce fa-2x"></i>');
+                // Show file name
+                $('#upload-file_' + file.id).html('<i class="fa-solid fa-file fa-sm mr-2"></i>' + htmlEncode(file.name) + '<span id="fileStatus_'+file.id+'"><i class="fa-solid fa-circle-notch fa-spin  ml-2"></i></span>');
 
                 // Get random number
                 if (store.get('teampassApplication').uploadedFileId === '') {
@@ -2807,17 +2807,23 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     files_number: $('#form-item-hidden-pickFilesNumber').val(),
                     file_size: file.size
                 });
+            },
+            UploadProgress: function(up, file) {
+                // Update only the percentage inside the Toastr message
+                $('#plupload-progress').text(file.percent + '%');
+            },
+            UploadComplete: function(up, files) {
+                // Inform user
+                toastr.remove();
+            },
+            Error: function(up, args) {
+                console.log("ERROR arguments:");
+                console.log(args);
             }
         }
     });
 
-    // Uploader options
-    uploader_attachments.bind('UploadProgress', function(up, file) {
-        //console.log('uploader_attachments.bind')
-        $('#upload-file_' + file.id).html('<i class="fa-solid fa-file fa-sm mr-2"></i>' + htmlEncode(file.name) + '<span id="fileStatus_'+file.id+'"><i class="fa-solid fa-circle-notch fa-spin  ml-2"></i></span>');
-    });
     uploader_attachments.bind('FileUploaded', function(up, file) {
-        //console.log('File '+file.name+' uploaded');
         $('#fileStatus_'+file.id).html('<i class="fa-solid fa-circle-check text-success ml-2 fa-1x"></i>');
         userUploadedFile = true;
         userDidAChange = true;
@@ -2825,15 +2831,39 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
     });
     uploader_attachments.bind('Error', function(up, err) {
         toastr.remove();
-        toastr.error(
-            err.message + (err.file ? ', File: ' + err.file.name : ''),
-            '', {
-                timeOut: 5000,
-                progressBar: true
+        // Extraire le message d'erreur
+        let errorMessage = 'An unknown error occurred.';
+        if (err.response) {
+            try {
+                const response = JSON.parse(err.response);
+                if (response.error && response.error.message) {
+                    errorMessage = response.error.message;
+                }
+            } catch (e) {
+                errorMessage = err.response; // Si la réponse n'est pas JSON
             }
-        );
+        }
 
-        up.refresh(); // Reposition Flash/Silverlight
+        // Vérifie si l'erreur est due à un dépassement de taille ou une autre erreur critique
+        if (err.code === -200 || err.status === 413) {
+            // Arrêter l'upload des chunks
+            up.stop();
+            errorMessage += ' - Upload stopped.';
+
+            // Affiche l'erreur dans l'interface utilisateur
+            toastr.error(
+                errorMessage + (err.file ? ', File: ' + err.file.name : ''),
+                '', {
+                    timeOut: 10000,
+                    progressBar: true
+                }
+            );
+
+            $('#fileStatus_'+fileId).html('<i class="fa-solid fa-circle-xmark text-danger ml-2 fa-1x"></i>');
+            return false;
+        } else {
+            up.refresh(); // Reposition Flash/Silverlight
+        }
     });
 
     $("#form-item-upload-pickfiles").click(function(e) {
@@ -3380,6 +3410,14 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 }
             );
         } else {
+            // Get password and fill the field.
+            const item_pwd = getItemPassword(
+                'at_password_shown_edit_form',
+                'item_id',
+                store.get('teampassItem').id
+            );
+            $('#form-item-password').val(item_pwd);
+
             $('#card-item-visibility').html(store.get('teampassItem').itemVisibility);
             $('#card-item-minimum-complexity').html(store.get('teampassItem').itemMinimumComplexity);
 
@@ -3980,57 +4018,18 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                                 // Send query and get password
                                 var result = '',
                                     error = false;
-                                
-                                $.ajax({
-                                    type: "POST",
-                                    async: false,
-                                    url: 'sources/items.queries.php',
-                                    data: 'type=show_item_password&item_key=' + trigger.getAttribute('data-item-key') +
-                                        '&key=<?php echo $session->get('key'); ?>',
-                                    dataType: "",
-                                    success: function(data) {
-                                        //decrypt data
-                                        try {
-                                            data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
-                                        } catch (e) {
-                                            // error
-                                            toastr.remove();
-                                            toastr.warning(
-                                                '<?php echo $lang->get('no_item_to_display'); ?>'
-                                            );
-                                            return false;
-                                        }
-                                        if (data.error === true) {
-                                            error = true;
-                                        } else {
-                                            if (data.password_error !== '') {
-                                                error = true;
-                                            } else {
-                                                result = simplePurifier(atob(data.password), false, false, false, false).utf8Decode();
-                                            }
-                                            if (result === '') {
-                                                toastr.info(
-                                                    '<?php echo $lang->get('password_is_empty'); ?>',
-                                                    '', {
-                                                        timeOut: 2000,
-                                                        positionClass: 'toast-bottom-right',
-                                                        progressBar: true
-                                                    }
-                                                );
-                                            }
-                                        }
-                                    }
-                                });
-                                return result;
+
+                                // Get item password from server
+                                const item_pwd = getItemPassword(
+                                    'at_password_copied',
+                                    'item_key',
+                                    trigger.getAttribute('data-item-key')
+                                );
+
+                                return item_pwd;
                             }
                         });
-                        clipboardForPassword.on('success', function(e) {
-                            itemLog(
-                                'at_password_copied',
-                                e.trigger.dataset.itemId,
-                                e.trigger.dataset.itemLabel
-                            );
-                            
+                        clipboardForPassword.on('success', function(e) {                            
                             // Warn user about clipboard clear
                             if (store.get('teampassSettings').clipboard_life_duration === undefined || parseInt(store.get('teampassSettings').clipboard_life_duration) === 0) {
                                 toastr.remove();
@@ -4338,10 +4337,10 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     // Show user that password is badly encrypted
                     (value.pw_status === 'encryption_error' ? '<i class="fa-solid fa-exclamation-triangle fa-xs text-danger infotip mr-1" title="<?php echo $lang->get('pw_encryption_error'); ?>"></i>' : '') +
                     // Prepare item info
+                    '</span>' +
                     '<span class="list-item-clicktoshow d-inline-flex' + (value.rights === 10 ? '' : ' pointer') + '" data-item-id="' + value.item_id + '" data-item-key="' + value.item_key + '">' +
                     // Show item fa_icon if set
                     (value.fa_icon !== '' ? '<i class="'+value.fa_icon+' mr-1 user-fa-icon"></i>' : '') +
-                    '</span>' +
                     '<span class="list-item-row-description d-inline-block' + (value.rights === 10 ? ' font-weight-light' : '') + '"><i class="item-favorite-star fa-solid' + ((store.get('teampassApplication').highlightFavorites === 1 && value.is_favourited === 1) ? ' fa-star mr-1' : '') + '"></i>' + value.label + '</span>' + (value.rights === 10 ? '' : description) +
                     '<span class="list-item-row-description-extend"></span>' +
                     '</span>' +
@@ -4834,16 +4833,12 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                         $('#card-item-pwd').after('<i class="fa-solid fa-bell text-orange fa-shake ml-3 delete-after-usage infotip" title="'+data.pwd_encryption_error_message+'"></i>');
                     }
 
-                    // Uncrypt the pwd
-                    if (data.pw !== undefined) {
-                        data.pw = simplePurifier(atob(data.pw), false, false, false, false).utf8Decode();
-                    }
-
                     // Update hidden variables
                     store.update(
                         'teampassItem',
                         function(teampassItem) {
                             teampassItem.id = parseInt(data.id),
+                            teampassItem.tree_id = parseInt(data.folder),
                             teampassItem.folderId = parseInt(data.folder),
                             teampassItem.timestamp = data.timestamp,
                             teampassItem.user_can_modify = data.user_can_modify,
@@ -4901,7 +4896,11 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                         $('.form-item').removeClass('hidden');
                         $('#folders-tree-card').addClass('hidden');
                     }
-                    $('#pwd-definition-size').val(data.pw.length);
+                    $('#pwd-definition-size').val(data.pw_length);
+
+                    // Store current item id in the DOM (cannot be updated in
+                    // an other tab or window)
+                    $('#items-details-container').data('id', data.id);
 
                     // Prepare card
                     const itemIcon = (data.fa_icon !== "") ? '<i class="'+data.fa_icon+' mr-1"></i>' : '';
@@ -4914,8 +4913,6 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                         $('#card-item-description').removeClass('hidden');
                     }
                     $('#card-item-pwd').html('<?php echo $var['hidden_asterisk']; ?>');
-                    $('#hidden-item-pwd, #form-item-suggestion-password').val(data.pw);
-                    $('#form-item-password, #form-item-password-confirmation, #form-item-server-old-password').val(data.pw);
                     $('#card-item-login').html(data.login);
                     $('#form-item-login, #form-item-suggestion-login, #form-item-server-login').val(data.login);
 
@@ -5179,7 +5176,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     }
 
                     // Prepare clipboard - COPY PASSWORD
-                    if (data.pw !== '' && store.get('teampassItem').readyToUse === true) {
+                    if (data.pw_length > 0 && store.get('teampassItem').readyToUse === true) {
                         // Delete existing clipboard
                         if (clipboardForPasswordListItems) {
                             clipboardForPasswordListItems.destroy();
@@ -5187,16 +5184,17 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                         // New clipboard
                         clipboardForPasswordListItems = new ClipboardJS('#card-item-pwd-button', {
                                 text: function() {
-                                    return (data.pw);
+                                    // Get item password from server
+                                    const item_pwd = getItemPassword(
+                                        'at_password_copied',
+                                        'item_id',
+                                        data.id
+                                    );
+
+                                    return item_pwd;
                                 }
                             })
                             .on('success', function(e) {
-                                itemLog(
-                                    'at_password_copied',
-                                    store.get('teampassItem').id,
-                                    $('#card-item-label').text()
-                                );
-
                                 // Warn user about clipboard clear
                                 if (store.get('teampassSettings').clipboard_life_duration === undefined || parseInt(store.get('teampassSettings').clipboard_life_duration) === 0) {
                                     toastr.remove();
@@ -6425,10 +6423,6 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 }
             }
         );
-    });
-
-    $('#item-button-password-copy').click(function() {
-        $('#form-item-password-confirmation').val($('#form-item-password').val());
     });
 
     /**

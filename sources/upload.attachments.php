@@ -117,6 +117,25 @@ if (null === $post_user_token) {
     handleAttachmentError('No user token found.', 110);
     exit();
 } else {
+    // Check post_max_size
+    $POST_MAX_SIZE = ini_get('post_max_size');
+    $unit = strtoupper(substr(trim($POST_MAX_SIZE), -1)); // Assurez-vous de bien gérer les espaces éventuels
+    $units = ['G' => 1073741824, 'M' => 1048576, 'K' => 1024];
+    $multiplier = $units[$unit] ?? 1; // Vérifie si l'unité est dans le tableau, sinon 1
+    $maxSize = (int)$POST_MAX_SIZE * $multiplier;
+    
+    // CHeck if the POST is too big
+    if (!empty($_SERVER['CONTENT_LENGTH']) && (int)$_SERVER['CONTENT_LENGTH'] > $maxSize && $maxSize > 0) {
+        handleAttachmentError('POST exceeded maximum allowed size.', 111, 413);
+    }
+
+    // CHeck if file size is too big
+    if ($post_fileSize > $maxSize && $maxSize > 0) {
+        handleAttachmentError('File exceeds the maximum allowed size', 120, 413);
+        die();
+    }
+    error_log('POST_MAX_SIZE: ' . $POST_MAX_SIZE." - CONTENT_LENGTH: ".$_SERVER['CONTENT_LENGTH']." - UNIT: ".$unit." - MAX: ".$maxSize." - MULTIPLIER: ".$multiplier." - FILE_SIZE: ".$post_fileSize);
+    
     // delete expired tokens
     DB::delete(prefixTable('tokens'), 'end_timestamp < %i', time());
 
@@ -212,14 +231,6 @@ $max_file_size_in_bytes = 2147483647; //2Go
 
 if (null !== $post_timezone) {
     date_default_timezone_set($post_timezone);
-}
-
-// Check post_max_size
-$POST_MAX_SIZE = ini_get('post_max_size');
-$unit = strtoupper(substr($POST_MAX_SIZE, -1));
-$multiplier = ($unit == 'M' ? 1048576 : ($unit == 'K' ? 1024 : ($unit == 'G' ? 1073741824 : 1)));
-if ((int) $_SERVER['CONTENT_LENGTH'] > $multiplier * (int) $POST_MAX_SIZE && $POST_MAX_SIZE) {
-    handleAttachmentError('POST exceeded maximum allowed size.', 111, 413);
 }
 
 // Validate the file size (Warning: the largest files supported by this code is 2GB)
@@ -483,7 +494,14 @@ function handleAttachmentError($message, $code, $http_code = 400)
     http_response_code($http_code);
 
     // json error message
-    echo '{"jsonrpc" : "2.0", "error" : {"code": ' . htmlentities((string) $code, ENT_QUOTES) . ', "message": "' . htmlentities((string) $message, ENT_QUOTES) . '"}, "id" : "id"}';
+    echo json_encode([
+        'jsonrpc' => '2.0',
+        'error' => [
+            'code' => $code,
+            'message' => $message
+        ],
+        'id' => 'id'
+    ]);
     
     // Force exit to avoid bypass filters.
     exit;

@@ -130,18 +130,42 @@ performRecuringItemTasks($SETTINGS);
 // log end
 doLog('end', '', (isset($SETTINGS['enable_tasks_log']) === true ? (int) $SETTINGS['enable_tasks_log'] : 0), $logID);
 
-// launch a new iterative process
-$process_to_perform = DB::queryfirstrow(
-    'SELECT *
-    FROM ' . prefixTable('background_tasks') . '
-    WHERE is_in_progress = %i AND process_type IN ("item_copy", "new_item", "update_item", "item_update_create_keys")
-    ORDER BY increment_id DESC',
-    1
-);
-if (DB::count() > 0) {
-    $process = new Symfony\Component\Process\Process([$phpBinaryPath, __FILE__]);
-    $process->start();  
-    $process->wait();
+// The main process run new iteratives process for each subtask
+if (!in_array('--child', $argv)) {
+    // Save subtasks start time
+    $start_time = time();
+
+    // Run new subtasks until there are no more to handle or we have exceeded
+    // the execution minute (the next execution will continue)
+    do {
+        // Search if there are remaining tasks
+        $process_to_perform = DB::queryFirstField(
+            'SELECT 1
+            FROM ' . prefixTable('background_tasks') . '
+            WHERE is_in_progress = %i AND process_type IN (
+                "item_copy",
+                "new_item",
+                "update_item",
+                "item_update_create_keys"
+            )
+            ORDER BY increment_id DESC LIMIT 1',
+            1
+        );
+
+        // No more tasks, exit
+        if ($process_to_perform !== 1)
+            break;
+
+        // Run next task
+        $process = new Symfony\Component\Process\Process([
+            $phpBinaryPath,
+            __FILE__,
+            '--child'
+        ]);
+        $process->start();  
+        $process->wait();
+
+    } while (time() - $start_time < 60);
 }
 
 
@@ -171,99 +195,99 @@ function handleTask(int $processId, array $ProcessArguments, array $SETTINGS, in
     if (DB::count() > 0) {
         // check if a linux process is not currently on going
         // if sub_task_in_progress === 1 then exit
-        if ((int) $task_to_perform['sub_task_in_progress'] === 0) {
-            // handle next task
-            $args = json_decode($task_to_perform['task'], true);
-            provideLog('[TASK][#'. $task_to_perform['increment_id'].'][START]Task '.$args['step'], $SETTINGS);
-
-            // flag as in progress
-            DB::update(
-                prefixTable('background_tasks'),
-                array(
-                    'updated_at' => time(),
-                    'is_in_progress' => 1,
-                ),
-                'increment_id = %i',
-                $processId
-            );
-
-            // flag task as on going
-            if ((int) $args['index'] === 0) {
-                DB::update(
-                    prefixTable('background_subtasks'),
-                    array(
-                        'is_in_progress' => 1,
-                    ),
-                    'increment_id = %i',
-                    $task_to_perform['increment_id']
-                );
-            }
-
-            // flag sub task in progress as on going
-            DB::update(
-                prefixTable('background_subtasks'),
-                array(
-                    'sub_task_in_progress' => 1,
-                ),
-                'increment_id = %i',
-                $task_to_perform['increment_id']
-            );
-
-            // handle the task step
-            handleTaskStep($args, $ProcessArguments, $SETTINGS);
-
-            // update the task status
-            DB::update(
-                prefixTable('background_subtasks'),
-                array(
-                    'sub_task_in_progress' => 0,    // flag sub task is no more in prgoress
-                    'task' => json_encode(["status" => "Done"]),
-                    'is_in_progress' => -1,
-                    'finished_at' => time(),
-                    'updated_at' => time(),
-                ),
-                'increment_id = %i',
-                $task_to_perform['increment_id']
-            );
-
-            provideLog('[TASK]['.$args['step'].'] starting at '.$args['index'].' is done.', $SETTINGS);
-
-            // are all tasks done?
-            DB::query(
-                'SELECT *
-                FROM ' . prefixTable('background_subtasks') . '
-                WHERE task_id = %i AND finished_at IS NULL',
-                $processId
-            );
-            if (DB::count() === 0) {
-                // all tasks are done
-                provideLog('[PROCESS]['.$processId.'][FINISHED]', $SETTINGS);
-                DB::debugmode(false);
-                DB::update(
-                    prefixTable('background_tasks'),
-                    array(
-                        'finished_at' => time(),
-                        'is_in_progress' => -1,
-                        'arguments' => json_encode([
-                            'new_user_id' => isset($ProcessArguments['new_user_id']) === true ? $ProcessArguments['new_user_id'] : '',
-                        ])
-                    ),
-                    'increment_id = %i',
-                    $processId
-                );
-
-                // if item was being updated then remove the edition lock
-                if (is_null($itemId) === false) {
-                    DB::delete(prefixTable('items_edition'), 'item_id = %i', $itemId);
-                }
-            }
-            return false;
-
-        } else {
+        if ((int) $task_to_perform['sub_task_in_progress'] !== 0) {
             // Task is currently being in progress by another server process
             provideLog('[TASK][#'. $task_to_perform['increment_id'].'][WARNING] Similar task already being processes', $SETTINGS);
             return false;
         }
+
+        // handle next task
+        $args = json_decode($task_to_perform['task'], true);
+        provideLog('[TASK][#'. $task_to_perform['increment_id'].'][START]Task '.$args['step'], $SETTINGS);
+
+        // flag as in progress
+        DB::update(
+            prefixTable('background_tasks'),
+            array(
+                'updated_at' => time(),
+                'is_in_progress' => 1,
+            ),
+            'increment_id = %i',
+            $processId
+        );
+
+        // flag task as on going
+        if ((int) $args['index'] === 0) {
+            DB::update(
+                prefixTable('background_subtasks'),
+                array(
+                    'is_in_progress' => 1,
+                ),
+                'increment_id = %i',
+                $task_to_perform['increment_id']
+            );
+        }
+
+        // flag sub task in progress as on going
+        DB::update(
+            prefixTable('background_subtasks'),
+            array(
+                'sub_task_in_progress' => 1,
+            ),
+            'increment_id = %i',
+            $task_to_perform['increment_id']
+        );
+
+        // handle the task step
+        handleTaskStep($args, $ProcessArguments, $SETTINGS);
+
+        // update the task status
+        DB::update(
+            prefixTable('background_subtasks'),
+            array(
+                'sub_task_in_progress' => 0,    // flag sub task is no more in prgoress
+                'task' => json_encode(["status" => "Done"]),
+                'is_in_progress' => -1,
+                'finished_at' => time(),
+                'updated_at' => time(),
+            ),
+            'increment_id = %i',
+            $task_to_perform['increment_id']
+        );
+
+        provideLog('[TASK]['.$args['step'].'] starting at '.$args['index'].' is done.', $SETTINGS);
+
+        // are all tasks done?
+        DB::query(
+            'SELECT *
+            FROM ' . prefixTable('background_subtasks') . '
+            WHERE task_id = %i AND finished_at IS NULL',
+            $processId
+        );
+        if (DB::count() === 0) {
+            // all tasks are done
+            provideLog('[PROCESS]['.$processId.'][FINISHED]', $SETTINGS);
+            DB::debugmode(false);
+            DB::update(
+                prefixTable('background_tasks'),
+                array(
+                    'finished_at' => time(),
+                    'is_in_progress' => -1,
+                    'arguments' => json_encode([
+                        'new_user_id' => isset($ProcessArguments['new_user_id']) === true ? $ProcessArguments['new_user_id'] : '',
+                    ])
+                ),
+                'increment_id = %i',
+                $processId
+            );
+
+            // if item was being updated then remove the edition lock
+            if (is_null($itemId) === false) {
+                DB::delete(prefixTable('items_edition'), 'item_id = %i', $itemId);
+            }
+        }
+        return false;
+
     } else {
         // no more task to perform
         provideLog('[PROCESS]['.$processId.'][FINISHED]', $SETTINGS);

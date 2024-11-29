@@ -1188,7 +1188,6 @@ return array(
     'show_item_data_tip' => 'Permite mostrar información adicional en la lista de elementos (nombre de usuario, correo electrónico y URL). Esto podría ser útil para tener una vista rápida del contenido del elemento.',
     'items_page_split_view_mode' => 'Mostrar los detalles del elemento en modo de vista dividida de página',
     'replace_tenant_id' => 'Adapte la URL pero mantenga {tenant-id} tal cual. Se reemplazará en vivo por el ID del inquilino.',
-    'user_exists_but_not_oauth2' => 'El usuario debe autenticarse utilizando Entra/Azure AD',
     'user_not_allowed_to_auth_to_teampass_app' => 'El usuario no tiene permitido autenticarse en la aplicación Teampass',
     'user_is_not_auth_with_oauth2' => 'El usuario no debe autenticarse con Entra/Azure AD',
     'highlight_favorites' => 'Resaltar favoritos',

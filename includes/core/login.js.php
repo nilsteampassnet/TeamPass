@@ -627,11 +627,7 @@ declare(strict_types=1);
         //TODO : je pense que cela pourrait etre modifié pour ne pas faire de requete ajax ; on dispose des infos via `get_teampass_settings`
         $.post(
             'sources/identify.php', {
-                type: 'get2FAMethods',
-                login: $('#login').val(),
-                xhrFields: {
-                    withCredentials: true
-                }
+                type: 'get2FAMethods'
             },
             function(data) {
                 data = JSON.parse(data);

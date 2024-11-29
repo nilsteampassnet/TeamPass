@@ -567,11 +567,20 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         event.preventDefault();
         $('#dialog-recovery-keys-download').removeClass('hidden');
 
+        // Default text on dialog box
+        let dialog_content = '<?php echo $lang->get('download_recovery_keys_confirmation'); ?>'
+
+        // Request authentication on local and ldap accounts
+        if (store.get('teampassUser').auth_type !== 'oauth2') {
+            dialog_content += '<br/><br/><?php echo $lang->get('confirm_password'); ?>' +
+                '<input type="password" placeholder="<?php echo $lang->get('password'); ?>" class="form-control" id="keys-download-confirm-pwd" />';
+        }
+
         // Prepare modal
         showModalDialogBox(
             '#warningModal',
             '<i class="fa-solid fa-user-shield fa-lg warning mr-2"></i><?php echo $lang->get('caution'); ?>',
-            '<?php echo $lang->get('download_recovery_keys_confirmation'); ?>',
+            dialog_content,
             '<?php echo $lang->get('download'); ?>',
             '<?php echo $lang->get('close'); ?>',
             false,
@@ -583,12 +592,25 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         $(document).on('click', '#warningModalButtonAction', function(event) {
             event.preventDefault();
 
+            // Ensure that a password is provided by user
+            const user_pasword = $('#keys-download-confirm-pwd').val() ?? '';
+            if (store.get('teampassUser').auth_type !== 'oauth2' && !user_pasword) {
+                toastr.remove();
+                toastr.error(
+                    '<?php echo $lang->get('password_cannot_be_empty'); ?>',
+                    '<?php echo $lang->get('caution'); ?>', {
+                        timeOut: 5000,
+                        progressBar: true
+                    }
+                );
+                return false;
+            }
+
             if (RequestOnGoing === true) {
                 return false;
             }
             RequestOnGoing = true;
 
-            // We have the password, start reencryption
             $('#warningModalButtonAction')
                 .addClass('disabled')
                 .html('<i class="fa-solid fa-spinner fa-spin"></i>');
@@ -598,12 +620,16 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             toastr.remove();
             toastr.info('<?php echo $lang->get('in_progress'); ?><i class="fa-solid fa-circle-notch fa-spin fa-2x ml-3"></i>');
 
+            let data = {
+                password: user_pasword,
+            };
             // Do query
             $.post(
                 "sources/main.queries.php", {
                     'type': "user_recovery_keys_download",
                     'type_category': 'action_key',
-                    'key': '<?php echo $session->get('key'); ?>'
+                    'key': '<?php echo $session->get('key'); ?>',
+                    'data': prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
                 },
                 function(data) {
                     data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
@@ -620,8 +646,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         );
 
                         // Enable buttons
-                        $("#user-current-defuse-psk-progress").html('<?php echo $lang->get('provide_current_psk_and_click_launch'); ?>');
-                        $('#button_do_sharekeys_reencryption, #button_close_sharekeys_reencryption').removeAttr('disabled');
+                        $('#warningModalButtonAction')
+                            .removeClass('disabled')
+                            .html('<?php echo $lang->get('download'); ?>');
+                        RequestOnGoing = false;
+
                         return false;
                     } else {
                         $('#profile-keys_download-date').text(data.datetime);

@@ -339,8 +339,8 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                 ],
                 1
             ) === true)
-        && (((int) $userInfo['admin'] !== 1 && (int) $userInfo['mfa_enabled'] === 1) || ((int) $SETTINGS['admin_2fa_required'] === 1 && (int) $userInfo['admin'] === 1))
-        && $userInfo['mfa_auth_requested_roles'] === true
+        && (((int) $userInfo['admin'] !== 1 && (int) $userInfo['mfa_enabled'] === 1 && $userInfo['mfa_auth_requested_roles'] === true)
+        || ((int) $SETTINGS['admin_2fa_required'] === 1 && (int) $userInfo['admin'] === 1))
     ) {
         // Check user against MFA method if selected
         $userMfa = identifyDoMFAChecks(
@@ -2229,6 +2229,9 @@ function identifyDoLDAPChecks(
     int $sessionPwdAttempts
 ): array
 {
+    $session = SessionManager::getSession();
+    $lang = new Language($session->get('user-language') ?? 'english');
+
     // Prepare LDAP connection if set up
     if ((int) $SETTINGS['ldap_mode'] === 1
         && $username !== 'admin'
@@ -2249,7 +2252,7 @@ function identifyDoLDAPChecks(
                     'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
                     'pwd_attempts' => (int) $sessionPwdAttempts,
                     'error' => true,
-                    'message' => "LDAP error: ".$retLDAP['message'],
+                    'message' => $lang->get('error_bad_credentials'),
                 ]
             ];
         }
@@ -2338,7 +2341,7 @@ function shouldUserAuthWithOauth2(
                 // Case where user exists in Teampass but not allowed to auth with Oauth2
                 return [
                     'error' => true,
-                    'message' => 'user_exists_but_not_oauth2',
+                    'message' => 'error_bad_credentials',
                     'oauth2Connection' => false,
                     'userPasswordVerified' => false,
                 ];
@@ -2617,7 +2620,7 @@ function identifyDoAzureChecks(
  * @param string $source - The source of the failed attempt (login or remote_ip).
  * @param string $value  - The value for this source (username or IP address).
  * @param int    $limit  - The failure attempt limit after which the account/IP
- *                     will be locked.
+ *                         will be locked.
  */
 function handleFailedAttempts($source, $value, $limit) {
     // Count failed attempts from this source
@@ -2633,8 +2636,13 @@ function handleFailedAttempts($source, $value, $limit) {
     $count++;
 
     // Calculate unlock time if number of attempts exceeds limit
-    $unlock_at = $count >= $limit 
+    $unlock_at = $count >= $limit
         ? date('Y-m-d H:i:s', time() + (($count - $limit + 1) * 600))
+        : NULL;
+
+    // Unlock account one time code
+    $unlock_code = ($count >= $limit && $source === 'login')
+        ? generateQuickPassword(30, false)
         : NULL;
 
     // Insert the new failure into the database
@@ -2644,8 +2652,41 @@ function handleFailedAttempts($source, $value, $limit) {
             'source' => $source,
             'value' => $value,
             'unlock_at' => $unlock_at,
+            'unlock_code' => $unlock_code,
         ]
     );
+
+    if ($unlock_at !== null && $source === 'login') {
+        $configManager = new ConfigManager();
+        $SETTINGS = $configManager->getAllSettings();
+        $lang = new Language($SETTINGS['default_language']);
+
+        // Get user email
+        $userInfos = DB::QueryFirstRow(
+            'SELECT email, name
+             FROM '.prefixTable('users').'
+             WHERE login = %s',
+             $value
+        );
+
+        // No valid email address for user
+        if (!$userInfos || !filter_var($userInfos['email'], FILTER_VALIDATE_EMAIL))
+            return;
+
+        $unlock_url = $SETTINGS['cpassman_url'].'/self-unlock.php?login='.$value.'&otp='.$unlock_code;
+
+        sendMailToUser(
+            $userInfos['email'],
+            $lang->get('bruteforce_reset_mail_body'),
+            $lang->get('bruteforce_reset_mail_subject'),
+            [
+                '#name#' => $userInfos['name'],
+                '#reset_url#' => $unlock_url,
+                '#unlock_at#' => $unlock_at,
+            ],
+            true
+        );
+    }
 }
 
 /**
@@ -2659,7 +2700,7 @@ function handleFailedAttempts($source, $value, $limit) {
  */
 function addFailedAuthentication($username, $ip) {
     $user_limit = 10;
-    $ip_limit = 20;
+    $ip_limit = 30;
 
     // Remove old logs (more than 24 hours)
     DB::delete(
