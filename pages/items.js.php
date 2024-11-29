@@ -423,7 +423,17 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         // displayed on the screen.
         const item_dom_id = parseInt($('#items-details-container').data('id'));
         const item_storage_id = parseInt(store.get('teampassItem').id);
-        if (item_dom_id !== item_storage_id) {
+
+        // Prevent usage of items actions when local storage and DOM are out
+        // of sync. Let the user create a new item or refresh data even if the
+        // IDs don't match.
+        if ($(this).data('folder-action') === undefined
+            && $(this).data('item-action') !== undefined
+            && $(this).data('item-action') !== 'new'
+            && $(this).data('item-action') !== 'reload' 
+            && item_dom_id !== item_storage_id) {
+
+            // Display error and stop
             toastr.remove();
             toastr.error(
                 '<?php echo $lang->get('data_inconsistency'); ?>',
