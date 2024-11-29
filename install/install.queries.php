@@ -1568,11 +1568,6 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                     );
                     fclose($file_handler);
 
-                    // NOw remove old file
-                    if (file_exists(__DIR__.'/../includes/config/'.SECUREFILE)) {
-                        unlink(__DIR__.'/../includes/config/'.SECUREFILE);
-                    }
-
                     // Create TP USER
                     require_once '../includes/config/include.php';
                     $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `" . $var['tbl_prefix'] . "users` WHERE id = '" . TP_USER_ID . "'"));
@@ -1685,12 +1680,18 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                                 
                                 $crontabRepository->addJob($crontabJob);
                                 $crontabRepository->persist();
+
+                                // Now remove old file
+                                if (file_exists(__DIR__.'/../includes/config/'.SECUREFILE)) {
+                                    unlink(__DIR__.'/../includes/config/'.SECUREFILE);
+                                }
                             }
                         } catch (Exception $e) {
                             // do nothing
                         }
                     } else {
                         echo '[{"error" : "Cannot find PHP binary location. Please add a cronjob manually (see documentation).", "result":"", "index" : "' . $inputData['index'] . '", "multiple" : "' . $inputData['multiple'] . '"}]';
+                        break;
                     }
                     echo '[{"error" : "", "index" : "' . $inputData['index'] . '", "multiple" : "' . $inputData['multiple'] . '"}]';
                 }
