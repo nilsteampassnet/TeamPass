@@ -1213,5 +1213,6 @@ return array(
     'disable_user_edit_language' => 'Les utilisateurs ne peuvent plus changer de langue',
     'disable_user_edit_timezone' => 'Les utilisateurs ne peuvent plus changer de fuseau horaire',
     'disable_user_edit_tree_load_strategy' => 'Les utilisateurs ne peuvent plus changer de stratégie de chargement',
+    'bruteforce_wait' => 'Trop de tentatives échouées, votre compte est bloqué jusqu&apos;à : ',
 
 );
