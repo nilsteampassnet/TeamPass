@@ -19,8 +19,6 @@ define("DB_SSL", false); // if DB over SSL then comment this line
 define("DB_CONNECT_OPTIONS", array(
     MYSQLI_OPT_CONNECT_TIMEOUT => 10
 ));
-define("SECUREPATH", "");
-define("SECUREFILE", "");
 define("IKEY", "");
 define("SKEY", "");
 define("HOST", "");
