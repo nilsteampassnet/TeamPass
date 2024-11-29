@@ -1461,7 +1461,7 @@ if (null !== $inputData['type']) {
                             KEY `ITEM` (`item_id`)
                             ) CHARSET=utf8;"
                         );
-                    } else if ($inputData['task'] === 'items_otp') {
+                    } else if ($inputData['task'] === 'auth_failures') {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
                             "CREATE TABLE IF NOT EXISTS `" . $var['tbl_prefix'] . "auth_failures` (
