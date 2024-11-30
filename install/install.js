@@ -25,16 +25,33 @@ $(function() {
     );
 
     // Next button clicked
-    $("#button_next").on('click', function(event) {
+    $("#button_next, #button_start").on('click', function(event) {
         event.preventDefault();
-        var step = $(this).data('step');
+        var step = parseInt($(this).data('step'));
         console.log('>> '+step);
         $('#button_next').prop('disabled', true);
 
         // Step - 1
-        if (step === '') {
+        if (step === 0) {
+            step0();
+            return;
+        } else if (step === 1) {
+            if ($('#absolute_path').val() === '') {
+                show_loader('error', 'Please enter the Absolute path');
+                return;
+            }
+            if ($('#url_path').val() === '') {
+                show_loader('error', 'Please enter the URL path');
+                return;
+            }
+            if ($('#secure_path').val() === '') {
+                show_loader('error', 'Please enter the Secure path');
+                return;
+            }
             step1();
             return;
+        } else {
+            console.error('Unknown step:', step);
         }
         
     });
@@ -45,12 +62,65 @@ $(function() {
 //prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
 //data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
 
+/**
+ * Step 1
+ */
 function step1() {
+    show_loader('warning', '<i class="fa fa-spinner fa-spin"></i> Please wait...');
+console.log(store.get('TeamPassInstallation'));
+    $.ajax({
+        type: 'POST',
+        url: 'install/run.step1.php',
+        headers: {
+            'X-CSRF-Token': $('meta[name="csrf-token"]').attr('content')
+        },
+        data: {
+            action: 'step1',
+            absolutePath: $('#absolute_path').val(),
+            urlPath: $('#url_path').val(),
+            securePathField: $('#secure_path').val(),
+            randomInstalldKey: store.get('TeamPassInstallation').randomInstalldKey,
+            settingsPath: store.get('TeamPassInstallation').settingsPath,
+            secureFile: store.get('TeamPassInstallation').secureFile,
+            securePath: store.get('TeamPassInstallation').securePath
+        },
+        success: function(response) {
+            if (typeof response === 'string') {
+                response = JSON.parse(response);
+            }
+            console.info(response);
+
+            if (response.success && response.message) {
+                show_loader('success', response.message);
+
+                // Update the nextstep
+                $('#installStep').val('2');
+
+                // Post the form
+                setTimeout(function() {
+                    $('#installation').off('submit').submit();
+                }, 1000);
+            } else {
+                show_loader('error', response.message);
+                console.error('Teampass error:', response.message);
+            }
+        },
+        error: function(xhr) {
+            show_loader('error', xhr.responseText);
+            console.error('Teampass error:', xhr.status, xhr.responseText);
+        }
+    });
+}
+
+/**
+ * Step 0
+ */
+function step0() {
     show_loader('warning', '<i class="fa fa-spinner fa-spin"></i> Please wait...');
 
     $.ajax({
         type: 'POST',
-        url: 'install/run.step1.php',
+        url: 'install/run.step0.php',
         headers: {
             'X-CSRF-Token': $('meta[name="csrf-token"]').attr('content')
         },
@@ -74,10 +144,10 @@ function step1() {
                     'TeamPassInstallation',
                     function(TeamPassInstallation) {
                         TeamPassInstallation.randomInstalldKey = response.data.randomInstalldKey,
-                        TeamPassInstallation.rootPath = response.data.rootPath,
+                        TeamPassInstallation.settingsPath = response.data.rootPath,
                         TeamPassInstallation.secureFile = response.data.secureFile,
                         TeamPassInstallation.securePath = response.data.securePath,
-                        TeamPassInstallation.secureFileStatus = response.data.status
+                        TeamPassInstallation.settingsFileStatus = response.data.status
                     }
                 )
 

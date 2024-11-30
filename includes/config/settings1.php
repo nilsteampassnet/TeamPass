@@ -28,5 +28,5 @@ if (isset($session) === true && $session->has('system-timezone') && null !== $se
 }
 
 define("SECUREPATH", "/var/www/html/TeamPass/install1/install/../../includes/config");
-define("SECUREFILE", "NGK46YZGMSuxpb8zfGWzY2QEEjsDY8PWMAnacMLa");
+define("SECUREFILE", "KpN4aUqFqYWRJL3PUr9jbuycyQJKpb9xMYEUrDX8");
     

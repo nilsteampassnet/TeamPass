@@ -43,6 +43,7 @@ $superGlobal = new SuperGlobal();
 $serverPath = rtrim($superGlobal->get('DOCUMENT_ROOT', 'SERVER'), '/').
 	substr($superGlobal->get('PHP_SELF', 'SERVER'), 0,-20);
 $serverProtocol = null !== $superGlobal->get('HTTPS', 'SERVER') ? 'https://' : 'http://';
+$serverUrl = $serverProtocol . $superGlobal->get('HTTP_HOST', 'SERVER') . substr($superGlobal->get('PHP_SELF', 'SERVER'), 0, strrpos($superGlobal->get('PHP_SELF', 'SERVER'), '/') - 8);
 
 // Fonction pour récupérer les valeurs POST avec une valeur par défaut si vide
 function getPostValue($key, $defaultKey = null) {
@@ -104,7 +105,7 @@ $csrf_token = $superGlobal->get('csrf_token', 'SESSION');
 
 	<form method="POST" id="installation" action="">
 		<input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">	
-		<input type="text" id="installStep" name="installStep" value="<?php echo isset($post_step) ? htmlspecialchars($post_step) : '';?>" />
+		<input type="text" id="installStep" name="installStep" value="<?php echo isset($post_step) ? htmlspecialchars($post_step) : '0';?>" />
 	</form>
 
 	<!--
@@ -174,30 +175,92 @@ $csrf_token = $superGlobal->get('csrf_token', 'SESSION');
 					</div>
 				</div>
 				<?php
+				//
+				// STEP 1 - PATHS AND URLS
+				//
 				} elseif ($post_step === "1") {
 					?>
 				<div class="row">
-
 					<div class="col-12">
-						<div class="card bg-light">
+						<div class="card card-primary">
+							<div class="card-header">
+								<h5>Teampass instance information</h5>
+							</div>
 							<div class="card-body">
-								<h5 class="card-title"><i class="fa-solid fa-info-circle text-info"></i>&nbsp;Welcome to Teampass installation</h5>
-								<p class="card-text">This seems to be the 1st time Teampass will be installed on this server.<br>
-								It will proceed with installation of release <b><?php echo TP_VERSION;?></b>.</p>
+								<div class="form-group">
+									<label>Absolute path to TeamPass folder</label>
+									<input type="text" class="form-control" name="absolute_path" id="absolute_path" class="ui-widget" value="<?php echo $serverPath;?>">
+								</div>
+								<div class="form-group mt-3">
+									<label>Full URL to TeamPass</label>
+									<input type="text" class="form-control" name="url_path" id="url_path" class="ui-widget" value="<?php echo $serverUrl;?>">
+								</div>
+								<div class="form-group mt-3">
+									<label>Absolute path to secure path</label><br>
+									<small class="form-text text-muted">
+										For security reasons, the secure path shall be defined outside the WWW folder of your server (example: /var/teampass/). It will host an encryption key used for several Teampass features.
+									</small>
+									<input type="text" class="form-control" name="secure_path" id="secure_path" class="ui-widget" value="">
+								</div>
 							</div>
 						</div>
 					</div>
-
-				</div>
+				</div>				
+				<?php
+				//
+				// STEP 2 - CHECKING SERVER CONFIGURATION
+				//
+				} elseif ($post_step === "2") {
+					?>
+				<div class="row">
+					<div class="col-12">
+						<div class="card card-primary">
+							<div class="card-header">
+								<h5>Server checks</h5>
+							</div>
+							<div class="card-body">
+							<ul>
+								<li>File <code>/includes/config/settings.php</code> is available&nbsp;<span id="res2_check99"></span></li>
+								<li>Directory <code>/install/</code> is writable&nbsp;<span id="res2_check0"></span></li>
+								<li>Directory <code>/includes/</code> is writable&nbsp;<span id="res2_check1"></span></li>
+								<li>Directory <code>/includes/config/</code> is writable&nbsp;<span id="res2_check2"></span></li>
+								<li>Directory <code>/includes/avatars/</code> is writable&nbsp;<span id="res2_check3"></span></li>
+								<li>Directory <code>/includes/libraries/csrfp/libs/</code> is writable&nbsp;<span id="res2_check4"></span></li>
+								<li>Directory <code>/includes/libraries/csrfp/js/</code> is writable&nbsp;<span id="res2_check5"></span></li>
+								<li>Directory <code>/includes/libraries/csrfp/log/</code> is writable&nbsp;<span id="res2_check6"></span></li>
+								<li>Directory <code>/files/</code> is writable&nbsp;<span id="res2_check17"></span></li>
+								<li>Directory <code>/upload/</code> is writable&nbsp;<span id="res2_check18"></span></li>
+								<li>PHP extension <code>mbstring</code> is loaded&nbsp;<span id="res2_check7"></span></li>
+								<li>PHP extension <code>openssl</code> is loaded&nbsp;<span id="res2_check8"></span></li>
+								<li>PHP extension <code>bcmath</code> is loaded&nbsp;<span id="res2_check9"></span></li>
+								<li>PHP extension <code>iconv</code> is loaded&nbsp;<span id="res2_check10"></span></li>
+								<li>PHP extension <code>xml</code> is loaded&nbsp;<span id="res2_check12"></span></li>
+								<li>PHP extension <code>gd</code> is loaded&nbsp;<span id="res2_check11"></span></li>
+								<li>PHP extension <code>curl</code> is loaded&nbsp;<span id="res2_check13"></span></li>
+								<li>PHP extension <code>gmp</code> is loaded&nbsp;<span id="res2_check16"></span></li>
+								<li>PHP version is greater or equal to <code><?php echo MIN_PHP_VERSION;?></code>&nbsp;<span id="res2_check14"></span></li>
+								<li>Execution time limit&nbsp;<span id="res2_check15"></span></li>
+							</ul>
+							</div>
+						</div>
+					</div>
+				</div>				
 				<?php
 				}
 				?>
 
+				<!-- MESSAGES -->
+				<div class="row mt-3 mb-4 hidden">
+					<div class="col-12">
+						
+					</div>
+				</div>
 
+				<!-- FOOTER -->
 				<div class="row mt-3 mb-4">
 					<div class="col-12">
-						<button type="button" class="btn btn-primary <?php echo empty($post_step) ? 'hidden'  : '' ;?>" id="button_start" >Start</button>
-						<button type="button" class="btn btn-secondary" id="button_next" disabled data-step="<?php echo $post_step;?>">Continue</button>
+						<button type="button" class="btn btn-primary <?php echo empty($post_step) ? 'hidden'  : '' ;?>" id="button_start" data-step="<?php echo $post_step;?>">Start</button>
+						<button type="button" class="btn btn-secondary" id="button_next" <?php echo empty($post_step) ? ''  : 'disabled ' ;?>data-step="<?php echo empty($post_step) ? 0 : $post_step;?>">Continue</button>
 					</div>
 				</div>
 			</div>
