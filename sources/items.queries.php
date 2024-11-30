@@ -4359,13 +4359,16 @@ switch ($inputData['type']) {
                         }
                     }
 
+                    // Is drag and drop enabled?
+                    $dragDrop = (int) $SETTINGS['disable_drag_drop'] !== 1;
+
                     // Now finalize the data to send back
                     $html_json[$record['id']]['rights'] = $right;
                     $html_json[$record['id']]['perso'] = 'fa-tag mi-red';
                     $html_json[$record['id']]['sk'] = $itemIsPersonal === true ? 1 : 0;
                     $html_json[$record['id']]['display'] = $right > 0 ? 1 : 0;
                     $html_json[$record['id']]['open_edit'] = in_array($right, array(40, 50, 60, 70)) === true ? 1 : 0;
-                    $html_json[$record['id']]['canMove'] = in_array($right, array(30, 60, 70)) === true ? 1 : 0;
+                    $html_json[$record['id']]['canMove'] = in_array($right, array(30, 60, 70)) === true ? (int) $dragDrop : 0;
 
                     //*************** */
 
