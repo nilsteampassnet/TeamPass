@@ -1214,5 +1214,6 @@ e new password must:<br/> - Be different from the previous one<br/> - Contain at
     'disable_user_edit_timezone' => 'Users can no longer change time zones',
     'disable_user_edit_tree_load_strategy' => 'Users can no longer change tree loading strategy',
     'bruteforce_wait' => 'Too many failed attempts, your account is blocked until: ',
+    'disable_drag_drop' => 'Disable item drag and drop',
 
 );
