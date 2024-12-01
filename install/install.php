@@ -219,28 +219,31 @@ $csrf_token = $superGlobal->get('csrf_token', 'SESSION');
 								<h5>Server checks</h5>
 							</div>
 							<div class="card-body">
-							<ul>
-								<li>File <code>/includes/config/settings.php</code> is available&nbsp;<span id="res2_check99"></span></li>
-								<li>Directory <code>/install/</code> is writable&nbsp;<span id="res2_check0"></span></li>
-								<li>Directory <code>/includes/</code> is writable&nbsp;<span id="res2_check1"></span></li>
-								<li>Directory <code>/includes/config/</code> is writable&nbsp;<span id="res2_check2"></span></li>
-								<li>Directory <code>/includes/avatars/</code> is writable&nbsp;<span id="res2_check3"></span></li>
-								<li>Directory <code>/includes/libraries/csrfp/libs/</code> is writable&nbsp;<span id="res2_check4"></span></li>
-								<li>Directory <code>/includes/libraries/csrfp/js/</code> is writable&nbsp;<span id="res2_check5"></span></li>
-								<li>Directory <code>/includes/libraries/csrfp/log/</code> is writable&nbsp;<span id="res2_check6"></span></li>
-								<li>Directory <code>/files/</code> is writable&nbsp;<span id="res2_check17"></span></li>
-								<li>Directory <code>/upload/</code> is writable&nbsp;<span id="res2_check18"></span></li>
-								<li>PHP extension <code>mbstring</code> is loaded&nbsp;<span id="res2_check7"></span></li>
-								<li>PHP extension <code>openssl</code> is loaded&nbsp;<span id="res2_check8"></span></li>
-								<li>PHP extension <code>bcmath</code> is loaded&nbsp;<span id="res2_check9"></span></li>
-								<li>PHP extension <code>iconv</code> is loaded&nbsp;<span id="res2_check10"></span></li>
-								<li>PHP extension <code>xml</code> is loaded&nbsp;<span id="res2_check12"></span></li>
-								<li>PHP extension <code>gd</code> is loaded&nbsp;<span id="res2_check11"></span></li>
-								<li>PHP extension <code>curl</code> is loaded&nbsp;<span id="res2_check13"></span></li>
-								<li>PHP extension <code>gmp</code> is loaded&nbsp;<span id="res2_check16"></span></li>
-								<li>PHP version is greater or equal to <code><?php echo MIN_PHP_VERSION;?></code>&nbsp;<span id="res2_check14"></span></li>
-								<li>Execution time limit&nbsp;<span id="res2_check15"></span></li>
-							</ul>
+								<div>
+									<div class="alert alert-info" role="alert">
+										<i class="fa-solid fa-info-circle"></i>&nbsp;Next requirements are expected to run Teampass.
+									</div>
+								</div>
+								<ul>
+									<li>Directory <code>/install/</code> is writable&nbsp;<span id="check0"></span></li>
+									<li>Directory <code>/includes/</code> is writable&nbsp;<span id="check1"></span></li>
+									<li>Directory <code>/includes/config/</code> is writable&nbsp;<span id="check2"></span></li>
+									<li>Directory <code>/includes/avatars/</code> is writable&nbsp;<span id="check3"></span></li>
+									<li>Directory <code>/includes/libraries/csrfp/libs/</code> is writable&nbsp;<span id="check4"></span></li>
+									<li>Directory <code>/includes/libraries/csrfp/js/</code> is writable&nbsp;<span id="check5"></span></li>
+									<li>Directory <code>/includes/libraries/csrfp/log/</code> is writable&nbsp;<span id="check6"></span></li>
+									<li>Directory <code>/files/</code> is writable&nbsp;<span id="check7"></span></li>
+									<li>Directory <code>/upload/</code> is writable&nbsp;<span id="check8"></span></li>
+									<li>PHP extension <code>mbstring</code> is loaded&nbsp;<span id="check9"></span></li>
+									<li>PHP extension <code>openssl</code> is loaded&nbsp;<span id="check10"></span></li>
+									<li>PHP extension <code>bcmath</code> is loaded&nbsp;<span id="check11"></span></li>
+									<li>PHP extension <code>iconv</code> is loaded&nbsp;<span id="check12"></span></li>
+									<li>PHP extension <code>xml</code> is loaded&nbsp;<span id="check13"></span></li>
+									<li>PHP extension <code>gd</code> is loaded&nbsp;<span id="check14"></span></li>
+									<li>PHP extension <code>curl</code> is loaded&nbsp;<span id="check15"></span></li>
+									<li>PHP version is greater or equal to <code><?php echo MIN_PHP_VERSION;?></code>&nbsp;<span id="check17"></span></li>
+									<li>Execution time limit is at least <code>30s</code>&nbsp;<span id="check18"></span></li>
+								</ul>
 							</div>
 						</div>
 					</div>
@@ -260,7 +263,7 @@ $csrf_token = $superGlobal->get('csrf_token', 'SESSION');
 				<div class="row mt-3 mb-4">
 					<div class="col-12">
 						<button type="button" class="btn btn-primary <?php echo empty($post_step) ? 'hidden'  : '' ;?>" id="button_start" data-step="<?php echo $post_step;?>">Start</button>
-						<button type="button" class="btn btn-secondary" id="button_next" <?php echo empty($post_step) ? ''  : 'disabled ' ;?>data-step="<?php echo empty($post_step) ? 0 : $post_step;?>">Continue</button>
+						<button type="button" class="btn btn-secondary" id="button_next" <?php echo empty($post_step) ? ''  : 'disabled ' ;?>data-step="<?php echo empty($post_step) ? 1 : ((int) $post_step +1 );?>">Continue</button>
 					</div>
 				</div>
 			</div>

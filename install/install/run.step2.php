@@ -12,49 +12,64 @@ $superGlobal = new SuperGlobal();
 
 // Initialize variables
 $inputData = [
-    'absolutePath' => $superGlobal->get('absolutePath', 'POST') ?? '',
-    'urlPath' => $superGlobal->get('urlPath', 'POST') ?? '',
-    'securePath' => $superGlobal->get('securePath', 'POST') ?? '',
-    /*
-    'randomInstalldKey' => $superGlobal->get('randomInstalldKey', 'POST') ?? '',
-    'settingsPath' => rtrim($superGlobal->get('settingsPath', 'POST'), '/') ?? '',
-    'secureFile' => $superGlobal->get('secureFile', 'POST') ?? '',
-    'securePath' => $superGlobal->get('securePath', 'POST') ?? '',
-    */
+    'type' => $superGlobal->get('type', 'POST') ?? '',
+    'path' => $superGlobal->get('path', 'POST') ?? '',
+    'name' => $superGlobal->get('name', 'POST') ?? '',
+    'version' => $superGlobal->get('version', 'POST') ?? '',
+    'limit' => $superGlobal->get('limit', 'POST') ?? '',
 ];
 $filters = [
-    'absolutePath' => 'trim|escape',
-    'urlPath' => 'trim|escape',
-    'securePath' => 'trim|escape',
-    /*
-    'randomInstalldKey' => 'trim|escape',
-    'settingsPath' => 'trim|escape',
-    'secureFile' => 'trim|escape',
-    'securePath' => 'trim|escape',
-    */
+    'type' => 'trim|escape',
+    'path' => 'trim|escape',
+    'name' => 'trim|escape',
+    'version' => 'trim|escape',
+    'limit' => 'trim|escape',
 ];
 $inputData = dataSanitizer(
     $inputData,
     $filters
 );
 
-header('Content-type: text/html; charset=utf-8');
+header('Content-type: application/json; charset=utf-8');
 header('Cache-Control: no-cache, no-store, must-revalidate');
 
 // Perform checks
-$settingsFileStatus = checks($inputData);
+$response = ['success' => false];
 
-// Prepare the response
-if ($settingsFileStatus['success'] === true) {
-    $response = [
-        'success' => true,
-        'message' => '<i class="fa-solid fa-check"></i> Done',
-    ];
-} else {
-    $response = [
-        'success' => false,
-        'message' => $settingsFileStatus['message'],
-    ];
+// Vérifier le type d'opération
+$type = $inputData['type'] ?? '';
+
+switch ($type) {
+    case 'directory':
+        $path = $inputData['path'] ?? '';error_log( $path);
+        if ($path && is_writable($path)) {
+            $response['success'] = true;
+        }
+        break;
+
+    case 'extension':
+        $extension = $inputData['name'] ?? '';
+        if ($extension && extension_loaded($extension)) {
+            $response['success'] = true;
+        }
+        break;
+
+    case 'php_version':
+        if (version_compare(phpversion(), MIN_PHP_VERSION, '>=')) {
+            $response['success'] = true;
+        }
+        break;
+
+    case 'execution_time':
+        $limit = (int) ($inputData['limit'] ?? 0);
+        if ($limit > 0 && ini_get('max_execution_time') >= $limit) {
+            $response['success'] = true;
+        }
+        break;
+
+    default:
+        $response['error'] = 'Invalid type';
+        break;
 }
 
 // Send the response
