@@ -1205,5 +1205,15 @@ return array(
     'user_password_expired' => 'Your password has expired. Please change it.',
     'user_password_policy_tip' => 'Th
 e new password must:<br/> - Be different from the previous one<br/> - Contain at least 10 characters<br/> - Contain at least one uppercase letter and one lowercase letter<br/> - Contain at least one number or special character<br/> - Not contain your name, first name, username, or email.',
+    'bruteforce_unlock_at' => 'Account unlocked at (anti bruteforce): ',
+    'bruteforce_reset_account' => 'Reset anti bruteforce of user',
+    'bruteforce_reset_mail_subject' => 'TEAMPASS - Your account is disabled',
+    'bruteforce_reset_mail_body' => 'Hello #name#,<br/><br/>Your teampass account has been locked due to a large number of authentication failures.<br/><br/>You can unblock it by clicking on this link <a href="#reset_url#" target="_blank">#reset_url#</a><br/><br/>Automatic unlock: #unlock_at#',
+    'disable_user_edit_profile' => 'Users can no longer edit their profile',
+    'disable_user_edit_language' => 'Users can no longer change language',
+    'disable_user_edit_timezone' => 'Users can no longer change time zones',
+    'disable_user_edit_tree_load_strategy' => 'Users can no longer change tree loading strategy',
+    'bruteforce_wait' => 'Too many failed attempts, your account is blocked until: ',
+    'disable_drag_drop' => 'Disable item drag and drop',
 
 );

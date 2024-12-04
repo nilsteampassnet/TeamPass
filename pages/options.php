@@ -724,6 +724,15 @@ $zones = timezone_list();
 
                         <div class='row mb-2 option' data-keywords="tree load strategy">
                             <div class='col-10'>
+                                <?php echo $lang->get('disable_drag_drop'); ?>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='disable_drag_drop' data-toggle-on='<?php echo isset($SETTINGS['disable_drag_drop']) === true && $SETTINGS['disable_drag_drop'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='disable_drag_drop_input' value='<?php echo isset($SETTINGS['disable_drag_drop']) && $SETTINGS['disable_drag_drop'] === '1' ? '1' : '0'; ?>' />
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option' data-keywords="tree load strategy">
+                            <div class='col-10'>
                                 <?php echo $lang->get('disable_user_edit_tree_load_strategy'); ?>
                             </div>
                             <div class='col-2'>
