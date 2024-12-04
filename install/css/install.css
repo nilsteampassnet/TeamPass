@@ -1,123 +1,40 @@
+html, body {
+    height: 100%; /* Allows the body to take the full height of the screen */
+    margin: 0;    /* Removes default margins */
+}
+
 body{
-    width: 1000px;
-    margin-left: auto;
-    margin-right: auto;
-    background-image: url(../../includes/images/install_background.jpg);
-	-webkit-background-size: cover;
-	background-size: cover;
-    font-family: sans-serif;
+    background-image: url(../../includes/images/install_background.jpg); /* Path to the image */
+    background-size: cover;      /* The image covers the entire screen */
+    background-position: center; /* The image is centered */
+    background-repeat: no-repeat; /* No image repetition */
+    background-attachment: fixed; /* The image stays fixed when scrolling */
+    font-family: sans-serif;     /* Default font */
 }
 
-#top{
-	width: 1000px;
-	margin-left: auto;
-	margin-right: auto;
-	padding: 10px;
-	font-family: sans-serif;
-	display:block;
-	color: #404d63;
-}
-
-.lcol {
-	vertical-align:middle;
-	display:inline-block;
-	margin-bottom: 15px;
+.custom-block {
+    max-width: 1000px;
+    background-color: white;
+    border: 1px solid #ddd; /* Optional: a subtle gray border */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Optional: a bit of shadow */
+    border-radius: 8px; /* Optional: rounded corners */
+    margin: 0 auto; 
 }
 
 .header-title{
-	font-size: 42px;
-	letter-spacing: 10px;
-	color: #84AAB7;
-}
-
-.header-title-small{
-	font-size: 16px;
-	letter-spacing: 2px;
-}
-
-#title {
-  font: bold 270%/100% "Lucida Grande";
-  color: #464646;
-  float:left;
-  margin-top:3px;
-}
-
-#main {
-	width: 1000px;
-	margin-top:15px;
-	margin-left: auto;
-	margin-right: auto;
-	background-color:white;
-	color:#464646;
-	height:90%;
-	overflow:hidden;
-	padding:10px;
-	display:block;
-	height:100%;
-}
-
-#menu {
-	float:  left;
-	width:  25%;
-	margin-left:-20px;
-	height:100%;
-}
-
-#menu li {
-	margin-top:5px;
-}
-
-.li_inprogress {
-	font-weight:    bold;
-	color:          #5283BB;
-}
-
-.li_done {
-	font-weight:    normal;
-	color:          #464646;
-}
-
-#content {
-	/*float:left;
-	width:  75%;
-	height:100%;*/
-}
-
-#step_name {
-	font-weight:    bold;
-	text-align:     center;
-	font-size:      15px;
-}
-
-#step_content {
-	margin-top: 10px;
-}
-
-#action_buttons {
-	width: 1000px;
-	padding:    10px;
-	margin:0 auto 0 auto;
-	background-color:white;
-	color:#464646;
-	height:     30px;
-	text-align: right;
-}
-h5 {
-	margin-bottom: 10px;
-}
-
-.label_block {
-	display: inline-block;
-	width:  200px;
-	margin-bottom: 2px;
-}
-
-.label_block_big {
-	display: inline-block;
-	width:  270px;
-	margin-bottom: 2px;
+    font-size: 42px;
+    letter-spacing: 10px;
 }
 
 .hidden {
-  display: none;
+    display: none !important;
+    visibility: hidden !important;
+}
+
+.scrollable-list {
+    flex: 1;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    padding: 10px;
+    border-radius: 5px;
 }
