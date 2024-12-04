@@ -17,15 +17,18 @@
 
 
 $(function() {
+    // Prepare tooltips
     const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]')
     const popoverList = [...popoverTriggerList].map(popoverTriggerEl => new bootstrap.Popover(popoverTriggerEl))
 
+    // Initialize the session
     browserSession(
         'init',
         'TeamPassInstallation', {
         }
     );
 
+    // Display or not action buttons
     if ($('#installStep').val() !== '7') {
         $('#buttons-div').removeClass('hidden');
     } else {
@@ -50,15 +53,13 @@ $(function() {
     $("#button_start").on('click', function(event) {
         event.preventDefault();
         var step = parseInt($(this).data('step'));
-        console.log('>> '+step);
         $('#button_next').prop('disabled', true);
 
-
-        // Vérifie que tous les champs requis ont une valeur
+        // Check if all fields are filled
         var allFieldsValid = true;
         $('.required').each(function() {
             var $this = $(this);
-            console.log("field: "+$this.attr('id')+" value: "+$this.val());
+            
             if ($this.val().trim() === '') {
                 allFieldsValid = false;
                 show_loader('error', '<i class="fa-regular fa-circle-xmark"></i> Field ' + $this.data('label') + ' is mandatory!');
@@ -134,7 +135,6 @@ function performStep6() {
     // Fonction pour effectuer une vérification
     function performCheck(index) {
         if (index >= checks.length) {
-            // Toutes les vérifications sont terminées
             if (errorOccurred) {
                 show_loader('error', '<i class="fa-regular fa-circle-xmark text-alert"></i> Des erreurs sont survenues. Veuillez corriger les problèmes avant de continuer.');
             } else {
@@ -152,84 +152,53 @@ function performStep6() {
 
         const check = checks[index];
         
-        // Affiche un indicateur de progression
+        // Display a progress indicator
         $('#'+check.id).html('<i class="fas fa-spinner fa-spin text-primary"></i>');
 
-        // Appel AJAX vers run.step2.php
+        // AJAX call
         $.ajax({
             url: './install/run.step6.php',
             method: 'POST',
             headers: {
-                'X-CSRF-Token': $('meta[name="csrf-token"]').attr('content')
+            'X-CSRF-Token': $('meta[name="csrf-token"]').attr('content')
             },
             data: {
-                action: check['action'],
-                dbHost: store.get('TeamPassInstallation').dbHost,
-                dbName: store.get('TeamPassInstallation').dbName,
-                dbLogin: store.get('TeamPassInstallation').dbLogin,
-                dbPw: store.get('TeamPassInstallation').dbPw,
-                dbPort: store.get('TeamPassInstallation').dbPort,
-                tablePrefix: store.get('TeamPassInstallation').tablePrefix
+            action: check['action'],
+            dbHost: store.get('TeamPassInstallation').dbHost,
+            dbName: store.get('TeamPassInstallation').dbName,
+            dbLogin: store.get('TeamPassInstallation').dbLogin,
+            dbPw: store.get('TeamPassInstallation').dbPw,
+            dbPort: store.get('TeamPassInstallation').dbPort,
+            tablePrefix: store.get('TeamPassInstallation').tablePrefix
             },
             success: function(response) {
-                if (typeof response === 'string') {
-                    response = JSON.parse(response);
-                }
-                console.log(response.success);
-                // Analyse la réponse (attend un objet JSON : { success: true/false })
-                if (response.success) {
-                    $(`#${check.id}`).html('<i class="fas fa-check text-success"></i>'); // Coche verte
-                } else {
-                    errorOccurred = true; // Une erreur s'est produite
-                    $(`#${check.id}`).html('<i class="fas fa-times text-danger"></i> <div class="alert alert-warning" role="alert">' + response.message + '</div>'); // Croix rouge
-                }
+            if (typeof response === 'string') {
+                response = JSON.parse(response);
+            }
+            console.log(response.success);
+            if (response.success) {
+                $(`#${check.id}`).html('<i class="fas fa-check text-success"></i>'); // Green checkmark
+            } else {
+                errorOccurred = true; // An error occurred
+                $(`#${check.id}`).html('<i class="fas fa-times text-danger"></i> <div class="alert alert-warning" role="alert">' + response.message + '</div>'); // Red cross
+            }
             },
             error: function() {
-                errorOccurred = true; // Une erreur s'est produite
-                $(`#${check.id}`).html('<i class="fas fa-exclamation-triangle text-warning"></i>'); // Icône de problème
+            errorOccurred = true; // An error occurred
+            $(`#${check.id}`).html('<i class="fas fa-exclamation-triangle text-warning"></i>'); // Warning icon
             },
             complete: function() {
-                currentStep++;
-                // Passer à la vérification suivante
-                setTimeout(function() {
-                    performCheck(index + 1);
-                }, 200);
+            currentStep++;
+            // Move to the next check
+            setTimeout(function() {
+                performCheck(index + 1);
+            }, 200);
             }
         });
-    }
+        }
 
-    // Démarrer les vérifications
+        // Start the checks
     performCheck(0);
-
-}
-
-function adjustScrollableHeight() {
-    const windowHeight = window.innerHeight; // Hauteur totale de la fenêtre
-    const headerHeight = document.querySelector('header').offsetHeight; // Hauteur de l'en-tête
-    const footerHeight = document.querySelector('footer').offsetHeight; // Hauteur du pied de page
-    const otherElementsHeight = 350; // Compense les autres marges ou éléments
-    const scrollableList = document.querySelector('.scrollable-list');
-
-    if (scrollableList) {
-        const availableHeight = windowHeight - (headerHeight + footerHeight + otherElementsHeight);
-        scrollableList.style.maxHeight = availableHeight + 'px'; // Applique la hauteur calculée
-    }
-}
-
-// Ajuste la hauteur lors du chargement et du redimensionnement de la fenêtre
-window.addEventListener('load', adjustScrollableHeight);
-window.addEventListener('resize', adjustScrollableHeight);
-
-function updateProgressBar(currentStep, totalSteps) {
-    const progressBar = document.getElementById('progressbar');
-    
-    // Calcul du pourcentage de progression
-    const percentage = Math.round((currentStep / totalSteps) * 100);
-    
-    // Mise à jour des propriétés de la barre
-    progressBar.style.width = percentage + '%';  // Largeur de la barre
-    progressBar.setAttribute('aria-valuenow', percentage);  // Mise à jour de l'accessibilité
-    progressBar.textContent = percentage + '%';  // Texte affiché
 }
 
 /**
@@ -237,13 +206,12 @@ function updateProgressBar(currentStep, totalSteps) {
  */
 function performStep5() {
     show_loader('warning', '<i class="fa fa-spinner fa-spin"></i> Please wait...');
-    updateProgressBar(0, 0); // Initialisation de la barre de progression
-    $('#step5_results').html(''); // Efface les résultats précédents
+    updateProgressBar(0, 0); // Initialize the progress bar
+    $('#step5_results').html(''); // Clear previous results
     $('#step5_start_message').addClass('hidden');
     $('#step5_results_div').removeClass('hidden');
 
-
-    // Liste des vérifications à effectuer
+    // List of checks to perform
     const checks = [
         { id: 'check0', action: 'utf8' },
         { id: 'check1', action: 'api' },
@@ -292,18 +260,17 @@ function performStep5() {
         { id: 'check44', action: 'auth_failures' }
     ];
     
-    let errorOccurred = false; // Variable pour suivre les erreurs
-    let currentStep = 1; // Nombre de vérifications effectuées
-    const totalSteps = checks.length; // Nombre total de vérifications
+    let errorOccurred = false; // Variable to track errors
+    let currentStep = 1; // Number of checks performed
+    const totalSteps = checks.length; // Total number of checks
 
-    // Fonction pour effectuer une vérification
+    // Function to perform a check
     function performCheck(index) {
         if (index >= checks.length) {
-            // Toutes les vérifications sont terminées
             if (errorOccurred) {
-                show_loader('error', '<i class="fa-regular fa-circle-xmark text-alert"></i> Des erreurs sont survenues. Veuillez corriger les problèmes avant de continuer.');
+                show_loader('error', '<i class="fa-regular fa-circle-xmark text-alert"></i> Errors occurred. Please fix the issues before continuing.');
             } else {
-                show_loader('success', '<i class="fas fa-check text-success"></i> Toutes les vérifications ont réussi !', 2);
+                show_loader('success', '<i class="fas fa-check text-success"></i> All checks succeeded!', 2);
 
                 // Update the next step
                 $('#installStep').val('6');
@@ -317,10 +284,10 @@ function performStep5() {
 
         const check = checks[index];
         
-        // Affiche un indicateur de progression
+        // Display a progress indicator
         $('#step5_results').prepend('<div>Creating table <code>'+check.action+'</code> <span id="'+check.id+'"><i class="fas fa-spinner fa-spin text-primary"></i></span></div>');
 
-        // Appel AJAX vers run.step2.php
+        // AJAX call
         $.ajax({
             url: './install/run.step5.php',
             method: 'POST',
@@ -341,22 +308,21 @@ function performStep5() {
                     response = JSON.parse(response);
                 }
                 console.log(response.success);
-                // Analyse la réponse (attend un objet JSON : { success: true/false })
                 if (response.success) {
-                    $(`#${check.id}`).html('<i class="fas fa-check text-success"></i>'); // Coche verte
+                    $(`#${check.id}`).html('<i class="fas fa-check text-success"></i>'); // Green checkmark
                 } else {
-                    errorOccurred = true; // Une erreur s'est produite
-                    $(`#${check.id}`).html('<i class="fas fa-times text-danger"></i> <div class="alert alert-warning" role="alert">' + response.message + '</div>'); // Croix rouge
+                    errorOccurred = true; // An error occurred
+                    $(`#${check.id}`).html('<i class="fas fa-times text-danger"></i> <div class="alert alert-warning" role="alert">' + response.message + '</div>'); // Red cross
                 }
             },
             error: function() {
-                errorOccurred = true; // Une erreur s'est produite
-                $(`#${check.id}`).html('<i class="fas fa-exclamation-triangle text-warning"></i>'); // Icône de problème
+                errorOccurred = true; // An error occurred
+                $(`#${check.id}`).html('<i class="fas fa-exclamation-triangle text-warning"></i>'); // Warning icon
             },
             complete: function() {
                 updateProgressBar(currentStep, totalSteps);
                 currentStep++;
-                // Passer à la vérification suivante
+                // Move to the next check
                 setTimeout(function() {
                     performCheck(index + 1);
                 }, 200);
@@ -364,7 +330,7 @@ function performStep5() {
         });
     }
 
-    // Démarrer les vérifications
+    // Start the checks
     performCheck(0);
 }
 
@@ -491,8 +457,7 @@ function performStep3() {
  * 
  */
 function performStep2() {
-
-    // Liste des vérifications à effectuer
+    // List of checks to perform
     const checks = [
         { id: 'check0', type: 'directory', path: store.get('TeamPassInstallation').teampassAbsolutePath+'install1/' },
         { id: 'check1', type: 'directory', path: store.get('TeamPassInstallation').teampassAbsolutePath+'includes/' },
@@ -514,16 +479,15 @@ function performStep2() {
         { id: 'check18', type: 'execution_time', limit: 30 }
     ];
 
-    let errorOccurred = false; // Variable pour suivre les erreurs
+    let errorOccurred = false; // Variable to track errors
 
-    // Fonction pour effectuer une vérification
+    // Function to perform a check
     function performCheck(index) {
         if (index >= checks.length) {
-            // Toutes les vérifications sont terminées
             if (errorOccurred) {
-                show_loader('error', '<i class="fa-regular fa-circle-xmark text-alert"></i> Des erreurs sont survenues. Veuillez corriger les problèmes avant de continuer.');
+                show_loader('error', '<i class="fa-regular fa-circle-xmark text-alert"></i> Errors occurred. Please fix the issues before continuing.');
             } else {
-                show_loader('success', '<i class="fas fa-check text-success"></i> Toutes les vérifications ont réussi !', 2);
+                show_loader('success', '<i class="fas fa-check text-success"></i> All checks succeeded!', 2);
 
                 // Update the next step
                 $('#installStep').val('3');
@@ -537,10 +501,10 @@ function performStep2() {
 
         const check = checks[index];
         
-        // Affiche un indicateur de progression
+        // Display a progress indicator
         $(`#${check.id}`).html('<i class="fas fa-spinner fa-spin text-primary"></i>');
 
-        // Appel AJAX vers run.step2.php
+        // AJAX call
         $.ajax({
             url: './install/run.step2.php',
             method: 'POST',
@@ -549,26 +513,25 @@ function performStep2() {
             },
             data: check,
             success: function(response) {
-                // Analyse la réponse (attend un objet JSON : { success: true/false })
                 if (response.success) {
-                    $(`#${check.id}`).html('<i class="fas fa-check text-success"></i>'); // Coche verte
+                    $(`#${check.id}`).html('<i class="fas fa-check text-success"></i>'); // Green checkmark
                 } else {
-                    errorOccurred = true; // Une erreur s'est produite
-                    $(`#${check.id}`).html('<i class="fas fa-times text-danger"></i>'); // Croix rouge
+                    errorOccurred = true; // An error occurred
+                    $(`#${check.id}`).html('<i class="fas fa-times text-danger"></i>'); // Red cross
                 }
             },
             error: function() {
-                errorOccurred = true; // Une erreur s'est produite
-                $(`#${check.id}`).html('<i class="fas fa-exclamation-triangle text-warning"></i>'); // Icône de problème
+                errorOccurred = true; // An error occurred
+                $(`#${check.id}`).html('<i class="fas fa-exclamation-triangle text-warning"></i>'); // Warning icon
             },
             complete: function() {
-                // Passer à la vérification suivante
+                // Move to the next check
                 performCheck(index + 1);
             }
         });
     }
 
-    // Démarrer les vérifications
+    // Start the checks
     performCheck(0);
 }
 
@@ -670,12 +633,9 @@ function show_loader(statut, message, delay = 0) {
     }
 }
 
-
-function hide_loader() {
-    //alertify.
-}
-
-
+/**
+ * Browser session
+ */
 function browserSession(action, name, data)
 {
     // Initialize the session
@@ -700,4 +660,36 @@ function browserSession(action, name, data)
             });
         }
     }
+}
+
+/*
+* Display a progress indicator
+*/
+function adjustScrollableHeight() {
+    const windowHeight = window.innerHeight; // Total window height
+    const headerHeight = document.querySelector('header').offsetHeight; // Header height
+    const footerHeight = document.querySelector('footer').offsetHeight; // Footer height
+    const otherElementsHeight = 350; // Compensate for other margins or elements
+    const scrollableList = document.querySelector('.scrollable-list');
+
+    if (scrollableList) {
+        const availableHeight = windowHeight - (headerHeight + footerHeight + otherElementsHeight);
+        scrollableList.style.maxHeight = availableHeight + 'px'; // Apply the calculated height
+    }
+}
+
+// Adjust the height on window load and resize
+window.addEventListener('load', adjustScrollableHeight);
+window.addEventListener('resize', adjustScrollableHeight);
+
+function updateProgressBar(currentStep, totalSteps) {
+    const progressBar = document.getElementById('progressbar');
+    
+    // Calculate the progress percentage
+    const percentage = Math.round((currentStep / totalSteps) * 100);
+    
+    // Update the progress bar properties
+    progressBar.style.width = percentage + '%';  // Width of the bar
+    progressBar.setAttribute('aria-valuenow', percentage);  // Update accessibility
+    progressBar.textContent = percentage + '%';  // Displayed text
 }
