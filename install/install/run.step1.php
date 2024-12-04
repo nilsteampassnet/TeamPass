@@ -6,33 +6,26 @@ use TeampassClasses\SuperGlobal\SuperGlobal;
 // Get some data
 include __DIR__.'/../../includes/config/include.php';
 // Load functions
-require_once __DIR__.'/../../sources/main.functions.php';
+include_once(__DIR__ . '/../tp.functions.php');
 
 $superGlobal = new SuperGlobal();
 
 // Initialize variables
-$inputData = [
-    'absolutePath' => $superGlobal->get('absolutePath', 'POST') ?? '',
-    'urlPath' => $superGlobal->get('urlPath', 'POST') ?? '',
-    'securePath' => $superGlobal->get('securePath', 'POST') ?? '',
-    /*
-    'randomInstalldKey' => $superGlobal->get('randomInstalldKey', 'POST') ?? '',
-    'settingsPath' => rtrim($superGlobal->get('settingsPath', 'POST'), '/') ?? '',
-    'secureFile' => $superGlobal->get('secureFile', 'POST') ?? '',
-    'securePath' => $superGlobal->get('securePath', 'POST') ?? '',
-    */
+$keys = [
+    'absolutePath',
+    'urlPath',
+    'securePath',
 ];
-$filters = [
-    'absolutePath' => 'trim|escape',
-    'urlPath' => 'trim|escape',
-    'securePath' => 'trim|escape',
-    /*
-    'randomInstalldKey' => 'trim|escape',
-    'settingsPath' => 'trim|escape',
-    'secureFile' => 'trim|escape',
-    'securePath' => 'trim|escape',
-    */
-];
+
+// Initialiser les tableaux
+$inputData = [];
+$filters = [];
+
+// Boucle pour récupérer les variables POST et constituer les tableaux
+foreach ($keys as $key) {
+    $inputData[$key] = $superGlobal->get($key, 'POST') ?? '';
+    $filters[$key] = 'trim|escape';
+}
 $inputData = dataSanitizer(
     $inputData,
     $filters

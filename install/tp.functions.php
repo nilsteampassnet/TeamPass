@@ -3,6 +3,8 @@
 use Defuse\Crypto\Key;
 use Defuse\Crypto\Crypto;
 use Defuse\Crypto\Exception as CryptoException;
+use Elegant\Sanitizer\Sanitizer;
+use voku\helper\AntiXSS;
 
 // new SECUREFILE - 3.0.0.23
 function handleSecurefileConstant()
@@ -538,4 +540,121 @@ function deleteAllFolder(string $str)
         // Remove the directory itself 
         @rmdir($str); 
     } 
+}
+
+
+/**
+ * Permits to encrypt a message using Defuse.
+ *
+ * @param string $message   Message to encrypt
+ * @param string $ascii_key Key to hash
+ *
+ * @return array String + Error
+ */
+function encryptFollowingDefuse($message, $ascii_key): array
+{
+    // convert KEY
+    $key = Key::loadFromAsciiSafeString($ascii_key);
+    $err = "";
+
+    try {
+        $text = Crypto::encrypt($message, $key);
+    } catch (CryptoException\WrongKeyOrModifiedCiphertextException $ex) {
+        $err = 'an attack! either the wrong key was loaded, or the ciphertext has changed since it was created either corrupted in the database or intentionally modified by someone trying to carry out an attack.';
+    } catch (CryptoException\BadFormatException $ex) {
+        $err = $ex;
+    } catch (CryptoException\EnvironmentIsBrokenException $ex) {
+        $err = $ex;
+    } catch (CryptoException\CryptoException $ex) {
+        $err = $ex;
+    } catch (CryptoException\IOException $ex) {
+        $err = $ex;
+    }
+
+    return array(
+        'string' => isset($text) ? $text : '',
+        'error' => $err,
+    );
+}
+
+/**
+ * Uses Sanitizer to perform data sanitization
+ *
+ * @param array     $data
+ * @param array     $filters
+ * @return array|string
+ */
+function dataSanitizer(array $data, array $filters): array|string
+{
+    // Load Sanitizer library
+    $sanitizer = new Sanitizer($data, $filters);
+
+    // Load AntiXSS
+    $antiXss = new AntiXSS();
+
+    // Sanitize post and get variables
+    return $antiXss->xss_clean($sanitizer->sanitize());
+}
+
+/**
+ * Chmods files and folders with different permissions.
+ *
+ * This is an all-PHP alternative to using: \n
+ * <tt>exec("find ".$path." -type f -exec chmod 644 {} \;");</tt> \n
+ * <tt>exec("find ".$path." -type d -exec chmod 755 {} \;");</tt>
+ *
+ * @author Jeppe Toustrup (tenzer at tenzer dot dk)
+  *
+ * @param string $path      An either relative or absolute path to a file or directory which should be processed.
+ * @param int    $filePerm The permissions any found files should get.
+ * @param int    $dirPerm  The permissions any found folder should get.
+ *
+ * @return bool Returns TRUE if the path if found and FALSE if not.
+ *
+ * @warning The permission levels has to be entered in octal format, which
+ * normally means adding a zero ("0") in front of the permission level. \n
+ * More info at: http://php.net/chmod.
+*/
+
+function recursiveChmod(
+    string $path,
+    int $filePerm = 0644,
+    int  $dirPerm = 0755
+) {
+    // Check if the path exists
+    $path = basename($path);
+    if (! file_exists($path)) {
+        return false;
+    }
+
+    // See whether this is a file
+    if (is_file($path)) {
+        // Chmod the file with our given filepermissions
+        try {
+            chmod($path, $filePerm);
+        } catch (Exception $e) {
+            return false;
+        }
+    // If this is a directory...
+    } elseif (is_dir($path)) {
+        // Then get an array of the contents
+        $foldersAndFiles = scandir($path);
+        // Remove "." and ".." from the list
+        $entries = array_slice($foldersAndFiles, 2);
+        // Parse every result...
+        foreach ($entries as $entry) {
+            // And call this function again recursively, with the same permissions
+            recursiveChmod($path.'/'.$entry, $filePerm, $dirPerm);
+        }
+
+        // When we are done with the contents of the directory, we chmod the directory itself
+        try {
+            chmod($path, $filePerm);
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+
+    // Everything seemed to work out well, return true
+    return true;
 }

@@ -17,12 +17,20 @@
 
 
 $(function() {
+    const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]')
+    const popoverList = [...popoverTriggerList].map(popoverTriggerEl => new bootstrap.Popover(popoverTriggerEl))
 
     browserSession(
         'init',
         'TeamPassInstallation', {
         }
     );
+
+    if ($('#installStep').val() !== '7') {
+        $('#buttons-div').removeClass('hidden');
+    } else {
+        $('#buttons-div').addClass('hidden');
+    }
 
     // Next button clicked
     $("#button_next").on('click', function(event) {
@@ -45,21 +53,22 @@ $(function() {
         console.log('>> '+step);
         $('#button_next').prop('disabled', true);
 
+
+        // Vérifie que tous les champs requis ont une valeur
+        var allFieldsValid = true;
+        $('.required').each(function() {
+            var $this = $(this);
+            console.log("field: "+$this.attr('id')+" value: "+$this.val());
+            if ($this.val().trim() === '') {
+                allFieldsValid = false;
+                show_loader('error', '<i class="fa-regular fa-circle-xmark"></i> Field ' + $this.data('label') + ' is mandatory!');
+                return false;
+            }
+        });
+
         // Steps
-        if (step === 1) {
+        if (step === 1 && allFieldsValid) {
             // Validate the fields
-            if ($('#absolute_path').val() === '') {
-                show_loader('error', '<i class="fa-regular fa-circle-xmark"></i> Please enter the Absolute path');
-                return;
-            }
-            if ($('#url_path').val() === '') {
-                show_loader('error', '<i class="fa-regular fa-circle-xmark"></i> Please enter the URL path');
-                return;
-            }
-            if ($('#secure_path').val() === '') {
-                show_loader('error', '<i class="fa-regular fa-circle-xmark"></i> Please enter the Secure path');
-                return;
-            }
             performStep1();
             return;
 
@@ -68,8 +77,32 @@ $(function() {
             performStep2();
             return;
             
+        } else if (step === 3 && allFieldsValid) {
+            // Validate the Database
+            performStep3();
+            return;
+
+        } else if (step === 4 && allFieldsValid) {
+            // Validate server settings
+            if ($('#admin_pwd').val() !== $('#admin_pwd_confirm').val()) {
+                show_loader('error', '<i class="fa-regular fa-circle-xmark"></i> Password confirmation is not correct!');
+                return false;
+            }
+            performStep4();
+            return;
+
+        } else if (step === 5) {
+            // Populating database
+            performStep5();
+            return;
+
+        } else if (step === 6) {
+            // Final step
+            performStep6();
+            return;
+
         } else {
-            console.error('Unknown step:', step);
+            console.error('Error at step '+step+', allFieldsValid='+allFieldsValid);
         }
         
     });
@@ -77,16 +110,386 @@ $(function() {
 });
 
 
-//prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
-//data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
-/*
 
-            randomInstalldKey: store.get('TeamPassInstallation').randomInstalldKey,
-            settingsPath: store.get('TeamPassInstallation').settingsPath,
-            secureFile: store.get('TeamPassInstallation').secureFile,
-            securePath: store.get('TeamPassInstallation').securePath
-*/
 
+/**
+ * Perform step 6
+ */
+function performStep6() {
+    show_loader('warning', '<i class="fa fa-spinner fa-spin"></i> Please wait...');
+
+    const checks = [
+        { id: 'check0', action: 'secureFile' },
+        { id: 'check1', action: 'chmod' },
+        { id: 'check2', action: 'settingsFile' },
+        { id: 'check3', action: 'csrf' },
+        { id: 'check4', action: 'cronJob' },
+        { id: 'check5', action: 'cleanInstall' }
+    ];
+    
+    let errorOccurred = false; // Variable pour suivre les erreurs
+    let currentStep = 1; // Nombre de vérifications effectuées
+    const totalSteps = checks.length; // Nombre total de vérifications
+
+    // Fonction pour effectuer une vérification
+    function performCheck(index) {
+        if (index >= checks.length) {
+            // Toutes les vérifications sont terminées
+            if (errorOccurred) {
+                show_loader('error', '<i class="fa-regular fa-circle-xmark text-alert"></i> Des erreurs sont survenues. Veuillez corriger les problèmes avant de continuer.');
+            } else {
+                show_loader('success', '<i class="fas fa-check text-success"></i> Toutes les actions ont réussi !', 2);
+
+                // Update the next step
+                $('#installStep').val('7');
+
+                // Handle the buttons
+                $('#button_next').prop('disabled', false);
+                $('#button_start').prop('disabled', true);
+            }
+            return;
+        }
+
+        const check = checks[index];
+        
+        // Affiche un indicateur de progression
+        $('#'+check.id).html('<i class="fas fa-spinner fa-spin text-primary"></i>');
+
+        // Appel AJAX vers run.step2.php
+        $.ajax({
+            url: './install/run.step6.php',
+            method: 'POST',
+            headers: {
+                'X-CSRF-Token': $('meta[name="csrf-token"]').attr('content')
+            },
+            data: {
+                action: check['action'],
+                dbHost: store.get('TeamPassInstallation').dbHost,
+                dbName: store.get('TeamPassInstallation').dbName,
+                dbLogin: store.get('TeamPassInstallation').dbLogin,
+                dbPw: store.get('TeamPassInstallation').dbPw,
+                dbPort: store.get('TeamPassInstallation').dbPort,
+                tablePrefix: store.get('TeamPassInstallation').tablePrefix
+            },
+            success: function(response) {
+                if (typeof response === 'string') {
+                    response = JSON.parse(response);
+                }
+                console.log(response.success);
+                // Analyse la réponse (attend un objet JSON : { success: true/false })
+                if (response.success) {
+                    $(`#${check.id}`).html('<i class="fas fa-check text-success"></i>'); // Coche verte
+                } else {
+                    errorOccurred = true; // Une erreur s'est produite
+                    $(`#${check.id}`).html('<i class="fas fa-times text-danger"></i> <div class="alert alert-warning" role="alert">' + response.message + '</div>'); // Croix rouge
+                }
+            },
+            error: function() {
+                errorOccurred = true; // Une erreur s'est produite
+                $(`#${check.id}`).html('<i class="fas fa-exclamation-triangle text-warning"></i>'); // Icône de problème
+            },
+            complete: function() {
+                currentStep++;
+                // Passer à la vérification suivante
+                setTimeout(function() {
+                    performCheck(index + 1);
+                }, 200);
+            }
+        });
+    }
+
+    // Démarrer les vérifications
+    performCheck(0);
+
+}
+
+function adjustScrollableHeight() {
+    const windowHeight = window.innerHeight; // Hauteur totale de la fenêtre
+    const headerHeight = document.querySelector('header').offsetHeight; // Hauteur de l'en-tête
+    const footerHeight = document.querySelector('footer').offsetHeight; // Hauteur du pied de page
+    const otherElementsHeight = 350; // Compense les autres marges ou éléments
+    const scrollableList = document.querySelector('.scrollable-list');
+
+    if (scrollableList) {
+        const availableHeight = windowHeight - (headerHeight + footerHeight + otherElementsHeight);
+        scrollableList.style.maxHeight = availableHeight + 'px'; // Applique la hauteur calculée
+    }
+}
+
+// Ajuste la hauteur lors du chargement et du redimensionnement de la fenêtre
+window.addEventListener('load', adjustScrollableHeight);
+window.addEventListener('resize', adjustScrollableHeight);
+
+function updateProgressBar(currentStep, totalSteps) {
+    const progressBar = document.getElementById('progressbar');
+    
+    // Calcul du pourcentage de progression
+    const percentage = Math.round((currentStep / totalSteps) * 100);
+    
+    // Mise à jour des propriétés de la barre
+    progressBar.style.width = percentage + '%';  // Largeur de la barre
+    progressBar.setAttribute('aria-valuenow', percentage);  // Mise à jour de l'accessibilité
+    progressBar.textContent = percentage + '%';  // Texte affiché
+}
+
+/**
+ * Perform step 5
+ */
+function performStep5() {
+    show_loader('warning', '<i class="fa fa-spinner fa-spin"></i> Please wait...');
+    updateProgressBar(0, 0); // Initialisation de la barre de progression
+    $('#step5_results').html(''); // Efface les résultats précédents
+    $('#step5_start_message').addClass('hidden');
+    $('#step5_results_div').removeClass('hidden');
+
+
+    // Liste des vérifications à effectuer
+    const checks = [
+        { id: 'check0', action: 'utf8' },
+        { id: 'check1', action: 'api' },
+        { id: 'check2', action: 'automatic_del' },
+        { id: 'check3', action: 'cache' },
+        { id: 'check4', action: 'cache_tree' },
+        { id: 'check5', action: 'categories' },
+        { id: 'check6', action: 'categories_folders' },
+        { id: 'check7', action: 'categories_items' },
+        { id: 'check8', action: 'defuse_passwords' },
+        { id: 'check9', action: 'emails' },
+        { id: 'check10', action: 'export' },
+        { id: 'check11', action: 'files' },
+        { id: 'check12', action: 'items' },
+        { id: 'check13', action: 'items_change' },
+        { id: 'check14', action: 'items_edition' },
+        { id: 'check15', action: 'items_otp' },
+        { id: 'check16', action: 'kb' },
+        { id: 'check17', action: 'kb_categories' },
+        { id: 'check18', action: 'kb_items' },
+        { id: 'check19', action: 'ldap_groups_roles' },
+        { id: 'check20', action: 'languages' },
+        { id: 'check21', action: 'log_items' },
+        { id: 'check22', action: 'log_system' },
+        { id: 'check23', action: 'misc' },
+        { id: 'check24', action: 'nested_tree' },
+        { id: 'check25', action: 'notification' },
+        { id: 'check26', action: 'otv' },
+        { id: 'check27', action: 'background_tasks' },
+        { id: 'check28', action: 'background_subtasks' },
+        { id: 'check29', action: 'background_tasks_logs' },
+        { id: 'check30', action: 'restriction_to_roles' },
+        { id: 'check31', action: 'rights' },
+        { id: 'check32', action: 'roles_title' },
+        { id: 'check33', action: 'roles_values' },
+        { id: 'check34', action: 'sharekeys_fields' },
+        { id: 'check35', action: 'sharekeys_files' },
+        { id: 'check36', action: 'sharekeys_items' },
+        { id: 'check37', action: 'sharekeys_logs' },
+        { id: 'check38', action: 'sharekeys_suggestions' },
+        { id: 'check39', action: 'suggestion' },
+        { id: 'check40', action: 'tags' },
+        { id: 'check41', action: 'templates' },
+        { id: 'check42', action: 'tokens' },
+        { id: 'check43', action: 'users' },
+        { id: 'check44', action: 'auth_failures' }
+    ];
+    
+    let errorOccurred = false; // Variable pour suivre les erreurs
+    let currentStep = 1; // Nombre de vérifications effectuées
+    const totalSteps = checks.length; // Nombre total de vérifications
+
+    // Fonction pour effectuer une vérification
+    function performCheck(index) {
+        if (index >= checks.length) {
+            // Toutes les vérifications sont terminées
+            if (errorOccurred) {
+                show_loader('error', '<i class="fa-regular fa-circle-xmark text-alert"></i> Des erreurs sont survenues. Veuillez corriger les problèmes avant de continuer.');
+            } else {
+                show_loader('success', '<i class="fas fa-check text-success"></i> Toutes les vérifications ont réussi !', 2);
+
+                // Update the next step
+                $('#installStep').val('6');
+
+                // Handle the buttons
+                $('#button_next').prop('disabled', false);
+                $('#button_start').prop('disabled', true);
+            }
+            return;
+        }
+
+        const check = checks[index];
+        
+        // Affiche un indicateur de progression
+        $('#step5_results').prepend('<div>Creating table <code>'+check.action+'</code> <span id="'+check.id+'"><i class="fas fa-spinner fa-spin text-primary"></i></span></div>');
+
+        // Appel AJAX vers run.step2.php
+        $.ajax({
+            url: './install/run.step5.php',
+            method: 'POST',
+            headers: {
+                'X-CSRF-Token': $('meta[name="csrf-token"]').attr('content')
+            },
+            data: {
+                action: check['action'],
+                dbHost: store.get('TeamPassInstallation').dbHost,
+                dbName: store.get('TeamPassInstallation').dbName,
+                dbLogin: store.get('TeamPassInstallation').dbLogin,
+                dbPw: store.get('TeamPassInstallation').dbPw,
+                dbPort: store.get('TeamPassInstallation').dbPort,
+                tablePrefix: store.get('TeamPassInstallation').tablePrefix
+            },
+            success: function(response) {
+                if (typeof response === 'string') {
+                    response = JSON.parse(response);
+                }
+                console.log(response.success);
+                // Analyse la réponse (attend un objet JSON : { success: true/false })
+                if (response.success) {
+                    $(`#${check.id}`).html('<i class="fas fa-check text-success"></i>'); // Coche verte
+                } else {
+                    errorOccurred = true; // Une erreur s'est produite
+                    $(`#${check.id}`).html('<i class="fas fa-times text-danger"></i> <div class="alert alert-warning" role="alert">' + response.message + '</div>'); // Croix rouge
+                }
+            },
+            error: function() {
+                errorOccurred = true; // Une erreur s'est produite
+                $(`#${check.id}`).html('<i class="fas fa-exclamation-triangle text-warning"></i>'); // Icône de problème
+            },
+            complete: function() {
+                updateProgressBar(currentStep, totalSteps);
+                currentStep++;
+                // Passer à la vérification suivante
+                setTimeout(function() {
+                    performCheck(index + 1);
+                }, 200);
+            }
+        });
+    }
+
+    // Démarrer les vérifications
+    performCheck(0);
+}
+
+
+/**
+ * Perform step 4
+ */
+function performStep4() {
+    show_loader('warning', '<i class="fa fa-spinner fa-spin"></i> Please wait...');
+
+    $.ajax({
+        type: 'POST',
+        url: './install/run.step4.php',
+        headers: {
+            'X-CSRF-Token': $('meta[name="csrf-token"]').attr('content')
+        },
+        data: {
+            adminPassword: $('#admin_pwd').val(),
+            adminEmail: $('#admin_email').val(),
+            adminName: $('#admin_name').val(),
+            adminLastname: $('#admin_lastname').val(),
+            dbHost: store.get('TeamPassInstallation').dbHost,
+            dbName: store.get('TeamPassInstallation').dbName,
+            dbLogin: store.get('TeamPassInstallation').dbLogin,
+            dbPw: store.get('TeamPassInstallation').dbPw,
+            dbPort: store.get('TeamPassInstallation').dbPort,
+            tablePrefix: store.get('TeamPassInstallation').tablePrefix
+        },
+        success: function(response) {
+            if (typeof response === 'string') {
+                response = JSON.parse(response);
+            }
+
+            // If success
+            if (response.success && response.message) {
+                show_loader('success', response.message);
+
+                // Update the next step
+                $('#installStep').val('5');
+
+                // Handle the buttons
+                $('#button_next').prop('disabled', false);
+                $('#button_start').prop('disabled', true);
+
+            } else {
+                show_loader('error', response.message);
+                console.error('Teampass error:', response.message);
+            }
+        },
+        error: function(xhr) {
+            show_loader('error', xhr.responseText);
+            console.error('Teampass error:', xhr.status, xhr.responseText);
+        }
+    });
+}
+
+/**
+ * 
+ */
+function performStep3() {
+    show_loader('warning', '<i class="fa fa-spinner fa-spin"></i> Please wait...');
+
+    $.ajax({
+        type: 'POST',
+        url: './install/run.step3.php',
+        headers: {
+            'X-CSRF-Token': $('meta[name="csrf-token"]').attr('content')
+        },
+        data: {
+            dbHost: $('#db_host').val(),
+            dbName: $('#db_bdd').val(),
+            dbLogin: $('#db_login').val(),
+            dbPw: $('#db_pw').val(),
+            dbPort: $('#db_port').val(),
+            tablePrefix: $('#tbl_prefix').val(),
+            teampassAbsolutePath: store.get('TeamPassInstallation').teampassAbsolutePath,
+            teampassUrl: store.get('TeamPassInstallation').teampassUrl,
+            teampassSecurePath: store.get('TeamPassInstallation').teampassSecurePath
+        },
+        success: function(response) {
+            if (typeof response === 'string') {
+                response = JSON.parse(response);
+            }
+
+            // If success
+            if (response.success && response.message) {
+                show_loader('success', response.message);
+
+                // Store the data to browser session
+                store.update(
+                    'TeamPassInstallation',
+                    function(TeamPassInstallation) {
+                        TeamPassInstallation.dbHost = $('#db_host').val(),
+                        TeamPassInstallation.dbName = $('#db_bdd').val(),
+                        TeamPassInstallation.dbLogin = $('#db_login').val(),
+                        TeamPassInstallation.dbPw = $('#db_pw').val(),
+                        TeamPassInstallation.dbPort = $('#db_port').val(),
+                        TeamPassInstallation.tablePrefix = $('#tbl_prefix').val()
+                    }
+                )
+
+                // Update the next step
+                $('#installStep').val('4');
+
+                // Handle the buttons
+                $('#button_next').prop('disabled', false);
+                $('#button_start').prop('disabled', true);
+
+            } else {
+                show_loader('error', response.message);
+                console.error('Teampass error:', response.message);
+            }
+        },
+        error: function(xhr) {
+            show_loader('error', xhr.responseText);
+            console.error('Teampass error:', xhr.status, xhr.responseText);
+        }
+    });
+}
+
+
+/**
+ * Step 3
+ * 
+ */
 function performStep2() {
 
     // Liste des vérifications à effectuer
@@ -183,7 +586,6 @@ function performStep1() {
             'X-CSRF-Token': $('meta[name="csrf-token"]').attr('content')
         },
         data: {
-            action: 'step1',
             absolutePath: $('#absolute_path').val(),
             urlPath: $('#url_path').val(),
             securePath: $('#secure_path').val(),
@@ -214,12 +616,6 @@ function performStep1() {
                 $('#button_next').prop('disabled', false);
                 $('#button_start').prop('disabled', true);
 
-                /*
-                // Post the form
-                setTimeout(function() {
-                    $('#installation').off('submit').submit();
-                }, 1000);
-                */
             } else {
                 show_loader('error', response.message);
                 console.error('Teampass error:', response.message);
@@ -248,59 +644,9 @@ function moveToNextStep(step) {
     $('#installation').off('submit').submit();
 }
 
-
-function step0__() {
-    show_loader('warning', '<i class="fa fa-spinner fa-spin"></i> Please wait...');
-
-    $.ajax({
-        type: 'POST',
-        url: 'install/run.step0.php',
-        headers: {
-            'X-CSRF-Token': $('meta[name="csrf-token"]').attr('content')
-        },
-        data: {
-            action: 'step0'
-        },
-        success: function(response) {
-            if (typeof response === 'string') {
-                response = JSON.parse(response);
-            }
-            console.info(response);
-
-            if (response.success && response.message) {
-                show_loader('success', response.message);
-
-                // Update the step
-                $('#installStep').val('1');
-
-                // Store the data to browser session
-                store.update(
-                    'TeamPassInstallation',
-                    function(TeamPassInstallation) {
-                        TeamPassInstallation.randomInstalldKey = response.data.randomInstalldKey,
-                        TeamPassInstallation.settingsPath = response.data.rootPath,
-                        TeamPassInstallation.secureFile = response.data.secureFile,
-                        TeamPassInstallation.securePath = response.data.securePath,
-                        TeamPassInstallation.settingsFileStatus = response.data.status
-                    }
-                )
-
-                // Post the form
-                setTimeout(function() {
-                    $('#installation').off('submit').submit();
-                }, 1000);
-            } else {
-                console.error('Error:', response.message);
-            }
-        },
-        error: function(xhr) {
-            show_loader('error', xhr.responseText);
-            console.error('Error:', xhr.status, xhr.responseText);
-        }
-    });
-}
-
-
+/**
+ * Show loader
+ */
 function show_loader(statut, message, delay = 0) {
     if (statut === 'show') {
         alertify.message(message, delay).dismissOthers();

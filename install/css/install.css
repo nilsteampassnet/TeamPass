@@ -1,31 +1,40 @@
 html, body {
-    height: 100%; /* Permet à body de prendre toute la hauteur de l'écran */
-    margin: 0;    /* Supprime les marges par défaut */
+    height: 100%; /* Allows the body to take the full height of the screen */
+    margin: 0;    /* Removes default margins */
 }
 
 body{
-    background-image: url(../../includes/images/install_background.jpg); /* Chemin de l'image */
-    background-size: cover;      /* L'image couvre tout l'écran */
-    background-position: center; /* L'image est centrée */
-    background-repeat: no-repeat; /* Pas de répétition de l'image */
-    font-family: sans-serif;     /* Police par défaut */
+    background-image: url(../../includes/images/install_background.jpg); /* Path to the image */
+    background-size: cover;      /* The image covers the entire screen */
+    background-position: center; /* The image is centered */
+    background-repeat: no-repeat; /* No image repetition */
+    background-attachment: fixed; /* The image stays fixed when scrolling */
+    font-family: sans-serif;     /* Default font */
 }
 
 .custom-block {
-	max-width: 1000px;
-	background-color: white;
-	border: 1px solid #ddd; /* Optionnel : une bordure grise subtile */
-	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Optionnel : un peu d'ombre */
-	border-radius: 8px; /* Optionnel : coins arrondis */
+    max-width: 1000px;
+    background-color: white;
+    border: 1px solid #ddd; /* Optional: a subtle gray border */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Optional: a bit of shadow */
+    border-radius: 8px; /* Optional: rounded corners */
     margin: 0 auto; 
 }
 
 .header-title{
-	font-size: 42px;
-	letter-spacing: 10px;
+    font-size: 42px;
+    letter-spacing: 10px;
 }
 
 .hidden {
     display: none !important;
     visibility: hidden !important;
+}
+
+.scrollable-list {
+    flex: 1;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    padding: 10px;
+    border-radius: 5px;
 }

@@ -6,25 +6,28 @@ use TeampassClasses\SuperGlobal\SuperGlobal;
 // Get some data
 include __DIR__.'/../../includes/config/include.php';
 // Load functions
-require_once __DIR__.'/../../sources/main.functions.php';
+include_once(__DIR__ . '/../tp.functions.php');
 
 $superGlobal = new SuperGlobal();
 
 // Initialize variables
-$inputData = [
-    'type' => $superGlobal->get('type', 'POST') ?? '',
-    'path' => $superGlobal->get('path', 'POST') ?? '',
-    'name' => $superGlobal->get('name', 'POST') ?? '',
-    'version' => $superGlobal->get('version', 'POST') ?? '',
-    'limit' => $superGlobal->get('limit', 'POST') ?? '',
+$keys = [
+    'type',
+    'path',
+    'name',
+    'version',
+    'limit',
 ];
-$filters = [
-    'type' => 'trim|escape',
-    'path' => 'trim|escape',
-    'name' => 'trim|escape',
-    'version' => 'trim|escape',
-    'limit' => 'trim|escape',
-];
+
+// Initialiser les tableaux
+$inputData = [];
+$filters = [];
+
+// Boucle pour récupérer les variables POST et constituer les tableaux
+foreach ($keys as $key) {
+    $inputData[$key] = $superGlobal->get($key, 'POST') ?? '';
+    $filters[$key] = 'trim|escape';
+}
 $inputData = dataSanitizer(
     $inputData,
     $filters
@@ -41,7 +44,7 @@ $type = $inputData['type'] ?? '';
 
 switch ($type) {
     case 'directory':
-        $path = $inputData['path'] ?? '';error_log( $path);
+        $path = $inputData['path'] ?? '';
         if ($path && is_writable($path)) {
             $response['success'] = true;
         }
