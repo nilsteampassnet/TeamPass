@@ -93,8 +93,8 @@ $csrf_token = $superGlobal->get('csrf_token', 'SESSION');
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
 	<link rel="stylesheet" href="../plugins/alertifyjs/css/alertify.min.css"/>
-	<link rel="stylesheet" href="../plugins/bootstrap-5.3.3-dist/css/bootstrap.min.css" />
-	<link rel="stylesheet" href="../plugins/fontawesome-free-6.7.1-web/css/all.min.css" type="text/css">
+	<link rel="stylesheet" href="../plugins/bootstrap/css/bootstrap.min.css" />
+	<link rel="stylesheet" href="../plugins/fontawesome-free-6/css/all.min.css" type="text/css">
 	<link rel="stylesheet" href="css/install.css" type="text/css" />
     
 </head>
@@ -465,11 +465,11 @@ $csrf_token = $superGlobal->get('csrf_token', 'SESSION');
 </body>
 </html>
 
+<script type="text/javascript" src="../plugins/jquery/jquery.min.js"></script>
+<script type="text/javascript" src="../plugins/jqueryUI/jquery-ui.min.js"></script>
 <script type="text/javascript" src="../includes/js/CreateRandomString.js"></script>
 <script type="text/javascript" src="js/aes.min.js"></script>
 <script type="text/javascript" src="../plugins/alertifyjs/alertify.min.js"></script>
-<script type="text/javascript" src="../plugins/bootstrap-5.3.3-dist/js/bootstrap.bundle.min.js"></script>
-<script type="text/javascript" src="../plugins/jquery/jquery.min.js"></script>
-<script type="text/javascript" src="../plugins/jqueryUI/jquery-ui.min.js"></script>
-<script type="text/javascript" src="./install/install.js"></script>
+<script type="text/javascript" src="../plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script type="text/javascript" src="../plugins/store.js/dist/store.everything.min.js"></script>
+<script type="text/javascript" src="./install-steps/install.js"></script>

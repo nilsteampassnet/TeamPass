@@ -157,7 +157,7 @@ function performStep6() {
 
         // AJAX call
         $.ajax({
-            url: './install/run.step6.php',
+            url: './install-steps/run.step6.php',
             method: 'POST',
             headers: {
             'X-CSRF-Token': $('meta[name="csrf-token"]').attr('content')
@@ -289,7 +289,7 @@ function performStep5() {
 
         // AJAX call
         $.ajax({
-            url: './install/run.step5.php',
+            url: './install-steps/run.step5.php',
             method: 'POST',
             headers: {
                 'X-CSRF-Token': $('meta[name="csrf-token"]').attr('content')
@@ -343,7 +343,7 @@ function performStep4() {
 
     $.ajax({
         type: 'POST',
-        url: './install/run.step4.php',
+        url: './install-steps/run.step4.php',
         headers: {
             'X-CSRF-Token': $('meta[name="csrf-token"]').attr('content')
         },
@@ -395,7 +395,7 @@ function performStep3() {
 
     $.ajax({
         type: 'POST',
-        url: './install/run.step3.php',
+        url: './install-steps/run.step3.php',
         headers: {
             'X-CSRF-Token': $('meta[name="csrf-token"]').attr('content')
         },
@@ -506,7 +506,7 @@ function performStep2() {
 
         // AJAX call
         $.ajax({
-            url: './install/run.step2.php',
+            url: './install-steps/run.step2.php',
             method: 'POST',
             headers: {
                 'X-CSRF-Token': $('meta[name="csrf-token"]').attr('content')
@@ -544,7 +544,7 @@ function performStep1() {
 
     $.ajax({
         type: 'POST',
-        url: './install/run.step1.php',
+        url: './install-steps/run.step1.php',
         headers: {
             'X-CSRF-Token': $('meta[name="csrf-token"]').attr('content')
         },
