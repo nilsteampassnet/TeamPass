@@ -1,4 +1,30 @@
 <?php
+/**
+ * Teampass - a collaborative passwords manager.
+ * ---
+ * This file is part of the TeamPass project.
+ * 
+ * TeamPass is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ * 
+ * TeamPass is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ * 
+ * Certain components of this file may be under different licenses. For
+ * details, see the `licenses` directory or individual file headers.
+ * ---
+ * @file      run.step5.php
+ * @author    Nils Laumaillé (nils@teampass.net)
+ * @copyright 2009-2024 Teampass.net
+ * @license   GPL-3.0
+ * @see       https://www.teampass.net
+ */
 
 require '../../vendor/autoload.php';
 use TeampassClasses\SuperGlobal\SuperGlobal;
@@ -22,11 +48,11 @@ $keys = [
     'tablePrefix',
 ];
 
-// Initialiser les tableaux
+// Initialize arrays
 $inputData = [];
 $filters = [];
 
-// Boucle pour récupérer les variables POST et constituer les tableaux
+// Loop to retrieve POST variables and build arrays
 foreach ($keys as $key) {
     $inputData[$key] = $superGlobal->get($key, 'POST') ?? '';
     $filters[$key] = 'trim|escape';
@@ -42,7 +68,6 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 // Perform checks
 $databaseStatus = checks($inputData);
 
-//error_log('Calling action: ' . $inputData['action']." - ".print_r($databaseStatus, true));
 // Prepare the response
 if ($databaseStatus['success'] === true) {
     $response = [
@@ -93,7 +118,7 @@ function checks($inputData): array
     // Get installation variables
     $installData = DB::query("SELECT `key`, `value` FROM _install");
 
-    // Convertir en tableau associatif
+    // Convert to array
     $installConfig = [];
     foreach ($installData as $row) {
         $installConfig[$row['key']] = $row['value'];
@@ -116,12 +141,16 @@ class DatabaseInstaller
         $this->installConfig = $installConfig;
     }
 
-    // Méthode principale pour gérer les actions
-    public function handleAction()
+    /**
+     * Handle the action
+     * 
+     * @return array
+     */
+    public function handleAction(): array
     {
         try {
             if (method_exists($this, $this->inputData['action'])) {
-                // Appelle dynamiquement la méthode correspondant à l'action
+                // Dynamically call the method corresponding to the action
                 call_user_func([$this, $this->inputData['action']]);
             } else {
                 throw new Exception('Action not recognized: ' . $this->inputData);
@@ -138,13 +167,13 @@ class DatabaseInstaller
         }
     }
 
-    // Forcer UTF8 sur la base de données
+    // Force UTF8
     private function utf8()
     {
         DB::query("ALTER DATABASE %b DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci", $this->inputData['dbName']);
     }
 
-    // Créer la table defuse_passwords
+    // Create table defuse_passwords
     private function defuse_passwords()
     {
         DB::query(
@@ -158,7 +187,7 @@ class DatabaseInstaller
         );
     }
 
-    // Créer la table notification
+    // Create table notification
     private function notification()
     {
         DB::query(
@@ -171,7 +200,7 @@ class DatabaseInstaller
         );
     }
 
-    // Créer la table sharekeys_items
+    // Create table sharekeys_items
     private function sharekeys_items()
     {
         DB::query(
@@ -185,7 +214,7 @@ class DatabaseInstaller
             ) CHARSET=utf8;"
         );
     
-        // Vérifier si les index existent
+        // Indexes exist?
         $keyExists = DB::queryFirstField(
             "SELECT COUNT(1) 
                 FROM information_schema.STATISTICS 
@@ -196,7 +225,7 @@ class DatabaseInstaller
         );
     
         if (intval($keyExists) === 0) {
-            // Ajouter les index manquants
+            // Add missing indexes
             DB::query(
                 "ALTER TABLE " . $this->inputData['tablePrefix'] . "sharekeys_items 
                     ADD KEY `object_id_idx` (`object_id`),
@@ -205,7 +234,7 @@ class DatabaseInstaller
         }
     }
 
-    // Créer la table sharekeys_logs
+    // Create table sharekeys_logs
     private function sharekeys_logs()
     {
         DB::query(
@@ -218,7 +247,7 @@ class DatabaseInstaller
             ) CHARSET=utf8;"
         );
     
-        // Vérifier si les index existent
+        // Indexes exist?
         $keyExists = DB::queryFirstField(
             "SELECT COUNT(1) 
                 FROM information_schema.STATISTICS 
@@ -229,7 +258,7 @@ class DatabaseInstaller
         );
     
         if (intval($keyExists) === 0) {
-            // Ajouter les index manquants
+            // Add missing indexes
             DB::query(
                 "ALTER TABLE " . $this->inputData['tablePrefix'] . "sharekeys_logs 
                     ADD KEY `object_id_idx` (`object_id`),
@@ -238,7 +267,7 @@ class DatabaseInstaller
         }
     }
 
-    // Créer la table sharekeys_fields
+    // Create table sharekeys_fields
     private function sharekeys_fields()
     {
         DB::query(
@@ -252,7 +281,7 @@ class DatabaseInstaller
         );
     }
 
-    // Créer la table sharekeys_suggestions
+    // Create table sharekeys_suggestions
     private function sharekeys_suggestions()
     {
         DB::query(
@@ -266,7 +295,7 @@ class DatabaseInstaller
         );
     }
 
-    // Créer la table sharekeys_files
+    // Create table sharekeys_files
     private function sharekeys_files()
     {
         DB::query(
@@ -280,7 +309,7 @@ class DatabaseInstaller
         );
     }
 
-    // Créer la table items
+    // Create table items
     private function items()
     {
         DB::query(
@@ -317,7 +346,7 @@ class DatabaseInstaller
         );
     }
 
-    // Créer la table log_items
+    // Create table log_items
     private function log_items()
     {
         DB::query(
@@ -335,7 +364,7 @@ class DatabaseInstaller
             ) CHARSET=utf8;"
         );
     
-        // Vérifier si les index existent
+        // Indexes exist?
         $keyExists = DB::queryFirstField(
             "SELECT COUNT(1) 
                 FROM information_schema.STATISTICS 
@@ -346,7 +375,7 @@ class DatabaseInstaller
         );
     
         if (intval($keyExists) === 0) {
-            // Ajouter les index manquants
+            // Add missing indexes
             DB::query(
                 "ALTER TABLE " . $this->inputData['tablePrefix'] . "log_items 
                     ADD KEY `teampass_log_items_id_item_IDX` (`id_item`, `date`);"
@@ -354,7 +383,7 @@ class DatabaseInstaller
         }
     }
 
-    // Créer la table misc
+    // Create table misc
     private function misc()
     {
         DB::query(
@@ -584,7 +613,7 @@ class DatabaseInstaller
         }
     }
 
-    // Créer la table nested_tree
+    // Create table nested_tree
     private function nested_tree()
     {
         DB::query(
@@ -615,7 +644,7 @@ class DatabaseInstaller
         );
     }
 
-    // Créer la table rights
+    // Create table rights
     private function rights()
     {
         DB::query(
@@ -629,7 +658,7 @@ class DatabaseInstaller
         );
     }
 
-    // Créer la table users
+    // Create table users
     private function users()
     {
         DB::query(
@@ -704,10 +733,10 @@ class DatabaseInstaller
         // check that admin accounts doesn't exist
         $adminExists = DB::queryFirstField(
             "SELECT COUNT(*) FROM ".$this->inputData['tablePrefix']."users WHERE login = %s",
-            'admin'                          // Login à vérifier
+            'admin'
         );
 
-        // Si l'utilisateur n'existe pas, insérer un nouvel utilisateur
+        // Admin account if doesn't exist
         if (intval($adminExists) === 0) {
             DB::insert($this->inputData['tablePrefix'] . 'users', [
                 'id'                     => 1,
@@ -730,7 +759,7 @@ class DatabaseInstaller
                 'created_at'             => time(),
             ]);
         } else {
-            // Mettre à jour le mot de passe pour l'utilisateur "admin"
+            // Update password if admin account exists
             DB::update($this->inputData['tablePrefix'] . 'users', [
                 'pw' => $hashedPassword
             ], "login = %s AND id = %i", 'admin', 1);
@@ -739,21 +768,20 @@ class DatabaseInstaller
         // check that API doesn't exist
         $apiUserExists = DB::queryFirstField(
             "SELECT COUNT(*) FROM ".$this->inputData['tablePrefix']."users WHERE id = %i",
-            API_USER_ID                     // ID à vérifier
+            API_USER_ID
         );
         
         if (intval($apiUserExists) === 0) {
-            // Insère un utilisateur API par défaut
             DB::insert($this->inputData['tablePrefix'] . 'users', [
                 'id'                     => API_USER_ID,
                 'login'                  => 'API',
-                'pw'                     => '',            // Mot de passe vide
-                'groupes_visibles'       => '',            // Valeurs par défaut
+                'pw'                     => '',
+                'groupes_visibles'       => '',
                 'derniers'               => '',
                 'key_tempo'              => '',
                 'last_pw_change'         => '',
                 'last_pw'                => '',
-                'admin'                  => 1,             // Utilisateur admin
+                'admin'                  => 1,
                 'fonction_id'            => '',
                 'groupes_interdits'      => '',
                 'last_connexion'         => '',
@@ -764,28 +792,27 @@ class DatabaseInstaller
                 'personal_folder'        => 0,
                 'is_ready_for_usage'     => 1,
                 'otp_provided'           => 0,
-                'created_at'             => time(),        // Date actuelle
+                'created_at'             => time(),
             ]);
         }
 
         // check that OTV doesn't exist
         $otvUserExists = DB::queryFirstField(
             "SELECT COUNT(*) FROM ".$this->inputData['tablePrefix']."users WHERE id = %i",
-            OTV_USER_ID                      // ID à vérifier
+            OTV_USER_ID
         );
 
         if (intval($otvUserExists) === 0) {
-            // Insère un utilisateur OTV par défaut
             DB::insert($this->inputData['tablePrefix'] . 'users', [
                 'id'                     => OTV_USER_ID,
                 'login'                  => 'OTV',
-                'pw'                     => '',            // Mot de passe vide
-                'groupes_visibles'       => '',            // Valeurs par défaut
+                'pw'                     => '',
+                'groupes_visibles'       => '',
                 'derniers'               => '',
                 'key_tempo'              => '',
                 'last_pw_change'         => '',
                 'last_pw'                => '',
-                'admin'                  => 1,             // Utilisateur admin
+                'admin'                  => 1,
                 'fonction_id'            => '',
                 'groupes_interdits'      => '',
                 'last_connexion'         => '',
@@ -796,12 +823,12 @@ class DatabaseInstaller
                 'personal_folder'        => 0,
                 'is_ready_for_usage'     => 1,
                 'otp_provided'           => 0,
-                'created_at'             => time(),        // Date actuelle
+                'created_at'             => time(),
             ]);
         }
     }
 
-    // Créer la table tags
+    // Create table tags
     private function tags()
     {
         DB::query(
@@ -814,7 +841,7 @@ class DatabaseInstaller
         );
     }
 
-    // Créer la table log_system
+    // Create table log_system
     private function log_system()
     {
         DB::query(
@@ -830,7 +857,7 @@ class DatabaseInstaller
         );
     }
 
-    // Créer la table files
+    // Create table files
     private function files()
     {
         DB::query(
@@ -850,7 +877,7 @@ class DatabaseInstaller
         );
     }
 
-    // Créer la table cache
+    // Create table cache
     private function cache()
     {
         DB::query(
@@ -875,10 +902,10 @@ class DatabaseInstaller
         );
     }
 
-    // Créer la table roles_title
+    // Create table roles_title
     private function roles_title()
     {
-        // Créer la table roles_title si elle n'existe pas
+        // Create table roles_title si elle n'existe pas
         DB::query(
             "CREATE TABLE IF NOT EXISTS " . $this->inputData['tablePrefix'] . "roles_title (
                 `id` int(12) NOT null AUTO_INCREMENT,
@@ -909,7 +936,7 @@ class DatabaseInstaller
         }
     }
 
-    // Créer la table roles_values
+    // Create table roles_values
     private function roles_values()
     {
         DB::query(
@@ -923,7 +950,7 @@ class DatabaseInstaller
         );
     }
 
-    // Créer la table kb
+    // Create table kb
     private function kb()
     {
         DB::query(
@@ -939,7 +966,7 @@ class DatabaseInstaller
         );
     }
 
-    // Créer la table kb_categories
+    // Create table kb_categories
     private function kb_categories()
     {
         DB::query(
@@ -951,7 +978,7 @@ class DatabaseInstaller
         );
     }
 
-    // Créer la table kb_items
+    // Create table kb_items
     private function kb_items()
     {
         DB::query(
@@ -964,7 +991,7 @@ class DatabaseInstaller
         );
     }
 
-    // Créer la table restriction_to_roles
+    // Create table restriction_to_roles
     private function restriction_to_roles()
     {
         DB::query(
@@ -977,7 +1004,7 @@ class DatabaseInstaller
         );
     }
 
-    // Créer la table languages
+    // Create table languages
     private function languages()
     {
         DB::query(
@@ -995,7 +1022,7 @@ class DatabaseInstaller
         // add lanaguages
         $tmp = DB::queryFirstField(
             "SELECT COUNT(*) FROM " . $this->inputData['tablePrefix'] . "languages WHERE name = %s",
-            'french'                    // Login à vérifier
+            'french'
         );
         if ($tmp === 0) {
             DB::query(
@@ -1028,7 +1055,7 @@ class DatabaseInstaller
         }
     }
 
-    // Créer la table emails
+    // Create table emails
     private function emails()
     {
         DB::query(
@@ -1044,7 +1071,7 @@ class DatabaseInstaller
         );
     }
 
-    // Créer la table automatic_del
+    // Create table automatic_del
     private function automatic_del()
     {
         DB::query(
@@ -1058,7 +1085,7 @@ class DatabaseInstaller
         );
     }
 
-    // Créer la table items_edition
+    // Create table items_edition
     private function items_edition()
     {
         DB::query(
@@ -1073,7 +1100,7 @@ class DatabaseInstaller
         );
     }
 
-    // Créer la table categories
+    // Create table categories
     private function categories()
     {
         DB::query(
@@ -1095,7 +1122,7 @@ class DatabaseInstaller
         );
     }
 
-    // Créer la table categories_items
+    // Create table categories_items
     private function categories_items()
     {
         DB::query(
@@ -1112,7 +1139,7 @@ class DatabaseInstaller
         );
     }
 
-    // Créer la table categories_folders
+    // Create table categories_folders
     private function categories_folders()
     {
         DB::query(
@@ -1125,7 +1152,7 @@ class DatabaseInstaller
         );
     }
 
-    // Créer la table api
+    // Create table api
     private function api()
     {
         DB::query(
@@ -1148,7 +1175,7 @@ class DatabaseInstaller
         );
     }
 
-    // Créer la table otv
+    // Create table otv
     private function otv()
     {
         DB::query(
@@ -1168,7 +1195,7 @@ class DatabaseInstaller
         );
     }
 
-    // Créer la table suggestion
+    // Create table suggestion
     private function suggestion()
     {
         DB::query(
@@ -1189,7 +1216,7 @@ class DatabaseInstaller
         );
     }
 
-    // Créer la table export
+    // Create table export
     private function export()
     {
         DB::query(
@@ -1214,7 +1241,7 @@ class DatabaseInstaller
         );
     }
 
-    // Créer la table tokens
+    // Create table tokens
     private function tokens()
     {
         DB::query(
@@ -1230,7 +1257,7 @@ class DatabaseInstaller
         );
     }
 
-    // Créer la table items_change
+    // Create table items_change
     private function items_change()
     {
         DB::query(
@@ -1252,7 +1279,7 @@ class DatabaseInstaller
         );
     }
 
-    // Créer la table templates
+    // Create table templates
     private function templates()
     {
         DB::query(
@@ -1265,7 +1292,7 @@ class DatabaseInstaller
         );
     }
 
-    // Créer la table cache_tree
+    // Create table cache_tree
     private function cache_tree()
     {
         DB::query(
@@ -1281,7 +1308,7 @@ class DatabaseInstaller
         );
     }
 
-    // Créer la table background_subtasks
+    // Create table background_subtasks
     private function background_subtasks()
     {
         DB::query(
@@ -1317,7 +1344,7 @@ class DatabaseInstaller
         }
     }
 
-    // Créer la table background_tasks
+    // Create table background_tasks
     private function background_tasks()
     {
         DB::query(
@@ -1338,7 +1365,7 @@ class DatabaseInstaller
         );
     }
 
-    // Créer la table background_tasks_logs
+    // Create table background_tasks_logs
     private function background_tasks_logs()
     {
         DB::query(
@@ -1356,7 +1383,7 @@ class DatabaseInstaller
         );
     }
 
-    // Créer la table ldap_groups_roles
+    // Create table ldap_groups_roles
     private function ldap_groups_roles()
     {
         DB::query(
@@ -1371,7 +1398,7 @@ class DatabaseInstaller
         );
     }
 
-    // Créer la table items_otp
+    // Create table items_otp
     private function items_otp()
     {
         DB::query(
@@ -1388,7 +1415,7 @@ class DatabaseInstaller
         );
     }
 
-    // Créer la table auth_failures
+    // Create table auth_failures
     private function auth_failures()
     {
         DB::query(
@@ -1404,186 +1431,3 @@ class DatabaseInstaller
         );
     }
 }
-
-
-/*
-    error_log(print_r($inputData, true));
-    try {        
-        if ($inputData['action'] === 'utf8') {
-            //FORCE UTF8 DATABASE
-            DB::query('ALTER DATABASE `' . $this->inputData['dbName'] . '` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci');
-
-        } elseif ($inputData['action'] === 'defuse_passwords') {
-
-            DB::query(
-                'CREATE TABLE IF NOT EXISTS `' . $this->inputData['tablePrefix'] . 'defuse_passwords` (
-                    `increment_id` int(12) NOT NULL AUTO_INCREMENT,
-                    `type` varchar(100) NOT NULL,
-                    `object_id` int(12) NOT NULL,
-                    `password` text NOT NULL,
-                    PRIMARY KEY (`increment_id`)
-                ) CHARSET=utf8;'
-            );
-
-        } elseif ($inputData['action'] === 'notification') {
-            DB::query(
-                'CREATE TABLE IF NOT EXISTS `' . $this->inputData['tablePrefix'] . 'notification` (
-                    `increment_id` INT(12) NOT NULL AUTO_INCREMENT,
-                    `item_id` INT(12) NOT NULL,
-                    `user_id` INT(12) NOT NULL,
-                    PRIMARY KEY (`increment_id`)
-                ) CHARSET=utf8;'
-            );
-
-        } elseif ($inputData['action'] === 'sharekeys_items') {
-            // Créer la table si elle n'existe pas
-            
-        } elseif ($inputData['action'] === 'sharekeys_logs') {
-            // Créer la table si elle n'existe pas
-                
-
-        } elseif ($inputData['action'] === 'sharekeys_fields') {
-            
-
-        } elseif ($inputData['action'] === 'sharekeys_suggestions') {
-            
-
-        } elseif ($inputData['action'] === 'sharekeys_files') {
-            
-
-        } elseif ($inputData['action'] === 'items') {
-            
-
-        } elseif ($inputData['action'] === 'log_items') {
-            
-
-        } elseif ($inputData['action'] === 'misc') {
-            
-
-            // --
-
-        } elseif ($inputData['action'] === 'nested_tree') {
-            
-
-        } elseif ($inputData['action'] === 'rights') {
-            
-
-        } elseif ($inputData['action'] === 'users') {
-            
-
-        } elseif ($inputData['action'] === 'tags') {
-            
-
-        } elseif ($inputData['action'] === 'log_system') {
-            
-
-        } elseif ($inputData['action'] === 'files') {
-            
-
-        } elseif ($inputData['action'] === 'cache') {
-            
-
-        } elseif ($inputData['action'] === 'roles_title') {
-            
-
-        } elseif ($inputData['action'] === 'roles_values') {
-            
-
-        } elseif ($inputData['action'] === 'kb') {
-            
-
-        } elseif ($inputData['action'] === 'kb_categories') {
-            
-
-        } elseif ($inputData['action'] === 'kb_items') {
-            
-
-        } elseif ($inputData['action'] == 'restriction_to_roles') {
-            
-
-        } elseif ($inputData['action'] === 'languages') {
-            
-
-        } elseif ($inputData['action'] === 'emails') {
-            
-
-        } elseif ($inputData['action'] === 'automatic_del') {
-            
-
-        } elseif ($inputData['action'] === 'items_edition') {
-            
-
-        } elseif ($inputData['action'] === 'categories') {
-            
-
-        } elseif ($inputData['action'] === 'categories_items') {
-           
-
-        } elseif ($inputData['action'] === 'categories_folders') {
-            
-
-        } elseif ($inputData['action'] === 'api') {
-            
-
-        } elseif ($inputData['action'] === 'otv') {
-            
-
-        } elseif ($inputData['action'] === 'suggestion') {
-            
-
-            
-
-        } elseif ($inputData['action'] === 'tokens') {
-            
-
-        } elseif ($inputData['action'] === 'items_change') {
-            
-
-        } elseif ($inputData['action'] === 'templates') {
-            
-
-        } elseif ($inputData['action'] === 'cache_tree') {
-            
-        } else if ($inputData['action'] === 'background_subtasks') {
-            
-
-        } else if ($inputData['action'] === 'background_tasks') {
-            
-        } else if ($inputData['action'] === 'background_tasks_logs') {
-            
-        } else if ($inputData['action'] === 'ldap_groups_roles') {
-            
-        } else if ($inputData['action'] === 'items_otp') {
-            
-        } else if ($inputData['action'] === 'auth_failures') {
-            DB::query(
-                "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "auth_failures` (
-                `id` int(12) NOT NULL AUTO_INCREMENT,
-                `source` ENUM('login', 'remote_ip') NOT NULL,
-                `value` VARCHAR(500) NOT NULL,
-                `date` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                `unlock_at` TIMESTAMP NULL DEFAULT NULL,
-                `unlock_code` VARCHAR(50) NULL DEFAULT NULL,
-                PRIMARY KEY (`id`)
-                ) CHARSET=utf8;"
-            );
-        }
-        // CARREFULL - WHEN ADDING NEW TABLE
-        // Add the command inside install.js file
-        // in task array at step 5
-
-
-        return [
-            'success' => true,
-            'message' => 'Database has been successfully installed',
-        ];
-
-    } catch (Exception $e) {
-        // Si la connexion échoue, afficher un message d'erreur
-        return [
-            'success' => false,
-            'message' => 'Query error occurred: ' . $e->getMessage(),
-        ];
-    }
-}
-*/

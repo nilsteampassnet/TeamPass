@@ -1,4 +1,30 @@
 <?php
+/**
+ * Teampass - a collaborative passwords manager.
+ * ---
+ * This file is part of the TeamPass project.
+ * 
+ * TeamPass is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ * 
+ * TeamPass is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ * 
+ * Certain components of this file may be under different licenses. For
+ * details, see the `licenses` directory or individual file headers.
+ * ---
+ * @file      run.step6.php
+ * @author    Nils Laumaillé (nils@teampass.net)
+ * @copyright 2009-2024 Teampass.net
+ * @license   GPL-3.0
+ * @see       https://www.teampass.net
+ */
 
 require '../../vendor/autoload.php';
 use TeampassClasses\SuperGlobal\SuperGlobal;
@@ -25,11 +51,11 @@ $keys = [
     'tablePrefix',
 ];
 
-// Initialiser les tableaux
+// Initialize arrays
 $inputData = [];
 $filters = [];
 
-// Boucle pour récupérer les variables POST et constituer les tableaux
+// Loop to retrieve POST variables and build arrays
 foreach ($keys as $key) {
     $inputData[$key] = $superGlobal->get($key, 'POST') ?? '';
     $filters[$key] = 'trim|escape';
@@ -97,7 +123,7 @@ function checks($inputData): array
     // Get installation variables
     $installData = DB::query("SELECT `key`, `value` FROM _install");
 
-    // Convertir en tableau associatif
+    // Convert to array
     $installConfig = [];
     foreach ($installData as $row) {
         $installConfig[$row['key']] = $row['value'];
@@ -195,7 +221,7 @@ class teampassInstaller
     function chmod(): array
     {
         try {
-            // Vérifiez si le serveur est Linux (pas Windows)
+            // Check if the server is Linux (not Windows)
             if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
                 return [
                     'success' => true,
@@ -203,7 +229,7 @@ class teampassInstaller
                 ];
             }
 
-            // Obtenir le chemin absolu de Teampass
+            // Get absolute path to teampass
             $absolutePath = rtrim($this->installConfig['teampassAbsolutePath'], '/');
             if (!is_dir($absolutePath)) {
                 return [
@@ -212,14 +238,14 @@ class teampassInstaller
                 ];
             }
 
-            // Dossiers et permissions à appliquer
+            // Folders and permissions to apply
             $directories = [
                 $absolutePath              => ['dir' => 0770, 'file' => 0740],
                 $absolutePath . '/files'   => ['dir' => 0770, 'file' => 0770],
                 $absolutePath . '/upload'  => ['dir' => 0770, 'file' => 0770],
             ];
 
-            // Appliquer les permissions
+            // Apply permissions
             foreach ($directories as $path => $permissions) {
                 $result = recursiveChmod($path, $permissions['dir'], $permissions['file']);
                 if (!$result) {
@@ -252,13 +278,13 @@ class teampassInstaller
     function csrf(): array
     {
         try {
-            // Obtenir le chemin absolu
+            // Get absolute path to teampass
             $absolutePath = rtrim($this->installConfig['teampassAbsolutePath'], '/');
             $configPath = $absolutePath . '/includes/libraries/csrfp/libs/';
             $csrfpFileSample = $configPath . 'csrfp.config.sample.php';
             $csrfpFile = $configPath . 'csrfp.config.php';
 
-            // Étape 1 : Vérifier l'existence et sauvegarder le fichier actuel
+            // Check if the configuration file already exists
             if (file_exists($csrfpFile)) {
                 $backupFileName = $csrfpFile . '.' . date('Y_m_d') . '.bak';
                 if (!@copy($csrfpFile, $backupFileName)) {
@@ -269,7 +295,7 @@ class teampassInstaller
                 }
             }
 
-            // Étape 2 : Copier le fichier d'exemple vers la configuration
+            // Copy the sample configuration file
             if (!is_readable($csrfpFileSample)) {
                 return [
                     'success' => false,
@@ -283,7 +309,7 @@ class teampassInstaller
                 ];
             }
 
-            // Étape 3 : Modifier les paramètres du fichier de configuration
+            // Adapt the configuration file
             $data = file_get_contents($csrfpFile);
             if ($data === false) {
                 return [
@@ -292,7 +318,7 @@ class teampassInstaller
                 ];
             }
 
-            // Générer un nouveau token CSRF sécurisé
+            // Generate a CSRF token
             $csrfToken = bin2hex(openssl_random_pseudo_bytes(25));
             $data = str_replace(
                 '"CSRFP_TOKEN" => ""',
@@ -300,7 +326,7 @@ class teampassInstaller
                 $data
             );
 
-            // Ajouter l'URL du script JS
+            // Add the JS URL
             $jsUrl = './includes/libraries/csrfp/js/csrfprotector.js';
             $data = str_replace(
                 '"jsUrl" => ""',
@@ -308,7 +334,7 @@ class teampassInstaller
                 $data
             );
 
-            // Enregistrer les modifications
+            // Save the changes
             if (file_put_contents($csrfpFile, $data) === false) {
                 return [
                     'success' => false,
@@ -337,13 +363,13 @@ class teampassInstaller
         include_once(__DIR__ . '/../tp.functions.php');
         
         try {
-            // Obtenir les chemins nécessaires
+            // Get expected paths
             $absolutePath = rtrim($this->installConfig['teampassAbsolutePath'], '/');
             $securePath = rtrim($this->installConfig['teampassSecurePath'], '/');
             $settingsFile = $absolutePath . '/includes/config/settings.php';
             $backupFile = $settingsFile . '.' . date('Y_m_d_His') . '.bak';
     
-            // Vérifier les permissions
+            // Check if the settings file directory is writable
             if (!is_writable($absolutePath . '/includes/config')) {
                 return [
                     'success' => false,
@@ -351,7 +377,7 @@ class teampassInstaller
                 ];
             }
     
-            // Sauvegarder le fichier settings.php existant
+            // Save settings.php backup
             if (file_exists($settingsFile) && !@copy($settingsFile, $backupFile)) {
                 return [
                     'success' => false,
@@ -359,7 +385,7 @@ class teampassInstaller
                 ];
             }
     
-            // Obtenir la clé d'encryption
+            // Get encryption key
             $secureFilePath = $securePath . '/' . $this->installConfig['teampassSecureFile'];
             if (!file_exists($secureFilePath) || !is_readable($secureFilePath)) {
                 return [
@@ -369,13 +395,13 @@ class teampassInstaller
             }
             $encryptionKey = file_get_contents($secureFilePath);
     
-            // Chiffrer le mot de passe admin
+            // Encrypt the admin password
             $encryptedPassword = encryptFollowingDefuse(
                 $this->installConfig['adminPassword'],
                 $encryptionKey
             )['string'];
     
-            // Créer le contenu du fichier settings.php
+            // Create the settings file content
             $settingsContent = '<?php
 // DATABASE connexion parameters
 define("DB_HOST", "' . $this->inputData['dbHost'] . '");
@@ -405,7 +431,7 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
 }
 ';
     
-            // Écrire le fichier settings.php
+            // Write the settings file
             if (file_put_contents($settingsFile, utf8_encode($settingsContent)) === false) {
                 return [
                     'success' => false,
@@ -413,7 +439,7 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                 ];
             }
     
-            // Vérifier si l'utilisateur TP existe
+            // Check if user TP exists
             $tpUserExists = DB::queryFirstField(
                 "SELECT COUNT(*) FROM %busers WHERE id = %i",
                 $this->inputData['tablePrefix'],
@@ -421,7 +447,7 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
             );
     
             if (intval($tpUserExists) === 0) {
-                // Générer les clés et le mot de passe utilisateur
+                // Generate a random password for the user
                 $userPassword = GenerateCryptKey(25, true, true, true, true);
                 $encryptedUserPassword = cryption(
                     $userPassword,
@@ -430,7 +456,7 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                 )['string'];
                 $userKeys = generateUserKeys($userPassword);
     
-                // Insérer l'utilisateur TP
+                // Insert the user into the database
                 DB::insert($this->inputData['tablePrefix'] . 'users', [
                     'id'                     => TP_USER_ID,
                     'login'                  => 'OTV',
@@ -463,7 +489,6 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
             ];
     
         } catch (Exception $e) {
-            // Gestion des erreurs
             return [
                 'success' => false,
                 'message' => "An error occurred: " . $e->getMessage(),
@@ -479,7 +504,7 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
     function cronJob(): array
     {
         try {
-            // Localiser le binaire PHP
+            // Get the PHP binary location
             include_once(__DIR__ . '/../tp.functions.php');
             $phpLocation = findPhpBinary();
             if ($phpLocation['error'] === true) {
@@ -489,7 +514,7 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                 ];
             }
 
-            // Obtenir le chemin absolu de Teampass
+            // Get absolute path to teampass
             $absolutePath = rtrim($this->installConfig['teampassAbsolutePath'], '/');
             if (!is_dir($absolutePath)) {
                 return [
@@ -498,10 +523,10 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                 ];
             }
 
-            // Initialiser le crontab adapter et repository
+            // Initialize the crontab repository
             $crontabRepository = new CrontabRepository(new CrontabAdapter());
 
-            // Vérifier si une tâche cron pour Teampass existe déjà
+            // Check if the cron job already exists
             $existingJobs = $crontabRepository->findJobByRegex('/Teampass\ scheduler/');
             if (count($existingJobs) > 0) {
                 return [
@@ -510,7 +535,7 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                 ];
             }
 
-            // Ajouter une nouvelle tâche cron
+            // Add the cron job
             $crontabJob = new CrontabJob();
             $crontabJob
                 ->setMinutes('*')
@@ -530,7 +555,6 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
             ];
 
         } catch (Exception $e) {
-            // Gestion des erreurs avec des messages précis
             return [
                 'success' => false,
                 'message' => $e->getMessage(),
@@ -558,7 +582,6 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
             ];
     
         } catch (Exception $e) {
-            // Si la connexion échoue, afficher un message d'erreur
             return [
                 'success' => false,
                 'message' => $e->getMessage(),

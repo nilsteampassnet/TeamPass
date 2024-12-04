@@ -471,5 +471,5 @@ $csrf_token = $superGlobal->get('csrf_token', 'SESSION');
 <script type="text/javascript" src="../plugins/bootstrap-5.3.3-dist/js/bootstrap.bundle.min.js"></script>
 <script type="text/javascript" src="../plugins/jquery/jquery.min.js"></script>
 <script type="text/javascript" src="../plugins/jqueryUI/jquery-ui.min.js"></script>
-<script type="text/javascript" src="install.js"></script>
+<script type="text/javascript" src="./install/install.js"></script>
 <script type="text/javascript" src="../plugins/store.js/dist/store.everything.min.js"></script>

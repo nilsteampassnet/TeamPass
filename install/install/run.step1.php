@@ -1,4 +1,30 @@
 <?php
+/**
+ * Teampass - a collaborative passwords manager.
+ * ---
+ * This file is part of the TeamPass project.
+ * 
+ * TeamPass is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ * 
+ * TeamPass is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ * 
+ * Certain components of this file may be under different licenses. For
+ * details, see the `licenses` directory or individual file headers.
+ * ---
+ * @file      run.step1.php
+ * @author    Nils Laumaillé (nils@teampass.net)
+ * @copyright 2009-2024 Teampass.net
+ * @license   GPL-3.0
+ * @see       https://www.teampass.net
+ */
 
 require '../../vendor/autoload.php';
 use TeampassClasses\SuperGlobal\SuperGlobal;
@@ -17,11 +43,11 @@ $keys = [
     'securePath',
 ];
 
-// Initialiser les tableaux
+// Initialize arrays
 $inputData = [];
 $filters = [];
 
-// Boucle pour récupérer les variables POST et constituer les tableaux
+// Loop to retrieve POST variables and build arrays
 foreach ($keys as $key) {
     $inputData[$key] = $superGlobal->get($key, 'POST') ?? '';
     $filters[$key] = 'trim|escape';
@@ -85,27 +111,7 @@ function checks($inputData)
             'success' => false,
             'message' => 'Path ' . $inputData['securePath'] . ' is not writable!',
         ];
-    }         
-
-    /*
-    // Handle the SK file to correct folder
-    $secureFile = $inputData['securePathField'] . '/' . $inputData['secureFile'];
-    $secureFileInConfigFolder = $inputData['securePath'].'/'.$inputData['secureFile'];
-
-    if (!file_exists($secureFile)) {
-        // Move file
-        if (!copy($secureFileInConfigFolder, $secureFile)) {
-            return [
-                'success' => false,
-                'message' => 'File ' . $secureFileInConfigFolder . ' could not be copied to `'.$secureFile.'`. Please check the path and the rights',
-            ];
-        }
-    }
-
-    if (file_exists($secureFileInConfigFolder)) {
-        unlink($secureFileInConfigFolder);
-    }
-    */
+    }    
 
     return [
         'success' => true,
