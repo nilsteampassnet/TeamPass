@@ -4352,7 +4352,7 @@ switch ($inputData['type']) {
                             $right = 20;
                         } elseif ((20 <= (int) $accessLevel) && ((int) $accessLevel < 30)) {
                             $right = 60;
-                        } elseif ((int) $accessLevel === 30) {
+                        } elseif ((int) $accessLevel >= 30) {
                             $right = 70;
                         } else {
                             $right = 10;
