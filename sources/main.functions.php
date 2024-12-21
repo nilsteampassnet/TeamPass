@@ -2466,7 +2466,7 @@ function encryptFile(string $fileInName, string $fileInPath): array
 
     // Save new file
     // deepcode ignore InsecureHash: is simply used to get a unique name
-    $hash = md5($plaintext);
+    $hash = uniqid('', true);
     $fileOut = $fileInPath . '/' . TP_FILE_PREFIX . $hash;
     file_put_contents($fileOut, $ciphertext);
     unlink($fileInPath . '/' . $fileInName);
