@@ -372,7 +372,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
     });
 
     // Prepare some UI elements
-    $('#limited-search').prop('checked', '<?php echo $SETTINGS['limited_search_default']; ?>');
+    $('#limited-search').prop('checked', <?php echo (int) $SETTINGS['limited_search_default'] === 1 ? true : false; ?>);
 
     $(document).on('blur', '#form-item-icon', function() {
         $('#form-item-icon-show').html('<i class="fas '+$(this).val()+'"></i>');
@@ -3392,7 +3392,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
     // Warn in case of limited search
     $(document).on('click', '#limited-search', function() {
-        if ($(this).is(":checked") != "<?php echo $SETTINGS['limited_search_default']; ?>") {
+        if ($(this).is(":checked") !== <?php echo (int) $SETTINGS['limited_search_default'] === 1 ? 'true' : 'false'; ?>) {
             $('#find_items').addClass('bg-red');
         } else {
             $('#find_items').removeClass('bg-red');
