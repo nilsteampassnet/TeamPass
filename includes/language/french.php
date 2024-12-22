@@ -1215,5 +1215,6 @@ return array(
     'disable_user_edit_tree_load_strategy' => 'Les utilisateurs ne peuvent plus changer de stratégie de chargement',
     'bruteforce_wait' => 'Trop de tentatives échouées, votre compte est bloqué jusqu&apos;à : ',
     'disable_drag_drop' => 'Désactiver le glisser-déposer d&apos;objets',
+    'clipboard_cleared' => 'Presse-papier nettoyé',
 
 );

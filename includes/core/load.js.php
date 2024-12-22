@@ -2170,3 +2170,4 @@ $request = SymfonyRequest::createFromGlobals();
             return '';
         }
     }
+</script>
