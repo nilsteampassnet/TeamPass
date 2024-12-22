@@ -1134,21 +1134,21 @@ foreach ($rows as $reccord) {
                                 </li>
                                 <li class="list-group-item">
                                     <b><?php echo $lang->get('index_login'); ?></b>
-                                    <button type="button" class="float-right btn btn-secondary btn-sm ml-1 btn-copy-clipboard-clear infotip" data-clipboard-target="#card-item-login" id="card-item-login-btn" title="<?php echo $lang->get('copy'); ?>">
+                                    <button type="button" class="float-right btn btn-secondary btn-sm ml-1 btn-copy-clipboard-clear infotip" data-clipboard-target="card-item-login" id="card-item-login-btn" title="<?php echo $lang->get('copy'); ?>">
                                         <i class="fa-regular fa-copy"></i>
                                     </button>
                                     <span id="card-item-login" class="float-right"></span>
                                 </li>
                                 <li class="list-group-item">
                                     <b><?php echo $lang->get('email'); ?></b>
-                                    <button type="button" class="float-right btn btn-secondary btn-sm ml-1 btn-copy-clipboard-clear" data-clipboard-target="#card-item-email" id="card-item-email-btn">
+                                    <button type="button" class="float-right btn btn-secondary btn-sm ml-1 btn-copy-clipboard-clear" data-clipboard-target="card-item-email" id="card-item-email-btn">
                                         <i class="fa-regular fa-copy"></i>
                                     </button>
                                     <span id="card-item-email" class="float-right ml-1"></span>
                                 </li>
                                 <li class="list-group-item">
                                     <b><?php echo $lang->get('url'); ?></b>
-                                    <button type="button" class="float-right btn btn-secondary btn-sm ml-1 btn-copy-clipboard-clear" data-clipboard-target="#card-item-url-text" id="card-item-url-text-btn">
+                                    <button type="button" class="float-right btn btn-secondary btn-sm ml-1 btn-copy-clipboard-clear" data-clipboard-target="card-item-url-text" id="card-item-url-text-btn">
                                         <i class="fa-regular fa-copy"></i>
                                     </button>
                                     <a id="card-item-url" class="float-right ml-1 btn btn-secondary btn-sm" href="#" target="_blank">
@@ -1220,7 +1220,7 @@ foreach ($rows as $reccord) {
                                             echo '
                                             <li class="list-group-item card-item-field hidden" id="card-item-field-' . $field['id'] . '">
                                                 <span id="card-item-field-title-' . $field['id'] . '"><b>' . $field['title'] . '</b></span>
-                                                <button type="button" class="float-right btn btn-secondary btn-sm ml-1 btn-copy-clipboard-clear"  data-clipboard-target="#card-item-field-value-' . $field['id'] . '">
+                                                <button type="button" class="float-right btn btn-secondary btn-sm ml-1 btn-copy-clipboard-clear"  data-clipboard-target="card-item-field-value-' . $field['id'] . '">
                                                     <i class="fa-solid fa-copy"></i>
                                                 </button>
                                                 <span class="card-item-field-value float-right ml-1" id="card-item-field-value-' . $field['id'] . '"></span>

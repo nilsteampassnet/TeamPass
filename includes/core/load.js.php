@@ -82,6 +82,47 @@ $request = SymfonyRequest::createFromGlobals();
         // Switch light/dark theme button
         $('#switch-theme').on('click', function() {
             applyTheme(true);
+        });        
+
+        // Select all objects with the class .fa-clickable-login
+        document.querySelectorAll('.clipboard-copy').forEach(element => {
+            element.addEventListener('click', async function() {
+                try {
+                    // Retrieve the target defined by clipboard-target
+                    const targetId = this.getAttribute('clipboard-target');
+                    if (!targetId) {
+                        return; // Stop if no target ID is defined
+                    }
+
+                    // Retrieve the value of the target field
+                    const targetElement = document.getElementById(targetId);
+                    if (!targetElement || !targetElement.textContent) {
+                        return; // Stop if the target element or its value is empty
+                    }
+
+                    // Copy the value to the clipboard
+                    await navigator.clipboard.writeText(targetElement.textContent);
+
+                    // Send success message
+                    toastr.info(
+                        '<?php echo $lang->get("copy_to_clipboard"); ?>',
+                        '', {
+                            timeOut: 2000,
+                            positionClass: 'toast-bottom-right',
+                            progressBar: true
+                        }
+                    );
+                } catch (error) {
+                    toastr.error(
+                        '<?php echo $lang->get("clipboard_error"); ?>',
+                        '', {
+                            timeOut: 3000,
+                            positionClass: 'toast-bottom-right',
+                            progressBar: true
+                        }
+                    );
+                }
+            });
         });
     });
 
@@ -887,25 +928,6 @@ $request = SymfonyRequest::createFromGlobals();
         } else {
             $('#sidebar-footer').addClass('hidden');
         }
-    });
-
-
-    var clipboardCopy = new ClipboardJS(".clipboard-copy", {
-        text: function(trigger) {
-            var elementId = $(trigger).data('clipboard-text');
-            if (debugJavascript === true) console.log($('#' + elementId).val())
-            return String($('#' + elementId).val());
-        }
-    });
-
-    clipboardCopy.on('success', function(e) {
-        toastr.remove();
-        toastr.info(
-            '<?php echo $lang->get('copy_to_clipboard'); ?>',
-            '<?php echo $lang->get('information'); ?>', {
-                timeOut: 2000
-            }
-        );
     });
     
     // Progress bar
@@ -2090,9 +2112,76 @@ $request = SymfonyRequest::createFromGlobals();
      * @param {string} id_type - 'item_key' or 'item_id'.
      * @param {number|string} id_value - The item key or id.
      * 
+     * @returns {Promise<string>} - A promise that resolves to the item cleartext password if user has access.
+     */
+    async function getItemPassword(action, id_type, id_value) {
+        const key = "<?php echo $session->get('key'); ?>";
+        const lang = "<?php echo $lang->get('no_item_to_display'); ?>";
+
+        try {
+            const response = await $.ajax({
+                type: "POST",
+                url: 'sources/items.queries.php',
+                data: `type=get_item_password&action=${action}&${id_type}=${id_value}&key=${key}`
+            });
+
+            // Decrypt data
+            let data;
+            try {
+                data = prepareExchangedData(response, "decode", key);
+            } catch (e) {
+                toastr.remove();
+                toastr.warning(lang);
+                return '';
+            }
+
+            // No access
+            if (data.password_error) {
+                toastr.remove();
+                toastr.error(data.password_error, '<?php echo $lang->get('caution'); ?>', {
+                    timeOut: 5000,
+                    progressBar: true
+                });
+                return '';
+            }
+
+            const password = simplePurifier(atob(data.password), false, false, false, false).utf8Decode();
+            if (password === '') {
+                toastr.info(
+                    '<?php echo $lang->get('password_is_empty'); ?>',
+                    '', {
+                        timeOut: 2000,
+                        positionClass: 'toast-bottom-right',
+                        progressBar: true
+                    }
+                );
+            }
+
+            return password;
+        } catch (error) {
+            console.error('Error fetching the password:', error);
+            toastr.error(
+                '<?php echo $lang->get("an_error_occurred"); ?>',
+                '', {
+                    timeOut: 5000,
+                    progressBar: true
+                }
+            );
+            return '';
+        }
+    }
+
+
+    /**
+     * Get item password to show or copy it in clipboard.
+     * 
+     * @param {string} action - Log action (ex: at_password_shown).
+     * @param {string} id_type - 'item_key' or 'item_id'.
+     * @param {number|string} id_value - The item key or id.
+     * 
      * @returns {string} - The item cleartext password if user has access.
      */
-    function getItemPassword(action, id_type, id_value) {
+    function getItemPassword1(action, id_type, id_value) {
         let item_password = '';
         
         // Get password from server
