@@ -108,7 +108,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         "ajax": {
             url: "<?php echo $SETTINGS['cpassman_url']; ?>/sources/find.queries.php",
             type: 'GET',
-            "dataSrc": function ( json ) {console.log(json);
+            "dataSrc": function ( json ) {
                 for ( var i=0, ien=json.data.length ; i<ien ; i++ ) {
                     json.data[i][1]=atob(json.data[i][1]).utf8Decode();
                     json.data[i][2]=atob(json.data[i][2]).utf8Decode();
@@ -289,90 +289,135 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     $('.new-row').remove();
                 });
 
-                // Manage buttons --> PASSWORD
-                new ClipboardJS('#btn-copy-pwd', {
-                        text: function(trigger) {   
-                            // Get item password from server
-                            const item_pwd = getItemPassword(
-                                'at_password_copied',
-                                'item_id',
-                                $('#btn-copy-pwd').data('id')
-                            );
+                // Prepare clipboard using async function
+                document.getElementById('btn-copy-pwd').addEventListener('click', async function() {
+                    try {
+                        // Retrieve the password
+                        const password = await getItemPassword('at_password_copied', 'item_id', $('#btn-copy-pwd').data('id'));
 
-                            return item_pwd;
+                        if (!password) {
+                            toastr.error('<?php echo $lang->get("error_fetching_password"); ?>', '', {
+                                timeOut: 3000,
+                                positionClass: 'toast-bottom-right',
+                                progressBar: true
+                            });
+                            return;
                         }
-                    })
-                    .on('success', function(e) {
-                        // Warn user about clipboard clear
-                        if (store.get('teampassSettings').clipboard_life_duration === undefined || parseInt(store.get('teampassSettings').clipboard_life_duration) === 0) {
+
+                        // Copy to clipboard
+                        await navigator.clipboard.writeText(password);
+
+                        // Notification for the user
+                        const clipboardDuration = store.get('teampassSettings').clipboard_life_duration || 0;
+                        if (clipboardDuration === 0) {
+                            toastr.info('<?php echo $lang->get("copy_to_clipboard"); ?>', '', {
+                                timeOut: 2000,
+                                positionClass: 'toast-bottom-right',
+                                progressBar: true
+                            });
+                        } else {
+                            toastr.warning('<?php echo $lang->get("clipboard_will_be_cleared"); ?>', '', {
+                                timeOut: clipboardDuration * 1000,
+                                progressBar: true
+                            });
+
+                            // Clear the clipboard content after a delay
+                            const cleaner = new ClipboardCleaner(clipboardDuration);
+                            cleaner.scheduleClearing(
+                                () => {
+                                    const clipboardStatus = JSON.parse(localStorage.getItem('clipboardStatus'));
+                                    if (clipboardStatus.status === 'unsafe') {
+                                        return;                                        
+                                    }
+                                    toastr.success('<?php echo $lang->get("clipboard_cleared"); ?>', '', {
+                                        timeOut: 2000,
+                                        positionClass: 'toast-bottom-right'
+                                    });
+                                },
+                                (error) => {
+                                    console.error('Error clearing clipboard:', error);
+                                }
+                            );
+                        }
+                    } catch (error) {
+                        toastr.error('<?php echo $lang->get("clipboard_error"); ?>', '', {
+                            timeOut: 3000,
+                            positionClass: 'toast-bottom-right',
+                            progressBar: true
+                        });
+                    }
+                });
+                
+                // Click handler to copy the login
+                document.getElementById('btn-copy-login').addEventListener('click', async function() {
+                    try {
+                        // Retrieve the ID of the element containing the login
+                        const loginId = this.dataset.id;
+                        const loginText = document.getElementById('login-item_' + loginId).textContent;
+
+                        // Copy the text to the clipboard
+                        await navigator.clipboard.writeText(loginText);
+
+                        // Display a success notification
+                        toastr.remove();
+                        toastr.info(
+                            '<?php echo $lang->get("copy_to_clipboard"); ?>',
+                            '', {
+                                timeOut: 2000,
+                                positionClass: 'toast-bottom-right',
+                                progressBar: true
+                            }
+                        );
+                    } catch (error) {
+                        toastr.error(
+                            '<?php echo $lang->get("clipboard_error"); ?>',
+                            '', {
+                                timeOut: 3000,
+                                positionClass: 'toast-bottom-right',
+                                progressBar: true
+                            }
+                        );
+                    }
+                });
+
+                // Check if the btn-copy-url button exists
+                const btnCopyUrl = document.getElementById('btn-copy-url');
+
+                if (btnCopyUrl) {
+                    // Attach a click handler only if the button exists
+                    btnCopyUrl.addEventListener('click', async function() {
+                        try {
+                            // Retrieve the ID of the element containing the URL
+                            const urlId = this.dataset.id;
+                            const urlText = document.getElementById('url-item_' + urlId).textContent;
+
+                            // Copy the URL to the clipboard
+                            await navigator.clipboard.writeText(urlText);
+
+                            // Display a success notification
                             toastr.remove();
                             toastr.info(
-                                '<?php echo $lang->get('copy_to_clipboard'); ?>',
+                                '<?php echo $lang->get("copy_to_clipboard"); ?>',
                                 '', {
                                     timeOut: 2000,
                                     positionClass: 'toast-bottom-right',
                                     progressBar: true
                                 }
                             );
-                        } else {
-                            toastr.remove();
-                            toastr.warning(
-                                '<?php echo $lang->get('clipboard_will_be_cleared'); ?>',
+                        } catch (error) {
+                            toastr.error(
+                                '<?php echo $lang->get("clipboard_error"); ?>',
                                 '', {
-                                    timeOut: store.get('teampassSettings').clipboard_life_duration * 1000,
+                                    timeOut: 3000,
+                                    positionClass: 'toast-bottom-right',
                                     progressBar: true
                                 }
                             );
-
-                            // Set clipboard eraser
-                            clearClipboardTimeout(
-                                store.get('teampassSettings').clipboard_life_duration
-                            );
                         }
-
-                        e.clearSelection();
                     });
-
-                // Manage buttons --> LOGIN
-                new ClipboardJS('#btn-copy-login', {
-                        text: function(e) {
-                            return $('#login-item_' + $('#btn-copy-login').data('id')).text();
-                        }
-                    })
-                    .on('success', function(e) {
-                        toastr.remove();
-                        toastr.info(
-                            '<?php echo $lang->get('copy_to_clipboard'); ?>',
-                            '', {
-                                timeOut: 2000,
-                                positionClass: 'toast-bottom-right',
-                                progressBar: true
-                            }
-                        );
-                        e.clearSelection();
-                    });
-
-                // Manage buttons --> URL
-                new ClipboardJS('#btn-copy-url', {
-                        text: function(e) {
-                            return $('#url-item_' + $('#btn-copy-url').data('id')).text();
-                        }
-                    })
-                    .on('success', function(e) {
-                        toastr.remove();
-                        toastr.info(
-                            '<?php echo $lang->get('copy_to_clipboard'); ?>',
-                            '', {
-                                timeOut: 2000,
-                                positionClass: 'toast-bottom-right',
-                                progressBar: true
-                            }
-                        );
-                        e.clearSelection();
-                    });
+                }
 
                 $('#search-spinner').remove();
-
                 $('.infotip').tooltip();
             }
         );
@@ -500,7 +545,6 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 if (selectedAction === 'move') {
                     // destination folder
                     var folders = '';
-                    console.log(store.get('teampassApplication').foldersList)
                     $.each(store.get('teampassApplication').foldersList, function(index, item) {
                         if (item.disabled === 0) {
                             folders += '<option value="' + item.id + '">' + item.title +

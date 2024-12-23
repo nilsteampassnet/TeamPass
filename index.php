@@ -1182,8 +1182,6 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
     <script type="text/javascript" src="includes/libraries/cryptojs/encryption.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
     <!-- pace -->
     <script type="text/javascript" data-pace-options='{ "ajax": true, "eventLag": false }' src="plugins/pace-progress/pace.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
-    <!-- clipboardjs -->
-    <script type="text/javascript" src="plugins/clipboard/clipboard.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
     <!-- select2 -->
     <script type="text/javascript" src="plugins/select2/js/select2.full.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
     <!-- simplePassMeter -->
@@ -1303,6 +1301,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
     <!-- functions -->
     <script type="text/javascript" src="includes/js/functions.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
     <script type="text/javascript" src="includes/js/CreateRandomString.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+    <script type="text/javascript" src="includes/js/secure-clipboard-cleaner.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
     <input type="hidden" id="encryptClientServerStatus" value="<?php echo $SETTINGS['encryptClientServer'] ?? 1; ?>" />
 
     </body>

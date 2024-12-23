@@ -28,6 +28,7 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'clipboard_cleared' => 'Clipboard cleared',
     'user_password_expired' => 'Your password has expired. Please change it.',
     'oauth2_client_urlResourceOwnerDetails' => 'URL to get user details',
     'oauth2_client_urlResourceOwnerDetails_tip' => 'URL to get user details. It is used to get user details after authentication.',
