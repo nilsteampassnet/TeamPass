@@ -115,7 +115,7 @@ if (null !== $post_type) {
         );
     }
 
-    // Non-manager use
+    // Non-manager user
     if ((int) $session->get('user-admin') !== 1 &&
         (int) $session->get('user-manager') !== 1 &&
         (int) $session->get('user-can_manage_all_users') !== 1) {
@@ -140,7 +140,7 @@ if (null !== $post_type) {
     // and $dataReceived['user_id'] is defined to ensure that this manager can
     // modify this user account.
     if (!in_array($post_type, $all_users_can_access) &&
-        (int) $session->get('user-admin') !== 1 && isset($dataReceived['user_id'])) {
+        (int) $session->get('user-admin') !== 1 && !empty($dataReceived['user_id'])) {
 
         // Get info about user to modify
         $targetUserInfos = DB::queryfirstrow(
@@ -148,6 +148,18 @@ if (null !== $post_type) {
             WHERE id = %i',
             (int) $dataReceived['user_id']
         );
+
+        // User not exists
+        if (DB::count() === 0) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to'),
+                ),
+                'encode'
+            );
+            exit;
+        }
 
         // Managers can't edit administrator or other manager
         if ((int) $targetUserInfos['admin'] === 1 ||
