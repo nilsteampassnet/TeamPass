@@ -766,7 +766,6 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         }
     }
     $subclause2 = $sWhere->addClause('OR');
-    $subclause2->add('timestamp = ""');
     $subclause2->add('session_end >= %i', time());
 
     // Get the total number of records
@@ -814,7 +813,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         }
         $sOutput .= '"'.$user_role.'", ';
         //col4
-        $time_diff = time() - strtotime($record['timestamp']);
+        $time_diff = time() - (int) $record['timestamp'];
         $hoursDiff = round($time_diff / 3600, 0, PHP_ROUND_HALF_DOWN);
         $minutesDiffRemainder = floor($time_diff % 3600 / 60);
         $sOutput .= '"'.$hoursDiff.'h '.$minutesDiffRemainder.'m" ';
