@@ -253,16 +253,6 @@ switch ($inputData['type']) {
             $inputData['label'] = filter_var($dataReceived['label'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $post_login = filter_var($dataReceived['login'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $post_password = htmlspecialchars_decode($dataReceived['pw']);
-            $post_restricted_to = filter_var(
-                $dataReceived['restricted_to'],
-                FILTER_SANITIZE_FULL_SPECIAL_CHARS
-            );
-            $post_restricted_to = $post_restricted_to !== false ? json_decode($post_restricted_to) : '';
-            $post_restricted_to_roles = filter_var(
-                $dataReceived['restricted_to_roles'],
-                FILTER_SANITIZE_FULL_SPECIAL_CHARS
-            );
-            $post_restricted_to_roles = $post_restricted_to_roles !== false ? json_decode($post_restricted_to_roles) : '';
             $post_tags = htmlspecialchars($dataReceived['tags']);
             $post_template_id = filter_var($dataReceived['template_id'], FILTER_SANITIZE_NUMBER_INT);
             $post_url = filter_var(htmlspecialchars_decode($dataReceived['url']), FILTER_SANITIZE_URL);
@@ -271,6 +261,16 @@ switch ($inputData['type']) {
             $post_to_be_deleted_after_date = isset($dataReceived['to_be_deleted_after_date']) === true ? filter_var($dataReceived['to_be_deleted_after_date'], FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '';
             $post_to_be_deleted_after_x_views = filter_var($dataReceived['to_be_deleted_after_x_views'], FILTER_SANITIZE_NUMBER_INT);
             $post_fa_icon = isset($dataReceived['fa_icon']) === true ? filter_var($dataReceived['fa_icon'], FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '';
+
+            // Restricted to users
+            $post_restricted_to = is_array($dataReceived['restricted_to'])
+                ? filter_var_array($dataReceived['restricted_to'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)
+                : '';
+
+            // Restricted to roles
+            $post_restricted_to_roles = is_array($dataReceived['restricted_to_roles'])
+                ? filter_var_array($dataReceived['restricted_to_roles'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)
+                : '';
 
             //-> DO A SET OF CHECKS
             // Perform a check in case of Read-Only user creating an item in his PF
