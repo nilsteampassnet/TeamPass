@@ -18,7 +18,7 @@
  * Certain components of this file may be under different licenses. For
  * details, see the `licenses` directory or individual file headers.
  * ---
- * @file      main.functions.pinstall.jshp
+ * @file      install.js
  * @author    Nils Laumaillé (nils@teampass.net)
  * @copyright 2009-2024 Teampass.net
  * @license   GPL-3.0
@@ -170,7 +170,7 @@ function performStep6() {
 
         // AJAX call
         $.ajax({
-            url: './install/run.step6.php',
+            url: './install-steps/run.step6.php',
             method: 'POST',
             headers: {
             'X-CSRF-Token': $('meta[name="csrf-token"]').attr('content')
@@ -302,7 +302,7 @@ function performStep5() {
 
         // AJAX call
         $.ajax({
-            url: './install/run.step5.php',
+            url: './install-steps/run.step5.php',
             method: 'POST',
             headers: {
                 'X-CSRF-Token': $('meta[name="csrf-token"]').attr('content')
@@ -356,7 +356,7 @@ function performStep4() {
 
     $.ajax({
         type: 'POST',
-        url: './install/run.step4.php',
+        url: './install-steps/run.step4.php',
         headers: {
             'X-CSRF-Token': $('meta[name="csrf-token"]').attr('content')
         },
@@ -408,7 +408,7 @@ function performStep3() {
 
     $.ajax({
         type: 'POST',
-        url: './install/run.step3.php',
+        url: './install-steps/run.step3.php',
         headers: {
             'X-CSRF-Token': $('meta[name="csrf-token"]').attr('content')
         },
@@ -472,7 +472,7 @@ function performStep3() {
 function performStep2() {
     // List of checks to perform
     const checks = [
-        { id: 'check0', type: 'directory', path: store.get('TeamPassInstallation').teampassAbsolutePath+'install1/' },
+        { id: 'check0', type: 'directory', path: store.get('TeamPassInstallation').teampassAbsolutePath+'install/' },
         { id: 'check1', type: 'directory', path: store.get('TeamPassInstallation').teampassAbsolutePath+'includes/' },
         { id: 'check2', type: 'directory', path: store.get('TeamPassInstallation').teampassAbsolutePath+'includes/config/' },
         { id: 'check3', type: 'directory', path: store.get('TeamPassInstallation').teampassAbsolutePath+'includes/avatars/' },
@@ -519,7 +519,7 @@ function performStep2() {
 
         // AJAX call
         $.ajax({
-            url: './install/run.step2.php',
+            url: './install-steps/run.step2.php',
             method: 'POST',
             headers: {
                 'X-CSRF-Token': $('meta[name="csrf-token"]').attr('content')
@@ -557,7 +557,7 @@ function performStep1() {
 
     $.ajax({
         type: 'POST',
-        url: './install/run.step1.php',
+        url: './install-steps/run.step1.php',
         headers: {
             'X-CSRF-Token': $('meta[name="csrf-token"]').attr('content')
         },
@@ -579,9 +579,13 @@ function performStep1() {
                 store.update(
                     'TeamPassInstallation',
                     function(TeamPassInstallation) {
-                        TeamPassInstallation.teampassAbsolutePath = $('#absolute_path').val(),
-                        TeamPassInstallation.teampassUrl = $('#url_path').val(),
-                        TeamPassInstallation.teampassSecurePath = $('#secure_path').val()
+                        // Force trailing slash if missing
+                        const ensureTrailingSlash = (path) => {
+                            return path.endsWith('/') ? path : path + '/';
+                        };
+                        TeamPassInstallation.teampassAbsolutePath = ensureTrailingSlash($('#absolute_path').val()),
+                        TeamPassInstallation.teampassUrl = ensureTrailingSlash($('#url_path').val()),
+                        TeamPassInstallation.teampassSecurePath = ensureTrailingSlash($('#secure_path').val())
                     }
                 )
 

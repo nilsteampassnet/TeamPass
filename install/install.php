@@ -31,7 +31,7 @@ use TeampassClasses\SuperGlobal\SuperGlobal;
 
 
 // Get some data
-include "../includes/config/include.php";
+include __DIR__.'/../includes/config/include.php';
 // Load functions
 require_once __DIR__.'/tp.functions.php';
 

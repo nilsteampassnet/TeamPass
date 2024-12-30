@@ -66,6 +66,7 @@ define('TP_PW_STRENGTH_2', 20);
 define('TP_PW_STRENGTH_3', 38);
 define('TP_PW_STRENGTH_4', 48);
 define('TP_PW_STRENGTH_5', 60);
+define('MIN_PHP_VERSION', 8.1);
 
 // URLs
 define('READTHEDOC_URL', 'https://teampass.readthedocs.io/en/latest/');

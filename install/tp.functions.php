@@ -684,3 +684,22 @@ function recursiveChmodForInstall(
     // Everything seemed to work out well, return true
     return true;
 }
+
+/**
+ * Uses Sanitizer to perform data sanitization
+ *
+ * @param array     $data
+ * @param array     $filters
+ * @return array|string
+ */
+function dataSanitizer(array $data, array $filters): array|string
+{
+    // Load Sanitizer library
+    $sanitizer = new Sanitizer($data, $filters);
+
+    // Load AntiXSS
+    $antiXss = new AntiXSS();
+
+    // Sanitize post and get variables
+    return $antiXss->xss_clean($sanitizer->sanitize());
+}
