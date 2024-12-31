@@ -1214,6 +1214,10 @@ return array(
     'disable_user_edit_tree_load_strategy' => 'Os usuários não podem mais alterar a estratégia de carregamento de menus',
     'bruteforce_wait' => 'Muitas tentativas frustradas, sua conta será bloqueada até:',
     'disable_drag_drop' => 'Desabilidar arrastar e soltar',
-    'clipboard_cleared' => 'Clipboard cleared',
+    'clipboard_cleared' => 'Área de transferência limpa',
+    'error_data_not_consistent' => 'Data is not consistent',
+    'error_permission_denied' => 'Permission denied',
+    'error_invalid_action' => 'Invalid action',
+    'error_fetching_password' => 'Error fetching password',
 
 );

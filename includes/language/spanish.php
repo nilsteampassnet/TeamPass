@@ -1215,5 +1215,9 @@ return array(
     'bruteforce_wait' => 'Demasiados intentos fallidos, tu cuenta está bloqueada hasta: ',
     'disable_drag_drop' => 'Deshabilitar la función de arrastrar y soltar elementos',
     'clipboard_cleared' => 'Clipboard cleared',
+    'error_data_not_consistent' => 'Data is not consistent',
+    'error_permission_denied' => 'Permission denied',
+    'error_invalid_action' => 'Invalid action',
+    'error_fetching_password' => 'Error fetching password',
 
 );

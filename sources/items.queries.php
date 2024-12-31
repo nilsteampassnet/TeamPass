@@ -4468,7 +4468,7 @@ switch ($inputData['type']) {
             $inputData['itemId'] ?? 0
         );
 
-        // Check user access rights
+        // Check if password item exists
         if (DB::count() === 0) {
             echo (string) prepareExchangedData(
                 [

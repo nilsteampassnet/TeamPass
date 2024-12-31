@@ -1216,5 +1216,9 @@ return array(
     'bruteforce_wait' => 'Trop de tentatives échouées, votre compte est bloqué jusqu&apos;à : ',
     'disable_drag_drop' => 'Désactiver le glisser-déposer d&apos;objets',
     'clipboard_cleared' => 'Presse-papier nettoyé',
+    'error_data_not_consistent' => 'Données non consistantes',
+    'error_permission_denied' => 'Permission refusée',
+    'error_invalid_action' => 'Action invalide',
+    'error_fetching_password' => 'Impossible de récupérer le mot de passe',
 
 );

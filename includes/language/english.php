@@ -28,6 +28,7 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'error_fetching_password' => 'Error fetching password',
     'clipboard_cleared' => 'Clipboard cleared',
     'user_password_expired' => 'Your password has expired. Please change it.',
     'oauth2_client_urlResourceOwnerDetails' => 'URL to get user details',

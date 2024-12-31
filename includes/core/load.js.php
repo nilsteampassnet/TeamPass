@@ -2155,6 +2155,7 @@ $request = SymfonyRequest::createFromGlobals();
                         progressBar: true
                     }
                 );
+                return '';
             }
 
             return password;

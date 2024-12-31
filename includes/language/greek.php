@@ -1216,5 +1216,9 @@ e new password must:<br/> - Be different from the previous one<br/> - Contain at
     'bruteforce_wait' => 'Too many failed attempts, your account is blocked until: ',
     'disable_drag_drop' => 'Disable item drag and drop',
     'clipboard_cleared' => 'Clipboard cleared',
+    'error_data_not_consistent' => 'Data is not consistent',
+    'error_permission_denied' => 'Permission denied',
+    'error_invalid_action' => 'Invalid action',
+    'error_fetching_password' => 'Error fetching password',
 
 );
