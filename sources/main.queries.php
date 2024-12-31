@@ -1346,6 +1346,18 @@ function changePassword(
     );
 }
 
+/**
+ * Generates a QR code for the user.
+ *
+ * @param int $post_id The user's ID.
+ * @param string $post_demand_origin The origin of the request.
+ * @param int $post_send_mail Whether to send an email.
+ * @param string $post_login The user's login.
+ * @param string $post_pwd The user's password.
+ * @param string $post_token The user's token.
+ * @param array $SETTINGS The application settings.
+ * @return string The generated QR code.
+ */
 function generateQRCode(
     $post_id,
     $post_demand_origin,
@@ -1354,196 +1366,248 @@ function generateQRCode(
     $post_pwd,
     $post_token,
     array $SETTINGS
-): string
-{
-    // Load user's language
+): string {
     $session = SessionManager::getSession();
     $lang = new Language($session->get('user-language') ?? 'english');
 
-    // is this allowed by setting
-    if (isKeyExistingAndEqual('ga_reset_by_user', 0, $SETTINGS) === true
-        && (null === $post_demand_origin || $post_demand_origin !== 'users_management_list')
-    ) {
-        // User cannot ask for a new code
-        return prepareExchangedData(
-            array(
-                'error' => true,
-                'message' => "113 ".$lang->get('error_not_allowed_to')." - ".isKeyExistingAndEqual('ga_reset_by_user', 1, $SETTINGS),
-            ),
-            'encode'
-        );
+    // Validate settings and origin
+    if (!isQRCodeRequestAllowed($post_demand_origin, $SETTINGS)) {
+        return generateErrorResponse($lang->get('error_not_allowed_to'), '113');
     }
-    
-    // Check if user exists
-    if (isValueSetNullEmpty($post_id) === true) {
-        // Get data about user
+
+    // Retrieve user data
+    $dataUser = fetchUserData($post_id, $post_login);
+    if (!$dataUser) {
+        logFailedAuth($SETTINGS, 'user_not_exists', $post_login);
+        return generateErrorResponse($lang->get('no_user'));
+    }
+
+    // Validate password if required
+    if (!isPasswordValid($post_pwd, $dataUser['pw'], $post_demand_origin, $SETTINGS, $post_login)) {
+        return generateErrorResponse($lang->get('no_user'));
+    }
+
+    if (empty($dataUser['email'])) {
+        return generateErrorResponse($lang->get('no_email_set'));
+    }
+
+    // Check token usage
+    $tokenId = handleToken($post_token, $dataUser['id']);
+    if ($tokenId === false) {
+        return generateErrorResponse('TOKEN already used');
+    }
+
+    // Generate and update user 2FA data
+    [$gaSecretKey, $gaTemporaryCode] = updateUserGAData($dataUser['id'], $SETTINGS);
+
+    logEvents($SETTINGS, 'user_connection', 'at_2fa_google_code_send_by_email', (string)$dataUser['id'], $post_login);
+
+    // Update token status
+    updateTokenStatus($tokenId);
+
+    // Send email if required
+    if ((int) $post_send_mail === 1) {
+        return sendQRCodeEmail($gaTemporaryCode, $dataUser['email'], $lang);
+    }
+
+    return generateSuccessResponse($dataUser['email'], $lang);
+}
+/**
+ * Validates whether the QR code request is allowed.
+ *
+ * @param string|null $post_demand_origin Origin of the request.
+ * @param array $SETTINGS Application settings.
+ * @return bool True if the request is allowed, false otherwise.
+ */
+function isQRCodeRequestAllowed(?string $post_demand_origin, array $SETTINGS): bool {
+    return !(isKeyExistingAndEqual('ga_reset_by_user', 0, $SETTINGS) &&
+        ($post_demand_origin !== 'users_management_list'));
+}
+
+/**
+ * Fetches user data based on their ID or login.
+ *
+ * @param int|string|null $post_id User ID or null if not provided.
+ * @param string|null $post_login User login (updated if ID is used).
+ * @return array|null User data as an associative array or null if not found.
+ */
+function fetchUserData($post_id, ?string &$post_login): ?array {
+    if (isValueSetNullEmpty($post_id)) {
         $dataUser = DB::queryfirstrow(
-            'SELECT id, email, pw
-            FROM ' . prefixTable('users') . '
-            WHERE login = %s',
+            'SELECT id, email, pw FROM ' . prefixTable('users') . ' WHERE login = %s',
             $post_login
         );
     } else {
         $dataUser = DB::queryfirstrow(
-            'SELECT id, login, email, pw
-            FROM ' . prefixTable('users') . '
-            WHERE id = %i',
+            'SELECT id, login, email, pw FROM ' . prefixTable('users') . ' WHERE id = %i',
             $post_id
         );
         $post_login = $dataUser['login'];
     }
-    // Get number of returned users
-    $counter = DB::count();
+    return $dataUser;
+}
 
-    // Do treatment
-    if ($counter === 0) {
-        // Not a registered user !
-        logEvents($SETTINGS, 'failed_auth', 'user_not_exists', '', stripslashes($post_login), stripslashes($post_login));
-        return prepareExchangedData(
-            array(
-                'error' => true,
-                'message' => $lang->get('no_user'),
-                'tst' => 1,
-            ),
-            'encode'
-        );
+/**
+ * Validates the user's password.
+ *
+ * @param string|null $post_pwd Provided password.
+ * @param string $storedPwd Stored password hash.
+ * @param string|null $post_demand_origin Request origin.
+ * @param array $SETTINGS Application settings.
+ * @param string $post_login User login.
+ * @return bool True if the password is valid, false otherwise.
+ */
+function isPasswordValid(?string $post_pwd, string $storedPwd, ?string $post_demand_origin, array $SETTINGS, string $post_login): bool {
+    if (isSetArrayOfValues([$post_pwd, $storedPwd]) &&
+        !(new PasswordManager())->verifyPassword($storedPwd, $post_pwd) &&
+        $post_demand_origin !== 'users_management_list') {
+        logFailedAuth($SETTINGS, 'password_is_not_correct', $post_login);
+        return false;
     }
+    return true;
+}
 
-    $passwordManager = new PasswordManager();
-    if (
-        isSetArrayOfValues([$post_pwd, $dataUser['pw']]) === true
-        && $passwordManager->verifyPassword($dataUser['pw'], $post_pwd) === false
-        && $post_demand_origin !== 'users_management_list'
-    ) {
-        // checked the given password
-        logEvents($SETTINGS, 'failed_auth', 'password_is_not_correct', '', stripslashes($post_login), stripslashes($post_login));
-        return prepareExchangedData(
-            array(
-                'error' => true,
-                'message' => $lang->get('no_user'),
-                'tst' => $post_demand_origin,
-            ),
-            'encode'
-        );
-    }
-    
-    if (empty($dataUser['email']) === true) {
-        return prepareExchangedData(
-            array(
-                'error' => true,
-                'message' => $lang->get('no_email_set'),
-            ),
-            'encode'
-        );
-    }
-
-    // Check if token already used
+/**
+ * Handles the token validation and storage process.
+ *
+ * @param string $post_token Provided token.
+ * @param int $userId User ID.
+ * 
+ * @return mixed Token ID if a new token is created, false if the token was already used.
+ */
+function handleToken(string $post_token, int $userId): mixed {
     $dataToken = DB::queryfirstrow(
-        'SELECT end_timestamp, reason
-        FROM ' . prefixTable('tokens') . '
-        WHERE token = %s AND user_id = %i',
+        'SELECT end_timestamp, reason FROM ' . prefixTable('tokens') . ' WHERE token = %s AND user_id = %i',
         $post_token,
-        $dataUser['id']
+        $userId
     );
-    $tokenId = '';
-    if (DB::count() > 0 && is_null($dataToken['end_timestamp']) === false && $dataToken['reason'] === 'auth_qr_code') {
-        // This token has already been used
-        return prepareExchangedData(
-            array(
-                'error' => true,
-                'message' => 'TOKEN already used',//$lang->get('no_email_set'),
-            ),
-            'encode'
-        );
-    } elseif(DB::count() === 0) {
-        // Store token for this action
-        DB::insert(
-            prefixTable('tokens'),
-            array(
-                'user_id' => (int) $dataUser['id'],
-                'token' => $post_token,
-                'reason' => 'auth_qr_code',
-                'creation_timestamp' => time(),
-            )
-        );
-        $tokenId = DB::insertId();
+
+    if (DB::count() > 0 && !is_null($dataToken['end_timestamp']) && $dataToken['reason'] === 'auth_qr_code') {
+        return false;
     }
-    
-    // generate new GA user code
+
+    if (DB::count() === 0) {
+        DB::insert(prefixTable('tokens'), [
+            'user_id' => $userId,
+            'token' => $post_token,
+            'reason' => 'auth_qr_code',
+            'creation_timestamp' => time(),
+        ]);
+        return DB::insertId();
+    }
+    return null;
+}
+
+/**
+ * Generates and updates the user's Google Authenticator data.
+ *
+ * @param int $userId User ID.
+ * @param array $SETTINGS Application settings.
+ * @return array A tuple containing the secret key and temporary code.
+ */
+function updateUserGAData(int $userId, array $SETTINGS): array {
     $tfa = new TwoFactorAuth($SETTINGS['ga_website_name']);
     $gaSecretKey = $tfa->createSecret();
     $gaTemporaryCode = GenerateCryptKey(12, false, true, true, false, true);
 
-    DB::update(
-        prefixTable('users'),
-        [
-            'ga' => $gaSecretKey,
-            'ga_temporary_code' => $gaTemporaryCode,
-        ],
-        'id = %i',
-        $dataUser['id']
+    DB::update(prefixTable('users'), [
+        'ga' => $gaSecretKey,
+        'ga_temporary_code' => $gaTemporaryCode,
+    ], 'id = %i', $userId);
+
+    return [$gaSecretKey, $gaTemporaryCode];
+}
+
+/**
+ * Updates the token status to mark it as used.
+ *
+ * @param int $tokenId Token ID.
+ * @return void
+ */
+function updateTokenStatus(int $tokenId): void {
+    DB::update(prefixTable('tokens'), [
+        'end_timestamp' => time(),
+    ], 'id = %i', $tokenId);
+}
+
+/**
+ * Sends the QR code email with the temporary code.
+ *
+ * @param string $gaTemporaryCode Temporary Google Authenticator code.
+ * @param string $email User's email address.
+ * @param Language $lang Language object for messages.
+ * @return string JSON response indicating success.
+ */
+function sendQRCodeEmail(string $gaTemporaryCode, string $email, Language $lang): string {
+    prepareSendingEmail(
+        $lang->get('email_ga_subject'),
+        str_replace('#2FACode#', $gaTemporaryCode, $lang->get('email_ga_text')),
+        $email
     );
 
-    // Log event
-    logEvents($SETTINGS, 'user_connection', 'at_2fa_google_code_send_by_email', (string) $dataUser['id'], stripslashes($post_login), stripslashes($post_login));
+    return generateSuccessResponse($email, $lang);
+}
 
-    // Update token status
-    DB::update(
-        prefixTable('tokens'),
-        [
-            'end_timestamp' => time(),
-        ],
-        'id = %i',
-        $tokenId
-    );
+/**
+ * Generates an error response in JSON format.
+ *
+ * @param string $message Error message.
+ * @param string $code Optional error code.
+ * @return string JSON response.
+ */
+function generateErrorResponse(string $message, string $code = ''): string {
+    return prepareExchangedData([
+        'error' => true,
+        'message' => $code . ' ' . $message,
+    ], 'encode');
+}
 
-    // send mail?
-    if ((int) $post_send_mail === 1) {
-        prepareSendingEmail(
-            $lang->get('email_ga_subject'),
-            str_replace(
-                '#2FACode#',
-                $gaTemporaryCode,
-                $lang->get('email_ga_text')
-            ),
-            $dataUser['email']
-        );
-
-        // send back
-        return prepareExchangedData(
-            array(
-                'error' => false,
-                'message' => $post_send_mail,
-                'email' => $dataUser['email'],
-                'email_result' => str_replace(
-                    '#email#',
-                    '<b>' . obfuscateEmail($dataUser['email']) . '</b>',
-                    addslashes($lang->get('admin_email_result_ok'))
-                ),
-            ),
-            'encode'
-        );
-    }
-    
-    // send back
-    return prepareExchangedData(
-        array(
-            'error' => false,
-            'message' => '',
-            'email' => $dataUser['email'],
-            'email_result' => str_replace(
-                '#email#',
-                '<b>' . obfuscateEmail($dataUser['email']) . '</b>',
-                addslashes($lang->get('admin_email_result_ok'))
-            ),
+/**
+ * Generates a success response in JSON format.
+ *
+ * @param string $email User's email address.
+ * @param Language $lang Language object for messages.
+ * @return string JSON response.
+ */
+function generateSuccessResponse(string $email, Language $lang): string {
+    return prepareExchangedData([
+        'error' => false,
+        'message' => '',
+        'email' => $email,
+        'email_result' => str_replace(
+            '#email#',
+            '<b>' . obfuscateEmail($email) . '</b>',
+            addslashes($lang->get('admin_email_result_ok'))
         ),
-        'encode'
+    ], 'encode');
+}
+
+/**
+ * Logs a failed authentication attempt for a user.
+ *
+ * @param array $SETTINGS Application settings.
+ * @param string $reason Reason for the failure.
+ * @param string|null $user_login The login of the user (if available).
+ * @return void
+ */
+function logFailedAuth(array $SETTINGS, string $reason, ?string $user_login): void {
+    logEvents(
+        $SETTINGS,
+        'user_connection',
+        $reason,
+        'null',
+        $user_login
     );
 }
 
-function sendEmailsNotSent(
-    array $SETTINGS
-)
+
+/**
+ * Sends emails that have not been sent yet.
+ * 
+ * @param array $SETTINGS The application settings.
+ * @return void
+ */
+function sendEmailsNotSent(array $SETTINGS): void
 {
     $emailSettings = new EmailSettings($SETTINGS);
     $emailService = new EmailService();
