@@ -523,7 +523,7 @@ function handleSaveUserLocation($dataReceived, $session, $SETTINGS, $post_key): 
  * @param string $post_type
  * @param array|null|string $dataReceived
  * @param array $SETTINGS
- * @return string
+ * @return bool
  */
 function userHandlerHasPermission(string $post_type, $dataReceived, $session): bool
 {
@@ -681,8 +681,14 @@ function mailHandler(string $post_type, /*php8 array|null|string */$dataReceived
  */
 function keyHandler(string $post_type, $dataReceived, array $SETTINGS): string
 {
+    // Load session and language
     $session = SessionManager::getSession();
     $lang = new Language($session->get('user-language') ?? 'english');
+
+    // Check that $dataReceived is an array (not a string or null)
+    if (!is_array($dataReceived) || is_null($dataReceived)) {
+        return prepareExchangedData(['error' => true, 'message' => $lang->get('error_data_not_consistent')], 'encode');
+    }
 
     // Check user permissions
     if (!userHasPermission($post_type, $dataReceived, $session)) {

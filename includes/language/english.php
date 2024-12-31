@@ -28,6 +28,9 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'error_data_not_consistent' => 'Data is not consistent',
+    'error_permission_denied' => 'Permission denied',
+    'error_invalid_action' => 'Invalid action',
     'user_password_expired' => 'Your password has expired. Please change it.',
     'oauth2_client_urlResourceOwnerDetails' => 'URL to get user details',
     'oauth2_client_urlResourceOwnerDetails_tip' => 'URL to get user details. It is used to get user details after authentication.',
