@@ -333,7 +333,7 @@ switch ($inputData['type']) {
 
             // is pwd empty?
             if (
-                empty($post_password) === true
+                empty($post_password)
                 && $session->has('user-create_item_without_password') && null !== $session->get('user-create_item_without_password')
                 && (int) $session->get('user-create_item_without_password') !== 1
             ) {
@@ -439,7 +439,7 @@ switch ($inputData['type']) {
                 // if not allowed then warn user
                 if (($session->has('user-create_item_without_password') && $session->has('user-create_item_without_password') && null !== $session->get('user-create_item_without_password')
                         && (int) $session->get('user-create_item_without_password') !== 1) ||
-                    empty($post_password) === false ||
+                    !empty($post_password) ||
                     (int) $post_folder_is_personal === 1
                 ) {
                     // NEW ENCRYPTION
@@ -468,7 +468,7 @@ switch ($inputData['type']) {
                         'id_tree' => $inputData['folderId'],
                         'login' => $post_login,
                         'inactif' => 0,
-                        'restricted_to' => empty($post_restricted_to) === true ?
+                        'restricted_to' => empty($post_restricted_to) ?
                             '' : (is_array($post_restricted_to) === true ? implode(';', $post_restricted_to) : $post_restricted_to),
                         'perso' => (isset($post_folder_is_personal) === true && (int) $post_folder_is_personal === 1) ?
                             1 : 0,
@@ -499,7 +499,7 @@ switch ($inputData['type']) {
                     && (int) $SETTINGS['item_extra_fields'] === 1
                 ) {
                     foreach ($post_fields as $field) {
-                        if (empty($field['value']) === false) {
+                        if (!empty($field['value'])) {
                             // should we encrypt the data
                             $dataTmp = DB::queryFirstRow(
                                 'SELECT encrypted_data
@@ -566,7 +566,7 @@ switch ($inputData['type']) {
                     isset($SETTINGS['item_creation_templates']) === true
                     && (int) $SETTINGS['item_creation_templates'] === 1
                     && isset($post_template_id) === true
-                    && empty($post_template_id) === false
+                    && !empty($post_template_id)
                 ) {
                     DB::queryFirstRow(
                         'SELECT *
@@ -585,7 +585,7 @@ switch ($inputData['type']) {
                         );
                     } else {
                         // Delete if empty
-                        if (empty($post_template_id) === true) {
+                        if (empty($post_template_id)) {
                             DB::delete(
                                 prefixTable('templates'),
                                 'item_id = %i',
@@ -613,7 +613,7 @@ switch ($inputData['type']) {
                     && is_null($post_to_be_deleted_after_date) === false
                 ) {
                     if (
-                        empty($post_to_be_deleted_after_date) === false
+                        !empty($post_to_be_deleted_after_date)
                         || $post_to_be_deleted_after_x_views > 0
                     ) {
                         // Automatic deletion to be added
@@ -638,7 +638,7 @@ switch ($inputData['type']) {
                     && (int) $SETTINGS['restricted_to'] === 1
                 ) {
                     foreach ($post_restricted_to as $userRest) {
-                        if (empty($userRest) === false) {
+                        if (!empty($userRest)) {
                             $dataTmp = DB::queryfirstrow('SELECT login FROM ' . prefixTable('users') . ' WHERE id= %i', $userRest);
                             if (empty($listOfRestricted)) {
                                 $listOfRestricted = $dataTmp['login'];
@@ -654,9 +654,9 @@ switch ($inputData['type']) {
                     && $data['restricted_to'] !== $post_restricted_to
                     && (int) $SETTINGS['restricted_to'] === 1
                 ) {
-                    if (empty($data['restricted_to']) === false) {
+                    if (!empty($data['restricted_to'])) {
                         foreach (explode(';', $data['restricted_to']) as $userRest) {
-                            if (empty($userRest) === false) {
+                            if (!empty($userRest)) {
                                 $dataTmp = DB::queryfirstrow(
                                     'SELECT login
                                     FROM ' . prefixTable('users') . '
@@ -664,7 +664,7 @@ switch ($inputData['type']) {
                                     $userRest
                                 );
 
-                                if (empty($oldRestrictionList) === true) {
+                                if (empty($oldRestrictionList)) {
                                     $oldRestrictionList = $dataTmp['login'];
                                 } else {
                                     $oldRestrictionList .= ';' . $dataTmp['login'];
@@ -715,7 +715,7 @@ switch ($inputData['type']) {
                 // Add tags
                 $tags = explode(' ', $post_tags);
                 foreach ($tags as $tag) {
-                    if (empty($tag) === false) {
+                    if (!empty($tag)) {
                         DB::insert(
                             prefixTable('tags'),
                             array(
@@ -727,7 +727,7 @@ switch ($inputData['type']) {
                 }
 
                 // Check if any files have been added
-                if (empty($post_uploaded_file_id) === false) {
+                if (!empty($post_uploaded_file_id)) {
                     $rows = DB::query(
                         'SELECT id
                         FROM ' . prefixTable('files') . '
@@ -764,7 +764,7 @@ switch ($inputData['type']) {
                 }
 
                 // Announce by email?
-                if (empty($post_diffusion_list) === false) {
+                if (!empty($post_diffusion_list)) {
                     // get links url
                     if (empty($SETTINGS['email_server_url'])) {
                         $SETTINGS['email_server_url'] = $SETTINGS['cpassman_url'];
@@ -781,7 +781,7 @@ switch ($inputData['type']) {
                     if (is_array($post_diffusion_list) === true && count($post_diffusion_list) > 0) {
                         $cpt = 0;
                         foreach ($post_diffusion_list as $emailAddress) {
-                            if (empty($emailAddress) === false) {
+                            if (!empty($emailAddress)) {
                                 prepareSendingEmail(
                                     $lang->get('email_subject_item_updated'),
                                     str_replace(
@@ -876,7 +876,11 @@ switch ($inputData['type']) {
         );
 
         // Error if not expected data
-        if (is_array($dataReceived) === false || count($dataReceived) === 0) {
+        if (
+            (!is_array($dataReceived) && !is_string($dataReceived)) || // Must be array or string
+            (is_array($dataReceived) && count($dataReceived) === 0) || // Empty array
+            (is_string($dataReceived) && trim($dataReceived) === '')   // Empty string
+        ) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -968,7 +972,7 @@ switch ($inputData['type']) {
 
         // Check PWD EMPTY
         if (
-            empty($pw) === true
+            empty($pw)
             && $session->has('user-create_item_without_password') && $session->has('user-create_item_without_password') && null !== $session->get('user-create_item_without_password')
             && (int) $session->get('user-create_item_without_password') !== 1
         ) {
@@ -1122,7 +1126,7 @@ switch ($inputData['type']) {
         if (in_array($session->get('user-id'), $restrictedTo) === true) {
             $restrictionActive = false;
         }
-        if (empty($dataItem['restricted_to']) === true) {
+        if (empty($dataItem['restricted_to'])) {
             $restrictionActive = false;
         }
 
@@ -1164,7 +1168,7 @@ switch ($inputData['type']) {
                 $session->get('user-id'),
                 $inputData['itemId']
             );
-            if (DB::count() === 0 || empty($data['pw']) === true) {
+            if (DB::count() === 0 || empty($data['pw'])) {
                 // No share key found
                 $pw = '';
             } else {
@@ -1201,9 +1205,14 @@ switch ($inputData['type']) {
             }
 
             // encrypt PW on if it has changed, or if it is empty
-            if ((($session->has('user-create_item_without_password') && $session->has('user-create_item_without_password') && null !== $session->get('user-create_item_without_password')
-                    && (int) $session->get('user-create_item_without_password') !== 1)
-                || empty($post_password) === false)
+            if (
+                (
+                    ($session->has('user-create_item_without_password')
+                        && null !== $session->get('user-create_item_without_password')
+                        && (int) $session->get('user-create_item_without_password') !== 1
+                    )
+                    || !empty($post_password)
+                )
                 && $post_password !== $pw
             ) {
                 //-----
@@ -1248,10 +1257,10 @@ switch ($inputData['type']) {
 
             // Add new tags
             $postArrayTags = [];
-            if (empty($post_tags) === false) {
+            if (!empty($post_tags)) {
                 $postArrayTags = explode(' ', $post_tags);
                 foreach ($postArrayTags as $tag) {
-                    if (empty($tag) === false) {
+                    if (!empty($tag)) {
                     // save in DB
                         DB::insert(
                             prefixTable('tags'),
@@ -1296,7 +1305,7 @@ switch ($inputData['type']) {
                     'login' => $post_login,
                     'url' => $post_url,
                     'id_tree' => $inputData['folderId'],
-                    'restricted_to' => empty($post_restricted_to) === true || count($post_restricted_to) === 0 ? '' : implode(';', $post_restricted_to),
+                    'restricted_to' => empty($post_restricted_to) || count($post_restricted_to) === 0 ? '' : implode(';', $post_restricted_to),
                     'anyone_can_modify' => (int) $post_anyone_can_modify,
                     'complexity_level' => (int) $post_complexity_level,
                     'encryption_type' => TP_ENCRYPTION_NAME,
@@ -1312,10 +1321,10 @@ switch ($inputData['type']) {
             if (
                 isset($SETTINGS['item_extra_fields']) === true
                 && (int) $SETTINGS['item_extra_fields'] === 1
-                && empty($post_fields) === false
+                && !empty($post_fields)
             ) {                
                 foreach ($post_fields as $field) {
-                    if (empty($field['value']) === false) {
+                    if (!empty($field['value'])) {
                         $dataTmpCat = DB::queryFirstRow(
                             'SELECT c.id AS id, c.title AS title, i.data AS data, i.data_iv AS data_iv,
                             i.encryption_type AS encryption_type, c.encrypted_data AS encrypted_data,
@@ -1525,7 +1534,7 @@ switch ($inputData['type']) {
                     } else {
                         // Case where field new value is empty
                         // then delete field
-                        if (empty($field_data[1]) === true) {
+                        if (empty($field_data[1])) {
                             DB::delete(
                                 prefixTable('categories_items'),
                                 'item_id = %i AND field_id = %s',
@@ -1564,7 +1573,7 @@ switch ($inputData['type']) {
                     WHERE item_id = %i',
                     $inputData['itemId']
                 );
-                if (DB::count() === 0 && empty($post_template_id) === false) {
+                if (DB::count() === 0 && !empty($post_template_id)) {
                     // store field text
                     DB::insert(
                         prefixTable('templates'),
@@ -1575,7 +1584,7 @@ switch ($inputData['type']) {
                     );
                 } else {
                     // Delete if empty
-                    if (empty($post_template_id) === true) {
+                    if (empty($post_template_id)) {
                         DB::delete(
                             prefixTable('templates'),
                             'item_id = %i',
@@ -1611,7 +1620,7 @@ switch ($inputData['type']) {
                 if (DB::count() === 0) {
                     // No automatic deletion for this item
                     if (
-                        empty($post_to_be_deleted_after_date) === false
+                        !empty($post_to_be_deleted_after_date)
                         || (int) $post_to_be_deleted_after_x_views > 0
                     ) {
                         // Automatic deletion to be added
@@ -1620,9 +1629,9 @@ switch ($inputData['type']) {
                             array(
                                 'item_id' => $inputData['itemId'],
                                 'del_enabled' => 1,
-                                'del_type' => empty($post_to_be_deleted_after_x_views) === false ?
+                                'del_type' => !empty($post_to_be_deleted_after_x_views) ?
                                     1 : 2, //1 = numeric : 2 = date
-                                'del_value' => empty($post_to_be_deleted_after_x_views) === false ?
+                                'del_value' => !empty($post_to_be_deleted_after_x_views) ?
                                     (int) $post_to_be_deleted_after_x_views : dateToStamp($post_to_be_deleted_after_date, $SETTINGS['date_format']),
                             )
                         );
@@ -1647,16 +1656,16 @@ switch ($inputData['type']) {
                 } else {
                     // Automatic deletion exists for this item
                     if (
-                        empty($post_to_be_deleted_after_date) === false
+                        !empty($post_to_be_deleted_after_date)
                         || (int) $post_to_be_deleted_after_x_views > 0
                     ) {
                         // Update automatic deletion
                         DB::update(
                             prefixTable('automatic_del'),
                             array(
-                                'del_type' => empty($post_to_be_deleted_after_x_views) === false ?
+                                'del_type' => !empty($post_to_be_deleted_after_x_views) ?
                                     1 : 2, //1 = numeric : 2 = date
-                                'del_value' => empty($post_to_be_deleted_after_x_views) === false ?
+                                'del_value' => !empty($post_to_be_deleted_after_x_views) ?
                                     $post_to_be_deleted_after_x_views : dateToStamp($post_to_be_deleted_after_date, $SETTINGS['date_format']),
                             ),
                             'item_id = %i',
@@ -1703,7 +1712,7 @@ switch ($inputData['type']) {
                 && (int) $SETTINGS['restricted_to'] === 1
             ) {
                 foreach ($post_restricted_to as $userId) {
-                    if (empty($userId) === false) {
+                    if (!empty($userId)) {
                         $dataTmp = DB::queryfirstrow(
                             'SELECT id, name, lastname
                             FROM ' . prefixTable('users') . '
@@ -1725,7 +1734,7 @@ switch ($inputData['type']) {
             }
             if ((int) $SETTINGS['restricted_to'] === 1) {
                 $diffUsersRestiction = array_diff(
-                    empty($data['restricted_to']) === false ?
+                    !empty($data['restricted_to']) ?
                         explode(';', $data['restricted_to']) : array(),
                     $arrayOfUsersIdRestriction
                 );
@@ -1841,7 +1850,7 @@ switch ($inputData['type']) {
                     $session->get('user-login'),
                     'at_otp_status:' . ((int) $post_otp_is_enabled === 0 ? 'disabled' : 'enabled')
                 );
-            } elseif (DB::count() === 0 && empty($post_otp_secret) === false) {
+            } elseif (DB::count() === 0 && !empty($post_otp_secret)) {
                 // Create the entry in items_otp table
                 // OTP doesn't exist then create it
 
@@ -2051,7 +2060,7 @@ switch ($inputData['type']) {
                 if (count($reason) > 0) {
                     $sentence = date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['date']) . ' - '
                         . $record['login'] . ' - ' . $lang->get($record['action']) . ' - '
-                        . (empty($record['raison']) === false ? (count($reason) > 1 ? $lang->get(trim($reason[0])) . ' : ' . $reason[1]
+                        . (!empty($record['raison']) ? (count($reason) > 1 ? $lang->get(trim($reason[0])) . ' : ' . $reason[1]
                             : $lang->get(trim($reason[0]))) : '');
                     if (empty($history)) {
                         $history = $sentence;
@@ -2068,7 +2077,7 @@ switch ($inputData['type']) {
             if (is_array($post_diffusion_list) === true && count($post_diffusion_list) > 0) {
                 $cpt = 0;
                 foreach ($post_diffusion_list as $emailAddress) {
-                    if (empty($emailAddress) === false) {
+                    if (!empty($emailAddress)) {
                         prepareSendingEmail(
                             $lang->get('email_subject_item_updated'),
                             str_replace(
@@ -2189,8 +2198,8 @@ switch ($inputData['type']) {
         );
 
         if (
-            empty($inputData['itemId']) === false
-            && empty($post_dest_id) === false
+            !empty($inputData['itemId'])
+            && !empty($post_dest_id)
         ) {
             // load the original record into an array
             $originalRecord = DB::queryfirstrow(
@@ -2267,7 +2276,7 @@ switch ($inputData['type']) {
                     $aSet[$key] = $post_new_label;
                 } elseif ($key === 'viewed_no') {
                     $aSet['viewed_no'] = '0';
-                } elseif ($key === 'pw' && empty($pw) === false) {
+                } elseif ($key === 'pw' && !empty($pw)) {
                     $aSet['pw'] = $originalRecord['pw'];
                     $aSet['pw_iv'] = '';
                 } elseif ($key === 'perso') {
@@ -2394,6 +2403,17 @@ switch ($inputData['type']) {
                         $SETTINGS['path_to_upload_folder'],
                         decryptUserObjectKey($record['share_key'], $session->get('user-private_key'))
                     );
+                    // Ensure that the file content is a string
+                    if (!is_string($fileContent)) {
+                        echo prepareExchangedData(
+                            array(
+                                'error' => true,
+                                'message' => $lang->get('error_unknown'),
+                            ),
+                            'encode'
+                        );
+                        break;
+                    }
 
                     // Step2 - create file
                     // deepcode ignore InsecureHash: md5 is used jonly for file name in order to get a hashed value in database
@@ -2676,7 +2696,7 @@ switch ($inputData['type']) {
         ) {
             $restrictionActive = false;
         }
-        if (empty($dataItem['restricted_to']) === true) {
+        if (empty($dataItem['restricted_to'])) {
             $restrictionActive = false;
         }
 
@@ -2702,7 +2722,7 @@ switch ($inputData['type']) {
             $session->get('user-id'),
             $inputData['id']
         );
-        if (DB::count() === 0 || empty($dataItem['pw']) === true) {
+        if (DB::count() === 0 || empty($dataItem['pw'])) {
             // No share key found
             $pwIsEmptyNormally = false;
             // Is this a personal and defuse password?
@@ -2726,7 +2746,7 @@ switch ($inputData['type']) {
             $decryptedObject = decryptUserObjectKey($userKey['share_key'], $session->get('user-private_key'));
             // if null then we have an error.
             // suspecting bad password
-            if (empty($decryptedObject) === false) {
+            if (!empty($decryptedObject)) {
                 $pw = doDataDecryption(
                     $dataItem['pw'],
                     $decryptedObject
@@ -2839,9 +2859,9 @@ switch ($inputData['type']) {
 
             $arrData['label'] = $dataItem['label'] === '' ? '' : $dataItem['label'];
             $arrData['pw_length'] = strlen($pw);
-            $arrData['pw_decrypt_info'] = empty($pw) === true && $pwIsEmptyNormal === false ? 'error_no_sharekey_yet' : '';
-            $arrData['email'] = empty($dataItem['email']) === true || $dataItem['email'] === null ? '' : $dataItem['email'];
-            $arrData['url'] = empty($dataItem['url']) === true ? '' : $dataItem['url'];
+            $arrData['pw_decrypt_info'] = empty($pw) && $pwIsEmptyNormal === false ? 'error_no_sharekey_yet' : '';
+            $arrData['email'] = empty($dataItem['email']) || $dataItem['email'] === null ? '' : $dataItem['email'];
+            $arrData['url'] = empty($dataItem['url']) ? '' : $dataItem['url'];
             $arrData['folder'] = $dataItem['id_tree'];
             $arrData['description'] = $dataItem['description'];
             $arrData['login'] = $dataItem['login'];
@@ -3006,7 +3026,7 @@ switch ($inputData['type']) {
                 WHERE item_id = %i',
                 $inputData['id']
             );
-            $arrData['item_ready'] = DB::count() === 0 ? true : (DB::count() > 0 && empty($rows_tmp['finished_at']) === true ? false : true);
+            $arrData['item_ready'] = DB::count() === 0 ? true : (DB::count() > 0 && empty($rows_tmp['finished_at']) ? false : true);
 
             // Manage user restriction
             if (null !== $post_restricted) {
@@ -3095,9 +3115,9 @@ switch ($inputData['type']) {
             $arrData['show_details'] = 0;
             // get readable list of restriction
             $listOfRestricted = '';
-            if (empty($dataItem['restricted_to']) === false) {
+            if (!empty($dataItem['restricted_to'])) {
                 foreach (explode(';', $dataItem['restricted_to']) as $userRest) {
-                    if (empty($userRest) === false) {
+                    if (!empty($userRest)) {
                         $dataTmp = DB::queryfirstrow(
                             'SELECT login
                             FROM ' . prefixTable('users') . '
@@ -3267,7 +3287,7 @@ switch ($inputData['type']) {
             // get OTP enabled for item
             $returnArray['otp_for_item_enabled'] = (int) $dataItem['otp_for_item_enabled'];
             $returnArray['otp_phone_number'] = (string) $dataItem['otp_phone_number'];
-            if (empty($dataItem['otp_secret']) === false) {
+            if (!empty($dataItem['otp_secret'])) {
                 $secret = cryption(
                     $dataItem['otp_secret'],
                     '',
@@ -3350,14 +3370,14 @@ switch ($inputData['type']) {
                 $arbo = $tree->getPath($dataItem['id_tree'], true);
                 $path = '';
                 foreach ($arbo as $elem) {
-                    if (empty($path) === true) {
+                    if (empty($path)) {
                         $path = htmlspecialchars(stripslashes(htmlspecialchars_decode($elem->title, ENT_QUOTES)), ENT_QUOTES) . ' ';
                     } else {
                         $path .= '&#8594; ' . htmlspecialchars(stripslashes(htmlspecialchars_decode($elem->title, ENT_QUOTES)), ENT_QUOTES);
                     }
                 }
                 // Build text to show user
-                if (empty($path) === true) {
+                if (empty($path)) {
                     $path = addslashes($dataItem['label']);
                 } else {
                     $path = addslashes($dataItem['label']) . ' (' . $path . ')';
@@ -3473,11 +3493,10 @@ switch ($inputData['type']) {
         
         $inputData = dataSanitizer(
             $data,
-            $filters,
-            $SETTINGS['cpassman_dir']
+            $filters
         );
         
-        if (empty($inputData['itemId']) === true && (empty($inputData['itemKey']) === true || is_null($inputData['itemKey']) === true)) {
+        if (empty($inputData['itemId']) && (empty($inputData['itemKey']) || is_null($inputData['itemKey']) === true)) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -3509,7 +3528,7 @@ switch ($inputData['type']) {
             $inputData['itemId'],
             $inputData['itemKey']
         );
-        if (empty($inputData['itemId']) === true) {
+        if (empty($inputData['itemId'])) {
             $inputData['itemId'] = $data['id'];
         }
         $inputData['label'] = $data['label'];
@@ -3610,7 +3629,7 @@ switch ($inputData['type']) {
         }
         
         // Generate OTP code
-        if (empty($secret) === false) {
+        if (!empty($secret)) {
             try {
                 $otp = TOTP::createFromSecret($secret);
                 $otpCode = $otp->now();
@@ -3695,7 +3714,7 @@ switch ($inputData['type']) {
         // Check if duplicate folders name are allowed
         if (isset($SETTINGS['duplicate_folder']) && $SETTINGS['duplicate_folder'] === '0') {
             $data = DB::queryFirstRow('SELECT id, title FROM ' . prefixTable('nested_tree') . ' WHERE title = %s', $title);
-            if (empty($data['id']) === false && $dataReceived['folder'] !== $data['id']) {
+            if (!empty($data['id']) && $dataReceived['folder'] !== $data['id']) {
                 echo '[ { "error" : "' . $lang->get('error_group_exist') . '" } ]';
                 break;
             }
@@ -3813,7 +3832,7 @@ switch ($inputData['type']) {
         $showError = 0;
         $itemsIDList = $rights = $returnedData = $uniqueLoadData = $html_json = array();
         // Build query limits
-        if (empty($post_start) === true) {
+        if (empty($post_start)) {
             $start = 0;
         } else {
             $start = $post_start;
@@ -3933,7 +3952,7 @@ switch ($inputData['type']) {
             // check if items exist
             $where = new WhereClause('and');
             $session__user_list_folders_limited = $session->get('user-list_folders_limited');
-            if (null !== $post_restricted && (int) $post_restricted === 1 && empty($session__user_list_folders_limited[$inputData['id']]) === false) {
+            if (null !== $post_restricted && (int) $post_restricted === 1 && !empty($session__user_list_folders_limited[$inputData['id']])) {
                 $counter = count($session__user_list_folders_limited[$inputData['id']]);
                 $uniqueLoadData['counter'] = $counter;
                 // check if this folder is visible
@@ -4078,7 +4097,7 @@ switch ($inputData['type']) {
         // prepare query WHere conditions
         $where = new WhereClause('and');
         $session__user_list_folders_limited = $session->get('user-list_folders_limited');
-        if (null !== $post_restricted && (int) $post_restricted === 1 && empty($session__user_list_folders_limited[$inputData['id']]) === false) {
+        if (null !== $post_restricted && (int) $post_restricted === 1 && !empty($session__user_list_folders_limited[$inputData['id']])) {
             $where->add('i.id IN %ls', $session__user_list_folders_limited[$inputData['id']]);
         } else {
             $where->add('i.id_tree=%i', $inputData['id']);
@@ -4099,7 +4118,7 @@ switch ($inputData['type']) {
                     . " WHERE action = 'at_modification' AND raison = 'at_pw'
                     AND id_item=i.id ORDER BY date DESC LIMIT 1)";
                 $where->add('l.date=%l', $sql_e);
-                if (empty($limited_to_items) === false) {
+                if (!empty($limited_to_items)) {
                     $where->add('i.id IN %ls', explode(',', $limited_to_items));
                 }
 
@@ -4152,7 +4171,7 @@ switch ($inputData['type']) {
 
             foreach ($rows as $record) {
                 // exclude all results except the first one returned by query
-                if (empty($idManaged) === true || $idManaged !== $record['id']) {
+                if (empty($idManaged) || $idManaged !== $record['id']) {
                     // Fix a bug on Personal Item creation - field `perso` must be set to `1`
                     if ((int) $record['perso'] !== 1 && (int) $folder_is_personal === 1) {
                         DB::update(
@@ -4193,7 +4212,7 @@ switch ($inputData['type']) {
                     }
 
                     // Is user in restricted list of users
-                    if (empty($record['restricted_to']) === false) {
+                    if (!empty($record['restricted_to'])) {
                         if (
                             in_array($session->get('user-id'), explode(';', $record['restricted_to'])) === true
                             || (((int) $session->get('user-manager') === 1 || (int) $session->get('user-can_manage_all_users') === 1)
@@ -4222,7 +4241,7 @@ switch ($inputData['type']) {
                     $html_json[$record['id']]['item_key'] = (string) $record['item_key'];
                     $html_json[$record['id']]['tree_id'] = (int) $record['tree_id'];
                     $html_json[$record['id']]['label'] = strip_tags($record['label']);
-                    if (isset($SETTINGS['show_description']) === true && (int) $SETTINGS['show_description'] === 1 && is_null($record['description']) === false && empty($record['description']) === false) {
+                    if (isset($SETTINGS['show_description']) === true && (int) $SETTINGS['show_description'] === 1 && is_null($record['description']) === false && !empty($record['description'])) {
                         $html_json[$record['id']]['desc'] = mb_substr(preg_replace('#<[^>]+>#', ' ', $record['description']), 0, 200);
                     } else {
                         $html_json[$record['id']]['desc'] = '';
@@ -4552,7 +4571,7 @@ switch ($inputData['type']) {
      */
     case 'get_complixity_level':
         // get some info about ITEM
-        if (null !== $inputData['itemId'] && empty($inputData['itemId']) === false) {
+        if (null !== $inputData['itemId'] && !empty($inputData['itemId'])) {
             // get if existing edition lock
             $dataItemEditionLocks = DB::query(
                 'SELECT timestamp, user_id
@@ -4570,7 +4589,7 @@ switch ($inputData['type']) {
                 $dataLastItemEditionLock = $dataItemEditionLocks[0];
 
                 // Calculate the edition grace delay
-                if (isset($SETTINGS['delay_item_edition']) && $SETTINGS['delay_item_edition'] > 0 && empty($dataTmp['timestamp']) === false) {
+                if (isset($SETTINGS['delay_item_edition']) && $SETTINGS['delay_item_edition'] > 0 && !empty($dataTmp['timestamp'])) {
                     $delay = $SETTINGS['delay_item_edition'];
                 } else {
                     $delay = EDITION_LOCK_PERIOD; // One day delay
@@ -4677,7 +4696,7 @@ switch ($inputData['type']) {
         // check if user can perform this action
         if (
             null !== $inputData['context']
-            && empty($inputData['context']) === false
+            && !empty($inputData['context'])
         ) {
             if (
                 $inputData['context'] === 'create_folder'
@@ -4716,7 +4735,7 @@ switch ($inputData['type']) {
             $inputData['folderId']
         );
 
-        if (isset($data['valeur']) === true && (empty($data['valeur']) === false || $data['valeur'] === '0')) {
+        if (isset($data['valeur']) === true && (!empty($data['valeur']) || $data['valeur'] === '0')) {
             $complexity = TP_PW_COMPLEXITY[$data['valeur']][1];
             $folder_is_personal = (int) $data['personal_folder'];
 
@@ -4967,7 +4986,7 @@ switch ($inputData['type']) {
             break;
         }
 
-        if (empty($data['id_item']) === false) {
+        if (!empty($data['id_item'])) {
             // Delete from FILES table
             DB::delete(
                 prefixTable('files'),
@@ -5477,7 +5496,7 @@ switch ($inputData['type']) {
 
         // loop on items to move
         foreach (explode(';', $post_item_ids) as $item_id) {
-            if (empty($item_id) === false) {
+            if (!empty($item_id)) {
                 // get data about item
                 $dataSource = DB::queryfirstrow(
                     'SELECT i.pw, f.personal_folder,i.id_tree, f.title,i.label
@@ -5818,7 +5837,7 @@ switch ($inputData['type']) {
 
         // loop on items to move
         foreach (explode(';', $post_item_ids) as $item_id) {
-            if (empty($item_id) === false) {
+            if (!empty($item_id)) {
                 // get info
                 $dataSource = DB::queryfirstrow(
                     'SELECT label, id_tree
@@ -5916,7 +5935,7 @@ switch ($inputData['type']) {
         $post_content = $request->request->has('name') ? explode(',', $request->request->filter('content', '', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) : '';
 
         // get links url
-        if (empty($SETTINGS['email_server_url']) === true) {
+        if (empty($SETTINGS['email_server_url'])) {
             $SETTINGS['email_server_url'] = $SETTINGS['cpassman_url'];
         }
         if ($inputData['cat'] === 'request_access_to_author') {
@@ -5978,7 +5997,7 @@ switch ($inputData['type']) {
                         '#tp_item#',
                     ),
                     array(
-                        empty($SETTINGS['email_server_url']) === false ?
+                        !empty($SETTINGS['email_server_url']) ?
                             $SETTINGS['email_server_url'] . '/index.php?page=items&group=' . $dataItem['id_tree'] . '&id=' . $inputData['id'] : $SETTINGS['cpassman_url'] . '/index.php?page=items&group=' . $dataItem['id_tree'] . '&id=' . $inputData['id'],
                         addslashes($session->get('user-login')),
                         addslashes($path),
@@ -6150,7 +6169,7 @@ switch ($inputData['type']) {
             $session->get('user-id'),
             $dataReceived['id']
         );
-        if (DB::count() === 0 || empty($itemQ['pw']) === true) {
+        if (DB::count() === 0 || empty($itemQ['pw'])) {
             // No share key found
             $pw = '';
         } else {
@@ -6257,7 +6276,7 @@ switch ($inputData['type']) {
             'stamp' => $orignal_link_parameters['stamp'],
         ];
 
-        if ((int) $dataReceived['shared_globaly'] === 1 && isset($SETTINGS['otv_subdomain']) === true && empty($SETTINGS['otv_subdomain']) === false) {
+        if ((int) $dataReceived['shared_globaly'] === 1 && isset($SETTINGS['otv_subdomain']) === true && !empty($SETTINGS['otv_subdomain'])) {
             // Inject subdomain in URL by convering www. to subdomain.
             $domain_scheme = parse_url($SETTINGS['cpassman_url'], PHP_URL_SCHEME);
             $domain_host = parse_url($SETTINGS['cpassman_url'], PHP_URL_HOST);
@@ -6311,7 +6330,7 @@ switch ($inputData['type']) {
         );
 
         // Check if user has this sharekey
-        if (empty($file_info['share_key']) === true) {
+        if (empty($file_info['share_key'])) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -6431,7 +6450,7 @@ switch ($inputData['type']) {
         } else {
             $listRestrictedFoldersForItemsKeys = array();
         }
-        
+
         //Build tree
         $tree->rebuild();
         $folders = $tree->getDescendants();
@@ -6447,7 +6466,7 @@ switch ($inputData['type']) {
                 $displayThisNode = false;
 
                 // Check if any allowed folder is part of the descendants of this node
-                $nodeDescendants = $tree->getDescendantsFromTreeArray($folders, $folder->id);
+                $nodeDescendants = $tree->getDescendantsFromTreeArray($folders, (int) $folder->id);
                 foreach ($nodeDescendants as $node) {
                     // manage tree counters
                     if (
@@ -6486,7 +6505,7 @@ switch ($inputData['type']) {
                 }
             }
         }
-        if (empty($arrayFolders) === false) {
+        if (!empty($arrayFolders)) {
             // store array to return
             $arr_data['folders'] = $arrayFolders;
 
@@ -6540,7 +6559,7 @@ switch ($inputData['type']) {
                 implode(',', $foldersArray)
             );
             foreach ($rows as $record) {
-                if (empty($record['categories']) === false) {
+                if (!empty($record['categories'])) {
                     array_push(
                         $ret,
                         array($record['id'] => json_decode($record['categories'], true))
@@ -6597,19 +6616,19 @@ switch ($inputData['type']) {
             '"at_shown","at_password_copied", "at_shown", "at_password_shown"'
         );
         foreach ($rows as $record) {
-            if (empty($record['raison']) === true) {
+            if (empty($record['raison'])) {
                 $reason[0] = '';
             } else {
                 $reason = array_map('trim', explode(':', $record['raison']));
             }
             
             // imported via API
-            if (empty($record['login']) === true) {
+            if (empty($record['login'])) {
                 $record['login'] = $lang->get('imported_via_api') . ' [' . $record['raison'] . ']';
             }
             
             // Prepare avatar
-            if (isset($record['avatar_thumb']) && empty($record['avatar_thumb']) === false) {
+            if (isset($record['avatar_thumb']) && !empty($record['avatar_thumb'])) {
                 if (file_exists($SETTINGS['cpassman_dir'] . '/includes/avatars/' . $record['avatar_thumb'])) {
                     $avatar = $SETTINGS['cpassman_url'] . '/includes/avatars/' . $record['avatar_thumb'];
                 } else {
@@ -6626,7 +6645,7 @@ switch ($inputData['type']) {
                 $action = $lang->get($reason[0]);
                 
                 // get previous password
-                if (empty($record['old_value']) === false) {
+                if (!empty($record['old_value'])) {
                     $previous_pwd = cryption(
                         $record['old_value'],
                         '',
@@ -6645,7 +6664,7 @@ switch ($inputData['type']) {
                 $action = $lang->get($record['action']);
             } elseif ($reason[0] === 'at_description') {
                 $action = $lang->get('description_has_changed');
-            } elseif (empty($record['raison']) === false && $reason[0] !== 'at_creation') {
+            } elseif (!empty($record['raison']) && $reason[0] !== 'at_creation') {
                 $action = $lang->get($reason[0]);
                 if ($reason[0] === 'at_moved') {
                     $tmp = explode(' -> ', $reason[1]);
@@ -6660,7 +6679,7 @@ switch ($inputData['type']) {
                     }
                 } elseif (in_array($reason[0], array('at_restriction', 'at_email', 'at_login', 'at_label', 'at_url', 'at_tag')) === true) {
                     $tmp = explode(' => ', $reason[1]);
-                    $detail = empty(trim($tmp[0])) === true ?
+                    $detail = empty(trim($tmp[0])) ?
                         $lang->get('no_previous_value') : $lang->get('previous_value') . ': <span class="font-weight-light">' . $tmp[0] . ' </span>';
                 } elseif ($reason[0] === 'at_automatic_del') {
                     $detail = $lang->get($reason[1]);
@@ -6698,8 +6717,9 @@ switch ($inputData['type']) {
         }
 
         // order previous passwords by date
-        $key_values = array_column($previous_passwords, 'date'); 
-        array_multisort($key_values, /** @scrutinizer ignore-type */SORT_DESC, $previous_passwords);
+        $key_values = array_column($previous_passwords, 'date');
+        $sort_order = SORT_DESC;
+        array_multisort($key_values, $sort_order, $previous_passwords);
 
         // send data
         // deepcode ignore ServerLeak: Data is encrypted before being sent

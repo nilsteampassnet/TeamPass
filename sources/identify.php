@@ -175,7 +175,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         $session->set('user-duo_data','');
         if($duo_data_dec === false) {
             // Add failed authentication log
-            addFailedAuthentication($username, getClientIpServer());
+            addFailedAuthentication($sentData['login'], getClientIpServer());
 
             echo prepareExchangedData(
                 [
@@ -418,7 +418,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         $session->set('pwd_attempts', 0);
 
         // Check if any unsuccessfull login tries exist
-        $attemptsInfos = handleLoginAttempts(
+        handleLoginAttempts(
             $userInfo['id'],
             $userInfo['login'],
             $userInfo['last_connexion'],

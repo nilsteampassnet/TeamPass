@@ -95,7 +95,9 @@ if (null !== $request->request->filter('PHPSESSID', null, FILTER_SANITIZE_FULL_S
 } elseif (null !== $request->query->get('PHPSESSID')) {
     session_id(filter_var($request->query->get('PHPSESSID'), FILTER_SANITIZE_FULL_SPECIAL_CHARS));
 } else {
-    handleAttachmentError('No Session was found.', 100);
+    $errorResponse = handleAttachmentError('No Session was found.', 100);
+    echo $errorResponse;
+    return;
 }
 
 // Prepare POST variables
@@ -114,8 +116,9 @@ $fileName = $request->request->filter('name', '', FILTER_SANITIZE_FULL_SPECIAL_C
 
 // token check
 if (null === $post_user_token) {
-    handleAttachmentError('No user token found.', 110);
-    exit();
+    $errorResponse = handleAttachmentError('No user token found.', 110);
+    echo $errorResponse;
+    return;
 } else {
     // Check post_max_size
     $POST_MAX_SIZE = ini_get('post_max_size');
@@ -126,15 +129,20 @@ if (null === $post_user_token) {
     
     // CHeck if the POST is too big
     if (!empty($_SERVER['CONTENT_LENGTH']) && (int)$_SERVER['CONTENT_LENGTH'] > $maxSize && $maxSize > 0) {
-        handleAttachmentError('POST exceeded maximum allowed size.', 111, 413);
+        $errorResponse = handleAttachmentError('POST exceeded maximum allowed size.', 111, 413);
+        echo $errorResponse;
+        return;
     }
 
     // CHeck if file size is too big
     if ($post_fileSize > $maxSize && $maxSize > 0) {
-        handleAttachmentError('File exceeds the maximum allowed size', 120, 413);
-        die();
+        $errorResponse = handleAttachmentError('File exceeds the maximum allowed size', 120, 413);
+        echo $errorResponse;
+        return;
     }
-    error_log('POST_MAX_SIZE: ' . $POST_MAX_SIZE." - CONTENT_LENGTH: ".$_SERVER['CONTENT_LENGTH']." - UNIT: ".$unit." - MAX: ".$maxSize." - MULTIPLIER: ".$multiplier." - FILE_SIZE: ".$post_fileSize);
+    if (DEBUG === true) {
+        error_log('TEAMPASS DEBUG : POST_MAX_SIZE: ' . $POST_MAX_SIZE." - CONTENT_LENGTH: ".$_SERVER['CONTENT_LENGTH']." - UNIT: ".$unit." - MAX: ".$maxSize." - MULTIPLIER: ".$multiplier." - FILE_SIZE: ".$post_fileSize);
+    }
     
     // delete expired tokens
     DB::delete(prefixTable('tokens'), 'end_timestamp < %i', time());
@@ -178,8 +186,9 @@ if (null === $post_user_token) {
         } else {
             // no more files to upload, kill session
             $session->remove($post_user_token);
-            handleAttachmentError('No user token found.', 110);
-            die();
+            $errorResponse = handleAttachmentError('No user token found.', 110);
+            echo $errorResponse;
+            return;
         }
 
         // check if token is expired
@@ -204,8 +213,9 @@ if (null === $post_user_token) {
         if (time() > $data['end_timestamp']) {
             // too old
             $session->remove($post_user_token);
-            handleAttachmentError('User token expired.', 110);
-            die();
+            $errorResponse = handleAttachmentError('User token expired.', 110);
+            echo $errorResponse;
+            return;
         }
     }
 
@@ -236,27 +246,41 @@ if (null !== $post_timezone) {
 // Validate the file size (Warning: the largest files supported by this code is 2GB)
 $file_size = @filesize($_FILES['file']['tmp_name']);
 if ($file_size === false || (int) $file_size > (int) $max_file_size_in_bytes) {
-    handleAttachmentError('File exceeds the maximum allowed size', 120, 413);
+    $errorResponse = handleAttachmentError('File exceeds the maximum allowed size', 120, 413);
+    echo $errorResponse;
+    return;
 }
 if ($file_size <= 0) {
-    handleAttachmentError('File size outside allowed lower bound', 112);
+    $errorResponse = handleAttachmentError('File size outside allowed lower bound', 112);
+    echo $errorResponse;
+    return;
 }
 
 // Validate the upload
 if (!isset($_FILES['file'])) {
-    handleAttachmentError('No upload found in $_FILES for Filedata', 121);
+    $errorResponse =  handleAttachmentError('No upload found in $_FILES for Filedata', 121);
+    echo $errorResponse;
+    return;
 } elseif (isset($_FILES['file']['error']) && $_FILES['file']['error'] != 0) {
-    handleAttachmentError($uploadErrors[$_FILES['Filedata']['error']], 122);
+    $errorResponse = handleAttachmentError($uploadErrors[$_FILES['Filedata']['error']], 122);
+    echo $errorResponse;
+    return;
 } elseif (!isset($_FILES['file']['tmp_name']) || !@is_uploaded_file($_FILES['file']['tmp_name'])) {
-    handleAttachmentError('Upload failed is_uploaded_file test.', 123);
+    $errorResponse = handleAttachmentError('Upload failed is_uploaded_file test.', 123);
+    echo $errorResponse;
+    return;
 } elseif (!isset($_FILES['file']['name'])) {
-    handleAttachmentError('File has no name.', 113);
+    $errorResponse = handleAttachmentError('File has no name.', 113);
+    echo $errorResponse;
+    return;
 }
 
 // Validate file name (for our purposes we'll just remove invalid characters)
 $file_name = preg_replace('[^A-Za-z0-9]', '', strtolower(basename($_FILES['file']['name'])));
 if (strlen($file_name) == 0 || strlen($file_name) > $MAX_FILENAME_LENGTH) {
-    handleAttachmentError('Invalid file name: ' . $file_name . '.', 114);
+    $errorResponse = handleAttachmentError('Invalid file name: ' . $file_name . '.', 114);
+    echo $errorResponse;
+    return;
 }
 
 // Validate file extension
@@ -271,7 +295,9 @@ if (
         )
     ) === false
 ) {
-    handleAttachmentError('Invalid file extension.', 115, 415);
+    $errorResponse = handleAttachmentError('Invalid file extension.', 115, 415);
+    echo $errorResponse;
+    return;
 }
 
 // 5 minutes execution time
@@ -494,7 +520,7 @@ function handleAttachmentError($message, $code, $http_code = 400)
     http_response_code($http_code);
 
     // json error message
-    echo json_encode([
+    return json_encode([
         'jsonrpc' => '2.0',
         'error' => [
             'code' => $code,
@@ -502,7 +528,4 @@ function handleAttachmentError($message, $code, $http_code = 400)
         ],
         'id' => 'id'
     ]);
-    
-    // Force exit to avoid bypass filters.
-    exit;
 }
