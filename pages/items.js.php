@@ -811,8 +811,6 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             $.when(
                 getPrivilegesOnItem(item_tree_id, 1)
             ).then(function(retData) {
-                console.log('getPrivilegesOnItem 2')
-                console.log(retData)
                 if (retData.error === true) {
                     toastr.remove();
                     toastr.error(
@@ -4476,7 +4474,6 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                             const cleaner = new ClipboardCleaner(clipboardDuration);
                             cleaner.scheduleClearing(
                                 () => {
-                                    console.log(localStorage.getItem('clipboardStatus'))
                                     const clipboardStatus = JSON.parse(localStorage.getItem('clipboardStatus'));
                                     if (clipboardStatus.status === 'unsafe') {
                                         return;                                        
@@ -5242,7 +5239,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     } else {
                         $('#card-item-login-btn').addClass('hidden');
                     }
-
+console.log(data);
                     // Prepare clipboard - COPY PASSWORD
                     if (data.pw_length > 0 && store.get('teampassItem').readyToUse === true) {
                         // Delete existing clipboard
