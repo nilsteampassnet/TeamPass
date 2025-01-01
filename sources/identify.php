@@ -2356,114 +2356,34 @@ function shouldUserAuthWithOauth2(
     ];
 }
 
+/**
+ * Creates or manages an OAuth2 user in Teampass.
+ *
+ * @param array $SETTINGS Global application settings.
+ * @param array $userInfo User information retrieved from the authentication process.
+ * @param string $username The username of the user.
+ * @param string $passwordClear The user's password in plain text.
+ * @param int $userLdapHasBeenCreated Flag indicating if the user was created via LDAP (1 = yes, 0 = no).
+ * @return array Result of the operation, including status, user data, and connection details.
+ */
 function createOauth2User(
     array $SETTINGS,
     array $userInfo,
     string $username,
     string $passwordClear,
     int $userLdapHasBeenCreated
-): array
-{
-    // Prepare creating the new oauth2 user in Teampass
-    if ((int) $SETTINGS['oauth2_enabled'] === 1
-        && $username !== 'admin'
-        && (bool) $userInfo['oauth2_user_to_be_created'] === true
-        && $userLdapHasBeenCreated !== 1
-    ) {
-        $session = SessionManager::getSession();
-        $lang = new Language($session->get('user-language') ?? 'english');
-        
-        // Create Oauth2 user if not exists and tasks enabled
-        $ret = externalAdCreateUser(
-            $username,
-            $passwordClear,
-            $userInfo['mail'],
-            is_null($userInfo['givenname']) ? (is_null($userInfo['givenName']) ? '' : $userInfo['givenName']) : $userInfo['givenname'],
-            is_null($userInfo['surname']) ? '' : $userInfo['surname'],
-            'oauth2',
-            is_null($userInfo['groups']) ? [] : $userInfo['groups'],
-            $SETTINGS
-        );
-        $userInfo = $userInfo + $ret;
-
-        // prepapre background tasks for item keys generation  
-        handleUserKeys(
-            (int) $userInfo['id'],
-            (string) $passwordClear,
-            (int) (isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH),
-            uniqidReal(20),
-            true,
-            true,
-            true,
-            false,
-            $lang->get('email_body_user_config_2'),
-        );
-
-        // Complete $userInfo
-        $userInfo['has_been_created'] = 1;
-
-        if (WIP === true) error_log("--- USER CREATED ---");
-
-        return [
-            'error' => false,
-            'retExternalAD' => $userInfo,
-            'oauth2Connection' => true,
-            'userPasswordVerified' => true,
-        ];
-    
-    } elseif (isset($userInfo['id']) === true && empty($userInfo['id']) === false) {
-        // CHeck if user should use oauth2
-        $ret = shouldUserAuthWithOauth2(
-            $SETTINGS,
-            $userInfo,
-            $username
-        );
-        if ($ret['error'] === true) {
-            return [
-                'error' => true,
-                'message' => $ret['message'],
-            ];
-        }
-
-        // login/password attempt on a local account:
-        // Return to avoid overwrite of user password that can allow a user
-        // to steal a local account.
-        if (!$ret['oauth2Connection'] || !$ret['userPasswordVerified']) {
-            return [
-                'error' => false,
-                'message' => $ret['message'],
-                'ldapConnection' => false,
-                'userPasswordVerified' => false,        
-            ];
-        }
-
-        // Oauth2 user already exists and authenticated
-        if (WIP === true) error_log("--- USER AUTHENTICATED ---");
-        $userInfo['has_been_created'] = 0;
-
-        $passwordManager = new PasswordManager();
-
-        // Update user hash un database if needed
-        if (!$passwordManager->verifyPassword($userInfo['pw'], $passwordClear)) {
-            DB::update(
-                prefixTable('users'),
-                [
-                    'pw' => $passwordManager->hashPassword($passwordClear),
-                ],
-                'id = %i',
-                $userInfo['id']
-            );
-        }
-
-        return [
-            'error' => false,
-            'retExternalAD' => $userInfo,
-            'oauth2Connection' => $ret['oauth2Connection'],
-            'userPasswordVerified' => $ret['userPasswordVerified'],
-        ];
+): array {
+    // Check if a new OAuth2 user should be created
+    if (shouldCreateOauth2User($SETTINGS, $userInfo, $username, $userLdapHasBeenCreated)) {
+        return handleOauth2UserCreation($SETTINGS, $userInfo, $username, $passwordClear);
     }
 
-    // return if no admin
+    // Check if the user is already existing and authenticated with OAuth2
+    if (isset($userInfo['id']) && !empty($userInfo['id'])) {
+        return handleExistingOauth2User($SETTINGS, $userInfo, $username, $passwordClear);
+    }
+
+    // Default case: User creation or authentication not applicable
     return [
         'error' => false,
         'retLDAP' => [],
@@ -2471,6 +2391,131 @@ function createOauth2User(
         'userPasswordVerified' => false,
     ];
 }
+
+/**
+ * Determines if a new OAuth2 user should be created.
+ *
+ * @param array $SETTINGS Application settings.
+ * @param array $userInfo User information.
+ * @param string $username Username of the user.
+ * @param int $userLdapHasBeenCreated Flag indicating if the user was created via LDAP.
+ * @return bool True if the user should be created, false otherwise.
+ */
+function shouldCreateOauth2User(array $SETTINGS, array $userInfo, string $username, int $userLdapHasBeenCreated): bool {
+    return (int) $SETTINGS['oauth2_enabled'] === 1
+        && $username !== 'admin'
+        && (bool) $userInfo['oauth2_user_to_be_created'] === true
+        && $userLdapHasBeenCreated !== 1;
+}
+
+/**
+ * Handles the creation of a new OAuth2 user.
+ *
+ * @param array $SETTINGS Application settings.
+ * @param array $userInfo User information.
+ * @param string $username Username of the user.
+ * @param string $passwordClear User's plain text password.
+ * @return array Result of the user creation process.
+ */
+function handleOauth2UserCreation(array $SETTINGS, array &$userInfo, string $username, string $passwordClear): array {
+    $session = SessionManager::getSession();
+    $lang = new Language($session->get('user-language') ?? 'english');
+
+    // Create the user via external AD integration
+    $ret = externalAdCreateUser(
+        $username,
+        $passwordClear,
+        $userInfo['mail'],
+        $userInfo['givenname'] ?? $userInfo['givenName'] ?? '',
+        $userInfo['surname'] ?? '',
+        'oauth2',
+        $userInfo['groups'] ?? [],
+        $SETTINGS
+    );
+    $userInfo += $ret;
+
+    // Handle background tasks for generating item keys
+    handleUserKeys(
+        (int) $userInfo['id'],
+        $passwordClear,
+        (int) ($SETTINGS['maximum_number_of_items_to_treat'] ?? NUMBER_ITEMS_IN_BATCH),
+        uniqidReal(20),
+        true,
+        true,
+        true,
+        false,
+        $lang->get('email_body_user_config_2')
+    );
+
+    // Mark the user as created
+    $userInfo['has_been_created'] = 1;
+
+    if (defined('WIP') && WIP === true) {
+        error_log("--- USER CREATED ---");
+    }
+
+    return [
+        'error' => false,
+        'retExternalAD' => $userInfo,
+        'oauth2Connection' => true,
+        'userPasswordVerified' => true,
+    ];
+}
+
+/**
+ * Handles authentication or updates for an existing OAuth2 user.
+ *
+ * @param array $SETTINGS Application settings.
+ * @param array $userInfo User information.
+ * @param string $username Username of the user.
+ * @param string $passwordClear User's plain text password.
+ * @return array Result of the authentication process.
+ */
+function handleExistingOauth2User(array $SETTINGS, array $userInfo, string $username, string $passwordClear): array {
+    // Check if the user should authenticate with OAuth2
+    $ret = shouldUserAuthWithOauth2($SETTINGS, $userInfo, $username);
+    if ($ret['error'] === true) {
+        return [
+            'error' => true,
+            'message' => $ret['message'],
+        ];
+    }
+
+    // Prevent overwriting local account passwords
+    if (!$ret['oauth2Connection'] || !$ret['userPasswordVerified']) {
+        return [
+            'error' => false,
+            'message' => $ret['message'],
+            'ldapConnection' => false,
+            'userPasswordVerified' => false,
+        ];
+    }
+
+    // OAuth2 user exists and authenticated
+    if (defined('WIP') && WIP === true) {
+        error_log("--- USER AUTHENTICATED ---");
+    }
+    $userInfo['has_been_created'] = 0;
+
+    // Update user password hash if necessary
+    $passwordManager = new PasswordManager();
+    if (!$passwordManager->verifyPassword($userInfo['pw'], $passwordClear)) {
+        DB::update(
+            prefixTable('users'),
+            ['pw' => $passwordManager->hashPassword($passwordClear)],
+            'id = %i',
+            $userInfo['id']
+        );
+    }
+
+    return [
+        'error' => false,
+        'retExternalAD' => $userInfo,
+        'oauth2Connection' => $ret['oauth2Connection'],
+        'userPasswordVerified' => $ret['userPasswordVerified'],
+    ];
+}
+
 
 
 function identifyDoMFAChecks(
