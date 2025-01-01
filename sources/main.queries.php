@@ -167,11 +167,11 @@ function mainQuery(array $SETTINGS)
         return false;
     }
     // decrypt and retreive data in JSON format
-    $dataReceived = empty($inputData['data']) === false ? prepareExchangedData(
+    $dataReceived = empty($inputData['data']) === false ? (prepareExchangedData(
         $inputData['data'],
         'decode'
-    ) : '';
-    
+    )) : '';
+
     switch ($inputData['type_category']) {
         case 'action_password':
             echo passwordHandler($inputData['type'], $dataReceived, $SETTINGS);
@@ -406,13 +406,13 @@ function handleGeneratePassword($dataReceived, $session, $SETTINGS, $post_key): 
     ]);
 
     return generateGenericPassword(
-        $validatedData['size'],
-        $validatedData['secure_pwd'],
-        $validatedData['lowercase'],
-        $validatedData['capitalize'],
-        $validatedData['numerals'],
-        $validatedData['symbols'],
-        $SETTINGS
+        (int) $validatedData['size'],
+        (bool) $validatedData['secure_pwd'],
+        (bool) $validatedData['lowercase'],
+        (bool) $validatedData['capitalize'],
+        (bool) $validatedData['numerals'],
+        (bool) $validatedData['symbols'],
+        (array) $SETTINGS
     );
 }
 
@@ -2363,167 +2363,182 @@ function startReEncryptingUserSharekeys(
     );
 }
 
+
 /**
- * Permits to encrypt user's keys
+ * Encrypts or re-encrypts user's shared keys through multiple steps.
  *
- * @param integer $post_user_id
- * @param boolean $post_self_change
- * @param string $post_action
- * @param integer $post_start
- * @param integer $post_length
- * @param array $SETTINGS
- * @return string
+ * @param int $post_user_id ID of the user whose keys are being encrypted.
+ * @param bool $post_self_change Indicates if the change is triggered by the user.
+ * @param string $post_action Current step of the encryption process.
+ * @param int $post_start Start index for the current batch.
+ * @param int $post_length Number of items to process in the current batch.
+ * @param array $SETTINGS Application settings.
+ * @return string JSON-encoded response indicating the next step or an error message.
  */
 function continueReEncryptingUserSharekeys(
-    int     $post_user_id,
-    bool    $post_self_change,
-    string  $post_action,
-    int     $post_start,
-    int     $post_length,
-    array   $SETTINGS
-): string
-{
-    // Load user's language
+    int $post_user_id,
+    bool $post_self_change,
+    string $post_action,
+    int $post_start,
+    int $post_length,
+    array $SETTINGS
+): string {
     $session = SessionManager::getSession();
     $lang = new Language($session->get('user-language') ?? 'english');
-    
-    if (isUserIdValid($post_user_id) === true) {
-        // Check if user exists
-        $userInfo = DB::queryFirstRow(
-            'SELECT public_key
-            FROM ' . prefixTable('users') . '
-            WHERE id = %i',
-            $post_user_id
-        );
-        if (isset($userInfo['public_key']) === true) {
-            $return = [];
+    error_log("continueReEncryptingUserSharekeys: post_user_id: $post_user_id, post_self_change: $post_self_change, post_action: $post_action, post_start: $post_start, post_length: $post_length");
 
-            // WHAT STEP TO PERFORM?
-            if ($post_action === 'step0') {
-                // CLear old sharekeys
-                if ($post_self_change === false) {
-                    deleteUserObjetsKeys($post_user_id, $SETTINGS);
-                }
+    // Validate the user ID
+    if (!isUserIdValid($post_user_id)) {
+        return prepareErrorResponse($lang->get('error_no_user'), $post_user_id);
+    }
 
-                $return['post_action'] = 'step10';
-            }
-            
-            // STEP 1 - ITEMS
-            elseif ($post_action === 'step10') {
-                $return = continueReEncryptingUserSharekeysStep10(
-                    $post_user_id,
-                    $post_self_change,
-                    $post_action,
-                    $post_start,
-                    $post_length,
-                    $userInfo['public_key'],
-                    $SETTINGS
-                );
-            }
+    // Retrieve user information
+    $userInfo = getUserPublicKey($post_user_id);
+    if (!$userInfo || !isset($userInfo['public_key'])) {
+        return prepareFinishedResponse($post_user_id, $post_self_change);
+    }
 
-            // STEP 2 - LOGS
-            elseif ($post_action === 'step20') {
-                $return = continueReEncryptingUserSharekeysStep20(
-                    $post_user_id,
-                    $post_self_change,
-                    $post_action,
-                    $post_start,
-                    $post_length,
-                    $userInfo['public_key'],
-                    $SETTINGS
-                );
-            }
+    // Perform the appropriate step
+    $response = handleEncryptionStep(
+        $post_user_id,
+        $post_self_change,
+        $post_action,
+        $post_start,
+        $post_length,
+        $userInfo['public_key'],
+        $SETTINGS
+    );
 
-            // STEP 3 - FIELDS
-            elseif ($post_action === 'step30') {
-                $return = continueReEncryptingUserSharekeysStep30(
-                    $post_user_id,
-                    $post_self_change,
-                    $post_action,
-                    $post_start,
-                    $post_length,
-                    $userInfo['public_key'],
-                    $SETTINGS
-                );
+    return prepareExchangedData($response, 'encode');
+}
+
+/**
+ * Retrieves user information from the database.
+ *
+ * @param int $userId ID of the user.
+ * @return array|null User information or null if the user does not exist.
+ */
+function getUserPublicKey(int $userId): ?array {
+    return DB::queryFirstRow(
+        'SELECT public_key FROM ' . prefixTable('users') . ' WHERE id = %i',
+        $userId
+    );
+}
+
+/**
+ * Handles the logic for each step of the encryption process.
+ *
+ * @param int $userId ID of the user.
+ * @param bool $selfChange Indicates if the change is triggered by the user.
+ * @param string $action Current step of the encryption process.
+ * @param int $start Start index for the current batch.
+ * @param int $length Number of items to process in the current batch.
+ * @param string $publicKey User's public key.
+ * @param array $settings Application settings.
+ * @return array Response data for the current step or next step.
+ */
+function handleEncryptionStep(
+    int $userId,
+    bool $selfChange,
+    string $action,
+    int $start,
+    int $length,
+    string $publicKey,
+    array $settings
+): array {
+    $response = [];
+
+    switch ($action) {
+        case 'step0':
+            if (!$selfChange) {
+                deleteUserObjetsKeys($userId, $settings);
             }
-            
-            // STEP 4 - SUGGESTIONS
-            elseif ($post_action === 'step40') {
-                $return = continueReEncryptingUserSharekeysStep40(
-                    $post_user_id,
-                    $post_self_change,
-                    $post_action,
-                    $post_start,
-                    $post_length,
-                    $userInfo['public_key'],
-                    $SETTINGS
-                );
-            }
-            
-            // STEP 5 - FILES
-            elseif ($post_action === 'step50') {
-                $return = continueReEncryptingUserSharekeysStep50(
-                    $post_user_id,
-                    $post_self_change,
-                    $post_action,
-                    $post_start,
-                    $post_length,
-                    $userInfo['public_key'],
-                    $SETTINGS
-                );
-            }
-            
-            // STEP 6 - PERSONAL ITEMS
-            elseif ($post_action === 'step60') {
-                $return = continueReEncryptingUserSharekeysStep60(
-                    $post_user_id,
-                    $post_self_change,
-                    $post_action,
-                    $post_start,
-                    $post_length,
-                    $userInfo['public_key'],
-                    $SETTINGS
-                );
-            }
-            
-            // Continu with next step
-            return prepareExchangedData(
-                array(
-                    'error' => false,
-                    'message' => '',
-                    'step' => isset($return['post_action']) === true ? $return['post_action'] : '',
-                    'start' => isset($return['next_start']) === true ? $return['next_start'] : 0,
-                    'userId' => $post_user_id,
-                    'self_change' => $post_self_change,
-                ),
-                'encode'
-            );
-        }
-        
-        // Nothing to do
-        return prepareExchangedData(
-            array(
+            $response['post_action'] = 'step10';
+            break;
+
+        case 'step10':
+            $response = continueReEncryptingUserSharekeysStep10($userId, $selfChange, $action, $start, $length, $publicKey, $settings);
+            break;
+
+        case 'step20':
+            $response = continueReEncryptingUserSharekeysStep20($userId, $selfChange, $action, $start, $length, $publicKey, $settings);
+            break;
+
+        case 'step30':
+            $response = continueReEncryptingUserSharekeysStep30($userId, $selfChange, $action, $start, $length, $publicKey, $settings);
+            break;
+
+        case 'step40':
+            $response = continueReEncryptingUserSharekeysStep40($userId, $selfChange, $action, $start, $length, $publicKey, $settings);
+            break;
+
+        case 'step50':
+            $response = continueReEncryptingUserSharekeysStep50($userId, $selfChange, $action, $start, $length, $publicKey, $settings);
+            break;
+
+        case 'step60':
+            $response = continueReEncryptingUserSharekeysStep60($userId, $selfChange, $action, $start, $length, $publicKey, $settings);
+            break;
+
+        default:
+            $response = [
                 'error' => false,
                 'message' => '',
                 'step' => 'finished',
                 'start' => 0,
-                'userId' => $post_user_id,
-                'self_change' => $post_self_change,
-            ),
-            'encode'
-        );
+                'userId' => $userId,
+                'self_change' => $selfChange,
+            ];
+            break;
     }
-    
-    // Nothing to do
+
+    // Add common fields
+    $response['userId'] = $userId;
+    $response['self_change'] = $selfChange;
+
+    return $response;
+}
+
+/**
+ * Prepares an error response.
+ *
+ * @param string $message Error message.
+ * @param int $userId User ID causing the error.
+ * @return string JSON-encoded error response.
+ */
+function prepareErrorResponse(string $message, int $userId): string {
     return prepareExchangedData(
-        array(
+        [
             'error' => true,
-            'message' => $lang->get('error_no_user'),
-            'extra' => $post_user_id,
-        ),
+            'message' => $message,
+            'extra' => $userId,
+        ],
         'encode'
     );
 }
+
+/**
+ * Prepares a response indicating that the process is finished.
+ *
+ * @param int $userId ID of the user.
+ * @param bool $selfChange Indicates if the change is triggered by the user.
+ * @return string JSON-encoded response for a finished process.
+ */
+function prepareFinishedResponse(int $userId, bool $selfChange): string {
+    return prepareExchangedData(
+        [
+            'error' => false,
+            'message' => '',
+            'step' => 'finished',
+            'start' => 0,
+            'userId' => $userId,
+            'self_change' => $selfChange,
+        ],
+        'encode'
+    );
+}
+
+
 
 function continueReEncryptingUserSharekeysStep10(
     int $post_user_id,
