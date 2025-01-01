@@ -21,7 +21,7 @@
  * ---
  * @file      french.php
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2024 Teampass.net
+ * @copyright 2009-2025 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
@@ -1220,5 +1220,10 @@ return array(
     'error_permission_denied' => 'Permission refusée',
     'error_invalid_action' => 'Action invalide',
     'error_fetching_password' => 'Impossible de récupérer le mot de passe',
+    'unable_to_clear_clipboard' => 'Impossible de vider le presse-papier manuellement',
+    'clipboard_unsafe' => 'Le presse-papier n&apos;a pas pu être vidé automatiquement, c&apos;est une faille de sécurité !',
+    'clipboard_clear_now' => 'Le vider maintenant !',
+    'clipboard_clearing_failed' => 'Le vidage du presse-papier à échoué',
+    'clipboard_error' => 'Erreur du presse-papier',
 
 );

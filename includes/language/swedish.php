@@ -21,7 +21,7 @@
  * ---
  * @file      swedish.php
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2024 Teampass.net
+ * @copyright 2009-2025 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
@@ -1220,5 +1220,10 @@ e new password must:<br/> - Be different from the previous one<br/> - Contain at
     'error_permission_denied' => 'Permission denied',
     'error_invalid_action' => 'Invalid action',
     'error_fetching_password' => 'Error fetching password',
+    'unable_to_clear_clipboard' => 'Unable to clear the clipboard manually',
+    'clipboard_unsafe' => 'The clipboard could not be cleared automatically, this is unsafe!',
+    'clipboard_clear_now' => 'Clear it now!',
+    'clipboard_clearing_failed' => 'Clipboard clearing failed',
+    'clipboard_error' => 'Clipboard error',
 
 );

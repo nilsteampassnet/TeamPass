@@ -1301,7 +1301,6 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
     <!-- functions -->
     <script type="text/javascript" src="includes/js/functions.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
     <script type="text/javascript" src="includes/js/CreateRandomString.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
-    <script type="text/javascript" src="includes/js/secure-clipboard-cleaner.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
     <input type="hidden" id="encryptClientServerStatus" value="<?php echo $SETTINGS['encryptClientServer'] ?? 1; ?>" />
 
     </body>
@@ -1332,7 +1331,18 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
         "showMethod": "fadeIn",
         "hideMethod": "fadeOut"
     }
+
+    // Clipboard translations
+    const TRANSLATIONS_CLIPBOARD = {
+        clipboard_unsafe: "<?php echo $lang->get('clipboard_unsafe'); ?>",
+        clipboard_clear_now: "<?php echo $lang->get('clipboard_clear_now'); ?>",
+        clipboard_clearing_failed: "<?php echo $lang->get('clipboard_clearing_failed'); ?>",
+        clipboard_cleared: "<?php echo $lang->get('clipboard_cleared'); ?>",
+        unable_to_clear_clipboard: "<?php echo $lang->get('unable_to_clear_clipboard'); ?>"
+    };
 </script>
+
+<script type="text/javascript" src="includes/js/secure-clipboard-cleaner.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
 
 <script>
     $(document).ready(function() {
