@@ -1459,7 +1459,7 @@ function fetchUserData($post_id, ?string &$post_login): ?array {
  */
 function isPasswordValid(?string $post_pwd, string $storedPwd, ?string $post_demand_origin, array $SETTINGS, string $post_login): bool {
     if (isSetArrayOfValues([$post_pwd, $storedPwd]) &&
-        !(new PasswordManager())->verifyPassword($storedPwd, $post_pwd) &&
+        !(new PasswordManager())->verifyPassword($storedPwd, /** @scrutinizer ignore-type */ $post_pwd) &&
         $post_demand_origin !== 'users_management_list') {
         logFailedAuth($SETTINGS, 'password_is_not_correct', $post_login);
         return false;
