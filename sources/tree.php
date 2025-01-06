@@ -566,18 +566,19 @@ function prepareNodeJson(
     ];
 }
 
+
 /**
- * Get the context of the folder
+ * Prepares the context of a folder based on user session and folder data.
  *
- * @param integer $nodeId
+ * @param int $nodeId
  * @param array $session_groupes_visibles
  * @param array $session_read_only_folders
  * @param array $session_personal_visible_groups
- * @param integer $nbItemsInFolder
- * @param integer $nbItemsInSubfolders
- * @param integer $nbSubfolders
+ * @param int $nbItemsInFolder
+ * @param int $nbItemsInSubfolders
+ * @param int $nbSubfolders
  * @param array $session_list_folders_limited
- * @param integer $tree_counters
+ * @param int $tree_counters
  * @param bool $session_user_read_only
  * @param array $listFoldersLimitedKeys
  * @param array $listRestrictedFoldersForItemsKeys
@@ -602,125 +603,175 @@ function prepareNodeData(
     array $session_list_restricted_folders_for_items,
     array $session_personal_folder,
     NestedTree $tree
-): array
-{
+): array {
     $session = SessionManager::getSession();
-    // Load user's language
     $lang = new Language($session->get('user-language') ?? 'english');
+    
+    // Determine if the folder is personal
+    $isPersonalFolder = in_array($nodeId, $session_personal_folder) === true ? 1 : 0;
 
-    if (in_array($nodeId, $session_groupes_visibles) === true) {
-        // special case for READ-ONLY folder
-        if (in_array($nodeId, $session_read_only_folders) === true) {
-            return [
-                'html' => '<i class="far fa-eye fa-xs mr-1 ml-1"></i>'.
-                    ($tree_counters === 1 ? '<span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' . $nodeId . '">' . $nbItemsInFolder .'/'.$nbItemsInSubfolders .'/'.$nbSubfolders. '</span>'  : ''),
-                'title' => $lang->get('read_only_account'),
-                'restricted' => 1,
-                'folderClass' => 'folder_not_droppable',
-                'show_but_block' => false,
-                'hide_node' => false,
-                'is_pf' => in_array($nodeId, $session_personal_folder) === true ? 1 : 0,
-            ];
-
-        } elseif (
-            $session_user_read_only === true
-            && in_array($nodeId, $session_personal_visible_groups) === false
-        ) {
-            return [
-                'html' => '<i class="far fa-eye fa-xs mr-1"></i>'.
-                    ($tree_counters === 1 ? '<span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' . $nodeId . '">' . $nbItemsInFolder .'/'.$nbItemsInSubfolders .'/'.$nbSubfolders. '</span>'  : ''),
-                'title' => $lang->get('read_only_account'),
-                'restricted' => 0,
-                'folderClass' => 'folder',
-                'show_but_block' => false,
-                'hide_node' => false,
-                'is_pf' => in_array($nodeId, $session_personal_folder) === true ? 1 : 0,
-            ];
-        }
-        
-        return [
-            'html' => ($tree_counters === 1 ? '<span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' . $nodeId . '">' . $nbItemsInFolder .'/'.$nbItemsInSubfolders .'/'.$nbSubfolders. '</span>'  : ''),
-            'title' => '',
-            'restricted' => 0,
-            'folderClass' => 'folder',
-            'show_but_block' => false,
-            'hide_node' => false,
-            'is_pf' => in_array($nodeId, $session_personal_folder) === true ? 1 : 0,
-        ];
-
-    } elseif (in_array($nodeId, $listFoldersLimitedKeys) === true) {
-        return [
-            'html' => ($session_user_read_only === true ? '<i class="far fa-eye fa-xs mr-1"></i>' : '') .
-                ($tree_counters === 1 ? '<span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' . $nodeId . '">' . count($session_list_folders_limited[$nodeId]) . '</span>' : ''),
-            'title' => '',
-            'restricted' => 1,
-            'folderClass' => 'folder',
-            'show_but_block' => false,
-            'hide_node' => false,
-            'is_pf' => in_array($nodeId, $session_personal_folder) === true ? 1 : 0,
-        ];
-
-    } elseif (in_array($nodeId, $listRestrictedFoldersForItemsKeys) === true) {
-        return [
-            'html' => $session_user_read_only === true ? '<i class="far fa-eye fa-xs mr-1"></i>' : '' .
-                '<span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' . $nodeId . '">' . count($session_list_restricted_folders_for_items[$nodeId]) . '</span>',
-            'title' => '',
-            'restricted' => 1,
-            'folderClass' => 'folder',
-            'show_but_block' => false,
-            'hide_node' => false,
-            'is_pf' => in_array($nodeId, $session_personal_folder) === true ? 1 : 0,
-        ];
-
-    } elseif ((int) $nbSubfolders === 0
-        //&& (int) $show_only_accessible_folders === 1
-    ) {
-        // folder should not be visible
-        // only if it has no descendants
-        $nodeDirectDescendants = $tree->getDescendants($nodeId, false, false, true);
-        if (
-            count(
-                array_diff(
-                    $nodeDirectDescendants,
-                    array_merge(
-                        $session_groupes_visibles,
-                        array_keys($session_list_restricted_folders_for_items)
-                    )
-                )
-            ) !== count($nodeDirectDescendants)
-        ) {
-            // show it but block it
-            return [
-                'html' => '',
-                'title' => '',
-                'restricted' => 1,
-                'folderClass' => 'folder_not_droppable',
-                'show_but_block' => true,
-                'hide_node' => false,
-                'is_pf' => in_array($nodeId, $session_personal_folder) === true ? 1 : 0,
-            ];
-        }
-        
-        // hide it
-        return [
-            'html' => '',
-            'title' => '',
-            'restricted' => 1,
-            'folderClass' => 'folder_not_droppable',
-            'show_but_block' => false,
-            'hide_node' => true,
-            'is_pf' => in_array($nodeId, $session_personal_folder) === true ? 1 : 0,
-        ];
+    // Case 1: Node is visible in user's groups
+    if (in_array($nodeId, $session_groupes_visibles)) {
+        return handleVisibleNode(
+            $nodeId,
+            $session_read_only_folders,
+            $session_personal_visible_groups,
+            $nbItemsInFolder,
+            $nbItemsInSubfolders,
+            $nbSubfolders,
+            $tree_counters,
+            $session_user_read_only,
+            $isPersonalFolder,
+            $lang
+        );
     }
 
+    // Case 2: Node is limited in user's folders
+    if (in_array($nodeId, $listFoldersLimitedKeys)) {
+        return createNodeData(
+            $session_user_read_only ? '<i class="far fa-eye fa-xs mr-1"></i>' : '',
+            $tree_counters === 1 ? '<span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' . $nodeId . '">' . count($session_list_folders_limited[$nodeId]) . '</span>' : '',
+            1, // restricted
+            'folder',
+            false,
+            false,
+            $isPersonalFolder
+        );
+    }
+
+    // Case 3: Node is restricted for items
+    if (in_array($nodeId, $listRestrictedFoldersForItemsKeys)) {
+        return createNodeData(
+            $session_user_read_only ? '<i class="far fa-eye fa-xs mr-1"></i>' : '',
+            '<span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' . $nodeId . '">' . count($session_list_restricted_folders_for_items[$nodeId]) . '</span>',
+            1, // restricted
+            'folder',
+            false,
+            false,
+            $isPersonalFolder
+        );
+    }
+
+    // Case 4: Node has no subfolders and no accessible descendants
+    if ((int)$nbSubfolders === 0) {
+        $nodeDirectDescendants = $tree->getDescendants($nodeId, false, false, true);
+        $accessibleDescendants = array_merge(
+            $session_groupes_visibles,
+            array_keys($session_list_restricted_folders_for_items)
+        );
+        $hasAccessibleDescendants = count(array_diff($nodeDirectDescendants, $accessibleDescendants)) !== count($nodeDirectDescendants);
+
+        if ($hasAccessibleDescendants) {
+            // Show node but block it
+            return createNodeData('', '', 1, 'folder_not_droppable', true, false, $isPersonalFolder);
+        }
+
+        // Hide node
+        return createNodeData('', '', 1, 'folder_not_droppable', false, true, $isPersonalFolder);
+    }
+
+    // Default case: Node is restricted and blocked
+    return createNodeData('', '', 1, 'folder_not_droppable', true, false, $isPersonalFolder);
+}
+
+/**
+ * Handles the logic for visible nodes.
+ * 
+ * @param int $nodeId
+ * @param array $session_read_only_folders
+ * @param array $session_personal_visible_groups
+ * @param int $nbItemsInFolder
+ * @param int $nbItemsInSubfolders
+ * @param int $nbSubfolders
+ * @param int $tree_counters
+ * @param bool $session_user_read_only
+ * @param int $isPersonalFolder
+ * @param Language $lang
+ * @return array
+ */
+function handleVisibleNode(
+    int $nodeId,
+    array $session_read_only_folders,
+    array $session_personal_visible_groups,
+    int $nbItemsInFolder,
+    int $nbItemsInSubfolders,
+    int $nbSubfolders,
+    int $tree_counters,
+    bool $session_user_read_only,
+    int $isPersonalFolder,
+    Language $lang
+): array {
+    // Check if the folder is read-only
+    if (in_array($nodeId, $session_read_only_folders)) {
+        return createNodeData(
+            '<i class="far fa-eye fa-xs mr-1 ml-1"></i>',
+            $tree_counters === 1 ? '<span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' . $nodeId . '">' . $nbItemsInFolder . '/' . $nbItemsInSubfolders . '/' . $nbSubfolders . '</span>' : '',
+            1, // restricted
+            'folder_not_droppable',
+            false,
+            false,
+            $isPersonalFolder,
+            $lang->get('read_only_account')
+        );
+    }
+
+    // Check if user is read-only and folder is not personal
+    if ($session_user_read_only && !in_array($nodeId, $session_personal_visible_groups)) {
+        return createNodeData(
+            '<i class="far fa-eye fa-xs mr-1"></i>',
+            $tree_counters === 1 ? '<span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' . $nodeId . '">' . $nbItemsInFolder . '/' . $nbItemsInSubfolders . '/' . $nbSubfolders . '</span>' : '',
+            0, // not restricted
+            'folder',
+            false,
+            false,
+            $isPersonalFolder,
+            $lang->get('read_only_account')
+        );
+    }
+
+    // Default case for visible nodes
+    return createNodeData(
+        '',
+        $tree_counters === 1 ? '<span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' . $nodeId . '">' . $nbItemsInFolder . '/' . $nbItemsInSubfolders . '/' . $nbSubfolders . '</span>' : '',
+        0, // not restricted
+        'folder',
+        false,
+        false,
+        $isPersonalFolder
+    );
+}
+
+/**
+ * Creates a standardized array for node data.
+ * 
+ * @param string $html The HTML content for the node
+ * @param string $badgeHtml The HTML content for the badge
+ * @param int $restricted The restricted status
+ * @param string $folderClass The folder class
+ * @param bool $showButBlock The show but block status
+ * @param bool $hideNode The hide node status
+ * @param int $isPersonalFolder The personal folder status
+ * @param string $title The title
+ * @return array
+ */
+function createNodeData(
+    string $html,
+    string $badgeHtml,
+    int $restricted,
+    string $folderClass,
+    bool $showButBlock,
+    bool $hideNode,
+    int $isPersonalFolder,
+    string $title = ''
+): array {
     return [
-        'html' => '',
-        'title' => '',
-        'restricted' => 1,
-        'folderClass' => 'folder_not_droppable',
-        'show_but_block' => true,
-        'hide_node' => false,
-        'is_pf' => in_array($nodeId, $session_personal_folder) === true ? 1 : 0,
+        'html' => $html . $badgeHtml,
+        'title' => $title,
+        'restricted' => $restricted,
+        'folderClass' => $folderClass,
+        'show_but_block' => $showButBlock,
+        'hide_node' => $hideNode,
+        'is_pf' => $isPersonalFolder,
     ];
 }
 

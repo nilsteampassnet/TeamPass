@@ -6391,17 +6391,21 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             secure_pwd = true;
         }
 
+        data = {
+            size: $('#pwd-definition-size').val() ?? 20,
+            lowercase: $('#pwd-definition-lcl').prop("checked"),
+            numerals: $('#pwd-definition-numeric').prop("checked"),
+            capitalize: $('#pwd-definition-ucl').prop("checked"),
+            symbols: $('#pwd-definition-symbols').prop("checked"),
+            secure_pwd: secure_pwd,
+            force: "false",
+        };
+
         $.post(
             "sources/main.queries.php", {
                 type: "generate_password",
                 type_category: 'action_user',
-                size: $('#pwd-definition-size').val() ?? 20,
-                lowercase: $('#pwd-definition-lcl').prop("checked"),
-                numerals: $('#pwd-definition-numeric').prop("checked"),
-                capitalize: $('#pwd-definition-ucl').prop("checked"),
-                symbols: $('#pwd-definition-symbols').prop("checked"),
-                secure_pwd: secure_pwd,
-                force: "false",
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
                 key: "<?php echo $session->get('key'); ?>"
             },
             function(data) {

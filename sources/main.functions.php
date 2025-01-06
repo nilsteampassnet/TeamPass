@@ -3557,26 +3557,8 @@ function handleUserKeys(
     $session = SessionManager::getSession();
     $lang = new Language($session->get('user-language') ?? 'english');
 
-    // prepapre background tasks for item keys generation        
-    $userTP = DB::queryFirstRow(
-        'SELECT pw, public_key, private_key
-        FROM ' . prefixTable('users') . '
-        WHERE id = %i',
-        TP_USER_ID
-    );
-    if (DB::count() === 0) {
-        return prepareExchangedData(
-            array(
-                'error' => true,
-                'message' => 'User not exists',
-            ),
-            'encode'
-        );
-    }
-
-    // Do we need to generate new user password
+    // Generate new user password if required
     if ($generate_user_new_password === true) {
-        // Generate a new password
         $passwordClear = GenerateCryptKey(20, false, true, true, false, true);
     }
 
@@ -3593,24 +3575,9 @@ function handleUserKeys(
         );
     }
 
-    // Check if valid public/private keys
+    // Validate public/private keys if provided
     if ($recovery_public_key !== '' && $recovery_private_key !== '') {
-        try {
-            // Generate random string
-            $random_str = generateQuickPassword(12, false);
-            // Encrypt random string with user publick key
-            $encrypted = encryptUserObjectKey($random_str, $recovery_public_key);
-            // Decrypt $encrypted with private key
-            $decrypted = decryptUserObjectKey($encrypted, $recovery_private_key);
-            // Check if decryptUserObjectKey returns our random string
-            if ($decrypted !== $random_str) {
-                throw new Exception('Public/Private keypair invalid.');
-            }
-        } catch (Exception $e) {
-            // Show error message to user and log event
-            if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
-                error_log('ERROR: User '.$userId.' - '.$e->getMessage());
-            }
+        if (!validateKeyPair($recovery_public_key, $recovery_private_key)) {
             return prepareExchangedData([
                     'error' => true,
                     'message' => $lang->get('pw_encryption_error'),
@@ -3621,84 +3588,30 @@ function handleUserKeys(
     }
 
     // Generate new keys
-    if ($user_self_change === true && empty($recovery_public_key) === false && empty($recovery_private_key) === false){
-        $userKeys = [
-            'public_key' => $recovery_public_key,
-            'private_key_clear' => $recovery_private_key,
-            'private_key' => encryptPrivateKey($passwordClear, $recovery_private_key),
-        ];
-    } else {
-        $userKeys = generateUserKeys($passwordClear);
-    }
+    $userKeys = generateNewKeys($passwordClear, $user_self_change, $recovery_public_key, $recovery_private_key);
 
-    // Save in DB
-    DB::update(
-        prefixTable('users'),
-        array(
-            'pw' => $hashedPassword,
-            'public_key' => $userKeys['public_key'],
-            'private_key' => $userKeys['private_key'],
-            'keys_recovery_time' => NULL,
-        ),
-        'id=%i',
-        $userId
-    );
+    // Save new keys and password in DB
+    saveUserKeysInDB($userId, $hashedPassword, $userKeys);
 
-    // update session too
-    if ($userId === $session->get('user-id')) {
-        $session->set('user-private_key', $userKeys['private_key_clear']);
-        $session->set('user-public_key', $userKeys['public_key']);
-        // Notify user that he must re download his keys:
-        $session->set('user-keys_recovery_time', NULL);
-    }
+    // Update session if the user is the current user
+    updateSessionKeys($userId, $userKeys);
 
-    // Manage empty encryption key
-    // Let's take the user's password if asked and if no encryption key provided
-    $encryptionKey = $encryptWithUserPassword === true && empty($encryptionKey) === true ? $passwordClear : $encryptionKey;
+    // Manage encryption key
+    $encryptionKey = manageEncryptionKey($encryptWithUserPassword, $encryptionKey, $passwordClear);
 
-    // Create process
-    DB::insert(
-        prefixTable('background_tasks'),
-        array(
-            'created_at' => time(),
-            'process_type' => 'create_user_keys',
-            'arguments' => json_encode([
-                'new_user_id' => (int) $userId,
-                'new_user_pwd' => cryption($passwordClear, '','encrypt')['string'],
-                'new_user_code' => cryption(empty($encryptionKey) === true ? uniqidReal(20) : $encryptionKey, '','encrypt')['string'],
-                'owner_id' => (int) TP_USER_ID,
-                'creator_pwd' => $userTP['pw'],
-                'send_email' => $sendEmailToUser === true ? 1 : 0,
-                'otp_provided_new_value' => 1,
-                'email_body' => empty($emailBody) === true ? '' : $lang->get($emailBody),
-                'user_self_change' => $user_self_change === true ? 1 : 0,
-            ]),
-        )
-    );
-    $processId = DB::insertId();
+    // Create background process
+    $processId = createBackgroundProcess($userId, $passwordClear, $encryptionKey, $sendEmailToUser, $emailBody, $user_self_change);
 
-    // Delete existing keys
+    // Delete existing keys if required
     if ($deleteExistingKeys === true) {
-        deleteUserObjetsKeys(
-            (int) $userId,
-        );
+        deleteUserObjetsKeys($userId);
     }
 
-    // Create tasks
+    // Create background tasks
     createUserTasks($processId, $nbItemsToTreat);
 
-    // update user's new status
-    DB::update(
-        prefixTable('users'),
-        [
-            'is_ready_for_usage' => 0,
-            'otp_provided' => 1,
-            'ongoing_process_id' => $processId,
-            'special' => 'generate-keys',
-        ],
-        'id=%i',
-        $userId
-    );
+    // Update user's status
+    updateUserStatus($userId, $processId);
 
     return prepareExchangedData(
         array(
@@ -3711,14 +3624,172 @@ function handleUserKeys(
 }
 
 /**
- * Permits to generate a new password for a user
+ * Validates a pair of public and private keys.
  *
- * @param integer $processId
- * @param integer $nbItemsToTreat
- * @return void
- 
+ * @param string $publicKey The public key to validate.
+ * @param string $privateKey The private key to validate.
+ * @return bool Returns true if the key pair is valid, false otherwise.
  */
-function createUserTasks($processId, $nbItemsToTreat): void
+function validateKeyPair(string $publicKey, string $privateKey): bool
+{
+    try {
+        $random_str = generateQuickPassword(12, false);
+        $encrypted = encryptUserObjectKey($random_str, $publicKey);
+        $decrypted = decryptUserObjectKey($encrypted, $privateKey);
+        return $decrypted === $random_str;
+    } catch (Exception $e) {
+        if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+            error_log('ERROR: ' . $e->getMessage());
+        }
+        return false;
+    }
+}
+
+/**
+ * Generates new encryption keys.
+ *
+ * @param string $passwordClear The clear text password.
+ * @param bool $user_self_change Indicates if the user is changing the password themselves.
+ * @param string $recovery_public_key The public key used for recovery.
+ * @param string $recovery_private_key The private key used for recovery.
+ * 
+ * @return array An array containing the new keys.
+ */
+function generateNewKeys(string $passwordClear, bool $user_self_change, string $recovery_public_key, string $recovery_private_key): array
+{
+    if ($user_self_change === true && !empty($recovery_public_key) && !empty($recovery_private_key)) {
+        return [
+            'public_key' => $recovery_public_key,
+            'private_key_clear' => $recovery_private_key,
+            'private_key' => encryptPrivateKey($passwordClear, $recovery_private_key),
+        ];
+    } else {
+        return generateUserKeys($passwordClear);
+    }
+}
+
+/**
+ * Saves the user's keys in the database.
+ *
+ * @param int $userId The user's ID.
+ * @param string $hashedPassword The hashed password.
+ * @param array $userKeys The user's keys.
+ * @return void
+ */
+function saveUserKeysInDB(int $userId, string $hashedPassword, array $userKeys): void
+{
+    DB::update(
+        prefixTable('users'),
+        array(
+            'pw' => $hashedPassword,
+            'public_key' => $userKeys['public_key'],
+            'private_key' => $userKeys['private_key'],
+            'keys_recovery_time' => NULL,
+        ),
+        'id=%i',
+        $userId
+    );
+}
+
+/**
+ * Updates the session keys.
+ *
+ * @param int $userId The user's ID.
+ * @param array $userKeys The user's keys.
+ * @return void
+ */
+function updateSessionKeys(int $userId, array $userKeys): void
+{
+    $session = SessionManager::getSession();
+    if ($userId === $session->get('user-id')) {
+        $session->set('user-private_key', $userKeys['private_key_clear']);
+        $session->set('user-public_key', $userKeys['public_key']);
+        $session->set('user-keys_recovery_time', NULL);
+    }
+}
+
+/**
+ * Manages the encryption key.
+ *
+ * @param bool $encryptWithUserPassword Indicates if the encryption key should be encrypted with the user's password.
+ * @param string $encryptionKey The encryption key.
+ * @param string $passwordClear The clear text password.
+ * @return string The encryption key.
+ */
+function manageEncryptionKey(bool $encryptWithUserPassword, string $encryptionKey, string $passwordClear): string
+{
+    return $encryptWithUserPassword && empty($encryptionKey) ? $passwordClear : $encryptionKey;
+}
+
+/**
+ * Creates a background process.
+ *
+ * @param int $userId The user's ID.
+ * @param string $passwordClear The clear text password.
+ * @param string $encryptionKey The encryption key.
+ * @param bool $sendEmailToUser Indicates if an email should be sent to the user.
+ * @param string $emailBody The email body.
+ * @param bool $user_self_change Indicates if the user is changing the password themselves.
+ * @return int The ID of the background process.
+ */
+function createBackgroundProcess(int $userId, string $passwordClear, string $encryptionKey, bool $sendEmailToUser, string $emailBody, bool $user_self_change): int
+{
+    $session = SessionManager::getSession();
+    $lang = new Language($session->get('user-language') ?? 'english');
+    $userTP = DB::queryFirstRow(
+        'SELECT pw, public_key, private_key
+        FROM ' . prefixTable('users') . '
+        WHERE id = %i',
+        TP_USER_ID
+    );
+
+    DB::insert(
+        prefixTable('background_tasks'),
+        array(
+            'created_at' => time(),
+            'process_type' => 'create_user_keys',
+            'arguments' => json_encode([
+                'new_user_id' => $userId,
+                'new_user_pwd' => cryption($passwordClear, '', 'encrypt')['string'],
+                'new_user_code' => cryption(empty($encryptionKey) ? uniqidReal(20) : $encryptionKey, '', 'encrypt')['string'],
+                'owner_id' => TP_USER_ID,
+                'creator_pwd' => $userTP['pw'],
+                'send_email' => $sendEmailToUser ? 1 : 0,
+                'otp_provided_new_value' => 1,
+                'email_body' => empty($emailBody) ? '' : $lang->get($emailBody),
+                'user_self_change' => $user_self_change ? 1 : 0,
+            ]),
+        )
+    );
+
+    return DB::insertId();
+}
+
+
+function updateUserStatus(int $userId, int $processId): void
+{    	
+    DB::update(
+        prefixTable('users'),
+        [
+            'is_ready_for_usage' => 0,
+            'otp_provided' => 1,
+            'ongoing_process_id' => $processId,
+            'special' => 'generate-keys',
+        ],
+        'id=%i',
+        $userId
+    );
+}
+
+/**
+ * Updates the status of a user based on the given user ID and process ID.
+ *
+ * @param int $userId The ID of the user whose status is to be updated.
+ * @param int $processId The ID of the process that determines the new status of the user.
+ *
+ * @return void
+ */
+function createUserTasks(int $processId, int $nbItemsToTreat): void
 {
     DB::insert(
         prefixTable('background_subtasks'),
@@ -3813,7 +3884,7 @@ function createUserTasks($processId, $nbItemsToTreat): void
 }
 
 /**
- * Permeits to check the consistency of date versus columns definition
+ * Permits to check the consistency of date versus columns definition
  *
  * @param string $table
  * @param array $dataFields

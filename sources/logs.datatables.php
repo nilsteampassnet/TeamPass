@@ -119,7 +119,9 @@ if (isset($params['search']['value'])) {
 }
 
 // Ordering
-$order = strtoupper($params['order'][0]['dir'] ?? null);
+$order = isset($params['order'][0]['dir']) && is_string($params['order'][0]['dir'])
+    ? strtoupper($params['order'][0]['dir'])
+    : '';
 $orderDirection = in_array($order, $aSortTypes, true) ? $order : 'DESC';
     
 // Start building the query and output depending on the action

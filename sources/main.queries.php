@@ -167,11 +167,11 @@ function mainQuery(array $SETTINGS)
         return false;
     }
     // decrypt and retreive data in JSON format
-    $dataReceived = empty($inputData['data']) === false ? prepareExchangedData(
+    $dataReceived = empty($inputData['data']) === false ? (prepareExchangedData(
         $inputData['data'],
         'decode'
-    ) : '';
-    
+    )) : '';
+
     switch ($inputData['type_category']) {
         case 'action_password':
             echo passwordHandler($inputData['type'], $dataReceived, $SETTINGS);
@@ -319,17 +319,214 @@ function passwordHandler(string $post_type, /*php8 array|null|string*/ $dataRece
 /**
  * Handler for all user tasks
  *
- * @param string $post_type
- * @param array|null|string $dataReceived
- * @param array $SETTINGS
- * @param string $post_key
+ * @param string $post_type       Type of action to handle.
+ * @param array|null|string $dataReceived Data received from the request.
+ * @param array $SETTINGS         Global settings.
+ * @param string $post_key        Additional key for post validation.
  * @return string
  */
 function userHandler(string $post_type, array|null|string $dataReceived, array $SETTINGS, string $post_key): string
 {
     $session = SessionManager::getSession();
 
-    // List of post types allowed to all users
+    // Vérifier si l'utilisateur a les permissions nécessaires
+    if (!userHandlerHasPermission($post_type, $dataReceived, $session)) {
+        return prepareExchangedData(['error' => true], 'encode');
+    }
+
+    // Map des gestionnaires par post_type
+    $handlers = [
+        'get_user_info' => 'handleGetUserInfo',
+        'increase_session_time' => 'handleIncreaseSessionTime',
+        'generate_password' => 'handleGeneratePassword',
+        'refresh_list_items_seen' => 'handleRefreshListItemsSeen',
+        'ga_generate_qr' => 'handleGenerateQRCode',
+        'user_is_ready' => 'handleUserIsReady',
+        'user_get_session_time' => 'handleUserGetSessionTime',
+        'save_user_location' => 'handleSaveUserLocation',
+    ];
+
+    // Appeler la fonction correspondante ou retourner une erreur par défaut
+    if (isset($handlers[$post_type]) && function_exists($handlers[$post_type])) {
+        return $handlers[$post_type]($dataReceived, $session, $SETTINGS, $post_key);
+    }
+
+    // Cas par défaut si le post_type est invalide
+    return prepareExchangedData(['error' => true], 'encode');
+}
+
+/**
+ * Handler for getting user information.
+ * 
+ * @param array $dataReceived The data received from the client.
+ * @param object $session The current session data.
+ * @param array $SETTINGS The application settings.
+ * @param string $post_key The additional key for post validation.
+ * @return string The user information.
+ */
+function handleGetUserInfo($dataReceived, $session, $SETTINGS, $post_key): string
+{
+    $userId = (int) $session->get('user-id');
+    return getUserInfo($userId, $SETTINGS);
+}
+
+/**
+ * Handler for increasing the session time.
+ * 
+ * @param array $dataReceived The data received from the client.
+ * @param object $session The current session data.
+ * @param array $SETTINGS The application settings.
+ * @param string $post_key The additional key for post validation.
+ * @return string The new session time.
+ */
+function handleIncreaseSessionTime($dataReceived, $session, $SETTINGS, $post_key): string
+{
+    $duration = (int) filter_input(INPUT_POST, 'duration', FILTER_SANITIZE_NUMBER_INT);
+    return increaseSessionDuration($duration);
+}
+
+/**
+ * Handler for generating a password.
+ * 
+ * @param array $dataReceived The data received from the client.
+ * @param object $session The current session data.
+ * @param array $SETTINGS The application settings.
+ * @param string $post_key The additional key for post validation.
+ * @return string The generated password.
+ */
+function handleGeneratePassword($dataReceived, $session, $SETTINGS, $post_key): string
+{
+    $validatedData = validateHandlerData($dataReceived, [
+        'size' => FILTER_SANITIZE_NUMBER_INT,
+        'secure_pwd' => FILTER_VALIDATE_BOOLEAN,
+        'lowercase' => FILTER_VALIDATE_BOOLEAN,
+        'capitalize' => FILTER_VALIDATE_BOOLEAN,
+        'numerals' => FILTER_VALIDATE_BOOLEAN,
+        'symbols' => FILTER_VALIDATE_BOOLEAN,
+    ]);
+
+    return generateGenericPassword(
+        (int) $validatedData['size'],
+        (bool) $validatedData['secure_pwd'],
+        (bool) $validatedData['lowercase'],
+        (bool) $validatedData['capitalize'],
+        (bool) $validatedData['numerals'],
+        (bool) $validatedData['symbols'],
+        (array) $SETTINGS
+    );
+}
+
+/**
+ * Handler for refreshing the list of items seen by the user.
+ * 
+ * @param array $dataReceived The data received from the client.
+ * @param object $session The current session data.
+ * @param array $SETTINGS The application settings.
+ * @param string $post_key The additional key for post validation.
+ * @return string The refreshed list of items seen by the user.
+ */
+function handleRefreshListItemsSeen($dataReceived, $session, $SETTINGS, $post_key): string
+{
+    if ($session->has('user-id') && (int) $session->get('user-id') > 0) {
+        return refreshUserItemsSeenList($SETTINGS);
+    }
+
+    return json_encode(
+        ['error' => '', 'existing_suggestions' => 0, 'html_json' => ''],
+        JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP
+    );
+}
+
+/**
+ * Handler for generating a QR code for Google Authenticator.
+ * 
+ * @param array $dataReceived The data received from the client.
+ * @param object $session The current session data.
+ * @param array $SETTINGS The application settings.
+ * @param string $post_key The additional key for post validation.
+ * @return string The generated QR code.
+ */
+function handleGenerateQRCode($dataReceived, $session, $SETTINGS, $post_key): string
+{
+    $validatedData = validateHandlerData($dataReceived, [
+        'demand_origin' => FILTER_SANITIZE_FULL_SPECIAL_CHARS,
+        'send_email' => FILTER_SANITIZE_FULL_SPECIAL_CHARS,
+        'login' => FILTER_SANITIZE_FULL_SPECIAL_CHARS,
+        'pwd' => FILTER_SANITIZE_FULL_SPECIAL_CHARS,
+        'token' => FILTER_SANITIZE_FULL_SPECIAL_CHARS,
+    ]);
+
+    return generateQRCode(
+        (int) $session->get('user-id'),
+        $validatedData['demand_origin'],
+        $validatedData['send_email'],
+        $validatedData['login'],
+        $validatedData['pwd'],
+        $validatedData['token'],
+        $SETTINGS
+    );
+}
+
+/**
+ * Handler for checking if the user is ready.
+ * 
+ * @param array $dataReceived The data received from the client.
+ * @param object $session The current session data.
+ * @param array $SETTINGS The application settings.
+ * @param string $post_key The additional key for post validation.
+ * @return string The user's readiness status.
+ */
+function handleUserIsReady($dataReceived, $session, $SETTINGS, $post_key): string
+{
+    $userId = (int) $session->get('user-id');
+    return userIsReady($userId, $SETTINGS['cpassman_dir']);
+}
+
+/**
+ * Handler for getting the user's session time.
+ * 
+ * @param array $dataReceived The data received from the client.
+ * @param object $session The current session data.
+ * @param array $SETTINGS The application settings.
+ * @param string $post_key The additional key for post validation.
+ * @return string The user's session time.
+ */
+function handleUserGetSessionTime($dataReceived, $session, $SETTINGS, $post_key): string
+{
+    return userGetSessionTime(
+        (int) $session->get('user-id'),
+        $SETTINGS['cpassman_dir'],
+        (int) $SETTINGS['maximum_session_expiration_time']
+    );
+}
+
+/**
+ * Handler for saving the user's location.
+ * 
+ * @param array $dataReceived The data received from the client.
+ * @param object $session The current session data.
+ * @param array $SETTINGS The application settings.
+ * @param string $post_key The additional key for post validation.
+ * @return string The user's location.
+ */
+function handleSaveUserLocation($dataReceived, $session, $SETTINGS, $post_key): string
+{
+    return userSaveIp(
+        (int) $session->get('user-id'),
+        (string) filter_var($dataReceived['action'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)
+    );
+}
+
+/**
+ * Handler for all system tasks.
+ *
+ * @param string $post_type
+ * @param array|null|string $dataReceived
+ * @param array $SETTINGS
+ * @return bool
+ */
+function userHandlerHasPermission(string $post_type, $dataReceived, $session): bool
+{
     $all_users_can_access = [
         'get_user_info',
         'increase_session_time',
@@ -337,157 +534,35 @@ function userHandler(string $post_type, array|null|string $dataReceived, array $
         'refresh_list_items_seen',
         'ga_generate_qr',
         'user_get_session_time',
-        'save_user_location'
+        'save_user_location',
     ];
 
-    // Default values
-    $filtered_user_id = $session->get('user-id');
-
-    // User can't manage users and requested type is administrative.
-    if ((int) $session->get('user-admin') !== 1 &&
-        (int) $session->get('user-manager') !== 1 &&
-        (int) $session->get('user-can_manage_all_users') !== 1 &&
-        !in_array($post_type, $all_users_can_access)) {
-
-        return prepareExchangedData(
-            array(
-                'error' => true,
-            ),
-            'encode'
-        );
+    if (in_array($post_type, $all_users_can_access)) {
+        return true;
     }
 
-    if (isset($dataReceived['user_id'])) {
-        // Get info about user to modify
-        $targetUserInfos = DB::queryfirstrow(
-            'SELECT admin, gestionnaire, can_manage_all_users, isAdministratedByRole FROM ' . prefixTable('users') . '
-            WHERE id = %i',
-            $dataReceived['user_id']
-        );
-
-        if (
-            // Administrator user
-            (int) $session->get('user-admin') === 1
-            // Manager of basic/ro users in this role
-            || ((int) $session->get('user-manager') === 1
-                && in_array($targetUserInfos['isAdministratedByRole'], $session->get('user-roles_array'))
-                && (int) $targetUserInfos['admin'] !== 1
-                && (int) $targetUserInfos['can_manage_all_users'] !== 1
-                && (int) $targetUserInfos['gestionnaire'] !== 1)
-            // Manager of all basic/ro users
-            || ((int) $session->get('user-can_manage_all_users') === 1
-                && (int) $targetUserInfos['admin'] !== 1
-                && (int) $targetUserInfos['can_manage_all_users'] !== 1
-                && (int) $targetUserInfos['gestionnaire'] !== 1)
-        ) {
-            // This user is allowed to modify other users.
-            $filtered_user_id = $dataReceived['user_id'];
-        }
-    }
-
-    switch ($post_type) {
-        /*
-        * Get info 
-        */
-        case 'get_user_info'://action_user
-            return getUserInfo(
-                (int) $filtered_user_id,
-                $SETTINGS
-            );
-
-        /*
-        * Increase the session time of User
-        */
-        case 'increase_session_time'://action_user
-            return increaseSessionDuration(
-                (int) filter_input(INPUT_POST, 'duration', FILTER_SANITIZE_NUMBER_INT)
-            );
-
-        /*
-        * Generate a password generic
-        */
-        case 'generate_password'://action_user
-            return generateGenericPassword(
-                (int) filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT),
-                (bool) filter_input(INPUT_POST, 'secure_pwd', FILTER_VALIDATE_BOOLEAN),
-                (bool) filter_input(INPUT_POST, 'lowercase', FILTER_VALIDATE_BOOLEAN),
-                (bool) filter_input(INPUT_POST, 'capitalize', FILTER_VALIDATE_BOOLEAN),
-                (bool) filter_input(INPUT_POST, 'numerals', FILTER_VALIDATE_BOOLEAN),
-                (bool) filter_input(INPUT_POST, 'symbols', FILTER_VALIDATE_BOOLEAN),
-                $SETTINGS
-            );
-
-        /*
-        * Refresh list of last items seen
-        */
-        case 'refresh_list_items_seen'://action_user
-            if ($session->has('user-id') || (int) $session->get('user-id') && null !== $session->get('user-id') || (int) $session->get('user-id') > 0) {
-                return refreshUserItemsSeenList(
-                    $SETTINGS
-                );
-
-            } else {
-                return json_encode(
-                    array(
-                        'error' => '',
-                        'existing_suggestions' => 0,
-                        'html_json' => '',
-                    ),
-                    JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP
-                );
-            }
-
-        /*
-        * This will generate the QR Google Authenticator
-        */
-        case 'ga_generate_qr'://action_user
-            return generateQRCode(
-                (int) $filtered_user_id,
-                (string) filter_var($dataReceived['demand_origin'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                (string) filter_var($dataReceived['send_email'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                (string) filter_var($dataReceived['login'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                (string) filter_var($dataReceived['pwd'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                (string) filter_var($dataReceived['token'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                $SETTINGS
-            );
-
-        /*
-        * This will set the user ready
-        */
-        case 'user_is_ready'://action_user
-            return userIsReady(
-                (int) $filtered_user_id,
-                (string) $SETTINGS['cpassman_dir']
-            );
-
-        /*
-        * This post type is used to check if the user session is still valid
-        */
-        case 'user_get_session_time'://action_user
-            return userGetSessionTime(
-                (int) $session->get('user-id'),
-                (string) $SETTINGS['cpassman_dir'],
-                (int) $SETTINGS['maximum_session_expiration_time'],
-            );
-
-        case 'save_user_location'://action_user
-            return userSaveIp(
-                (int) $session->get('user-id'),
-                (string) filter_var($dataReceived['action'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-            );
-
-        /*
-        * Default case
-        */
-        default :
-            return prepareExchangedData(
-                array(
-                    'error' => true,
-                ),
-                'encode'
-            );
-    }
+    return (int) $session->get('user-admin') === 1
+        || (int) $session->get('user-manager') === 1
+        || (int) $session->get('user-can_manage_all_users') === 1;
 }
+
+/**
+ * Handler for validating data received from the client.
+ * 
+ * @param array $data The data received from the client.
+ * @param array $rules The rules to apply to the data.
+ * @return array The validated data.
+ */
+function validateHandlerData(array $data, array $rules): array
+{
+    $validated = [];
+    foreach ($rules as $key => $filter) {
+        $validated[$key] = filter_var($data[$key] ?? null, $filter);
+    }
+    return $validated;
+}
+
+
 
 /**
  * Handler for all mail tasks
@@ -597,227 +672,271 @@ function mailHandler(string $post_type, /*php8 array|null|string */$dataReceived
 }
 
 /**
- * Handler for all key related tasks
+ * Handler for all key-related tasks.
  *
- * @param string $post_type
- * @param array|null|string $dataReceived
- * @param array $SETTINGS
+ * @param string $post_type       Type of action to handle.
+ * @param array|null|string $dataReceived Data received from the request.
+ * @param array $SETTINGS         Global settings.
  * @return string
  */
-function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived, array $SETTINGS): string
+function keyHandler(string $post_type, $dataReceived, array $SETTINGS): string
 {
+    // Load session and language
     $session = SessionManager::getSession();
     $lang = new Language($session->get('user-language') ?? 'english');
 
-    // List of post types allowed to all users
+    // Check that $dataReceived is an array (not a string or null)
+    if (!is_array($dataReceived) || is_null($dataReceived)) {
+        return prepareExchangedData(['error' => true, 'message' => $lang->get('error_data_not_consistent')], 'encode');
+    }
+
+    // Check user permissions
+    if (!userHasPermission($post_type, $dataReceived, $session)) {
+        return prepareExchangedData(['error' => true, 'message' => $lang->get('error_permission_denied')], 'encode');
+    }
+
+    // Map post types to their corresponding handlers
+    $handlers = [
+        'generate_temporary_encryption_key' => 'handleGenerateTemporaryKey',
+        'user_sharekeys_reencryption_next' => 'handleSharekeysReencryption',
+        'user_psk_reencryption' => 'handlePskReencryption',
+        'change_private_key_encryption_password' => 'handleChangePrivateKeyPassword',
+        'user_new_keys_generation' => 'handleNewKeysGeneration',
+        'user_recovery_keys_download' => 'handleRecoveryKeysDownload',
+    ];
+
+    // Call the appropriate handler or return an error message
+    if (isset($handlers[$post_type]) && function_exists($handlers[$post_type])) {
+        return $handlers[$post_type]($dataReceived, $session, $SETTINGS, $lang);
+    }
+
+    return prepareExchangedData(['error' => true, 'message' => $lang->get('error_invalid_action')], 'encode');
+}
+
+
+/**
+ * Generates a temporary key based on the provided data.
+ *
+ * @param array $dataReceived The data received for generating the key.
+ * @param object $session The current session data.
+ * @param array $SETTINGS The application settings.
+ * @param object $lang The language settings.
+ * @return string The generated temporary key.
+ */
+function handleGenerateTemporaryKey($dataReceived, $session, $SETTINGS, $lang): string
+{
+    $userId = (int) filter_var($session->get('user-id'), FILTER_SANITIZE_NUMBER_INT);
+    return generateOneTimeCode($userId);
+}
+
+/**
+ * Handles the re-encryption of user sharekeys.
+ *
+ * @param array $dataReceived The data received for generating the key.
+ * @param object $session The current session data.
+ * @param array $SETTINGS The application settings.
+ * @param object $lang The language settings.
+ * @return string The generated temporary key.
+ */
+function handleSharekeysReencryption($dataReceived, $session, $SETTINGS, $lang): string
+{
+    $validatedData = validateData($dataReceived, [
+        'self_change' => FILTER_VALIDATE_BOOLEAN,
+        'action' => FILTER_SANITIZE_FULL_SPECIAL_CHARS,
+        'start' => FILTER_SANITIZE_NUMBER_INT,
+        'length' => FILTER_SANITIZE_NUMBER_INT,
+    ]);
+
+    return continueReEncryptingUserSharekeys(
+        (int) $session->get('user-id'),
+        $validatedData['self_change'],
+        $validatedData['action'],
+        $validatedData['start'],
+        $validatedData['length'],
+        $SETTINGS
+    );
+}
+
+/**
+ * Handles the re-encryption of user personal items.
+ *
+ * @param array $dataReceived The data received for generating the key.
+ * @param object $session The current session data.
+ * @param array $SETTINGS The application settings.
+ * @param object $lang The language settings.
+ * @return string The generated temporary key.
+ */
+function handlePskReencryption($dataReceived, $session, $SETTINGS, $lang): string
+{
+    $validatedData = validateData($dataReceived, [
+        'start' => FILTER_SANITIZE_NUMBER_INT,
+        'length' => FILTER_SANITIZE_NUMBER_INT,
+        'counterItemsToTreat' => FILTER_SANITIZE_NUMBER_INT,
+        'userPsk' => FILTER_SANITIZE_FULL_SPECIAL_CHARS,
+    ]);
+
+    return migrateTo3_DoUserPersonalItemsEncryption(
+        (int) $session->get('user-id'),
+        $validatedData['start'],
+        $validatedData['length'],
+        $validatedData['counterItemsToTreat'],
+        $validatedData['userPsk'],
+        $SETTINGS
+    );
+}
+
+/**
+ * Handles the change of the private key encryption password.
+ *
+ * @param array $dataReceived The data received for generating the key.
+ * @param object $session The current session data.
+ * @param array $SETTINGS The application settings.
+ * @param object $lang The language settings.
+ * @return string The generated temporary key.
+ */
+function handleChangePrivateKeyPassword($dataReceived, $session, $SETTINGS, $lang): string
+{
+    $newPassword = filter_var($dataReceived['new_code'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+    $userHash = DB::queryFirstRow(
+        "SELECT pw FROM " . prefixtable('users') . " WHERE id = %d;",
+        $session->get('user-id')
+    )['pw'];
+
+    $passwordManager = new PasswordManager();
+
+    if (!$passwordManager->verifyPassword($userHash, $newPassword)) {
+        return prepareExchangedData(
+            ['error' => true, 'message' => $lang->get('error_bad_credentials')],
+            'encode'
+        );
+    }
+
+    return changePrivateKeyEncryptionPassword(
+        (int) $session->get('user-id'),
+        (string) $dataReceived['current_code'],
+        $newPassword,
+        (string) filter_var($dataReceived['action_type'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+        $SETTINGS
+    );
+}
+
+/**
+ * Handles the generation of new keys for a user.
+ *
+ * @param array $dataReceived The data received for generating the key.
+ * @param object $session The current session data.
+ * @param array $SETTINGS The application settings.
+ * @param object $lang The language settings.
+ * @return string The generated temporary key.
+ */
+function handleNewKeysGeneration($dataReceived, $session, $SETTINGS, $lang): string
+{
+    $validatedData = validateData($dataReceived, [
+        'user_pwd' => FILTER_SANITIZE_FULL_SPECIAL_CHARS,
+        'generate_user_new_password' => FILTER_VALIDATE_BOOLEAN,
+        'encryption_key' => FILTER_SANITIZE_FULL_SPECIAL_CHARS,
+        'delete_existing_keys' => FILTER_VALIDATE_BOOLEAN,
+        'send_email_to_user' => FILTER_VALIDATE_BOOLEAN,
+        'encrypt_with_user_pwd' => FILTER_VALIDATE_BOOLEAN,
+        'email_body' => FILTER_SANITIZE_FULL_SPECIAL_CHARS,
+        'recovery_public_key' => FILTER_SANITIZE_FULL_SPECIAL_CHARS,
+        'recovery_private_key' => FILTER_SANITIZE_FULL_SPECIAL_CHARS,
+    ]);
+
+    return handleUserKeys(
+        (int) $session->get('user-id'),
+        $validatedData['user_pwd'],
+        (int) $SETTINGS['maximum_number_of_items_to_treat'] ?? NUMBER_ITEMS_IN_BATCH,
+        $validatedData['encryption_key'],
+        $validatedData['delete_existing_keys'],
+        $validatedData['send_email_to_user'],
+        $validatedData['encrypt_with_user_pwd'],
+        $validatedData['generate_user_new_password'] ?? false,
+        $validatedData['email_body'],
+        true,
+        $validatedData['recovery_public_key'],
+        $validatedData['recovery_private_key']
+    );
+}
+
+/**
+ * Handles the download of recovery keys for a user.
+ *
+ * @param array $dataReceived The data received for generating the key.
+ * @param object $session The current session data.
+ * @param array $SETTINGS The application settings.
+ * @param object $lang The language settings.
+ * @return string The generated temporary key.
+ */
+function handleRecoveryKeysDownload($dataReceived, $session, $SETTINGS, $lang): string
+{
+    $userPassword = filter_var($dataReceived['password'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+    $userHash = DB::queryFirstRow(
+        "SELECT pw FROM " . prefixtable('users') . " WHERE id = %i;",
+        $session->get('user-id')
+    )['pw'];
+
+    $passwordManager = new PasswordManager();
+
+    if (!$passwordManager->verifyPassword($userHash, $userPassword)) {
+        return prepareExchangedData(
+            ['error' => true, 'message' => $lang->get('error_bad_credentials')],
+            'encode'
+        );
+    }
+
+    return handleUserRecoveryKeysDownload((int) $session->get('user-id'), $SETTINGS);
+}
+
+/**
+ * Handles the validation of data received from the client.
+ * 
+ * @param array $data The data received from the client.
+ * @param array $rules The rules to apply to the data.
+ * @return array The validated data.
+ */
+function validateData($data, array $rules): array
+{
+    $validated = [];
+    foreach ($rules as $key => $filter) {
+        $validated[$key] = filter_var($data[$key] ?? null, $filter);
+    }
+    return $validated;
+}
+
+/**
+ * Checks if the user has permission to perform the given action.
+ *
+ * @param string $post_type The type of action to perform.
+ * @param array $dataReceived The data received from the client.
+ * @param object $session The current session data.
+ * @return bool True if the user has permission, false otherwise.
+ */
+function userHasPermission(string $post_type, $dataReceived, $session): bool
+{
     $all_users_can_access = [
         'change_private_key_encryption_password',
         'user_new_keys_generation',
         'user_recovery_keys_download',
     ];
 
-    // Default values
-    $filtered_user_id = $session->get('user-id');
-
-    if (isset($dataReceived['user_id'])) {
-        // Get info about user to modify
-        $targetUserInfos = DB::queryfirstrow(
-            'SELECT admin, gestionnaire, can_manage_all_users, isAdministratedByRole FROM ' . prefixTable('users') . '
-            WHERE id = %i',
-            $dataReceived['user_id']
-        );
-    
-        if (
-            // Administrator user
-            (int) $session->get('user-admin') === 1
-            // Manager of basic/ro users in this role
-            || ((int) $session->get('user-manager') === 1
-                && in_array($targetUserInfos['isAdministratedByRole'], $session->get('user-roles_array'))
-                && (int) $targetUserInfos['admin'] !== 1
-                && (int) $targetUserInfos['can_manage_all_users'] !== 1
-                && (int) $targetUserInfos['gestionnaire'] !== 1)
-            // Manager of all basic/ro users
-            || ((int) $session->get('user-can_manage_all_users') === 1
-                && (int) $targetUserInfos['admin'] !== 1
-                && (int) $targetUserInfos['can_manage_all_users'] !== 1
-                && (int) $targetUserInfos['gestionnaire'] !== 1)
-        ) {
-            // This user is allowed to modify other users.
-            $filtered_user_id = $dataReceived['user_id'];
-    
-        } else if (!in_array($post_type, $all_users_can_access)) {
-            // User can't manage users and requested type is administrative.
-            return prepareExchangedData(
-                array(
-                    'error' => true,
-                ),
-                'encode'
-            ); 
-        }
+    if (!isset($dataReceived['user_id'])) {
+        return in_array($post_type, $all_users_can_access);
     }
 
-    switch ($post_type) {
-        /*
-         * Generate a temporary encryption key for user
-         */
-        case 'generate_temporary_encryption_key'://action_key
-            return generateOneTimeCode(
-                (int) filter_var($filtered_user_id, FILTER_SANITIZE_NUMBER_INT)
-            );
+    $targetUserInfos = DB::queryFirstRow(
+        'SELECT admin, gestionnaire, can_manage_all_users, isAdministratedByRole FROM ' . prefixTable('users') . ' WHERE id = %i',
+        $dataReceived['user_id']
+    );
 
-        /*
-         * user_sharekeys_reencryption_next
-         */
-        case 'user_sharekeys_reencryption_next'://action_key
-            return continueReEncryptingUserSharekeys(
-                (int) filter_var($filtered_user_id, FILTER_SANITIZE_NUMBER_INT),
-                (bool) filter_var($dataReceived['self_change'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                (string) filter_var($dataReceived['action'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                (int) filter_var($dataReceived['start'], FILTER_SANITIZE_NUMBER_INT),
-                (int) filter_var($dataReceived['length'], FILTER_SANITIZE_NUMBER_INT),
-                $SETTINGS
-            );
-
-        /*
-         * user_psk_reencryption
-         */
-        case 'user_psk_reencryption'://action_key
-            return migrateTo3_DoUserPersonalItemsEncryption(
-                (int) filter_var($filtered_user_id, FILTER_SANITIZE_NUMBER_INT),
-                (int) filter_var($dataReceived['start'], FILTER_SANITIZE_NUMBER_INT),
-                (int) filter_var($dataReceived['length'], FILTER_SANITIZE_NUMBER_INT),
-                (int) filter_var($dataReceived['counterItemsToTreat'], FILTER_SANITIZE_NUMBER_INT),
-                (string) filter_var($dataReceived['userPsk'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                $SETTINGS
-            );
-
-        /*
-         * User's public/private keys change
-         */
-        case 'change_private_key_encryption_password'://action_key
-
-            // Users passwords are html escaped
-            $newPassword = filter_var($dataReceived['new_code'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-
-            // Get current user hash
-            $userHash = DB::queryFirstRow(
-                "SELECT pw FROM " . prefixtable('users') . " WHERE id = %d;",
-                $session->get('user-id')
-            )['pw'];
-
-            $passwordManager = new PasswordManager();
-
-            // Verify provided user password
-            if (!$passwordManager->verifyPassword($userHash, $newPassword)) {
-                return prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => $lang->get('error_bad_credentials'),
-                    ),
-                    'encode'
-                );
-            }
-
-            return changePrivateKeyEncryptionPassword(
-                (int) filter_var($filtered_user_id, FILTER_SANITIZE_NUMBER_INT),
-                (string) $dataReceived['current_code'],
-                (string) $newPassword,
-                (string) filter_var($dataReceived['action_type'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                $SETTINGS
-            );
-
-        /*
-         * Launch user keys change on his demand
-         */
-        case 'user_new_keys_generation'://action_key
-
-            // Users passwords are html escaped
-            $userPassword = filter_var($dataReceived['user_pwd'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-
-            // Don't generate new user password -> verify it
-            if ($dataReceived['generate_user_new_password'] !== true) {
-
-                // Get current user hash
-                $userHash = DB::queryFirstRow(
-                    "SELECT pw FROM " . prefixtable('users') . " WHERE id = %d;",
-                    $session->get('user-id')
-                )['pw'];
-
-                $passwordManager = new PasswordManager();
-
-                // Verify provided user password
-                if (!$passwordManager->verifyPassword($userHash, $userPassword)) {
-                    return prepareExchangedData(
-                        array(
-                            'error' => true,
-                            'message' => $lang->get('error_bad_credentials'),
-                        ),
-                        'encode'
-                    );
-                }
-            }
-
-            return handleUserKeys(
-                (int) filter_var($filtered_user_id, FILTER_SANITIZE_NUMBER_INT),
-                (string) $userPassword,
-                (int) isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH,
-                (string) filter_var($dataReceived['encryption_key'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                (bool) filter_var($dataReceived['delete_existing_keys'], FILTER_VALIDATE_BOOLEAN),
-                (bool) filter_var($dataReceived['send_email_to_user'], FILTER_VALIDATE_BOOLEAN),
-                (bool) filter_var($dataReceived['encrypt_with_user_pwd'], FILTER_VALIDATE_BOOLEAN),
-                (bool) isset($dataReceived['generate_user_new_password']) === true ? filter_var($dataReceived['generate_user_new_password'], FILTER_VALIDATE_BOOLEAN) : false,
-                (string) filter_var($dataReceived['email_body'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                (bool) filter_var($dataReceived['user_self_change'], FILTER_VALIDATE_BOOLEAN),
-                (string) filter_var($dataReceived['recovery_public_key'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                (string) filter_var($dataReceived['recovery_private_key'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-            );
-
-        /*
-         * Launch user recovery download
-         */
-        case 'user_recovery_keys_download'://action_key
-            // Validate user password on local and LDAP accounts before download
-            if ($session->get('user-auth_type') !== 'oauth2') {
-                // Users passwords are html escaped
-                $userPassword = filter_var($dataReceived['password'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-
-                // Get current user hash
-                $userHash = DB::queryFirstRow(
-                    "SELECT pw FROM " . prefixtable('users') . " WHERE id = %i;",
-                    $session->get('user-id')
-                )['pw'];
-
-                $passwordManager = new PasswordManager();
-
-                // Verify provided user password
-                if (!$passwordManager->verifyPassword($userHash, $userPassword)) {
-                    return prepareExchangedData(
-                        array(
-                            'error' => true,
-                            'message' => $lang->get('error_bad_credentials'),
-                        ),
-                        'encode'
-                    );
-                }
-            }
-
-            return handleUserRecoveryKeysDownload(
-                (int) $filtered_user_id,
-                (array) $SETTINGS,
-            );
-
-        /*
-         * Default case
-         */
-        default :
-            return prepareExchangedData(
-                array(
-                    'error' => true,
-                ),
-                'encode'
-            );
-    }
+    return (int) $session->get('user-admin') === 1
+        || ((int) $session->get('user-manager') === 1
+            && in_array($targetUserInfos['isAdministratedByRole'], $session->get('user-roles_array'))
+            && (int) $targetUserInfos['admin'] !== 1
+            && (int) $targetUserInfos['can_manage_all_users'] !== 1
+            && (int) $targetUserInfos['gestionnaire'] !== 1);
 }
+
 
 /**
  * Handler for all system tasks
@@ -1227,6 +1346,18 @@ function changePassword(
     );
 }
 
+/**
+ * Generates a QR code for the user.
+ *
+ * @param int $post_id The user's ID.
+ * @param string $post_demand_origin The origin of the request.
+ * @param int $post_send_mail Whether to send an email.
+ * @param string $post_login The user's login.
+ * @param string $post_pwd The user's password.
+ * @param string $post_token The user's token.
+ * @param array $SETTINGS The application settings.
+ * @return string The generated QR code.
+ */
 function generateQRCode(
     $post_id,
     $post_demand_origin,
@@ -1235,196 +1366,248 @@ function generateQRCode(
     $post_pwd,
     $post_token,
     array $SETTINGS
-): string
-{
-    // Load user's language
+): string {
     $session = SessionManager::getSession();
     $lang = new Language($session->get('user-language') ?? 'english');
 
-    // is this allowed by setting
-    if (isKeyExistingAndEqual('ga_reset_by_user', 0, $SETTINGS) === true
-        && (null === $post_demand_origin || $post_demand_origin !== 'users_management_list')
-    ) {
-        // User cannot ask for a new code
-        return prepareExchangedData(
-            array(
-                'error' => true,
-                'message' => "113 ".$lang->get('error_not_allowed_to')." - ".isKeyExistingAndEqual('ga_reset_by_user', 1, $SETTINGS),
-            ),
-            'encode'
-        );
+    // Validate settings and origin
+    if (!isQRCodeRequestAllowed($post_demand_origin, $SETTINGS)) {
+        return generateErrorResponse($lang->get('error_not_allowed_to'), '113');
     }
-    
-    // Check if user exists
-    if (isValueSetNullEmpty($post_id) === true) {
-        // Get data about user
+
+    // Retrieve user data
+    $dataUser = fetchUserData($post_id, $post_login);
+    if (!$dataUser) {
+        logFailedAuth($SETTINGS, 'user_not_exists', $post_login);
+        return generateErrorResponse($lang->get('no_user'));
+    }
+
+    // Validate password if required
+    if (!isPasswordValid($post_pwd, $dataUser['pw'], $post_demand_origin, $SETTINGS, $post_login)) {
+        return generateErrorResponse($lang->get('no_user'));
+    }
+
+    if (empty($dataUser['email'])) {
+        return generateErrorResponse($lang->get('no_email_set'));
+    }
+
+    // Check token usage
+    $tokenId = handleToken($post_token, $dataUser['id']);
+    if ($tokenId === false) {
+        return generateErrorResponse('TOKEN already used');
+    }
+
+    // Generate and update user 2FA data
+    [$gaSecretKey, $gaTemporaryCode] = updateUserGAData($dataUser['id'], $SETTINGS);
+
+    logEvents($SETTINGS, 'user_connection', 'at_2fa_google_code_send_by_email', (string)$dataUser['id'], $post_login);
+
+    // Update token status
+    updateTokenStatus($tokenId);
+
+    // Send email if required
+    if ((int) $post_send_mail === 1) {
+        return sendQRCodeEmail($gaTemporaryCode, $dataUser['email'], $lang);
+    }
+
+    return generateSuccessResponse($dataUser['email'], $lang);
+}
+/**
+ * Validates whether the QR code request is allowed.
+ *
+ * @param string|null $post_demand_origin Origin of the request.
+ * @param array $SETTINGS Application settings.
+ * @return bool True if the request is allowed, false otherwise.
+ */
+function isQRCodeRequestAllowed(?string $post_demand_origin, array $SETTINGS): bool {
+    return !(isKeyExistingAndEqual('ga_reset_by_user', 0, $SETTINGS) &&
+        ($post_demand_origin !== 'users_management_list'));
+}
+
+/**
+ * Fetches user data based on their ID or login.
+ *
+ * @param int|string|null $post_id User ID or null if not provided.
+ * @param string|null $post_login User login (updated if ID is used).
+ * @return array|null User data as an associative array or null if not found.
+ */
+function fetchUserData($post_id, ?string &$post_login): ?array {
+    if (isValueSetNullEmpty($post_id)) {
         $dataUser = DB::queryfirstrow(
-            'SELECT id, email, pw
-            FROM ' . prefixTable('users') . '
-            WHERE login = %s',
+            'SELECT id, email, pw FROM ' . prefixTable('users') . ' WHERE login = %s',
             $post_login
         );
     } else {
         $dataUser = DB::queryfirstrow(
-            'SELECT id, login, email, pw
-            FROM ' . prefixTable('users') . '
-            WHERE id = %i',
+            'SELECT id, login, email, pw FROM ' . prefixTable('users') . ' WHERE id = %i',
             $post_id
         );
         $post_login = $dataUser['login'];
     }
-    // Get number of returned users
-    $counter = DB::count();
+    return $dataUser;
+}
 
-    // Do treatment
-    if ($counter === 0) {
-        // Not a registered user !
-        logEvents($SETTINGS, 'failed_auth', 'user_not_exists', '', stripslashes($post_login), stripslashes($post_login));
-        return prepareExchangedData(
-            array(
-                'error' => true,
-                'message' => $lang->get('no_user'),
-                'tst' => 1,
-            ),
-            'encode'
-        );
+/**
+ * Validates the user's password.
+ *
+ * @param string|null $post_pwd Provided password.
+ * @param string $storedPwd Stored password hash.
+ * @param string|null $post_demand_origin Request origin.
+ * @param array $SETTINGS Application settings.
+ * @param string $post_login User login.
+ * @return bool True if the password is valid, false otherwise.
+ */
+function isPasswordValid(?string $post_pwd, string $storedPwd, ?string $post_demand_origin, array $SETTINGS, string $post_login): bool {
+    if (isSetArrayOfValues([$post_pwd, $storedPwd]) &&
+        !(new PasswordManager())->verifyPassword($storedPwd, /** @scrutinizer ignore-type */ $post_pwd) &&
+        $post_demand_origin !== 'users_management_list') {
+        logFailedAuth($SETTINGS, 'password_is_not_correct', $post_login);
+        return false;
     }
+    return true;
+}
 
-    $passwordManager = new PasswordManager();
-    if (
-        isSetArrayOfValues([$post_pwd, $dataUser['pw']]) === true
-        && $passwordManager->verifyPassword($dataUser['pw'], $post_pwd) === false
-        && $post_demand_origin !== 'users_management_list'
-    ) {
-        // checked the given password
-        logEvents($SETTINGS, 'failed_auth', 'password_is_not_correct', '', stripslashes($post_login), stripslashes($post_login));
-        return prepareExchangedData(
-            array(
-                'error' => true,
-                'message' => $lang->get('no_user'),
-                'tst' => $post_demand_origin,
-            ),
-            'encode'
-        );
-    }
-    
-    if (empty($dataUser['email']) === true) {
-        return prepareExchangedData(
-            array(
-                'error' => true,
-                'message' => $lang->get('no_email_set'),
-            ),
-            'encode'
-        );
-    }
-
-    // Check if token already used
+/**
+ * Handles the token validation and storage process.
+ *
+ * @param string $post_token Provided token.
+ * @param int $userId User ID.
+ * 
+ * @return mixed Token ID if a new token is created, false if the token was already used.
+ */
+function handleToken(string $post_token, int $userId): mixed {
     $dataToken = DB::queryfirstrow(
-        'SELECT end_timestamp, reason
-        FROM ' . prefixTable('tokens') . '
-        WHERE token = %s AND user_id = %i',
+        'SELECT end_timestamp, reason FROM ' . prefixTable('tokens') . ' WHERE token = %s AND user_id = %i',
         $post_token,
-        $dataUser['id']
+        $userId
     );
-    $tokenId = '';
-    if (DB::count() > 0 && is_null($dataToken['end_timestamp']) === false && $dataToken['reason'] === 'auth_qr_code') {
-        // This token has already been used
-        return prepareExchangedData(
-            array(
-                'error' => true,
-                'message' => 'TOKEN already used',//$lang->get('no_email_set'),
-            ),
-            'encode'
-        );
-    } elseif(DB::count() === 0) {
-        // Store token for this action
-        DB::insert(
-            prefixTable('tokens'),
-            array(
-                'user_id' => (int) $dataUser['id'],
-                'token' => $post_token,
-                'reason' => 'auth_qr_code',
-                'creation_timestamp' => time(),
-            )
-        );
-        $tokenId = DB::insertId();
+
+    if (DB::count() > 0 && !is_null($dataToken['end_timestamp']) && $dataToken['reason'] === 'auth_qr_code') {
+        return false;
     }
-    
-    // generate new GA user code
+
+    if (DB::count() === 0) {
+        DB::insert(prefixTable('tokens'), [
+            'user_id' => $userId,
+            'token' => $post_token,
+            'reason' => 'auth_qr_code',
+            'creation_timestamp' => time(),
+        ]);
+        return DB::insertId();
+    }
+    return null;
+}
+
+/**
+ * Generates and updates the user's Google Authenticator data.
+ *
+ * @param int $userId User ID.
+ * @param array $SETTINGS Application settings.
+ * @return array A tuple containing the secret key and temporary code.
+ */
+function updateUserGAData(int $userId, array $SETTINGS): array {
     $tfa = new TwoFactorAuth($SETTINGS['ga_website_name']);
     $gaSecretKey = $tfa->createSecret();
     $gaTemporaryCode = GenerateCryptKey(12, false, true, true, false, true);
 
-    DB::update(
-        prefixTable('users'),
-        [
-            'ga' => $gaSecretKey,
-            'ga_temporary_code' => $gaTemporaryCode,
-        ],
-        'id = %i',
-        $dataUser['id']
+    DB::update(prefixTable('users'), [
+        'ga' => $gaSecretKey,
+        'ga_temporary_code' => $gaTemporaryCode,
+    ], 'id = %i', $userId);
+
+    return [$gaSecretKey, $gaTemporaryCode];
+}
+
+/**
+ * Updates the token status to mark it as used.
+ *
+ * @param int $tokenId Token ID.
+ * @return void
+ */
+function updateTokenStatus(int $tokenId): void {
+    DB::update(prefixTable('tokens'), [
+        'end_timestamp' => time(),
+    ], 'id = %i', $tokenId);
+}
+
+/**
+ * Sends the QR code email with the temporary code.
+ *
+ * @param string $gaTemporaryCode Temporary Google Authenticator code.
+ * @param string $email User's email address.
+ * @param Language $lang Language object for messages.
+ * @return string JSON response indicating success.
+ */
+function sendQRCodeEmail(string $gaTemporaryCode, string $email, Language $lang): string {
+    prepareSendingEmail(
+        $lang->get('email_ga_subject'),
+        str_replace('#2FACode#', $gaTemporaryCode, $lang->get('email_ga_text')),
+        $email
     );
 
-    // Log event
-    logEvents($SETTINGS, 'user_connection', 'at_2fa_google_code_send_by_email', (string) $dataUser['id'], stripslashes($post_login), stripslashes($post_login));
+    return generateSuccessResponse($email, $lang);
+}
 
-    // Update token status
-    DB::update(
-        prefixTable('tokens'),
-        [
-            'end_timestamp' => time(),
-        ],
-        'id = %i',
-        $tokenId
-    );
+/**
+ * Generates an error response in JSON format.
+ *
+ * @param string $message Error message.
+ * @param string $code Optional error code.
+ * @return string JSON response.
+ */
+function generateErrorResponse(string $message, string $code = ''): string {
+    return prepareExchangedData([
+        'error' => true,
+        'message' => $code . ' ' . $message,
+    ], 'encode');
+}
 
-    // send mail?
-    if ((int) $post_send_mail === 1) {
-        prepareSendingEmail(
-            $lang->get('email_ga_subject'),
-            str_replace(
-                '#2FACode#',
-                $gaTemporaryCode,
-                $lang->get('email_ga_text')
-            ),
-            $dataUser['email']
-        );
-
-        // send back
-        return prepareExchangedData(
-            array(
-                'error' => false,
-                'message' => $post_send_mail,
-                'email' => $dataUser['email'],
-                'email_result' => str_replace(
-                    '#email#',
-                    '<b>' . obfuscateEmail($dataUser['email']) . '</b>',
-                    addslashes($lang->get('admin_email_result_ok'))
-                ),
-            ),
-            'encode'
-        );
-    }
-    
-    // send back
-    return prepareExchangedData(
-        array(
-            'error' => false,
-            'message' => '',
-            'email' => $dataUser['email'],
-            'email_result' => str_replace(
-                '#email#',
-                '<b>' . obfuscateEmail($dataUser['email']) . '</b>',
-                addslashes($lang->get('admin_email_result_ok'))
-            ),
+/**
+ * Generates a success response in JSON format.
+ *
+ * @param string $email User's email address.
+ * @param Language $lang Language object for messages.
+ * @return string JSON response.
+ */
+function generateSuccessResponse(string $email, Language $lang): string {
+    return prepareExchangedData([
+        'error' => false,
+        'message' => '',
+        'email' => $email,
+        'email_result' => str_replace(
+            '#email#',
+            '<b>' . obfuscateEmail($email) . '</b>',
+            addslashes($lang->get('admin_email_result_ok'))
         ),
-        'encode'
+    ], 'encode');
+}
+
+/**
+ * Logs a failed authentication attempt for a user.
+ *
+ * @param array $SETTINGS Application settings.
+ * @param string $reason Reason for the failure.
+ * @param string|null $user_login The login of the user (if available).
+ * @return void
+ */
+function logFailedAuth(array $SETTINGS, string $reason, ?string $user_login): void {
+    logEvents(
+        $SETTINGS,
+        'user_connection',
+        $reason,
+        'null',
+        $user_login
     );
 }
 
-function sendEmailsNotSent(
-    array $SETTINGS
-)
+
+/**
+ * Sends emails that have not been sent yet.
+ * 
+ * @param array $SETTINGS The application settings.
+ * @return void
+ */
+function sendEmailsNotSent(array $SETTINGS): void
 {
     $emailSettings = new EmailSettings($SETTINGS);
     $emailService = new EmailService();
@@ -2180,167 +2363,182 @@ function startReEncryptingUserSharekeys(
     );
 }
 
+
 /**
- * Permits to encrypt user's keys
+ * Encrypts or re-encrypts user's shared keys through multiple steps.
  *
- * @param integer $post_user_id
- * @param boolean $post_self_change
- * @param string $post_action
- * @param integer $post_start
- * @param integer $post_length
- * @param array $SETTINGS
- * @return string
+ * @param int $post_user_id ID of the user whose keys are being encrypted.
+ * @param bool $post_self_change Indicates if the change is triggered by the user.
+ * @param string $post_action Current step of the encryption process.
+ * @param int $post_start Start index for the current batch.
+ * @param int $post_length Number of items to process in the current batch.
+ * @param array $SETTINGS Application settings.
+ * @return string JSON-encoded response indicating the next step or an error message.
  */
 function continueReEncryptingUserSharekeys(
-    int     $post_user_id,
-    bool    $post_self_change,
-    string  $post_action,
-    int     $post_start,
-    int     $post_length,
-    array   $SETTINGS
-): string
-{
-    // Load user's language
+    int $post_user_id,
+    bool $post_self_change,
+    string $post_action,
+    int $post_start,
+    int $post_length,
+    array $SETTINGS
+): string {
     $session = SessionManager::getSession();
     $lang = new Language($session->get('user-language') ?? 'english');
-    
-    if (isUserIdValid($post_user_id) === true) {
-        // Check if user exists
-        $userInfo = DB::queryFirstRow(
-            'SELECT public_key
-            FROM ' . prefixTable('users') . '
-            WHERE id = %i',
-            $post_user_id
-        );
-        if (isset($userInfo['public_key']) === true) {
-            $return = [];
+    error_log("continueReEncryptingUserSharekeys: post_user_id: $post_user_id, post_self_change: $post_self_change, post_action: $post_action, post_start: $post_start, post_length: $post_length");
 
-            // WHAT STEP TO PERFORM?
-            if ($post_action === 'step0') {
-                // CLear old sharekeys
-                if ($post_self_change === false) {
-                    deleteUserObjetsKeys($post_user_id, $SETTINGS);
-                }
+    // Validate the user ID
+    if (!isUserIdValid($post_user_id)) {
+        return prepareErrorResponse($lang->get('error_no_user'), $post_user_id);
+    }
 
-                $return['post_action'] = 'step10';
-            }
-            
-            // STEP 1 - ITEMS
-            elseif ($post_action === 'step10') {
-                $return = continueReEncryptingUserSharekeysStep10(
-                    $post_user_id,
-                    $post_self_change,
-                    $post_action,
-                    $post_start,
-                    $post_length,
-                    $userInfo['public_key'],
-                    $SETTINGS
-                );
-            }
+    // Retrieve user information
+    $userInfo = getUserPublicKey($post_user_id);
+    if (!$userInfo || !isset($userInfo['public_key'])) {
+        return prepareFinishedResponse($post_user_id, $post_self_change);
+    }
 
-            // STEP 2 - LOGS
-            elseif ($post_action === 'step20') {
-                $return = continueReEncryptingUserSharekeysStep20(
-                    $post_user_id,
-                    $post_self_change,
-                    $post_action,
-                    $post_start,
-                    $post_length,
-                    $userInfo['public_key'],
-                    $SETTINGS
-                );
-            }
+    // Perform the appropriate step
+    $response = handleEncryptionStep(
+        $post_user_id,
+        $post_self_change,
+        $post_action,
+        $post_start,
+        $post_length,
+        $userInfo['public_key'],
+        $SETTINGS
+    );
 
-            // STEP 3 - FIELDS
-            elseif ($post_action === 'step30') {
-                $return = continueReEncryptingUserSharekeysStep30(
-                    $post_user_id,
-                    $post_self_change,
-                    $post_action,
-                    $post_start,
-                    $post_length,
-                    $userInfo['public_key'],
-                    $SETTINGS
-                );
+    return prepareExchangedData($response, 'encode');
+}
+
+/**
+ * Retrieves user information from the database.
+ *
+ * @param int $userId ID of the user.
+ * @return array|null User information or null if the user does not exist.
+ */
+function getUserPublicKey(int $userId): ?array {
+    return DB::queryFirstRow(
+        'SELECT public_key FROM ' . prefixTable('users') . ' WHERE id = %i',
+        $userId
+    );
+}
+
+/**
+ * Handles the logic for each step of the encryption process.
+ *
+ * @param int $userId ID of the user.
+ * @param bool $selfChange Indicates if the change is triggered by the user.
+ * @param string $action Current step of the encryption process.
+ * @param int $start Start index for the current batch.
+ * @param int $length Number of items to process in the current batch.
+ * @param string $publicKey User's public key.
+ * @param array $settings Application settings.
+ * @return array Response data for the current step or next step.
+ */
+function handleEncryptionStep(
+    int $userId,
+    bool $selfChange,
+    string $action,
+    int $start,
+    int $length,
+    string $publicKey,
+    array $settings
+): array {
+    $response = [];
+
+    switch ($action) {
+        case 'step0':
+            if (!$selfChange) {
+                deleteUserObjetsKeys($userId, $settings);
             }
-            
-            // STEP 4 - SUGGESTIONS
-            elseif ($post_action === 'step40') {
-                $return = continueReEncryptingUserSharekeysStep40(
-                    $post_user_id,
-                    $post_self_change,
-                    $post_action,
-                    $post_start,
-                    $post_length,
-                    $userInfo['public_key'],
-                    $SETTINGS
-                );
-            }
-            
-            // STEP 5 - FILES
-            elseif ($post_action === 'step50') {
-                $return = continueReEncryptingUserSharekeysStep50(
-                    $post_user_id,
-                    $post_self_change,
-                    $post_action,
-                    $post_start,
-                    $post_length,
-                    $userInfo['public_key'],
-                    $SETTINGS
-                );
-            }
-            
-            // STEP 6 - PERSONAL ITEMS
-            elseif ($post_action === 'step60') {
-                $return = continueReEncryptingUserSharekeysStep60(
-                    $post_user_id,
-                    $post_self_change,
-                    $post_action,
-                    $post_start,
-                    $post_length,
-                    $userInfo['public_key'],
-                    $SETTINGS
-                );
-            }
-            
-            // Continu with next step
-            return prepareExchangedData(
-                array(
-                    'error' => false,
-                    'message' => '',
-                    'step' => isset($return['post_action']) === true ? $return['post_action'] : '',
-                    'start' => isset($return['next_start']) === true ? $return['next_start'] : 0,
-                    'userId' => $post_user_id,
-                    'self_change' => $post_self_change,
-                ),
-                'encode'
-            );
-        }
-        
-        // Nothing to do
-        return prepareExchangedData(
-            array(
+            $response['post_action'] = 'step10';
+            break;
+
+        case 'step10':
+            $response = continueReEncryptingUserSharekeysStep10($userId, $selfChange, $action, $start, $length, $publicKey, $settings);
+            break;
+
+        case 'step20':
+            $response = continueReEncryptingUserSharekeysStep20($userId, $selfChange, $action, $start, $length, $publicKey, $settings);
+            break;
+
+        case 'step30':
+            $response = continueReEncryptingUserSharekeysStep30($userId, $selfChange, $action, $start, $length, $publicKey, $settings);
+            break;
+
+        case 'step40':
+            $response = continueReEncryptingUserSharekeysStep40($userId, $selfChange, $action, $start, $length, $publicKey, $settings);
+            break;
+
+        case 'step50':
+            $response = continueReEncryptingUserSharekeysStep50($userId, $selfChange, $action, $start, $length, $publicKey, $settings);
+            break;
+
+        case 'step60':
+            $response = continueReEncryptingUserSharekeysStep60($userId, $selfChange, $action, $start, $length, $publicKey, $settings);
+            break;
+
+        default:
+            $response = [
                 'error' => false,
                 'message' => '',
                 'step' => 'finished',
                 'start' => 0,
-                'userId' => $post_user_id,
-                'self_change' => $post_self_change,
-            ),
-            'encode'
-        );
+                'userId' => $userId,
+                'self_change' => $selfChange,
+            ];
+            break;
     }
-    
-    // Nothing to do
+
+    // Add common fields
+    $response['userId'] = $userId;
+    $response['self_change'] = $selfChange;
+
+    return $response;
+}
+
+/**
+ * Prepares an error response.
+ *
+ * @param string $message Error message.
+ * @param int $userId User ID causing the error.
+ * @return string JSON-encoded error response.
+ */
+function prepareErrorResponse(string $message, int $userId): string {
     return prepareExchangedData(
-        array(
+        [
             'error' => true,
-            'message' => $lang->get('error_no_user'),
-            'extra' => $post_user_id,
-        ),
+            'message' => $message,
+            'extra' => $userId,
+        ],
         'encode'
     );
 }
+
+/**
+ * Prepares a response indicating that the process is finished.
+ *
+ * @param int $userId ID of the user.
+ * @param bool $selfChange Indicates if the change is triggered by the user.
+ * @return string JSON-encoded response for a finished process.
+ */
+function prepareFinishedResponse(int $userId, bool $selfChange): string {
+    return prepareExchangedData(
+        [
+            'error' => false,
+            'message' => '',
+            'step' => 'finished',
+            'start' => 0,
+            'userId' => $userId,
+            'self_change' => $selfChange,
+        ],
+        'encode'
+    );
+}
+
+
 
 function continueReEncryptingUserSharekeysStep10(
     int $post_user_id,
