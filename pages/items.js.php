@@ -408,7 +408,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                         $('.pwd-show-spinner')
                             .removeClass('fa-solid fa-eye fa-beat-fade text-warning')
                             .addClass('fa-regular fa-eye');
-                    }, <?php echo isset($SETTINGS['password_overview_delay']) && is_int($SETTINGS['password_overview_delay']) ? $SETTINGS['password_overview_delay'] * 1000 : 4000; ?>);
+                    }, <?php echo isset($SETTINGS['password_overview_delay']) && (int) $SETTINGS['password_overview_delay'] > 0 ? $SETTINGS['password_overview_delay'] * 1000 : 4000; ?>);
                 }
             });
         } else {
