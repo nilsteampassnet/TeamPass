@@ -308,7 +308,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                         await navigator.clipboard.writeText(password);
 
                         // Notification for the user
-                        const clipboardDuration = store.get('teampassSettings').clipboard_life_duration || 0;
+                        const clipboardDuration = parseInt(store.get('teampassSettings').clipboard_life_duration) || 0;
                         if (clipboardDuration === 0) {
                             toastr.info('<?php echo $lang->get("copy_to_clipboard"); ?>', '', {
                                 timeOut: 2000,
@@ -444,19 +444,21 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
     const showPwdContinuous = function showPwdContinuous(elem_id) {
         const itemId = elem_id.split('_')[1];
         if (mouseStillDown === true 
-            && !$('#pwd-show_' + itemId).hasClass('pwd-shown')) {
-
-            const item_pwd = getItemPassword(
+            && !$('#pwd-show_' + itemId).hasClass('pwd-shown')
+        ) {
+            getItemPassword(
                 'at_password_shown',
                 'item_id',
                 itemId
-            );
+            ).then(item_pwd => {
+                if (item_pwd) {                    
+                    $('#pwd-show_' + itemId).text(item_pwd);
+                    $('#pwd-show_' + itemId).addClass('pwd-shown');
 
-            $('#pwd-show_' + itemId).text(item_pwd);
-            $('#pwd-show_' + itemId).addClass('pwd-shown');
-
-            // Auto hide password
-            setTimeout('showPwdContinuous("pwd-show_' + itemId + '")', 50);
+                    // Auto hide password
+                    setTimeout('showPwdContinuous("pwd-show_' + itemId + '")', 50);
+                }
+            });
         } else if(mouseStillDown !== true) {
             $('#pwd-show_' + itemId)
                 .html('<?php echo $var['hidden_asterisk']; ?>')
@@ -470,28 +472,34 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         if ($(this).hasClass('pwd-shown') === false) {
             const itemId = $(this).data('id');
             $(this).addClass('pwd-shown');
-            
-            const item_pwd = getItemPassword(
+
+            getItemPassword(
                 'at_password_shown',
                 'item_id',
                 itemId
-            );
+            ).then(item_pwd => {
+                if (item_pwd) {
+                    $('.pwd-show-spinner')
+                        .removeClass('fa-regular fa-eye')
+                        .addClass('fa-solid fa-eye fa-beat-fade text-warning');
 
-            $('#pwd-show_' + itemId).text(item_pwd);
+                    // display raw password
+                    $('#pwd-show_' + itemId)
+                        .text(item_pwd)
+                        .addClass('pointer_none');
 
-            // Change class and show spinner
-            $('.pwd-show-spinner')
-                .removeClass('far fa-eye')
-                .addClass('fas fa-circle-notch fa-spin text-warning');
-
-            // Autohide
-            setTimeout(() => {
-                $(this).removeClass('pwd-shown');
-                $('#pwd-show_' + itemId).html('<?php echo $var['hidden_asterisk']; ?>');
-                $('.pwd-show-spinner')
-                    .removeClass('fas fa-circle-notch fa-spin text-warning')
-                    .addClass('far fa-eye');
-            }, <?php echo isset($SETTINGS['password_overview_delay']) === true ? $SETTINGS['password_overview_delay'] * 1000 : 4000; ?>);
+                    // Autohide
+                    setTimeout(() => {
+                        $(this).removeClass('pwd-shown');
+                        $('#pwd-show_' + itemId)
+                            .html('<?php echo $var['hidden_asterisk']; ?>')
+                            .removeClass('pointer_none');
+                        $('.pwd-show-spinner')
+                            .removeClass('fa-solid fa-eye fa-beat-fade text-warning')
+                            .addClass('fa-regular fa-eye');
+                    }, <?php echo isset($SETTINGS['password_overview_delay']) && (int) $SETTINGS['password_overview_delay'] > 0 ? $SETTINGS['password_overview_delay'] * 1000 : 4000; ?>);
+                }
+            });
         } else {
             $('#pwd-show_' + itemId).html('<?php echo $var['hidden_asterisk']; ?>');
         }

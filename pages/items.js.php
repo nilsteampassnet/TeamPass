@@ -4457,7 +4457,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                         await navigator.clipboard.writeText(password);
 
                         // User notifications
-                        const clipboardDuration = store.get('teampassSettings').clipboard_life_duration || 0;
+                        const clipboardDuration = parseInt(store.get('teampassSettings').clipboard_life_duration) || 0;
                         if (clipboardDuration === 0) {
                             toastr.info('<?php echo $lang->get("copy_to_clipboard"); ?>', '', {
                                 timeOut: 2000,
@@ -5263,7 +5263,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                                 await navigator.clipboard.writeText(password);
 
                                 // Notification for the user
-                                const clipboardDuration = store.get('teampassSettings').clipboard_life_duration || 0;
+                                const clipboardDuration = parseInt(store.get('teampassSettings').clipboard_life_duration) || 0;
                                 if (clipboardDuration === 0) {
                                     toastr.info('<?php echo $lang->get("copy_to_clipboard"); ?>', '', {
                                         timeOut: 2000,
