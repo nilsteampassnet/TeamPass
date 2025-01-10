@@ -2575,6 +2575,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             $('#form-item-password').attr('type', 'password');
         })
         .mousedown(function() {
+            // Allow $('#form-item .form-item-control').on('change') to be fired
+            $('#form-item .form-item-control').blur();
+            // Display cleartext password
             $('#form-item-password').attr('type', 'text');
         });
     $('.btn-no-click')
