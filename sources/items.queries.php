@@ -968,8 +968,8 @@ switch ($inputData['type']) {
 
         // Check PWD EMPTY
         if (
-            empty($pw) === true
-            && $session->has('user-create_item_without_password') && $session->has('user-create_item_without_password') && null !== $session->get('user-create_item_without_password')
+            empty($pw)
+            && $session->has('user-create_item_without_password') && null !== $session->get('user-create_item_without_password')
             && (int) $session->get('user-create_item_without_password') !== 1
         ) {
             echo (string) prepareExchangedData(
@@ -1201,9 +1201,13 @@ switch ($inputData['type']) {
             }
 
             // encrypt PW on if it has changed, or if it is empty
-            if ((($session->has('user-create_item_without_password') && $session->has('user-create_item_without_password') && null !== $session->get('user-create_item_without_password')
+            if (
+                (
+                    ($session->has('user-create_item_without_password')
+                    && null !== $session->get('user-create_item_without_password')
                     && (int) $session->get('user-create_item_without_password') !== 1)
-                || empty($post_password) === false)
+                    || !empty($post_password)
+                )
                 && $post_password !== $pw
             ) {
                 //-----
@@ -4468,7 +4472,7 @@ switch ($inputData['type']) {
             $inputData['itemId'] ?? 0
         );
 
-        // Check user access rights
+        // Check if password item exists
         if (DB::count() === 0) {
             echo (string) prepareExchangedData(
                 [

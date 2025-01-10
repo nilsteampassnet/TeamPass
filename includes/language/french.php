@@ -21,7 +21,7 @@
  * ---
  * @file      french.php
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2024 Teampass.net
+ * @copyright 2009-2025 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
@@ -1215,5 +1215,15 @@ return array(
     'disable_user_edit_tree_load_strategy' => 'Les utilisateurs ne peuvent plus changer de stratégie de chargement',
     'bruteforce_wait' => 'Trop de tentatives échouées, votre compte est bloqué jusqu&apos;à : ',
     'disable_drag_drop' => 'Désactiver le glisser-déposer d&apos;objets',
+    'clipboard_cleared' => 'Presse-papier nettoyé',
+    'error_data_not_consistent' => 'Données non consistantes',
+    'error_permission_denied' => 'Permission refusée',
+    'error_invalid_action' => 'Action invalide',
+    'error_fetching_password' => 'Impossible de récupérer le mot de passe',
+    'unable_to_clear_clipboard' => 'Impossible de vider le presse-papier manuellement',
+    'clipboard_unsafe' => 'Le presse-papier n&apos;a pas pu être vidé automatiquement, c&apos;est une faille de sécurité !',
+    'clipboard_clear_now' => 'Le vider maintenant !',
+    'clipboard_clearing_failed' => 'Le vidage du presse-papier à échoué',
+    'clipboard_error' => 'Erreur du presse-papier',
 
 );
