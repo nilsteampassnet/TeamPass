@@ -1120,13 +1120,13 @@ foreach ($rows as $reccord) {
                             <ul class="list-group list-group-unbordered mb-3">
                                 <li class="list-group-item">
                                     <b><?php echo $lang->get('pw'); ?></b>
-                                    <button type="button" class="float-right btn btn-secondary btn-sm btn-copy-clipboard infotip" id="card-item-pwd-button" title="<?php echo $lang->get('copy'); ?>">
+                                    <button type="button" class="float-right btn btn-secondary btn-sm btn-copy-clipboard" id="card-item-pwd-button">
                                         <i class="fa-regular fa-copy"></i>
                                     </button>
-                                    <button type="button" class="float-right btn btn-secondary btn-sm mr-1 hidden infotip" id="card-item-password-history-button" title="<?php echo $lang->get('history'); ?>">
+                                    <button type="button" class="float-right btn btn-secondary btn-sm mr-1 hidden" id="card-item-password-history-button">
                                     <i class="fa-solid fa-clock-rotate-left"></i>
                                     </button>
-                                    <button type="button" class="float-right btn btn-secondary btn-sm mr-1 infotip" id="card-item-pwd-show-button" title="<?php echo $lang->get('show'); ?>">
+                                    <button type="button" class="float-right btn btn-secondary btn-sm mr-1" id="card-item-pwd-show-button">
                                         <i class="fa-regular fa-eye pwd-show-spinner"></i>
                                     </button>
                                     <span id="card-item-pwd" class="float-right unhide_masked_data pointer mr-2"></span>
@@ -1134,7 +1134,7 @@ foreach ($rows as $reccord) {
                                 </li>
                                 <li class="list-group-item">
                                     <b><?php echo $lang->get('index_login'); ?></b>
-                                    <button type="button" class="float-right btn btn-secondary btn-sm ml-1 btn-copy-clipboard-clear infotip" data-clipboard-target="card-item-login" id="card-item-login-btn" title="<?php echo $lang->get('copy'); ?>">
+                                    <button type="button" class="float-right btn btn-secondary btn-sm ml-1 btn-copy-clipboard-clear" data-clipboard-target="card-item-login" id="card-item-login-btn">
                                         <i class="fa-regular fa-copy"></i>
                                     </button>
                                     <span id="card-item-login" class="float-right"></span>

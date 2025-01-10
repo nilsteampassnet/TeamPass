@@ -296,11 +296,6 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                         const password = await getItemPassword('at_password_copied', 'item_id', $('#btn-copy-pwd').data('id'));
 
                         if (!password) {
-                            toastr.error('<?php echo $lang->get("error_fetching_password"); ?>', '', {
-                                timeOut: 3000,
-                                positionClass: 'toast-bottom-right',
-                                progressBar: true
-                            });
                             return;
                         }
 
@@ -348,42 +343,42 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     }
                 });
                 
-                // Click handler to copy the login
-                document.getElementById('btn-copy-login').addEventListener('click', async function() {
-                    try {
-                        // Retrieve the ID of the element containing the login
-                        const loginId = this.dataset.id;
-                        const loginText = document.getElementById('login-item_' + loginId).textContent;
+                // Click handler to copy the login to the clipboard if it exists
+                if (document.getElementById('btn-copy-login')) {
+                    document.getElementById('btn-copy-login').addEventListener('click', async function() {
+                        try {
+                            // Retrieve the ID of the element containing the login
+                            const loginId = this.dataset.id;
+                            const loginText = document.getElementById('login-item_' + loginId).textContent;
 
-                        // Copy the text to the clipboard
-                        await navigator.clipboard.writeText(loginText);
+                            // Copy the text to the clipboard
+                            await navigator.clipboard.writeText(loginText);
 
-                        // Display a success notification
-                        toastr.remove();
-                        toastr.info(
-                            '<?php echo $lang->get("copy_to_clipboard"); ?>',
-                            '', {
-                                timeOut: 2000,
-                                positionClass: 'toast-bottom-right',
-                                progressBar: true
-                            }
-                        );
-                    } catch (error) {
-                        toastr.error(
-                            '<?php echo $lang->get("clipboard_error"); ?>',
-                            '', {
-                                timeOut: 3000,
-                                positionClass: 'toast-bottom-right',
-                                progressBar: true
-                            }
-                        );
-                    }
-                });
+                            // Display a success notification
+                            toastr.remove();
+                            toastr.info(
+                                '<?php echo $lang->get("copy_to_clipboard"); ?>',
+                                '', {
+                                    timeOut: 2000,
+                                    positionClass: 'toast-bottom-right',
+                                    progressBar: true
+                                }
+                            );
+                        } catch (error) {
+                            toastr.error(
+                                '<?php echo $lang->get("clipboard_error"); ?>',
+                                '', {
+                                    timeOut: 3000,
+                                    positionClass: 'toast-bottom-right',
+                                    progressBar: true
+                                }
+                            );
+                        }
+                    });
+                }
 
                 // Check if the btn-copy-url button exists
-                const btnCopyUrl = document.getElementById('btn-copy-url');
-
-                if (btnCopyUrl) {
+                if (document.getElementById('btn-copy-url')) {
                     // Attach a click handler only if the button exists
                     btnCopyUrl.addEventListener('click', async function() {
                         try {
@@ -469,15 +464,18 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
     // Manage the password show button
     // including autohide after a couple of seconds
     $(document).on('click', '.btn-show-pwd', function() {
+        const itemId = $(this).data('id');
+        // Show the password if it is not already shown
         if ($(this).hasClass('pwd-shown') === false) {
-            const itemId = $(this).data('id');
-            $(this).addClass('pwd-shown');
+            $(this).addClass('pwd-shown');  // Set the class
 
             getItemPassword(
                 'at_password_shown',
                 'item_id',
                 itemId
             ).then(item_pwd => {
+                $(this).removeClass('pwd-shown');   // Reset the class
+                // Display the password if it exists
                 if (item_pwd) {
                     $('.pwd-show-spinner')
                         .removeClass('fa-regular fa-eye')
@@ -490,7 +488,6 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
 
                     // Autohide
                     setTimeout(() => {
-                        $(this).removeClass('pwd-shown');
                         $('#pwd-show_' + itemId)
                             .html('<?php echo $var['hidden_asterisk']; ?>')
                             .removeClass('pointer_none');
