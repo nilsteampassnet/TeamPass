@@ -156,7 +156,7 @@ function cleanOrphanObjects(): void
     DB::query(
         'DELETE l FROM ' . prefixTable('log_system') . ' l
         LEFT JOIN ' . prefixTable('users') . ' u ON l.qui = u.id
-        WHERE i.id IS NULL OR u.deleted_at IS NOT NULL'
+        WHERE u.id IS NULL OR u.deleted_at IS NOT NULL'
     );
 
     // Delete all item keys for which no object exist
@@ -183,7 +183,7 @@ function cleanOrphanObjects(): void
     // Delete all item logs for which no object exist
     DB::query(
         'DELETE l FROM ' . prefixTable('log_items') . ' l
-        LEFT JOIN ' . prefixTable('items') . ' i ON k.id_item = i.id
+        LEFT JOIN ' . prefixTable('items') . ' i ON l.id_item = i.id
         WHERE i.id IS NULL'
     );
 
