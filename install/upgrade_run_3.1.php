@@ -597,11 +597,15 @@ $replacements = [
     "'" => "&#39;"
 ];
 
+$stmt = mysqli_prepare($db_link, 
+    "UPDATE `" . $pre . "tags` 
+    SET `tag` = REPLACE(`tag`, ?, ?)
+    WHERE `tag` LIKE CONCAT('%', ?, '%')");
+
 foreach ($replacements as $search => $replace) {
-    mysqli_query($db_link,
-        "UPDATE `" . $pre. "tags` 
-        SET `tag` = REPLACE(`tag`, '{$search}', '{$replace}')
-        WHERE `tag` LIKE '%{$search}%'");
+    // Link parameters to the prepared statement
+    mysqli_stmt_bind_param($stmt, 'sss', $search, $replace, $search);
+    mysqli_stmt_execute($stmt);
 }
 
 // Remove unused no_bad_attempts field
