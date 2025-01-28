@@ -149,9 +149,9 @@ function performStep6() {
     function performCheck(index) {
         if (index >= checks.length) {
             if (errorOccurred) {
-                show_loader('error', '<i class="fa-regular fa-circle-xmark text-alert"></i> Des erreurs sont survenues. Veuillez corriger les problèmes avant de continuer.');
+                show_loader('error', '<i class="fa-regular fa-circle-xmark text-alert"></i> Some errors occurred. Please fix them all before continuing.');
             } else {
-                show_loader('success', '<i class="fas fa-check text-success"></i> Toutes les actions ont réussi !', 2);
+                show_loader('success', '<i class="fas fa-check text-success"></i> All checks successfull!', 2);
 
                 // Update the next step
                 $('#installStep').val('7');

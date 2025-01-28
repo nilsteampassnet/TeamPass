@@ -26,9 +26,14 @@
  * @see       https://www.teampass.net
  */
 
+// Define some constants
+define('MIN_PHP_VERSION', 8.1);
+define('MIN_MYSQL_VERSION', '8.0.13');
+define('MIN_MARIADB_VERSION', '10.2.1');
+
+// Prepare autoloader
 require '../vendor/autoload.php';
 use TeampassClasses\SuperGlobal\SuperGlobal;
-
 
 // Get some data
 include __DIR__.'/../includes/config/include.php';
@@ -267,7 +272,7 @@ $csrf_token = $superGlobal->get('csrf_token', 'SESSION');
 								
 								<div class="form-group mt-3">
 									<label>Password</label>
-									<input type="text" class="form-control required" data-label="Password" name="db_pw" id="db_pw" class="ui-widget" value="">
+									<input type="password" class="form-control required" data-label="Password" name="db_pw" id="db_pw" class="ui-widget" value="">
 								</div>
 								
 								<div class="form-group mt-3">
