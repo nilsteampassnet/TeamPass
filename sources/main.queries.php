@@ -3298,11 +3298,11 @@ function changeUserLDAPAuthenticationPassword(
             }
             // Get one itemKey from current user
             $currentUserKey = DB::queryFirstRow(
-                'SELECT ski.share_key, ski.increment_id
+                'SELECT ski.share_key, ski.increment_id, l.id_user
                 FROM ' . prefixTable('sharekeys_items') . ' AS ski
                 INNER JOIN ' . prefixTable('log_items') . ' AS l ON ski.object_id = l.id_item
-                WHERE l.id_user = %i
-                ORDER BY date DESC
+                WHERE ski.user_id = %i
+                ORDER BY RAND()
                 LIMIT 1',
                 $post_user_id
             );
@@ -3311,7 +3311,7 @@ function changeUserLDAPAuthenticationPassword(
                 // Decrypt itemkey with user key
                 // use old password to decrypt private_key
                 $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $privateKey);
-
+                
                 if (empty(base64_decode($itemKey)) === false) {
                     // GOOD password
                     // Encrypt it with current password
