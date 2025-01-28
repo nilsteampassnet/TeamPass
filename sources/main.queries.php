@@ -3227,14 +3227,12 @@ function changeUserAuthenticationPassword(
  * @param integer $post_user_id
  * @param string $post_previous_pwd
  * @param string $post_current_pwd
- * @param array $SETTINGS
  * @return string
  */            
 function changeUserLDAPAuthenticationPassword(
     int $post_user_id,
     string $post_previous_pwd,
-    string $post_current_pwd,
-    array $SETTINGS
+    string $post_current_pwd
 )
 {
     $session = SessionManager::getSession();
@@ -3249,7 +3247,7 @@ function changeUserLDAPAuthenticationPassword(
             WHERE id = %i',
             $post_user_id
         );
-        
+
         if (DB::count() > 0 && empty($userData['private_key']) === false) {
             // Now check if current password is correct (only if not ldap)
             if ($userData['auth_type'] === 'ldap' && $userData['special'] === 'auth-pwd-change') {
@@ -3298,12 +3296,13 @@ function changeUserLDAPAuthenticationPassword(
                     'encode'
                 );
             }
-
             // Get one itemKey from current user
             $currentUserKey = DB::queryFirstRow(
-                'SELECT share_key, increment_id
-                FROM ' . prefixTable('sharekeys_items') . '
-                WHERE user_id = %i
+                'SELECT ski.share_key, ski.increment_id
+                FROM ' . prefixTable('sharekeys_items') . ' AS ski
+                INNER JOIN ' . prefixTable('log_items') . ' AS l ON ski.object_id = l.id_item
+                WHERE l.id_user = %i
+                ORDER BY date DESC
                 LIMIT 1',
                 $post_user_id
             );
@@ -3312,7 +3311,7 @@ function changeUserLDAPAuthenticationPassword(
                 // Decrypt itemkey with user key
                 // use old password to decrypt private_key
                 $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $privateKey);
-                
+
                 if (empty(base64_decode($itemKey)) === false) {
                     // GOOD password
                     // Encrypt it with current password
