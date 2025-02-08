@@ -297,4 +297,533 @@ case 'perform_fix_pf_items-step3':
         'encode'
     );
     break;
+
+    /*
+    * STEP 1 - Check if we have the correct pwd for TP_USER
+    */
+    case 'perform_fix_items_master_keys-step1':
+        // Check KEY
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        // Is admin?
+        if ($session->get('user-admin') !== 1) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        // decrypt and retrieve data in JSON format
+        $dataReceived = prepareExchangedData(
+            $post_data,
+            'decode'
+        );
+
+        // Get PT_USER info
+        $userInfo = DB::queryFirstRow(
+            'SELECT pw, public_key, private_key, login, name
+            FROM ' . prefixTable('users') . '
+            WHERE id = %i',
+            TP_USER_ID
+        );
+
+        // decrypt owner password
+        $pwd = cryption($userInfo['pw'], '','decrypt', $SETTINGS)['string'];
+
+        $privateKey = decryptPrivateKey($pwd, $userInfo['private_key']);
+
+        if (is_null($privateKey) === true) {
+            echo prepareExchangedData(
+                array(
+                    'error' => false,
+                    'message' => 'Master password not decrypted, let\'s try using provided account.',
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        // Checking that this pwd cannot decrypt an item sharekey        
+        // Get one itemKey from current user
+        $currentUserKey = DB::queryFirstRow(
+            'SELECT ski.share_key, ski.increment_id AS increment_id, l.id_user
+            FROM ' . prefixTable('sharekeys_items') . ' AS ski
+            INNER JOIN ' . prefixTable('log_items') . ' AS l ON ski.object_id = l.id_item
+            WHERE ski.user_id = %i
+            ORDER BY RAND()
+            LIMIT 1',
+            TP_USER_ID
+        );
+        
+        //* REMOVED FOR DEV PURPOSE ; THIS SHOULD BE KEPT IN NORMAL CASE
+        if (is_countable($currentUserKey) && count($currentUserKey) > 0) {
+            // Decrypt itemkey with user key
+            // use old password to decrypt private_key
+            $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $privateKey);
+            
+            if (empty(base64_decode($itemKey)) === false) {
+                // GOOD password
+                // THings all good
+                echo  prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => 'No issue found, normal process should work. This process is now finished. (item id : ' . $currentUserKey['increment_id'] . ')',
+                    ),
+                    'encode'
+                );
+            }
+        }
+        
+        //Show done
+        echo prepareExchangedData(
+            array(
+                'error' => empty($pwd) === false ? false : true,
+                'message' => empty($pwd) === false ? 
+                    'Master password decrypted.'
+                    : 'Master password not decrypted, We have a problem.', 
+                'tp_user_publicKey' => $userInfo['public_key'],
+                'tp_user_pwd' => $pwd,
+            ),
+            'encode'
+        );
+        break;
+
+    /*
+    * STEP 2 - Check if we have the correct pwd for selected user
+    */
+    case 'perform_fix_items_master_keys-step2':
+        // Check KEY
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        // Is admin?
+        if ($session->get('user-admin') !== 1) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        // decrypt and retrieve data in JSON format
+        $dataReceived = prepareExchangedData(
+            $post_data,
+            'decode'
+        );
+        $userId = filter_var($dataReceived['userId'], FILTER_SANITIZE_NUMBER_INT);
+        $userPwd = filter_var($dataReceived['userPassword'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+
+        // Get user info
+        $userInfo = DB::queryFirstRow(
+            'SELECT public_key, private_key
+            FROM ' . prefixTable('users') . '
+            WHERE id = %i',
+            $userId
+        );
+
+        // decrypt user provate key
+        $privateKey = decryptPrivateKey($userPwd, $userInfo['private_key']);
+
+        //error_log('pwd: '.$userPwd. ' - privateKey: ' . $privateKey);
+        if (is_null($privateKey) === true || empty($privateKey) === true) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => 'User private key not decrypted, ',
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        // Checking that this pwd cannot decrypt an item sharekey        
+        // Get one itemKey from current user
+        $currentUserKey = DB::queryFirstRow(
+            'SELECT ski.share_key, ski.increment_id AS increment_id, l.id_user
+            FROM ' . prefixTable('sharekeys_items') . ' AS ski
+            INNER JOIN ' . prefixTable('log_items') . ' AS l ON ski.object_id = l.id_item
+            WHERE ski.user_id = %i
+            ORDER BY RAND()
+            LIMIT 1',
+            $userId
+        );
+
+        if (is_countable($currentUserKey) && count($currentUserKey) > 0) {
+            // Decrypt itemkey with user key
+            // use old password to decrypt private_key
+            $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $privateKey);
+            
+            if (empty(base64_decode($itemKey)) === false) {
+                // GOOD password
+                // THings all good
+
+                // Check and prepare backup table
+                DB::query("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '".prefixTable('sharekeys_backup')."'");
+                if (DB::count() === 0) {
+                    // Table doesn't exist, create it
+                    DB::query(
+                        'CREATE TABLE `'.prefixTable('sharekeys_backup').'` (
+                        `increment_id` INT(12) NOT NULL AUTO_INCREMENT,
+                        `object_type` VARCHAR(50) NOT NULL,
+                        `object_id` INT(12) NOT NULL,
+                        `user_id` INT(12) NOT NULL,
+                        `share_key` MEDIUMTEXT NOT NULL,
+                        `increment_id_value` INT(12) NOT NULL,
+                        `operation_code` VARCHAR(50) NOT NULL,
+                        `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                        PRIMARY KEY (`increment_id`)
+                        ) CHARSET=utf8;'
+                    );
+                }
+
+                // Get number of users to treat
+                DB::query(
+                    'SELECT i.id 
+                    FROM ' . prefixTable('items') . ' AS i
+                    INNER JOIN ' . prefixTable('sharekeys_items') . ' AS si ON i.id = si.object_id
+                    WHERE i.perso = %i AND si.user_id = %i;',
+                    0,
+                    $userId
+                );
+
+                
+                echo prepareExchangedData(
+                    array(
+                        'error' => false,
+                        'message' => 'Could decrypt the privatekey. We can proceed with '.DB::count().' items.',
+                        'nb_items_to_proceed' => DB::count(),
+                        'selected_user_privateKey' => $privateKey,
+                    ),
+                    'encode'
+                );
+            }
+        }
+        
+        //Show done
+        echo prepareExchangedData(
+            array(
+                'error' => true,
+                'message' => 'We could not decrypt the item share key with user provided, We have a problem.', 
+            ),
+            'encode'
+        );
+        break;
+
+    /*
+    * STEP 3 - Start the process of changing the keys
+    */
+    case 'perform_fix_items_master_keys-step3':
+        // Check KEY
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        // Is admin?
+        if ($session->get('user-admin') !== 1) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        // decrypt and retrieve data in JSON format
+        $dataReceived = prepareExchangedData(
+            $post_data,
+            'decode'
+        );
+        $userId = filter_var($dataReceived['userId'], FILTER_SANITIZE_NUMBER_INT);
+        $tpUserPublicKey = filter_var($dataReceived['tp_user_publicKey'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        $selectedUserPrivateKey = filter_var($dataReceived['selected_user_privateKey'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        $nbItems = filter_var($dataReceived['nbItems'], FILTER_SANITIZE_NUMBER_INT);
+        $startIndex = filter_var($dataReceived['startIndex'], FILTER_SANITIZE_NUMBER_INT);
+        $limit = filter_var($dataReceived['limit'], FILTER_SANITIZE_NUMBER_INT);
+        $operationCode = filter_var($dataReceived['operationCode'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+
+        // Start transaction for better performance
+        DB::startTransaction();
+
+        // If we are starting then generate a code
+        if (empty($operationCode) === true) {
+            $operationCode = uniqidReal(32);
+        }
+
+        // Loop on items
+        DB::debugMode(false);
+        $rows = DB::query(
+            'SELECT *
+            FROM ' . prefixTable('sharekeys_items') . '
+            WHERE user_id = %i
+            ORDER BY increment_id ASC
+            LIMIT ' . $startIndex . ', ' . $limit,
+            $userId
+        );
+        
+        DB::debugMode(false);
+
+        //error_log($selectedUserPrivateKey);
+        
+        foreach ($rows as $record) {
+            // Decrypt itemkey with admin key
+            $itemKey = decryptUserObjectKey(
+                $record['share_key'],
+                $selectedUserPrivateKey
+            );
+            
+            // Prevent to change key if its key is empty
+            if (empty($itemKey) === true) {
+                continue;
+            }
+
+            // Encrypt Item key for TP USER
+            $share_key_for_item = encryptUserObjectKey($itemKey, $tpUserPublicKey);
+            
+            // Get object for TP USER
+            // It will be updated if already exists
+            $currentTPUserKey = DB::queryFirstRow(
+                'SELECT increment_id, user_id, share_key
+                FROM ' . prefixTable('sharekeys_items') . '
+                WHERE object_id = %i AND user_id = %i',
+                $record['object_id'],
+                TP_USER_ID
+            );
+            
+            if (DB::count() > 0) {
+                // Backup current value
+                DB::insert(
+                    prefixTable('sharekeys_backup'),
+                    array(
+                        'object_id' => (int) $record['object_id'],
+                        'user_id' => (int) $currentTPUserKey['user_id'],
+                        'share_key' => $currentTPUserKey['share_key'],
+                        'object_type' => 'item',
+                        'increment_id_value' => (int) $currentTPUserKey['increment_id'],
+                        'operation_code' => $operationCode,
+                    )
+                );
+
+                // NOw update
+                DB::update(
+                    prefixTable('sharekeys_items'),
+                    array(
+                        'share_key' => $share_key_for_item,
+                    ),
+                    'increment_id = %i',
+                    $currentTPUserKey['increment_id']
+                );
+            }
+        }
+        // Commit transaction
+        DB::commit();
+
+        $nextIndex = (int) $startIndex + (int) $limit;
+        
+        //Show done
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => '', 
+                'nextIndex' => $nextIndex,
+                'status' => (int) $nextIndex >= (int) $nbItems ? 'done' : 'continue',
+                'operationCode' => $operationCode,
+            ),
+            'encode'
+        );
+        break;
+
+        /*
+        * RESTORE a backup
+        */
+        case 'restore_items_master_keys_from_backup':
+            // Check KEY
+            if ($post_key !== $session->get('key')) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+            // Is admin?
+            if ($session->get('user-admin') !== 1) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+    
+            // decrypt and retrieve data in JSON format
+            $dataReceived = prepareExchangedData(
+                $post_data,
+                'decode'
+            );
+            
+            $operationCode = filter_var($dataReceived['operationCode'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+    
+            // Get PT_USER info
+            DB::queryFirstRow(
+                'SELECT operation_code
+                FROM ' . prefixTable('sharekeys_backup') . '
+                WHERE operation_code = %s',
+                $operationCode
+            );
+
+            if (DB::count() > 0) {
+                // Copy all sharekeys from backup to original table
+                // using increment_id_value in order to update the correct record
+                $rows = DB::query(
+                    'SELECT *
+                    FROM ' . prefixTable('sharekeys_backup') . '
+                    WHERE operation_code = %s',
+                    $operationCode
+                );
+                foreach ($rows as $backup) {
+                    // Get object for TP USER
+                    // It will be updated if already exists
+                    DB::update(
+                        prefixTable('sharekeys_items'),
+                        array(
+                            'share_key' => $backup['share_key'],
+                        ),
+                        'increment_id = %i',
+                        $backup['increment_id_value']
+                    );
+                }
+
+                // Delete all sharekeys for this operation
+                DB::query(
+                    'DELETE FROM ' . prefixTable('sharekeys_backup') . '
+                    WHERE operation_code = %i',
+                    $operationCode
+                );
+
+                // DOne
+                echo prepareExchangedData(
+                    array(
+                        'error' => false,
+                        'message' => 'This backup has been restored. Original keys are back in production',
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => 'This operation code does not exists.',
+                ),
+                'encode'
+            );
+            break;
+
+        /*
+        * DELETE a backup
+        */
+        case 'perform_delete_restore_backup':
+            // Check KEY
+            if ($post_key !== $session->get('key')) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+            // Is admin?
+            if ($session->get('user-admin') !== 1) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+    
+            // decrypt and retrieve data in JSON format
+            $dataReceived = prepareExchangedData(
+                $post_data,
+                'decode'
+            );
+            
+            $operationCode = filter_var($dataReceived['operationCode'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            error_log('Deleted backup with code: '.$operationCode);
+            // Get operation info
+            DB::query(
+                'SELECT operation_code
+                FROM ' . prefixTable('sharekeys_backup') . '
+                WHERE operation_code = %s',
+                $operationCode
+            );
+            $nbKeys = DB::count();
+
+            if ($nbKeys > 0) {
+                // Delete all sharekeys for this operation
+                DB::query(
+                    'DELETE FROM ' . prefixTable('sharekeys_backup') . '
+                    WHERE operation_code = %s',
+                    $operationCode
+                );
+
+                // DOne
+                echo prepareExchangedData(
+                    array(
+                        'error' => false,
+                        'message' => 'This backup with '.$nbKeys.' keys has been deleted.',
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => 'This operation code does not exists.',
+                ),
+                'encode'
+            );
+            break;
+
 }
