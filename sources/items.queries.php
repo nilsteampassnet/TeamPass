@@ -6594,7 +6594,7 @@ switch ($inputData['type']) {
             WHERE id_item=%i AND l.action NOT IN (%l)
             ORDER BY date DESC',
             $inputData['itemId'],
-            '"at_shown","at_password_copied", "at_shown", "at_password_shown"'
+            '"at_shown","at_password_copied", "at_shown", "at_password_shown", "at_password_shown_edit_form"'
         );
         foreach ($rows as $record) {
             if (empty($record['raison']) === true) {
