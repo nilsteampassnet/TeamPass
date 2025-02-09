@@ -344,7 +344,7 @@ case 'perform_fix_pf_items-step3':
 
         $privateKey = decryptPrivateKey($pwd, $userInfo['private_key']);
 
-        if (is_null($privateKey) === true) {
+        if (empty($privateKey) === true) {
             echo prepareExchangedData(
                 array(
                     'error' => false,
