@@ -568,7 +568,7 @@ function identUser(
  * 
  * @return array
  */
-function identUserGetFoldersFromRoles($userRoles, $allowedFoldersByRoles, $readOnlyFolders, $allowedFolders) : array
+function identUserGetFoldersFromRoles(array $userRoles, array $allowedFoldersByRoles = [], array $readOnlyFolders = [], array $allowedFolders = []) : array
 {
     $rows = DB::query(
         'SELECT *
