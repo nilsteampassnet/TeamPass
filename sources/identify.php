@@ -2020,16 +2020,16 @@ class initialChecks {
         
         // User doesn't exist then return error
         // Except if user creation from LDAP is enabled
-        if (DB::count() === 0 && ($enable_ad_user_auto_creation === false || $oauth2_enabled === false)) {
+        if (DB::count() === 0 && ((bool) $enable_ad_user_auto_creation === false || (bool) $oauth2_enabled === false)) {
             throw new Exception(
                 "error" 
             );
         }
         // We cannot create a user with LDAP if the OAuth2 login is ongoing
         $oauth2LoginOngoing = isset($session->get('userOauth2Info')['oauth2LoginOngoing']) ? $session->get('userOauth2Info')['oauth2LoginOngoing'] : false;
-        $data['oauth2_login_ongoing'] = $oauth2LoginOngoing;
-        $data['ldap_user_to_be_created'] = $enable_ad_user_auto_creation === true && DB::count() === 0 && $oauth2LoginOngoing !== true ? true : false;
-        $data['oauth2_user_to_be_created'] = $oauth2_enabled === true && DB::count() === 0 && $oauth2LoginOngoing === true ? true : false;
+        $data['oauth2_login_ongoing'] = (bool) $oauth2LoginOngoing;
+        $data['ldap_user_to_be_created'] = (bool) $enable_ad_user_auto_creation === true && DB::count() === 0 && (bool) $oauth2LoginOngoing !== true ? true : false;
+        $data['oauth2_user_to_be_created'] = (bool) $oauth2_enabled === true && DB::count() === 0 && (bool) $oauth2LoginOngoing === true ? true : false;
 
         return $data;
     }
@@ -2316,7 +2316,7 @@ function shouldUserAuthWithOauth2(
                     'oauth2Connection' => true,
                     'userPasswordVerified' => true,
                 ];
-            } elseif ((string) $userInfo['auth_type'] === 'oauth2') {
+            } elseif ((string) $userInfo['auth_type'] === 'oauth2' || (bool) $userInfo['oauth2_login_ongoing'] === true) {
                 // OAuth2 login request on OAuth2 user account.
                 return [
                     'error' => false,
@@ -2384,7 +2384,7 @@ function createOauth2User(
             is_null($userInfo['groups']) ? [] : $userInfo['groups'],
             $SETTINGS
         );
-        $userInfo = $userInfo + $ret;
+        $userInfo = array_merge($userInfo, $ret);
 
         // prepapre background tasks for item keys generation  
         handleUserKeys(
