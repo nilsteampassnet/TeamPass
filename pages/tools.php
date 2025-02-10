@@ -183,6 +183,160 @@ if (is_null($tableExists) === true) {
             <!-- /.col-md-6 -->
         </div>
         <!-- /.row -->
+         
+        <div class='card card-primary'>
+            <div class='card-header'>
+                <h3 class='card-title'>Fix items are empty after user OTP change</h3>
+            </div>
+            <!-- /.card-header -->
+            <!-- form start -->
+            <form role='form-horizontal'>
+                <div class='card-body'>
+
+                    <div class='row mb-3'>
+                        <div class='col-12'>
+                            <small id='passwordHelpBlock' class='form-text text-muted'>
+                                This tool permits to fix the issue where items are empty after a new OTP has been generated for a user. It consists in regenerating the master sharekeys using the ones from an account for which you know it has access to all items. If not, some items could be lost.
+                                A backup of the keys are performed before being updated. You will be able to restore them if needed using the Restore keys tool.<br>
+                                <strong>Warning:</strong> This operation is irreversible. As a precaution, please backup the table <code>teampass_sharekeys_items</code> before starting.
+                            </small>
+                        </div>
+                    </div>
+                    <?php                            
+// Check if table  exists
+DB::query('SELECT id from teampass_items WHERE perso = 0;');
+$nbItems = DB::count();
+
+// Get list of users
+$selectOptions = '';
+$users = DB::query('
+    SELECT id, login, lastname, name, personal_folder 
+    FROM teampass_users 
+    WHERE disabled = 0 AND (login NOT LIKE "%_deleted%")
+    ORDER BY login');
+foreach ($users as $user) {
+    // Get number of items for this user
+    DB::query(
+        'SELECT i.id 
+        FROM teampass_items AS i
+        INNER JOIN teampass_sharekeys_items AS si ON i.id = si.object_id
+        WHERE i.perso = %i AND si.user_id = %i;',
+        0,
+        $user['id']
+    );
+    $selectOptions .= '<option value="'.$user['id'].'">'.$user['lastname'].' '.$user['name'].' ('.$user['login'].')'.
+        ' - '.DB::count().'/'.$nbItems.''.
+        '</option>';
+}
+?>
+                    <div class='row mb-2'>
+                        <div class='col-5'>
+                            Select username that has access to all items
+                        </div>
+                        <div class='col-7'>
+                            <select class='form-control' id='fix_items_master_keys_user_id'>
+                                <option value='0'><?php echo $lang->get('select_user'); ?></option>
+                                <?php echo $selectOptions; ?>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class='row mb-2'>
+                        <div class='col-5'>
+                            Password
+                        </div>
+                        <div class='col-7'>
+                            <input type='password' class='form-control' id='fix_items_master_keys_pwd' placeholder='User password'>
+                        </div>
+                    </div>
+                    
+                    <div class='row mb-3'>
+                        <button type='button' class='btn btn-primary btn-sm tp-action mr-2' id="fix_items_master_keys_but" data-action='fix_items_master_keys_but'>
+                            <i class='fas fa-cog mr-2'></i><?php echo $lang->get('perform'); ?>
+                        </button>
+                    </div>
+                    
+                    <div class='row mb-2'>
+                        <div class='col-12'>
+                            <div id='fix_items_master_keys_results'>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </form>
+        </div>
+
+        
+         
+        <div class='card card-primary'>
+            <div class='card-header'>
+                <h3 class='card-title'>Fix items are empty after user OTP change - Restore keys</h3>
+            </div>
+            <!-- /.card-header -->
+            <!-- form start -->
+            <form role='form-horizontal'>
+                <div class='card-body'>
+
+                    <div class='row mb-3'>
+                        <div class='col-12'>
+                            <small id='passwordHelpBlock' class='form-text text-muted'>
+                                This tool permits to restore backuped keys from a previous fix. It consists in restoring the master sharekeys using the ones from the backup.
+                            </small>
+                        </div>
+                    </div>
+                    <?php                            
+// Check if table  exists
+$result = DB::queryFirstField(
+    'SELECT COUNT(*) FROM information_schema.tables 
+    WHERE table_schema = %s AND table_name = %s',
+    DB_NAME, 
+    prefixTable('sharekeys_backup')
+);
+if ($result > 0) {
+    // Get list of backups
+    $backups = DB::query('SELECT sb.operation_code, sb.created_at, sb.user_id, u.login
+        FROM '.prefixTable('sharekeys_backup').' AS sb
+        INNER JOIN '.prefixTable('users').' AS u ON sb.user_id = u.id
+        GROUP BY sb.operation_code
+        ORDER BY sb.created_at DESC;'
+    );
+}
+$selectOptions = '';
+// Get list of backups
+foreach ($backups as $bck) {
+    $selectOptions .= '<option value="'.$bck['operation_code'].'">'.$bck['login'].' - Backup date: '.$bck['created_at'].'</option>';
+}
+?>
+                    <div class='row mb-2'>
+                        <div class='col-5'>
+                            Select the backup to restore
+                        </div>
+                        <div class='col-7'>
+                            <select class='form-control' id='restore_items_master_keys_id'>
+                                <?php echo $selectOptions; ?>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class='row mb-3'>
+                        <button type='button' class='btn btn-primary btn-sm tp-action mr-2' id="restore_items_master_keys_but" data-action='restore_items_master_keys_but'>
+                            <i class='fas fa-cog mr-2'></i>Restore keys
+                        </button>
+                        <button type='button' class='btn btn-secundary btn-sm tp-action mr-2' id="delete_restore_backup_but" data-action='delete_restore_backup_but'>
+                            <i class='fas fa-trash mr-2'></i>Delete backup
+                        </button>
+                    </div>
+                    
+                    <div class='row mb-2'>
+                        <div id='restore_items_master_keys_results'>
+                        </div>
+                    </div>
+
+                </div>
+            </form>
+        </div>
+
     </div><!-- /.container-fluid -->
 </div>
 <!-- /.content -->

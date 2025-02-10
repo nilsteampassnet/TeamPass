@@ -108,7 +108,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
         "ajax": {
             url: "<?php echo $SETTINGS['cpassman_url']; ?>/sources/find.queries.php",
             type: 'GET',
-            "dataSrc": function ( json ) {console.log(json);
+            "dataSrc": function ( json ) {
                 for ( var i=0, ien=json.data.length ; i<ien ; i++ ) {
                     json.data[i][1]=atob(json.data[i][1]).utf8Decode();
                     json.data[i][2]=atob(json.data[i][2]).utf8Decode();
@@ -289,90 +289,130 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                     $('.new-row').remove();
                 });
 
-                // Manage buttons --> PASSWORD
-                new ClipboardJS('#btn-copy-pwd', {
-                        text: function(trigger) {   
-                            // Get item password from server
-                            const item_pwd = getItemPassword(
-                                'at_password_copied',
-                                'item_id',
-                                $('#btn-copy-pwd').data('id')
-                            );
+                // Prepare clipboard using async function
+                document.getElementById('btn-copy-pwd').addEventListener('click', async function() {
+                    try {
+                        // Retrieve the password
+                        const password = await getItemPassword('at_password_copied', 'item_id', $('#btn-copy-pwd').data('id'));
 
-                            return item_pwd;
+                        if (!password) {
+                            return;
                         }
-                    })
-                    .on('success', function(e) {
-                        // Warn user about clipboard clear
-                        if (store.get('teampassSettings').clipboard_life_duration === undefined || parseInt(store.get('teampassSettings').clipboard_life_duration) === 0) {
+
+                        // Copy to clipboard
+                        await navigator.clipboard.writeText(password);
+
+                        // Notification for the user
+                        const clipboardDuration = parseInt(store.get('teampassSettings').clipboard_life_duration) || 0;
+                        if (clipboardDuration === 0) {
+                            toastr.info('<?php echo $lang->get("copy_to_clipboard"); ?>', '', {
+                                timeOut: 2000,
+                                positionClass: 'toast-bottom-right',
+                                progressBar: true
+                            });
+                        } else {
+                            toastr.warning('<?php echo $lang->get("clipboard_will_be_cleared"); ?>', '', {
+                                timeOut: clipboardDuration * 1000,
+                                progressBar: true
+                            });
+
+                            // Clear the clipboard content after a delay
+                            const cleaner = new ClipboardCleaner(clipboardDuration);
+                            cleaner.scheduleClearing(
+                                () => {
+                                    const clipboardStatus = JSON.parse(localStorage.getItem('clipboardStatus'));
+                                    if (clipboardStatus.status === 'unsafe') {
+                                        return;                                        
+                                    }
+                                    toastr.success('<?php echo $lang->get("clipboard_cleared"); ?>', '', {
+                                        timeOut: 2000,
+                                        positionClass: 'toast-bottom-right'
+                                    });
+                                },
+                                (error) => {
+                                    console.error('Error clearing clipboard:', error);
+                                }
+                            );
+                        }
+                    } catch (error) {
+                        toastr.error('<?php echo $lang->get("clipboard_error"); ?>', '', {
+                            timeOut: 3000,
+                            positionClass: 'toast-bottom-right',
+                            progressBar: true
+                        });
+                    }
+                });
+                
+                // Click handler to copy the login to the clipboard if it exists
+                if (document.getElementById('btn-copy-login')) {
+                    document.getElementById('btn-copy-login').addEventListener('click', async function() {
+                        try {
+                            // Retrieve the ID of the element containing the login
+                            const loginId = this.dataset.id;
+                            const loginText = document.getElementById('login-item_' + loginId).textContent;
+
+                            // Copy the text to the clipboard
+                            await navigator.clipboard.writeText(loginText);
+
+                            // Display a success notification
                             toastr.remove();
                             toastr.info(
-                                '<?php echo $lang->get('copy_to_clipboard'); ?>',
+                                '<?php echo $lang->get("copy_to_clipboard"); ?>',
                                 '', {
                                     timeOut: 2000,
                                     positionClass: 'toast-bottom-right',
                                     progressBar: true
                                 }
                             );
-                        } else {
-                            toastr.remove();
-                            toastr.warning(
-                                '<?php echo $lang->get('clipboard_will_be_cleared'); ?>',
+                        } catch (error) {
+                            toastr.error(
+                                '<?php echo $lang->get("clipboard_error"); ?>',
                                 '', {
-                                    timeOut: store.get('teampassSettings').clipboard_life_duration * 1000,
+                                    timeOut: 3000,
+                                    positionClass: 'toast-bottom-right',
                                     progressBar: true
                                 }
                             );
+                        }
+                    });
+                }
 
-                            // Set clipboard eraser
-                            clearClipboardTimeout(
-                                store.get('teampassSettings').clipboard_life_duration
+                // Check if the btn-copy-url button exists
+                if (document.getElementById('btn-copy-url')) {
+                    // Attach a click handler only if the button exists
+                    btnCopyUrl.addEventListener('click', async function() {
+                        try {
+                            // Retrieve the ID of the element containing the URL
+                            const urlId = this.dataset.id;
+                            const urlText = document.getElementById('url-item_' + urlId).textContent;
+
+                            // Copy the URL to the clipboard
+                            await navigator.clipboard.writeText(urlText);
+
+                            // Display a success notification
+                            toastr.remove();
+                            toastr.info(
+                                '<?php echo $lang->get("copy_to_clipboard"); ?>',
+                                '', {
+                                    timeOut: 2000,
+                                    positionClass: 'toast-bottom-right',
+                                    progressBar: true
+                                }
+                            );
+                        } catch (error) {
+                            toastr.error(
+                                '<?php echo $lang->get("clipboard_error"); ?>',
+                                '', {
+                                    timeOut: 3000,
+                                    positionClass: 'toast-bottom-right',
+                                    progressBar: true
+                                }
                             );
                         }
-
-                        e.clearSelection();
                     });
-
-                // Manage buttons --> LOGIN
-                new ClipboardJS('#btn-copy-login', {
-                        text: function(e) {
-                            return $('#login-item_' + $('#btn-copy-login').data('id')).text();
-                        }
-                    })
-                    .on('success', function(e) {
-                        toastr.remove();
-                        toastr.info(
-                            '<?php echo $lang->get('copy_to_clipboard'); ?>',
-                            '', {
-                                timeOut: 2000,
-                                positionClass: 'toast-bottom-right',
-                                progressBar: true
-                            }
-                        );
-                        e.clearSelection();
-                    });
-
-                // Manage buttons --> URL
-                new ClipboardJS('#btn-copy-url', {
-                        text: function(e) {
-                            return $('#url-item_' + $('#btn-copy-url').data('id')).text();
-                        }
-                    })
-                    .on('success', function(e) {
-                        toastr.remove();
-                        toastr.info(
-                            '<?php echo $lang->get('copy_to_clipboard'); ?>',
-                            '', {
-                                timeOut: 2000,
-                                positionClass: 'toast-bottom-right',
-                                progressBar: true
-                            }
-                        );
-                        e.clearSelection();
-                    });
+                }
 
                 $('#search-spinner').remove();
-
                 $('.infotip').tooltip();
             }
         );
@@ -399,19 +439,21 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
     const showPwdContinuous = function showPwdContinuous(elem_id) {
         const itemId = elem_id.split('_')[1];
         if (mouseStillDown === true 
-            && !$('#pwd-show_' + itemId).hasClass('pwd-shown')) {
-
-            const item_pwd = getItemPassword(
+            && !$('#pwd-show_' + itemId).hasClass('pwd-shown')
+        ) {
+            getItemPassword(
                 'at_password_shown',
                 'item_id',
                 itemId
-            );
+            ).then(item_pwd => {
+                if (item_pwd) {                    
+                    $('#pwd-show_' + itemId).text(item_pwd);
+                    $('#pwd-show_' + itemId).addClass('pwd-shown');
 
-            $('#pwd-show_' + itemId).text(item_pwd);
-            $('#pwd-show_' + itemId).addClass('pwd-shown');
-
-            // Auto hide password
-            setTimeout('showPwdContinuous("pwd-show_' + itemId + '")', 50);
+                    // Auto hide password
+                    setTimeout('showPwdContinuous("pwd-show_' + itemId + '")', 50);
+                }
+            });
         } else if(mouseStillDown !== true) {
             $('#pwd-show_' + itemId)
                 .html('<?php echo $var['hidden_asterisk']; ?>')
@@ -422,31 +464,39 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
     // Manage the password show button
     // including autohide after a couple of seconds
     $(document).on('click', '.btn-show-pwd', function() {
+        const itemId = $(this).data('id');
+        // Show the password if it is not already shown
         if ($(this).hasClass('pwd-shown') === false) {
-            const itemId = $(this).data('id');
-            $(this).addClass('pwd-shown');
-            
-            const item_pwd = getItemPassword(
+            $(this).addClass('pwd-shown');  // Set the class
+
+            getItemPassword(
                 'at_password_shown',
                 'item_id',
                 itemId
-            );
+            ).then(item_pwd => {
+                $(this).removeClass('pwd-shown');   // Reset the class
+                // Display the password if it exists
+                if (item_pwd) {
+                    $('.pwd-show-spinner')
+                        .removeClass('fa-regular fa-eye')
+                        .addClass('fa-solid fa-eye fa-beat-fade text-warning');
 
-            $('#pwd-show_' + itemId).text(item_pwd);
+                    // display raw password
+                    $('#pwd-show_' + itemId)
+                        .text(item_pwd)
+                        .addClass('pointer_none');
 
-            // Change class and show spinner
-            $('.pwd-show-spinner')
-                .removeClass('far fa-eye')
-                .addClass('fas fa-circle-notch fa-spin text-warning');
-
-            // Autohide
-            setTimeout(() => {
-                $(this).removeClass('pwd-shown');
-                $('#pwd-show_' + itemId).html('<?php echo $var['hidden_asterisk']; ?>');
-                $('.pwd-show-spinner')
-                    .removeClass('fas fa-circle-notch fa-spin text-warning')
-                    .addClass('far fa-eye');
-            }, <?php echo isset($SETTINGS['password_overview_delay']) === true ? $SETTINGS['password_overview_delay'] * 1000 : 4000; ?>);
+                    // Autohide
+                    setTimeout(() => {
+                        $('#pwd-show_' + itemId)
+                            .html('<?php echo $var['hidden_asterisk']; ?>')
+                            .removeClass('pointer_none');
+                        $('.pwd-show-spinner')
+                            .removeClass('fa-solid fa-eye fa-beat-fade text-warning')
+                            .addClass('fa-regular fa-eye');
+                    }, <?php echo isset($SETTINGS['password_overview_delay']) && (int) $SETTINGS['password_overview_delay'] > 0 ? $SETTINGS['password_overview_delay'] * 1000 : 4000; ?>);
+                }
+            });
         } else {
             $('#pwd-show_' + itemId).html('<?php echo $var['hidden_asterisk']; ?>');
         }
@@ -500,7 +550,6 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 if (selectedAction === 'move') {
                     // destination folder
                     var folders = '';
-                    console.log(store.get('teampassApplication').foldersList)
                     $.each(store.get('teampassApplication').foldersList, function(index, item) {
                         if (item.disabled === 0) {
                             folders += '<option value="' + item.id + '">' + item.title +

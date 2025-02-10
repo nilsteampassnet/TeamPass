@@ -21,7 +21,7 @@
  * ---
  * @file      czech.php
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2024 Teampass.net
+ * @copyright 2009-2025 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
@@ -1215,5 +1215,15 @@ e new password must:<br/> - Be different from the previous one<br/> - Contain at
     'disable_user_edit_tree_load_strategy' => 'Users can no longer change tree loading strategy',
     'bruteforce_wait' => 'Too many failed attempts, your account is blocked until: ',
     'disable_drag_drop' => 'Disable item drag and drop',
+    'clipboard_cleared' => 'Clipboard cleared',
+    'error_data_not_consistent' => 'Data is not consistent',
+    'error_permission_denied' => 'Permission denied',
+    'error_invalid_action' => 'Invalid action',
+    'error_fetching_password' => 'Error fetching password',
+    'unable_to_clear_clipboard' => 'Unable to clear the clipboard manually',
+    'clipboard_unsafe' => 'The clipboard could not be cleared automatically, this is unsafe!',
+    'clipboard_clear_now' => 'Clear it now!',
+    'clipboard_clearing_failed' => 'Clipboard clearing failed',
+    'clipboard_error' => 'Clipboard error',
 
 );

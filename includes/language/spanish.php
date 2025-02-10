@@ -21,7 +21,7 @@
  * ---
  * @file      spanish.php
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2024 Teampass.net
+ * @copyright 2009-2025 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
@@ -1202,18 +1202,27 @@ return array(
     'duo_redirect_uri' => 'Redirigiendo al aviso de Duo',
     'number_users_build_cache_tree' => 'Número de usuarios procesados para la tarea build_cache_tree.',
     'number_users_build_cache_tree_tip' => 'Número de usuarios procesados para la tarea build_cache_tree en cada ejecución del programador.',
-    'user_password_expired' => 'Your password has expired. Please change it.',
-    'user_password_policy_tip' => 'Th
-e new password must:<br/> - Be different from the previous one<br/> - Contain at least 10 characters<br/> - Contain at least one uppercase letter and one lowercase letter<br/> - Contain at least one number or special character<br/> - Not contain your name, first name, username, or email.',
-    'bruteforce_unlock_at' => 'Account unlocked at (anti bruteforce): ',
-    'bruteforce_reset_account' => 'Reset anti bruteforce of user',
-    'bruteforce_reset_mail_subject' => 'TEAMPASS - Your account is disabled',
-    'bruteforce_reset_mail_body' => 'Hello #name#,<br/><br/>Your teampass account has been locked due to a large number of authentication failures.<br/><br/>You can unblock it by clicking on this link <a href="#reset_url#" target="_blank">#reset_url#</a><br/><br/>Automatic unlock: #unlock_at#',
-    'disable_user_edit_profile' => 'Users can no longer edit their profile',
-    'disable_user_edit_language' => 'Users can no longer change language',
-    'disable_user_edit_timezone' => 'Users can no longer change time zones',
-    'disable_user_edit_tree_load_strategy' => 'Users can no longer change tree loading strategy',
-    'bruteforce_wait' => 'Too many failed attempts, your account is blocked until: ',
-    'disable_drag_drop' => 'Disable item drag and drop',
+    'user_password_expired' => 'Tu contraseña ha expirado. Por favor, cámbiala.',
+    'user_password_policy_tip' => 'La nueva contraseña debe cumplir con los siguientes requisitos:<br/> - Ser diferente a la anterior<br/> - Contener al menos 10 caracteres<br/> - Incluir al menos una letra mayúscula y una minúscula<br/> - Incluir al menos un número o un carácter especial<br/> - No contener tu nombre, apellidos, nombre de usuario o correo electrónico.',
+    'bruteforce_unlock_at' => 'Cuenta desbloqueada a las (anti fuerza bruta): ',
+    'bruteforce_reset_account' => 'Restablecer protección anti fuerza bruta del usuario',
+    'bruteforce_reset_mail_subject' => 'TEAMPASS - Tu cuenta está deshabilitada',
+    'bruteforce_reset_mail_body' => 'Hola #name#,<br/><br/>Tu cuenta de Teampass ha sido bloqueada debido a numerosos intentos fallidos de autenticación.<br/><br/>Puedes desbloquearla haciendo clic en este enlace <a href="#reset_url#" target="_blank">#reset_url#</a><br/><br/>Desbloqueo automático: #unlock_at#',
+    'disable_user_edit_profile' => 'Los usuarios ya no pueden editar su perfil',
+    'disable_user_edit_language' => 'Los usuarios ya no pueden cambiar el idioma',
+    'disable_user_edit_timezone' => 'Los usuarios ya no pueden cambiar la zona horaria',
+    'disable_user_edit_tree_load_strategy' => 'Los usuarios ya no pueden cambiar la estrategia de carga del árbol',
+    'bruteforce_wait' => 'Demasiados intentos fallidos, tu cuenta está bloqueada hasta: ',
+    'disable_drag_drop' => 'Deshabilitar la función de arrastrar y soltar elementos',
+    'clipboard_cleared' => 'Clipboard cleared',
+    'error_data_not_consistent' => 'Data is not consistent',
+    'error_permission_denied' => 'Permission denied',
+    'error_invalid_action' => 'Invalid action',
+    'error_fetching_password' => 'Error fetching password',
+    'unable_to_clear_clipboard' => 'Unable to clear the clipboard manually',
+    'clipboard_unsafe' => 'The clipboard could not be cleared automatically, this is unsafe!',
+    'clipboard_clear_now' => 'Clear it now!',
+    'clipboard_clearing_failed' => 'Clipboard clearing failed',
+    'clipboard_error' => 'Clipboard error',
 
 );

@@ -220,6 +220,439 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             // END
             // ---
         }
+
+        else if ($(this).data('action') === 'fix_items_master_keys_but') {
+            // check if possible
+            if ($('#fix_items_master_keys_user_id').val() === 0) {
+                toastr.remove();
+                toastr.error(
+                    '<?php echo $lang->get('user_config_not_compliant'); ?>1',
+                    '<?php echo $lang->get('caution'); ?>', {
+                        timeOut: 5000,
+                        progressBar: true
+                    }
+                );
+                return false;
+            } else if ($('#fix_items_master_keys_pwd').val() === '') {
+                toastr.remove();
+                toastr.error(
+                    '<?php echo $lang->get('user_config_not_compliant'); ?>1',
+                    '<?php echo $lang->get('caution'); ?>', {
+                        timeOut: 5000,
+                        progressBar: true
+                    }
+                );
+                return false;
+            }
+
+            // continue
+            $(this).prop('disabled', true);            
+            
+            // Ask confirmation to the user through a checkbox and button
+            $('#fix_items_master_keys_results').html(
+                '<div class="alert alert-warning" role="alert">'+
+                    '<i class="fas fa-exclamation-triangle"></i> '+
+                    'This operation will encrypt all items master keys using the ones from the selected user. '+
+                    'This operation is irreversible. '+
+                    '<br>Please confirm by checking the box below and clicking on the button.'+
+                    '<div class="form-check mt-2">'+
+                        '<input class="form-check-input" type="checkbox" value="" id="restore_items_master_keys_confirm">'+
+                        '<label class="form-check-label" for="restore_items_master_keys_confirm">'+
+                            'I confirm the operation and I have a backup of table <code>teampass_sharekeys_items</code>.'+
+                        '</label>'+
+                    '</div>'+
+                    '<button type="button" class="btn btn-danger mt-2 btn-sm tp-action" id="fix_items_master_keys_confirm_but" data-action="fix_items_master_keys_confirm_but">'+
+                        'Confirm'+
+                    '</button>'+
+                    '<button type="button" class="btn btn-secundary mt-2 ml-2 btn-sm tp-action" id="fix_items_master_keys_cancel_but" data-action="fix_items_master_keys_cancel_but">'+
+                        'Cancel'+
+                    '</button>'+
+                '</div>'
+            );
+        }
+
+        // Fix items shared keys -> CANCEL
+        else if ($(this).data('action') === 'fix_items_master_keys_cancel_but') {
+            //
+            $('#fix_items_master_keys_results').html("");
+            $('#fix_items_master_keys_but').prop('disabled', false);
+        }
+
+        // Fix items shared keys -> GO
+        else if ($(this).data('action') === 'fix_items_master_keys_confirm_but') {
+            // check if possible
+            if ($('#fix_items_master_keys_user_id').val() === 0) {
+                toastr.remove();
+                toastr.error(
+                    '<?php echo $lang->get('user_config_not_compliant'); ?>1',
+                    '<?php echo $lang->get('caution'); ?>', {
+                        timeOut: 5000,
+                        progressBar: true
+                    }
+                );
+                return false;
+            } else if ($('#fix_items_master_keys_pwd').val() === '') {
+                toastr.remove();
+                toastr.error(
+                    '<?php echo $lang->get('user_config_not_compliant'); ?>1',
+                    '<?php echo $lang->get('caution'); ?>', {
+                        timeOut: 5000,
+                        progressBar: true
+                    }
+                );
+                return false;
+            }
+
+            $('#fix_items_master_keys_results').html("");
+            toastr.remove();
+            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+
+            var data = {}
+
+            $.post(
+                "sources/tools.queries.php", {
+                    type: "perform_fix_items_master_keys-step1",
+                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                    key: "<?php echo $session->get('key'); ?>"
+                },
+                function(dataStep1) {
+                    dataStep1 = prepareExchangedData(dataStep1, 'decode', '<?php echo $session->get('key'); ?>');
+                    console.log(dataStep1);
+
+                    $('#fix_items_master_keys_results').html(dataStep1.message);
+
+                    if (dataStep1.error === true) {
+                        // Show error
+                        toastr.remove();
+                        toastr.error(
+                            dataStep1.message,
+                            '<?php echo $lang->get('caution'); ?>', {
+                                //timeOut: 5000,
+                                progressBar: true
+                            }
+                        );
+                        $('#fix_items_master_keys_but').prop('disabled', false);
+                    } else {
+                        $('#fix_items_master_keys_results').html('Step 1:<br>'+dataStep1.message+'<br>Public key is available');
+
+                        // Launch step 2
+                        // CHecking                        
+                        var data = {
+                            'userId': $('#fix_items_master_keys_user_id').val(),
+                            'userPassword': $('#fix_items_master_keys_pwd').val(),
+                        }
+                        console.log(data);
+                        $.post(
+                            "sources/tools.queries.php", {
+                                type: "perform_fix_items_master_keys-step2",
+                                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                                key: "<?php echo $session->get('key'); ?>"
+                            },
+                            function(dataStep2) {
+                                dataStep2 = prepareExchangedData(dataStep2, 'decode', '<?php echo $session->get('key'); ?>');
+                                console.log('-- STEP2 RESULTS --');
+                                console.log(dataStep2);
+
+                                $('#fix_items_master_keys_results').append('<br><br>Step 2:<br>'+dataStep2.message);
+
+                                if (dataStep2.error === true) {
+                                    // Show error
+                                    toastr.remove();
+                                    toastr.error(
+                                        dataStep2.message,
+                                        '<?php echo $lang->get('caution'); ?>', {
+                                            progressBar: true
+                                        }
+                                    );
+                                    $('#fix_items_master_keys_but').prop('disabled', false);
+                                } else {
+                                    //$('#fix_items_master_keys_results').append(dataStep2.message);
+                                    // Recursievely decrypt all items
+                                    function fetchData(startIndex, limit, operationCode, dataStep1, dataStep2) {
+                                        var data = {
+                                            'userId': $('#fix_items_master_keys_user_id').val(),
+                                            'tp_user_publicKey': dataStep1.tp_user_publicKey,
+                                            'selected_user_privateKey': dataStep2.selected_user_privateKey,
+                                            'nbItems': dataStep2.nb_items_to_proceed,
+                                            'startIndex': startIndex,
+                                            'limit': limit,
+                                            'operationCode': operationCode,
+                                        }
+                                        console.log(data);
+                                        $.post(
+                                            "sources/tools.queries.php", {
+                                                type: "perform_fix_items_master_keys-step3",
+                                                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                                                key: "<?php echo $session->get('key'); ?>"
+                                            },
+                                            function(dataStep3) {
+                                                dataStep3 = prepareExchangedData(dataStep3, 'decode', '<?php echo $session->get('key'); ?>');
+                                                console.log(dataStep3);
+
+                                                if (dataStep2.error === true) {
+                                                    $('#fix_items_master_keys_results').append(dataStep3.message);
+                                                    // Show error
+                                                    toastr.remove();
+                                                    toastr.error(
+                                                        dataStep3.message,
+                                                        '<?php echo $lang->get('caution'); ?>', {
+                                                            //timeOut: 5000,
+                                                            progressBar: true
+                                                        }
+                                                    );
+                                                    $('#fix_items_master_keys_but').prop('disabled', false);
+                                                } else { 
+                                                    updateProgressBar(dataStep3.nextIndex, dataStep2.nb_items_to_proceed); // Update progress bar
+                                                    if (dataStep3.status === 'continue') {
+                                                        fetchData(
+                                                            dataStep3.nextIndex,
+                                                            limit,
+                                                            dataStep3.operationCode,
+                                                            dataStep1,
+                                                            dataStep2
+                                                        );  // Rappelle la fonction avec le nouvel index
+                                                    } else {
+                                                        $('#fix_items_master_keys-progress').remove();
+                                                        //$('#fix_items_master_keys-progressbar').remove();
+                                                        $('#fix_items_master_keys_results').append('Items master key have been encrypted.');
+                                                        $('#fix_items_master_keys_but').prop('disabled', false);
+
+                                                        toastr.remove();
+                                                        toastr.success(
+                                                            '',
+                                                            'Done', {
+                                                                timeOut: 5000,
+                                                                progressBar: true
+                                                            }
+                                                        );
+                                                    }
+                                                }
+                                            }
+                                        );
+                                    }
+
+                                    function updateProgressBar(offset, totalSize) {
+                                        // Show progress to user
+                                        var percentage = Math.round((offset / totalSize) * 100);
+                                        //$('#fix_items_master_keys-progress-text').text(percentage);
+                                        //$('#fix_items_master_keys-progress-text2').text('('+offset+' / '+totalSize+')');
+                                        $('#fix_items_master_keys-progressbar-value').css('width', percentage+'%').text(percentage+'%');
+                                    }
+
+                                    $('#fix_items_master_keys_results').append(                                        
+                                        '<br><br>Step 3:<br>'+
+                                        '<div class="alert alert-info ml-2 mt-1 mr-2" id="fix_items_master_keys-progress">'+
+                                            '<i class="mr-2 fa-solid fa-rocket fa-beat"></i>Encryption process performed at'+ // <b><span id="fix_items_master_keys-progress-text">0</span>%</b>'+
+                                            //'<span class="ml-3" id="fix_items_master_keys-progress-text2">(0 / '+dataStep2.nb_items_to_proceed+')</span>'+
+                                            '<div class="progress mt-3" id="fix_items_master_keys-progressbar">'+
+                                                '<div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"  style="width: 0%" id="fix_items_master_keys-progressbar-value">0%</div>'+                                            
+                                            '</div>'+
+                                        '</div>'
+                                    );
+                                    // Exemple d'appel initial
+                                    fetchData(0, 50, '', dataStep1, dataStep2);
+                                }
+                            }
+                        );
+                    }
+                }
+            );
+        } 
+
+        
+        /**
+         * Restore backup
+         */
+        else if ($(this).data('action') === 'restore_items_master_keys_but') {
+            // check if possible
+            if ($('#restore_items_master_keys_id').val() === 0) {
+                toastr.remove();
+                toastr.error(
+                    'You need to select a backup file',
+                    '<?php echo $lang->get('caution'); ?>', {
+                        timeOut: 5000,
+                        progressBar: true
+                    }
+                );
+                return false;
+            }
+
+            $(this).prop('disabled', true);
+            $('#restore_items_master_keys_id').prop('disabled', true);
+            
+            // Ask confirmation to the user through a checkbox and button
+            $('#restore_items_master_keys_results').html(
+                '<div class="alert alert-warning" role="alert">'+
+                    '<i class="fas fa-exclamation-triangle"></i> '+
+                    'This operation will restore all items master keys from the backup file. '+
+                    'This operation is irreversible. '+
+                    '<br>Please confirm by checking the box below and clicking on the button.'+
+                    '<div class="form-check mt-2">'+
+                        '<input class="form-check-input" type="checkbox" value="" id="restore_items_master_keys_confirm">'+
+                        '<label class="form-check-label" for="restore_items_master_keys_confirm">'+
+                            'I confirm the operation and I understand that it is irreversible'+
+                        '</label>'+
+                    '</div>'+
+                    '<button type="button" class="btn btn-danger mt-2 btn-sm tp-action" id="restore_items_master_keys_confirm_but" data-action="restore_items_master_keys_confirm_but">'+
+                        'Confirm'+
+                    '</button>'+
+                    '<button type="button" class="btn btn-secundary mt-2 ml-2 btn-sm tp-action" id="restore_items_master_keys_cancel_but" data-action="restore_items_master_keys_cancel_but">'+
+                        'Cancel'+
+                    '</button>'+
+                '</div>'
+            );
+        }
+        
+        /**
+         * Restore backup -> CANCEL
+         */
+        else if ($(this).data('action') === 'restore_items_master_keys_cancel_but') {
+            //
+            $('#restore_items_master_keys_results').html("");
+            $('#restore_items_master_keys_id').prop('disabled', false);
+            $('#restore_items_master_keys_but').prop('disabled', false);
+        }
+        
+        /**
+         * Restore backup -> GO
+         */
+        else if ($(this).data('action') === 'restore_items_master_keys_confirm_but') {
+            // check if possible
+            if ($('#restore_items_master_keys_id').val() === 0) {
+                toastr.remove();
+                toastr.error(
+                    'You need to select a backup file',
+                    '<?php echo $lang->get('caution'); ?>', {
+                        timeOut: 5000,
+                        progressBar: true
+                    }
+                );
+                return false;
+            }
+
+            $('#restore_items_master_keys_results').html("");
+            $('#restore_items_master_keys_id').prop('disabled', true);
+
+            // continue
+            toastr.remove();
+            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+
+            var data = {
+                'operationCode': $('#restore_items_master_keys_id').val(),
+            }
+
+            $.post(
+                "sources/tools.queries.php", {
+                    type: "restore_items_master_keys_from_backup",
+                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                    key: "<?php echo $session->get('key'); ?>"
+                },
+                function(dataStep1) {
+                    dataStep1 = prepareExchangedData(dataStep1, 'decode', '<?php echo $session->get('key'); ?>');
+                    console.log(dataStep1);
+
+                    $('#restore_items_master_keys_results').html(dataStep1.message);
+                    $('#restore_items_master_keys_but').prop('disabled', false);
+
+                    if (dataStep1.error === true) {
+                        // Show error
+                        toastr.remove();
+                        toastr.error(
+                            dataStep1.message,
+                            '<?php echo $lang->get('caution'); ?>', {
+                                //timeOut: 5000,
+                                progressBar: true
+                            }
+                        );
+                        $(this).prop('disabled', false);
+                    } else {
+                        $('#restore_items_master_keys_id')
+                            .find(":selected").remove()
+                            .val(0);
+
+                        // Show user                        
+                        toastr.remove();
+                        toastr.success(
+                            '<?php echo $lang->get('done'); ?>',
+                            '', {
+                                timeOut: 5000
+                            }
+                        );
+                    }
+                }
+            );
+        }
+
+                
+        /**
+         * Delete backup
+         */
+        else if ($(this).data('action') === 'delete_restore_backup_but') {
+            // check if possible
+            if ($('#restore_items_master_keys_id').val() === 0) {
+                toastr.remove();
+                toastr.error(
+                    'You need to select a backup file',
+                    '<?php echo $lang->get('caution'); ?>', {
+                        timeOut: 5000,
+                        progressBar: true
+                    }
+                );
+                return false;
+            }
+
+            // Confirm action
+            if (confirm('Are you sure you want to delete this backup file?')) {
+                // continue
+                $(this).prop('disabled', true);
+                $('#restore_items_master_keys_results').html("");
+                toastr.remove();
+                toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+
+                var data = {
+                    'operationCode': $('#restore_items_master_keys_id').val(),
+                }
+
+                $.post(
+                    "sources/tools.queries.php", {
+                        type: "perform_delete_restore_backup",
+                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                        key: "<?php echo $session->get('key'); ?>"
+                    },
+                    function(dataStep) {
+                        dataStep = prepareExchangedData(dataStep, 'decode', '<?php echo $session->get('key'); ?>');
+
+                        $('#delete_restore_backup_but').prop('disabled', false);
+
+                        if (dataStep.error === true) {
+                            // Show error
+                            toastr.remove();
+                            toastr.error(
+                                dataStep.message,
+                                '<?php echo $lang->get('caution'); ?>', {
+                                    //timeOut: 5000,
+                                    progressBar: true
+                                }
+                            );
+                            $(this).prop('disabled', false);
+                        } else {
+                            $('#restore_items_master_keys_id')
+                                .find(":selected").remove()
+                                .val(0);
+
+                            // Inform user
+                            toastr.remove();
+                            toastr.success(
+                                dataStep.message,
+                                'Done', {
+                                    timeOut: 10000
+                                }
+                            );
+                        }
+                    }
+                );
+            }
+        }
     });
 
     /**

@@ -28,6 +28,13 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'unable_to_clear_clipboard' => 'Unable to clear the clipboard manually',
+    'clipboard_unsafe' => 'The clipboard could not be cleared automatically, this is unsafe!',
+    'clipboard_clear_now' => 'Clear it now!',
+    'clipboard_clearing_failed' => 'Clipboard clearing failed',
+    'clipboard_error' => 'Clipboard error',
+    'error_fetching_password' => 'Error fetching password',
+    'clipboard_cleared' => 'Clipboard cleared',
     'user_password_expired' => 'Your password has expired. Please change it.',
     'oauth2_client_urlResourceOwnerDetails' => 'URL to get user details',
     'oauth2_client_urlResourceOwnerDetails_tip' => 'URL to get user details. It is used to get user details after authentication.',
