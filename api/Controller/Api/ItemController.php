@@ -132,7 +132,7 @@ class ItemController extends BaseController
             && isset($arrQueryStringParams['anyone_can_modify']) === true
         ) {
             //
-            if (in_array($arrQueryStringParams['folder_id'], $userData['folders_list']) === false) {
+            if (in_array($arrQueryStringParams['folder_id'], $userData['folders_list']) === false && $userData['user_can_create_root_folder'] === 0) {
                 return [
                     'error' => true,
                     'strErrorDesc' => 'User is not allowed in this folder',

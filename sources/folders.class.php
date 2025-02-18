@@ -73,7 +73,8 @@ class FolderManager
         }
 
         if (!$this->isParentFolderAllowed($parent_id, $user_accessible_folders, $user_is_admin)) {
-            return $this->errorResponse($this->lang->get('error_folder_not_allowed_for_this_user'));
+           if ($parent_id != 0 && $user_can_create_root_folder == false )
+               return $this->errorResponse($this->lang->get('error_folder_not_allowed_for_this_user'));
         }
 
         if (!$this->checkDuplicateFolderAllowed($title) && $personal_folder == 0) {
@@ -350,7 +351,7 @@ class FolderManager
         if (empty($cache_tree)) {
             DB::insert(prefixTable('cache_tree'), [
                 'user_id' => $user_id,
-                'folders' => json_encode($newId),
+                'folders' => json_encode([$newId,]),
                 'visible_folders' => json_encode($new_json),
                 'timestamp' => time(),
                 'data' => '[{}]',
