@@ -384,6 +384,7 @@ class FolderManager
         );
 
         if (empty($cache_tree)) {
+<<<<<<< HEAD
             DB::insert(
                 prefixTable('cache_tree'), 
                 [
@@ -394,6 +395,15 @@ class FolderManager
                     'data' => '[{}]',
                 ]
             );
+=======
+            DB::insert(prefixTable('cache_tree'), [
+                'user_id' => $user_id,
+                'folders' => json_encode([$newId]),
+                'visible_folders' => json_encode($new_json),
+                'timestamp' => time(),
+                'data' => '[{}]',
+            ]);
+>>>>>>> 7bd3d6ef1 (Fixes in patch:)
         } else {
             $folders = json_decode($cache_tree['folders'] ?? '[]', true);
             $visible_folders = json_decode($cache_tree['visible_folders'] ?? '[]', true);
