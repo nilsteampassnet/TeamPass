@@ -342,7 +342,8 @@ class ItemModel
         );
 
         if (DB::count() > 0 && (
-            (isset($SETTINGS['duplicate_item']) && (int) $SETTINGS['duplicate_item'] === 0))
+	     (isset($SETTINGS['duplicate_item']) && (int) $SETTINGS['duplicate_item'] === 0)
+	     && (int) $itemInfos['personal_folder'] === 0)
         ) {
             throw new Exception('Similar item already exists. Duplicates are not allowed.');
         }
