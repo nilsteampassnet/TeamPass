@@ -351,7 +351,7 @@ class FolderManager
         if (empty($cache_tree)) {
             DB::insert(prefixTable('cache_tree'), [
                 'user_id' => $user_id,
-                'folders' => json_encode([$newId,]),
+                'folders' => json_encode([$newId]),
                 'visible_folders' => json_encode($new_json),
                 'timestamp' => time(),
                 'data' => '[{}]',

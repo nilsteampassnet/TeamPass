@@ -59,14 +59,13 @@ class BaseController
     public function getQueryStringParams()
     {
         $request = symfonyRequest::createFromGlobals();
-       $queryString = $request->getQueryString();
-       if ($request->getContentTypeFormat() != 'application/json') {
-               parse_str(html_entity_decode($queryString), $query);
-               return $this->sanitizeUrl($query);
-       }
+        $queryString = $request->getQueryString();
+        if ($request->getContentTypeFormat() != 'application/json') {
+            parse_str(html_entity_decode($queryString), $query);
+            return $this->sanitizeUrl($query);
+        }
 
-       return $request->toArray();
-
+        return $request->toArray();
     }
 
     /**
