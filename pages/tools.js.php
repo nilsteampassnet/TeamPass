@@ -327,7 +327,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         toastr.error(
                             dataStep1.message,
                             '<?php echo $lang->get('caution'); ?>', {
-                                //timeOut: 5000,
+                                timeOut: 5000,
                                 progressBar: true
                             }
                         );

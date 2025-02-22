@@ -298,6 +298,7 @@ case 'perform_fix_pf_items-step3':
     );
     break;
 
+    /* TOOL #2 - Fixing items master keys */
     /*
     * STEP 1 - Check if we have the correct pwd for TP_USER
     */
@@ -345,14 +346,21 @@ case 'perform_fix_pf_items-step3':
         $privateKey = decryptPrivateKey($pwd, $userInfo['private_key']);
 
         if (empty($privateKey) === true) {
-            echo prepareExchangedData(
+            // Generate new keys for TP user
+            $userKeys = generateUserKeys($pwd);
+
+            // Update user keys
+            DB::update(
+                prefixTable('users'),
                 array(
-                    'error' => false,
-                    'message' => 'Master password not decrypted, let\'s try using provided account.',
+                    'public_key' => $userKeys['public_key'],
+                    'private_key' => $userKeys['private_key'],
                 ),
-                'encode'
+                'id = %i',
+                TP_USER_ID
             );
-            break;
+
+            $privateKey = decryptPrivateKey($pwd, $userKeys['private_key']);
         }
 
         // Checking that this pwd cannot decrypt an item sharekey        
@@ -383,6 +391,7 @@ case 'perform_fix_pf_items-step3':
                     ),
                     'encode'
                 );
+                break;
             }
         }
         
@@ -446,7 +455,6 @@ case 'perform_fix_pf_items-step3':
         // decrypt user provate key
         $privateKey = decryptPrivateKey($userPwd, $userInfo['private_key']);
 
-        //error_log('pwd: '.$userPwd. ' - privateKey: ' . $privateKey);
         if (is_null($privateKey) === true || empty($privateKey) === true) {
             echo prepareExchangedData(
                 array(
@@ -507,7 +515,6 @@ case 'perform_fix_pf_items-step3':
                     0,
                     $userId
                 );
-
                 
                 echo prepareExchangedData(
                     array(
@@ -518,6 +525,7 @@ case 'perform_fix_pf_items-step3':
                     ),
                     'encode'
                 );
+                break;
             }
         }
         
@@ -582,14 +590,14 @@ case 'perform_fix_pf_items-step3':
         // Loop on items
         DB::debugMode(false);
         $rows = DB::query(
-            'SELECT *
-            FROM ' . prefixTable('sharekeys_items') . '
-            WHERE user_id = %i
-            ORDER BY increment_id ASC
+            'SELECT si.object_id AS object_id, si.share_key AS share_key, i.pw AS pw, si.increment_id as increment_id
+            FROM ' . prefixTable('sharekeys_items') . ' AS si
+            INNER JOIN ' . prefixTable('items') . ' AS i ON (i.id = si.object_id)
+            WHERE si.user_id = %i
+            ORDER BY si.increment_id ASC
             LIMIT ' . $startIndex . ', ' . $limit,
             $userId
-        );
-        
+        );        
         DB::debugMode(false);
 
         //error_log($selectedUserPrivateKey);
