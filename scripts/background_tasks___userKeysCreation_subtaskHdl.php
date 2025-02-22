@@ -346,11 +346,11 @@ function cronContinueReEncryptingUserSharekeysStep20(
         
         // Prevent to change key if its key is empty
         if (empty($itemKey) === true) {
-            continue;
+            $share_key_for_item = '';
+        } else {
+            // Encrypt Item key
+            $share_key_for_item = encryptUserObjectKey($itemKey, $user_public_key);
         }
-
-        // Encrypt Item key
-        $share_key_for_item = encryptUserObjectKey($itemKey, $user_public_key);
         
         $currentUserKey = DB::queryFirstRow(
             'SELECT increment_id
