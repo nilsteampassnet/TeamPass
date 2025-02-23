@@ -92,7 +92,7 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
     <div class="container-fluid">
         <div class="row mb-2">
             <div class="col-sm-12">
-                <h1 class="m-0 text-dark"><i class="fas fa-screwdriver-wrench mr-2"></i><?php echo $lang->get('tools'); ?></h1>
+                <h1 class="m-0 text-dark"><i class="fas fa-person-drowning mr-2"></i><?php echo $lang->get('tools'); ?></h1>
             </div><!-- /.col -->
         </div><!-- /.row -->
     </div><!-- /.container-fluid -->
@@ -107,8 +107,11 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
             <div class='col-md-12'>
                 <div class='row mb-3'>
                     <div class='col-12'>
-                        <div class="alert alert-danger" role="alert">
-                            <?php echo $lang->get('tools_usage_warning'); ?>
+                        <div class="alert alert-danger pt-4 pb-4" role="alert">
+                            <h5 class="m-0 text-dark">
+                                <i class="fas fa-bullhorn mr-2"></i>
+                                <?php echo $lang->get('tools_usage_warning'); ?>
+                            </h5>
                         </div>
                     </div>
                 </div>

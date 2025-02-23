@@ -93,7 +93,7 @@ switch ($post_type) {
 //CASE for creating a DB backup
 case 'perform_fix_pf_items-step1':
     // Check KEY
-    if ($post_key !== $session->get('key')) {
+    if (!hash_equals((string) $session->get('key'), (string) $post_key)) {
         echo prepareExchangedData(
             array(
                 'error' => true,
@@ -104,7 +104,7 @@ case 'perform_fix_pf_items-step1':
         break;
     }
     // Is admin?
-    if ($session->get('user-admin') !== 1) {
+    if ((int) $session->get('user-admin') !== 1) {
         echo prepareExchangedData(
             array(
                 'error' => true,
@@ -169,7 +169,7 @@ case 'perform_fix_pf_items-step1':
 
 case 'perform_fix_pf_items-step2':
     // Check KEY
-    if ($post_key !== $session->get('key')) {
+    if (!hash_equals((string) $session->get('key'), (string) $post_key)) {
         echo prepareExchangedData(
             array(
                 'error' => true,
@@ -180,7 +180,7 @@ case 'perform_fix_pf_items-step2':
         break;
     }
     // Is admin?
-    if ($session->get('user-admin') !== 1) {
+    if ((int) $session->get('user-admin') !== 1) {
         echo prepareExchangedData(
             array(
                 'error' => true,
@@ -233,7 +233,7 @@ case 'perform_fix_pf_items-step2':
 
 case 'perform_fix_pf_items-step3':
     // Check KEY
-    if ($post_key !== $session->get('key')) {
+    if (!hash_equals((string) $session->get('key'), (string) $post_key)) {
         echo prepareExchangedData(
             array(
                 'error' => true,
@@ -244,7 +244,7 @@ case 'perform_fix_pf_items-step3':
         break;
     }
     // Is admin?
-    if ($session->get('user-admin') !== 1) {
+    if ((int) $session->get('user-admin') !== 1) {
         echo prepareExchangedData(
             array(
                 'error' => true,
@@ -304,7 +304,7 @@ case 'perform_fix_pf_items-step3':
     */
     case 'perform_fix_items_master_keys-step1':
         // Check KEY
-        if ($post_key !== $session->get('key')) {
+        if (!hash_equals((string) $session->get('key'), (string) $post_key)) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -315,7 +315,7 @@ case 'perform_fix_pf_items-step3':
             break;
         }
         // Is admin?
-        if ($session->get('user-admin') !== 1) {
+        if ((int) $session->get('user-admin') !== 1) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -341,11 +341,12 @@ case 'perform_fix_pf_items-step3':
         );
 
         // decrypt owner password
-        $pwd = cryption($userInfo['pw'], '','decrypt', $SETTINGS)['string'];
+        $decryptedData = cryption($userInfo['pw'], '', 'decrypt', $SETTINGS);
+        $pwd = is_array($decryptedData) && isset($decryptedData['string']) ? $decryptedData['string'] : '';
 
         $privateKey = decryptPrivateKey($pwd, $userInfo['private_key']);
 
-        if (empty($privateKey) === true) {
+        if (empty($privateKey)) {
             // Generate new keys for TP user
             $userKeys = generateUserKeys($pwd);
 
@@ -361,6 +362,10 @@ case 'perform_fix_pf_items-step3':
             );
 
             $privateKey = decryptPrivateKey($pwd, $userKeys['private_key']);
+
+            if (empty($privateKey)) {
+                error_log("Teampass - Error: impossible to decrypt the private key for master user");
+            }
         }
 
         // Checking that this pwd cannot decrypt an item sharekey        
@@ -375,13 +380,13 @@ case 'perform_fix_pf_items-step3':
             TP_USER_ID
         );
         
-        //* REMOVED FOR DEV PURPOSE ; THIS SHOULD BE KEPT IN NORMAL CASE
-        if (is_countable($currentUserKey) && count($currentUserKey) > 0) {
+        //* CAN BE COMMENTED OUT FOR DEV PURPOSE ; THIS SHOULD BE KEPT IN NORMAL CASE
+        if (!empty($currentUserKey)) {
             // Decrypt itemkey with user key
             // use old password to decrypt private_key
             $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $privateKey);
             
-            if (empty(base64_decode($itemKey)) === false) {
+            if (!empty(@base64_decode($itemKey))) {
                 // GOOD password
                 // THings all good
                 echo  prepareExchangedData(
@@ -414,7 +419,7 @@ case 'perform_fix_pf_items-step3':
     */
     case 'perform_fix_items_master_keys-step2':
         // Check KEY
-        if ($post_key !== $session->get('key')) {
+        if (!hash_equals((string) $session->get('key'), (string) $post_key)) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -425,7 +430,7 @@ case 'perform_fix_pf_items-step3':
             break;
         }
         // Is admin?
-        if ($session->get('user-admin') !== 1) {
+        if ((int) $session->get('user-admin') !== 1) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -455,7 +460,7 @@ case 'perform_fix_pf_items-step3':
         // decrypt user provate key
         $privateKey = decryptPrivateKey($userPwd, $userInfo['private_key']);
 
-        if (is_null($privateKey) === true || empty($privateKey) === true) {
+        if (empty($privateKey)) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -478,18 +483,18 @@ case 'perform_fix_pf_items-step3':
             $userId
         );
 
-        if (is_countable($currentUserKey) && count($currentUserKey) > 0) {
+        if (!empty($currentUserKey)) {
             // Decrypt itemkey with user key
             // use old password to decrypt private_key
             $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $privateKey);
             
-            if (empty(base64_decode($itemKey)) === false) {
+            if (!empty(@base64_decode($itemKey))) {
                 // GOOD password
                 // THings all good
 
                 // Check and prepare backup table
-                DB::query("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '".prefixTable('sharekeys_backup')."'");
-                if (DB::count() === 0) {
+                $tableExists = DB::queryFirstField("SHOW TABLES LIKE %s", prefixTable('sharekeys_backup'));
+                if (empty($tableExists)) {
                     // Table doesn't exist, create it
                     DB::query(
                         'CREATE TABLE `'.prefixTable('sharekeys_backup').'` (
@@ -544,7 +549,7 @@ case 'perform_fix_pf_items-step3':
     */
     case 'perform_fix_items_master_keys-step3':
         // Check KEY
-        if ($post_key !== $session->get('key')) {
+        if (!hash_equals((string) $session->get('key'), (string) $post_key)) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -555,7 +560,7 @@ case 'perform_fix_pf_items-step3':
             break;
         }
         // Is admin?
-        if ($session->get('user-admin') !== 1) {
+        if ((int) $session->get('user-admin') !== 1) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -571,89 +576,93 @@ case 'perform_fix_pf_items-step3':
             $post_data,
             'decode'
         );
-        $userId = filter_var($dataReceived['userId'], FILTER_SANITIZE_NUMBER_INT);
-        $tpUserPublicKey = filter_var($dataReceived['tp_user_publicKey'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-        $selectedUserPrivateKey = filter_var($dataReceived['selected_user_privateKey'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-        $nbItems = filter_var($dataReceived['nbItems'], FILTER_SANITIZE_NUMBER_INT);
-        $startIndex = filter_var($dataReceived['startIndex'], FILTER_SANITIZE_NUMBER_INT);
-        $limit = filter_var($dataReceived['limit'], FILTER_SANITIZE_NUMBER_INT);
-        $operationCode = filter_var($dataReceived['operationCode'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        $userId = intval($dataReceived['userId']);
+        $tpUserPublicKey = htmlspecialchars($dataReceived['tp_user_publicKey'], ENT_QUOTES, 'UTF-8');
+        $selectedUserPrivateKey = htmlspecialchars($dataReceived['selected_user_privateKey'], ENT_QUOTES, 'UTF-8');
+        $nbItems = intval($dataReceived['nbItems']);
+        $startIndex = intval($dataReceived['startIndex']);
+        $limit = intval($dataReceived['limit']);
+        $operationCode = htmlspecialchars($dataReceived['operationCode'], ENT_QUOTES, 'UTF-8');
+
 
         // Start transaction for better performance
-        DB::startTransaction();
+        try {
+            DB::startTransaction();
 
-        // If we are starting then generate a code
-        if (empty($operationCode) === true) {
-            $operationCode = uniqidReal(32);
-        }
-
-        // Loop on items
-        DB::debugMode(false);
-        $rows = DB::query(
-            'SELECT si.object_id AS object_id, si.share_key AS share_key, i.pw AS pw, si.increment_id as increment_id
-            FROM ' . prefixTable('sharekeys_items') . ' AS si
-            INNER JOIN ' . prefixTable('items') . ' AS i ON (i.id = si.object_id)
-            WHERE si.user_id = %i
-            ORDER BY si.increment_id ASC
-            LIMIT ' . $startIndex . ', ' . $limit,
-            $userId
-        );        
-        DB::debugMode(false);
-
-        //error_log($selectedUserPrivateKey);
-        
-        foreach ($rows as $record) {
-            // Decrypt itemkey with admin key
-            $itemKey = decryptUserObjectKey(
-                $record['share_key'],
-                $selectedUserPrivateKey
-            );
-            
-            // Prevent to change key if its key is empty
-            if (empty($itemKey) === true) {
-                continue;
+            // If we are starting then generate a code
+            if (empty($operationCode)) {
+                $operationCode = uniqidReal(32);
             }
 
-            // Encrypt Item key for TP USER
-            $share_key_for_item = encryptUserObjectKey($itemKey, $tpUserPublicKey);
+            // Loop on items
+            $rows = DB::query(
+                'SELECT si.object_id AS object_id, si.share_key AS share_key, i.pw AS pw, si.increment_id as increment_id
+                FROM ' . prefixTable('sharekeys_items') . ' AS si
+                INNER JOIN ' . prefixTable('items') . ' AS i ON (i.id = si.object_id)
+                WHERE si.user_id = %i
+                ORDER BY si.increment_id ASC
+                LIMIT ' . $startIndex . ', ' . $limit,
+                $userId
+            );        
             
-            // Get object for TP USER
-            // It will be updated if already exists
-            $currentTPUserKey = DB::queryFirstRow(
-                'SELECT increment_id, user_id, share_key
-                FROM ' . prefixTable('sharekeys_items') . '
-                WHERE object_id = %i AND user_id = %i',
-                $record['object_id'],
-                TP_USER_ID
-            );
-            
-            if (DB::count() > 0) {
-                // Backup current value
-                DB::insert(
-                    prefixTable('sharekeys_backup'),
-                    array(
-                        'object_id' => (int) $record['object_id'],
-                        'user_id' => (int) $currentTPUserKey['user_id'],
-                        'share_key' => $currentTPUserKey['share_key'],
-                        'object_type' => 'item',
-                        'increment_id_value' => (int) $currentTPUserKey['increment_id'],
-                        'operation_code' => $operationCode,
-                    )
-                );
+            if (!empty($rows)) {
+                foreach ($rows as $record) {
+                    // Decrypt itemkey with admin key
+                    $itemKey = decryptUserObjectKey(
+                        $record['share_key'],
+                        $selectedUserPrivateKey
+                    );
+                    
+                    // Prevent to change key if its key is empty
+                    if (empty($itemKey) === true) {
+                        continue;
+                    }
 
-                // NOw update
-                DB::update(
-                    prefixTable('sharekeys_items'),
-                    array(
-                        'share_key' => $share_key_for_item,
-                    ),
-                    'increment_id = %i',
-                    $currentTPUserKey['increment_id']
-                );
+                    // Encrypt Item key for TP USER
+                    $share_key_for_item = encryptUserObjectKey($itemKey, $tpUserPublicKey);
+                    
+                    // Get object for TP USER
+                    // It will be updated if already exists
+                    $currentTPUserKey = DB::queryFirstRow(
+                        'SELECT increment_id, user_id, share_key
+                        FROM ' . prefixTable('sharekeys_items') . '
+                        WHERE object_id = %i AND user_id = %i',
+                        $record['object_id'],
+                        TP_USER_ID
+                    );
+                    
+                    if (!empty($currentTPUserKey)) {
+                        // Backup current value
+                        DB::insert(
+                            prefixTable('sharekeys_backup'),
+                            array(
+                                'object_id' => (int) $record['object_id'],
+                                'user_id' => (int) $currentTPUserKey['user_id'],
+                                'share_key' => $currentTPUserKey['share_key'],
+                                'object_type' => 'item',
+                                'increment_id_value' => (int) $currentTPUserKey['increment_id'],
+                                'operation_code' => $operationCode,
+                            )
+                        );
+
+                        // NOw update
+                        DB::update(
+                            prefixTable('sharekeys_items'),
+                            array(
+                                'share_key' => $share_key_for_item,
+                            ),
+                            'increment_id = %i',
+                            $currentTPUserKey['increment_id']
+                        );
+                    }
+                }
             }
+            // Commit transaction
+            DB::commit();
+        } catch (Exception $e) {
+            DB::rollback();
+            error_log("Teampass - Error: Keys treatment: " . $e->getMessage());
         }
-        // Commit transaction
-        DB::commit();
 
         $nextIndex = (int) $startIndex + (int) $limit;
         
@@ -675,7 +684,7 @@ case 'perform_fix_pf_items-step3':
         */
         case 'restore_items_master_keys_from_backup':
             // Check KEY
-            if ($post_key !== $session->get('key')) {
+            if (!hash_equals((string) $session->get('key'), (string) $post_key)) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -686,7 +695,7 @@ case 'perform_fix_pf_items-step3':
                 break;
             }
             // Is admin?
-            if ($session->get('user-admin') !== 1) {
+            if ((int) $session->get('user-admin') !== 1) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -767,7 +776,7 @@ case 'perform_fix_pf_items-step3':
         */
         case 'perform_delete_restore_backup':
             // Check KEY
-            if ($post_key !== $session->get('key')) {
+            if (!hash_equals((string) $session->get('key'), (string) $post_key)) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -778,7 +787,7 @@ case 'perform_fix_pf_items-step3':
                 break;
             }
             // Is admin?
-            if ($session->get('user-admin') !== 1) {
+            if ((int) $session->get('user-admin') !== 1) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,

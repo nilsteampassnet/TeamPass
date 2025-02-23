@@ -609,7 +609,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
             echo '
                     <li class="nav-item">
                         <a href="#" data-name="tools" class="nav-link', $get['page'] === 'tools' ? ' active' : '', '">
-                        <i class="nav-icon fa-solid fa-screwdriver-wrench"></i>
+                        <i class="nav-icon fa-solid fa-person-drowning"></i>
                         <p>
                             ' . $lang->get('tools') . '
                         </p>
