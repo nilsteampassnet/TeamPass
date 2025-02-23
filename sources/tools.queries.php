@@ -342,7 +342,7 @@ case 'perform_fix_pf_items-step3':
 
         // decrypt owner password
         $decryptedData = cryption($userInfo['pw'], '', 'decrypt', $SETTINGS);
-        $pwd = is_array($decryptedData) && isset($decryptedData['string']) ? $decryptedData['string'] : '';
+        $pwd = $decryptedData['string'] ?? '';
 
         $privateKey = decryptPrivateKey($pwd, $userInfo['private_key']);
 

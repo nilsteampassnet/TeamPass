@@ -318,9 +318,10 @@ function cronContinueReEncryptingUserSharekeysStep20(
     $rows = DB::query(
         'SELECT id, pw, perso
         FROM ' . prefixTable('items') . '
-        '.(isset($extra_arguments['only_personal_items']) === true && $extra_arguments['only_personal_items'] === 1 ? 'WHERE perso = 1' : 'WHERE perso = 0').'
+        WHERE perso =  %i
         ORDER BY id ASC
-        LIMIT ' . $post_start . ', ' . $post_length
+        LIMIT ' . $post_start . ', ' . $post_length,
+        ($extra_arguments['only_personal_items'] ?? 0) === 1 ? 1 : 0
     );
 
     foreach ($rows as $record) {
