@@ -318,11 +318,12 @@ function cronContinueReEncryptingUserSharekeysStep20(
     $rows = DB::query(
         'SELECT id, pw, perso
         FROM ' . prefixTable('items') . '
-        '.(isset($extra_arguments['only_personal_items']) === true && $extra_arguments['only_personal_items'] === 1 ? 'WHERE perso = 1' : '').'
+        WHERE perso =  %i
         ORDER BY id ASC
-        LIMIT ' . $post_start . ', ' . $post_length
+        LIMIT ' . $post_start . ', ' . $post_length,
+        ($extra_arguments['only_personal_items'] ?? 0) === 1 ? 1 : 0
     );
-    //    WHERE perso = 0
+
     foreach ($rows as $record) {
         // Get itemKey from current user
         $currentUserKey = DB::queryFirstRow(
@@ -330,7 +331,6 @@ function cronContinueReEncryptingUserSharekeysStep20(
             FROM ' . prefixTable('sharekeys_items') . '
             WHERE object_id = %i AND user_id = %i',
             $record['id'],
-            //$extra_arguments['owner_id']
             (int) $record['perso'] === 0 ? $extra_arguments['owner_id'] : $extra_arguments['new_user_id']
         );
 
@@ -342,17 +342,16 @@ function cronContinueReEncryptingUserSharekeysStep20(
         // Decrypt itemkey with admin key
         $itemKey = decryptUserObjectKey(
             $currentUserKey['share_key'],
-            //$ownerInfo['private_key']
             (int) $record['perso'] === 0 ? $ownerInfo['private_key'] : $userInfo['private_key']
         );
         
         // Prevent to change key if its key is empty
         if (empty($itemKey) === true) {
-            continue;
+            $share_key_for_item = '';
+        } else {
+            // Encrypt Item key
+            $share_key_for_item = encryptUserObjectKey($itemKey, $user_public_key);
         }
-
-        // Encrypt Item key
-        $share_key_for_item = encryptUserObjectKey($itemKey, $user_public_key);
         
         $currentUserKey = DB::queryFirstRow(
             'SELECT increment_id
@@ -362,7 +361,7 @@ function cronContinueReEncryptingUserSharekeysStep20(
             $post_user_id
         );
 
-        if (DB::count() > 0) {
+        if ($currentUserKey) {
             // NOw update
             DB::update(
                 prefixTable('sharekeys_items'),
