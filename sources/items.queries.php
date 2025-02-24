@@ -1199,7 +1199,7 @@ switch ($inputData['type']) {
                     isset($previousValue['string']) === true ? $previousValue['string'] : '',
                 );
             }
-
+            
             // encrypt PW on if it has changed, or if it is empty
             if (
                 (
