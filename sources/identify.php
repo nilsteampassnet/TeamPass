@@ -1563,6 +1563,7 @@ function externalAdCreateUser(
         'proceedIdentification' => true,
         'user_initial_creation_through_external_ad' => true,
         'id' => $newUserId,
+        'oauth2_login_ongoing' => true,
     ];
 }
 
@@ -2020,16 +2021,28 @@ class initialChecks {
         
         // User doesn't exist then return error
         // Except if user creation from LDAP is enabled
-        if (DB::count() === 0 && ((bool) $enable_ad_user_auto_creation === false || (bool) $oauth2_enabled === false)) {
+        if (
+            DB::count() === 0 &&
+            (filter_var($enable_ad_user_auto_creation, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) !== true ||
+             filter_var($oauth2_enabled, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) !== true)
+        ) {
             throw new Exception(
                 "error" 
             );
         }
         // We cannot create a user with LDAP if the OAuth2 login is ongoing
         $oauth2LoginOngoing = isset($session->get('userOauth2Info')['oauth2LoginOngoing']) ? $session->get('userOauth2Info')['oauth2LoginOngoing'] : false;
-        $data['oauth2_login_ongoing'] = (bool) $oauth2LoginOngoing;
-        $data['ldap_user_to_be_created'] = (bool) $enable_ad_user_auto_creation === true && DB::count() === 0 && (bool) $oauth2LoginOngoing !== true ? true : false;
-        $data['oauth2_user_to_be_created'] = (bool) $oauth2_enabled === true && DB::count() === 0 && (bool) $oauth2LoginOngoing === true ? true : false;
+        $data['oauth2_login_ongoing'] = filter_var($oauth2LoginOngoing, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false;
+        $data['ldap_user_to_be_created'] = (
+            filter_var($enable_ad_user_auto_creation, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) === true &&
+            DB::count() === 0 &&
+            filter_var($oauth2LoginOngoing, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) !== true
+        ) ? true : false;        
+        $data['oauth2_user_to_be_created'] = (
+            filter_var($oauth2_enabled, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) === true &&
+            DB::count() === 0 &&
+            filter_var($oauth2LoginOngoing, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) === true
+        ) ? true : false;
 
         return $data;
     }
@@ -2281,7 +2294,7 @@ function shouldUserAuthWithOauth2(
     // Security issue without this return if an user auth_type == oauth2 and
     // oauth2 disabled : we can login as a valid user by using hashUserId(username)
     // as password in the login the form.
-    if ((int) $SETTINGS['oauth2_enabled'] !== 1 && (bool) $userInfo['oauth2_login_ongoing'] === true) {
+    if ((int) $SETTINGS['oauth2_enabled'] !== 1 && filter_var($userInfo['oauth2_login_ongoing'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) === true) {
         return [
             'error' => true,
             'message' => 'user_not_allowed_to_auth_to_teampass_app',
@@ -2367,7 +2380,7 @@ function createOauth2User(
     // Prepare creating the new oauth2 user in Teampass
     if ((int) $SETTINGS['oauth2_enabled'] === 1
         && $username !== 'admin'
-        && (bool) $userInfo['oauth2_user_to_be_created'] === true
+        && filter_var($userInfo['oauth2_user_to_be_created'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) === true
         && $userLdapHasBeenCreated !== 1
     ) {
         $session = SessionManager::getSession();
