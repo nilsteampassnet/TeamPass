@@ -1203,9 +1203,10 @@ switch ($inputData['type']) {
             // encrypt PW on if it has changed, or if it is empty
             if (
                 (
-                    ($session->has('user-create_item_without_password')
-                    && (int) $session->get('user-create_item_without_password') === 1
-                    && empty($post_password))
+                    (
+                        $session->has('user-create_item_without_password')
+                        && (int) $session->get('user-create_item_without_password') !== 1
+                    )
                     || !empty($post_password)
                 )
                 && $post_password !== $pw

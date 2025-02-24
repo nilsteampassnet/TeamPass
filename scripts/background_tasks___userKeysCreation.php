@@ -81,6 +81,14 @@ if (DB::count() > 0) {
 
 function subtasksHandler($taskId, $taskArguments)
 {
+    // Check if subtasks are still running
+    // This in order to prevent the script from running multiple times on same objects
+    while (DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('background_subtasks') . ' 
+        WHERE is_in_progress = 1'
+    ) > 0) {
+        sleep(10); // Wait 10 seconds before continuing
+    }
     // Are server processes still running?
     serverProcessesHandler();
 
