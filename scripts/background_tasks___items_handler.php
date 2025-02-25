@@ -130,6 +130,11 @@ performRecuringItemTasks($SETTINGS);
 // log end
 doLog('end', '', (isset($SETTINGS['enable_tasks_log']) === true ? (int) $SETTINGS['enable_tasks_log'] : 0), $logID);
 
+// Check if $argv is defined and is an array
+if (!isset($argv) || !is_array($argv)) {
+    $argv = [];
+}
+
 // The main process run new iteratives process for each subtask
 if (!in_array('--child', $argv)) {
     // Save subtasks start time
