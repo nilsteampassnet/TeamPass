@@ -395,7 +395,7 @@ class teampassInstaller
             }
             $encryptionKey = file_get_contents($secureFilePath);
     
-            // Encrypt the admin password
+            // Encrypt the database password
             $encryptedPassword = encryptFollowingDefuseForInstall(
                 $this->inputData['dbPw'],
                 $encryptionKey

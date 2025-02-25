@@ -143,11 +143,11 @@ function performStep6() {
         { id: 'check5', action: 'cleanInstall' }
     ];
     
-    let errorOccurred = false; // Variable pour suivre les erreurs
-    let currentStep = 1; // Nombre de vérifications effectuées
-    const totalSteps = checks.length; // Nombre total de vérifications
+    let errorOccurred = false; // Variable for tracking errors
+    let currentStep = 1; // Number of checks performed
+    const totalSteps = checks.length; // Number of checks to perform
 
-    // Fonction pour effectuer une vérification
+    // Permits to perform a check
     function performCheck(index) {
         if (index >= checks.length) {
             if (errorOccurred) {
@@ -187,27 +187,27 @@ function performStep6() {
                 tablePrefix: store.get('TeamPassInstallation').tablePrefix
             },
             success: function(response) {
-            if (typeof response === 'string') {
-                response = JSON.parse(response);
-            }
-            console.log(response.success);
-            if (response.success) {
-                $(`#${check.id}`).html('<i class="fas fa-check text-success"></i>'); // Green checkmark
-            } else {
-                if (check.optional) {
-                    $(`#${check.id}`).html('<i class="fas fa-exclamation-triangle text-warning"></i> <div class="alert alert-info" role="alert">Optional check failed: ' + response.message + '</div>'); // ⚠️ Avertissement
-                } else {
-                    errorOccurred = true; // Erreur bloquante
-                    $(`#${check.id}`).html('<i class="fas fa-times text-danger"></i> <div class="alert alert-warning" role="alert">' + response.message + '</div>'); // Erreur
+                if (typeof response === 'string') {
+                    response = JSON.parse(response);
                 }
-            }
+                
+                if (response.success) {
+                    $(`#${check.id}`).html('<i class="fas fa-check text-success"></i>'); 
+                } else {
+                    if (check.optional) {
+                        $(`#${check.id}`).html('<i class="fas fa-exclamation-triangle text-warning"></i> <div class="alert alert-info" role="alert">Optional check failed: ' + response.message + '</div>'); // Warning
+                    } else {
+                        errorOccurred = true; // Blocking error
+                        $(`#${check.id}`).html('<i class="fas fa-times text-danger"></i> <div class="alert alert-warning" role="alert">' + response.message + '</div>');
+                    }
+                }
             },
             error: function() {
                 if (check.optional) {
-                    $(`#${check.id}`).html('<i class="fas fa-exclamation-triangle text-warning"></i> <div class="alert alert-info" role="alert">Optional check failed: Network error</div>'); // ⚠️ Avertissement
+                    $(`#${check.id}`).html('<i class="fas fa-exclamation-triangle text-warning"></i> <div class="alert alert-info" role="alert">Optional check failed: Network error</div>'); // Warning
                 } else {
-                    errorOccurred = true; // Erreur bloquante
-                    $(`#${check.id}`).html('<i class="fas fa-exclamation-triangle text-warning"></i>'); // Erreur générique
+                    errorOccurred = true; // Blocking error
+                    $(`#${check.id}`).html('<i class="fas fa-exclamation-triangle text-warning"></i>');
                 }
             },
             complete: function() {
@@ -330,7 +330,7 @@ function performStep5() {
                 if (typeof response === 'string') {
                     response = JSON.parse(response);
                 }
-                console.log(response.success);
+                
                 if (response.success) {
                     $(`#${check.id}`).html('<i class="fas fa-check text-success"></i>'); // Green checkmark
                 } else {
