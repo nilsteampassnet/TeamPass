@@ -27,7 +27,7 @@
  */
 
 // Define some constants
-define('MIN_PHP_VERSION', 8.1);
+define('MIN_PHP_VERSION', '8.1');
 define('MIN_MYSQL_VERSION', '8.0.13');
 define('MIN_MARIADB_VERSION', '10.2.1');
 
@@ -475,6 +475,7 @@ $csrf_token = $superGlobal->get('csrf_token', 'SESSION');
 <script type="text/javascript" src="../includes/js/CreateRandomString.js"></script>
 <script type="text/javascript" src="js/aes.min.js"></script>
 <script type="text/javascript" src="../plugins/alertifyjs/alertify.min.js"></script>
+<script type="text/javascript" src="../plugins/popper/umd/popper.min.js"></script>
 <script type="text/javascript" src="../plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script type="text/javascript" src="../plugins/store.js/dist/store.everything.min.js"></script>
 <script type="text/javascript" src="./install-steps/install.js"></script>

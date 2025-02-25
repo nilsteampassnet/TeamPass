@@ -20,7 +20,7 @@
  * ---
  * @file      install.js
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2024 Teampass.net
+ * @copyright 2009-2025 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
@@ -28,10 +28,6 @@
 
 
 $(function() {
-    // Prepare tooltips
-    const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]')
-    const popoverList = [...popoverTriggerList].map(popoverTriggerEl => new bootstrap.Popover(popoverTriggerEl))
-
     // Initialize the session
     browserSession(
         'init',
@@ -117,13 +113,19 @@ $(function() {
 
         } else {
             console.error('Error at step '+step+', allFieldsValid='+allFieldsValid);
-        }
-        
+        }        
     });
-
 });
 
-
+// Handle tooltips
+document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll('[data-bs-toggle="popover"]').forEach(function (el) {
+        new bootstrap.Popover(el, {
+            trigger: 'hover focus',
+            container: 'body'
+        });
+    });
+});
 
 
 /**
@@ -137,7 +139,7 @@ function performStep6() {
         { id: 'check1', action: 'chmod' },
         { id: 'check2', action: 'settingsFile' },
         { id: 'check3', action: 'csrf' },
-        { id: 'check4', action: 'cronJob' },
+        { id: 'check4', action: 'cronJob', optional: true },
         { id: 'check5', action: 'cleanInstall' }
     ];
     
@@ -173,16 +175,16 @@ function performStep6() {
             url: './install-steps/run.step6.php',
             method: 'POST',
             headers: {
-            'X-CSRF-Token': $('meta[name="csrf-token"]').attr('content')
+                'X-CSRF-Token': $('meta[name="csrf-token"]').attr('content')
             },
             data: {
-            action: check['action'],
-            dbHost: store.get('TeamPassInstallation').dbHost,
-            dbName: store.get('TeamPassInstallation').dbName,
-            dbLogin: store.get('TeamPassInstallation').dbLogin,
-            dbPw: store.get('TeamPassInstallation').dbPw,
-            dbPort: store.get('TeamPassInstallation').dbPort,
-            tablePrefix: store.get('TeamPassInstallation').tablePrefix
+                action: check['action'],
+                dbHost: store.get('TeamPassInstallation').dbHost,
+                dbName: store.get('TeamPassInstallation').dbName,
+                dbLogin: store.get('TeamPassInstallation').dbLogin,
+                dbPw: store.get('TeamPassInstallation').dbPw,
+                dbPort: store.get('TeamPassInstallation').dbPort,
+                tablePrefix: store.get('TeamPassInstallation').tablePrefix
             },
             success: function(response) {
             if (typeof response === 'string') {
@@ -192,13 +194,21 @@ function performStep6() {
             if (response.success) {
                 $(`#${check.id}`).html('<i class="fas fa-check text-success"></i>'); // Green checkmark
             } else {
-                errorOccurred = true; // An error occurred
-                $(`#${check.id}`).html('<i class="fas fa-times text-danger"></i> <div class="alert alert-warning" role="alert">' + response.message + '</div>'); // Red cross
+                if (check.optional) {
+                    $(`#${check.id}`).html('<i class="fas fa-exclamation-triangle text-warning"></i> <div class="alert alert-info" role="alert">Optional check failed: ' + response.message + '</div>'); // ⚠️ Avertissement
+                } else {
+                    errorOccurred = true; // Erreur bloquante
+                    $(`#${check.id}`).html('<i class="fas fa-times text-danger"></i> <div class="alert alert-warning" role="alert">' + response.message + '</div>'); // Erreur
+                }
             }
             },
             error: function() {
-            errorOccurred = true; // An error occurred
-            $(`#${check.id}`).html('<i class="fas fa-exclamation-triangle text-warning"></i>'); // Warning icon
+                if (check.optional) {
+                    $(`#${check.id}`).html('<i class="fas fa-exclamation-triangle text-warning"></i> <div class="alert alert-info" role="alert">Optional check failed: Network error</div>'); // ⚠️ Avertissement
+                } else {
+                    errorOccurred = true; // Erreur bloquante
+                    $(`#${check.id}`).html('<i class="fas fa-exclamation-triangle text-warning"></i>'); // Erreur générique
+                }
             },
             complete: function() {
             currentStep++;

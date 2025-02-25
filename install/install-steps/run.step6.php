@@ -381,7 +381,7 @@ class teampassInstaller
             if (file_exists($settingsFile) && !@copy($settingsFile, $backupFile)) {
                 return [
                     'success' => false,
-                    'message' => "Unable to back up the existing settings.php file. Please rename or remove it manually.",
+                    'message' => "Unable to backup the existing settings.php file. Please rename or remove it manually.",
                 ];
             }
     
@@ -397,7 +397,7 @@ class teampassInstaller
     
             // Encrypt the admin password
             $encryptedPassword = encryptFollowingDefuseForInstall(
-                $this->installConfig['adminPassword'],
+                $this->inputData['dbPw'],
                 $encryptionKey
             )['string'];
     
