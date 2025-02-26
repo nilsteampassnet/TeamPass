@@ -162,7 +162,7 @@ if ($order && in_array($order['dir'], $aSortTypes)) {
 */
 $sWhere = '';
 $letter = $inputData['letter'];
-$searchValue = isset($inputData['search']) && isset($inputData['search']['value']) ?? '';
+$searchValue = isset($inputData['search']) && $inputData['search']['value'] ?? '';
 if ($letter !== '' && $letter !== 'None') {
     $sWhere = ' AND (';
     $sWhere .= $aColumns[1]." LIKE '".$letter."%'";
