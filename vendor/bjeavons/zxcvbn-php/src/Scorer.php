@@ -260,7 +260,7 @@ class Scorer
      * @param int $n
      * @return int
      */
-    protected function factorial(int $n): int
+    protected function factorial(int $n): float
     {
         if ($n < 2) {
             return 1;

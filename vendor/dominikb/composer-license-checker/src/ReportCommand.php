@@ -35,7 +35,14 @@ class ReportCommand extends Command implements LicenseLookupAware, DependencyLoa
                 'c',
                 InputOption::VALUE_OPTIONAL,
                 'Path to composer executable',
-                realpath('./vendor/bin/composer')
+                'composer'
+            ),
+            new InputOption(
+                'no-dev',
+                null,
+                InputOption::VALUE_OPTIONAL,
+                'Do not include dev dependencies',
+                'false'
             ),
             new InputOption(
                 'no-cache',
@@ -77,7 +84,8 @@ class ReportCommand extends Command implements LicenseLookupAware, DependencyLoa
 
         $dependencies = $this->dependencyLoader->loadDependencies(
             $input->getOption('composer'),
-            $input->getOption('project-path')
+            $input->getOption('project-path'),
+            ($input->getOption('no-dev') ?? 'true') === 'true'
         );
 
         $dependencies = $this->filterLicenses($dependencies, $input->getOption('filter'));

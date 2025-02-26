@@ -21,14 +21,14 @@
  * ---
  * @file      include.php
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2024 Teampass.net
+ * @copyright 2009-2025 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
 
-define('TP_VERSION', '3.1.3');
+define('TP_VERSION', '3.1.4');
 define("UPGRADE_MIN_DATE", "1732981987");
-define('TP_VERSION_MINOR', '14');
+define('TP_VERSION_MINOR', '0');
 define('TP_TOOL_NAME', 'Teampass');
 define('TP_ONE_DAY_SECONDS', 86400);
 define('TP_ONE_WEEK_SECONDS', 604800);

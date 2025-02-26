@@ -24,9 +24,9 @@ class DependencyLoader implements DependencyLoaderContract
     /**
      * @throws CommandExecutionException
      */
-    public function loadDependencies(string $composer, string $project): array
+    public function loadDependencies(string $composer, string $project, bool $withoutDev): array
     {
-        $commandOutput = $this->runComposerLicenseCommand($composer, $project);
+        $commandOutput = $this->runComposerLicenseCommand($composer, $project, $withoutDev);
 
         return $this->dependencyParser->parse(join(PHP_EOL, $commandOutput));
     }
@@ -34,9 +34,9 @@ class DependencyLoader implements DependencyLoaderContract
     /**
      * @throws CommandExecutionException
      */
-    private function runComposerLicenseCommand(string $composer, string $project): array
+    private function runComposerLicenseCommand(string $composer, string $project, bool $withoutDev): array
     {
-        $command = sprintf('%s licenses --format json --working-dir %s', escapeshellarg($composer), escapeshellarg($project));
+        $command = sprintf('%s licenses%s --format json --working-dir %s', escapeshellarg($composer), $withoutDev ? ' --no-dev' : '', escapeshellarg($project));
 
         return $this->exec($command);
     }

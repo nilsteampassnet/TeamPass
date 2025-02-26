@@ -25,7 +25,7 @@ Use DB;
  * ---
  * @file      PerformChecks.php
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2024 Teampass.net
+ * @copyright 2009-2025 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
@@ -125,7 +125,7 @@ class PerformChecks
                 'SELECT id FROM ' . prefixTable('users') . ' WHERE login = %s',
                 $this->sessionVar['login']
             );
-            if (DB::count() > 0 || isset($this->sessionVar['oauth2']) === true) {
+            if (DB::count() > 0 || isset($this->sessionVar['sso']) === true) {
                 return true;
             }
         }
@@ -154,7 +154,7 @@ class PerformChecks
         // Definition
         $pagesRights = array(
             'user' => array(
-                'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'profile', 'import', 'export', 'offline',
+                'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'profile', 'import', 'export', 'folders', 'offline',
             ),
             'manager' => array(
                 'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'folders', 'roles', 'utilities', 'users', 'profile',

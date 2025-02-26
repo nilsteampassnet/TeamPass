@@ -11,5 +11,5 @@ interface DependencyLoader
     /**
      * @return Dependency[]
      */
-    public function loadDependencies(string $composer, string $project): array;
+    public function loadDependencies(string $composer, string $project, bool $withoutDev): array;
 }
