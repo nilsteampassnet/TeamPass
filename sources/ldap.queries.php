@@ -24,7 +24,7 @@ declare(strict_types=1);
  * ---
  * @file      ldap.queries.php
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2024 Teampass.net
+ * @copyright 2009-2025 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
