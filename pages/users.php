@@ -387,12 +387,12 @@ foreach ($treeDesc as $t) {
                 <!-- /.card-header -->
                 <!-- table start -->
                 <div class="card-body form" id="user-logs">
-                    <table id="table-logs" class="table table-striped table-responsive" style="width:100%">
+                    <table id="table-logs" class="table table-striped nowrap table-responsive p-0" style="width:100%">
                         <thead>
                             <tr>
-                                <th><?php echo $lang->get('date'); ?></th>
-                                <th><?php echo $lang->get('activity'); ?></th>
-                                <th><?php echo $lang->get('label'); ?></th>
+                                <th scope="col"><?php echo $lang->get('date'); ?></th>
+                                <th scope="col"><?php echo $lang->get('activity'); ?></th>
+                                <th scope="col"><?php echo $lang->get('label'); ?></th>
                             </tr>
                         </thead>
                         <tbody>
