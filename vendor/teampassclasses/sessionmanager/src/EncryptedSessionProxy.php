@@ -62,7 +62,7 @@ class EncryptedSessionProxy extends SessionHandlerProxy
     {
         $data = parent::read($id);
 
-        if ($data !== '' && preg_match('/^def/', $data)) {
+        if ($data !== '') {
             return Crypto::decrypt($data, $this->key);
         }
 

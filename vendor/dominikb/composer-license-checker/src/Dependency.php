@@ -15,6 +15,10 @@ class Dependency
     /** @var string[] */
     private $licenses;
 
+    // This is a constant that is used to represent the absence of a license.
+    // Matches the value of the 'none' license in the composer.json file.
+    const NO_LICENSES = ['none'];
+
     /**
      * Dependency constructor.
      *
@@ -65,12 +69,21 @@ class Dependency
         return $this;
     }
 
+    public function hasAnyLicense(): bool
+    {
+        return ! empty($this->licenses);
+    }
+
     /**
      * @return string[]
      */
     public function getLicenses(): array
     {
-        return $this->licenses;
+        if ($this->hasAnyLicense()) {
+            return $this->licenses;
+        } else {
+            return self::NO_LICENSES;
+        }
     }
 
     /**

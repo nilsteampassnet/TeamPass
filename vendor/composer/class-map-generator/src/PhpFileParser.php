@@ -24,7 +24,7 @@ class PhpFileParser
      *
      * @param  string            $path The file to check
      * @throws \RuntimeException
-     * @return array<int, class-string> The found classes
+     * @return list<class-string> The found classes
      */
     public static function findClasses(string $path): array
     {
@@ -98,7 +98,9 @@ class PhpFileParser
                         $name = substr($name, 0, $colonPos);
                     }
                 }
-                $classes[] = ltrim($namespace . $name, '\\');
+                /** @var class-string */
+                $className = ltrim($namespace . $name, '\\');
+                $classes[] = $className;
             }
         }
 

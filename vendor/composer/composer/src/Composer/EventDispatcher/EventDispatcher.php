@@ -67,6 +67,8 @@ class EventDispatcher
     protected $runScripts = true;
     /** @var list<string> */
     private $eventStack;
+    /** @var list<string> */
+    private $skipScripts;
 
     /**
      * Constructor.
@@ -81,6 +83,12 @@ class EventDispatcher
         $this->io = $io;
         $this->process = $process ?? new ProcessExecutor($io);
         $this->eventStack = [];
+        $this->skipScripts = array_values(array_filter(
+            array_map('trim', explode(',', (string) Platform::getEnv('COMPOSER_SKIP_SCRIPTS'))),
+            function ($val) {
+                return $val !== '';
+            }
+        ));
     }
 
     /**
@@ -581,6 +589,12 @@ class EventDispatcher
         $scripts = $package->getScripts();
 
         if (empty($scripts[$event->getName()])) {
+            return [];
+        }
+
+        if (in_array($event->getName(), $this->skipScripts, true)) {
+            $this->io->writeError('Skipped script listeners for <info>'.$event->getName().'</info> because of COMPOSER_SKIP_SCRIPTS', true, IOInterface::VERBOSE);
+
             return [];
         }
 
