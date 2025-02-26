@@ -56,7 +56,7 @@ $SETTINGS = $configManager->getAllSettings();
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => $request->request->get('type', '') !== '' ? htmlspecialchars($request->request->get('type')) : '',
+            'type' => htmlspecialchars($request->request->get('type', ''), ENT_QUOTES, 'UTF-8'),
         ],
         [
             'type' => 'trim|escape',
@@ -1236,7 +1236,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             var userID = $(this).data('id');
 
             //Launch the datatables pluggin
-            var oTableLogs = $('#table-logs').DataTable({
+            $('#table-logs').DataTable({
                 'destroy': true,
                 'paging': true,
                 'searching': true,

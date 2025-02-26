@@ -33,10 +33,8 @@ declare(strict_types=1);
 use TeampassClasses\SessionManager\SessionManager;
 use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use TeampassClasses\Language\Language;
-use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\ConfigManager\ConfigManager;
-use TeampassClasses\NestedTree\NestedTree;
 use voku\helper\AntiXSS;
 
 // Load functions
@@ -58,7 +56,7 @@ $SETTINGS = $configManager->getAllSettings();
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => $request->request->get('type', '') !== '' ? htmlspecialchars($request->request->get('type')) : '',
+            'type' => htmlspecialchars($request->request->get('type', ''), ENT_QUOTES, 'UTF-8'),
         ],
         [
             'type' => 'trim|escape',
@@ -82,7 +80,7 @@ if (
 }
 
 // Define Timezone
-date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
+date_default_timezone_set($SETTINGS['timezone'] ?? 'UTC');
 
 // Set header properties
 header('Content-type: text/html; charset=utf-8');
@@ -99,25 +97,54 @@ $aColumns = ['date', 'label', 'action'];
 $aSortTypes = ['asc', 'desc'];
 //init SQL variables
 $sWhere = $sOrder = $sLimit = '';
-$params = $request->query->all();
+
+// Prepare POST variables
+$data = [
+    'start' => $request->query->filter('start', '', FILTER_SANITIZE_NUMBER_INT),
+    'length' => $request->query->filter('length', '', FILTER_SANITIZE_NUMBER_INT),
+    'letter' => $request->query->filter('letter', '', FILTER_SANITIZE_SPECIAL_CHARS),
+    'search' => json_encode($request->query->filter('search', '', FILTER_SANITIZE_SPECIAL_CHARS, FILTER_REQUIRE_ARRAY)),
+    'order' => json_encode($request->query->filter('order', '', FILTER_SANITIZE_SPECIAL_CHARS, FILTER_REQUIRE_ARRAY)),
+    'column' => $request->query->filter('column', '', FILTER_SANITIZE_SPECIAL_CHARS),
+    'dir' => $request->query->filter('dir', '', FILTER_SANITIZE_SPECIAL_CHARS),
+    'userId' => $request->query->filter('userId', '', FILTER_SANITIZE_NUMBER_INT),
+    'draw' => $request->query->filter('draw', '', FILTER_SANITIZE_NUMBER_INT),
+];
+
+$filters = [
+    'start' => 'cast:integer',
+    'length' => 'cast:integer',
+    'letter' => 'trim|escape',
+    'search' => 'cast:array',
+    'order' => 'cast:array',
+    'column' => 'trim|escape',
+    'dir' => 'trim|escape',
+    'userId' => 'cast:integer',
+    'draw' => 'cast:integer',
+];
+
+$inputData = dataSanitizer(
+    $data,
+    $filters
+);
 
 /* BUILD QUERY */
 // Paging
 $sLimit = '';
-if (isset($params['length']) && (int) $params['length'] !== -1) {
-    $start = filter_var($params['start'], FILTER_SANITIZE_NUMBER_INT);
-    $length = filter_var($params['length'], FILTER_SANITIZE_NUMBER_INT);
+if (isset($inputData['length']) && (int) $inputData['length'] !== -1) {
+    $start = $inputData['start'];
+    $length = $inputData['length'];
     $sLimit = " LIMIT $start, $length";
 }
 
 // Ordering
 $sOrder = '';
-$order = $params['order'][0] ?? null;
+$order = $inputData['order'][0] ?? null;
 if ($order && in_array($order['dir'], $aSortTypes)) {
     $sOrder = ' ORDER BY  ';
     if (isset($order['column']) && preg_match('#^(asc|desc)$#i', $order['dir'])) {
-        $columnIndex = filter_var($order['column'], FILTER_SANITIZE_NUMBER_INT);
-        $dir = filter_var($order['dir'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        $columnIndex = $order['column'];
+        $dir = $inputData['dir'];
         $sOrder .= $aColumns[$columnIndex] . ' ' . $dir . ', ';
     }
 
@@ -134,8 +161,8 @@ if ($order && in_array($order['dir'], $aSortTypes)) {
    * on very large tables, and MySQL's regex functionality is very limited
 */
 $sWhere = '';
-$letter = $request->query->filter('letter', '', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-$searchValue = isset($params['search']) && isset($params['search']['value']) ? filter_var($params['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '';
+$letter = $inputData['letter'];
+$searchValue = isset($inputData['search']) && isset($inputData['search']['value']) ?? '';
 if ($letter !== '' && $letter !== 'None') {
     $sWhere = ' AND (';
     $sWhere .= $aColumns[1]." LIKE '".$letter."%'";
@@ -151,12 +178,12 @@ $rows = DB::query(
     FROM '.prefixTable('log_items').' as l
     INNER JOIN '.prefixTable('items').' as i ON (l.id_item=i.id)
     INNER JOIN '.prefixTable('users').' as u ON (l.id_user=u.id)
-    WHERE u.id = '.$request->query->filter('userId', FILTER_SANITIZE_NUMBER_INT).
+    WHERE u.id = '.$inputData['userId'].
     (string) $sWhere.
     ' UNION '.
     'SELECT s.date AS date, s.label AS label, s.field_1 AS field1
     FROM '.prefixTable('log_system').' AS s
-    WHERE s.qui = '.$request->query->filter('userId', FILTER_SANITIZE_NUMBER_INT)
+    WHERE s.qui = '.$inputData['userId']
 );
 $iTotal = DB::count();
 $rows = DB::query(
@@ -164,17 +191,17 @@ $rows = DB::query(
     FROM '.prefixTable('log_items').' as l
     INNER JOIN '.prefixTable('items').' as i ON (l.id_item=i.id)
     INNER JOIN '.prefixTable('users').' as u ON (l.id_user=u.id)
-    WHERE u.id = '.$request->query->filter('userId', FILTER_SANITIZE_NUMBER_INT).
+    WHERE u.id = '.$inputData['userId'].
     (string) $sWhere.
     ' UNION
     SELECT s.date AS date, s.label AS label, s.field_1 AS field1, s.id as id
     FROM '.prefixTable('log_system').' AS s
-    WHERE s.qui = '.$request->query->filter('userId', FILTER_SANITIZE_NUMBER_INT).
+    WHERE s.qui = '.$inputData['userId'].
     (string) $sOrder.
     (string) $sLimit
 );
 $sOutput = '{';
-$sOutput .= '"sEcho": '.(int) $request->query->filter('draw', FILTER_SANITIZE_NUMBER_INT).', ';
+$sOutput .= '"sEcho": '.$inputData['draw'].', ';
 $sOutput .= '"iTotalRecords": '.$iTotal.', ';
 $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
 $sOutput .= '"aaData": ';
@@ -186,7 +213,7 @@ if (DB::count() > 0) {
 
 foreach ($rows as $record) {
     if (empty($record['action']) === true
-        || $record['action'] === $request->query->filter('userId', FILTER_SANITIZE_NUMBER_INT)
+        || $record['action'] === $inputData['userId']
     ) {
         if (strpos($record['label'], 'at_') === 0) {
             if (strpos($record['label'], '#') >= 0) {
