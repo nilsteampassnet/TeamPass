@@ -176,4 +176,16 @@ class ClassMap implements \Countable
     {
         return \count($this->map);
     }
+
+    /**
+     * Get the raw psr violations
+     *
+     * This is a map of filepath to an associative array of the warning string
+     * and the offending class name.
+     * @return array<string, array<array{warning: string, className: string}>>
+     */
+    public function getRawPsrViolations(): array
+    {
+        return $this->psrViolations;
+    }
 }

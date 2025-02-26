@@ -23,7 +23,7 @@ namespace TeampassClasses\EmailService;
  * ---
  * @file      EmailService.php
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2024 Teampass.net
+ * @copyright 2009-2025 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
@@ -31,6 +31,35 @@ namespace TeampassClasses\EmailService;
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 use voku\helper\AntiXSS;
+
+class EmailSettings
+{
+    public $smtpServer;
+    public $smtpAuth;
+    public $authUsername;
+    public $authPassword;
+    public $port;
+    public $security;
+    public $from;
+    public $fromName;
+    public $debugLevel;
+    public $dir;
+
+    // Constructeur pour initialiser les paramètres
+    public function __construct(array $SETTINGS)
+    {
+        $this->smtpServer = $SETTINGS['email_smtp_server'];
+        $this->smtpAuth = (int) $SETTINGS['email_smtp_auth'] === 1;
+        $this->authUsername = $SETTINGS['email_auth_username'];
+        $this->authPassword = $SETTINGS['email_auth_pwd'];
+        $this->port = (int) $SETTINGS['email_port'];
+        $this->security = $SETTINGS['email_security'];
+        $this->from = $SETTINGS['email_from'];
+        $this->fromName = $SETTINGS['email_from_name'];
+        $this->debugLevel = $SETTINGS['email_debug_level'];
+        $this->dir = $SETTINGS['cpassman_dir'];
+    }
+}
 
 class EmailService
 {
@@ -80,15 +109,11 @@ class EmailService
     // Fonction pour nettoyer le contenu de l'email et prévenir les attaques XSS
     public function sanitizeEmailBody($textMail)
     {
-        // Nettoyage Anti-XSS pour garantir que $textMail est sécurisé avant utilisation
         $textMailClean = $this->antiXSS->xss_clean($textMail);
-
-        // Si un XSS potentiel est détecté, on échappe les caractères spéciaux pour se protéger
         if ($this->antiXSS->isXssFound()) {
             return htmlspecialchars($textMailClean, ENT_QUOTES, 'UTF-8');
         }
 
-        // Si aucun XSS n'est trouvé, retourner le texte original
         return $textMail;
     }
 

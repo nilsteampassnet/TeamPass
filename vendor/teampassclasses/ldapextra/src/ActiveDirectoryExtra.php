@@ -24,7 +24,7 @@ namespace TeampassClasses\LdapExtra;
  * ---
  * @file      ActiveDirectoryExtra.php
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2024 Teampass.net
+ * @copyright 2009-2025 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
@@ -32,7 +32,7 @@ namespace TeampassClasses\LdapExtra;
 use LdapRecord\Models\ActiveDirectory\Group as BaseGroup ;
 use LdapRecord\Connection;
 use LdapRecord\Container;
-use LdapRecord\Models\ActiveDirectory\User;
+use LdapRecord\Models\OpenLDAP\User;
 
 class ActiveDirectoryExtra extends BaseGroup 
 {
@@ -62,7 +62,7 @@ class ActiveDirectoryExtra extends BaseGroup
 
             $groupsArr = [];
             foreach($groups as $key => $group) {
-                $adGroupId = md5($group[(isset($settings['ldap_guid_attibute']) === true && empty($settings['ldap_guid_attibute']) === false ? $settings['ldap_guid_attibute'] : 'gidnumber')][0]);
+                $adGroupId = (int) $group[(isset($settings['ldap_guid_attibute']) === true && empty($settings['ldap_guid_attibute']) === false ? $settings['ldap_guid_attibute'] : 'gidnumber')][0];
                 $groupsArr[$adGroupId] = [
                     'ad_group_id' => $adGroupId,
                     'ad_group_title' => $group['cn'][0],
@@ -107,7 +107,7 @@ class ActiveDirectoryExtra extends BaseGroup
             foreach ($groups as $group) {
                 array_push(
                     $groupsArr,
-                    md5($group[$idAttribute][0])
+                    $group[$idAttribute][0]
                 );
             }
         } catch (\LdapRecord\Auth\BindException $e) {

@@ -21,7 +21,7 @@
  * ---
  * @file      upgrade.php
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2024 Teampass.net
+ * @copyright 2009-2025 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
@@ -51,7 +51,7 @@ $session = SessionManager::getSession();
 
 //Session teampass tag
 $_SESSION['CPM'] = 1;
-define('MIN_PHP_VERSION', 8.1);
+define('MIN_PHP_VERSION', '8.1');
 define('MIN_MYSQL_VERSION', '8.0.13');
 define('MIN_MARIADB_VERSION', '10.2.1');
 

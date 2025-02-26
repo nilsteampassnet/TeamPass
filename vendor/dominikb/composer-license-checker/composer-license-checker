@@ -42,7 +42,7 @@ $reportCommand = new ReportCommand;
 $reportCommand->setLicenseLookup($licenceLookUp);
 $reportCommand->setDependencyLoader(new DependencyLoader(new JSONDependencyParser()));
 
-$application = new Application('composer-license-checker', '2.6.0');
+$application = new Application('composer-license-checker', '2.7.0');
 
 $application->addCommands([$checkCommand, $reportCommand]);
 

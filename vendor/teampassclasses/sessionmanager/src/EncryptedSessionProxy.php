@@ -23,7 +23,7 @@ namespace TeampassClasses\SessionManager;
  * ---
  * @file      EncryptedSessionProxy.php
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2024 Teampass.net
+ * @copyright 2009-2025 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
@@ -62,7 +62,7 @@ class EncryptedSessionProxy extends SessionHandlerProxy
     {
         $data = parent::read($id);
 
-        if ($data !== '' && preg_match('/^def/', $data)) {
+        if ($data !== '') {
             return Crypto::decrypt($data, $this->key);
         }
 

@@ -40,7 +40,14 @@ class CheckCommand extends Command implements LicenseLookupAware, LicenseConstra
                 'c',
                 InputOption::VALUE_OPTIONAL,
                 'Path to composer executable',
-                realpath('./vendor/bin/composer')
+                'composer'
+            ),
+            new InputOption(
+                'no-dev',
+                null,
+                InputOption::VALUE_OPTIONAL,
+                'Do not include dev dependencies',
+                'false'
             ),
             new InputOption(
                 'allowlist',
@@ -81,7 +88,8 @@ class CheckCommand extends Command implements LicenseLookupAware, LicenseConstra
 
         $dependencies = $this->dependencyLoader->loadDependencies(
             $input->getOption('composer'),
-            $input->getOption('project-path')
+            $input->getOption('project-path'),
+            ($input->getOption('no-dev') ?? 'true') === 'true'
         );
 
         $this->io->writeln(count($dependencies).' dependencies were found ...');
@@ -160,12 +168,12 @@ class CheckCommand extends Command implements LicenseLookupAware, LicenseConstra
     {
         $byLicense = [];
         foreach ($violators as $violator) {
-            $license = $violator->getLicenses()[0];
-
-            if (! isset($byLicense[$license])) {
-                $byLicense[$license] = [];
+            foreach ($violator->getLicenses() as $license) {
+                if (! isset($byLicense[$license])) {
+                    $byLicense[$license] = [];
+                }
+                $byLicense[$license][] = $violator;
             }
-            $byLicense[$license][] = $violator;
         }
 
         foreach ($byLicense as $license => $violators) {
