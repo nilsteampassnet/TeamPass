@@ -72,7 +72,7 @@ class FolderManager
             return $this->errorResponse($this->lang->get('error_only_numbers_in_folder_name'));
         }
 
-        if (!$this->isParentFolderAllowed($parent_id, $user_accessible_folders, $user_is_admin)) {
+        if (!$this->isParentFolderAllowed($parent_id, $user_accessible_folders, $user_is_admin, $user_can_create_root_folder)) {
             return $this->errorResponse($this->lang->get('error_folder_not_allowed_for_this_user'));
         }
 
@@ -107,10 +107,14 @@ class FolderManager
      * @param integer $parent_id
      * @param array $user_accessible_folders
      * @param boolean $user_is_admin
+     * @param boolean $user_can_create_root_folder
      * @return boolean
      */
-    private function isParentFolderAllowed($parent_id, $user_accessible_folders, $user_is_admin)
+    private function isParentFolderAllowed($parent_id, $user_accessible_folders, $user_is_admin, $user_can_create_root_folder)
     {
+        if ($parent_id == 0 && $user_can_create_root_folder == true)
+	    return true;
+
         if (in_array($parent_id, $user_accessible_folders) === false
             && (int) $user_is_admin !== 1
         ) {
@@ -350,7 +354,7 @@ class FolderManager
         if (empty($cache_tree)) {
             DB::insert(prefixTable('cache_tree'), [
                 'user_id' => $user_id,
-                'folders' => json_encode($newId),
+                'folders' => json_encode([$newId]),
                 'visible_folders' => json_encode($new_json),
                 'timestamp' => time(),
                 'data' => '[{}]',
@@ -374,7 +378,7 @@ class FolderManager
      */
     private function manageFolderPermissions($parent_id, $newId, $user_roles, $access_rights, $user_is_admin)
     {
-        if ($this->settings['subfolder_rights_as_parent'] ?? false) {
+        if ($patent_id != 0 && $this->settings['subfolder_rights_as_parent'] ?? false) {
             $rows = DB::query('SELECT role_id, type FROM ' . prefixTable('roles_values') . ' WHERE folder_id = %i', $parent_id);
             foreach ($rows as $record) {
                 DB::insert(prefixTable('roles_values'), [
