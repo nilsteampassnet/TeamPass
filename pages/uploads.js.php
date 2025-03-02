@@ -57,7 +57,7 @@ if (empty($SETTINGS)) {
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => $request->request->get('type', '') !== '' ? htmlspecialchars($request->request->get('type')) : '',
+            'type' => htmlspecialchars($request->request->get('type', ''), ENT_QUOTES, 'UTF-8'),
         ],
         [
             'type' => 'trim|escape',

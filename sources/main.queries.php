@@ -61,7 +61,7 @@ $SETTINGS = $configManager->getAllSettings();
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => $request->request->get('type', '') !== '' ? htmlspecialchars($request->request->get('type')) : '',
+            'type' => htmlspecialchars($request->request->get('type', ''), ENT_QUOTES, 'UTF-8'),
         ],
         [
             'type' => 'trim|escape',
@@ -86,7 +86,7 @@ if (
 }
 
 // Define Timezone
-date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
+date_default_timezone_set($SETTINGS['timezone'] ?? 'UTC');
 set_time_limit(600);
 
 // DO CHECKS

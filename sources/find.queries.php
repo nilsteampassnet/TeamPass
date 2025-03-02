@@ -78,7 +78,7 @@ if (
 }
 
 // Define Timezone
-date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
+date_default_timezone_set($SETTINGS['timezone'] ?? 'UTC');
 
 // Set header properties
 header('Content-type: text/html; charset=utf-8');
