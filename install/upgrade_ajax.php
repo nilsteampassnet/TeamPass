@@ -209,9 +209,6 @@ $lang = new Language();
 
 error_reporting(E_ERROR | E_PARSE);
 $_SESSION['CPM'] = 1;
-define('MIN_PHP_VERSION', '8.1');
-define('MIN_MYSQL_VERSION', '8.0.13');
-define('MIN_MARIADB_VERSION', '10.2.1');
 
 // Load config
 $configManager = new ConfigManager();
@@ -221,7 +218,6 @@ require_once '../includes/language/english.php';
 require_once '../includes/config/include.php';
 require_once '../includes/config/settings.php';
 require_once 'tp.functions.php';
-
 
 // Prepare POST variables
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
