@@ -73,7 +73,12 @@ class EmailService
     public function addRecipients($email)
     {
         foreach (array_filter(explode(',', $email)) as $dest) {
-            $this->mailer->addAddress($dest);
+            $dest = trim($dest);
+            if (filter_var($dest, FILTER_VALIDATE_EMAIL)) {
+                $this->mailer->addAddress($dest);
+            } else {
+                error_log("Teampass - Error - Invalid email ignored : $dest");
+            }
         }
     }
 
