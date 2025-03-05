@@ -53,7 +53,7 @@ $SETTINGS = $configManager->getAllSettings();
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => $request->request->get('type', '') !== '' ? htmlspecialchars($request->request->get('type')) : '',
+            'type' => htmlspecialchars($request->request->get('type', ''), ENT_QUOTES, 'UTF-8'),
         ],
         [
             'type' => 'trim|escape',
@@ -74,7 +74,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 }
 
 // Define Timezone
-date_default_timezone_set(isset($SETTINGS['timezone']) === true ? $SETTINGS['timezone'] : 'UTC');
+date_default_timezone_set($SETTINGS['timezone'] ?? 'UTC');
 
 // Set header properties
 header('Content-type: text/html; charset=utf-8');
@@ -387,12 +387,12 @@ foreach ($treeDesc as $t) {
                 <!-- /.card-header -->
                 <!-- table start -->
                 <div class="card-body form" id="user-logs">
-                    <table id="table-logs" class="table table-striped table-responsive" style="width:100%">
+                    <table id="table-logs" class="table table-striped nowrap table-responsive p-0" style="width:100%">
                         <thead>
                             <tr>
-                                <th><?php echo $lang->get('date'); ?></th>
-                                <th><?php echo $lang->get('activity'); ?></th>
-                                <th><?php echo $lang->get('label'); ?></th>
+                                <th scope="col"><?php echo $lang->get('date'); ?></th>
+                                <th scope="col"><?php echo $lang->get('activity'); ?></th>
+                                <th scope="col"><?php echo $lang->get('label'); ?></th>
                             </tr>
                         </thead>
                         <tbody>
