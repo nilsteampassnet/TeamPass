@@ -35,9 +35,9 @@ use TeampassClasses\SuperGlobal\SuperGlobal;
 include __DIR__.'/../includes/config/include.php';
 // Load functions
 require_once __DIR__.'/tp.functions.php';
+require_once __DIR__.'/install-steps/install.functions.php';
 
 $superGlobal = new SuperGlobal();
-
 // Prepare variables
 $serverPath = rtrim($superGlobal->get('DOCUMENT_ROOT', 'SERVER'), '/').
 	substr($superGlobal->get('PHP_SELF', 'SERVER'), 0,-20);
