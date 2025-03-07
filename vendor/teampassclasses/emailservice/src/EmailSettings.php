@@ -44,15 +44,15 @@ class EmailSettings
     // Constructeur pour initialiser les paramètres
     public function __construct(array $SETTINGS)
     {
-        $this->smtpServer = $SETTINGS['email_smtp_server'];
-        $this->smtpAuth = (int) $SETTINGS['email_smtp_auth'] === 1;
-        $this->authUsername = $SETTINGS['email_auth_username'];
-        $this->authPassword = $SETTINGS['email_auth_pwd'];
-        $this->port = (int) $SETTINGS['email_port'];
-        $this->security = $SETTINGS['email_security'];
-        $this->from = $SETTINGS['email_from'];
-        $this->fromName = $SETTINGS['email_from_name'];
-        $this->debugLevel = $SETTINGS['email_debug_level'];
-        $this->dir = $SETTINGS['cpassman_dir'];
+        $this->smtpServer = $SETTINGS['email_smtp_server'] ?? '';
+        $this->smtpAuth = isset($SETTINGS['email_smtp_auth']) ? ((int) $SETTINGS['email_smtp_auth']) === 1 : false;
+        $this->authUsername = $SETTINGS['email_auth_username'] ?? '';
+        $this->authPassword = $SETTINGS['email_auth_pwd'] ?? '';
+        $this->port = isset($SETTINGS['email_port']) ? (int) $SETTINGS['email_port'] : 25;
+        $this->security = $SETTINGS['email_security'] ?? 'none';
+        $this->from = $SETTINGS['email_from'] ?? 'no-reply@example.com';
+        $this->fromName = $SETTINGS['email_from_name'] ?? 'No Reply';
+        $this->debugLevel = $SETTINGS['email_debug_level'] ?? 0;
+        $this->dir = $SETTINGS['cpassman_dir'] ?? __DIR__;
     }
 }

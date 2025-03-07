@@ -32,35 +32,6 @@ use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 use voku\helper\AntiXSS;
 
-class EmailSettings
-{
-    public $smtpServer;
-    public $smtpAuth;
-    public $authUsername;
-    public $authPassword;
-    public $port;
-    public $security;
-    public $from;
-    public $fromName;
-    public $debugLevel;
-    public $dir;
-
-    // Constructeur pour initialiser les paramètres
-    public function __construct(array $SETTINGS)
-    {
-        $this->smtpServer = $SETTINGS['email_smtp_server'];
-        $this->smtpAuth = (int) $SETTINGS['email_smtp_auth'] === 1;
-        $this->authUsername = $SETTINGS['email_auth_username'];
-        $this->authPassword = $SETTINGS['email_auth_pwd'];
-        $this->port = (int) $SETTINGS['email_port'];
-        $this->security = $SETTINGS['email_security'];
-        $this->from = $SETTINGS['email_from'];
-        $this->fromName = $SETTINGS['email_from_name'];
-        $this->debugLevel = $SETTINGS['email_debug_level'];
-        $this->dir = $SETTINGS['cpassman_dir'];
-    }
-}
-
 class EmailService
 {
     protected $mailer;
@@ -102,7 +73,12 @@ class EmailService
     public function addRecipients($email)
     {
         foreach (array_filter(explode(',', $email)) as $dest) {
-            $this->mailer->addAddress($dest);
+            $dest = trim($dest);
+            if (filter_var($dest, FILTER_VALIDATE_EMAIL)) {
+                $this->mailer->addAddress($dest);
+            } else {
+                error_log("Teampass - Error - Invalid email ignored : $dest");
+            }
         }
     }
 

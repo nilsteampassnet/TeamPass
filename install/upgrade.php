@@ -44,6 +44,7 @@ ini_set('session.cookie_secure', 0);
 
 require_once './libs/SecureHandler.php';
 require_once '../sources/main.functions.php';
+require_once '../includes/config/include.php';
 
 // init
 loadClasses();
@@ -51,9 +52,6 @@ $session = SessionManager::getSession();
 
 //Session teampass tag
 $_SESSION['CPM'] = 1;
-define('MIN_PHP_VERSION', '8.1');
-define('MIN_MYSQL_VERSION', '8.0.13');
-define('MIN_MARIADB_VERSION', '10.2.1');
 
 // Prepare POST variables
 $post_root_url = filter_input(INPUT_POST, 'root_url', FILTER_SANITIZE_FULL_SPECIAL_CHARS);

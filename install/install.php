@@ -26,10 +26,6 @@
  * @see       https://www.teampass.net
  */
 
-// Define some constants
-define('MIN_PHP_VERSION', '8.1');
-define('MIN_MYSQL_VERSION', '8.0.13');
-define('MIN_MARIADB_VERSION', '10.2.1');
 
 // Prepare autoloader
 require '../vendor/autoload.php';
@@ -39,9 +35,9 @@ use TeampassClasses\SuperGlobal\SuperGlobal;
 include __DIR__.'/../includes/config/include.php';
 // Load functions
 require_once __DIR__.'/tp.functions.php';
+require_once __DIR__.'/install-steps/install.functions.php';
 
 $superGlobal = new SuperGlobal();
-
 // Prepare variables
 $serverPath = rtrim($superGlobal->get('DOCUMENT_ROOT', 'SERVER'), '/').
 	substr($superGlobal->get('PHP_SELF', 'SERVER'), 0,-20);
