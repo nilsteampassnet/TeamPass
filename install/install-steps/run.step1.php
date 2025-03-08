@@ -33,6 +33,7 @@ use TeampassClasses\SuperGlobal\SuperGlobal;
 include __DIR__.'/../../includes/config/include.php';
 // Load functions
 include_once(__DIR__ . '/../tp.functions.php');
+require_once __DIR__.'/install.functions.php';
 
 $superGlobal = new SuperGlobal();
 

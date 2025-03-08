@@ -172,10 +172,10 @@ catch (Exception $e) {
                                             <span class="badge badge-secondary ml-2" id="sending_emails_job_frequency_badge"></span>
                                         </div>
                                         <div class='col-2'>
-                                            <input type='range' class='form-control form-control-sm form-control-range range-slider' id='sending_emails_job_frequency' min='0' max="59" value='<?php echo $SETTINGS['sending_emails_job_frequency'] ?? '2'; ?>'>
+                                            <input type='range' class='form-control form-control-sm form-control-range range-slider' id='sending_emails_job_frequency' min='1' max="59" value='<?php echo $SETTINGS['sending_emails_job_frequency'] ?? '2'; ?>'>
                                         </div>
                                         <div class='col-1'>
-                                            <input type='text' disabled class='form-control form-control-sm' id='sending_emails_job_frequency_text' value='<?php echo $SETTINGS['sending_emails_job_frequency'] ?? '2'; ?>'>
+                                            <input type='number' disabled class='form-control form-control-sm' id='sending_emails_job_frequency_text' value='<?php echo $SETTINGS['sending_emails_job_frequency'] ?? '2'; ?>'>
                                         </div>
                                     </div>
 
@@ -185,10 +185,10 @@ catch (Exception $e) {
                                             <span class="badge badge-secondary ml-2" id="user_keys_job_frequency_badge"></span>
                                         </div>
                                         <div class='col-2'>
-                                            <input type='range' class='form-control form-control-sm form-control-range range-slider' id='user_keys_job_frequency' min='0' max="59" value='<?php echo $SETTINGS['user_keys_job_frequency'] ?? '1'; ?>'>
+                                            <input type='range' class='form-control form-control-sm form-control-range range-slider' id='user_keys_job_frequency' min='1' max="59" value='<?php echo $SETTINGS['user_keys_job_frequency'] ?? '1'; ?>'>
                                         </div>
                                         <div class='col-1'>
-                                            <input type='text' disabled class='form-control form-control-sm' id='user_keys_job_frequency_text' value='<?php echo $SETTINGS['user_keys_job_frequency'] ?? '1'; ?>'>
+                                            <input type='number' disabled class='form-control form-control-sm' id='user_keys_job_frequency_text' value='<?php echo $SETTINGS['user_keys_job_frequency'] ?? '1'; ?>'>
                                         </div>
                                     </div>
 
@@ -198,10 +198,10 @@ catch (Exception $e) {
                                             <span class="badge badge-secondary ml-2" id="items_ops_job_frequency_badge"></span>
                                         </div>
                                         <div class='col-2'>
-                                            <input type='range' class='form-control form-control-sm form-control-range range-slider' id='items_ops_job_frequency' min='0' max="59" value='<?php echo $SETTINGS['items_ops_job_frequency'] ?? '1'; ?>'>
+                                            <input type='range' class='form-control form-control-sm form-control-range range-slider' id='items_ops_job_frequency' min='1' max="59" value='<?php echo $SETTINGS['items_ops_job_frequency'] ?? '1'; ?>'>
                                         </div>
                                         <div class='col-1'>
-                                            <input type='text' disabled class='form-control form-control-sm' id='items_ops_job_frequency_text' value='<?php echo $SETTINGS['items_ops_job_frequency'] ?? '1'; ?>'>
+                                            <input type='number' disabled class='form-control form-control-sm' id='items_ops_job_frequency_text' value='<?php echo $SETTINGS['items_ops_job_frequency'] ?? '1'; ?>'>
                                         </div>
                                     </div>
 
@@ -211,10 +211,10 @@ catch (Exception $e) {
                                             <span class="badge badge-secondary ml-2" id="items_statistics_job_frequency_badge"></span>
                                         </div>
                                         <div class='col-2'>
-                                            <input type='range' class='form-control form-control-sm form-control-range range-slider' id='items_statistics_job_frequency' min='0' max="59" value='<?php echo $SETTINGS['items_statistics_job_frequency'] ?? '5'; ?>'>
+                                            <input type='range' class='form-control form-control-sm form-control-range range-slider' id='items_statistics_job_frequency' min='1' max="59" value='<?php echo $SETTINGS['items_statistics_job_frequency'] ?? '5'; ?>'>
                                         </div>
                                         <div class='col-1'>
-                                            <input type='text' disabled class='form-control form-control-sm' id='items_statistics_job_frequency_text' value='<?php echo $SETTINGS['items_statistics_job_frequency'] ?? '5'; ?>'>
+                                            <input type='number' disabled class='form-control form-control-sm' id='items_statistics_job_frequency_text' value='<?php echo $SETTINGS['items_statistics_job_frequency'] ?? '5'; ?>'>
                                         </div>
                                     </div>
 

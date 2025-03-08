@@ -242,7 +242,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         toastr.info('<?php echo $lang->get('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
         if ($(this).data('type') === "add-new-job") {
-            console.log('add new job')
             $.post(
                 "sources/utilities.queries.php", {
                     type: "handle_crontab_job",
@@ -250,7 +249,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 },
                 function(data) {
                     data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
-                    console.log(data)
 
                     // Inform user
                     toastr.remove();
@@ -289,9 +287,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         // Fetch data
         setTimeout(fetchTaskData,20000);
 
-        // show value on slider
+        // Synchronize range slider with number input
         $('.form-control-range').on("input", function() {
-            $('#'+$(this).attr('id')+'_text').val($(this).val());
+            const rangeValue = $(this).val();
+            const numberInputId = '#' + $(this).attr('id') + '_text';
+            $(numberInputId).val(rangeValue);
         });
 
         // Handle delete task
@@ -307,7 +307,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 },
                 function(data) {
                     data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
-                    console.log(data)
 
                     $("#task-delete-user-confirm").modal('hide');
 
@@ -378,7 +377,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         );
                         return false;
                     }
-                    console.log(data)
+                    
                     if (data.error === false) {
                         toastr.remove();
                         toastr.success(
@@ -413,7 +412,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         let task = $(this).data('task'),
             definition = $('#'+task+'_parameter_value').val().split(';');
         
-        console.log($('#'+task+'_parameter_value').val()+" -- "+definition[0]+";"+definition[1]+";"+definition[2])
         if (definition[0] === "hourly") {
             $('#task-define-modal-parameter-hourly').removeClass('hidden');
             $('#task-define-modal-parameter-daily, #task-define-modal-parameter-monthly').addClass('hidden');
@@ -512,7 +510,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         manuelTaskIsRunning = false;
                         return false;
                     }
-                    console.log(data);
+                    
                     if (data.error === false) {
                         toastr.remove();
                         toastr.success(
