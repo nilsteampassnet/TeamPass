@@ -193,6 +193,7 @@
         "composer/composer": "^2.7"
     },
     "require-dev": {
-        "dominikb/composer-license-checker": "^2.6"
+        "dominikb/composer-license-checker": "^2.6",
+        "phpstan/phpstan": "^2.1"
     }
 }
