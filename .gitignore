@@ -39,3 +39,4 @@ version-commit.php
 tp_minor_release.txt
 /includes/config/tp.config*
 /includes/tables_integrity.json
+phpstan.neon
