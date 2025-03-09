@@ -32,7 +32,7 @@ namespace TeampassClasses\LdapExtra;
 use LdapRecord\Models\ActiveDirectory\Group as BaseGroup ;
 use LdapRecord\Connection;
 use LdapRecord\Container;
-use LdapRecord\Models\OpenLDAP\User;
+use LdapRecord\Models\ActiveDirectory\User;
 
 class ActiveDirectoryExtra extends BaseGroup 
 {
