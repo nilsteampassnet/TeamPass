@@ -378,7 +378,7 @@ class FolderManager
      */
     private function manageFolderPermissions($parent_id, $newId, $user_roles, $access_rights, $user_is_admin)
     {
-        if ($patent_id != 0 && $this->settings['subfolder_rights_as_parent'] ?? false) {
+        if ($parent_id !== 0 && $this->settings['subfolder_rights_as_parent'] ?? false) {
             $rows = DB::query('SELECT role_id, type FROM ' . prefixTable('roles_values') . ' WHERE folder_id = %i', $parent_id);
             foreach ($rows as $record) {
                 DB::insert(prefixTable('roles_values'), [
