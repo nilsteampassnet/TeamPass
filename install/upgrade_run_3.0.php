@@ -31,6 +31,7 @@ use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\Language\Language;
 use TeampassClasses\PasswordManager\PasswordManager;
 use TeampassClasses\ConfigManager\ConfigManager;
+use Encryption\Crypt\aesctr;
 
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
@@ -52,7 +53,7 @@ require_once '../includes/language/english.php';
 require_once '../includes/config/include.php';
 require_once '../includes/config/settings.php';
 require_once 'tp.functions.php';
-require_once 'libs/aesctr.php';
+require_once 'libs/aesctr/aesctr.php';
 
 // Get the encrypted password
 define('DB_PASSWD_CLEAR', defuse_return_decrypted(DB_PASSWD));
@@ -71,7 +72,7 @@ $db_link = mysqli_connect(
     $user,
     $pass,
     $database,
-    $port
+    (int) $port
 );
 if ($db_link) {
     $db_link->set_charset(DB_ENCODING);

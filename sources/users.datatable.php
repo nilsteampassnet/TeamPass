@@ -178,7 +178,6 @@ if ((int) $session->get('user-admin') === 0
     }
 }
 
-db::debugmode(false);
 $rows = DB::query(
     'SELECT *
     FROM '.prefixTable('users').

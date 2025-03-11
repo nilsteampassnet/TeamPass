@@ -53,7 +53,7 @@ require_once '../includes/language/english.php';
 require_once '../includes/config/include.php';
 require_once '../includes/config/settings.php';
 require_once 'tp.functions.php';
-require_once 'libs/aesctr.php';
+require_once 'libs/aesctr/aesctr.php';
 
 // 3.0.0.23
 $ret = handleSecurefileConstant();
@@ -87,7 +87,7 @@ $db_link = mysqli_connect(
     $user,
     $pass,
     $database,
-    $port
+    (int) $port
 );
 if ($db_link) {
     $db_link->set_charset(DB_ENCODING);
@@ -143,7 +143,7 @@ foreach ($val as $elem) {
     );
     if (mysqli_error($db_link)) {
         echo '[{"finish":"1", "msg":"", "error":"MySQL Error! Last input is "'.$elem[1].' - '.
-            addslashes($queryRes).'"}]';
+            addslashes((string) $queryRes).'"}]';
         exit();
     } else {
         $resTmp = mysqli_fetch_row($queryRes);

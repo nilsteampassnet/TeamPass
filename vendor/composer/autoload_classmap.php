@@ -648,6 +648,7 @@ return array(
     'Elegant\\Sanitizer\\Laravel\\SanitizerServiceProvider' => $vendorDir . '/elegantweb/sanitizer/src/Laravel/SanitizerServiceProvider.php',
     'Elegant\\Sanitizer\\Laravel\\SanitizesInput' => $vendorDir . '/elegantweb/sanitizer/src/Laravel/SanitizesInput.php',
     'Elegant\\Sanitizer\\Sanitizer' => $vendorDir . '/elegantweb/sanitizer/src/Sanitizer.php',
+    'Encryption\\Crypt\\aesctr' => $baseDir . '/install/libs/aesctr/aesctr.php',
     'File_ANSI' => $vendorDir . '/phpseclib/phpseclib/phpseclib/File/ANSI.php',
     'File_ASN1' => $vendorDir . '/phpseclib/phpseclib/phpseclib/File/ASN1.php',
     'File_X509' => $vendorDir . '/phpseclib/phpseclib/phpseclib/File/X509.php',

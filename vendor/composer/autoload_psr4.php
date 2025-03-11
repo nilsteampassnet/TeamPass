@@ -80,6 +80,7 @@ return array(
     'GuzzleHttp\\' => array($vendorDir . '/guzzlehttp/guzzle/src'),
     'GO\\' => array($vendorDir . '/peppeocchi/php-cron-scheduler/src/GO'),
     'Firebase\\JWT\\' => array($vendorDir . '/firebase/php-jwt/src'),
+    'Encryption\\Crypt\\' => array($baseDir . '/install/libs/aesctr'),
     'Elegant\\Sanitizer\\' => array($vendorDir . '/elegantweb/sanitizer/src'),
     'Egulias\\EmailValidator\\' => array($vendorDir . '/egulias/email-validator/src'),
     'EZimuel\\PHPSecureSession\\' => array($vendorDir . '/ezimuel/php-secure-session/src'),

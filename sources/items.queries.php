@@ -2077,8 +2077,16 @@ switch ($inputData['type']) {
                         prepareSendingEmail(
                             $lang->get('email_subject_item_updated'),
                             str_replace(
-                                array('#item_label#', '#item_category#', '#item_id#', '#url#', '#name#', '#lastname#', '#folder_name#'),
-                                array($inputData['label'], $inputData['folderId'], $inputData['itemId'], $SETTINGS['cpassman_url'], $session->get('user-name'), $session->get('user-lastname'), $dataFolderSettings['title']),
+                                ['#item_label#', '#item_category#', '#item_id#', '#url#', '#name#', '#lastname#', '#folder_name#'],
+                                [
+                                    strval($inputData['label']),
+                                    strval($inputData['folderId']),
+                                    strval($inputData['itemId']),
+                                    strval($SETTINGS['cpassman_url']),
+                                    strval($session->get('user-name')),
+                                    strval($session->get('user-lastname')),
+                                    strval($dataFolderSettings['title'])
+                                ],
                                 $lang->get('email_body_item_updated')
                             ),
                             $emailAddress,
@@ -4390,7 +4398,7 @@ switch ($inputData['type']) {
                 $idManaged = $record['id'];
             }
 
-            $rights = recupDroitCreationSansComplexite($inputData['id']);
+            $rights = recupDroitCreationSansComplexite((int) $inputData['id']);
         }
 
         // DELETE - 2.1.19 - AND (l.action = 'at_creation' OR (l.action = 'at_modification' AND l.raison LIKE 'at_pw :%'))

@@ -430,7 +430,6 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
                     'login' => empty($item['login']) ? '' : substr($item['login'], 0, 500),
                     'folder' => $data_fld['title'],
                     'author' => $session->get('user-id'),
-                    'timestamp' => time(),
                     'tags' => '',
                     'restricted_to' => '0',
                     'renewal_period' => '0',
@@ -697,7 +696,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
         );
 
         // get destination folder informations
-        $destinationFolderInfos = getFolderComplexity($post_folder_id, $session->get('user-personal_folders'));
+        $destinationFolderInfos = getFolderComplexity((int) $post_folder_id, $session->get('user-personal_folders'));
         $arrFolders[$post_folder_id] = [
             'id' => (int) $post_folder_id,
             'level' => 1,

@@ -30,6 +30,7 @@ use EZimuel\PHPSecureSession;
 use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\Language\Language;
 use TeampassClasses\ConfigManager\ConfigManager;
+use Encryption\Crypt\aesctr;
 
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
@@ -50,7 +51,7 @@ require_once '../includes/language/english.php';
 require_once '../includes/config/include.php';
 require_once '../includes/config/settings.php';
 require_once 'tp.functions.php';
-require_once 'libs/aesctr.php';
+require_once 'libs/aesctr/aesctr.php';
 
 // Prepare POST variables
 $post_nb = filter_input(INPUT_POST, 'nb', FILTER_SANITIZE_NUMBER_INT);
@@ -78,7 +79,7 @@ $db_link = mysqli_connect(
     $user,
     $pass,
     $database,
-    $port
+    (int) $port
 );
 if ($db_link) {
     $db_link->set_charset(DB_ENCODING);
@@ -90,7 +91,7 @@ if ($db_link) {
 // Get POST with user info
 $post_user_info = json_decode(base64_decode(filter_input(INPUT_POST, 'info', FILTER_SANITIZE_FULL_SPECIAL_CHARS)));
 $userLogin = $post_user_info[0];
-$userPassword = Encryption\Crypt\aesctr::decrypt(base64_decode($post_user_info[1]), 'cpm', 128);
+$userPassword = aesctr::decrypt(base64_decode($post_user_info[1]), 'cpm', 128);
 $userId = $post_user_info[2];
 if (isset($userPassword) === false || empty($userPassword) === true
     || isset($userLogin) === false || empty($userLogin) === true

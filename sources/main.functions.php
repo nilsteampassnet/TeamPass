@@ -1640,7 +1640,15 @@ function notifyChangesToSubscribers(int $item_id, string $label, array $changes,
                 'subject' => $lang->get('email_subject_item_updated'),
                 'body' => str_replace(
                     ['#item_label#', '#folder_name#', '#item_id#', '#url#', '#name#', '#lastname#', '#changes#'],
-                    [$label, $path, $item_id, $SETTINGS['cpassman_url'], $globalsName, $globalsLastname, $htmlChanges],
+                    [
+                        strval($label),
+                        strval($path),
+                        strval($item_id),
+                        strval($SETTINGS['cpassman_url']),
+                        strval($globalsName),
+                        strval($globalsLastname),
+                        strval($htmlChanges)
+                    ],
                     $lang->get('email_body_item_updated')
                 ),
                 'receivers' => implode(',', $notification),
@@ -2301,7 +2309,7 @@ function encryptPrivateKey(string $userPwd, string $userPrivateKey): string
         try {
             return base64_encode($cipher->encrypt(base64_decode($userPrivateKey)));
         } catch (Exception $e) {
-            return $e;
+            return $e->getMessage();
         }
     }
     return '';

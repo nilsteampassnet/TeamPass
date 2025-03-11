@@ -82,7 +82,7 @@ $db_link = mysqli_connect(
     $user,
     $pass,
     $database,
-    $port
+    (int) $port
 );
 if ($db_link) {
     $db_link->set_charset(DB_ENCODING);
@@ -158,7 +158,7 @@ if (isset($post_operation) === true && empty($post_operation) === false && strpo
             // OPERATION - 20231017_1 - remove all existing keys
             // if item is personal and user is not owner
 
-            installPurgeUnnecessaryKeys(true, 0,$pre);
+            installPurgeUnnecessaryKeys($pre, true, 0);
     }
     // Return back
     echo '[{"finish":"'.$finish.'" , "next":"", "error":"", "total":"'.$total.'"}]';
@@ -271,7 +271,7 @@ function populateItemsTable_DeletedAt($pre)
  * @param integer $user_id
  * @return void
  */
-function installPurgeUnnecessaryKeys(bool $allUsers = true, int $user_id=0, string $pre)
+function installPurgeUnnecessaryKeys(string $pre, bool $allUsers = true, int $user_id=0)
 {
     global $db_link;
     if ($allUsers === true) {
@@ -283,10 +283,10 @@ function installPurgeUnnecessaryKeys(bool $allUsers = true, int $user_id=0, stri
             ORDER BY login ASC'
         );
         while ($user = mysqli_fetch_assoc($users)) {
-            installPurgeUnnecessaryKeysForUser((int) $user['id'], $pre);
+            installPurgeUnnecessaryKeysForUser($pre, (int) $user['id']);
         }
     } else {
-        installPurgeUnnecessaryKeysForUser((int) $user_id, $pre);
+        installPurgeUnnecessaryKeysForUser($pre, (int) $user_id);
     }
 }
 
@@ -296,7 +296,7 @@ function installPurgeUnnecessaryKeys(bool $allUsers = true, int $user_id=0, stri
  * @param integer $user_id
  * @return void
  */
-function installPurgeUnnecessaryKeysForUser(int $user_id=0, string $pre)
+function installPurgeUnnecessaryKeysForUser(string $pre, int $user_id=0)
 {
     global $db_link;
     // Start transaction to avoid autocommit

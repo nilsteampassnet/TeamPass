@@ -42,7 +42,6 @@ return array(
     'encryptClientServer_tip' => 'When enabled, the client encrypts the data before sending it to the server. The server only stores encrypted data. It can be disabled.',
     'limited_search_default' => 'Limited search by default',
     'limited_search_default_tip' => 'When enabled, the search will be limited to the current folder and its subfolders. Otherwise, the search will be performed on all items.',
-    'highlight_selected' => 'Highlight selected',
     'highlight_selected_tip' => 'When enabled, the selected item will be highlighted in the list.',
     'highlight_favorites' => 'Highlight favorites',
     'highlight_favorites_tip' => 'When enabled, the favorite items will be highlighted in the list.',

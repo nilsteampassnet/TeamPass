@@ -1693,7 +1693,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
             $.post(
                 "sources/utils.queries.php", {
-                    type: "server_auto_update_password",
+                    type: "    $database,
+    (int) $port
+);",
                     data: prepareExchangedData(data, "encode", "<?php echo $session->get('key'); ?>"),
                     key: "<?php echo $session->get('key'); ?>"
                 },
@@ -1729,7 +1731,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         } else if ($('#tab-scheduled').hasClass('active') === true) {
             $.post(
                 "sources/utils.queries.php", {
-                    type: "server_auto_update_password_frequency",
+                    type: "    $database,
+    (int) $port
+);_frequency",
                     id: store.get('teampassItem').id,
                     freq: $('#form-item-server-cron-frequency').val(),
                     key: "<?php echo $session->get('key'); ?>"

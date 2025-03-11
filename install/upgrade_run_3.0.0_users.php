@@ -31,6 +31,8 @@ use EZimuel\PHPSecureSession;
 use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\Language\Language;
 use TeampassClasses\ConfigManager\ConfigManager;
+use TeampassClasses\EmailService\EmailService;
+use TeampassClasses\EmailService\EmailSettings;
 
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
@@ -52,7 +54,7 @@ require_once '../includes/config/include.php';
 require_once '../includes/config/settings.php';
 require_once '../sources/main.functions.php';
 require_once 'tp.functions.php';
-require_once 'libs/aesctr.php';
+require_once 'libs/aesctr/aesctr.php';
 
 // Prepare POST variables
 $post_nb = filter_input(INPUT_POST, 'nb', FILTER_SANITIZE_NUMBER_INT);
@@ -80,14 +82,16 @@ if ($db_link = mysqli_connect(
         $user,
         $pass,
         $database,
-        $port
+        (int) $port
     )
 ) {
     $db_link->set_charset(DB_ENCODING);
 } else {
     $res = 'Impossible to get connected to server. Error is: ' . addslashes(mysqli_connect_error());
     echo '[{"finish":"1", "error":"Impossible to get connected to server. Error is: ' . addslashes(mysqli_connect_error()) . '!"}]';
-    mysqli_close($db_link);
+    if ($db_link) {
+        mysqli_close($db_link);
+    }
     exit();
 }
 
@@ -784,7 +788,10 @@ if (null !== $post_step) {
             if (empty($userEmail['email']) === false) {
                 // Send email
                 try {
-                    sendEmail(
+                    $emailSettings = new EmailSettings($SETTINGS);
+                    $emailService = new EmailService();
+
+                    $emailService->sendMail(
                         '[Teampass] Your One Time Code',
                         str_replace(
                             array('#tp_password#'),

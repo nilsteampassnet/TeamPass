@@ -195,5 +195,10 @@
     "require-dev": {
         "dominikb/composer-license-checker": "^2.6",
         "phpstan/phpstan": "^2.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "Encryption\\Crypt\\": "install/libs/aesctr/"
+        }
     }
 }

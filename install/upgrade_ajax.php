@@ -32,7 +32,7 @@ use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\Language\Language;
 use TeampassClasses\PasswordManager\PasswordManager;
 use TeampassClasses\ConfigManager\ConfigManager;
-
+use Encryption\Crypt\aesctr;
 
 $_SESSION = [];
 
@@ -284,8 +284,6 @@ if (isset($post_type)) {
             $_SESSION = array();
             setcookie('pma_end_session');
             session_destroy();
-
-            require_once 'libs/aesctr.php';
             
             // check if path in settings.php are consistent
             if (defined(SECUREPATH) === true) {
@@ -324,10 +322,13 @@ if (isset($post_type)) {
                 '}]';
                 $superGlobal->put('user_granted', false, 'SESSION');
             } else {
-                if ($passwordManager->verifyPassword($user_info['pw'], Encryption\Crypt\aesctr::decrypt(base64_decode($post_pwd), 'cpm', 128)) === true && $user_info['admin'] === '1') {
+                // Load library
+                require_once './libs/aesctr/aesctr.php';
+
+                if ($passwordManager->verifyPassword($user_info['pw'], aesctr::decrypt(base64_decode($post_pwd), 'cpm', 128)) === true && $user_info['admin'] === '1') {
                     $superGlobal->put('user_granted', true, 'SESSION');
                     $superGlobal->put('user_login', mysqli_escape_string($db_link, stripslashes($post_login)), 'SESSION');
-                    $superGlobal->put('user_password', Encryption\Crypt\aesctr::decrypt(base64_decode($post_pwd), 'cpm', 128), 'SESSION');
+                    $superGlobal->put('user_password', aesctr::decrypt(base64_decode($post_pwd), 'cpm', 128), 'SESSION');
                     $superGlobal->put('user_id', $user_info['id'], 'SESSION');
                     echo '[{'.
                         '"error" : "",'.
@@ -476,8 +477,8 @@ if (isset($post_type)) {
                     phpversion() . ' is OK<i class=\"fa-solid fa-circle-check text-success ml-2\"></i>' .
                     '</span><br />';
             }
-            $mysqlVersion = version_compare($db_link -> server_version, MIN_MYSQL_VERSION, '<') ;
-            $mariadbVersion = version_compare($db_link -> server_version, MIN_MARIADB_VERSION, '<') ;
+            $mysqlVersion = version_compare((string) $db_link -> server_version, MIN_MYSQL_VERSION, '<') ;
+            $mariadbVersion = version_compare((string) $db_link -> server_version, MIN_MARIADB_VERSION, '<') ;
             if ($mysqlVersion && $mariadbVersion) {
                 if ($mariadbVersion === '') {
                     $txt .= '<span>MySQL version ' .
@@ -620,9 +621,6 @@ if (isset($post_type)) {
                 '}]';
                 break;
             }
-            //decrypt the password
-            // AES Counter Mode implementation
-            require_once 'libs/aesctr.php';
 
             //Get some infos from DB
             $cpmIsUTF8[0] = 0;

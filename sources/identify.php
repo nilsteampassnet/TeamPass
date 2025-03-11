@@ -175,7 +175,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         $session->set('user-duo_data','');
         if($duo_data_dec === false) {
             // Add failed authentication log
-            addFailedAuthentication($username, getClientIpServer());
+            addFailedAuthentication((string) filter_var($dataReceived['login'], FILTER_SANITIZE_FULL_SPECIAL_CHARS), getClientIpServer());
 
             echo prepareExchangedData(
                 [
@@ -1372,78 +1372,6 @@ function finalizeAuthentication(
     }
 }
 
-/**
- * Undocumented function.
- *
- * @param string|array|resource $dataReceived Received data
- * @param string                $userInfo     Result of query
- * @param array                 $SETTINGS     Teampass settings
- *
- * @return array
- */
-function yubicoMFACheck($dataReceived, string $userInfo, array $SETTINGS): array
-{
-    $session = SessionManager::getSession();
-    $lang = new Language($session->get('user-language') ?? 'english');
-    $sessionAdmin = $session->get('user-admin');
-    $sessionUrl = $session->get('user-initial_url');
-    $sessionPwdAttempts = $session->get('pwd_attempts');
-    // Init
-    $yubico_key = htmlspecialchars_decode($dataReceived['yubico_key']);
-    $yubico_user_key = htmlspecialchars_decode($dataReceived['yubico_user_key']);
-    $yubico_user_id = htmlspecialchars_decode($dataReceived['yubico_user_id']);
-    if (empty($yubico_user_key) === false && empty($yubico_user_id) === false) {
-        // save the new yubico in user's account
-        DB::update(
-            prefixTable('users'),
-            [
-                'yubico_user_key' => $yubico_user_key,
-                'yubico_user_id' => $yubico_user_id,
-            ],
-            'id=%i',
-            $userInfo['id']
-        );
-    } else {
-        // Check existing yubico credentials
-        if ($userInfo['yubico_user_key'] === 'none' || $userInfo['yubico_user_id'] === 'none') {
-            return [
-                'error' => true,
-                'value' => '',
-                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : '',
-                'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
-                'pwd_attempts' => (int) $sessionPwdAttempts,
-                'message' => 'no_user_yubico_credentials',
-                'proceedIdentification' => false,
-            ];
-        }
-        $yubico_user_key = $userInfo['yubico_user_key'];
-        $yubico_user_id = $userInfo['yubico_user_id'];
-    }
-
-    // Now check yubico validity
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Authentication/Yubico/Yubico.php';
-    $yubi = new Auth_Yubico($yubico_user_id, $yubico_user_key);
-    $auth = $yubi->verify($yubico_key);
-    //, null, null, null, 60
-
-    if (PEAR::isError($auth)) {
-        return [
-            'error' => true,
-            'value' => '',
-            'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : '',
-            'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
-            'pwd_attempts' => (int) $sessionPwdAttempts,
-            'message' => $lang->get('yubico_bad_code'),
-            'proceedIdentification' => false,
-        ];
-    }
-
-    return [
-        'error' => false,
-        'message' => '',
-        'proceedIdentification' => true,
-    ];
-}
 
 /**
  * Undocumented function.
@@ -2520,21 +2448,6 @@ function identifyDoMFAChecks(
                 'mfaQRCodeInfos' => $userInitialData['user_mfa_mode'] === 'google'
                 && count($ret['firstTime']) > 0 ? true : false,
             ];
-
-        case 'yubico':
-            $ret = yubicoMFACheck(
-                $dataReceived,
-                $userInfo,
-                $SETTINGS
-            );
-            if ($ret['error'] !== false) {
-                return [
-                    'error' => true,
-                    'mfaData' => $ret,
-                    'mfaQRCodeInfos' => false,
-                ];
-            }
-            break;
         
         case 'duo':
             // Prepare Duo connection if set up
