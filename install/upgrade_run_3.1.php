@@ -657,6 +657,29 @@ try {
 $deleteQuery = "DELETE FROM `" . $pre . "roles_values` WHERE type = ''";
 mysqli_query($db_link, $deleteQuery);
 
+//---<END 3.1.3
+
+//--->BEGIN 3.1.4
+
+// Remove from roles_values folders without any access
+if (tableHasColumn($pre . 'notification', 'id')) {
+    // Drop the table
+    mysqli_query($db_link, "DROP TABLE `" . $pre . "notification`");
+
+    // Create the table
+    mysqli_query(
+        $db_link,
+        "CREATE TABLE IF NOT EXISTS `" . $pre . "notification` (
+            `increment_id` int(12) NOT NULL AUTO_INCREMENT,
+            `item_id` int(12) NOT NULL,
+            `user_id` int(12) NOT NULL,
+            PRIMARY KEY (`increment_id`)
+        ) CHARSET=utf8;"
+    );
+}
+
+//---<END 3.1.4
+
 //---------------------------------------------------------------------
 
 //---< END 3.1.X upgrade steps
