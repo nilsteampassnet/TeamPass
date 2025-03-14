@@ -86,8 +86,10 @@ define('FONTAWESOME_URL', 'https://fontawesome.com/search?m=free&o=r');
 define('DUO_ADMIN_URL_INFO', 'https://duo.com/docs/duoweb#overview');
 define('DUO_CALLBACK', 'index.php?post_type=duo');
 
-define('DEBUG', false);
-define('DEBUGLDAP', false); //Can be used in order to debug LDAP authentication
+define('DEBUG', false); // Can be used in order to debug the application
+define('MYSQL_LOG', false); // Can be used in order to enable MySQL debug
+define('MYSQL_LOG_FILE', '/var/log/teampass_mysql_query.log'); // 🫸 Ensure you have the right to write in the log file
+define('DEBUGLDAP', false); // Can be used in order to debug LDAP authentication
 
 define("ADMIN_VISIBLE_OTP_ON_LDAP_IMPORT", true);
 

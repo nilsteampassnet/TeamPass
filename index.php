@@ -67,7 +67,6 @@ if (file_exists(__DIR__.'/includes/config/settings.php') === false) {
     exit;
 }
 
-
 // initialise CSRFGuard library
 require_once __DIR__.'/includes/libraries/csrfp/libs/csrf/csrfprotector.php';
 csrfProtector::init();
@@ -139,6 +138,14 @@ if (empty($get['page']) && !empty($session_name)) {
     // Redirect user on default page.
     header('Location: index.php?page='.$redirect_page);
     exit();
+}
+
+// Force log of all queries
+if (defined('MYSQL_LOG') && MYSQL_LOG === true) {
+    DB::query("SET GLOBAL general_log = 'ON'");
+    DB::query("SET GLOBAL general_log_file = " . (defined('MYSQL_LOG_FILE') ? MYSQL_LOG_FILE : "'/var/log/teampass_mysql_query.log'"));
+} else {
+    DB::query("SET GLOBAL general_log = 'OFF'");
 }
 
 /* DEFINE WHAT LANGUAGE TO USE */
