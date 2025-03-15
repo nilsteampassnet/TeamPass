@@ -450,7 +450,7 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
             if (intval($tpUserExists) === 0) {
                 // Generate a random password for the user
                 $userPassword = GenerateCryptKeyForInstall(25, true, true, true, true);
-                $encryptedUserPassword = cryption(
+                $encryptedUserPassword = cryptionForInstall(
                     $userPassword,
                     $encryptionKey,
                     'encrypt'
