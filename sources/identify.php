@@ -175,7 +175,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         $session->set('user-duo_data','');
         if($duo_data_dec === false) {
             // Add failed authentication log
-            addFailedAuthentication($username, getClientIpServer());
+            addFailedAuthentication(filter_var($dataReceived['login'], FILTER_SANITIZE_FULL_SPECIAL_CHARS), getClientIpServer());
 
             echo prepareExchangedData(
                 [
@@ -2009,7 +2009,7 @@ class initialChecks {
 
     public function getUserInfo($login, $enable_ad_user_auto_creation, $oauth2_enabled) {
         $session = SessionManager::getSession();
-
+    
         // Get user info from DB
         $data = DB::queryFirstRow(
             'SELECT u.*, a.value AS api_key
@@ -2018,32 +2018,33 @@ class initialChecks {
             WHERE login = %s AND deleted_at IS NULL',
             $login
         );
-        
+    
         // User doesn't exist then return error
         // Except if user creation from LDAP is enabled
         if (
-            DB::count() === 0 &&
-            (filter_var($enable_ad_user_auto_creation, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) !== true ||
-             filter_var($oauth2_enabled, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) !== true)
+            DB::count() === 0
+            && !filter_var($enable_ad_user_auto_creation, FILTER_VALIDATE_BOOLEAN) 
+            && !filter_var($oauth2_enabled, FILTER_VALIDATE_BOOLEAN)
         ) {
-            throw new Exception(
-                "error" 
-            );
+            throw new Exception("error");
         }
+    
         // We cannot create a user with LDAP if the OAuth2 login is ongoing
-        $oauth2LoginOngoing = isset($session->get('userOauth2Info')['oauth2LoginOngoing']) ? $session->get('userOauth2Info')['oauth2LoginOngoing'] : false;
-        $data['oauth2_login_ongoing'] = filter_var($oauth2LoginOngoing, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false;
+        $oauth2LoginOngoing = $session->get('userOauth2Info')['oauth2LoginOngoing'] ?? false;
+        $oauth2LoginOngoing = filter_var($oauth2LoginOngoing, FILTER_VALIDATE_BOOLEAN) ?? false;
+    
+        $data['oauth2_login_ongoing'] = $oauth2LoginOngoing;
         $data['ldap_user_to_be_created'] = (
-            filter_var($enable_ad_user_auto_creation, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) === true &&
+            filter_var($enable_ad_user_auto_creation, FILTER_VALIDATE_BOOLEAN) &&
             DB::count() === 0 &&
-            filter_var($oauth2LoginOngoing, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) !== true
-        ) ? true : false;        
+            !$oauth2LoginOngoing
+        );
         $data['oauth2_user_to_be_created'] = (
-            filter_var($oauth2_enabled, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) === true &&
+            filter_var($oauth2_enabled, FILTER_VALIDATE_BOOLEAN) &&
             DB::count() === 0 &&
-            filter_var($oauth2LoginOngoing, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) === true
-        ) ? true : false;
-
+            $oauth2LoginOngoing
+        );
+    
         return $data;
     }
 

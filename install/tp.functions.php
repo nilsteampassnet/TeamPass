@@ -356,11 +356,32 @@ function tableExists($tablename)
         AND table_name = '$tablename'"
     );
 
-    if ($res > 0) {
-        return true;
+    if ($res === false) {
+        return false;
     }
 
-    return false;
+    $row = mysqli_fetch_assoc($res);
+    return isset($row['count']) ? (int) $row['count'] > 0 : false;
+}
+
+/**
+ * Check if a column exists in a table
+ * 
+ * @param string $table  Table
+ * @param string $column Column
+ * 
+ * @return boolean
+ */
+function tableHasColumn(string $table, string $column): bool {
+    $count = DB::queryFirstField(
+        "SELECT COUNT(*) FROM information_schema.columns 
+         WHERE table_schema = DATABASE() 
+         AND table_name = %s 
+         AND column_name = %s",
+        $table, $column
+    );
+
+    return (int) $count > 0;
 }
 
 /**

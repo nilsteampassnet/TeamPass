@@ -5242,6 +5242,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     } else {
                         $('#card-item-login-btn').addClass('hidden');
                     }
+                    $('#pwd_empty_igloo').remove();
 
                     // Prepare clipboard - COPY PASSWORD
                     if (data.pw_length > 0 && store.get('teampassItem').readyToUse === true) {
@@ -5306,14 +5307,13 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                             }
                         });
                         $('#card-item-pwd-button, #card-item-pwd, #card-item-pwd-show-button').removeClass('hidden');
-                        $('#pwd_empty_igloo').remove();
                     } else {
                         $('#card-item-pwd-button, #card-item-pwd, #card-item-pwd-show-button').addClass('hidden');
                         // Case where pw is not ready (encryption on going)
                         if (data.pw_decrypt_info === 'error_no_sharekey_yet') {
                             $('#card-item-label').after('<i class="fa-solid fa-bell fa-shake fa-lg infotip ml-4 text-warning delete-after-usage" title="<?php echo $lang->get('sharekey_not_ready'); ?>"></i>');
                         }
-                        $('#card-item-pwd-show-button').before('<i class="fa-solid fa-igloo infotip" id="pwd_empty_igloo" style="float:right" title="<?php echo $lang->get('password_is_empty'); ?>"></i>');
+                        $('#card-item-pwd-show-button').before('<i class="fa-solid fa-igloo infotip ml-2" id="pwd_empty_igloo" style="float:right" title="<?php echo $lang->get('password_is_empty'); ?>"></i>');
                         $('#card-item-pwd').after('<i class="fa-solid fa-ban text-teal ml-3 delete-after-usage"></i>');
                     }
 
