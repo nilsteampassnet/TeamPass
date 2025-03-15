@@ -142,10 +142,10 @@ if (empty($get['page']) && !empty($session_name)) {
 
 // Force log of all queries
 if (defined('MYSQL_LOG') && MYSQL_LOG === true) {
-    DB::query("SET GLOBAL general_log = 'ON'");
-    DB::query("SET GLOBAL general_log_file = " . (defined('MYSQL_LOG_FILE') ? MYSQL_LOG_FILE : "'/var/log/teampass_mysql_query.log'"));
+    DB::query("SET SESSION general_log = 'ON'");
+    DB::query("SET SESSION general_log_file = " . (defined('MYSQL_LOG_FILE') ? MYSQL_LOG_FILE : "'/var/log/teampass_mysql_query.log'"));
 } else {
-    DB::query("SET GLOBAL general_log = 'OFF'");
+    DB::query("SET SESSION general_log = 'OFF'");
 }
 
 /* DEFINE WHAT LANGUAGE TO USE */
