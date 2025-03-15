@@ -443,24 +443,24 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
             // Check if user TP exists
             $tpUserExists = DB::queryFirstField(
                 "SELECT COUNT(*) FROM %busers WHERE id = %i",
-                $this->inputData['tablePrefix'],
+                $this->inputData['tablePrefix'] . 'users',
                 TP_USER_ID
             );
     
             if (intval($tpUserExists) === 0) {
                 // Generate a random password for the user
-                $userPassword = GenerateCryptKey(25, true, true, true, true);
-                $encryptedUserPassword = cryption(
+                $userPassword = GenerateCryptKeyForInstall(25, true, true, true, true);
+                $encryptedUserPassword = cryptionForInstall(
                     $userPassword,
                     $encryptionKey,
                     'encrypt'
                 )['string'];
-                $userKeys = generateUserKeys($userPassword);
+                $userKeys = generateUserKeysForInstall($userPassword);
     
                 // Insert the user into the database
                 DB::insert($this->inputData['tablePrefix'] . 'users', [
                     'id'                     => TP_USER_ID,
-                    'login'                  => 'OTV',
+                    'login'                  => 'TP',
                     'pw'                     => $encryptedUserPassword,
                     'groupes_visibles'       => '',
                     'derniers'               => '',
