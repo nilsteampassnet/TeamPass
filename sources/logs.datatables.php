@@ -189,9 +189,9 @@ if (isset($params['action']) && $params['action'] === 'connections') {
 
     if (count($rows) > 0) {
         $sOutput = substr_replace($sOutput, '', -1);
-        $sOutput .= '] }';
+        echo $sOutput . '] }';
     } else {
-        $sOutput .= '[] }';
+        echo $sOutput . '[] }';
     }
 
     /* ERRORS LOG */
@@ -262,9 +262,9 @@ if (isset($params['action']) && $params['action'] === 'connections') {
 
     if (count($rows) > 0) {
         $sOutput = substr_replace($sOutput, '', -1);
-        $sOutput .= '] }';
+        echo $sOutput . '] }';
     } else {
-        $sOutput .= '[] }';
+        echo $sOutput . '[] }';
     }
 
     /* COPY LOG */
@@ -314,7 +314,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
 
     // Output
     $sOutput = '{';
-    $sOutput .= '"sEcho": '. (int) $request->query->filter('draw', FILTER_SANITIZE_NUMBER_INT) . ', ';
+    $sOutput .= '"sEcho": '. $request->query->filter('draw', FILTER_SANITIZE_NUMBER_INT) . ', ';
     $sOutput .= '"iTotalRecords": '.$iTotal.', ';
     $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
     $sOutput .= '"aaData": ';
@@ -335,9 +335,9 @@ if (isset($params['action']) && $params['action'] === 'connections') {
 
     if (count($rows) > 0) {
         $sOutput = substr_replace($sOutput, '', -1);
-        $sOutput .= '] }';
+        echo $sOutput . '] }';
     } else {
-        $sOutput .= '[] }';
+        echo $sOutput . '[] }';
     }
 
     /*
@@ -421,7 +421,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         //col4
         if (empty($record['field_1']) === false) {
             // get user name
-            $info = DB::queryfirstrow(
+            $info = DB::queryFirstRow(
                 'SELECT u.login as login, u.name AS name, u.lastname AS lastname
                     FROM '.prefixTable('users').' as u
                     WHERE u.id = %i',
@@ -440,7 +440,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     if ($iFilteredTotal > 0) {
         $sOutput = substr_replace($sOutput, '', -2);
     }
-    $sOutput .= '] }';
+    echo $sOutput . '] }';
 /* ITEMS */
 } elseif (isset($params['action']) && $params['action'] === 'items') {
     require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
@@ -525,7 +525,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     if ($iFilteredTotal > 0) {
         $sOutput = substr_replace($sOutput, '', -2);
     }
-    $sOutput .= '] }';
+    echo $sOutput . '] }';
 /* FAILED AUTHENTICATION */
 } elseif (isset($params['action']) && $params['action'] === 'failed_auth') {
     //Columns name
@@ -598,9 +598,9 @@ if (isset($params['action']) && $params['action'] === 'connections') {
 
     if (count($rows) > 0) {
         $sOutput = substr_replace($sOutput, '', -1);
-        $sOutput .= '] }';
+        echo $sOutput . '] }';
     } else {
-        $sOutput .= '[] }';
+        echo $sOutput . '[] }';
     }
 } elseif (isset($params['action']) && $params['action'] === 'errors') {
     //Columns name
@@ -669,9 +669,9 @@ if (isset($params['action']) && $params['action'] === 'connections') {
 
     if (count($rows) > 0) {
         $sOutput = substr_replace($sOutput, '', -1);
-        $sOutput .= '] }';
+        echo $sOutput . '] }';
     } else {
-        $sOutput .= '[] }';
+        echo $sOutput . '[] }';
     }
 } elseif (isset($params['action']) && $params['action'] === 'items_in_edition') {
     //Columns name
@@ -743,9 +743,9 @@ if (isset($params['action']) && $params['action'] === 'connections') {
 
     if (count($rows) > 0) {
         $sOutput = substr_replace($sOutput, '', -1);
-        $sOutput .= '] }';
+        echo $sOutput . '] }';
     } else {
-        $sOutput .= '[] }';
+        echo $sOutput . '[] }';
     }
 } elseif (isset($params['action']) && $params['action'] === 'users_logged_in') {
     //Columns name
@@ -823,9 +823,9 @@ if (isset($params['action']) && $params['action'] === 'connections') {
 
     if (count($rows) > 0) {
         $sOutput = substr_replace($sOutput, '', -1);
-        $sOutput .= '] }';
+        echo $sOutput . '] }';
     } else {
-        $sOutput .= '[] }';
+        echo $sOutput . '[] }';
     }
 } elseif (isset($params['action']) && $params['action'] === 'tasks_in_progress') {
     //Columns name
@@ -899,7 +899,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
 
         // col5
         if (in_array($record['process_type'], array('create_user_keys', 'item_copy')) === true) {
-            $data_user = DB::queryfirstrow(
+            $data_user = DB::queryFirstRow(
                 'SELECT name, lastname FROM ' . prefixTable('users') . '
                 WHERE id = %i',
                 json_decode($record['arguments'], true)['new_user_id']
@@ -916,9 +916,9 @@ if (isset($params['action']) && $params['action'] === 'connections') {
 
     if (count($rows) > 0) {
         $sOutput = substr_replace($sOutput, '', -1);
-        $sOutput .= '] }';
+        echo $sOutput . '] }';
     } else {
-        $sOutput .= '[] }';
+        echo $sOutput . '[] }';
     }
 } elseif (isset($params['action']) && $params['action'] === 'tasks_finished') {
     //Columns name
@@ -1004,7 +1004,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         $arguments = json_decode($record['arguments'], true);
         $newUserId = array_key_exists('new_user_id', $arguments) ? $arguments['new_user_id'] : null;
         if ($record['process_type'] === 'create_user_keys' && is_null($newUserId) === false && empty($newUserId) === false) {
-            $data_user = DB::queryfirstrow(
+            $data_user = DB::queryFirstRow(
                 'SELECT name, lastname, login FROM ' . prefixTable('users') . '
                 WHERE id = %i',
                 $newUserId
@@ -1020,7 +1020,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
             $sOutput .= '"'.(is_null($user) === true || empty($user) === true ? '<i class=\"fa-solid fa-user-slash\"></i>' : $user).'"';
         } elseif ($record['process_type'] === 'user_build_cache_tree') {
             $user = json_decode($record['arguments'], true)['user_id'];
-            $data_user = DB::queryfirstrow(
+            $data_user = DB::queryFirstRow(
                 'SELECT name, lastname, login FROM ' . prefixTable('users') . '
                 WHERE id = %i',
                 $user
@@ -1040,18 +1040,20 @@ if (isset($params['action']) && $params['action'] === 'connections') {
 
     if (count($rows) > 0) {
         $sOutput = substr_replace($sOutput, '', -1);
-        $sOutput .= '] }';
+        echo $sOutput . '] }';
     } else {
-        $sOutput .= '[] }';
+        echo $sOutput . '[] }';
     }
 }
 
-// deepcode ignore XSS: data comes from database. Before being stored it is clean with feature antiXss->xss_clean
-echo (string) $sOutput;
 
-
-
-function getSubtaskProgress($id)
+/**
+ * Get the subtask progress
+ *
+ * @param int $id
+ * @return string
+ */
+function getSubtaskProgress($id): string
 {
     $subtasks = DB::query(
         'SELECT *

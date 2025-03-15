@@ -288,7 +288,8 @@ foreach ($users as $user) {
                             </small>
                         </div>
                     </div>
-                    <?php                            
+                    <?php
+$selectOptions = '';                       
 // Check if table  exists
 $result = DB::queryFirstField(
     'SELECT COUNT(*) FROM information_schema.tables 
@@ -304,12 +305,11 @@ if ($result > 0) {
         GROUP BY sb.operation_code
         ORDER BY sb.created_at DESC;'
     );
-}
-$selectOptions = '';
-// Get list of backups
-foreach ($backups as $bck) {
-    $selectOptions .= '<option value="'.$bck['operation_code'].'">'.$bck['login'].' - Backup date: '.$bck['created_at'].'</option>';
-}
+
+    // Get list of backups
+    foreach ($backups as $bck) {
+        $selectOptions .= '<option value="'.$bck['operation_code'].'">'.$bck['login'].' - Backup date: '.$bck['created_at'].'</option>';
+    }
 ?>
                     <div class='row mb-2'>
                         <div class='col-5'>
@@ -335,7 +335,9 @@ foreach ($backups as $bck) {
                         <div id='restore_items_master_keys_results'>
                         </div>
                     </div>
-
+<?php
+}
+?>
                 </div>
             </form>
         </div>

@@ -34,6 +34,9 @@ use TeampassClasses\Language\Language;
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\ConfigManager\ConfigManager;
 
+// User session handler
+/** @var SessionManager $session */
+
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
 
@@ -294,7 +297,7 @@ foreach ($session->get('user-roles_array') as $role) {
                                         ) {
                                             $numDaysBeforePwExpiration = '';
                                         } else {
-                                            $numDaysBeforePwExpiration = $LANG['index_pw_expiration'] . ' ' . $session->get('user-num_days_before_exp') . ' ' . $LANG['days'] . '.';
+                                            $numDaysBeforePwExpiration = $lang->get('index_pw_expiration') . ' ' . $session->get('user-num_days_before_exp') . ' ' . $lang->get('days') . '.';
                                         }
                                         echo '
                                     <li class="list-group-item">

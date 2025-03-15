@@ -29,6 +29,10 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
+// User session handler
+/** @var SessionManager $session */
+// Language translations handler
+/** @var LangClass $lang */
 ?>
 <script type="text/javascript">
     var debugJavascript = false;

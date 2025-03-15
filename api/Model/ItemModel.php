@@ -59,7 +59,7 @@ class ItemModel
 
         $ret = [];
         foreach ($rows as $row) {
-            $userKey = DB::queryfirstrow(
+            $userKey = DB::queryFirstRow(
                 'SELECT share_key
                 FROM ' . prefixTable('sharekeys_items') . '
                 WHERE user_id = %i AND object_id = %i',

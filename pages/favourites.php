@@ -65,6 +65,8 @@ $checkUserAccess = new PerformChecks(
     ]
 );
 
+$session_user_admin = $session->get('user-admin');
+
 // Check user access and favourites enabled
 echo $checkUserAccess->caseHandler();
 if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('favourites') === false

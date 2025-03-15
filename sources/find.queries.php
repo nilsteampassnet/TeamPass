@@ -235,10 +235,7 @@ if (count($crit) === 0) {
 
 // Do NOT show the items in PERSONAL FOLDERS
 if (empty($listPf) === false) {
-    if (empty($sWhere) === false) {
-        $sWhere .= ' AND ';
-    }
-    $sWhere = 'WHERE ' . $sWhere . 'c.id_tree NOT IN %ls_pf ';
+    $sWhere = 'WHERE ' . $sWhere . ' AND c.id_tree NOT IN %ls_pf ';
 } else {
     $sWhere = 'WHERE ' . $sWhere;
 }
@@ -448,7 +445,7 @@ if (null === $request->query->get('type')) {
         }
 
         // Anyone can modify?
-        $tmp = DB::queryfirstrow(
+        $tmp = DB::queryFirstRow(
             'SELECT anyone_can_modify FROM ' . prefixTable('items') . ' WHERE id = %i',
             $record['id']
         );

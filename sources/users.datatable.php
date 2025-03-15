@@ -237,7 +237,7 @@ foreach ($rows as $record) {
             }
         }
 
-        $userDate = DB::queryfirstrow(
+        $userDate = DB::queryFirstRow(
             'SELECT date FROM '.prefixTable('log_system ').' WHERE type = %s AND field_1 = %i',
             'user_mngt',
             $record['id']

@@ -177,7 +177,7 @@ if (null !== $post_step) {
 
                     $usersArray = array(
                         'id' => TP_USER_ID,
-                        'otp' => $random_string,
+                        'otp' => $random_string ?? '',
                         'public_key' => $userQuery['public_key'],
                         'private_key' => $userQuery['private_key'],
                         'login' => $userQuery['login'],
@@ -194,6 +194,7 @@ if (null !== $post_step) {
             
             // Treat the 1st user in the list
             if (count($listOfUsers) > 0 || (count($listOfUsers) === 0 && empty($post_number) === false && $post_extra !== 'all_users_created')) {
+                $usersArray = [];
                 // Get info about user
                 $userQuery = mysqli_fetch_array(
                     mysqli_query(
@@ -242,31 +243,31 @@ if (null !== $post_step) {
                         $db_link,
                         'DELETE  
                         FROM ' . $pre . 'sharekeys_items
-                        WHERE user_id = ' . (int) $userInfo['id']
+                        WHERE user_id = ' . (int) $post_number
                     );
                     mysqli_query(
                         $db_link,
                         'DELETE  
                         FROM ' . $pre . 'sharekeys_logs
-                        WHERE user_id = ' . (int) $userInfo['id']
+                        WHERE user_id = ' . (int) $post_number
                     );
                     mysqli_query(
                         $db_link,
                         'DELETE  
                         FROM ' . $pre . 'sharekeys_fields
-                        WHERE user_id = ' . (int) $userInfo['id']
+                        WHERE user_id = ' . (int) $post_number
                     );
                     mysqli_query(
                         $db_link,
                         'DELETE  
                         FROM ' . $pre . 'sharekeys_suggestions
-                        WHERE user_id = ' . (int) $userInfo['id']
+                        WHERE user_id = ' . (int) $post_number
                     );
                     mysqli_query(
                         $db_link,
                         'DELETE  
                         FROM ' . $pre . 'sharekeys_files
-                        WHERE user_id = ' . (int) $userInfo['id']
+                        WHERE user_id = ' . (int) $post_number
                     );
 
                     $usersArray = array(

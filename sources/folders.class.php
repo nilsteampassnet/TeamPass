@@ -65,25 +65,23 @@ class FolderManager
      */
     public function createNewFolder(array $params): array
     {
-        // Décomposer les paramètres pour une meilleure lisibilité
-        extract($params);
 
-        if ($this->isTitleNumeric($title)) {
+        if ($this->isTitleNumeric($params['title'])) {
             return $this->errorResponse($this->lang->get('error_only_numbers_in_folder_name'));
         }
 
-        if (!$this->isParentFolderAllowed($parent_id, $user_accessible_folders, $user_is_admin)) {
+        if (!$this->isParentFolderAllowed($params['parent_id'], $params['user_accessible_folders'], $params['user_is_admin'])) {
             return $this->errorResponse($this->lang->get('error_folder_not_allowed_for_this_user'));
         }
 
-        if (!$this->checkDuplicateFolderAllowed($title) && $personal_folder == 0) {
+        if (!$this->checkDuplicateFolderAllowed($params['title']) && $params['personal_folder'] == 0) {
             return $this->errorResponse($this->lang->get('error_group_exist'));
         }
 
-        $parentFolderData = $this->getParentFolderData($parent_id);
+        $parentFolderData = $this->getParentFolderData($params['parent_id']);
 
-        $parentComplexity = $this->checkComplexityLevel($parentFolderData, $complexity, $parent_id);
-        if (isset($parentComplexity ['error']) && $parentComplexity['error'] === true) {
+        $parentComplexity = $this->checkComplexityLevel($params['parentFolderData'], $params['complexity'], $params['parent_id']);
+        if (isset($parentComplexity['error']) && $parentComplexity['error'] === true) {
             return $this->errorResponse($this->lang->get('error_folder_complexity_lower_than_top_folder') . " [<b>{$this->settings['TP_PW_COMPLEXITY'][$parentComplexity['valeur']][1]}</b>]");
         }
 
@@ -155,7 +153,7 @@ class FolderManager
     private function getParentFolderData($parent_id)
     {
         //check if parent folder is personal
-        $data = DB::queryfirstrow(
+        $data = DB::queryFirstRow(
             'SELECT personal_folder, bloquer_creation, bloquer_modification
             FROM ' . prefixTable('nested_tree') . '
             WHERE id = %i',
@@ -192,9 +190,9 @@ class FolderManager
         $parent_id
     )
     {
-        if (isset($data) === false || (int) $data['isPersonal'] === 0) {    
+        if ((int) $data['isPersonal'] === 0) {    
             // get complexity level for this folder
-            $data = DB::queryfirstrow(
+            $data = DB::queryFirstRow(
                 'SELECT valeur
                 FROM ' . prefixTable('misc') . '
                 WHERE intitule = %i AND type = %s',
@@ -221,26 +219,43 @@ class FolderManager
      * @param array $parentFolderData - Parent folder data (e.g., ID, permissions)
      * @return array - Returns an array indicating success or failure
      */
-    private function createFolder($params, $parentFolderData)
+    private function createFolder(array $params, array $parentFolderData)
     {
-        extract($params);
-        extract($parentFolderData);
-
-        if ($this->canCreateFolder($isPersonal, $user_is_admin, $user_is_manager, $user_can_manage_all_users, $user_can_create_root_folder)) {
+        if ($this->canCreateFolder(
+            $params['isPersonal'],
+            $params['user_is_admin'],
+            $params['user_is_manager'],
+            $params['user_can_manage_all_users'],
+            $params['user_can_create_root_folder']
+        )) {
             $newId = $this->insertFolder($params, $parentFolderData);
-            $this->addComplexity($newId, $complexity);
+            $this->addComplexity($newId, $params['complexity']);
             $this->setFolderCategories($newId);
             $this->updateTimestamp();
-            $this->rebuildFolderTree($user_is_admin, $title, $parent_id, $isPersonal, $user_id, $newId);
-            $this->manageFolderPermissions($parent_id, $newId, $user_roles, $access_rights, $user_is_admin);
-            $this->copyCustomFieldsCategories($parent_id, $newId);
-            $this->refreshCacheForUsersWithSimilarRoles($user_roles);
-
+            $this->rebuildFolderTree(
+                $params['user_is_admin'],
+                $params['title'],
+                $params['parent_id'],
+                $params['isPersonal'],
+                $params['user_id'],
+                $newId
+            );
+            $this->manageFolderPermissions(
+                $params['parent_id'],
+                $newId,
+                $params['user_roles'],
+                $params['access_rights'],
+                $params['user_is_admin']
+            );
+            $this->copyCustomFieldsCategories($params['parent_id'], $newId);
+            $this->refreshCacheForUsersWithSimilarRoles($params['user_roles']);
+    
             return ['error' => false, 'newId' => $newId];
         } else {
             return ['error' => true, 'newId' => null];
         }
     }
+    
 
     /**
      * Checks if the user has the permissions to create a folder.

@@ -161,7 +161,7 @@ if (isset($post_operation) === true && empty($post_operation) === false && strpo
             installPurgeUnnecessaryKeys($pre, true, 0);
     }
     // Return back
-    echo '[{"finish":"'.$finish.'" , "next":"", "error":"", "total":"'.$total.'"}]';
+    echo '[{"finish":"'.$finish.'" , "next":"", "error":"", "total":"'.($total ?? 0).'"}]';
     // Commit transaction.
     mysqli_commit($db_link);
 }

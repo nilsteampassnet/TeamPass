@@ -536,9 +536,9 @@ function identUser(
         ), SORT_NUMERIC)
     );
     // Folders and Roles numbers
-    DB::queryfirstrow('SELECT id FROM ' . prefixTable('nested_tree') . '');
+    DB::queryFirstRow('SELECT id FROM ' . prefixTable('nested_tree') . '');
     $session->set('user-nb_folders', DB::count());
-    DB::queryfirstrow('SELECT id FROM ' . prefixTable('roles_title'));
+    DB::queryFirstRow('SELECT id FROM ' . prefixTable('roles_title'));
     $session->set('user-nb_roles', DB::count());
     // check if change proposals on User's items
     if (isset($SETTINGS['enable_suggestion']) === true && (int) $SETTINGS['enable_suggestion'] === 1) {
@@ -637,7 +637,7 @@ function identUserGetPFList(
         (int) $enablePfFeature === 1
         && (int) $globalsPersonalFolders === 1
     ) {
-        $persoFld = DB::queryfirstrow(
+        $persoFld = DB::queryFirstRow(
             'SELECT id
             FROM ' . prefixTable('nested_tree') . '
             WHERE title = %s AND personal_folder = %i'.
@@ -766,7 +766,7 @@ function cacheTableRefresh(): void
             }
 
             // Get renewal period
-            $resNT = DB::queryfirstrow(
+            $resNT = DB::queryFirstRow(
                 'SELECT renewal_period
                 FROM ' . prefixTable('nested_tree') . '
                 WHERE id = %i',
@@ -779,7 +779,7 @@ function cacheTableRefresh(): void
                 // Check if title is the ID of a user
                 if (is_numeric($elem->title) === true) {
                     // Is this a User id?
-                    $user = DB::queryfirstrow(
+                    $user = DB::queryFirstRow(
                         'SELECT id, login
                         FROM ' . prefixTable('users') . '
                         WHERE id = %i',
@@ -830,7 +830,7 @@ function cacheTableUpdate(?int $ident = null): void
     //Load Tree
     $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
     // get new value from db
-    $data = DB::queryfirstrow(
+    $data = DB::queryFirstRow(
         'SELECT label, description, id_tree, perso, restricted_to, login, url
         FROM ' . prefixTable('items') . '
         WHERE id=%i',
@@ -854,7 +854,7 @@ function cacheTableUpdate(?int $ident = null): void
         // Check if title is the ID of a user
         if (is_numeric($elem->title) === true) {
             // Is this a User id?
-            $user = DB::queryfirstrow(
+            $user = DB::queryFirstRow(
                 'SELECT id, login
                 FROM ' . prefixTable('users') . '
                 WHERE id = %i',
@@ -932,7 +932,7 @@ function cacheTableAdd(?int $ident = null): void
         // Check if title is the ID of a user
         if (is_numeric($elem->title) === true) {
             // Is this a User id?
-            $user = DB::queryfirstrow(
+            $user = DB::queryFirstRow(
                 'SELECT id, login
                 FROM ' . prefixTable('users') . '
                 WHERE id = %i',
@@ -952,7 +952,7 @@ function cacheTableAdd(?int $ident = null): void
             'id' => $data['id'],
             'label' => $data['label'],
             'description' => $data['description'],
-            'tags' => isset($tags) && empty($tags) === false ? $tags : 'None',
+            'tags' => !empty($tags) ? $tags : 'None',
             'url' => isset($data['url']) && ! empty($data['url']) ? $data['url'] : '0',
             'id_tree' => $data['id_tree'],
             'perso' => isset($data['perso']) && empty($data['perso']) === false && $data['perso'] !== 'None' ? $data['perso'] : '0',
@@ -1323,12 +1323,7 @@ function makeThumbnail(string $src, string $dest, int $desired_width)
 function prefixTable(string $table): string
 {
     $safeTable = htmlspecialchars(DB_PREFIX . $table);
-    if (empty($safeTable) === false) {
-        // sanitize string
-        return $safeTable;
-    }
-    // stop error no table
-    return 'table_not_exists';
+    return $safeTable;
 }
 
 /**
@@ -1571,7 +1566,7 @@ function logItems(
         $attribute = is_null($raison) === true ? Array('') : explode(' : ', $raison);
         // Get item info if not known
         if (empty($item_label) === true) {
-            $dataItem = DB::queryfirstrow(
+            $dataItem = DB::queryFirstRow(
                 'SELECT id, id_tree, label
                 FROM ' . prefixTable('items') . '
                 WHERE id = %i',
@@ -1614,9 +1609,8 @@ function notifyChangesToSubscribers(int $item_id, string $label, array $changes,
     $globalsLastname = $session->get('user-lastname');
     $globalsName = $session->get('user-name');
     // send email to user that what to be notified
-    $notification = DB::queryOneColumn(
-        'email',
-        'SELECT *
+    $notification = DB::queryFirstColumn(
+        'SELECT u.email
         FROM ' . prefixTable('notification') . ' AS n
         INNER JOIN ' . prefixTable('users') . ' AS u ON (n.user_id = u.id)
         WHERE n.item_id = %i AND n.user_id != %i',
@@ -1834,7 +1828,7 @@ function loadSettings(): void
 function checkCFconsistency(int $source_id, int $target_id): bool
 {
     $source_cf = [];
-    $rows = DB::QUERY(
+    $rows = DB::query(
         'SELECT id_category
             FROM ' . prefixTable('categories_folders') . '
             WHERE id_folder = %i',
@@ -1845,7 +1839,7 @@ function checkCFconsistency(int $source_id, int $target_id): bool
     }
 
     $target_cf = [];
-    $rows = DB::QUERY(
+    $rows = DB::query(
         'SELECT id_category
             FROM ' . prefixTable('categories_folders') . '
             WHERE id_folder = %i',
@@ -2968,7 +2962,6 @@ function cleanStringForExport(string $text, bool $emptyCheckOnly = false): strin
 function isUserIdValid($userId): bool
 {
     if (is_null($userId) === false
-        && isset($userId) === true
         && empty($userId) === false
     ) {
         return true;
@@ -3126,7 +3119,7 @@ function isOneVarOfArrayEqualToValue(
  */
 function isValueSetNullEmpty(/*PHP8 - string|int|null*/ $value) : bool
 {
-    if (is_null($value) === true || isset($value) === false || empty($value) === true) {
+    if (is_null($value) === true || empty($value) === true) {
         return true;
     }
     return false;
@@ -3141,7 +3134,7 @@ function isValueSetNullEmpty(/*PHP8 - string|int|null*/ $value) : bool
  */
 function isValueSetEmpty($value, $boolean = true) : bool
 {
-    if (isset($value) === true && empty($value) === $boolean) {
+    if (empty($value) === $boolean) {
         return true;
     }
     return false;
@@ -3206,7 +3199,7 @@ function cacheTreeUserHandler(int $user_id, string $data, array $SETTINGS, strin
     loadClasses('DB');
 
     // Exists ?
-    $userCacheId = DB::queryfirstrow(
+    $userCacheId = DB::queryFirstRow(
         'SELECT increment_id
         FROM ' . prefixTable('cache_tree') . '
         WHERE user_id = %i',
@@ -3288,7 +3281,7 @@ function loadFoldersListByCache(
     $session = SessionManager::getSession();
 
     // Get last folder update
-    $lastFolderChange = DB::queryfirstrow(
+    $lastFolderChange = DB::queryFirstRow(
         'SELECT valeur FROM ' . prefixTable('misc') . '
         WHERE type = %s AND intitule = %s',
         'timestamp',
@@ -3318,7 +3311,7 @@ function loadFoldersListByCache(
     }
     
     // Does this user has a tree cache
-    $userCacheTree = DB::queryfirstrow(
+    $userCacheTree = DB::queryFirstRow(
         'SELECT '.$fieldName.'
         FROM ' . prefixTable('cache_tree') . '
         WHERE user_id = %i',
@@ -3494,7 +3487,7 @@ function getFullUserInfos(
         return array();
     }
 
-    $val = DB::queryfirstrow(
+    $val = DB::queryFirstRow(
         'SELECT *
         FROM ' . prefixTable('users') . '
         WHERE id = %i',
@@ -3515,7 +3508,7 @@ function upgradeRequired(): bool
     include_once __DIR__. '/../includes/config/settings.php';
 
     // Get timestamp in DB
-    $val = DB::queryfirstrow(
+    $val = DB::queryFirstRow(
         'SELECT valeur
         FROM ' . prefixTable('misc') . '
         WHERE type = %s AND intitule = %s',
@@ -4298,7 +4291,7 @@ function getCurrectPage($SETTINGS)
 function returnIfSet($value, $retFalse = '', $retTrue = null): mixed
 {
 
-    return isset($value) === true ? ($retTrue === null ? $value : $retTrue) : $retFalse;
+    return $retTrue === null ? $value : $retTrue;
 }
 
 

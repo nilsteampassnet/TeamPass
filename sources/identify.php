@@ -719,7 +719,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             && (int) $sessionAdmin !== 1
         ) {
             // get all Admin users
-            $val = DB::queryfirstrow('SELECT email FROM ' . prefixTable('users') . " WHERE admin = %i and email != ''", 1);
+            $val = DB::queryFirstRow('SELECT email FROM ' . prefixTable('users') . " WHERE admin = %i and email != ''", 1);
             if (DB::count() > 0) {
                 // Add email to table
                 prepareSendingEmail(
@@ -1731,7 +1731,7 @@ function duoMFAPerform(
         }
         
         // Somethimes Duo return success but fail to return a URL, double check if the URL has been created
-        if (!empty($duo_redirect_url) && isset($duo_redirect_url) && filter_var($duo_redirect_url,FILTER_SANITIZE_URL)) {
+        if (!empty($duo_redirect_url) && filter_var($duo_redirect_url,FILTER_SANITIZE_URL)) {
             // Since Duo Universal requires a redirect, let's store some info when the user get's back after completing the Duo prompt
             $key = hash('sha256', $duo_state);
             $iv = substr(hash('sha256', $duo_state), 0, 16);
@@ -2121,8 +2121,8 @@ function identifyDoInitialChecks(
             'error' => true,
             'array' => [
                 'value' => '2fa_not_set',
-                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
-                'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
+                'user_admin' => (int) $sessionAdmin,
+                'initial_url' => $sessionUrl,
                 'pwd_attempts' => (int) $sessionPwdAttempts,
                 'error' => '2fa_not_set',
                 'message' => $lang->get('select_valid_2fa_credentials'),
@@ -2141,8 +2141,8 @@ function identifyDoInitialChecks(
             'error' => true,
             'array' => [
                 'value' => '',
-                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
-                'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
+                'user_admin' => (int) $sessionAdmin,
+                'initial_url' => $sessionUrl,
                 'pwd_attempts' => (int) $sessionPwdAttempts,
                 'error' => true,
                 'message' => $lang->get('remove_install_folder'),
@@ -2187,8 +2187,8 @@ function identifyDoLDAPChecks(
                 'error' => true,
                 'array' => [
                     'value' => '',
-                    'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
-                    'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
+                    'user_admin' => (int) $sessionAdmin,
+                    'initial_url' => $sessionUrl,
                     'pwd_attempts' => (int) $sessionPwdAttempts,
                     'error' => true,
                     'message' => $lang->get('error_bad_credentials'),
@@ -2586,7 +2586,7 @@ function handleFailedAttempts($source, $value, $limit) {
         $lang = new Language($SETTINGS['default_language']);
 
         // Get user email
-        $userInfos = DB::QueryFirstRow(
+        $userInfos = DB::queryFirstRow(
             'SELECT email, name
              FROM '.prefixTable('users').'
              WHERE login = %s',

@@ -152,8 +152,8 @@ if (null !== $post_type) {
             foreach ($tables as $table) {
                 if (empty($pre) || substr_count($table, $pre) > 0) {
                     // Do query
-                    $result = DB::queryRaw('SELECT * FROM ' . $table);
-                    DB::queryRaw(
+                    $result = DB::query('SELECT * FROM ' . $table);
+                    DB::query(
                         'SELECT *
                         FROM INFORMATION_SCHEMA.COLUMNS
                         WHERE table_schema = %s
@@ -165,7 +165,7 @@ if (null !== $post_type) {
 
                     // prepare a drop table
                     $return .= 'DROP TABLE ' . $table . ';';
-                    $row2 = DB::queryfirstrow('SHOW CREATE TABLE ' . $table);
+                    $row2 = DB::queryFirstRow('SHOW CREATE TABLE ' . $table);
                     $return .= "\n\n" . $row2['Create Table'] . ";\n\n";
 
                     //prepare all fields and datas
@@ -386,7 +386,7 @@ if (null !== $post_type) {
                         } else {
                             // Execute the complete SQL statement
                             $query .= $line;
-                            DB::queryRaw($query);
+                            DB::query($query);
                             $query = '';
                             $executedQueries++;
                         }

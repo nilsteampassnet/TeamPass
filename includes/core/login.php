@@ -32,6 +32,12 @@ declare(strict_types=1);
 use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use TeampassClasses\Language\Language;
 use TeampassClasses\OAuth2Controller\OAuth2Controller;
+
+// User session handler
+/** @var SessionManager $session */
+// Server variables handler
+/** @var array<string, string> $server */
+
 // Automatic redirection
 $nextUrl = '';
 if (strpos($server['request_uri'], '?') > 0) {
@@ -47,6 +53,7 @@ $get = [];
 $postType = $request->query->get('post_type', '');
 $postType = filter_var($postType, FILTER_SANITIZE_SPECIAL_CHARS);
 $get['post_type'] = $postType;
+$SETTINGS = $SETTINGS ?? [];
 if (isset($SETTINGS['duo']) === true && (int) $SETTINGS['duo'] === 1 && $get['post_type'] === 'duo' ) {
     $get['duo_state'] = $request->query->get('state');
     $get['duo_code'] = $request->query->get('duo_code');
@@ -96,7 +103,7 @@ if (null !== $session->get('userOauth2Info') && empty($session->get('userOauth2I
 }
 
 echo '
-<body class="hold-transition login-page '.$theme_body.'">
+<body class="hold-transition login-page '.($theme_body ?? '').'">
 <div class="login-box">
     <div class="login-logo"><div style="margin:30px;">',
     isset($SETTINGS['custom_logo']) === true && empty($SETTINGS['custom_logo']) === false ?

@@ -40,7 +40,7 @@ loadClasses();
 $session = SessionManager::getSession();
 
 // Création d'une instance du contrôleur
-$OAuth2 = new OAuth2Controller($SETTINGS);
+$OAuth2 = new OAuth2Controller($SETTINGS ?? []);
 
 // Redirection vers Azure pour l'authentification
 $OAuth2->redirect();

@@ -191,6 +191,8 @@ if ((int) $_SERVER['CONTENT_LENGTH'] > $multiplier * (int) $POST_MAX_SIZE && $PO
 
 // Validate file size (Warning: the largest files supported by this code is 2GB)
 $file = $request->files->get('file');
+$uploadErrors = [];
+$contentType = '';
 
 if ($file) {
     // Get the size of the uploaded file

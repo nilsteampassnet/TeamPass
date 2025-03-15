@@ -59,7 +59,7 @@ require_once __DIR__.'/background_tasks___functions.php';
 $logID = doLog('start', 'do_maintenance - purge-old-files', 1);
 
 // Perform maintenance tasks
-purgeTemporaryFiles();
+purgeTemporaryFiles($SETTINGS);
 
 // log end
 doLog('end', '', 1, $logID);
@@ -68,7 +68,7 @@ doLog('end', '', 1, $logID);
  *
  * @return void
  */
-function purgeTemporaryFiles(): void
+function purgeTemporaryFiles($SETTINGS): void
 {
     // Load expected files
     require_once __DIR__. '/../sources/main.functions.php';

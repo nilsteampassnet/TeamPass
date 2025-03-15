@@ -93,7 +93,7 @@ $post_user_info = json_decode(base64_decode(filter_input(INPUT_POST, 'info', FIL
 $userLogin = $post_user_info[0];
 $userPassword = aesctr::decrypt(base64_decode($post_user_info[1]), 'cpm', 128);
 $userId = $post_user_info[2];
-if (isset($userPassword) === false || empty($userPassword) === true
+if (empty($userPassword) === true
     || isset($userLogin) === false || empty($userLogin) === true
     || isset($userId) === false || empty($userId) === true
 ) {

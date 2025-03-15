@@ -302,7 +302,7 @@ if (!isset($_GET['step']) && !isset($post_step)) {
     }
     require_once '../sources/main.functions.php';
     if (defined('DB_PASSWD_CLEAR') === false) {
-        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS ?? []));
     }
     //ETAPE 2
     echo '
@@ -550,10 +550,10 @@ if (!isset($post_step)) {
     echo '
             <input type="button" id="but_launch" data-step="step0" class="btn btn-primary" value="START">
             <input type="button" id="but_next" data-target="1" style="" class="btn btn-primary" value="NEXT" disabled="disabled">';
-} elseif (intVal($post_step) === 3 && $conversion_utf8 === false && $_SESSION['user_granted'] === '1') {
+} elseif (intVal($post_step) === 3 && isset($conversion_utf8) && $conversion_utf8 === false && $_SESSION['user_granted'] === '1') {
     echo '
             <input type="button" id="but_next" target_id="'.(intval($post_step) + 1).'" class="btn btn-primary" value="NEXT">';
-} elseif (intVal($post_step) === 3 && $conversion_utf8 === true && $_SESSION['user_granted'] === '1') {
+} elseif (intVal($post_step) === 3 && isset($conversion_utf8) && $conversion_utf8 === true && $_SESSION['user_granted'] === '1') {
     echo '
             <input type="button" id="but_launch" data-step="step'.$post_step.'" class="btn btn-primary" value="START">
             <input type="button" id="but_next" data-target="'.(intval($post_step) + 1).'" class="btn btn-primary" value="NEXT" disabled="disabled">';

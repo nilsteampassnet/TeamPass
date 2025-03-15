@@ -111,6 +111,9 @@ $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES);
 
+// Init
+$comment = $login = $pwd = $url = '';
+
 // Build query
 switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
     //Check if import CSV file format is what expected

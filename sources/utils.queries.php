@@ -186,7 +186,7 @@ if (null !== $post_type) {
                     }
                 }
                 //save the file
-                $handle = fopen($settings['bck_script_path'].'/'.$settings['bck_script_filename'].'-'.time().'.sql', 'w+');
+                $handle = fopen($SETTINGS['bck_script_path'].'/'.$SETTINGS['bck_script_filename'].'-'.time().'.sql', 'w+');
                 if ($handle !== false) {
                     foreach ($full_listing as $line) {
                         $return = $line['id'].';'.$line['label'].';'.$line['description'].';'.$line['pw'].';'.$line['login'].';'.$line['restricted_to'].';'.$line['perso'].'/n';

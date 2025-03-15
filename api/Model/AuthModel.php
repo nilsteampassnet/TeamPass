@@ -72,7 +72,7 @@ class AuthModel
         } else {
             // case where it is a user api key
             // Check if user exists
-            $userInfo = DB::queryfirstrow(
+            $userInfo = DB::queryFirstRow(
                 "SELECT u.id, u.pw, u.login, u.admin, u.gestionnaire, u.can_manage_all_users, u.fonction_id, u.can_create_root_folder, u.public_key, u.private_key, u.personal_folder, u.fonction_id, u.groupes_visibles, u.groupes_interdits, a.value AS user_api_key, a.allowed_folders as user_api_allowed_folders, a.enabled, a.allowed_to_create, a.allowed_to_read, a.allowed_to_update, a.allowed_to_delete
                 FROM " . prefixTable('users') . " AS u
                 INNER JOIN " . prefixTable('api') . " AS a ON (a.user_id=u.id)

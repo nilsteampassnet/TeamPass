@@ -223,6 +223,8 @@ header('Cache-Control: no-store, no-cache, must-revalidate');
 header('Cache-Control: post-check=0, pre-check=0', false);
 
 $targetDir = $SETTINGS['path_to_upload_folder'];
+$uploadErrors = [];
+$contentType = '';
 
 $cleanupTargetDir = true; // Remove old files
 $maxFileAge = 5 * 3600; // Temp file age in seconds
@@ -461,8 +463,7 @@ if (null !== $post_type_upload && $post_type_upload === 'item_attachments') {
     // Log upload into databse
     if (
         isset($post_isNewItem) === false
-        || (isset($post_isNewItem) === true
-            && ($post_isNewItem === false || (int) $post_isNewItem !== 1))
+        || ($post_isNewItem === false || (int) $post_isNewItem !== 1)
     ) {
         DB::insert(
             prefixTable('log_items'),
@@ -478,7 +479,7 @@ if (null !== $post_type_upload && $post_type_upload === 'item_attachments') {
 }
 
 // Return JSON-RPC response
-die('{"jsonrpc" : "2.0", "result" : null, "id" : "' . $newID . '"}');
+die('{"jsonrpc" : "2.0", "result" : null, "id" : "' . ($newID ?? '') . '"}');
 
 /**
  * Handle errors and kill script.

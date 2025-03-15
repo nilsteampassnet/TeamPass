@@ -175,7 +175,7 @@ if (null !== $post_type) {
                                         || (in_array($session->get('user-id'), explode(';', $record['restricted_to'])) === true)))
                             ) {
                                 // Run query
-                                $dataItem = DB::queryfirstrow(
+                                $dataItem = DB::queryFirstRow(
                                     'SELECT i.pw AS pw, s.share_key AS share_key
                                     FROM ' . prefixTable('items') . ' AS i
                                     INNER JOIN ' . prefixTable('sharekeys_items') . ' AS s ON (s.object_id = i.id)
@@ -401,7 +401,7 @@ if (null !== $post_type) {
                             //exclude this case
                         } else {
                             // Run query
-                            $dataItem = DB::queryfirstrow(
+                            $dataItem = DB::queryFirstRow(
                                 'SELECT i.pw AS pw, s.share_key AS share_key
                                 FROM ' . prefixTable('items') . ' AS i
                                 INNER JOIN ' . prefixTable('sharekeys_items') . ' AS s ON (s.object_id = i.id)

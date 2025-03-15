@@ -63,15 +63,9 @@ if ($ret['error'] === true) {
 }
 
 // Get the encrypted password
-define('DB_PASSWD_CLEAR', defuse_return_decrypted(DB_PASSWD));
-
-//Build tree
-$tree = new NestedTree(
-    $pre . 'nested_tree',
-    'id',
-    'parent_id',
-    'title'
-);
+if (defined('DB_PASSWD_CLEAR') === false) {
+    define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS ?? []));
+}
 
 // DataBase
 // Test DB connexion
@@ -95,15 +89,24 @@ if ($db_link) {
     echo '[{"finish":"1", "msg":"", "error":"Impossible to get connected to server. Error is: ' . addslashes(mysqli_connect_error()) . '!"}]';
     exit();
 }
+//Build tree
+$tree = new NestedTree(
+    $pre . 'nested_tree',
+    'id',
+    'parent_id',
+    'title'
+);
 
 // Load libraries
 $superGlobal = new SuperGlobal();
 $lang = new Language(); 
 
 // Set Session
+$post_fullurl = filter_input(INPUT_POST, 'fullurl', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_abspath = filter_input(INPUT_POST, 'abspath', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $superGlobal->put('db_encoding', 'utf8', 'SESSION');
 $superGlobal->put('fullurl', $post_fullurl, 'SESSION');
-$superGlobal->put('abspath', $abspath, 'SESSION');
+$superGlobal->put('abspath', $post_abspath, 'SESSION');
 
 // Get POST with user info
 $post_user_info = json_decode(base64_decode(filter_input(INPUT_POST, 'info', FILTER_SANITIZE_FULL_SPECIAL_CHARS)));//print_r($post_user_info);
@@ -578,7 +581,7 @@ if ((int) $db_count[0] === 0) {
 
 // Generate keys pair for the admin
 if (
-    isset($userPassword) === false || empty($userPassword) === true
+    empty($userPassword) === true
     || isset($userLogin) === false || empty($userLogin) === true
 ) {
     echo '[{"finish":"1", "msg":"", "error":"Error - The user is not identified! Please restart upgrade."}]';

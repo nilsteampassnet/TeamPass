@@ -143,7 +143,7 @@ if (null !== $post_type) {
         (int) $session->get('user-admin') !== 1 && !empty($dataReceived['user_id'])) {
 
         // Get info about user to modify
-        $targetUserInfos = DB::queryfirstrow(
+        $targetUserInfos = DB::queryFirstRow(
             'SELECT admin, gestionnaire, can_manage_all_users, isAdministratedByRole FROM ' . prefixTable('users') . '
             WHERE id = %i',
             (int) $dataReceived['user_id']
@@ -494,7 +494,7 @@ if (null !== $post_type) {
             $post_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
 
             // Get info about user to delete
-            $data_user = DB::queryfirstrow(
+            $data_user = DB::queryFirstRow(
                 'SELECT login, admin, isAdministratedByRole FROM ' . prefixTable('users') . '
                 WHERE id = %i',
                 $post_id
@@ -528,7 +528,7 @@ if (null !== $post_type) {
                     $post_id
                 );
                 // delete personal folder and subfolders
-                $data = DB::queryfirstrow(
+                $data = DB::queryFirstRow(
                     'SELECT id FROM ' . prefixTable('nested_tree') . '
                     WHERE title = %s AND personal_folder = %i',
                     $post_id,
@@ -659,7 +659,7 @@ if (null !== $post_type) {
             $post_user_id = filter_input(INPUT_POST, 'user_id', FILTER_SANITIZE_NUMBER_INT);
 
             // Get info about user to delete
-            $data_user = DB::queryfirstrow(
+            $data_user = DB::queryFirstRow(
                 'SELECT admin, isAdministratedByRole, gestionnaire
                 FROM ' . prefixTable('users') . '
                 WHERE id = %i',
@@ -715,7 +715,7 @@ if (null !== $post_type) {
             $post_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
 
             // Get info about user
-            $rowUser = DB::queryfirstrow(
+            $rowUser = DB::queryFirstRow(
                 'SELECT *
                 FROM ' . prefixTable('users') . '
                 WHERE id = %i',
@@ -978,7 +978,7 @@ if (null !== $post_type) {
             $post_mfa_enabled = filter_var($dataReceived['mfa_enabled'], FILTER_SANITIZE_NUMBER_INT);
 
             // Get info about user to modify
-            $data_user = DB::queryfirstrow(
+            $data_user = DB::queryFirstRow(
                 'SELECT admin, gestionnaire, can_manage_all_users, isAdministratedByRole FROM ' . prefixTable('users') . '
                 WHERE id = %i',
                 $post_id
@@ -1116,7 +1116,7 @@ if (null !== $post_type) {
                         $post_id
                     );
                     // delete personal folder and subfolders
-                    $data = DB::queryfirstrow(
+                    $data = DB::queryFirstRow(
                         'SELECT id FROM ' . prefixTable('nested_tree') . '
                         WHERE title = %s AND personal_folder = %i',
                         $post_id,
@@ -1150,7 +1150,7 @@ if (null !== $post_type) {
                     logEvents($SETTINGS, 'user_mngt', 'at_user_deleted', (string) $session->get('user-id'), $session->get('user-login'), $post_id);
                 } else {
                     // Get old data about user
-                    $oldData = DB::queryfirstrow(
+                    $oldData = DB::queryFirstRow(
                         'SELECT * FROM ' . prefixTable('users') . '
                         WHERE id = %i',
                         $post_id
@@ -1235,7 +1235,7 @@ if (null !== $post_type) {
                 break;
             }
 
-            DB::queryfirstrow(
+            DB::queryFirstRow(
                 'SELECT * FROM ' . prefixTable('users') . '
                 WHERE login = %s
                 AND deleted_at IS NULL',
@@ -1452,7 +1452,7 @@ if (null !== $post_type) {
                 $groups = [];
                 $groupIds = [];
                 foreach (explode(';', $record['fonction_id']) as $group) {
-                    $tmp = DB::queryfirstrow(
+                    $tmp = DB::queryFirstRow(
                         'SELECT id, title FROM ' . prefixTable('roles_title') . '
                         WHERE id = %i',
                         $group
@@ -1464,7 +1464,7 @@ if (null !== $post_type) {
                 }
 
                 // Get managed_by
-                $managedBy = DB::queryfirstrow(
+                $managedBy = DB::queryFirstRow(
                     'SELECT id, title FROM ' . prefixTable('roles_title') . '
                     WHERE id = %i',
                     $record['isAdministratedByRole']
@@ -1474,7 +1474,7 @@ if (null !== $post_type) {
                 $foldersAllowed = [];
                 $foldersAllowedIds = [];
                 foreach (explode(';', $record['groupes_visibles']) as $role) {
-                    $tmp = DB::queryfirstrow(
+                    $tmp = DB::queryFirstRow(
                         'SELECT id, title FROM ' . prefixTable('nested_tree') . '
                         WHERE id = %i',
                         $role
@@ -1487,7 +1487,7 @@ if (null !== $post_type) {
                 $foldersForbidden = [];
                 $foldersForbiddenIds = [];
                 foreach (explode(';', $record['groupes_interdits']) as $role) {
-                    $tmp = DB::queryfirstrow(
+                    $tmp = DB::queryFirstRow(
                         'SELECT id, title FROM ' . prefixTable('nested_tree') . '
                         WHERE id = %i',
                         $role
@@ -1606,7 +1606,7 @@ if (null !== $post_type) {
             }
 
             // Get info about user
-            $data_user = DB::queryfirstrow(
+            $data_user = DB::queryFirstRow(
                 'SELECT admin, isAdministratedByRole FROM ' . prefixTable('users') . '
                 WHERE id = %i',
                 $inputData['source_id']
@@ -1832,7 +1832,7 @@ if (null !== $post_type) {
 
             // If
             if (empty($post_context) === false && $post_context === 'add_one_role_to_user') {
-                $data_user = DB::queryfirstrow(
+                $data_user = DB::queryFirstRow(
                     'SELECT fonction_id, public_key
                     FROM ' . prefixTable('users') . '
                     WHERE id = %i',
@@ -1862,7 +1862,7 @@ if (null !== $post_type) {
                 $session->set('user-api_key', $post_new_value);
 
                 // test if user has an api key
-                $data_user = DB::queryfirstrow(
+                $data_user = DB::queryFirstRow(
                     'SELECT value
                     FROM ' . prefixTable('api') . '
                     WHERE user_id = %i',
@@ -2045,7 +2045,7 @@ if (null !== $post_type) {
                 $userLogin = $adUser[$SETTINGS['ldap_user_attribute']][0];
                 if (null !== $userLogin) {
                     // Get his ID
-                    $userInfo = DB::queryfirstrow(
+                    $userInfo = DB::queryFirstRow(
                         'SELECT id, login, fonction_id, auth_type
                         FROM ' . prefixTable('users') . '
                         WHERE login = %s',
@@ -2397,7 +2397,7 @@ if (null !== $post_type) {
 
 
             // Empty user
-            if (empty($post_id) === true || empty($post_id) === true) {
+            if (empty($post_id)) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -2784,7 +2784,7 @@ if (null !== $post_type) {
     $post_newValue = filter_input(INPUT_POST, 'newValue', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
     // Get info about user
-    $data_user = DB::queryfirstrow(
+    $data_user = DB::queryFirstRow(
         'SELECT admin, isAdministratedByRole FROM ' . prefixTable('users') . '
         WHERE id = %i',
         $value[1]
@@ -2849,10 +2849,12 @@ if (null !== $post_type) {
     }
     // # ADMIN FOR USER HAS BEEN DEFINED ##
 } elseif (null !== filter_input(INPUT_POST, 'newadmin', FILTER_SANITIZE_NUMBER_INT)) {
+    // Prepare POST variables
     $id = explode('_', filter_input(INPUT_POST, 'id', FILTER_SANITIZE_FULL_SPECIAL_CHARS));
+    $value = explode('_', filter_input(INPUT_POST, 'id', FILTER_SANITIZE_FULL_SPECIAL_CHARS));
 
     // Get info about user
-    $data_user = DB::queryfirstrow(
+    $data_user = DB::queryFirstRow(
         'SELECT admin, isAdministratedByRole FROM ' . prefixTable('users') . '
         WHERE id = %i',
         $value[1]

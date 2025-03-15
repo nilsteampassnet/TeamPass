@@ -604,7 +604,7 @@ if (null !== $post_type) {
                         DB::update(
                             prefixTable('categories_items'),
                             [
-                                'data' => $encrypt['string'],
+                                'data' => $encrypt['string'] ?? '',
                                 'data_iv' => '',
                                 'encryption_type' => $encryption_type,
                             ],
@@ -1021,7 +1021,7 @@ if (null !== $post_type) {
                     );
 
                     // prepare a list
-                    $row = DB::queryfirstrow("SELECT title FROM ".prefixTable("nested_tree")." WHERE id=%i", $folder);
+                    $row = DB::queryFirstRow("SELECT title FROM ".prefixTable("nested_tree")." WHERE id=%i", $folder);
                     if (empty($list)) {
                         $list = $row['title'];
                     } else {

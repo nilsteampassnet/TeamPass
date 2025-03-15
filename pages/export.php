@@ -65,6 +65,8 @@ $checkUserAccess = new PerformChecks(
     ]
 );
 
+$session_user_admin = $session->get('user-admin');
+
 // Check user access and printing enabled
 echo $checkUserAccess->caseHandler();
 if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('export') === false

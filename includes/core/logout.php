@@ -35,6 +35,9 @@ use TeampassClasses\Language\Language;
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\ConfigManager\ConfigManager;
 
+// User session handler
+/** @var SessionManager $session */
+
 // Load functions
 require_once __DIR__.'/../../sources/main.functions.php';
 

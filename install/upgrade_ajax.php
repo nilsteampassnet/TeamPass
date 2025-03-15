@@ -36,13 +36,66 @@ use Encryption\Crypt\aesctr;
 
 $_SESSION = [];
 
+
+// Test DB connexion
+$pass = defuse_return_decrypted(DB_PASSWD);
+$server = DB_HOST;
+$pre = DB_PREFIX;
+$database = DB_NAME;
+$port = intval(DB_PORT);
+$user = DB_USER;
+
+try {
+    $db_link = mysqli_connect(
+        $server,
+        $user,
+        $pass,
+        $database,
+        $port
+    );
+    $res = 'Connection is successful';
+    $db_link->set_charset(DB_ENCODING);
+} catch (Exception $e) {
+    echo '[{
+        "error" : "Impossible to get connected to server. Ensure that file includes/config/settings.php exists and is correct.",
+        "index" : ""
+    }]';
+    exit;
+}
+
 function settingsConsistencyCheck(): array
 {
     $settingsFile = __DIR__.'/../includes/config/settings.php';
     require_once $settingsFile;
     require_once 'tp.functions.php';
 
-    if (defined('DB_PASSWD') === false && isset($pass) === true) {
+    if (defined('DB_PASSWD') === false && isset($pass) === true) { 
+        // Test DB connexion
+        $pass = defuse_return_decrypted(DB_PASSWD);
+        $server = DB_HOST;
+        $pre = DB_PREFIX;
+        $database = DB_NAME;
+        $port = intval(DB_PORT);
+        $user = DB_USER;
+    
+        try {
+            $db_link = mysqli_connect(
+                $server,
+                $user,
+                $pass,
+                $database,
+                $port
+            );
+            $res = 'Connection is successful';
+            $db_link->set_charset(DB_ENCODING);
+        } catch (Exception $e) {
+            echo '[{
+                "error" : "Impossible to get connected to server. Ensure that file includes/config/settings.php exists and is correct.",
+                "index" : ""
+            }]';
+            exit;
+        }
+
         // We need to convert settings.php file from V2 to V3 format
         
         //Do a copy of the existing file
@@ -117,8 +170,8 @@ define("DB_USER", "' . trim($user) . '");
 define("DB_PASSWD", "' . trim($pass) . '");
 define("DB_NAME", "' . trim($database) . '");
 define("DB_PREFIX", "' . trim($pre) . '");
-define("DB_PORT", "' . trim($port) . '");
-define("DB_ENCODING", "' . trim($encoding) . '");
+define("DB_PORT", "' . trim((string) $port) . '");
+define("DB_ENCODING", "' . trim($encoding ?? '') . '");
 define("DB_SSL", false); // if DB over SSL then comment this line
 // if DB over SSL then uncomment the following lines
 //define("DB_SSL", array(
@@ -236,32 +289,6 @@ $post_prefix_before_convert = filter_input(INPUT_POST, 'prefix_before_convert', 
 $post_sk_path = filter_input(INPUT_POST, 'sk_path', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $post_url_path = filter_input(INPUT_POST, 'url_path', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
-
-// Test DB connexion
-$pass = defuse_return_decrypted(DB_PASSWD);
-$server = DB_HOST;
-$pre = DB_PREFIX;
-$database = DB_NAME;
-$port = intval(DB_PORT);
-$user = DB_USER;
-
-try {
-    $db_link = mysqli_connect(
-        $server,
-        $user,
-        $pass,
-        $database,
-        $port
-    );
-    $res = 'Connection is successful';
-    $db_link->set_charset(DB_ENCODING);
-} catch (Exception $e) {
-    echo '[{
-        "error" : "Impossible to get connected to server. Ensure that file includes/config/settings.php exists and is correct.",
-        "index" : ""
-    }]';
-    exit;
-}
 
 // Set Session
 $superGlobal->put('CPM', 1, 'SESSION');

@@ -52,7 +52,7 @@ set_time_limit($SETTINGS['task_maximum_run_time']);
 
 // --------------------------------- //
 
-$subtask = DB::queryfirstrow(
+$subtask = DB::queryFirstRow(
     'SELECT *
     FROM ' . prefixTable('background_subtasks') . '
     WHERE process_id = %i AND finished_at IS NULL
@@ -67,6 +67,7 @@ list($taskArguments) = DB::queryFirstField(
     $subtask['process_id']
 );
 $args = json_decode($taskArguments, true);
+$ProcessArguments = $ProcessArguments ?? [];
 
 // perform the task step "create_users_files_key"
 if ($args['step'] === 'create_users_files_key') {

@@ -2529,7 +2529,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 '<div class="form-group">'+
                     '<label for="ldap-user-roles"><?php echo $lang->get('roles'); ?></label>'+
                     '<select id="ldap-user-roles" class="form-control form-item-control select2 required" style="width:100%;" multiple="multiple">'+
-                    '<?php echo $optionsRoles; ?></select>'+
+                    '<?php echo $optionsRoles ?? ''; ?></select>'+
                 '</div>',
                 '<?php echo $lang->get('perform'); ?>',
                 '<?php echo $lang->get('cancel'); ?>'
