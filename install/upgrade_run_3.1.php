@@ -678,6 +678,45 @@ if (tableHasColumn($pre . 'notification', 'id')) {
     );
 }
 
+// Is TP_USER_ID created?
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "users` WHERE id = " . TP_USER_ID));
+if (intval($tmp) === 0) {
+    // Generate a random password for the user
+    $userPassword = GenerateCryptKeyForInstall(25, true, true, true, true);
+    $encryptedUserPassword = cryption(
+        $userPassword,
+        $encryptionKey,
+        'encrypt'
+    )['string'];
+    $userKeys = generateUserKeysForInstall($userPassword);
+
+    // Insert the user into the database
+    DB::insert($pre . 'users', [
+        'id'                     => TP_USER_ID,
+        'login'                  => 'TP',
+        'pw'                     => $encryptedUserPassword,
+        'groupes_visibles'       => '',
+        'derniers'               => '',
+        'key_tempo'              => '',
+        'last_pw_change'         => '',
+        'last_pw'                => '',
+        'admin'                  => 1,
+        'fonction_id'            => '',
+        'groupes_interdits'      => '',
+        'last_connexion'         => '',
+        'gestionnaire'           => 0,
+        'email'                  => '',
+        'favourites'             => '',
+        'latest_items'           => '',
+        'personal_folder'        => 0,
+        'public_key'             => $userKeys['public_key'],
+        'private_key'            => $userKeys['private_key'],
+        'is_ready_for_usage'     => 1,
+        'otp_provided'           => 0,
+        'created_at'             => time(),
+    ]);
+}
+
 //---<END 3.1.4
 
 //---------------------------------------------------------------------
