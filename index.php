@@ -141,11 +141,29 @@ if (empty($get['page']) && !empty($session_name)) {
 }
 
 // Force log of all queries
-if (defined('MYSQL_LOG') && MYSQL_LOG === true) {
-    DB::query("SET SESSION general_log = 'ON'");
-    DB::query("SET SESSION general_log_file = " . (defined('MYSQL_LOG_FILE') ? MYSQL_LOG_FILE : "'/var/log/teampass_mysql_query.log'"));
+// Check if super privilege exists in session
+if (!$session->has('hasSuperPrivilege')) {
+    // Execute query
+    $hasSuperPrivilege = (int) DB::queryFirstField(
+        "SELECT COUNT(*) 
+        FROM information_schema.user_privileges 
+        WHERE GRANTEE = CONCAT(\"'\", CURRENT_USER(), \"'@'localhost'\") 
+        AND PRIVILEGE_TYPE = 'SUPER'"
+    );
+    // Save in session
+    $session->set('hasSuperPrivilege', $hasSuperPrivilege);
 } else {
-    DB::query("SET SESSION general_log = 'OFF'");
+    // Get value from session
+    $hasSuperPrivilege = (int) $session->get('hasSuperPrivilege');
+}
+// Enable or not if user has super privilege
+if ($hasSuperPrivilege > 0) {
+    if (defined('MYSQL_LOG') && MYSQL_LOG === true) {
+        DB::query("SET GLOBAL general_log = 'ON'");
+        DB::query("SET GLOBAL general_log_file = " . (defined('MYSQL_LOG_FILE') ? MYSQL_LOG_FILE : "'/var/log/teampass_mysql_query.log'"));
+    } else {
+        DB::query("SET GLOBAL general_log = 'OFF'");
+    }
 }
 
 /* DEFINE WHAT LANGUAGE TO USE */
