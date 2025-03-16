@@ -28,7 +28,7 @@
 
 define('TP_VERSION', '3.1.4');
 define("UPGRADE_MIN_DATE", "1741899582");
-define('TP_VERSION_MINOR', '5');
+define('TP_VERSION_MINOR', '6');
 define('TP_TOOL_NAME', 'Teampass');
 define('TP_ONE_DAY_SECONDS', 86400);
 define('TP_ONE_WEEK_SECONDS', 604800);
@@ -87,7 +87,7 @@ define('DUO_ADMIN_URL_INFO', 'https://duo.com/docs/duoweb#overview');
 define('DUO_CALLBACK', 'index.php?post_type=duo');
 
 define('DEBUG', false); // Can be used in order to debug the application
-define('MYSQL_LOG', false); // Can be used in order to enable MySQL debug
+define('MYSQL_LOG', false); // Can be used in order to enable global MySQL log. 🫸 Ensure the mysql user has SUPER privilege set
 define('MYSQL_LOG_FILE', '/var/log/teampass_mysql_query.log'); // 🫸 Ensure you have the right to write in the log file
 define('DEBUGLDAP', false); // Can be used in order to debug LDAP authentication
 
