@@ -750,8 +750,8 @@ class DatabaseInstaller
                 'email'                  => $this->installConfig['adminEmail'],
                 'encrypted_psk'          => '',
                 'last_pw_change'         => time(),
-                'name'                   => 'Change me',
-                'lastname'               => 'Change me',
+                'name'                   => $this->installConfig['adminName'],
+                'lastname'               => $this->installConfig['adminLastname'],
                 'can_create_root_folder' => 1,
                 'public_key'             => 'none',
                 'private_key'            => 'none',
@@ -1021,7 +1021,7 @@ class DatabaseInstaller
         );
 
         // add lanaguages
-        $tmp = DB::queryFirstField(
+        $tmp = (int) DB::query(
             "SELECT COUNT(*) FROM " . $this->inputData['tablePrefix'] . "languages WHERE name = %s",
             'french'
         );

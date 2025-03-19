@@ -391,7 +391,7 @@ if (null !== $post_step) {
                     $itemKey = $_SESSION['items_object_keys'][$item_id];
 
                     // Create sharekey for user
-                    $share_key_for_item = $userInfo['public_key'] !== null ? encryptUserObjectKey($itemKey, $userInfo['public_key']) : '';
+                    $share_key_for_item = $userInfo['public_key'] !== null && $itemKey !== null ? encryptUserObjectKey($itemKey, $userInfo['public_key']) : '';
 
                     // Collect values for bulk insert
                     $insert_values[] = '(NULL, ' . (int) $item['id'] . ', ' . (int) $userInfo['id'] . ", '" . mysqli_real_escape_string($db_link, $share_key_for_item) . "')";
