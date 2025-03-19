@@ -64,7 +64,7 @@ class OAuth2Controller
                 'clientId'                => $settings['oauth2_client_id'],
                 'clientSecret'            => $settings['oauth2_client_secret'],
                 'tenant'                  => $settings['oauth2_tenant_id'],
-                'redirectUri'             => $settings['cpassman_url'].'/index.php?post_type=oauth2',
+                'redirectUri'             => rtrim($settings['cpassman_url'], '/').'/index.php?post_type=oauth2',
                 'urlAuthorize'            => 'https://login.microsoftonline.com/' . $settings['oauth2_tenant_id'] . '/oauth2/v2.0/authorize', // Using the v2.0 endpoint
                 'urlAccessToken'          => 'https://login.microsoftonline.com/' . $settings['oauth2_tenant_id'] . '/oauth2/v2.0/token',     // v2.0 endpoint for the token
                 'urlResourceOwnerDetails' => 'https://graph.microsoft.com/v1.0/me',  // Endpoint to get user info
