@@ -30,6 +30,7 @@ use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\SessionManager\SessionManager;
 use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use Symfony\Component\Process\Process;
+use Symfony\Component\Process\PhpExecutableFinder;
 use TeampassClasses\Language\Language;
 use TeampassClasses\ConfigManager\ConfigManager;
 
@@ -76,10 +77,19 @@ $processToPerform = DB::queryfirstrow(
 // Check if there is a task to execute
 if (DB::count() > 0) {
     // Execute or continue the task
-    subtasksHandler($processToPerform['increment_id'], $processToPerform['arguments']);
+    subtasksHandler($processToPerform['increment_id'], $processToPerform['arguments'], $phpBinaryPath);
 }
 
-function subtasksHandler($taskId, $taskArguments)
+/**
+ * Function to handle the subtasks
+ * 
+ * @param int $taskId Task identifier
+ * @param string $taskArguments Task arguments
+ * @param string $phpBinaryPath Path to the PHP binary
+ * 
+ * @return void
+ */
+function subtasksHandler($taskId, $taskArguments, $phpBinaryPath): void
 {
     // Check if subtasks are still running
     // This in order to prevent the script from running multiple times on same objects
@@ -107,7 +117,7 @@ function subtasksHandler($taskId, $taskArguments)
         // Exit
         return;
     }
-
+    
     foreach ($subTasks as $subTask) {
         // Launch the process for this subtask
 
@@ -170,7 +180,7 @@ function subtasksHandler($taskId, $taskArguments)
             }
             
             // Launch the subtask with the current parameters
-            $process = new Process(['php', __DIR__.'/background_tasks___userKeysCreation_subtaskHdl.php', $subTask['increment_id'], $subTaskParams['index'], $subTaskParams['nb'], $subTaskParams['step'], $taskArguments, $taskId]);
+            $process = new Process([$phpBinaryPath, __DIR__.'/background_tasks___userKeysCreation_subtaskHdl.php', $subTask['increment_id'], $subTaskParams['index'], $subTaskParams['nb'], $subTaskParams['step'], $taskArguments, $taskId]);
             $process->start();
             $pid = $process->getPid();
             
@@ -182,7 +192,7 @@ function subtasksHandler($taskId, $taskArguments)
     sleep(10); // Wait 10 seconds before continuing
 
     // Recursively call this function until all subtasks are finished
-    subtasksHandler($taskId, $taskArguments);
+    subtasksHandler($taskId, $taskArguments, $phpBinaryPath);
 }
 
 function createAllSubTasks($action, $totalElements, $elementsPerIteration, $taskId)
