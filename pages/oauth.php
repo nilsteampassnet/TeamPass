@@ -155,7 +155,7 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
                                     </small>
                                 </div>
                                 <div class='col-7'>
-                                    <input type='text' class='form-control form-control-sm setting-oauth' id='oauth2_callback_url' value='<?php echo $SETTINGS['cpassman_url'].'/'.OAUTH2_REDIRECTURI; ?>' disabled>
+                                    <input type='text' class='form-control form-control-sm setting-oauth' id='oauth2_callback_url' value='<?php echo rtrim($SETTINGS['cpassman_url'], '/').'/'.OAUTH2_REDIRECTURI; ?>' disabled>
                                 </div>
                             </div>
 
