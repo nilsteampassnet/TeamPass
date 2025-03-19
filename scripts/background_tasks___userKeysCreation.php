@@ -30,6 +30,7 @@ use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\SessionManager\SessionManager;
 use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use Symfony\Component\Process\Process;
+use Symfony\Component\Process\PhpExecutableFinder;
 use TeampassClasses\Language\Language;
 use TeampassClasses\ConfigManager\ConfigManager;
 
@@ -168,9 +169,15 @@ function subtasksHandler($taskId, $taskArguments)
                     createAllSubTasks($subTaskParams['step'], DB::count(), $subTaskParams['nb'], $taskId);
                 }
             }
+
+            // Get PHP binary
+            $php_binary = (new PhpExecutableFinder)->find();
+            if ($php_binary === false) {
+                throw new \RuntimeException('Teampass - Error - No PHP executable was found.');
+            }
             
             // Launch the subtask with the current parameters
-            $process = new Process(['php', __DIR__.'/background_tasks___userKeysCreation_subtaskHdl.php', $subTask['increment_id'], $subTaskParams['index'], $subTaskParams['nb'], $subTaskParams['step'], $taskArguments, $taskId]);
+            $process = new Process([$php_binary, __DIR__.'/background_tasks___userKeysCreation_subtaskHdl.php', $subTask['increment_id'], $subTaskParams['index'], $subTaskParams['nb'], $subTaskParams['step'], $taskArguments, $taskId]);
             $process->start();
             $pid = $process->getPid();
             
