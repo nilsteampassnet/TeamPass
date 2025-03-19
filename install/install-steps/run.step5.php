@@ -1021,9 +1021,8 @@ class DatabaseInstaller
         );
 
         // add lanaguages
-        $tmp = (int) DB::query(
-            "SELECT COUNT(*) FROM " . $this->inputData['tablePrefix'] . "languages WHERE name = %s",
-            'french'
+        $tmp = (int) DB::queryFirstField(
+            "SELECT COUNT(*) FROM " . $this->inputData['tablePrefix'] . "languages"
         );
         if ($tmp === 0) {
             DB::query(
