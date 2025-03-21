@@ -178,12 +178,12 @@ if (!isset($_GET['step']) && !isset($post_step)) {
                     <div class="callout callout-warning col-12">
                         <h5>Information</h5>
     
-                        <p>Upgrade process is about to start. This will upgrade Teampass database to version '.TP_VERSION.'.</p>
+                        <p>Upgrade process is about to start. This will upgrade Teampass database to version <code>'.TP_VERSION.'.'.TP_VERSION_MINOR.'</code>.</p>
                         <p>Version 3 comes with a new secured encryption strategy getting rid of any Saltkey. It relies on public and private keys generated for each user. As an impact, this upgrade will automatically generate a One-Time-Code for each user and send by email. It will be requested on first login. Please ensure your users have filled in their email with a valid value.</p>
                     </div>
 
                     <div class="callout callout-info col-12">
-                        <h5>Before starting, take a couple of minutes to perform backup of current Teampass instance:</h5>
+                        <h5>Before starting, take a couple of minutes to backup this current Teampass instance:</h5>
     
                         <p>
                         <ul>
@@ -637,6 +637,7 @@ $(function(){
             postData = '';
         // STEP 0
         if (currentStep === 'step0') {
+            $("#res_step0").html("").addClass("hidden");
             if ($("#user_login").val() === "" || $("#user_pwd").val() === "") {
                 alertify
                     .error('<i class="fas fa-ban mr-2">[ERROR] You must provide credentials</i>', 10)
@@ -708,8 +709,12 @@ $(function(){
                         $('#res_'+currentStep).html(data.info).removeClass("hidden");
                     }
                     alertify
-                        .error('<i class="fas fa-exclamation-triangle mr-2"></i>  '+data.error+'</i>', 5)
+                        .error('<i class="fas fa-exclamation-triangle mr-2"></i>  '+data.error, 5)
                         .dismissOthers();
+                    
+                    if (currentStep === 'step0') {
+                        $("#res_step0").html('<i class="fa-solid fa-exclamation-triangle mr-2"></i>'+data.error).removeClass("hidden");
+                    }
                 } else {
                     $("#step").val(data.index);
                     $("#user_granted").val("1");
