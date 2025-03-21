@@ -682,13 +682,13 @@ if (tableHasColumn($pre . 'notification', 'id')) {
 $tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "users` WHERE id = " . TP_USER_ID));
 if (intval($tmp) === 0) {
     // Generate a random password for the user
-    $userPassword = GenerateCryptKeyForInstall(25, true, true, true, true);
+    $userPassword = GenerateCryptKey(25, true, true, true, true);
     $encryptedUserPassword = cryption(
         $userPassword,
         $encryptionKey,
         'encrypt'
     )['string'];
-    $userKeys = generateUserKeysForInstall($userPassword);
+    $userKeys = generateUserKeys($userPassword);
 
     // Insert the user into the database
     DB::insert($pre . 'users', [
