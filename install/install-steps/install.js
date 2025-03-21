@@ -280,7 +280,8 @@ function performStep5() {
         { id: 'check41', action: 'templates' },
         { id: 'check42', action: 'tokens' },
         { id: 'check43', action: 'users' },
-        { id: 'check44', action: 'auth_failures' }
+        { id: 'check44', action: 'auth_failures' },
+        { id: 'check45', action: 'items_importations' }
     ];
     
     let errorOccurred = false; // Variable to track errors

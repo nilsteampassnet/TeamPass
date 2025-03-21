@@ -1431,4 +1431,22 @@ class DatabaseInstaller
             ) CHARSET=utf8;"
         );
     }
+
+    // Create table importations
+    private function items_importations()
+    {
+        DB::query(
+            "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "items_importations` (
+            `increment_id` INT(12) AUTO_INCREMENT PRIMARY KEY,
+            `operation_id` INT(12) NOT NULL,
+            `label` VARCHAR(255) NOT NULL,
+            `login` VARCHAR(255) NOT NULL,
+            `pwd` TEXT NOT NULL,
+            `url` TEXT NULL,
+            `comment` TEXT NULL,
+            `folder` VARCHAR(255) NOT NULL,
+            `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            ) CHARSET=utf8;"
+        );
+    }
 }
