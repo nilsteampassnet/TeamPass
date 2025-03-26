@@ -717,27 +717,28 @@ if (intval($tmp) === 0) {
     ]);
 }
 
+$tableImportationsExists = mysqli_query($db_link, "SHOW TABLES LIKE '" . $pre . "items_importations'");
+if (mysqli_num_rows($tableImportationsExists) == 0) {
+    mysqli_query(
+        $db_link,
+        "CREATE TABLE IF NOT EXISTS `" . $pre . "items_importations` (
+        `increment_id` INT(12) AUTO_INCREMENT PRIMARY KEY,
+        `operation_id` INT(12) NOT NULL,
+        `label` VARCHAR(255) NOT NULL,
+        `login` VARCHAR(255) NOT NULL,
+        `pwd` TEXT NOT NULL,
+        `url` TEXT NULL,
+        `description` TEXT NULL,
+        `folder` VARCHAR(255) NOT NULL,
+        `folder_id` INT(12) NULL DEFAULT NULL
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        `imported_at` INT(12) NULL DEFAULT NULL
+        ) CHARSET=utf8;"
+    );
+}
+
 //---<END 3.1.4
 
-//--->BEGIN 3.1.7
-
-// Table used to store items importations
-mysqli_query(
-    $db_link,
-    "CREATE TABLE IF NOT EXISTS `" . $pre . "auth_failures` (
-    `increment_id` INT(12) AUTO_INCREMENT PRIMARY KEY,
-    `operation_id` INT(12) NOT NULL,
-    `label` VARCHAR(255) NOT NULL,
-    `login` VARCHAR(255) NOT NULL,
-    `pwd` TEXT NOT NULL,
-    `url` TEXT NULL,
-    `comment` TEXT NULL,
-    `folder` VARCHAR(255) NOT NULL,
-    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    ) CHARSET=utf8;"
-);
-
-//--->END 3.1.7
 
 //---------------------------------------------------------------------
 

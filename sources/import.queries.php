@@ -105,18 +105,43 @@ define('KP_UUID', 6);
 define('KP_NOTES', 7);
 
 
+// Prepare POST variables
+$data = [
+    'type' => $request->request->filter('type', '', FILTER_SANITIZE_SPECIAL_CHARS),
+    'data' => $request->request->filter('data', '', FILTER_SANITIZE_SPECIAL_CHARS),
+    'key' => $request->request->filter('key', '', FILTER_SANITIZE_SPECIAL_CHARS),
+    'file' => $request->request->filter('file', '', FILTER_SANITIZE_SPECIAL_CHARS),
+    'editAll' => $request->request->filter('editAll', '', FILTER_SANITIZE_SPECIAL_CHARS),
+    'editRole' => $request->request->filter('editRole', '', FILTER_SANITIZE_SPECIAL_CHARS),
+    'folderId' => $request->request->filter('folderId', '', FILTER_SANITIZE_SPECIAL_CHARS),
+    'csvOperationId' => $request->request->filter('csvOperationId', '', FILTER_SANITIZE_SPECIAL_CHARS),
+];
+
+$filters = [
+    'type' => 'trim|escape',
+    'data' => 'trim|escape',
+    'key' => 'trim|escape',
+    'file' => 'cast:integer',
+    'editAll' => 'trim|escape',
+    'editRole' => 'trim|escape',
+    'folderId' => 'trim|escape',
+    'csvOperationId' => 'cast:integer',
+];
+
+$inputData = dataSanitizer(
+    $data,
+    $filters
+);
+
+
 $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
-// POST Varaibles
-$post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES);
-
 // Build query
-switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
+switch ($inputData['type']) {
     //Check if import CSV file format is what expected
     case 'import_file_format_csv':
         // Check KEY and rights
-        if ($post_key !== $session->get('key')) {
+        if ($inputData['key'] !== $session->get('key')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -132,7 +157,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
         $tree = $tree->getDescendants();
 
         // Init post variable
-        $post_operation_id = filter_input(INPUT_POST, 'file', FILTER_SANITIZE_NUMBER_INT);
+        $post_operation_id = $inputData['file'];
 
         // Get filename from database
         $data = DB::queryFirstRow(
@@ -149,146 +174,167 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
             $post_operation_id
         );
 
-        // do some initializations
-        $file = $SETTINGS['path_to_files_folder'].'/'.$data['valeur'];
+        // Initialisation
+        $file = $SETTINGS['path_to_files_folder'] . '/' . $data['valeur'];
         $importation_possible = true;
-        $itemsArray = array();
-        $line_number = 0;
-        $account = $text = '';
-        $continue_on_next_line = false;
+        $valuesToImport = [];
+        $items_number = 0;
+        $batchInsert = [];
+        $uniqueFolders = [];
 
-        // Open file
-        if ($fp = fopen($file, 'r')) {
-            // data from CSV
-            $valuesToImport = array();
-            $header = fgetcsv($fp);
-            // Lexer configuration
-            $config = new LexerConfig();
-            $lexer = new Lexer($config);
-            $config->setIgnoreHeaderLine('true');
-            $interpreter = new Interpreter();
-            $interpreter->addObserver(function (array $row) use (&$valuesToImport,$header) {
-                $rowData = array_combine($header, $row);
-                $valuesToImport[] = array(
-                    'Label' => $rowData['label'],
-                    'Login' => $rowData['login'],
-                    'Password' => $rowData['password'],
-                    'url' => $rowData['url'],
-                    'Comments' => $rowData['description'],
-                );
-            });
-            $lexer->parse($file, $interpreter);
-            
-            // extract one line
-            foreach ($valuesToImport as $key => $row) {
-                //increment number of lines found
-                ++$line_number;
-
-                //Check number of fields. MUST be 5. if not stop importation
-                if (count($row) != 5) {
-                    $importation_possible = false;
-                    //Stop if file has not expected structure
-                    if ($importation_possible === false) {
-                        echo '[{"error":"bad_structure"}]';
-                        break;
-                    }
-                }
-
-                //If any comment is on several lines, then replace 'lf' character
-                $row['Comments'] = isset($row['Comments']) ? str_replace(array("\r\n", "\n", "\r"), '<br>', $row['Comments']) : '';
-
-                // Check if current line contains a "<br>" character in order to identify an ITEM on several CSV lines
-                if (substr_count($row['Comments'], '<br>') > 0 || substr_count($row['Label'], '<br>') > 0) {
-                    $continue_on_next_line = true;
-                    $comment .= addslashes($row['Label']);
-                } else {
-                    // Store in variable values from previous line
-                    if (empty($account) === false) {
-                        if ($continue_on_next_line === false) {
-                            // Prepare listing that will be shown to user
-                            array_push(
-                                $itemsArray,
-                                array(
-                                    'label' => $account,
-                                    'login' => $login,
-                                    'pwd' => $pwd,
-                                    'url' => $url,
-                                    'comment' => $comment,
-                                )
-                            );
-
-                            // Initialize this variable in order to restart from scratch
-                            $account = '';
-                        }
-                    }
-                }
-                
-                // Get values of current line
-                if ($account === '' && $continue_on_next_line === false) {
-                    $account = isset($row['Label']) && is_string($row['Label']) ? trim(htmlspecialchars($row['Label'], ENT_QUOTES, 'UTF-8')) : '';
-                    $login = isset($row['Login']) && is_string($row['Login']) ? trim(htmlspecialchars($row['Login'], ENT_QUOTES, 'UTF-8')) : '';
-                    $pwd = isset($row['Password']) && is_string($row['Password']) ? trim(str_replace('"', '&quot;', $row['Password'])) : '';
-                    $url = isset($row['url']) && is_string($row['url']) ? trim($row['url']) : '';
-                    $to_find = array('"', "'");
-                    $to_ins = array('&quot', '&#39;');
-                    $comment = htmlentities(
-                        addslashes(str_replace($to_find, $to_ins, $row['Comments'])),
-                        ENT_QUOTES,
-                        'UTF-8'
-                    );
-
-                    $continue_on_next_line = false;
-                }
-            }
-            // close file
-            fclose($fp);
-        } else {
+        // Vérifier si le fichier est accessible
+        if (!file_exists($file) || !is_readable($file)) {
             echo prepareExchangedData(
-                array(
-                    'error' => true,
-                    'message' => $lang->get('cannot_open_file'),
-                ),
+                array('error' => true, 'message' => $lang->get('cannot_open_file')),
                 'encode'
             );
-
-            //delete file
             unlink($file);
             break;
         }
 
-        if ($line_number > 0) {
-            array_push(
-                $itemsArray,
-                array(
-                    'label' => $account,
-                    'login' => $login,
-                    'pwd' => $pwd,
-                    'url' => $url,
-                    'comment' => $comment,
-                )
-            );
+        // Ouvrir le fichier pour récupérer l'en-tête
+        $fp = fopen($file, 'r');
+        $header = fgetcsv($fp);
+        fclose($fp);
 
-            // Show results to user.
+        // Vérifier si l'en-tête est valide
+        if ($header === false || empty($header)) {
             echo prepareExchangedData(
-                array(
-                    'error' => false,
-                    'message' => '',
-                    'output' => $itemsArray,
-                    'number' => $line_number++,
-                ),
+                array('error' => true, 'message' => $lang->get('import_error_no_read_possible')),
                 'encode'
             );
+            unlink($file);
+            break;
         }
 
-        //delete file
-        unlink($file);
+        // Initialisation du tableau de stockage des valeurs
+        $valuesToImport = [];
 
+        // Configuration du parser CSV
+        $config = new LexerConfig();
+        $lexer = new Lexer($config);
+        $config->setIgnoreHeaderLine(true);
+
+        // Observer pour récupérer les données et respecter l'ordre des colonnes
+        $interpreter = new Interpreter();
+        $interpreter->addObserver(function (array $row) use (&$valuesToImport, $header) {
+            $rowData = array_combine($header, $row);
+
+            if ($rowData !== false) {
+                $valuesToImport[] = array(
+                    'Label' => isset($rowData['label']) ? trim($rowData['label']) : '',
+                    'Login' => isset($rowData['login']) ? trim($rowData['login']) : '',
+                    'Password' => isset($rowData['password']) ? trim($rowData['password']) : '',
+                    'url' => isset($rowData['url']) ? trim($rowData['url']) : '',
+                    'Comments' => isset($rowData['description']) ? trim($rowData['description']) : '',
+                    'Folder' => isset($rowData['folder']) ? trim($rowData['folder']) : '',
+                );
+            }
+        });
+
+        // Launch parsing with `Lexer`
+        $lexer->parse($file, $interpreter);
+
+        // Check if some date were imported
+        if (empty($valuesToImport)) {
+            echo prepareExchangedData(
+                array('error' => true, 'message' => $lang->get('import_error_no_read_possible')),
+                'encode'
+            );
+            unlink($file);
+            break;
+        }
+        
+        // Process lines
+        foreach ($valuesToImport as $row) {
+        
+            // Check that each line has 6 columns
+            if (count($row) != 6) {
+                echo prepareExchangedData(
+                    array('error' => true, 'message' => $lang->get('import_error_invalid_structure')),
+                    'encode'
+                );
+                unlink($file);
+                break;
+            }
+        
+            // CLean data
+            $label    = cleanInput($row['Label']);
+            $login    = cleanInput($row['Login']);
+            $pwd      = cleanInput($row['Password']);
+            $url      = cleanInput($row['url']);
+            $folder   = cleanInput($row['Folder']);
+            $comments = cleanInput($row['Comments']);
+        
+            // Handle multiple lignes description
+            if (strpos($comments, '<br>') !== false || strpos($label, '<br>') !== false) {
+                $continue_on_next_line = true;
+                $comment .= " " . $label;
+            } else {
+                // Insert previous line if changing line
+                if (!empty($account)) {
+                    $items_number++;
+
+                    // Insert in batch
+                    $batchInsert[] = array(
+                        'label'        => $account,
+                        'description'  => $comment,
+                        'pwd'          => $pwd,
+                        'url'          => $url,
+                        'folder'       => ((int) $session->get('user-admin') === 1 || (int) $session->get('user-manager') === 1 || (int) $session->get('user-can_manage_all_users') === 1) ? $folder : '',
+                        'login'        => $login,
+                        'operation_id' => $post_operation_id,
+                    );
+
+                    // Store unique folders
+                    // Each folder is the unique element of the path located inside $folder and delimited by '/' or '\'
+                    $folders = preg_split('/[\/\\\\]/', $folder);
+                    foreach ($folders as $folder) {
+                        if (!empty($folder)) {
+                            $uniqueFolders[$folder] = $folder;
+                        }
+                    }
+                }
+                // Update current variables
+                $account = $label;
+                $comment = $comments;
+                $continue_on_next_line = false;
+            }
+        }
+        
+        // Insert in database (with batch optimisation)
+        if (!empty($batchInsert)) {
+            $tableName = prefixTable('items_importations');
+            $values = [];
+        
+            foreach ($batchInsert as $data) {
+                $values[] = "('" . implode("','", array_map('addslashes', $data)) . "')";
+            }
+        
+            $sql = "INSERT INTO `$tableName` (`label`, `description`, `pwd`, `url`, `folder`, `login`, `operation_id`) VALUES " . implode(',', $values);
+            
+            DB::query($sql);
+        }
+
+        // Display results
+        echo prepareExchangedData(
+            array('error' => false,
+                'operation_id' => $post_operation_id,
+                'items_number' => $items_number,
+                'folders_number' => count($uniqueFolders),        
+                'userCanManageFolders' => ((int) $session->get('user-admin') === 1 || (int) $session->get('user-manager') === 1 || (int) $session->get('user-can_manage_all_users') === 1) ? 1 : 0
+            ),
+            'encode'
+        );
+        
+        // Delete file after processing	
+        unlink($file);
         break;
 
-    //Insert into DB the items the user has selected
-    case 'import_items':
+    // Create new folders
+    case 'import_csv_folders':
         // Check KEY and rights
-        if ($post_key !== $session->get('key')) {
+        if ($inputData['key'] !== $session->get('key')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -299,160 +345,314 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
             break;
         }
 
-        // Init
-        $list = [];
+        // Check if user is manager at least.
+        if ((int) $session->get('user-admin') === 0 && (int) $session->get('user-manager') === 0 && (int) $session->get('user-can_manage_all_users') === 0) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('import_error_no_rights'),
+                ),
+                'encode'
+            );
+            break;
+        }
 
         // Decrypt and retreive data in JSON format
         $dataReceived = prepareExchangedData(
-            $post_data,
+            $inputData['data'],
             'decode'
         );
 
-        // Init post variable
-        $post_folder = filter_var($dataReceived['folder-id'], FILTER_SANITIZE_NUMBER_INT);
+        // Is this a personal folder?
+        $personalFolder = in_array($dataReceived['folderId'], $session->get('user-personal_folders')) ? 1 : 0;
 
-        // Clean each array entry and exclude password as it will be hashed
-        $post_items = [];
-        foreach ($dataReceived['items'] as $item) {
-            $filtered_item = [];
-            foreach ($item as $key => $value) {
-                $value = $antiXss->xss_clean($value);
-                if ($key !== 'pwd') {
-                    $value = filter_var($value, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-                }
-                $filtered_item[$key] = $value;
-            }
-            $post_items[] = $filtered_item;
-        }
-
-        $post_edit_role = filter_var($dataReceived['edit-role'], FILTER_SANITIZE_NUMBER_INT);
-        $post_edit_all = filter_var($dataReceived['edit-all'], FILTER_SANITIZE_NUMBER_INT);
-
-        // Get title for this folder
-        $data_fld = DB::queryFirstRow(
-            'SELECT title
-            FROM '.prefixTable('nested_tree').'
-            WHERE id = %i',
-            $post_folder
+        // Get all folders from objects in DB
+        $itemsPath = DB::query(
+            'SELECT folder, increment_id
+            FROM '.prefixTable('items_importations').'
+            WHERE operation_id = %i
+            LIMIT %i, %i',
+            $dataReceived['csvOperationId'],
+            $dataReceived['offset'],
+            $dataReceived['limit']
         );
 
-        //Get some info about personal folder
-        if (in_array($post_folder, $session->get('user-personal_folders')) === true) {
-            $personalFolder = 1;
-        } else {
-            $personalFolder = 0;
-        }
 
-        // Clean each array entry
-        array_walk_recursive($post_items, 'cleanOutput');
+        // Save matches "path -> ID" to prevent against multiple insertions
+        $folderIdMap = $dataReceived['folderIdMap'] ?? [];
         
-        // Loop on array
-        foreach ($post_items as $item) {
-            //For each item, insert into DB
+        require_once 'folders.class.php';
+        $folderManager = new FolderManager($lang);
 
-            // Handle case where pw is empty
-            // if not allowed then warn user
-            if (($session->has('user-create_item_without_password') && null !== $session->get('user-create_item_without_password')
-                && (int) $session->get('user-create_item_without_password') !== 1
-                ) ||
-                empty($item['pwd']) === false
-            ) {
-                // NEW ENCRYPTION
-                $cryptedStuff = doDataEncryption($item['pwd']);
-            } else {
-                $cryptedStuff['encrypted'] = '';
-            }
-            $post_password = $cryptedStuff['encrypted'];
-            
-            // Insert new item in table ITEMS
-            DB::insert(
-                prefixTable('items'),
-                array(
-                    'label' => substr($item['label'], 0, 500),
-                    'description' => empty($item['comment']) === true ? '' : $item['comment'],
-                    'pw' => $post_password,
-                    'pw_iv' => '',
-                    'url' => empty($item['url']) === true ? '' : substr($item['url'], 0, 500),
-                    'id_tree' => $post_folder,
-                    'login' => empty($item['login']) === true ? '' : substr($item['login'], 0, 200),
-                    'anyone_can_modify' => $post_edit_all,
-                    'encryption_type' => 'teampass_aes',
-                    'item_key' => uniqidReal(50),
-                    'created_at' => time(),
-                )
-            );
-            $newId = DB::insertId();
+        // Get all folders from objects in DB
+        foreach ($itemsPath as $item) {
+            $path = $item['folder'];
+            $importId = $item['increment_id']; // Entry ID in items_importations
 
-            // Create sharekeys for users
-            storeUsersShareKey(
-                prefixTable('sharekeys_items'),
-                (int) $personalFolder,
-                (int) $newId,
-                $cryptedStuff['objectKey'],
-            );
+            $parts = explode("\\", $path); // Décomposer le chemin en sous-dossiers
+            $currentPath = "";
+            $parentId = $dataReceived['folderId']; // Strating with provided folder
 
-            //if asked, anyone in role can modify
-            if ((int) $post_edit_role === 1) {
-                foreach ($session->get('system-array_roles') as $role) {
-                    DB::insert(
-                        prefixTable('restriction_to_roles'),
-                        array(
-                            'role_id' => $role['id'],
-                            'item_id' => $newId,
-                        )
-                    );
+            foreach ($parts as $part) {
+                $currentPath = trim($currentPath . "/" . $part, "/");
+                $currentFolder = $part;
+
+                // Check if this folder has already been created
+                if (isset($folderIdMap[$currentPath]) || empty($currentFolder)) {
+                    $parentId = $folderIdMap[$currentPath];
+                    continue; // Jump to next iteration
+                }
+
+                // Vérifier si le dossier existe déjà en base
+                $existingId = DB::queryFirstField(
+                    'SELECT id FROM '.prefixTable('nested_tree').' WHERE title = %s AND parent_id = %i',
+                    $currentFolder, // Searching only by name
+                    $parentId // Ensure we search the correct parent
+                );
+
+                if ($existingId) {
+                    $folderIdMap[$currentPath] = $existingId;
+                    $parentId = $existingId;
+                } else {
+                    // Insert folder and get its ID
+                    $params = [
+                        'title' => (string) $currentFolder,
+                        'parent_id' => (int) $parentId,
+                        'personal_folder' => (int) $personalFolder,
+                        'complexity' => 0,
+                        'duration' => 0,
+                        'access_rights' => "", // R W N
+                        'user_is_admin' => (int) $session->get('user-admin'),
+                        'user_accessible_folders' => (array) $session->get('user-accessible_folders'),
+                        'user_is_manager' => (int) $session->get('user-manager'),
+                        'user_can_create_root_folder' => (int) $session->get('user-can_create_root_folder'),
+                        'user_can_manage_all_users' => (int) $session->get('user-can_manage_all_users'),
+                        'user_id' => (int) $session->get('user-id'),
+                        'user_roles' => (string) $session->get('user-roles')
+                    ];
+                    $options = [
+                        'rebuildFolderTree' => false,
+                        'setFolderCategories' => false,
+                        'manageFolderPermissions' => true,
+                        'copyCustomFieldsCategories' => false,
+                        'refreshCacheForUsersWithSimilarRoles' => true,
+                    ];
+                    $creationStatus = $folderManager->createNewFolder($params, $options);
+                    $folderCreationDone = $creationStatus['error'];
+
+                    if ((int) $folderCreationDone === 0) {
+                        $newFolderId = $creationStatus['newId'];
+                        // User created the folder
+                        // Add new ID to list of visible ones
+                        if ((int) $session->get('user-admin') === 0 && $creationStatus['error'] === false && $newFolderId !== 0) {
+                            SessionManager::addRemoveFromSessionArray('user-accessible_folders', [$newFolderId], 'add');
+                        }
+
+                        // Save ID in map to avoid recreating it
+                        $folderIdMap[$currentPath] = $newFolderId;
+                        $parentId = $newFolderId;
+                    } else {
+                        // Get ID of existing folder
+                        $ret = DB::queryFirstRow(
+                            'SELECT *
+                            FROM ' . prefixTable('nested_tree') . '
+                            WHERE title = %s',
+                            $currentFolder
+                        );
+                        $newFolderId = $ret['id'];
+                        $parentId = $newFolderId;
+                    }
                 }
             }
 
-            // Insert new item in table LOGS_ITEMS
-            DB::insert(
-                prefixTable('log_items'),
-                array(
-                    'id_item' => $newId,
-                    'date' => time(),
-                    'id_user' => $session->get('user-id'),
-                    'action' => 'at_creation',
-                )
-            );
-
-            array_push($list, $item['row']);
-
-            //Add entry to cache table
-            DB::insert(
-                prefixTable('cache'),
-                array(
-                    'id' => $newId,
-                    'label' => substr($item['label'], 0, 500),
-                    'description' => empty($item['comment']) ? '' : $item['comment'],
-                    'id_tree' => $post_folder,
-                    'url' => '0',
-                    'perso' => $personalFolder === 0 ? 0 : 1,
-                    'login' => empty($item['login']) ? '' : substr($item['login'], 0, 500),
-                    'folder' => $data_fld['title'],
-                    'author' => $session->get('user-id'),
-                    'timestamp' => time(),
-                    'tags' => '',
-                    'restricted_to' => '0',
-                    'renewal_period' => '0',
-                    'timestamp' => time(),
-                )
-            );
+            // Update the importation entry with the new folder ID
+            DB::update(prefixTable('items_importations'), [
+                'folder_id' => $parentId
+            ], "increment_id=%i", $importId);
         }
 
         echo prepareExchangedData(
             array(
                 'error' => false,
                 'message' => '',
-                'items' => $list,
+                'processedCount' => count($itemsPath),
+                'folderIdMap' => $folderIdMap,
+            ),
+            'encode'
+        );
+        
+        break;
+
+
+    //Insert into DB the items the user has selected
+    case 'import_csv_items':
+        // Check KEY and rights
+        if ($inputData['key'] !== $session->get('key')) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        
+
+        // Decrypt and retreive data in JSON format
+        $dataReceived = prepareExchangedData(
+            $inputData['data'],
+            'decode'
+        );
+
+        //Get some info about personal folder
+        $personalFolder = in_array($dataReceived['folderId'], $session->get('user-personal_folders')) ? 1 : 0;        
+
+        // Get all folders from objects in DB
+        $items = DB::query(
+            'SELECT ii.label, ii.login, ii.pwd, ii.url, ii.description, ii.folder_id, ii.increment_id, nt.title
+            FROM '.prefixTable('items_importations').' AS ii
+            INNER JOIN '.prefixTable('nested_tree').' AS nt ON ii.folder_id = nt.id
+            WHERE ii.operation_id = %i
+            LIMIT %i, %i',
+            $dataReceived['csvOperationId'],
+            $dataReceived['offset'],
+            $dataReceived['limit']
+        );
+
+        // Init some variables
+        $insertedItems = $dataReceived['insertedItems'] ?? 0;
+        $failedItems = [];
+
+        // Loop on items
+        foreach ($items as $item) {            
+            try {
+                // Handle case where password is empty
+                if (($session->has('user-create_item_without_password') && 
+                    null !== $session->get('user-create_item_without_password') &&
+                    (int) $session->get('user-create_item_without_password') !== 1) ||
+                    !empty($item['pwd'])) {
+                    // Encrypt password
+                    $cryptedStuff = doDataEncryption($item['pwd']);
+                } else {
+                    $cryptedStuff['encrypted'] = '';
+                    $cryptedStuff['objectKey'] = '';
+                }
+                $itemPassword = $cryptedStuff['encrypted'];
+            
+                // Insert new item in table ITEMS
+                DB::insert(
+                    prefixTable('items'),
+                    array(
+                        'label' => substr($item['label'], 0, 500),
+                        'description' => empty($item['comment']) === true ? '' : $item['comment'],
+                        'pw' => $itemPassword,
+                        'pw_iv' => '',
+                        'url' => empty($item['url']) === true ? '' : substr($item['url'], 0, 500),
+                        'id_tree' => $item['folder_id'],
+                        'login' => empty($item['login']) === true ? '' : substr($item['login'], 0, 200),
+                        'anyone_can_modify' => $dataReceived['editAll'],
+                        'encryption_type' => 'teampass_aes',
+                        'item_key' => uniqidReal(50),
+                        'created_at' => time(),
+                    )
+                );
+                $newId = DB::insertId();
+
+                // Create new task for the new item
+                // If it is not a personnal one
+                if ((int) $post_folder_is_personal === 0) {
+                    storeTask(
+                        'new_item',
+                        $session->get('user-id'),
+                        0,
+                        (int) $item['folder_id'],
+                        (int) $newId,
+                        $cryptedStuff['objectKey'],
+                    );
+                } else {
+                    // Create sharekeys for current user
+                    storeUsersShareKey(
+                        prefixTable('sharekeys_items'),
+                        (int) $personalFolder,
+                        (int) $newId,
+                        $cryptedStuff['objectKey'],
+                        true
+                    );
+                }
+
+                //if asked, anyone in role can modify
+                if ((int) $dataReceived['editRole'] === 1) {
+                    foreach ($session->get('system-array_roles') as $role) {
+                        DB::insert(
+                            prefixTable('restriction_to_roles'),
+                            array(
+                                'role_id' => $role['id'],
+                                'item_id' => $newId,
+                            )
+                        );
+                    }
+                }
+
+                // Insert new item in table LOGS_ITEMS
+                DB::insert(
+                    prefixTable('log_items'),
+                    array(
+                        'id_item' => $newId,
+                        'date' => time(),
+                        'id_user' => $session->get('user-id'),
+                        'action' => 'at_creation',
+                    )
+                );
+
+                //Add entry to cache table
+                DB::insert(
+                    prefixTable('cache'),
+                    array(
+                        'id' => $newId,
+                        'label' => substr($item['label'], 0, 500),
+                        'description' => empty($item['comment']) ? '' : $item['comment'],
+                        'id_tree' => $item['folder_id'],
+                        'url' => '0',
+                        'perso' => $personalFolder === 0 ? 0 : 1,
+                        'login' => empty($item['login']) ? '' : substr($item['login'], 0, 500),
+                        'folder' => $item['title'],
+                        'author' => $session->get('user-id'),
+                        'timestamp' => time(),
+                        'tags' => '',
+                        'restricted_to' => '0',
+                        'renewal_period' => '0',
+                        'timestamp' => time(),
+                    )
+                );
+
+                $insertedItems++;
+
+            } catch (Exception $e) {
+                // Log the error and store the failed item
+                $failedItems[] = [
+                    'increment_id' => $item['increment_id'],
+                    'error' => $e->getMessage(),
+                ];
+            }
+        }
+
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => '',
+                'insertedItems' => $insertedItems,
+                'failedItems' => $failedItems,
             ),
             'encode'
         );
         break;
 
+
     //Check if import KEEPASS file format is what expected
     case 'import_file_format_keepass':
         // Check KEY and rights
-        if ($post_key !== $session->get('key')) {
+        if ($inputData['key'] !== $session->get('key')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -465,7 +665,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
 
         // Decrypt and retreive data in JSON format
         $receivedParameters = prepareExchangedData(
-            $post_data,
+            $inputData['data'],
             'decode'
         );
         $post_operation_id = filter_var($receivedParameters['file'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
@@ -671,7 +871,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
     // KEEPASS - CREATE FOLDERS
     case 'keepass_create_folders':
         // Check KEY and rights
-        if ($post_key !== $session->get('key')) {
+        if ($inputData['key'] !== $session->get('key')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -684,13 +884,13 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
 
         // Decrypt and retreive data in JSON format
         $receivedParameters = prepareExchangedData(
-            $post_data,
+            $inputData['data'],
             'decode'
         );
 
         $post_folder_id = filter_var($receivedParameters['folder-id'], FILTER_SANITIZE_NUMBER_INT);
-        $post_edit_all = filter_var($receivedParameters['edit-all'], FILTER_SANITIZE_NUMBER_INT);
-        $post_edit_role = filter_var($receivedParameters['edit-role'], FILTER_SANITIZE_NUMBER_INT);
+        $$inputData['editAll'] = filter_var($receivedParameters['edit-all'], FILTER_SANITIZE_NUMBER_INT);
+        $$inputData['editRole'] = filter_var($receivedParameters['edit-role'], FILTER_SANITIZE_NUMBER_INT);
         $post_folders = filter_var_array(
             $receivedParameters['folders'],
             FILTER_SANITIZE_FULL_SPECIAL_CHARS
@@ -743,7 +943,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
     // KEEPASS - CREATE ITEMS
     case 'keepass_create_items':
         // Check KEY and rights
-        if ($post_key !== $session->get('key')) {
+        if ($inputData['key'] !== $session->get('key')) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -756,12 +956,12 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
 
         // Decrypt and retreive data in JSON format
         $receivedParameters = prepareExchangedData(
-            $post_data,
+            $inputData['data'],
             'decode'
         );
 
-        $post_edit_all = filter_var($receivedParameters['edit-all'], FILTER_SANITIZE_NUMBER_INT);
-        $post_edit_role = filter_var($receivedParameters['edit-role'], FILTER_SANITIZE_NUMBER_INT);
+        $$inputData['editAll'] = filter_var($receivedParameters['edit-all'], FILTER_SANITIZE_NUMBER_INT);
+        $$inputData['editRole'] = filter_var($receivedParameters['edit-role'], FILTER_SANITIZE_NUMBER_INT);
         $post_folders = filter_var_array(
             $receivedParameters['folders'],
             FILTER_SANITIZE_FULL_SPECIAL_CHARS
@@ -809,7 +1009,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
                     'url' => substr($item['URL'], 0, 500),
                     'id_tree' => $post_folders[$item['parentFolderId']]['id'],
                     'login' => substr($item['UserName'], 0, 500),
-                    'anyone_can_modify' => $post_edit_all,
+                    'anyone_can_modify' => $$inputData['editAll'],
                     'encryption_type' => 'teampass_aes',
                     'inactif' => 0,
                     'restricted_to' => '',
@@ -829,7 +1029,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
             );
 
             //if asked, anyone in role can modify
-            if ($post_edit_role === 1) {
+            if ($$inputData['editRole'] === 1) {
                 foreach ($session->get('system-array_roles') as $role) {
                     DB::insert(
                         prefixTable('restriction_to_roles'),
@@ -1064,3 +1264,46 @@ function cleanOutput(&$value)
 {
     return htmlspecialchars_decode($value);
 }
+
+/**
+ * Clean a string.
+ * 
+ * @param string $value The string to clean.
+ * 
+ * @return string The cleaned string.
+ */
+function cleanInput($value): string
+{
+    return stripEmojis(
+        cleanString(
+            html_entity_decode($value, ENT_QUOTES | ENT_XHTML, 'UTF-8'),
+            true
+        )
+    );
+}
+
+/**
+ * Strip any emoji icons from the string.
+ *
+ * @param string $string
+ *   The string to remove emojis from.
+ *
+ * @return string
+ *   The string with emojis removed.
+ */
+function stripEmojis($string): string
+{
+    // Convert question marks to a special thing so that we can remove
+    // question marks later without any problems.
+    $string = str_replace("?", "{%}", $string);
+    // Convert the text into UTF-8.
+    $string = mb_convert_encoding($string, "ISO-8859-1", "UTF-8");
+    // Convert the text to ASCII.
+    $string = mb_convert_encoding($string, "UTF-8", "ISO-8859-1");
+    // Replace anything that is a question mark (left over from the conversion.
+    $string = preg_replace('/(\s?\?\s?)/', ' ', $string);
+    // Put back the .
+    $string = str_replace("{%}", "?", $string);
+    // Trim and return.
+    return trim($string);
+  }

@@ -429,7 +429,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                                 }
 
     // IMPORT menu
-    if (isset($SETTINGS['allow_import']) === true && (int) $SETTINGS['allow_import'] === 1&& $session_user_admin === 0) {
+    if (isset($SETTINGS['allow_import']) === true && (int) $SETTINGS['allow_import'] === 1) {
         echo '
                     <li class="nav-item">
                         <a href="#" data-name="import" class="nav-link', $get['page'] === 'import' ? ' active' : '', '">
