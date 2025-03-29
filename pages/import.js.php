@@ -89,11 +89,12 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
     // Select2
     $('.select2')
-        .html(store.get('teampassUser').folders)
         .select2({
             language: '<?php echo $session->get('user-language_code'); ?>'
         });
 
+    // Provide list to filder target select
+    $('#import-csv-target-folder, #import-keepass-target-folder').html(store.get('teampassUser').folders)
 
     // Plupload for CSV
     var csv_filename = '';
@@ -163,7 +164,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 if (data.error === true) {
                     toastr.remove();
                     toastr.error(
-                        '<i class="fas fa-exclamation-circle fa-lg mr-2"></i>Message: ' + data.message,
+                        '<i class="fa-solid fa-exclamation-circle fa-lg mr-2"></i>Message: ' + data.message,
                         '', {
                             timeOut: 10000,
                             progressBar: true
@@ -286,7 +287,14 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     });
 
 
-    //Permits to upload passwords from CSV file
+    // STEP 1 - Permits to upload passwords from CSV file
+    const batchSizeFolders = 100;
+    let batchSizeItems = 10; // Is defined as 10 but will change to 100 in case of tasks handler used for keys encryption
+    let folderIdMap = {};
+    let failedItems = [];
+    let processTimeEstimated = 0;
+    let processTimeStarted = 0;
+
     function ImportCSV() {
         // Show spinner
         toastr.remove();
@@ -318,10 +326,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     }
                 );
 
-                if (data.error == "bad_structure") {
+                if (data.error == true) {
                     toastr.remove();
                     toastr.error(
-                        '<i class="fas fa-ban fa-lg mr-2"></i><?php echo addslashes($lang->get('import_error_no_read_possible')); ?>',
+                        '<i class="fa-solid fa-ban fa-lg mr-2"></i>' + data.message,
                         '', {
                             timeOut: 10000,
                             closeButton: true,
@@ -332,41 +340,23 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     $('#import-feedback').removeClass('hidden');
                     $('#import-feedback div').html('');
                 } else {
-                    // Show Import definition
-                    $('.csv-setup').removeClass('hidden');
-
-                    // Show items to import
-                    var htmlItems = '';
-                    $.each(data.output, function(i, value) {
-                        // Prepare options lists
-                        htmlItems += '<div class="form-group">' +
-                            '<input type="checkbox" class="flat-blue csv-item" id="importcsv-' + i + '" ' +
-                            'data-label="' + value.label + '" data-login="' + value.login + '" ' +
-                            'data-pwd="' + value.pwd + '" data-url="' + value.url + '" ' +
-                            'data-comment="' + value.comment + '" data-row="' + i + '">' +
-                            '<label for="importcsv-' + i + '" class="ml-2">' + value.label + '</label>' +
-                            '</div>';
-                    });
-                    $('#csv-items-list').html(htmlItems);
-
-                    // Prepare iCheck format for checkboxes
-                    $('input[type="checkbox"].flat-blue').iCheck({
-                        checkboxClass: 'icheckbox_flat-blue'
-                    });
-                    $('input[type="checkbox"].flat-blue').iCheck('check');
-
-                    // Increment counter
-                    $(document).on('ifChecked', 'input[type="checkbox"].flat-blue', function() {
-                        $('#csv-items-number').html(parseInt($('#csv-items-number').text()) + 1);
-                    });
-
-                    // Decrease counter
-                    $(document).on('ifUnchecked', 'input[type="checkbox"].flat-blue', function() {
-                        $('#csv-items-number').html(parseInt($('#csv-items-number').text()) - 1);
-                    });
-
                     // Show number of items
-                    $('#csv-items-number').html(data.number);
+                    $('#csv-file-info').html('<i class="fa-solid fa-list mr-2"></i><?php echo $lang->get('to_be_imported'); ?>:' + 
+                        '<i class="fa-solid fa-key ml-4 mr-1"></i><span id="csv-items-number">' + data.items_number + '</span>' +
+                        (data.userCanManageFolders === 1 ?
+                        '<i class="fa-solid fa-folder ml-4 mr-1"></i><span id="csv-folders-number">' + data.folders_number + '</span>'
+                        : '') +
+                        '<input type="hidden" id="csv-operation-id" value="' + data.operation_id + '">' +
+                        '<input type="hidden" id="userCanManageFolders" value="' + data.userCanManageFolders + '">'
+                    );
+
+                    // Show Import definition
+                    if (data.userCanManageFolders === 1 && data.folders_number > 0) {
+                        $('.csv-folder').removeClass('hidden');
+                    } else {
+                        $('.csv-folder').addClass('hidden');
+                    }
+                    $('.csv-setup').removeClass('hidden');
 
                     toastr.remove();
                     toastr.success(
@@ -381,13 +371,21 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         );
     }
 
-    //get list of items checked by user
+
+    // Function to update progress bar dynamically
+    function updateCsvProgressBar(current, total) {
+        let progress = Math.round((current / total) * 100);
+        $('#import-csv-progress-bar').css('width', progress+'%').text(progress+'%');
+    }
+
+
+    // STEP 2 - Start performing the import of the preloaded CSV file
     function launchCSVItemsImport() {
         // IS the folder selected?
         if (parseInt($("#import-csv-target-folder").val()) === 0) {
             toastr.remove();
             toastr.error(
-                '<i class="fas fa-ban fa-lg mr-2"></i><?php echo $lang->get('please_select_a_folder'); ?>',
+                '<i class="fa-solid fa-ban fa-lg mr-2"></i><?php echo $lang->get('please_select_a_folder'); ?>',
                 '', {
                     timeOut: 10000,
                     closeButton: true,
@@ -396,38 +394,12 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             );
             return false;
         }
-        // Show spinner
-        toastr.remove();
-        toastr.info('<i class="fas fa-cog fa-spin fa-2x"></i><?php echo $lang->get('please_wait'); ?>');
 
-        // Init
-        var items = '',
-            arrItems = [];
-
-        // Get data checked
-        $(".flat-blue").each(function() {
-            if ($(this).is(':checked') === true && $(this).hasClass('csv-item') === true) {
-                if ($(this).attr('id') !== undefined) {
-                    var elem = $(this).attr("id").split("-");
-                    // Exclude previously imported items
-                    if ($("#importcsv-" + elem[1]).parent().closest('.icheckbox_flat-blue').hasClass('disabled') !== true) {
-                        arrItems.push({
-                            label: $(this).data('label'),
-                            login: $(this).data('login'),
-                            pwd: $(this).data('pwd'),
-                            url: $(this).data('url'),
-                            comment: $(this).data('comment'),
-                            row: $(this).data('row'),
-                        })
-                    }
-                }
-            }
-        });
-
-        if (arrItems.length === 0) {
+        // Is the operation id available?
+        if ($('#csv-operation-id').val() === '') {
             toastr.remove();
             toastr.error(
-                '<i class="fas fa-ban fa-lg mr-2"></i><?php echo $lang->get('no_data_selected'); ?>',
+                '<i class="fa-solid fa-ban fa-lg mr-2"></i><?php echo addslashes($lang->get('import_error_no_read_possible')); ?>',
                 '', {
                     timeOut: 10000,
                     closeButton: true,
@@ -437,63 +409,403 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             return false;
         }
 
-        data = {
-            'items': arrItems,
-            'edit-all': $('#import-csv-edit-all-checkbox').prop('checked') === true ? 1 : 0,
-            'edit-role': $('#import-csv-edit-role-checkbox').prop('checked') === true ? 1 : 0,
-            'folder-id' : parseInt($("#import-csv-target-folder").val()),
+        // Show spinner
+        toastr.remove();
+        toastr.info('<i class="fa-solid fa-cog fa-spin fa-1x mr-2"></i><?php echo $lang->get('please_wait_folders_in_construction'); ?>');
+
+        // Stop session timer
+        ProcessInProgress = true;
+        
+        // Configuration
+        let processedFolders = 0;
+        let totalFolders = 0;
+        let csvOperationId = $('#csv-operation-id').val();
+        let folderId = parseInt($("#import-csv-target-folder").val());
+
+        
+        // Initialize progress bar
+        $("#csv-setup-progress, #import-progress").removeClass("hidden");
+        $("#import-progress-bar").css("width", "0%").attr("aria-valuenow", "0");
+
+        // If user can manage folders, process folders first
+        if ($('#userCanManageFolders').val() === '1') {
+            // Set total folder count and start recursive processing
+            totalFolders = parseInt($('#csv-items-number').text()) || 0;
+            if (totalFolders > 0 && processedFolders <= totalFolders) {
+                processCsvFoldersBatch(csvOperationId, folderId, processedFolders, totalFolders, batchSizeFolders,);
+            } else {
+                toastr.info(
+                    '<i class="fa-solid fa-info-circle fa-lg mr-2"></i><?php echo addslashes($lang->get('import_no_folders_to_process')); ?>',
+                    '', {
+                        timeOut: 5000,
+                        closeButton: true
+                    }
+                );
+                processCSVItems(csvOperationId, folderId);
+            }
+        } else {
+            // No folders to process, start importing items directly
+            processCSVItems(csvOperationId, folderId);
         }
+    }
+
+    // Function to process folders in batches recursively
+    function processCsvFoldersBatch(csvOperationId, folderId, processedFolders, totalFolders, batchSizeFolders) {
+        let dataFolders = {
+            'csvOperationId': csvOperationId,
+            'folderId': folderId,
+            'offset': processedFolders, // Start from where we left off
+            'limit': batchSizeFolders, // Process only batchSize folders
+            'folderIdMap': folderIdMap, // Persist folder ID mapping
+            'folderPasswordComplexity': $('#import-csv-complexity').val(),
+            'folderAccessRight': $('#import-csv-access-right').val(),
+        };
+
         if (debugJavascript === true) {
-            console.log(data);
+            console.log(`Processing folders batch: ${processedFolders} / ${totalFolders}`, dataFolders);
         }
-        // Lauchn ajax query that will insert items into DB
+
+        // Time estimation
+        processTimeStarted = Date.now();
+
         $.post(
-            "sources/import.queries.php", {
-                type: "import_items",
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+            "sources/import.queries.php",
+            {
+                type: "import_csv_folders",
+                data: prepareExchangedData(JSON.stringify(dataFolders), "encode", "<?php echo $session->get('key'); ?>"),
                 key: '<?php echo $session->get('key'); ?>'
             },
-            function(data) {
-                data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
+            function(response) {
+                response = prepareExchangedData(response, "decode", "<?php echo $session->get('key'); ?>");
+
                 if (debugJavascript === true) {
-                    console.log(data);
+                    console.log("Folder creation response", response);
                 }
 
-                if (data.error === true) {
+                if (response.error === true) {
                     toastr.remove();
                     toastr.error(
-                        '<i class="fas fa-ban fa-lg mr-2"></i><?php echo addslashes($lang->get('import_error_no_read_possible')); ?>',
+                        '<i class="fa-solid fa-ban fa-lg mr-2"></i><?php echo addslashes($lang->get('import_error_folder_creation')); ?>',
                         '', {
                             timeOut: 10000,
                             closeButton: true,
                             progressBar: true
                         }
                     );
+                    return;
+                }
 
-                    $('#import-feedback').removeClass('hidden');
-                    $('#import-feedback div').html('');
+                // Estimate time remaining based upon the number of folders processed and the time taken
+                let processTimeElapsed = Date.now() - processTimeStarted;
+                let estimatedTimeRemaining = Math.round((processTimeElapsed / (processedFolders + batchSizeFolders)) * (totalFolders - processedFolders));
+                let estimatedTimeRemainingFormatted = new Date(estimatedTimeRemaining * 1000).toISOString().substr(11, 8);
+                $('#import-csv-progress-text').html(
+                    '<i class="fa-solid fa-folder mr-2 fa-beat-fade"></i>' + processedFolders + '/' + totalFolders +
+                    ' <span class="">(<i class="fa-solid fa-stopwatch ml-1 mr-1"></i>' + estimatedTimeRemainingFormatted + ')</span>'
+                );
+
+                // Persist the updated folderIdMap
+                folderIdMap = response.folderIdMap;
+
+                // Update processed count
+                processedFolders += response.processedCount || batchSizeFolders;
+                updateCsvProgressBar(processedFolders, totalFolders);
+
+                // If there are more folders to process, continue recursively
+                if (processedFolders < totalFolders) {
+                    processCsvFoldersBatch(csvOperationId, folderId, processedFolders, totalFolders, batchSizeFolders);
                 } else {
-                    var counter_treated_items = 0;
-                    // after inserted, disable the checkbox in order to prevent against new insert
-                    $.each(data.items, function(i, value) {
-                        $("#importcsv-" + value).parent().closest('.icheckbox_flat-blue').addClass('disabled');
-                        $('#csv-items-number').html(parseInt($('#csv-items-number').text()) - 1);
-                        counter_treated_items++;
-                    });
-
-                    // Show
+                    // All folders processed successfully
                     toastr.remove();
                     toastr.success(
-                        '<?php echo $lang->get('number_of_items_imported'); ?> : ' + counter_treated_items,
-                        data.message, {
-                            timeOut: 5000,
+                        '<i class="fa-solid fa-check-circle fa-lg mr-2"></i><?php echo addslashes($lang->get('import_folders_success')); ?>',
+                        '', {
+                            timeOut: 2000,
+                            closeButton: true,
                             progressBar: true
                         }
                     );
+
+                    // Wait for 1 second before starting the next phase
+                    setTimeout(() => {
+                        processCSVItems(csvOperationId, folderId);
+                    }, 1500);
                 }
             }
         );
     }
+
+    // STEP 3 - Start importing items from CSV
+    function processCSVItems(csvOperationId, folderId)
+    {
+        // Show spinner
+        toastr.remove();
+        toastr.info('<i class="fa-solid fa-cog fa-spin fa-1x mr-2"></i><?php echo $lang->get('please_wait_items_in_construction'); ?>');
+
+        // Configuration
+        let processedItems = 0;
+        let totalItems = 0;
+        let insertedItems = 0;
+
+        if ($('#import-csv-keys-strategy').val() === 'tasksHandler' && batchSizeItems === 10) {
+            // If the keys strategy is set to tasksHandler, increase batch size to 100
+            batchSizeItems = 100;
+        }
+
+        // Set total folder count and start recursive processing
+        totalItems = parseInt($('#csv-items-number').text()) || 0;
+        if (totalItems > 0) {
+            // Initialize progress bar            
+            updateCsvProgressBar(processedItems, totalItems);
+
+            $('#import-csv-progress-text').html(
+                '<i class="fa-solid fa-key mr-2 fa-beat-fade"></i><?php echo addslashes($lang->get('please_wait')); ?></span>'
+            );
+
+            // Start processing items in batches
+            processCsvItemsBatch(csvOperationId, folderId, processedItems, totalItems, batchSizeItems, insertedItems);
+        } else {
+            toastr.info(
+                '<i class="fa-solid fa-info-circle fa-lg mr-2"></i><?php echo addslashes($lang->get('import_no_items_to_process')); ?>',
+                '', {
+                    timeOut: 5000,
+                    closeButton: true
+                }
+            );
+
+            finishingCSVImport();
+        }
+
+    }
+
+    function processCsvItemsBatch(csvOperationId, folderId, processedItems, totalItems, batchSizeItems, insertedItems)
+    {
+        let dataItems = {
+            'csvOperationId': csvOperationId,
+            'folderId': folderId,
+            'offset': processedItems, // Start from where we left off
+            'limit': batchSizeItems, // Process only batchSize items
+            'editAll': $('#import-csv-edit-all-checkbox').prop('checked') ? 1 : 0,
+            'editRole': $('#import-csv-edit-role-checkbox').prop('checked') ? 1 : 0,
+            'keysGenerationWithTasksHandler': $('#import-csv-keys-strategy').val(),
+            'insertedItems': insertedItems,
+            'foldersNumber': parseInt($('#csv-folders-number').text()) || 0,
+        };
+
+        if (debugJavascript === true) {
+            console.log(`Processing items batch: ${processedItems} / ${totalItems}`, dataItems);
+        }
+
+        // Time estimation
+        processTimeStarted = Date.now();
+
+        $.post(
+            "sources/import.queries.php",
+            {
+                type: "import_csv_items",
+                data: prepareExchangedData(JSON.stringify(dataItems), "encode", "<?php echo $session->get('key'); ?>"),
+                key: '<?php echo $session->get('key'); ?>'
+            },
+            function(response) {
+                response = prepareExchangedData(response, "decode", "<?php echo $session->get('key'); ?>");
+
+                if (debugJavascript === true) {
+                    console.log("Item creation response", response);
+                }
+
+                if (response.error === true) {
+                    toastr.remove();
+                    toastr.error(
+                        '<i class="fa-solid fa-ban fa-lg mr-2"></i><?php echo addslashes($lang->get('import_error_item_creation')); ?>',
+                        '', {
+                            timeOut: 10000,
+                            closeButton: true,
+                            progressBar: true
+                        }
+                    );
+                    return;
+                }
+
+                // Estimate time remaining based upon the number of items processed and the time taken
+                let processTimeElapsed = Date.now() - processTimeStarted;
+                let estimatedTimeRemaining = Math.round((processTimeElapsed / (processedItems + batchSizeFolders)) * (totalItems - processedItems));
+                let estimatedTimeRemainingFormatted = new Date(estimatedTimeRemaining * 1000).toISOString().substr(11, 8);
+                $('#import-csv-progress-text').html(
+                    '<i class="fa-solid fa-folder mr-2 fa-beat-fade"></i>' + processedItems + '/' + totalItems +
+                    ' <span class="">(<i class="fa-solid fa-stopwatch ml-1 mr-1"></i>' + estimatedTimeRemainingFormatted + ')</span>'
+                );
+
+                // Update processed count
+                processedItems += batchSizeItems;
+                updateCsvProgressBar(processedItems, totalItems);
+
+                // Update inserted items count
+                insertedItems = response.insertedItems || 0;
+
+                // Update failedItems array
+                failedItems = failedItems.concat(response.failedItems || []);
+
+                // If there are more folders to process, continue recursively
+                console.log('Processed items', processedItems, totalItems)
+                if (processedItems < totalItems) {
+                    processCsvItemsBatch(csvOperationId, folderId, processedItems, totalItems, batchSizeItems, insertedItems);
+                } else {
+                    // All items processed successfully
+                    finishingCSVImport(totalItems, insertedItems);
+                }
+            }
+        );
+    }
+
+    // STEP 4 - Finish the CSV import process
+    function finishingCSVImport(totalItems = 0, insertedItems = 0) {
+        // Show status
+        toastr.remove();
+        toastr.success(
+            '<i class="fa-solid fa-check-circle fa-lg mr-2"></i><?php echo addslashes($lang->get('csv_import_success')); ?>',
+            '', {
+                timeOut: 2000,
+                closeButton: true,
+                progressBar: true
+            }
+        );
+
+        // Clear form
+        $('.csv-setup, #csv-setup-progress').addClass('hidden');
+        $('#csv-file-info').html('');
+        $('#import-csv-attach-pickfile-csv-text').val('');
+        $('.import-csv-cb').iCheck('uncheck');
+        $('#import-csv-access-right, #import-csv-target-folder, #import-csv-keys-strategy, #import-csv-complexity').val('');
+
+        $('#import-feedback').removeClass('hidden');
+        $('#import-feedback-progress-text').html(
+            '<i class="fa-solid fa-check-circle fa-lg mr-2"></i><?php echo addslashes($lang->get('csv_import_success')); ?>' +
+            '<br>' +
+            '<i class="fa-solid fa-key mr-2"></i><?php echo addslashes($lang->get('number_of_items_imported')); ?>: ' + insertedItems +
+            '<br>' +
+            '<i class="fa-solid fa-exclamation-triangle mr-2"></i><?php echo addslashes($lang->get('number_of_items_failed')); ?>: ' + failedItems.length +
+            '<br>' +
+            (failedItems.length > 0 ? 
+                failedItems.map((item) => `<i class="fa-solid fa-exclamation-triangle mr-2"></i>${item}`).join('<br>')
+                : ''
+            )
+        );
+
+        // Show message
+        
+        // restart time expiration counter
+        ProcessInProgress = false; 
+    }
+
+/*
+        dataFolders = {
+            'csvOperationId': $('#csv-operation-id').text(),
+            'folderId': parseInt($("#import-csv-target-folder").val()),
+        };
+
+        if (debugJavascript === true) {
+            console.log("Folders creation", dataFolders);
+        }
+
+        // Premier appel AJAX : création des répertoires
+        $.post(
+            "sources/import.queries.php",
+            {
+                type: "import_csv_folders",
+                data: prepareExchangedData(JSON.stringify(dataFolders), "encode", "<?php echo $session->get('key'); ?>"),
+                key: '<?php echo $session->get('key'); ?>'
+            },
+            function(response) {
+                response = prepareExchangedData(response, "decode", "<?php echo $session->get('key'); ?>");
+
+                if (debugJavascript === true) {
+                    console.log("Réponse création des répertoires", response);
+                }
+
+                if (response.error === true) {
+                    toastr.remove();
+                    toastr.error(
+                        '<i class="fa-solid fa-ban fa-lg mr-2"></i><?php echo addslashes($lang->get('import_error_folder_creation')); ?>',
+                        '', {
+                            timeOut: 10000,
+                            closeButton: true,
+                            progressBar: true
+                        }
+                    );
+                    return;
+                }
+                console.log('Folders created')
+                toastr.remove();
+                toastr.info('<i class="fa-solid fa-cog fa-spin fa-1x mr-3"></i><?php echo $lang->get('please_wait_items_in_construction'); ?>');
+                return;
+
+                processCSVItems();
+
+                // Si les répertoires sont créés avec succès, on lance l'import des objets CSV
+                dataItems = {
+                    'editAll': $('#import-csv-edit-all-checkbox').prop('checked') ? 1 : 0,
+                    'editRole': $('#import-csv-edit-role-checkbox').prop('checked') ? 1 : 0,
+                    'folderId': parseInt($("#import-csv-target-folder").val()),
+                    'csvOperationId': $('#csv-operation-id').text(),
+                };
+
+                if (debugJavascript === true) {
+                    console.log("Insertion des objets", dataItems);
+                }
+
+                $.post(
+                    "sources/import.queries.php",
+                    {
+                        type: "import_csv_items",
+                        data: prepareExchangedData(JSON.stringify(dataItems), "encode", "<?php echo $session->get('key'); ?>"),
+                        key: '<?php echo $session->get('key'); ?>'
+                    },
+                    function(response) {
+                        response = prepareExchangedData(response, "decode", "<?php echo $session->get('key'); ?>");
+
+                        if (debugJavascript === true) {
+                            console.log("Réponse insertion des objets", response);
+                        }
+
+                        if (response.error === true) {
+                            toastr.remove();
+                            toastr.error(
+                                '<i class="fa-solid fa-ban fa-lg mr-2"></i><?php echo addslashes($lang->get('import_error_no_read_possible')); ?>',
+                                '', {
+                                    timeOut: 10000,
+                                    closeButton: true,
+                                    progressBar: true
+                                }
+                            );
+
+                            $('#import-feedback').removeClass('hidden');
+                            $('#import-feedback div').html('');
+                        } else {
+                            var counter_treated_items = 0;
+
+                            // Désactiver les checkboxes après l'import
+                            $.each(response.items, function(i, value) {
+                                $("#importcsv-" + value).parent().closest('.icheckbox_flat-blue').addClass('disabled');
+                                $('#csv-items-number').html(parseInt($('#csv-items-number').text()) - 1);
+                                counter_treated_items++;
+                            });
+
+                            // Affichage du succès
+                            toastr.remove();
+                            toastr.success(
+                                '<?php echo $lang->get('number_of_items_imported'); ?> : ' + counter_treated_items,
+                                response.message, {
+                                    timeOut: 5000,
+                                    progressBar: true
+                                }
+                            );
+                        }
+                    }
+                );
+            }
+        );
+    }
+    */
 
     // **************  K E E P A S S  *************** //
 
@@ -548,7 +860,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             BeforeUpload: function(up, file) {
                 // Show spinner
                 toastr.remove();
-                toastr.info('<i class="fas fa-cog fa-spin fa-2x"></i>');
+                toastr.info('<i class="fa-solid fa-cog fa-spin fa-2x"></i>');
 
                 up.settings.multipart_params.PHPSESSID = "<?php echo session_id(); ?>";
                 up.settings.multipart_params.type_upload = "import_items_from_keepass";
@@ -563,7 +875,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 if (data.error === true) {
                     toastr.remove();
                     toastr.error(
-                        '<i class="fas fa-exclamation-circle fa-lg mr-2"></i>Message: ' + data.message,
+                        '<i class="fa-solid fa-exclamation-circle fa-lg mr-2"></i>Message: ' + data.message,
                         '', {
                             timeOut: 10000,
                             closeButton: true,
@@ -655,7 +967,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 if (data.error === true) {
                     toastr.remove();
                     toastr.error(
-                        '<i class="fas fa-ban fa-lg mr-2"></i><?php echo addslashes($lang->get('import_error_no_read_possible')); ?>',
+                        '<i class="fa-solid fa-ban fa-lg mr-2"></i><?php echo addslashes($lang->get('import_error_no_read_possible')); ?>',
                         '', {
                             timeOut: 10000,
                             closeButton: true,
@@ -677,7 +989,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     }
                     // Show spinner
                     $('#import-feedback-progress-text')
-                        .html('<i class="fas fa-cog fa-spin ml-4 mr-2"></i><?php echo $lang->get('folder'); ?> <?php echo $lang->get('at_creation'); ?>');
+                        .html('<i class="fa-solid fa-cog fa-spin ml-4 mr-2"></i><?php echo $lang->get('folder'); ?> <?php echo $lang->get('at_creation'); ?>');
                     if (debugJavascript === true) {
                         console.info("Now creating folders")
                     }
@@ -696,7 +1008,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             if (data.error === true) {
                                 toastr.remove();
                                 toastr.error(
-                                    '<i class="fas fa-ban fa-lg mr-2"></i><?php echo addslashes($lang->get('import_error_no_read_possible')); ?>',
+                                    '<i class="fa-solid fa-ban fa-lg mr-2"></i><?php echo addslashes($lang->get('import_error_no_read_possible')); ?>',
                                     '', {
                                         timeOut: 10000,
                                         closeButton: true,
@@ -731,7 +1043,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                     // Isolate first item
                                     if (itemsList.length > 0) {
                                         $('#import-feedback-progress-text')
-                                            .html('<i class="fas fa-cog fa-spin ml-4 mr-2"></i><?php echo $lang->get('operation_progress');?> ('+((counter*100)/itemsNumber).toFixed(2)+'%) - <i id="item-title"></i>');
+                                            .html('<i class="fa-solid fa-cog fa-spin ml-4 mr-2"></i><?php echo $lang->get('operation_progress');?> ('+((counter*100)/itemsNumber).toFixed(2)+'%) - <i id="item-title"></i>');
 
                                         // XSS Filtering :
                                         $('#import-feedback-progress-text').text(itemsList[0].Title);
@@ -763,7 +1075,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                                     // ERROR
                                                     toastr.remove();
                                                     toastr.error(
-                                                        '<i class="fas fa-ban fa-lg mr-2"></i><?php echo addslashes($lang->get('import_error_no_read_possible')); ?>',
+                                                        '<i class="fa-solid fa-ban fa-lg mr-2"></i><?php echo addslashes($lang->get('import_error_no_read_possible')); ?>',
                                                         '', {
                                                             timeOut: 10000,
                                                             closeButton: true,

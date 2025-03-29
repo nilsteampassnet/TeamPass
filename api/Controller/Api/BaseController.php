@@ -60,8 +60,12 @@ class BaseController
     {
         $request = symfonyRequest::createFromGlobals();
         $queryString = $request->getQueryString();
-        parse_str(html_entity_decode($queryString), $query);
-        return $this->sanitizeUrl($query);
+        if ($request->getContentTypeFormat() !== 'json') {
+            parse_str(html_entity_decode($queryString), $query);
+            return $this->sanitizeUrl($query);
+        }
+
+        return $request->toArray();
     }
 
     /**
