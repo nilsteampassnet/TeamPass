@@ -111,10 +111,6 @@ $data = [
     'data' => $request->request->filter('data', '', FILTER_SANITIZE_SPECIAL_CHARS),
     'key' => $request->request->filter('key', '', FILTER_SANITIZE_SPECIAL_CHARS),
     'file' => $request->request->filter('file', '', FILTER_SANITIZE_SPECIAL_CHARS),
-    'editAll' => $request->request->filter('editAll', '', FILTER_SANITIZE_SPECIAL_CHARS),
-    'editRole' => $request->request->filter('editRole', '', FILTER_SANITIZE_SPECIAL_CHARS),
-    'folderId' => $request->request->filter('folderId', '', FILTER_SANITIZE_SPECIAL_CHARS),
-    'csvOperationId' => $request->request->filter('csvOperationId', '', FILTER_SANITIZE_SPECIAL_CHARS),
 ];
 
 $filters = [
@@ -122,10 +118,6 @@ $filters = [
     'data' => 'trim|escape',
     'key' => 'trim|escape',
     'file' => 'cast:integer',
-    'editAll' => 'trim|escape',
-    'editRole' => 'trim|escape',
-    'folderId' => 'trim|escape',
-    'csvOperationId' => 'cast:integer',
 ];
 
 $inputData = dataSanitizer(
@@ -247,7 +239,6 @@ switch ($inputData['type']) {
         
         // Process lines
         foreach ($valuesToImport as $row) {
-        
             // Check that each line has 6 columns
             if (count($row) != 6) {
                 echo prepareExchangedData(
@@ -299,6 +290,31 @@ switch ($inputData['type']) {
                 $account = $label;
                 $comment = $comments;
                 $continue_on_next_line = false;
+            }
+        }
+
+        // Insert last line
+        if (!empty($account)) {
+            $items_number++;
+
+            // Insert in batch
+            $batchInsert[] = array(
+                'label'        => $account,
+                'description'  => $comment,
+                'pwd'          => $pwd,
+                'url'          => $url,
+                'folder'       => ((int) $session->get('user-admin') === 1 || (int) $session->get('user-manager') === 1 || (int) $session->get('user-can_manage_all_users') === 1) ? $folder : '',
+                'login'        => $login,
+                'operation_id' => $post_operation_id,
+            );
+
+            // Store unique folders
+            // Each folder is the unique element of the path located inside $folder and delimited by '/' or '\'
+            $folders = preg_split('/[\/\\\\]/', $folder);
+            foreach ($folders as $folder) {
+                if (!empty($folder)) {
+                    $uniqueFolders[$folder] = $folder;
+                }
             }
         }
         
@@ -419,9 +435,9 @@ switch ($inputData['type']) {
                         'title' => (string) $currentFolder,
                         'parent_id' => (int) $parentId,
                         'personal_folder' => (int) $personalFolder,
-                        'complexity' => 0,
+                        'complexity' => $dataReceived['folderPasswordComplexity'] ?? 0,
                         'duration' => 0,
-                        'access_rights' => "", // R W N
+                        'access_rights' => $dataReceived['folderAccessRight'] ?? '',
                         'user_is_admin' => (int) $session->get('user-admin'),
                         'user_accessible_folders' => (array) $session->get('user-accessible_folders'),
                         'user_is_manager' => (int) $session->get('user-manager'),
@@ -509,23 +525,42 @@ switch ($inputData['type']) {
         $personalFolder = in_array($dataReceived['folderId'], $session->get('user-personal_folders')) ? 1 : 0;        
 
         // Get all folders from objects in DB
-        $items = DB::query(
-            'SELECT ii.label, ii.login, ii.pwd, ii.url, ii.description, ii.folder_id, ii.increment_id, nt.title
-            FROM '.prefixTable('items_importations').' AS ii
-            INNER JOIN '.prefixTable('nested_tree').' AS nt ON ii.folder_id = nt.id
-            WHERE ii.operation_id = %i
-            LIMIT %i, %i',
-            $dataReceived['csvOperationId'],
-            $dataReceived['offset'],
-            $dataReceived['limit']
-        );
+        if ($dataReceived['foldersNumber'] > 0) {
+            $items = DB::query(
+                'SELECT ii.label, ii.login, ii.pwd, ii.url, ii.description, ii.folder_id, ii.increment_id, nt.title
+                FROM '.prefixTable('items_importations').' AS ii
+                INNER JOIN '.prefixTable('nested_tree').' AS nt ON ii.folder_id = nt.id
+                WHERE ii.operation_id = %i
+                LIMIT %i, %i',
+                $dataReceived['csvOperationId'],
+                $dataReceived['offset'],
+                $dataReceived['limit']
+            );
+        } else {
+            $items = DB::query(
+                'SELECT ii.label, ii.login, ii.pwd, ii.url, ii.description, ii.folder_id, ii.increment_id
+                FROM '.prefixTable('items_importations').' AS ii
+                WHERE ii.operation_id = %i
+                LIMIT %i, %i',
+                $dataReceived['csvOperationId'],
+                $dataReceived['offset'],
+                $dataReceived['limit']
+            );
+            $targetFolderId = $dataReceived['folderId'];
+            $targetFolderName = DB::queryFirstField(
+                'SELECT title
+                FROM '.prefixTable('nested_tree').'
+                WHERE id = %i',
+                $targetFolderId
+            );
+        }
 
         // Init some variables
         $insertedItems = $dataReceived['insertedItems'] ?? 0;
         $failedItems = [];
 
         // Loop on items
-        foreach ($items as $item) {            
+        foreach ($items as $item) {         
             try {
                 // Handle case where password is empty
                 if (($session->has('user-create_item_without_password') && 
@@ -549,7 +584,7 @@ switch ($inputData['type']) {
                         'pw' => $itemPassword,
                         'pw_iv' => '',
                         'url' => empty($item['url']) === true ? '' : substr($item['url'], 0, 500),
-                        'id_tree' => $item['folder_id'],
+                        'id_tree' => is_null($item['folder_id']) === true ? $targetFolderId : (int) $item['folder_id'],
                         'login' => empty($item['login']) === true ? '' : substr($item['login'], 0, 200),
                         'anyone_can_modify' => $dataReceived['editAll'],
                         'encryption_type' => 'teampass_aes',
@@ -561,15 +596,27 @@ switch ($inputData['type']) {
 
                 // Create new task for the new item
                 // If it is not a personnal one
-                if ((int) $post_folder_is_personal === 0) {
-                    storeTask(
-                        'new_item',
-                        $session->get('user-id'),
-                        0,
-                        (int) $item['folder_id'],
-                        (int) $newId,
-                        $cryptedStuff['objectKey'],
-                    );
+                if ((int) $personalFolder === 0) {
+                    if ($dataReceived['keysGenerationWithTasksHandler' === 'tasksHandler']) {
+                        // Create task for the new item
+                        storeTask(
+                            'new_item',
+                            $session->get('user-id'),
+                            0,
+                            (int) $item['folder_id'],
+                            (int) $newId,
+                            $cryptedStuff['objectKey'],
+                        );
+                    } else {
+                        // Create sharekeys for current user
+                        storeUsersShareKey(
+                            prefixTable('sharekeys_items'),
+                            (int) $item['folder_id'],
+                            (int) $newId,
+                            $cryptedStuff['objectKey'],
+                            false
+                        );
+                    }
                 } else {
                     // Create sharekeys for current user
                     storeUsersShareKey(
@@ -612,11 +659,11 @@ switch ($inputData['type']) {
                         'id' => $newId,
                         'label' => substr($item['label'], 0, 500),
                         'description' => empty($item['comment']) ? '' : $item['comment'],
-                        'id_tree' => $item['folder_id'],
+                        'id_tree' => is_null($item['folder_id']) === true ? $targetFolderId : (int) $item['folder_id'],
                         'url' => '0',
                         'perso' => $personalFolder === 0 ? 0 : 1,
                         'login' => empty($item['login']) ? '' : substr($item['login'], 0, 500),
-                        'folder' => $item['title'],
+                        'folder' => is_null($item['title']) === true ? $targetFolderName : $item['title'],
                         'author' => $session->get('user-id'),
                         'timestamp' => time(),
                         'tags' => '',
@@ -624,6 +671,17 @@ switch ($inputData['type']) {
                         'renewal_period' => '0',
                         'timestamp' => time(),
                     )
+                );
+
+                // Update items_importation table
+                DB::update(
+                    prefixTable('items_importations'),
+                    array(
+                        'increment_id' => $newId,
+                        'imported_at'=> time(),
+                    ),
+                    "increment_id=%i",
+                    $item['increment_id']
                 );
 
                 $insertedItems++;

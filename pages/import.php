@@ -156,7 +156,17 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                             <!-- OPTIONS -->
                             <div class="row mt-2 hidden csv-setup">
                                 <div class="col-12">
-                                    <h5><?php echo $lang->get('options'); ?></h5>
+                                    <h5><?php echo $lang->get('options'); ?></h5>                                    
+
+                                    <div class="form-group">                                        
+                                        <label for="import-csv-keys-strategy"><?php echo $lang->get('import_csv_keys_generation_strategy'); ?></label>
+                                        <span class="ml-2 text-muted"><?php echo $lang->get('import_csv_keys_generation_strategy_tip'); ?></span>
+                                        <select id="import-csv-keys-strategy" class="form-control form-item-control select2" style="width:100%;">
+                                            <option value="import"><?php echo $lang->get('during_import'); ?></option>
+                                            <option value="tasksHandler"><?php echo $lang->get('with_tasks_handler'); ?></option>
+                                        </select>
+                                    </div>
+
                                     <div class="form-group">
                                         <input type="checkbox" class="flat-blue import-csv-cb" id="import-csv-edit-all-checkbox">
                                         <label for="import-csv-edit-all-checkbox" class="ml-2"><?php echo $lang->get('import_csv_anyone_can_modify_txt'); ?></label>
@@ -199,9 +209,14 @@ echo $complexitySelect;
                             <!-- PROGRESS BAR -->
                             <div class="row mt-2 hidden" id="csv-setup-progress">
                                 <div class="form-group col-12">
-                                    <h5><?php echo $lang->get('progress'); ?></h5>
+                                    <h5>
+                                        <?php echo $lang->get('progress'); ?>
+                                    </h5>
                                     <div class="progress">
                                         <div class="progress-bar progress-bar-striped progress-bar-animated" id="import-csv-progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%"></div>
+                                    </div>
+                                    <div class="mt-2">
+                                        <div class="text-muted text-center" id="import-csv-progress-text"></div>
                                     </div>
                                 </div>
                             </div>

@@ -1234,5 +1234,7 @@ return array(
     'to_be_imported' => 'To be imported',
     'please_wait_folders_in_construction' => 'Please wait, folders are being constructed',
     'please_wait_items_in_construction' => 'Please wait, items are being constructed',
+    'import_csv_keys_generation_strategy' => 'Keys generation strategy',
+    'import_csv_keys_generation_strategy_tip' => 'When importing items, you can choose to generate new keys for the items on the fly or using task manager.',
 
 );

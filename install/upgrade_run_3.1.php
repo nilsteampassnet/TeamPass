@@ -737,6 +737,49 @@ if (mysqli_num_rows($tableImportationsExists) == 0) {
     );
 }
 
+
+// Add index on background_tasks.
+try {
+    $alter_table_query = "
+        ALTER TABLE `" . $pre . "background_tasks`
+        ADD INDEX idx_progress (is_in_progress)
+    ";
+    mysqli_begin_transaction($db_link);
+    mysqli_query($db_link, $alter_table_query);
+    mysqli_commit($db_link);
+} catch (Exception $e) {
+    // Rollback transaction if index already exists.
+    mysqli_rollback($db_link);
+}
+
+// Add index on background_tasks.
+try {
+    $alter_table_query = "
+        ALTER TABLE `" . $pre . "background_tasks`
+        ADD INDEX idx_finished (finished_at)
+    ";
+    mysqli_begin_transaction($db_link);
+    mysqli_query($db_link, $alter_table_query);
+    mysqli_commit($db_link);
+} catch (Exception $e) {
+    // Rollback transaction if index already exists.
+    mysqli_rollback($db_link);
+}
+
+// Add index on background_tasks.
+try {
+    $alter_table_query = "
+        ALTER TABLE `" . $pre . "background_subtasks`
+        ADD INDEX idx_finished (finished_at)
+    ";
+    mysqli_begin_transaction($db_link);
+    mysqli_query($db_link, $alter_table_query);
+    mysqli_commit($db_link);
+} catch (Exception $e) {
+    // Rollback transaction if index already exists.
+    mysqli_rollback($db_link);
+}
+
 //---<END 3.1.4
 
 

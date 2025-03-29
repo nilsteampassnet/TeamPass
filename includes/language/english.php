@@ -32,6 +32,10 @@
  // - selected_items_to_be_imported
 
 return array(
+    'import_csv_keys_generation_strategy' => 'Keys generation strategy',
+    'import_csv_keys_generation_strategy_tip' => 'When importing items, you can choose to generate new keys for the items on the fly or using task manager.',
+    'during_import' => 'During import',
+    'with_tasks_handler' => 'With task handler',
     'csv_import_success' => 'CSV file imported successfully',
     'number_of_items_failed' => 'Number of items failed',
     'import_error_item_creation' => 'Error while creating item',

@@ -288,9 +288,12 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
 
     // STEP 1 - Permits to upload passwords from CSV file
-    const batchSize = 100;
+    const batchSizeFolders = 100;
+    let batchSizeItems = 10; // Is defined as 10 but will change to 100 in case of tasks handler used for keys encryption
     let folderIdMap = {};
     let failedItems = [];
+    let processTimeEstimated = 0;
+    let processTimeStarted = 0;
 
     function ImportCSV() {
         // Show spinner
@@ -348,7 +351,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     );
 
                     // Show Import definition
-                    if (data.userCanManageFolders === 1){
+                    if (data.userCanManageFolders === 1 && data.folders_number > 0) {
                         $('.csv-folder').removeClass('hidden');
                     } else {
                         $('.csv-folder').addClass('hidden');
@@ -429,7 +432,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             // Set total folder count and start recursive processing
             totalFolders = parseInt($('#csv-items-number').text()) || 0;
             if (totalFolders > 0 && processedFolders <= totalFolders) {
-                processCsvFoldersBatch(csvOperationId, folderId, processedFolders, totalFolders, batchSize,);
+                processCsvFoldersBatch(csvOperationId, folderId, processedFolders, totalFolders, batchSizeFolders,);
             } else {
                 toastr.info(
                     '<i class="fa-solid fa-info-circle fa-lg mr-2"></i><?php echo addslashes($lang->get('import_no_folders_to_process')); ?>',
@@ -447,18 +450,23 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     }
 
     // Function to process folders in batches recursively
-    function processCsvFoldersBatch(csvOperationId, folderId, processedFolders, totalFolders, batchSize) {
+    function processCsvFoldersBatch(csvOperationId, folderId, processedFolders, totalFolders, batchSizeFolders) {
         let dataFolders = {
             'csvOperationId': csvOperationId,
             'folderId': folderId,
             'offset': processedFolders, // Start from where we left off
-            'limit': batchSize, // Process only batchSize folders
-            'folderIdMap': folderIdMap // Persist folder ID mapping
+            'limit': batchSizeFolders, // Process only batchSize folders
+            'folderIdMap': folderIdMap, // Persist folder ID mapping
+            'folderPasswordComplexity': $('#import-csv-complexity').val(),
+            'folderAccessRight': $('#import-csv-access-right').val(),
         };
 
         if (debugJavascript === true) {
             console.log(`Processing folders batch: ${processedFolders} / ${totalFolders}`, dataFolders);
         }
+
+        // Time estimation
+        processTimeStarted = Date.now();
 
         $.post(
             "sources/import.queries.php",
@@ -487,16 +495,25 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     return;
                 }
 
+                // Estimate time remaining based upon the number of folders processed and the time taken
+                let processTimeElapsed = Date.now() - processTimeStarted;
+                let estimatedTimeRemaining = Math.round((processTimeElapsed / (processedFolders + batchSizeFolders)) * (totalFolders - processedFolders));
+                let estimatedTimeRemainingFormatted = new Date(estimatedTimeRemaining * 1000).toISOString().substr(11, 8);
+                $('#import-csv-progress-text').html(
+                    '<i class="fa-solid fa-folder mr-2 fa-beat-fade"></i>' + processedFolders + '/' + totalFolders +
+                    ' <span class="">(<i class="fa-solid fa-stopwatch ml-1 mr-1"></i>' + estimatedTimeRemainingFormatted + ')</span>'
+                );
+
                 // Persist the updated folderIdMap
                 folderIdMap = response.folderIdMap;
 
                 // Update processed count
-                processedFolders += response.processedCount || batchSize;
+                processedFolders += response.processedCount || batchSizeFolders;
                 updateCsvProgressBar(processedFolders, totalFolders);
 
                 // If there are more folders to process, continue recursively
                 if (processedFolders < totalFolders) {
-                    processCsvFoldersBatch(csvOperationId, folderId, processedFolders, totalFolders, batchSize);
+                    processCsvFoldersBatch(csvOperationId, folderId, processedFolders, totalFolders, batchSizeFolders);
                 } else {
                     // All folders processed successfully
                     toastr.remove();
@@ -530,13 +547,23 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         let totalItems = 0;
         let insertedItems = 0;
 
-        // Initialize progress bar
-        $("#import-progress-bar").css("width", "0%").attr("aria-valuenow", "0");
+        if ($('#import-csv-keys-strategy').val() === 'tasksHandler' && batchSizeItems === 10) {
+            // If the keys strategy is set to tasksHandler, increase batch size to 100
+            batchSizeItems = 100;
+        }
 
         // Set total folder count and start recursive processing
         totalItems = parseInt($('#csv-items-number').text()) || 0;
         if (totalItems > 0) {
-            processCsvItemsBatch(csvOperationId, folderId, processedItems, totalItems, batchSize, insertedItems);
+            // Initialize progress bar            
+            updateCsvProgressBar(processedItems, totalItems);
+
+            $('#import-csv-progress-text').html(
+                '<i class="fa-solid fa-key mr-2 fa-beat-fade"></i><?php echo addslashes($lang->get('please_wait')); ?></span>'
+            );
+
+            // Start processing items in batches
+            processCsvItemsBatch(csvOperationId, folderId, processedItems, totalItems, batchSizeItems, insertedItems);
         } else {
             toastr.info(
                 '<i class="fa-solid fa-info-circle fa-lg mr-2"></i><?php echo addslashes($lang->get('import_no_items_to_process')); ?>',
@@ -551,21 +578,26 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
     }
 
-    function processCsvItemsBatch(csvOperationId, folderId, processedItems, totalItems, batchSize, insertedItems)
+    function processCsvItemsBatch(csvOperationId, folderId, processedItems, totalItems, batchSizeItems, insertedItems)
     {
         let dataItems = {
             'csvOperationId': csvOperationId,
             'folderId': folderId,
             'offset': processedItems, // Start from where we left off
-            'limit': batchSize, // Process only batchSize folders
+            'limit': batchSizeItems, // Process only batchSize items
             'editAll': $('#import-csv-edit-all-checkbox').prop('checked') ? 1 : 0,
             'editRole': $('#import-csv-edit-role-checkbox').prop('checked') ? 1 : 0,
+            'keysGenerationWithTasksHandler': $('#import-csv-keys-strategy').val(),
             'insertedItems': insertedItems,
+            'foldersNumber': parseInt($('#csv-folders-number').text()) || 0,
         };
 
         if (debugJavascript === true) {
             console.log(`Processing items batch: ${processedItems} / ${totalItems}`, dataItems);
         }
+
+        // Time estimation
+        processTimeStarted = Date.now();
 
         $.post(
             "sources/import.queries.php",
@@ -594,8 +626,17 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     return;
                 }
 
+                // Estimate time remaining based upon the number of items processed and the time taken
+                let processTimeElapsed = Date.now() - processTimeStarted;
+                let estimatedTimeRemaining = Math.round((processTimeElapsed / (processedItems + batchSizeFolders)) * (totalItems - processedItems));
+                let estimatedTimeRemainingFormatted = new Date(estimatedTimeRemaining * 1000).toISOString().substr(11, 8);
+                $('#import-csv-progress-text').html(
+                    '<i class="fa-solid fa-folder mr-2 fa-beat-fade"></i>' + processedItems + '/' + totalItems +
+                    ' <span class="">(<i class="fa-solid fa-stopwatch ml-1 mr-1"></i>' + estimatedTimeRemainingFormatted + ')</span>'
+                );
+
                 // Update processed count
-                processedItems += batchSize;
+                processedItems += batchSizeItems;
                 updateCsvProgressBar(processedItems, totalItems);
 
                 // Update inserted items count
@@ -607,7 +648,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 // If there are more folders to process, continue recursively
                 console.log('Processed items', processedItems, totalItems)
                 if (processedItems < totalItems) {
-                    processCsvItemsBatch(csvOperationId, folderId, processedItems, totalItems, batchSize, insertedItems);
+                    processCsvItemsBatch(csvOperationId, folderId, processedItems, totalItems, batchSizeItems, insertedItems);
                 } else {
                     // All items processed successfully
                     finishingCSVImport(totalItems, insertedItems);
@@ -623,7 +664,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         toastr.success(
             '<i class="fa-solid fa-check-circle fa-lg mr-2"></i><?php echo addslashes($lang->get('csv_import_success')); ?>',
             '', {
-                timeOut: 8000,
+                timeOut: 2000,
                 closeButton: true,
                 progressBar: true
             }
@@ -634,7 +675,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         $('#csv-file-info').html('');
         $('#import-csv-attach-pickfile-csv-text').val('');
         $('.import-csv-cb').iCheck('uncheck');
-        $('#import-csv-access-right, #import-csv-target-folder').val('');
+        $('#import-csv-access-right, #import-csv-target-folder, #import-csv-keys-strategy, #import-csv-complexity').val('');
 
         $('#import-feedback').removeClass('hidden');
         $('#import-feedback-progress-text').html(
