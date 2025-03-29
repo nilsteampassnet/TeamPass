@@ -717,7 +717,71 @@ if (intval($tmp) === 0) {
     ]);
 }
 
+$tableImportationsExists = mysqli_query($db_link, "SHOW TABLES LIKE '" . $pre . "items_importations'");
+if (mysqli_num_rows($tableImportationsExists) == 0) {
+    mysqli_query(
+        $db_link,
+        "CREATE TABLE IF NOT EXISTS `" . $pre . "items_importations` (
+        `increment_id` INT(12) AUTO_INCREMENT PRIMARY KEY,
+        `operation_id` INT(12) NOT NULL,
+        `label` VARCHAR(255) NOT NULL,
+        `login` VARCHAR(255) NOT NULL,
+        `pwd` TEXT NOT NULL,
+        `url` TEXT NULL,
+        `description` TEXT NULL,
+        `folder` VARCHAR(255) NOT NULL,
+        `folder_id` INT(12) NULL DEFAULT NULL
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        `imported_at` INT(12) NULL DEFAULT NULL
+        ) CHARSET=utf8;"
+    );
+}
+
+
+// Add index on background_tasks.
+try {
+    $alter_table_query = "
+        ALTER TABLE `" . $pre . "background_tasks`
+        ADD INDEX idx_progress (is_in_progress)
+    ";
+    mysqli_begin_transaction($db_link);
+    mysqli_query($db_link, $alter_table_query);
+    mysqli_commit($db_link);
+} catch (Exception $e) {
+    // Rollback transaction if index already exists.
+    mysqli_rollback($db_link);
+}
+
+// Add index on background_tasks.
+try {
+    $alter_table_query = "
+        ALTER TABLE `" . $pre . "background_tasks`
+        ADD INDEX idx_finished (finished_at)
+    ";
+    mysqli_begin_transaction($db_link);
+    mysqli_query($db_link, $alter_table_query);
+    mysqli_commit($db_link);
+} catch (Exception $e) {
+    // Rollback transaction if index already exists.
+    mysqli_rollback($db_link);
+}
+
+// Add index on background_tasks.
+try {
+    $alter_table_query = "
+        ALTER TABLE `" . $pre . "background_subtasks`
+        ADD INDEX idx_finished (finished_at)
+    ";
+    mysqli_begin_transaction($db_link);
+    mysqli_query($db_link, $alter_table_query);
+    mysqli_commit($db_link);
+} catch (Exception $e) {
+    // Rollback transaction if index already exists.
+    mysqli_rollback($db_link);
+}
+
 //---<END 3.1.4
+
 
 //---------------------------------------------------------------------
 

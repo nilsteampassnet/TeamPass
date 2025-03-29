@@ -27,7 +27,26 @@
  * ---
  * @see       https://www.teampass.net
  */
+
+ // TO REMOVE
+ // - selected_items_to_be_imported
+
 return array(
+    'import_csv_keys_generation_strategy' => 'Keys generation strategy',
+    'import_csv_keys_generation_strategy_tip' => 'When importing items, you can choose to generate new keys for the items on the fly or using task manager.',
+    'during_import' => 'During import',
+    'with_tasks_handler' => 'With task handler',
+    'csv_import_success' => 'CSV file imported successfully',
+    'number_of_items_failed' => 'Number of items failed',
+    'import_error_item_creation' => 'Error while creating item',
+    'import_no_items_to_process' => 'No items to process',
+    'import_error_no_rights' => 'You do not have the rights create folders while importing items',
+    'password_minimal_complexity_target_for_folders' => 'Password minimal complexity target on new folders',
+    'access_right_for_roles_for_folders' => 'Access right for roles on new folders',
+    'import_folders_success' => 'Folders imported successfully',
+    'to_be_imported' => 'To be imported',
+    'please_wait_folders_in_construction' => 'Please wait, folders are being constructed',
+    'please_wait_items_in_construction' => 'Please wait, items are being constructed',
     'unable_to_clear_clipboard' => 'Unable to clear the clipboard manually',
     'clipboard_unsafe' => 'The clipboard could not be cleared automatically, this is unsafe!',
     'clipboard_clear_now' => 'Clear it now!',

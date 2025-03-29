@@ -179,5 +179,13 @@ foreach ($items as $item) {
     );
 }
 
+
+/*
+* Clear items_operations table from old entries (older than 20 minutes)
+*/
+DB::query(
+    'DELETE FROM '.prefixTable('items_operations').' WHERE created_at < DATE_SUB(NOW(), INTERVAL 20 MINUTE)'
+);
+
 // log end
 doLog('end', '', (isset($SETTINGS['enable_tasks_log']) === true ? (int) $SETTINGS['enable_tasks_log'] : 0), $logID);

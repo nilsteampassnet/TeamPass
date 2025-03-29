@@ -124,7 +124,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 // Instantiate the adapter and repository
 try {
     // Get last cron execution timestamp
-    DB::query(
+    $queryResults = DB::query(
         'SELECT valeur
         FROM ' . prefixTable('misc') . '
         WHERE type = %s AND intitule = %s and valeur >= %d',
@@ -133,7 +133,7 @@ try {
         time() - 600 // max 10 minutes
     );
 
-    if (DB::count() === 0) {
+    if (empty($queryResults)) {
         ?>
                                             <div class="callout callout-info alert-dismissible mt-3">
                                                 <h5><i class="fa-solid fa-info mr-2"></i><?php echo $lang->get('information'); ?></h5>

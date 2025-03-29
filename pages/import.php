@@ -139,10 +139,34 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                 </div>
                             </div>
 
+                            <!-- ITEMS TO IMPORT -->
+                            <div class="row mt-4 hidden csv-setup">
+                                <div class="col-12">
+                                    <div id="accordion">
+                                        <div class="card card-primary">
+                                            <div class="card-header">
+                                                <h4 class="card-title" id="csv-file-info">
+                                                </h4>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- OPTIONS -->
-                            <div class="row mt-3 hidden csv-setup">
-                                <div class="col-6">
-                                    <h5><?php echo $lang->get('options'); ?></h5>
+                            <div class="row mt-2 hidden csv-setup">
+                                <div class="col-12">
+                                    <h5><?php echo $lang->get('options'); ?></h5>                                    
+
+                                    <div class="form-group">                                        
+                                        <label for="import-csv-keys-strategy"><?php echo $lang->get('import_csv_keys_generation_strategy'); ?></label>
+                                        <span class="ml-2 text-muted"><?php echo $lang->get('import_csv_keys_generation_strategy_tip'); ?></span>
+                                        <select id="import-csv-keys-strategy" class="form-control form-item-control select2" style="width:100%;">
+                                            <option value="import"><?php echo $lang->get('during_import'); ?></option>
+                                            <option value="tasksHandler"><?php echo $lang->get('with_tasks_handler'); ?></option>
+                                        </select>
+                                    </div>
+
                                     <div class="form-group">
                                         <input type="checkbox" class="flat-blue import-csv-cb" id="import-csv-edit-all-checkbox">
                                         <label for="import-csv-edit-all-checkbox" class="ml-2"><?php echo $lang->get('import_csv_anyone_can_modify_txt'); ?></label>
@@ -152,35 +176,47 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                         <input type="checkbox" class="flat-blue import-csv-cb" id="import-csv-edit-role-checkbox">
                                         <label for="import-csv-edit-role-checkbox" class="ml-2"><?php echo $lang->get('import_csv_anyone_can_modify_in_role_txt'); ?></label>
                                     </div>
+
+                                    <div class="form-group csv-folder">
+                                        <label for="import-csv-complexity"><?php echo $lang->get('password_minimal_complexity_target_for_folders'); ?></label>
+                                        <select id="import-csv-complexity" class="form-control form-item-control select2" style="width:100%;">
+                                        <?php
+$complexitySelect = '';
+foreach (TP_PW_COMPLEXITY as $level) {
+    $complexitySelect .= '<option value="' . $level[0] . '">' . $level[1] . '</option>';
+}
+echo $complexitySelect;
+                                        ?>
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group csv-folder">
+                                        <label for="import-csv-access-right"><?php echo $lang->get('access_right_for_roles_for_folders'); ?></label>
+                                        <select id="import-csv-access-right" class="form-control form-item-control select2" style="width:100%;">
+                                            <option value=""><?php echo $lang->get('no_access'); ?></option>
+                                            <option value="R"><?php echo $lang->get('read'); ?></option>
+                                            <option value="W"><?php echo $lang->get('write'); ?></option>
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="import-csv-target-folder"><?php echo $lang->get('target_folder'); ?></label>
+                                        <select id="import-csv-target-folder" class="form-control form-item-control select2" style="width:100%;"></select>
+                                    </div>
                                 </div>
                             </div>
 
-                            <!-- TARGET FOLDER -->
-                            <div class="row mt-3 hidden csv-setup">
+                            <!-- PROGRESS BAR -->
+                            <div class="row mt-2 hidden" id="csv-setup-progress">
                                 <div class="form-group col-12">
-                                    <h5><?php echo $lang->get('target_folder'); ?></h5>
-                                    <label><?php echo $lang->get('where_shall_items_be_created'); ?></label>
-                                    <select class="form-control select2" style="width:100%;" id="import-csv-target-folder"></select>
-                                </div>
-                            </div>
-
-                            <!-- ITEMS TO IMPORT -->
-                            <div class="row mt-3 hidden csv-setup">
-                                <div class="col-12">
-                                    <div id="accordion">
-                                        <div class="card card-primary">
-                                            <div class="card-header">
-                                                <h4 class="card-title">
-                                                    <a data-toggle="collapse" data-parent="#accordion" href="#collapseOne">
-                                                        <?php echo $lang->get('selected_items_to_be_imported'); ?>:
-                                                        <span class="ml-2 text-bold" id="csv-items-number"></span>
-                                                    </a>
-                                                </h4>
-                                            </div>
-                                            <div id="collapseOne" class="panel-collapse collapse in">
-                                                <div class="card-body" id="csv-items-list"></div>
-                                            </div>
-                                        </div>
+                                    <h5>
+                                        <?php echo $lang->get('progress'); ?>
+                                    </h5>
+                                    <div class="progress">
+                                        <div class="progress-bar progress-bar-striped progress-bar-animated" id="import-csv-progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%"></div>
+                                    </div>
+                                    <div class="mt-2">
+                                        <div class="text-muted text-center" id="import-csv-progress-text"></div>
                                     </div>
                                 </div>
                             </div>
@@ -239,7 +275,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                     <div class="row alert alert-info mt-3 hidden" id="import-feedback">
                         <h5><i class="icon fas fa-info-circle mr-2"></i><?php echo $lang->get('info'); ?></h5>
                         <div class="row hidden" id="import-feedback-result"></div>
-                        <div class="row" id="import-feedback-progress">
+                        <div class="form-group col-12" id="import-feedback-progress">
                             <span id="import-feedback-progress-text"></span>
                         </div>
                     </div>
