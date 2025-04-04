@@ -1322,6 +1322,8 @@ class DatabaseInstaller
             `process_id` varchar(100) NULL DEFAULT NULL,
             `is_in_progress` tinyint(1) NOT NULL DEFAULT 0,
             `sub_task_in_progress` tinyint(1) NOT NULL DEFAULT 0,
+            `status` varchar(50) DEFAULT NULL,
+            `error_message` TEXT NULL DEFAULT NULL,
             PRIMARY KEY (`increment_id`)
             ) CHARSET=utf8;"
         );
@@ -1360,6 +1362,8 @@ class DatabaseInstaller
             `arguments` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`arguments`)),
             `is_in_progress` tinyint(1) NOT NULL DEFAULT 0,
             `item_id` INT(12) NULL,
+            `status` varchar(50) DEFAULT NULL,
+            `error_message` TEXT NULL DEFAULT NULL,
             PRIMARY KEY (`increment_id`)
             ) CHARSET=utf8;"
         );

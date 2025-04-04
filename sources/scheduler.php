@@ -2,34 +2,11 @@
 /**
  * Teampass - a collaborative passwords manager.
  * ---
- * This file is part of the TeamPass project.
- * 
- * TeamPass is free software: you can redistribute it and/or modify it
- * under the terms of the GNU General Public License as published by
- * the Free Software Foundation, version 3 of the License.
- * 
- * TeamPass is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- * 
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <https://www.gnu.org/licenses/>.
- * 
- * Certain components of this file may be under different licenses. For
- * details, see the `licenses` directory or individual file headers.
- * ---
- * @file      scheduler.php
- * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2025 Teampass.net
- * @license   GPL-3.0
- * @see       https://www.teampass.net
+ * Optimized Scheduler for Background Tasks
  */
 
 use GO\Scheduler;
-use EZimuel\PHPSecureSession;
 use TeampassClasses\ConfigManager\ConfigManager;
-
 
 // Load config
 require_once __DIR__.'/../includes/config/include.php';
@@ -40,20 +17,19 @@ require_once __DIR__.'/../vendor/autoload.php';
 require_once __DIR__.'/../sources/main.functions.php';
 
 // Create a new scheduler
-$scheduler = new scheduler();
+$scheduler = new Scheduler();
 
 // Load config
 $configManager = new ConfigManager();
 $SETTINGS = $configManager->getAllSettings();
 
-// Update row if exists
+// Update or insert last cron execution timestamp
 $updated = DB::update(
     prefixTable('misc'),
     ['valeur' => time()],
     'type = "admin" AND intitule = "last_cron_exec"'
 );
 
-// Insert row if not exists
 if ($updated === 0) {
     DB::insert(
         prefixTable('misc'), [
@@ -63,68 +39,73 @@ if ($updated === 0) {
     ]);
 }
 
-// Build the scheduler jobs
-// https://github.com/peppeocchi/php-cron-scheduler
-$scheduler->php(__DIR__.'/../scripts/background_tasks___userKeysCreation.php')->everyMinute($SETTINGS['user_keys_job_frequency'] ?? '1');
-$scheduler->php(__DIR__.'/../scripts/background_tasks___sending_emails.php')->everyMinute($SETTINGS['sending_emails_job_frequency'] ?? '2');
-$scheduler->php(__DIR__.'/../scripts/background_tasks___do_calculation.php')->everyMinute($SETTINGS['items_statistics_job_frequency'] ?? '5');
-$scheduler->php(__DIR__.'/../scripts/background_tasks___user_task.php')->everyMinute($SETTINGS['user_keys_job_frequency'] ?? '1');
-$scheduler->php(__DIR__.'/../scripts/background_tasks___items_handler.php')->everyMinute($SETTINGS['items_ops_job_frequency'] ?? '1');
+// Configuration des tâches de fond avec des fréquences dynamiques
+$backgroundTasks = [
+    /*'user_keys_creation' => [
+        'script' => __DIR__.'/../scripts/background_tasks___userKeysCreation.php',
+        'frequency' => $SETTINGS['user_keys_job_frequency'] ?? 1
+    ],*/
+    /*'sending_emails' => [
+        'script' => __DIR__.'/../scripts/background_tasks___sending_emails.php',
+        'frequency' => $SETTINGS['sending_emails_job_frequency'] ?? 2
+    ],*/
+    'items_statistics' => [
+        'script' => __DIR__.'/../scripts/background_tasks___do_calculation.php',
+        'frequency' => $SETTINGS['items_statistics_job_frequency'] ?? 5
+    ],
+    /*'user_task' => [
+        'script' => __DIR__.'/../scripts/background_tasks___user_task.php',
+        'frequency' => $SETTINGS['user_keys_job_frequency'] ?? 1
+    ],*/
+    'items_handler' => [
+        'script' => __DIR__.'/../scripts/background_tasks___handler.php',
+        'frequency' => $SETTINGS['items_ops_job_frequency'] ?? 1
+    ]
+];
 
-if (isset($SETTINGS['users_personal_folder_task']) === true && empty($SETTINGS['users_personal_folder_task']) === false) {
-    runTask(
-        explode(';', $SETTINGS['users_personal_folder_task']),
-        __DIR__.'/../scripts/task_maintenance_users_personal_folder.php',
-        $scheduler
-    );
+// Ajout dynamique des tâches de maintenance
+$maintenanceTasks = [
+    'users_personal_folder' => [
+        'script' => __DIR__.'/../scripts/task_maintenance_users_personal_folder.php',
+        'setting' => 'users_personal_folder_task'
+    ],
+    'clean_orphan_objects' => [
+        'script' => __DIR__.'/../scripts/task_maintenance_clean_orphan_objects.php',
+        'setting' => 'clean_orphan_objects_task'
+    ],
+    'purge_temporary_files' => [
+        'script' => __DIR__.'/../scripts/task_maintenance_purge_old_files.php',
+        'setting' => 'purge_temporary_files_task'
+    ],
+    'reload_cache_table' => [
+        'script' => __DIR__.'/../scripts/task_maintenance_reload_cache_table.php',
+        'setting' => 'reload_cache_table_task'
+    ]
+];
+
+// Ajouter les tâches de fond
+foreach ($backgroundTasks as $taskName => $taskConfig) {
+    $scheduler->php($taskConfig['script'])->everyMinute($taskConfig['frequency']);
 }
 
-if (isset($SETTINGS['clean_orphan_objects_task']) === true && empty($SETTINGS['clean_orphan_objects_task']) === false) {
-    runTask(
-        explode(';', $SETTINGS['clean_orphan_objects_task']),
-        __DIR__.'/../scripts/task_maintenance_clean_orphan_objects.php',
-        $scheduler
-    );
-}
-
-if (isset($SETTINGS['purge_temporary_files_task']) === true && empty($SETTINGS['purge_temporary_files_task']) === false) {
-    runTask(
-        explode(';', $SETTINGS['purge_temporary_files_task']),
-        __DIR__.'/../scripts/task_maintenance_purge_old_files.php',
-        $scheduler
-    );
-}
-
-if (isset($SETTINGS['reload_cache_table_task']) === true && empty($SETTINGS['reload_cache_table_task']) === false) {
-    runTask(
-        explode(';', $SETTINGS['reload_cache_table_task']),
-        __DIR__.'/../scripts/task_maintenance_reload_cache_table.php',
-        $scheduler
-    );
-}
-
-// Let the scheduler execute jobs which are due.
-$scheduler->run();
-
-/**
- * Permits to prepare the task definition
- *
- * @param array $parameters
- * @param string $fileName
- * @return void
- */
-function runTask($parameters, $fileName, $scheduler): void
-{
-    if (count($parameters) === 2) {
-        if ($parameters[0] === 'hourly') {
-            $time = explode(':', $parameters[1]);
-            $scheduler->php($fileName)->hourly(is_numeric($time[0]) ? $time[0] : 0);
-        } elseif ($parameters[0] !== '') {
-            $param = (string) $parameters[0];
-            $scheduler->php($fileName)->$param($parameters[1]);
+// Ajouter les tâches de maintenance configurées
+foreach ($maintenanceTasks as $taskName => $taskConfig) {
+    if (isset($SETTINGS[$taskConfig['setting']]) && !empty($SETTINGS[$taskConfig['setting']])) {
+        $maintenanceTaskParams = explode(';', $SETTINGS[$taskConfig['setting']]);
+        
+        if (count($maintenanceTaskParams) === 2) {
+            if ($maintenanceTaskParams[0] === 'hourly') {
+                $time = explode(':', $maintenanceTaskParams[1]);
+                $scheduler->php($taskConfig['script'])->hourly(is_numeric($time[0]) ? $time[0] : 0);
+            } elseif (!empty($maintenanceTaskParams[0])) {
+                $scheduler->php($taskConfig['script'])->{$maintenanceTaskParams[0]}($maintenanceTaskParams[1]);
+            }
         }
-    } else {
-        $param = (string) $parameters[0];
-        $scheduler->php($fileName)->$param('*', $parameters[2], $parameters[1]);
     }
 }
+
+// Ajouter une tâche de supervision et de nettoyage
+$scheduler->php(__DIR__.'/../scripts/bck_tasks___supervisor.php')->everyMinute(5);
+
+// Exécuter le scheduler
+$scheduler->run();

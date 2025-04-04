@@ -766,7 +766,7 @@ try {
     mysqli_rollback($db_link);
 }
 
-// Add index on background_tasks.
+// Add index on background_subtasks.
 try {
     $alter_table_query = "
         ALTER TABLE `" . $pre . "background_subtasks`
@@ -777,6 +777,62 @@ try {
     mysqli_commit($db_link);
 } catch (Exception $e) {
     // Rollback transaction if index already exists.
+    mysqli_rollback($db_link);
+}
+
+// Add status field on background_tasks.
+try {
+    $alter_table_query = "
+        ALTER TABLE `" . $pre . "background_tasks`
+        ADD `status` VARCHAR(50) NULL DEFAULT NULL
+    ";
+    mysqli_begin_transaction($db_link);
+    mysqli_query($db_link, $alter_table_query);
+    mysqli_commit($db_link);
+} catch (Exception $e) {
+    // Rollback transaction if field already exists.
+    mysqli_rollback($db_link);
+}
+
+// Add error_message field on background_tasks.
+try {
+    $alter_table_query = "
+        ALTER TABLE `" . $pre . "background_tasks`
+        ADD `error_message` TEXT NULL DEFAULT NULL
+    ";
+    mysqli_begin_transaction($db_link);
+    mysqli_query($db_link, $alter_table_query);
+    mysqli_commit($db_link);
+} catch (Exception $e) {
+    // Rollback transaction if field already exists.
+    mysqli_rollback($db_link);
+}
+
+// Add status field on background_subtasks.
+try {
+    $alter_table_query = "
+        ALTER TABLE `" . $pre . "background_subtasks`
+        ADD `status` VARCHAR(50) NULL DEFAULT NULL
+    ";
+    mysqli_begin_transaction($db_link);
+    mysqli_query($db_link, $alter_table_query);
+    mysqli_commit($db_link);
+} catch (Exception $e) {
+    // Rollback transaction if field already exists.
+    mysqli_rollback($db_link);
+}
+
+// Add error_message field on background_subtasks.
+try {
+    $alter_table_query = "
+        ALTER TABLE `" . $pre . "background_subtasks`
+        ADD `error_message` TEXT NULL DEFAULT NULL
+    ";
+    mysqli_begin_transaction($db_link);
+    mysqli_query($db_link, $alter_table_query);
+    mysqli_commit($db_link);
+} catch (Exception $e) {
+    // Rollback transaction if field already exists.
     mysqli_rollback($db_link);
 }
 

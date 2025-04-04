@@ -73,7 +73,7 @@ $logID = doLog('start', 'item_keys', (isset($SETTINGS['enable_tasks_log']) === t
 // 1- take first is_in_progress === 1
 // 2- take first is_in_progress === 0 and finished_at === null
 DB::debugmode(false);
-$process_to_perform = DB::queryfirstrow(
+$process_to_perform = DB::queryFirstRow(
     'SELECT *
     FROM ' . prefixTable('background_tasks') . '
     WHERE is_in_progress = %i AND process_type IN ("item_copy", "new_item", "update_item", "item_update_create_keys")
@@ -91,7 +91,7 @@ if (DB::count() > 0) {
     );
 } else {
     // search for next process to handle
-    $process_to_perform = DB::queryfirstrow(
+    $process_to_perform = DB::queryFirstRow(
         'SELECT *
         FROM ' . prefixTable('background_tasks') . '
         WHERE is_in_progress = %i AND (finished_at = "" OR finished_at IS NULL) AND process_type IN ("item_copy", "new_item", "update_item", "item_update_create_keys")
@@ -186,7 +186,7 @@ if (!in_array('--child', $argv)) {
 function handleTask(int $processId, array $ProcessArguments, array $SETTINGS, int $itemId = null): bool
 {
     provideLog('[PROCESS][#'. $processId.'][START]', $SETTINGS);
-    $task_to_perform = DB::queryfirstrow(
+    $task_to_perform = DB::queryFirstRow(
         'SELECT *
         FROM ' . prefixTable('background_subtasks') . '
         WHERE task_id = %i AND finished_at IS NULL
