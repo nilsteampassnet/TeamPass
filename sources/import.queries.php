@@ -580,7 +580,7 @@ switch ($inputData['type']) {
                     prefixTable('items'),
                     array(
                         'label' => substr($item['label'], 0, 500),
-                        'description' => empty($item['comment']) === true ? '' : $item['comment'],
+                        'description' => empty($item['description']) === true ? '' : $item['description'],
                         'pw' => $itemPassword,
                         'pw_iv' => '',
                         'url' => empty($item['url']) === true ? '' : substr($item['url'], 0, 500),
@@ -658,7 +658,7 @@ switch ($inputData['type']) {
                     array(
                         'id' => $newId,
                         'label' => substr($item['label'], 0, 500),
-                        'description' => empty($item['comment']) ? '' : $item['comment'],
+                        'description' => empty($item['description']) ? '' : $item['description'],
                         'id_tree' => is_null($item['folder_id']) === true ? $targetFolderId : (int) $item['folder_id'],
                         'url' => '0',
                         'perso' => $personalFolder === 0 ? 0 : 1,
