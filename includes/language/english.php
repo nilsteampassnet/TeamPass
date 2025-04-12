@@ -32,6 +32,11 @@
  // - selected_items_to_be_imported
 
 return array(
+    'max_parallel_tasks' => 'Maximum number of parallel tasks',
+    'max_parallel_tasks_tip' => 'This option sets the maximum number of Process tasks that can run simultaneously. It is important to adjust this number based on the vCPUs capacity to avoid system overload. Start with a conservative number, and adjust according to observed performance.',
+    'item_copied' => 'Item copied',
+    'item_updated' => 'Item updated',
+    'done_tasks_history_delay_in_days' => 'Delay for which the tasks history is kept (in days)',
     'import_csv_keys_generation_strategy' => 'Keys generation strategy',
     'import_csv_keys_generation_strategy_tip' => 'When importing items, you can choose to generate new keys for the items on the fly or using task manager.',
     'during_import' => 'During import',
@@ -271,8 +276,6 @@ return array(
     'execution_time' => 'Execution time',
     'maximum_number_of_items_to_treat' => 'Maximum number of items to treat during one cycle',
     'maximum_number_of_items_to_treat_tip' => 'In order to ensure the completion of the script without timeout, it is possible to define a personnal value.',
-    'number_users_build_cache_tree' => 'Number of users processed for build_cache_tree task.',
-    'number_users_build_cache_tree_tip' => 'Number of users processed for build_cache_tree task at each run of the scheduler.',
     'maximum_time_script_allowed_to_run' => 'Duration in seconds allowed for the script to run in background',
     'maximum_time_script_allowed_to_run_tip' => 'By default, the PHP script cannot run more than the duration defined by max_execution_time parameter in php.ini file. The goal here is to define a more higher value to ensure that the script is performing completely.',
     'refresh_data_every_on_screen' => 'Screen refreshing period (in seconds)',
@@ -559,7 +562,6 @@ return array(
     'date_range' => 'Date range',
     'purge' => 'Purge',
     'belong_of_deleted_folder' => 'Belong to deleted folder',
-    'highlight_selected' => 'Highlight selected',
     'number_of_selected_objects' => 'Number of selected objects',
     'confirm_selection_restore' => 'Please confirm the restoration of selected items.',
     'confirm_selection_delete' => 'Please confirm the deletion of selected items.',

@@ -27,6 +27,7 @@
  */
 
 use TeampassClasses\Language\Language;
+use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\ConfigManager\ConfigManager;
 
 // Load functions
@@ -34,6 +35,7 @@ require_once __DIR__.'/../sources/main.functions.php';
 
 // init
 loadClasses('DB');
+$session = SessionManager::getSession();
 $lang = new Language($session->get('user-language') ?? 'english');
 
 // Load config

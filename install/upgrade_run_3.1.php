@@ -836,6 +836,15 @@ try {
     mysqli_rollback($db_link);
 }
 
+// Add new setting 'tasks_history_delay'
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'tasks_history_delay'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'tasks_history_delay', '604800')"
+    );
+}
+
 //---<END 3.1.4
 
 

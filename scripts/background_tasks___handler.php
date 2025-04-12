@@ -38,20 +38,24 @@ class BackgroundTasksHandler {
     private $maxParallelTasks;
     private $maxExecutionTime;
     private $batchSize;
+    private $maxTimeBeforeRemoval;
 
     public function __construct(array $settings) {
         $this->settings = $settings;
-        $this->settings['enable_tasks_log'] = true;
-        $this->logger = new TaskLogger($settings);//, '/tmp/teampass_background_tasks.log'
+        $this->logger = new TaskLogger($settings, LOG_TASKS_FILE);
         $this->maxParallelTasks = $settings['max_parallel_tasks'] ?? 2;
         $this->maxExecutionTime = $settings['task_maximum_run_time'] ?? 300;
         $this->batchSize = $settings['task_batch_size'] ?? 50;
+        $this->maxTimeBeforeRemoval = isset($settings['history_duration']) ? ($settings['history_duration'] * 24 * 3600) : (15 * 24 * 3600);
     }
 
+    /**
+     * Main function to process background tasks
+     */
     public function processBackgroundTasks() {
         // Prevent multiple concurrent executions
         if (!$this->acquireProcessLock()) {
-            $this->logger->log('Process already running', 'INFO');
+            if (LOG_TASKS=== true) $this->logger->log('Process already running', 'INFO');
             return false;
         }
 
@@ -60,14 +64,19 @@ class BackgroundTasksHandler {
             $this->processTaskBatches();
             $this->performMaintenanceTasks();
         } catch (Exception $e) {
-            $this->logger->log('Task processing error: ' . $e->getMessage(), 'ERROR');
+            if (LOG_TASKS=== true) $this->logger->log('Task processing error: ' . $e->getMessage(), 'ERROR');
         } finally {
             $this->releaseProcessLock();
         }
     }
 
+    /**
+     * Acquire a lock to prevent multiple instances of this script from running simultaneously.
+     * @return bool
+     */
     private function acquireProcessLock(): bool {
-        $lockFile = sys_get_temp_dir() . '/teampass_background_tasks.lock';
+        $lockFile = empty(TASKS_LOCK_FILE) ? __DIR__.'/../files/teampass_background_tasks.lock' : TASKS_LOCK_FILE;
+        
         $fp = fopen($lockFile, 'w');
         
         if (!flock($fp, LOCK_EX | LOCK_NB)) {
@@ -78,11 +87,17 @@ class BackgroundTasksHandler {
         return true;
     }
 
+    /**
+     * Release the lock file.
+     */
     private function releaseProcessLock() {
-        $lockFile = sys_get_temp_dir() . '/teampass_background_tasks.lock';
+        $lockFile = empty(TASKS_LOCK_FILE) ? __DIR__.'/../files/teampass_background_tasks.lock' : TASKS_LOCK_FILE;
         unlink($lockFile);
     }
 
+    /**
+     * Cleanup stale tasks that have been running for too long or are marked as failed.
+     */
     private function cleanupStaleTasks() {
         // Mark tasks as failed if they've been running too long
         DB::query(
@@ -96,21 +111,27 @@ class BackgroundTasksHandler {
             time() - $this->maxExecutionTime
         );
 
-        /*
         // Remove very old failed tasks
         DB::query(
-            'DELETE FROM ' . prefixTable('background_tasks') . '
-            WHERE finished_at < %i 
-            AND is_in_progress = -1',
-            time() - (24 * 3600)  // 24 hours
+            'DELETE t, st FROM ' . prefixTable('background_tasks') . ' t
+            INNER JOIN ' . prefixTable('background_subtasks') . ' st ON (t.increment_id = st.task_id)
+            WHERE t.finished_at > %i 
+            AND t.status = %s',
+            time() - $this->maxTimeBeforeRemoval,
+            "failed"
         );
-        */
     }
 
+    /**
+     * Process batches of tasks.
+     * This method fetches tasks from the database and processes them in parallel.
+     */
     private function processTaskBatches() {
         $runningTasks = $this->countRunningTasks();
         
+        // Check if the maximum number of parallel tasks is reached
         if ($runningTasks >= $this->maxParallelTasks) {
+            if (LOG_TASKS=== true) $this->logger->log('Wait ... '.$runningTasks.' out of '.$this->maxParallelTasks.' are already running ', 'INFO');
             return;
         }
 
@@ -128,23 +149,30 @@ class BackgroundTasksHandler {
         );
 
         foreach ($tasks as $task) {
+            if (LOG_TASKS=== true) $this->logger->log('Launching '.$task['increment_id'], 'INFO');
             $this->processIndividualTask($task);
         }
     }
 
+    /**
+     * Process an individual task.
+     * This method updates the task status in the database and starts a new process for the task.
+     * @param array $task The task to process.
+     */
     private function processIndividualTask(array $task) {
-        // Mark task as in progress
+        if (LOG_TASKS=== true)  $this->logger->log('Processing task: ' . print_r($task, true), 'INFO');
+
+        // Store progress in the database        
         DB::update(
             prefixTable('background_tasks'),
             [
                 'is_in_progress' => 1,
                 'started_at' => time(),
+                'status' => 'in_progress'
             ],
             'increment_id = %i',
             $task['increment_id']
         );
-
-        $this->logger->log('Processing task: ' . print_r($task, true), 'DEBUG');
 
         // Prepare process
         $process = new Process([
@@ -155,9 +183,14 @@ class BackgroundTasksHandler {
             $task['arguments']
         ]);
 
+        // Launch process
         $process->run();
     }
 
+    /**
+     * Count the number of currently running tasks.
+     * @return int The number of running tasks.
+     */
     private function countRunningTasks(): int {
         return DB::queryFirstField(
             'SELECT COUNT(*) 
@@ -166,12 +199,20 @@ class BackgroundTasksHandler {
         );
     }
 
+    /**
+     * Perform maintenance tasks.
+     * This method cleans up old items, expired tokens, and finished tasks.
+     */
     private function performMaintenanceTasks() {
-        // Existing maintenance tasks from your original code
         $this->cleanMultipleItemsEdition();
         $this->handleItemTokensExpiration();
+        $this->cleanOldFinishedTasks();
     }
 
+    /**
+     * Clean up multiple items edition.
+     * This method removes duplicate entries in the items_edition table.
+     */
     private function cleanMultipleItemsEdition() {
         DB::query(
             'DELETE i1 FROM ' . prefixTable('items_edition') . ' i1
@@ -184,12 +225,57 @@ class BackgroundTasksHandler {
         );
     }
 
+    /**
+     * Handle item tokens expiration.
+     * This method removes expired tokens from the items_edition table.
+     */
     private function handleItemTokensExpiration() {
         DB::query(
             'DELETE FROM ' . prefixTable('items_edition') . '
             WHERE timestamp < %i',
             time() - ($this->settings['delay_item_edition'] * 60 ?: EDITION_LOCK_PERIOD)
         );
+    }
+
+    /**
+     * Clean up old finished tasks.
+     * This method removes tasks that have been completed for too long.
+     */
+    private function cleanOldFinishedTasks() {
+        // Timestamp cutoff for removal
+        $cutoffTimestamp = time() - $this->maxTimeBeforeRemoval;
+    
+        // 1. Get all finished tasks older than the cutoff timestamp
+        //    and that are not in progress
+        $tasks = DB::query(
+            'SELECT increment_id FROM ' . prefixTable('background_tasks') . '
+            WHERE status = %s AND is_in_progress = %i AND finished_at < %s',
+            'completed',
+            -1,
+            $cutoffTimestamp
+        );
+        
+        if (empty($tasks)) {
+            return;
+        }
+    
+        $taskIds = array_column($tasks, 'increment_id');
+    
+        // 2. Delete all subtasks related to these tasks
+        DB::query(
+            'DELETE FROM ' . prefixTable('background_subtasks') . '
+            WHERE task_id IN %ls',
+            $taskIds
+        );
+    
+        // 3. Delete the tasks themselves
+        DB::query(
+            'DELETE FROM ' . prefixTable('background_tasks') . '
+            WHERE increment_id IN %ls',
+            $taskIds
+        );
+    
+        if (LOG_TASKS=== true) $this->logger->log('Old finished tasks cleaned: ' . count($taskIds), 'INFO');
     }
 }
 

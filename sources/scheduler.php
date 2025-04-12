@@ -41,22 +41,10 @@ if ($updated === 0) {
 
 // Configuration des tâches de fond avec des fréquences dynamiques
 $backgroundTasks = [
-    /*'user_keys_creation' => [
-        'script' => __DIR__.'/../scripts/background_tasks___userKeysCreation.php',
-        'frequency' => $SETTINGS['user_keys_job_frequency'] ?? 1
-    ],*/
-    /*'sending_emails' => [
-        'script' => __DIR__.'/../scripts/background_tasks___sending_emails.php',
-        'frequency' => $SETTINGS['sending_emails_job_frequency'] ?? 2
-    ],*/
     'items_statistics' => [
         'script' => __DIR__.'/../scripts/background_tasks___do_calculation.php',
         'frequency' => $SETTINGS['items_statistics_job_frequency'] ?? 5
     ],
-    /*'user_task' => [
-        'script' => __DIR__.'/../scripts/background_tasks___user_task.php',
-        'frequency' => $SETTINGS['user_keys_job_frequency'] ?? 1
-    ],*/
     'items_handler' => [
         'script' => __DIR__.'/../scripts/background_tasks___handler.php',
         'frequency' => $SETTINGS['items_ops_job_frequency'] ?? 1
@@ -103,9 +91,6 @@ foreach ($maintenanceTasks as $taskName => $taskConfig) {
         }
     }
 }
-
-// Ajouter une tâche de supervision et de nettoyage
-$scheduler->php(__DIR__.'/../scripts/bck_tasks___supervisor.php')->everyMinute(5);
 
 // Exécuter le scheduler
 $scheduler->run();

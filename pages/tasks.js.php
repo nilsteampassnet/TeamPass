@@ -190,7 +190,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             'sPaginationType': 'listbox',
             'searching': true,
             'order': [
-                [2, 'asc']
+                [1, 'desc']
             ],
             'info': true,
             'processing': false,
@@ -219,10 +219,15 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 );
             },
             'columnDefs': [{
-                'width': '80px',
+                'width': '40px',
                 'targets': 0,
                 'render': function(data, type, row, meta) {
-                    return '<i class="fas fa-square text-success"></i>';
+                    // Check if the first column is empty
+                    if (row[0] === '') {
+                        return '<i class="fas fa-square text-success"></i>';
+                    } else {
+                        return '<i class="fas fa-square text-danger" title="'+row[0]+'"></i>';
+                    }
                 }
             }],
         });

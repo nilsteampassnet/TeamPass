@@ -986,23 +986,29 @@ if (isset($params['action']) && $params['action'] === 'connections') {
             ('"'.date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['started_at']).'", ') :
                 ('"'.date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['created_at']).'", ');
         //col4
-        $sOutput .= '"'.date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['finished_at']).'", ';
+        $sOutput .= '"'.date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['finished_at']).'", '; 
         // col7
         $sOutput .= '"'.gmdate('H:i:s', (int) $record['finished_at'] - (is_null($record['started_at']) === false ? (int) $record['started_at'] : (int) $record['created_at'])).'",';
         //col5
         if ($record['process_type'] === 'create_user_keys') {
-            $processIcon = '<i class=\"fa-solid fa-user-gear infotip\" title=\"'.$lang->get('user_creation').'\"></i>';
+            $processIcon = '<i class=\"fa-solid fa-user-plus infotip\" title=\"'.$lang->get('user_creation').'\"></i>';
         } else if ($record['process_type'] === 'send_email') {
             $processIcon = '<i class=\"fa-solid fa-envelope-circle-check infotip\" title=\"'.$lang->get('send_email_to_user').'\"></i>';
         } else if ($record['process_type'] === 'user_build_cache_tree') {
             $processIcon = '<i class=\"fa-solid fa-folder-tree infotip\" title=\"'.$lang->get('reload_user_cache_table').'\"></i>';
+        } else if ($record['process_type'] === 'item_copy') {
+            $processIcon = '<i class=\"fa-solid fa-copy infotip\" title=\"'.$lang->get('item_copied').'\"></i>';
+        } else if ($record['process_type'] === 'item_update_create_keys') {
+            $processIcon = '<i class=\"fa-solid fa-pencil infotip\" title=\"'.$lang->get('item_updated').'\"></i>';
         } else {
             $processIcon = '<i class=\"fa-solid fa-question\"></i> ('.$record['process_type'].')';
         }
         $sOutput .= '"'.$processIcon.'", ';
         // col6
         $arguments = json_decode($record['arguments'], true);
-        $newUserId = array_key_exists('new_user_id', $arguments) ? $arguments['new_user_id'] : null;
+        $newUserId = array_key_exists('new_user_id', $arguments) ? 
+            $arguments['new_user_id'] : 
+            (array_key_exists('user_id', $arguments) ? $arguments['user_id'] : null);
         if ($record['process_type'] === 'create_user_keys' && is_null($newUserId) === false && empty($newUserId) === false) {
             $data_user = DB::queryfirstrow(
                 'SELECT name, lastname, login FROM ' . prefixTable('users') . '

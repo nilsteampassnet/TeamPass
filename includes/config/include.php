@@ -28,7 +28,7 @@
 
 define('TP_VERSION', '3.1.4');
 define("UPGRADE_MIN_DATE", "1743255664");
-define('TP_VERSION_MINOR', '10');
+define('TP_VERSION_MINOR', '11');
 define('TP_TOOL_NAME', 'Teampass');
 define('TP_ONE_DAY_SECONDS', 86400);
 define('TP_ONE_WEEK_SECONDS', 604800);
@@ -48,6 +48,12 @@ define('EDITION_LOCK_PERIOD', 86400);   // Defines the delay for which an item e
 define('LOG_TO_SERVER', false);         // Defines if logs are sent to the server
 define('OAUTH2_REDIRECTURI', 'index.php?post_type=oauth2');
 
+// Tasks Handler
+define('LOG_TASKS', true); // Can be used in order to log background tasks
+define('LOG_TASKS_FILE', '../files/teampass_tasks.log'); // By default, its is stored inside server error log. 🫸 Ensure you have the right to write in the log file
+define('TASKS_LOCK_FILE', ''); // By default, it is stored in folder 'files'. 🫸 Ensure you have the right to write in the lock file
+
+// Internal constants
 define('ERR_NOT_ALLOWED', '1000');
 define('ERR_NOT_EXIST', '1001');
 define('ERR_SESS_EXPIRED', '1002');
@@ -86,6 +92,7 @@ define('FONTAWESOME_URL', 'https://fontawesome.com/search?m=free&o=r');
 define('DUO_ADMIN_URL_INFO', 'https://duo.com/docs/duoweb#overview');
 define('DUO_CALLBACK', 'index.php?post_type=duo');
 
+// Debugging
 define('DEBUG', false); // Can be used in order to debug the application
 define('MYSQL_LOG', false); // Can be used in order to enable global MySQL log. 🫸 Ensure the mysql user has SUPER privilege set
 define('MYSQL_LOG_FILE', '/var/log/teampass_mysql_query.log'); // 🫸 Ensure you have the right to write in the log file

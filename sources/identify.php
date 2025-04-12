@@ -702,9 +702,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                     'arguments' => json_encode([
                         'user_id' => (int) $session->get('user-id'),
                     ], JSON_HEX_QUOT | JSON_HEX_TAG),
-                    'updated_at' => '',
-                    'finished_at' => '',
-                    'output' => '',
                 )
             );
         } else {

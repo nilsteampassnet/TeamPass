@@ -27,20 +27,17 @@
  */
 
 use TeampassClasses\ConfigManager\ConfigManager;
-file_put_contents('/tmp/worker_called.txt', date('Y-m-d H:i:s') . "\n", FILE_APPEND);
 require_once __DIR__.'/../sources/main.functions.php';
 require_once __DIR__.'/background_tasks___functions.php';
-require_once __DIR__.'/traits/ItemManagementTrait.php';
-require_once __DIR__.'/traits/UserManagementTrait.php';
+require_once __DIR__.'/traits/ItemHandlerTrait.php';
+require_once __DIR__.'/traits/UserHandlerTrait.php';
 require_once __DIR__.'/traits/EmailTrait.php';
-require_once __DIR__.'/traits/SubTasksTrait.php';
 require_once __DIR__ . '/TaskLogger.php';
 
 class TaskWorker {
-    use ItemManagementTrait;
-    use UserManagementTrait;
+    use ItemHandlerTrait;
+    use UserHandlerTrait;
     use EmailTrait;
-    use SubTasksTrait;
 
     private $taskId;
     private $processType;
@@ -53,136 +50,226 @@ class TaskWorker {
         $this->processType = $processType;
         $this->taskData = $taskData;
         $this->settings['enable_tasks_log'] = true;
-        $this->logger = new TaskLogger($this->settings);//, '/tmp/teampass_background_tasks.log'
+        $this->logger = new TaskLogger($this->settings, LOG_TASKS_FILE);
         
         $configManager = new ConfigManager();
         $this->settings = $configManager->getAllSettings();
     }
 
+    /**
+     * Execute the task based on its type.
+     * This method will handle different types of tasks such as item copy, new item creation,
+     * user cache tree building, email sending, and user key generation.
+     * 
+     * @return void
+     */
     public function execute() {
         try {
-            $this->logger->log('Processing task: ' . print_r($this->taskData, true), 'DEBUG');
+            if (LOG_TASKS=== true) $this->logger->log('Processing task: ' . print_r($this->taskData, true), 'DEBUG');
             // Dispatch selon le type de processus
             switch ($this->processType) {
                 case 'item_copy':
-                    $this->handleItemCopy($this->taskData);
+                    $this->processSubTasks($this->taskData);
                     break;
                 case 'new_item':
-                    $this->handleNewItem($this->taskData);
-                    break;
-                case 'update_item':
-                    $this->handleUpdateItem($this->taskData);
+                    $this->processSubTasks($this->taskData);
                     break;
                 case 'item_update_create_keys':
-                    $this->handleItemUpdateCreateKeys($this->taskData);
+                    $this->processSubTasks($this->taskData);
                     break;
                 case 'user_build_cache_tree':
-                    // Logique pour construire l'arbre de cache utilisateur
                     $this->handleUserBuildCacheTree($this->taskData);
                     break;
                 case 'send_email':
-                    // Logic for sending email
                     $this->sendEmail($this->taskData);
                     break;
-                case 'user_keys_creation':
-                    // Logic for user keys creation
-                    $this->generateUserKeys($this->taskData);
-                    break;
                 case 'create_user_keys':
-                    // Logic for new user keys creation
                     $this->generateUserKeys($this->taskData);
                     break;
                 default:
-                    throw new Exception("Type de processus inconnu : {$this->processType}");
+                    throw new Exception("Type of subtask unknown: {$this->processType}");
             }
 
-            // Marquer la tâche comme terminée
+            // Mark the task as completed
             $this->completeTask();
 
         } catch (Exception $e) {
             $this->handleTaskFailure($e);
         }
     }
-
-    private function generateUserPasswordKeys($taskData, $arguments) {  
-        // Logique pour générer les clés utilisateur        
-        storeUsersShareKey(
-            prefixTable('sharekeys_items'),
-            0,
-            (int) $arguments['item_id'],
-            (string) (array_key_exists('pwd', $arguments) === true ? $arguments['pwd'] : (array_key_exists('object_key', $arguments) === true ? $arguments['object_key'] : '')),
-            false,
-            false,
-            [],
-            array_key_exists('all_users_except_id', $arguments) === true ? $arguments['all_users_except_id'] : -1
-        );
-    }
-
-    private function generateUserFileKeys($taskData, $arguments) {    
-        foreach($arguments['files_keys'] as $file) {
-            storeUsersShareKey(
-                prefixTable('sharekeys_files'),
-                0,
-                (int) $file['object_id'],
-                (string) $file['object_key'],
-                false,
-                false,
-                [],
-                array_key_exists('all_users_except_id', $arguments) === true ? $arguments['all_users_except_id'] : -1,
-            );
-        }
-    }
-
-    private function generateUserFieldKeys($taskData, $arguments) {
-        foreach($arguments['fields_keys'] as $field) {
-            storeUsersShareKey(
-                prefixTable('sharekeys_fields'),
-                0,
-                (int) $field['object_id'],
-                (string) $field['object_key'],
-                false,
-                false,
-                [],
-                array_key_exists('all_users_except_id', $arguments) === true ? $arguments['all_users_except_id'] : -1,
-            );
-        }
-    }
     
-
+    /**
+     * Mark the task as completed in the database.
+     * This method updates the task status to 'completed' and sets the finished_at timestamp.
+     * 
+     * @return void
+     */
     private function completeTask() {
+        // Prepare data for updating the task status
+        $updateData = [
+            'is_in_progress' => -1,
+            'finished_at' => time(),
+            'status' => 'completed'
+        ];
+
+        // Prepare anonimzation of arguments
+        if ($this->processType === 'send_mail') {
+            $arguments = json_encode(
+                [
+                    'email' => $this->taskData['receivers'],
+                    'login' => $this->taskData['receiver_name'],
+                ]
+            );
+        } elseif ($this->processType === 'create_user_keys') {
+            $arguments = json_encode(
+                [
+                    'user_id' => $this->taskData['new_user_id'],
+                ]
+            );
+        } elseif ($this->processType === 'item_update_create_keys') {
+            $arguments = json_encode(
+                [
+                    'item_id' => $this->taskData['new_user_id'],
+                    'author' => $this->taskData['author'],
+                ]
+            );
+        } else {
+            $arguments = '';
+        }
+
+        if (LOG_TASKS=== true) $this->logger->log('Process: '.$this->processType.' -- '.print_r($arguments, true), 'DEBUG');
+
+        // Add 'arguments' only if not empty
+        if (!empty($arguments)) {
+            $updateData['arguments'] = $arguments;
+        }
+
+        // Store completed status in the database
         DB::update(
             prefixTable('background_tasks'),
-            [
-                'is_in_progress' => -1,
-                'finished_at' => time(),
-                'updated_at' => time(),
-                'status' => 'completed'
-            ],
+            $updateData,
             'increment_id = %i',
             $this->taskId
         );
+        if (LOG_TASKS=== true) $this->logger->log('Finishing task: ' . $this->taskId, 'DEBUG');
     }
 
+    /**
+     * Handle task failure by updating the task status in the database.
+     * This method sets the task status to 'failed', updates the finished_at timestamp,
+     * and logs the error message.
+     * 
+     * @param Exception $e The exception that occurred during task processing.
+     * @return void
+     */
     private function handleTaskFailure(Exception $e) {
         DB::update(
             prefixTable('background_tasks'),
             [
                 'is_in_progress' => -1,
                 'finished_at' => time(),
-                'updated_at' => time(),
                 'status' => 'failed',
                 'error_message' => $e->getMessage()
             ],
             'increment_id = %i',
             $this->taskId
         );
+        $this->logger->log('Task failure: ' . $e->getMessage(), 'ERROR');
+    }
 
-        error_log("Échec de la tâche {$this->taskId} : " . $e->getMessage());
+    /**
+     * Handle subtasks for the current task.
+     * This method retrieves all subtasks related to the current task and processes them.
+     * If all subtasks are completed, it marks the main task as completed.
+     * 
+     * @param array $arguments Arguments for the subtasks.
+     * @return void
+     */
+    private function processSubTasks($arguments) {
+        // Get all subtasks related to this task
+        $subtasks = DB::query(
+            'SELECT * FROM ' . prefixTable('background_subtasks') . ' WHERE task_id = %i AND is_in_progress = 0 ORDER BY `task` ASC',
+            $this->taskId
+        );
+    
+        // Check if there are any subtasks to process
+        if (empty($subtasks)) {
+            if (LOG_TASKS=== true) $this->logger->log('No subtask was found for task: ' . $this->taskId, 'DEBUG');
+            return;
+        }
+    
+        // Process each subtask
+        foreach ($subtasks as $subtask) {
+            try {
+                // Get the subtask data
+                $subtaskData = json_decode($subtask['task'], true);
+
+                if (LOG_TASKS=== true) $this->logger->log('Processing subtask: ' . $subtaskData['step'], 'DEBUG');
+
+                // Process the subtask based on its type
+                switch ($subtaskData['step'] ?? '') {
+                    case 'create_users_pwd_key':
+                        $this->generateUserPasswordKeys($arguments);
+                        break;
+                    case 'create_users_fields_key':
+                        $this->generateUserFieldKeys($subtaskData);
+                        break;
+                    case 'create_users_files_key':
+                        $this->generateUserFileKeys($subtaskData);
+                        break;
+                    default:
+                        throw new Exception("Type de sous-tâche inconnu (".$subtaskData['step'].")");
+                }                
+        
+                // Mark subtask as completed
+                DB::update(
+                    prefixTable('background_subtasks'),
+                    [
+                        'is_in_progress' => -1,
+                        'finished_at' => time(),
+                        'status' => 'completed',
+                    ],
+                    'increment_id = %i',
+                    $subtask['increment_id']
+                );
+        
+            } catch (Exception $e) {
+                // Mark subtask as failed
+                DB::update(
+                    prefixTable('background_subtasks'),
+                    [
+                        'is_in_progress' => -1,
+                        'finished_at' => time(),
+                        'updated_at' => time(),
+                        'status' => 'failed',
+                        'error_message' => $e->getMessage(),
+                    ],
+                    'increment_id = %i',
+                    $subtask['increment_id']
+                );
+        
+                $this->logger->log('processSubTasks : ' . $e->getMessage(), 'ERROR');
+            }
+        }
+    
+        // Are all subtasks completed?
+        $remainingSubtasks = DB::queryFirstField(
+            'SELECT COUNT(*) FROM ' . prefixTable('background_subtasks') . ' WHERE task_id = %i AND is_in_progress = 0',
+            $this->taskId
+        );
+    
+        if ($remainingSubtasks == 0) {
+            $this->completeTask();
+        }
     }
 }
 
-$logger = new TaskLogger(['enable_tasks_log'=> 1, 'time_format'=>'H:i:s', 'date_format'=>'d/m/Y']);//, '/tmp/teampass_background_tasks.log'
-
+// Prepare the environment
+// Get the task ID and process type from command line arguments
+if ($argc < 3) {
+    error_log("Usage: php background_tasks___worker.php <task_id> <process_type> [<task_data>]");
+    exit(1);
+}
 $taskId = (int)$argv[1];
 $processType = $argv[2];
 $taskData = $argv[3] ?? null;
@@ -192,5 +279,6 @@ if ($taskData) {
     $taskData = [];
 }
 
+// Initialize the worker
 $worker = new TaskWorker($taskId, $processType, $taskData);
 $worker->execute();

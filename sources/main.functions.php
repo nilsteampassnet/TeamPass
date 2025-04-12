@@ -536,9 +536,9 @@ function identUser(
         ), SORT_NUMERIC)
     );
     // Folders and Roles numbers
-    DB::queryfirstrow('SELECT id FROM ' . prefixTable('nested_tree') . '');
+    DB::queryFirstRow('SELECT id FROM ' . prefixTable('nested_tree') . '');
     $session->set('user-nb_folders', DB::count());
-    DB::queryfirstrow('SELECT id FROM ' . prefixTable('roles_title'));
+    DB::queryFirstRow('SELECT id FROM ' . prefixTable('roles_title'));
     $session->set('user-nb_roles', DB::count());
     // check if change proposals on User's items
     if (isset($SETTINGS['enable_suggestion']) === true && (int) $SETTINGS['enable_suggestion'] === 1) {
@@ -637,7 +637,7 @@ function identUserGetPFList(
         (int) $enablePfFeature === 1
         && (int) $globalsPersonalFolders === 1
     ) {
-        $persoFld = DB::queryfirstrow(
+        $persoFld = DB::queryFirstRow(
             'SELECT id
             FROM ' . prefixTable('nested_tree') . '
             WHERE title = %s AND personal_folder = %i'.
@@ -766,7 +766,7 @@ function cacheTableRefresh(): void
             }
 
             // Get renewal period
-            $resNT = DB::queryfirstrow(
+            $resNT = DB::queryFirstRow(
                 'SELECT renewal_period
                 FROM ' . prefixTable('nested_tree') . '
                 WHERE id = %i',
@@ -779,7 +779,7 @@ function cacheTableRefresh(): void
                 // Check if title is the ID of a user
                 if (is_numeric($elem->title) === true) {
                     // Is this a User id?
-                    $user = DB::queryfirstrow(
+                    $user = DB::queryFirstRow(
                         'SELECT id, login
                         FROM ' . prefixTable('users') . '
                         WHERE id = %i',
@@ -830,7 +830,7 @@ function cacheTableUpdate(?int $ident = null): void
     //Load Tree
     $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
     // get new value from db
-    $data = DB::queryfirstrow(
+    $data = DB::queryFirstRow(
         'SELECT label, description, id_tree, perso, restricted_to, login, url
         FROM ' . prefixTable('items') . '
         WHERE id=%i',
@@ -854,7 +854,7 @@ function cacheTableUpdate(?int $ident = null): void
         // Check if title is the ID of a user
         if (is_numeric($elem->title) === true) {
             // Is this a User id?
-            $user = DB::queryfirstrow(
+            $user = DB::queryFirstRow(
                 'SELECT id, login
                 FROM ' . prefixTable('users') . '
                 WHERE id = %i',
@@ -932,7 +932,7 @@ function cacheTableAdd(?int $ident = null): void
         // Check if title is the ID of a user
         if (is_numeric($elem->title) === true) {
             // Is this a User id?
-            $user = DB::queryfirstrow(
+            $user = DB::queryFirstRow(
                 'SELECT id, login
                 FROM ' . prefixTable('users') . '
                 WHERE id = %i',
@@ -952,7 +952,7 @@ function cacheTableAdd(?int $ident = null): void
             'id' => $data['id'],
             'label' => $data['label'],
             'description' => $data['description'],
-            'tags' => isset($tags) && empty($tags) === false ? $tags : 'None',
+            'tags' => empty($tags) === false ? $tags : 'None',
             'url' => isset($data['url']) && ! empty($data['url']) ? $data['url'] : '0',
             'id_tree' => $data['id_tree'],
             'perso' => isset($data['perso']) && empty($data['perso']) === false && $data['perso'] !== 'None' ? $data['perso'] : '0',
@@ -1571,7 +1571,7 @@ function logItems(
         $attribute = is_null($raison) === true ? Array('') : explode(' : ', $raison);
         // Get item info if not known
         if (empty($item_label) === true) {
-            $dataItem = DB::queryfirstrow(
+            $dataItem = DB::queryFirstRow(
                 'SELECT id, id_tree, label
                 FROM ' . prefixTable('items') . '
                 WHERE id = %i',
@@ -1614,9 +1614,8 @@ function notifyChangesToSubscribers(int $item_id, string $label, array $changes,
     $globalsLastname = $session->get('user-lastname');
     $globalsName = $session->get('user-name');
     // send email to user that what to be notified
-    $notification = DB::queryOneColumn(
-        'email',
-        'SELECT *
+    $notification = DB::queryFirstColumn(
+        'SELECT email
         FROM ' . prefixTable('notification') . ' AS n
         INNER JOIN ' . prefixTable('users') . ' AS u ON (n.user_id = u.id)
         WHERE n.item_id = %i AND n.user_id != %i',
@@ -1826,7 +1825,7 @@ function loadSettings(): void
 function checkCFconsistency(int $source_id, int $target_id): bool
 {
     $source_cf = [];
-    $rows = DB::QUERY(
+    $rows = DB::query(
         'SELECT id_category
             FROM ' . prefixTable('categories_folders') . '
             WHERE id_folder = %i',
@@ -2301,7 +2300,7 @@ function encryptPrivateKey(string $userPwd, string $userPrivateKey): string
         try {
             return base64_encode($cipher->encrypt(base64_decode($userPrivateKey)));
         } catch (Exception $e) {
-            return $e;
+            return $e->getMessage();
         }
     }
     return '';
@@ -3198,7 +3197,7 @@ function cacheTreeUserHandler(int $user_id, string $data, array $SETTINGS, strin
     loadClasses('DB');
 
     // Exists ?
-    $userCacheId = DB::queryfirstrow(
+    $userCacheId = DB::queryFirstRow(
         'SELECT increment_id
         FROM ' . prefixTable('cache_tree') . '
         WHERE user_id = %i',
@@ -3280,7 +3279,7 @@ function loadFoldersListByCache(
     $session = SessionManager::getSession();
 
     // Get last folder update
-    $lastFolderChange = DB::queryfirstrow(
+    $lastFolderChange = DB::queryFirstRow(
         'SELECT valeur FROM ' . prefixTable('misc') . '
         WHERE type = %s AND intitule = %s',
         'timestamp',
@@ -3310,7 +3309,7 @@ function loadFoldersListByCache(
     }
     
     // Does this user has a tree cache
-    $userCacheTree = DB::queryfirstrow(
+    $userCacheTree = DB::queryFirstRow(
         'SELECT '.$fieldName.'
         FROM ' . prefixTable('cache_tree') . '
         WHERE user_id = %i',
@@ -3486,7 +3485,7 @@ function getFullUserInfos(
         return array();
     }
 
-    $val = DB::queryfirstrow(
+    $val = DB::queryFirstRow(
         'SELECT *
         FROM ' . prefixTable('users') . '
         WHERE id = %i',
@@ -3507,7 +3506,7 @@ function upgradeRequired(): bool
     include_once __DIR__. '/../includes/config/settings.php';
 
     // Get timestamp in DB
-    $val = DB::queryfirstrow(
+    $val = DB::queryFirstRow(
         'SELECT valeur
         FROM ' . prefixTable('misc') . '
         WHERE type = %s AND intitule = %s',
@@ -3720,6 +3719,7 @@ function handleUserKeys(
  */
 function createUserTasks($processId, $nbItemsToTreat): void
 {
+    // Create subtask for step 0
     DB::insert(
         prefixTable('background_subtasks'),
         array(
@@ -3733,83 +3733,53 @@ function createUserTasks($processId, $nbItemsToTreat): void
         )
     );
 
-    DB::insert(
-        prefixTable('background_subtasks'),
-        array(
-            'task_id' => $processId,
-            'created_at' => time(),
-            'task' => json_encode([
-                'step' => 'step10',
-                'index' => 0,
-                'nb' => $nbItemsToTreat,
-            ]),
-        )
-    );
+    // Prepare the subtask queries
+    $queries = [
+        'step20' => 'SELECT * FROM ' . prefixTable('items'),
 
-    DB::insert(
-        prefixTable('background_subtasks'),
-        array(
-            'task_id' => $processId,
-            'created_at' => time(),
-            'task' => json_encode([
-                'step' => 'step20',
-                'index' => 0,
-                'nb' => $nbItemsToTreat,
-            ]),
-        )
-    );
+        'step30' => 'SELECT * FROM ' . prefixTable('log_items') . 
+                    ' WHERE raison LIKE "at_pw :%" AND encryption_type = "teampass_aes"',
 
-    DB::insert(
-        prefixTable('background_subtasks'),
-        array(
-            'task_id' => $processId,
-            'created_at' => time(),
-            'task' => json_encode([
-                'step' => 'step30',
-                'index' => 0,
-                'nb' => $nbItemsToTreat,
-            ]),
-        )
-    );
+        'step40' => 'SELECT * FROM ' . prefixTable('categories_items') . 
+                    ' WHERE encryption_type = "teampass_aes"',
 
-    DB::insert(
-        prefixTable('background_subtasks'),
-        array(
-            'task_id' => $processId,
-            'created_at' => time(),
-            'task' => json_encode([
-                'step' => 'step40',
-                'index' => 0,
-                'nb' => $nbItemsToTreat,
-            ]),
-        )
-    );
+        'step50' => 'SELECT * FROM ' . prefixTable('suggestion'),
 
-    DB::insert(
-        prefixTable('background_subtasks'),
-        array(
-            'task_id' => $processId,
-            'created_at' => time(),
-            'task' => json_encode([
-                'step' => 'step50',
-                'index' => 0,
-                'nb' => $nbItemsToTreat,
-            ]),
-        )
-    );
+        'step60' => 'SELECT * FROM ' . prefixTable('files') . ' AS f
+                        INNER JOIN ' . prefixTable('items') . ' AS i ON i.id = f.id_item
+                        WHERE f.status = "' . TP_ENCRYPTION_NAME . '"'
+    ];
 
-    DB::insert(
-        prefixTable('background_subtasks'),
-        array(
-            'task_id' => $processId,
+    // Perform loop on $queries to create sub-tasks
+    foreach ($queries as $step => $query) {
+        DB::query($query);
+        createAllSubTasks($step, DB::count(), $nbItemsToTreat, $processId);
+    }
+}
+
+/**
+ * Create all subtasks for a given action
+ * @param string $action The action to be performed
+ * @param int $totalElements Total number of elements to process
+ * @param int $elementsPerIteration Number of elements per iteration
+ * @param int $taskId The ID of the task
+ */
+function createAllSubTasks($action, $totalElements, $elementsPerIteration, $taskId) {
+    // Calculate the number of iterations
+    $iterations = ceil($totalElements / $elementsPerIteration);
+
+    // Create the subtasks
+    for ($i = 0; $i < $iterations; $i++) {
+        DB::insert(prefixTable('background_subtasks'), [
+            'task_id' => $taskId,
             'created_at' => time(),
             'task' => json_encode([
-                'step' => 'step60',
-                'index' => 0,
-                'nb' => $nbItemsToTreat,
+                "step" => $action,
+                "index" => $i * $elementsPerIteration,
+                "nb" => $elementsPerIteration,
             ]),
-        )
-    );
+        ]);
+    }
 }
 
 /**

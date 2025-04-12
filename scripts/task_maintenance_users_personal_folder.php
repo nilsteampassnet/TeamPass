@@ -37,6 +37,7 @@ require_once __DIR__.'/../sources/main.functions.php';
 
 // init
 loadClasses('DB');
+$session = SessionManager::getSession();
 $lang = new Language($session->get('user-language') ?? 'english');
 
 // Load config
@@ -86,7 +87,7 @@ function createUserPersonalFolder(): void
     );
     foreach ($users as $user) {
         //if folder doesn't exist then create it
-        $data = DB::queryfirstrow(
+        $data = DB::queryFirstRow(
             'SELECT id
             FROM ' . prefixTable('nested_tree') . '
             WHERE title = %s AND parent_id = %i',

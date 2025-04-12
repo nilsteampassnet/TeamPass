@@ -241,9 +241,6 @@ if ($goTreeRefresh['state'] === true || empty($inputData['nodeId']) === false ||
             'arguments' => json_encode([
                 'user_id' => (int) $inputData['userId'],
             ], JSON_HEX_QUOT | JSON_HEX_TAG),
-            'updated_at' => '',
-            'finished_at' => '',
-            'output' => '',
         )
     );
 

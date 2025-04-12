@@ -1199,8 +1199,6 @@ return array(
     'oauth2_client_urlResourceOwnerDetails' => 'URL de récupération des détails utilisateurs',
     'oauth2_client_urlResourceOwnerDetails_tip' => 'Utiliser pour récupérer des informations complémentaires après authentification.',
     'duo_redirect_uri' => 'Redirection vers DUO',
-    'number_users_build_cache_tree' => 'Nombre d&apos;utilisateurs traités par build_cache_tree.',
-    'number_users_build_cache_tree_tip' => 'Nombre d&apos;utilisateurs traités par build_cache_tree à chaque lancement du scheduler.',
     'user_password_expired' => 'Ton mot de passe est expiré. Merci de le changer.',
     'user_password_policy_tip' => 'Le nouveau mot de passe doit :<br/> - Etre différent du précédent<br/> - Contenir au moins 10 caractères<br/> - Contenir au moins une lettre en majuscule et une en minuscule<br/> - Contenir au moins un chiffre ou caractère spécial<br/> - Ne pas contenir votre nom/prénom/identifiant/mail.
 ',
@@ -1237,5 +1235,10 @@ return array(
     'please_wait_items_in_construction' => 'Merci de patienter, les objets sont en cours d&apos;importation',
     'import_csv_keys_generation_strategy' => 'Stratégie de génération des clés',
     'import_csv_keys_generation_strategy_tip' => 'Lors de l&apos;importation des objets, vous pouvez choisir entre générer les clés au fur et à mesure ou de le déporter sur le gestionnaire de taches.',
+    'max_parallel_tasks' => 'Nombre maximum de tâches parallèles',
+    'max_parallel_tasks_tip' => 'Nombre maximum de taches traitées en parallèle en même temps. Il est important de ajuster ce nombre en fonction du nombre de vCPU de la machine pour éviter une saturation. Commencer par observer le comportement avec la valeur par défaut et augmenter uniquement si nécessaire tout en observant.',
+    'item_copied' => 'Objet copié',
+    'item_updated' => 'Objet mis à jour',
+    'done_tasks_history_delay_in_days' => 'Durée de conservation (en jours) de l&apos;historique des taches',
 
 );

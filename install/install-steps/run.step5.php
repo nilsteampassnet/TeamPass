@@ -589,6 +589,7 @@ class DatabaseInstaller
             array('admin', 'limited_search_default', '0'),
             array('admin', 'highlight_selected', '0'),
             array('admin', 'highlight_favorites', '0'),
+            array('admin', 'tasks_history_delay', '604800'),
         );
         foreach ($aMiscVal as $elem) {
             //Check if exists before inserting

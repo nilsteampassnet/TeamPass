@@ -71,59 +71,6 @@ doLog('end', '', 1, $logID);
  */
 function cleanOrphanObjects(): void
 {
-    /*
-    //Libraries call
-    $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
-
-    //init
-    $foldersIds = array();
-
-    // Get an array of all folders
-    $folders = $tree->getDescendants();
-    foreach ($folders as $folder) {
-        if (!in_array($folder->id, $foldersIds)) {
-            array_push($foldersIds, $folder->id);
-        }
-    }
-
-    $items = DB::query('SELECT id,label FROM ' . prefixTable('items') . ' WHERE id_tree NOT IN %li', $foldersIds);
-    foreach ($items as $item) {
-        //Delete item
-        DB::DELETE(prefixTable('items'), 'id = %i', $item['id']);
-
-        // Delete if template related to item
-        DB::delete(
-            prefixTable('templates'),
-            'item_id = %i',
-            $item['id']
-        );
-
-        //log
-        DB::DELETE(prefixTable('log_items'), 'id_item = %i', $item['id']);
-    }*/
-
-    /*
-    // delete orphan items
-    $rows = DB::query(
-        'SELECT id
-        FROM ' . prefixTable('items') . '
-        ORDER BY id ASC'
-    );
-    foreach ($rows as $item) {
-        DB::query(
-            'SELECT * FROM ' . prefixTable('log_items') . ' WHERE id_item = %i AND action = %s',
-            $item['id'],
-            'at_creation'
-        );
-        $counter = DB::count();
-        if ($counter === 0) {
-            DB::DELETE(prefixTable('items'), 'id = %i', $item['id']);
-            DB::DELETE(prefixTable('categories_items'), 'item_id = %i', $item['id']);
-            DB::DELETE(prefixTable('log_items'), 'id_item = %i', $item['id']);
-        }
-    }
-    */
-
     // Delete all item keys for which no user exist
     DB::query(
         'DELETE k FROM ' . prefixTable('sharekeys_items') . ' k
