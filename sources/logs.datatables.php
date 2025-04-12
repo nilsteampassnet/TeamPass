@@ -421,7 +421,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         //col4
         if (empty($record['field_1']) === false) {
             // get user name
-            $info = DB::queryfirstrow(
+            $info = DB::queryFirstRow(
                 'SELECT u.login as login, u.name AS name, u.lastname AS lastname
                     FROM '.prefixTable('users').' as u
                     WHERE u.id = %i',
@@ -899,7 +899,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
 
         // col5
         if (in_array($record['process_type'], array('create_user_keys', 'item_copy')) === true) {
-            $data_user = DB::queryfirstrow(
+            $data_user = DB::queryFirstRow(
                 'SELECT name, lastname FROM ' . prefixTable('users') . '
                 WHERE id = %i',
                 json_decode($record['arguments'], true)['new_user_id']
@@ -978,7 +978,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         
         $sOutput .= '[';
         //col1
-        $sOutput .= '"", ';
+        $sOutput .= '"'.(is_null($record['error_message']) ? '' : addslashes($record['error_message'])).'", ';
         //col2
         $sOutput .= '"'.date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['created_at']).'", ';
         //col3
@@ -991,15 +991,17 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         $sOutput .= '"'.gmdate('H:i:s', (int) $record['finished_at'] - (is_null($record['started_at']) === false ? (int) $record['started_at'] : (int) $record['created_at'])).'",';
         //col5
         if ($record['process_type'] === 'create_user_keys') {
-            $processIcon = '<i class=\"fa-solid fa-user-plus infotip\" title=\"'.$lang->get('user_creation').'\"></i>';
+            $processIcon = '<i class=\"fa-solid fa-user-plus infotip\" style=\"cursor: pointer;\" title=\"'.$lang->get('user_creation').'\"></i>';
         } else if ($record['process_type'] === 'send_email') {
-            $processIcon = '<i class=\"fa-solid fa-envelope-circle-check infotip\" title=\"'.$lang->get('send_email_to_user').'\"></i>';
+            $processIcon = '<i class=\"fa-solid fa-envelope-circle-check infotip\" style=\"cursor: pointer;\" title=\"'.$lang->get('send_email_to_user').'\"></i>';
         } else if ($record['process_type'] === 'user_build_cache_tree') {
-            $processIcon = '<i class=\"fa-solid fa-folder-tree infotip\" title=\"'.$lang->get('reload_user_cache_table').'\"></i>';
+            $processIcon = '<i class=\"fa-solid fa-folder-tree infotip\" style=\"cursor: pointer;\" title=\"'.$lang->get('reload_user_cache_table').'\"></i>';
         } else if ($record['process_type'] === 'item_copy') {
-            $processIcon = '<i class=\"fa-solid fa-copy infotip\" title=\"'.$lang->get('item_copied').'\"></i>';
+            $processIcon = '<i class=\"fa-solid fa-copy infotip\" style=\"cursor: pointer;\" title=\"'.$lang->get('item_copied').'\"></i>';
         } else if ($record['process_type'] === 'item_update_create_keys') {
-            $processIcon = '<i class=\"fa-solid fa-pencil infotip\" title=\"'.$lang->get('item_updated').'\"></i>';
+            $processIcon = '<i class=\"fa-solid fa-pencil infotip\" style=\"cursor: pointer;\" title=\"'.$lang->get('item_updated').'\"></i>';
+        } else if ($record['process_type'] === 'new_item') {
+            $processIcon = '<i class=\"fa-solid fa-square-plus infotip\" style=\"cursor: pointer;\" title=\"'.$lang->get('new_item').'\"></i>';
         } else {
             $processIcon = '<i class=\"fa-solid fa-question\"></i> ('.$record['process_type'].')';
         }
@@ -1010,7 +1012,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
             $arguments['new_user_id'] : 
             (array_key_exists('user_id', $arguments) ? $arguments['user_id'] : null);
         if ($record['process_type'] === 'create_user_keys' && is_null($newUserId) === false && empty($newUserId) === false) {
-            $data_user = DB::queryfirstrow(
+            $data_user = DB::queryFirstRow(
                 'SELECT name, lastname, login FROM ' . prefixTable('users') . '
                 WHERE id = %i',
                 $newUserId
@@ -1026,7 +1028,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
             $sOutput .= '"'.(is_null($user) === true || empty($user) === true ? '<i class=\"fa-solid fa-user-slash\"></i>' : $user).'"';
         } elseif ($record['process_type'] === 'user_build_cache_tree') {
             $user = json_decode($record['arguments'], true)['user_id'];
-            $data_user = DB::queryfirstrow(
+            $data_user = DB::queryFirstRow(
                 'SELECT name, lastname, login FROM ' . prefixTable('users') . '
                 WHERE id = %i',
                 $user

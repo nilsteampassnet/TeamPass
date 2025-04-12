@@ -223,10 +223,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 'targets': 0,
                 'render': function(data, type, row, meta) {
                     // Check if the first column is empty
+                    console.log(row[0]);
                     if (row[0] === '') {
                         return '<i class="fas fa-square text-success"></i>';
                     } else {
-                        return '<i class="fas fa-square text-danger" title="'+row[0]+'"></i>';
+                        return '<i class="fas fa-square text-danger" title="'+row[0]+'" style="cursor: pointer;"></i>';
                     }
                 }
             }],

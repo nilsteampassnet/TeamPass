@@ -1325,7 +1325,8 @@ class DatabaseInstaller
             `sub_task_in_progress` tinyint(1) NOT NULL DEFAULT 0,
             `status` varchar(50) DEFAULT NULL,
             `error_message` TEXT NULL DEFAULT NULL,
-            PRIMARY KEY (`increment_id`)
+            PRIMARY KEY (`increment_id`),
+            INDEX idx_finished (finished_at)
             ) CHARSET=utf8;"
         );
 
@@ -1365,7 +1366,9 @@ class DatabaseInstaller
             `item_id` INT(12) NULL,
             `status` varchar(50) DEFAULT NULL,
             `error_message` TEXT NULL DEFAULT NULL,
-            PRIMARY KEY (`increment_id`)
+            PRIMARY KEY (`increment_id`),
+            INDEX idx_finished (`finished_at`),
+            INDEX idx_progress (`is_in_progress`)
             ) CHARSET=utf8;"
         );
     }
