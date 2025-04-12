@@ -29,6 +29,7 @@
 use TeampassClasses\Language\Language;
 
 trait UserHandlerTrait {
+    abstract protected function completeTask();
 
     /**
      * Handle user build cache tree
@@ -103,16 +104,16 @@ trait UserHandlerTrait {
                     $this->generateNewUserStep0($arguments);
                     break;
                 case 'step20':
-                    $this->generateNewUserStep20($taskData, $arguments, $subtask['task_id']);
+                    $this->generateNewUserStep20($taskData, $arguments);
                     break;
                 case 'step30':
-                    $this->generateNewUserStep30($taskData, $arguments, $subtask['task_id']);
+                    $this->generateNewUserStep30($taskData, $arguments);
                     break;
                 case 'step40':
-                    $this->generateNewUserStep40($taskData, $arguments, $subtask['task_id']);
+                    $this->generateNewUserStep40($taskData, $arguments);
                     break;
                 case 'step50':
-                    $this->generateNewUserStep50($taskData, $arguments, $subtask['task_id']);
+                    $this->generateNewUserStep50($taskData, $arguments);
                     break;
                 case 'step60':
                     $this->generateNewUserStep60($arguments);
@@ -170,9 +171,8 @@ trait UserHandlerTrait {
      * Generate new user keys
      * @param array $taskData Task data
      * @param array $arguments Arguments for the task
-     * @param int $taskId Task ID
      */
-    private function generateNewUserStep20($taskData, $arguments, $taskId) {
+    private function generateNewUserStep20($taskData, $arguments) {
         // get user private key
         $ownerInfo = $this->getOwnerInfos($arguments['owner_id'], $arguments['creator_pwd']);
         $userInfo = $this->getOwnerInfos($arguments['new_user_id'], $arguments['new_user_pwd']);
@@ -258,10 +258,9 @@ trait UserHandlerTrait {
      * Generate new user keys - step 30
      * @param array $taskData Task data
      * @param array $arguments Arguments for the task
-     * @param int $taskId Task ID
      * @return void
      */
-    private function generateNewUserStep30($taskData, $arguments, $taskId) {
+    private function generateNewUserStep30($taskData, $arguments) {
         // get user private key
         $ownerInfo = $this->getOwnerInfos($arguments['owner_id'], $arguments['creator_pwd']);
         $userInfo = $this->getOwnerInfos($arguments['new_user_id'], $arguments['new_user_pwd']);
@@ -341,10 +340,9 @@ trait UserHandlerTrait {
      * Generate new user keys - step 40
      * @param array $taskData Task data
      * @param array $arguments Arguments for the task
-     * @param int $taskId Task ID
      * @return void
      */
-    private function generateNewUserStep40($taskData, $arguments, $taskId) {
+    private function generateNewUserStep40($taskData, $arguments) {
         // get user private key
         $ownerInfo = $this->getOwnerInfos($arguments['owner_id'], $arguments['creator_pwd']);
         $userInfo = $this->getOwnerInfos($arguments['new_user_id'], $arguments['new_user_pwd']);
@@ -421,10 +419,9 @@ trait UserHandlerTrait {
      * Generate new user keys - step 50
      * @param array $taskData Task data
      * @param array $arguments Arguments for the task
-     * @param int $taskId Task ID
      * @return void
      */
-    private function generateNewUserStep50($taskData, $arguments, $taskId) {
+    private function generateNewUserStep50($taskData, $arguments) {
         // get user private key
         $ownerInfo = $this->getOwnerInfos($arguments['owner_id'], $arguments['creator_pwd']);
         $userInfo = $this->getOwnerInfos($arguments['new_user_id'], $arguments['new_user_pwd']);

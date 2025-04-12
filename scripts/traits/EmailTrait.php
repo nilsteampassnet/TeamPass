@@ -55,9 +55,5 @@ trait EmailTrait {
             true,
             true
         );
-
-        // Clear body content and encryptedUserPassword
-        $email['body'] = '<cleared>';
-        $email['encryptedUserPassword'] = '<cleared>';
     }
 }
