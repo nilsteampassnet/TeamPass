@@ -41,4 +41,4 @@ tp_minor_release.txt
 /includes/tables_integrity.json
 phpstan.neon
 /_things/*
-!/files/teampass_tasks.log
+/files/teampass_tasks.log
