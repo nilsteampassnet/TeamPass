@@ -1517,6 +1517,7 @@ function externalAdCreateUser(
             'auth_type' => $authType,
             'otp_provided' => '1',
             'is_ready_for_usage' => '0',
+            'created_at' => time(),
         ]
     );
     $newUserId = DB::insertId();

@@ -3755,6 +3755,18 @@ function createUserTasks($processId, $nbItemsToTreat): void
         DB::query($query);
         createAllSubTasks($step, DB::count(), $nbItemsToTreat, $processId);
     }
+
+    // Create subtask for step 99
+    DB::insert(
+        prefixTable('background_subtasks'),
+        array(
+            'task_id' => $processId,
+            'created_at' => time(),
+            'task' => json_encode([
+                'step' => 'step99',
+            ]),
+        )
+    );
 }
 
 /**

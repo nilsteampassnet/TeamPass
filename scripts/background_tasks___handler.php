@@ -160,7 +160,7 @@ class BackgroundTasksHandler {
      * @param array $task The task to process.
      */
     private function processIndividualTask(array $task) {
-        if (LOG_TASKS=== true)  $this->logger->log('Processing task: ' . print_r($task, true), 'INFO');
+        if (LOG_TASKS=== true)  $this->logger->log('Starting task: ' . print_r($task, true), 'INFO');
 
         // Store progress in the database        
         DB::update(
@@ -183,8 +183,24 @@ class BackgroundTasksHandler {
             $task['arguments']
         ]);
 
-        // Launch process
-        $process->run();
+            // Launch process
+        try{
+            $process->mustRun();
+            if (LOG_TASKS=== true && !is_null($process->getOutput())) $this->logger->log('Process on going output: ' . $process->getOutput(), 'INFO');
+
+        } catch (Exception $e) {
+            if (LOG_TASKS=== true) $this->logger->log('Error launching task: ' . $e->getMessage(), 'ERROR');
+            DB::update(
+                prefixTable('background_tasks'),
+                [
+                    'is_in_progress' => -1,
+                    'finished_at' => time(),
+                    'status' => 'failed'
+                ],
+                'increment_id = %i',
+                $task['increment_id']
+            );
+        }
     }
 
     /**

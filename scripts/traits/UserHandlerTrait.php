@@ -116,8 +116,11 @@ trait UserHandlerTrait {
                     $this->generateNewUserStep50($taskData, $arguments);
                     break;
                 case 'step60':
-                    $this->generateNewUserStep60($arguments);
+                    $this->generateNewUserStep60($taskData, $arguments);
                     break;
+                case 'step99':
+                    $this->generateNewUserStep99($arguments);
+                break;
                 default:
                     throw new Exception("Type of subtask unknown: {$this->processType}");
             }
@@ -498,9 +501,96 @@ trait UserHandlerTrait {
 
     /**
      * Generate new user keys - step 60
+     * @param array $taskData Task data
+     * @param array $arguments Arguments for the task
+     * @return void
+     */
+    private function generateNewUserStep60($taskData, $arguments) {
+        // get user private key
+        $ownerInfo = $this->getOwnerInfos($arguments['owner_id'], $arguments['creator_pwd']);
+        $userInfo = $this->getOwnerInfos($arguments['new_user_id'], $arguments['new_user_pwd']);
+
+        // Start transaction for better performance
+        DB::startTransaction();
+
+        // Loop on files
+        $rows = DB::query(
+            'SELECT f.id AS id, i.perso AS perso
+            FROM ' . prefixTable('files') . ' AS f
+            INNER JOIN ' . prefixTable('items') . ' AS i ON i.id = f.id_item
+            WHERE f.status = "' . TP_ENCRYPTION_NAME . '"
+            LIMIT ' . $taskData['index'] . ', ' . $taskData['nb']
+        ); //aes_encryption
+        foreach ($rows as $record) {
+            // Get itemKey from current user
+            $currentUserKey = DB::queryFirstRow(
+                'SELECT share_key, increment_id
+                FROM ' . prefixTable('sharekeys_files') . '
+                WHERE object_id = %i AND user_id = %i',
+                $record['id'],
+                (int) $record['perso'] === 0 ? $arguments['owner_id'] : $arguments['new_user_id']
+            );
+
+            // do we have any input? (#3481)
+            if ($currentUserKey === null || count($currentUserKey) === 0) {
+                continue;
+            }
+
+            // Decrypt itemkey with user key
+            $itemKey = decryptUserObjectKey(
+                $currentUserKey['share_key'],
+                //$ownerInfo['private_key']
+                (int) $record['perso'] === 0 ? $ownerInfo['private_key'] : $userInfo['private_key']
+            );
+            
+            // Prevent to change key if its key is empty
+            if (empty($itemKey) === true) {
+                continue;
+            }
+
+            // Encrypt Item key
+            $share_key_for_item = encryptUserObjectKey($itemKey, $userInfo['public_key']);
+
+            $currentUserKey = DB::queryFirstRow(
+                'SELECT increment_id
+                FROM ' . prefixTable('sharekeys_files') . '
+                WHERE object_id = %i AND user_id = %i',
+                $record['id'],
+                $arguments['new_user_id']
+            );
+            // Save the key in DB
+            if (DB::count() > 0) {
+                // NOw update
+                DB::update(
+                    prefixTable('sharekeys_files'),
+                    array(
+                        'share_key' => $share_key_for_item,
+                    ),
+                    'increment_id = %i',
+                    $currentUserKey['increment_id']
+                );
+            } else {
+                DB::insert(
+                    prefixTable('sharekeys_files'),
+                    array(
+                        'object_id' => (int) $record['id'],
+                        'user_id' => (int) $arguments['new_user_id'],
+                        'share_key' => $share_key_for_item,
+                    )
+                );
+            }
+        }
+
+        // Commit transaction
+        DB::commit();
+    }
+
+
+    /**
+     * Generate new user keys - step 99
      * @param array $arguments Arguments for the task
      */
-    private function generateNewUserStep60($arguments) {
+    private function generateNewUserStep99($arguments) {
         $lang = new Language('english');
 
         // IF USER IS NOT THE SAME
@@ -559,7 +649,10 @@ trait UserHandlerTrait {
             prefixTable('users'),
             array(
                 'is_ready_for_usage' => 1,
-                'otp_provided' => isset($arguments['otp_provided_new_value']) === true && (int) $arguments['otp_provided_new_value'] === 1 ? $arguments['otp_provided_new_value'] : 0
+                'otp_provided' => isset($arguments['otp_provided_new_value']) === true && (int) $arguments['otp_provided_new_value'] === 1 ? $arguments['otp_provided_new_value'] : 0,
+                'ongoing_process_id' => NULL,
+                'special' => 'none',
+                'updated_at' => time(),
             ),
             'id = %i',
             $arguments['new_user_id']

@@ -49,11 +49,10 @@ class TaskWorker {
         $this->taskId = $taskId;
         $this->processType = $processType;
         $this->taskData = $taskData;
-        $this->settings['enable_tasks_log'] = true;
-        $this->logger = new TaskLogger($this->settings, LOG_TASKS_FILE);
         
         $configManager = new ConfigManager();
         $this->settings = $configManager->getAllSettings();
+        $this->logger = new TaskLogger($this->settings, LOG_TASKS_FILE);
     }
 
     /**
@@ -186,6 +185,7 @@ class TaskWorker {
      * @return void
      */
     private function processSubTasks($arguments) {
+        if (LOG_TASKS=== true) $this->logger->log('processSubTasks: '.print_r($arguments, true), 'DEBUG');
         // Get all subtasks related to this task
         $subtasks = DB::query(
             'SELECT * FROM ' . prefixTable('background_subtasks') . ' WHERE task_id = %i AND is_in_progress = 0 ORDER BY `task` ASC',
