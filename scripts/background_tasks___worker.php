@@ -128,7 +128,7 @@ class TaskWorker {
         } elseif ($this->processType === 'item_update_create_keys') {
             $arguments = json_encode(
                 [
-                    'item_id' => $this->taskData['new_user_id'],
+                    'item_id' => $this->taskData['item_id'],
                     'author' => $this->taskData['author'],
                 ]
             );

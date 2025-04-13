@@ -183,10 +183,9 @@ class BackgroundTasksHandler {
             $task['arguments']
         ]);
 
-            // Launch process
+        // Launch process
         try{
             $process->mustRun();
-            if (LOG_TASKS=== true && !is_null($process->getOutput())) $this->logger->log('Process on going output: ' . $process->getOutput(), 'INFO');
 
         } catch (Exception $e) {
             if (LOG_TASKS=== true) $this->logger->log('Error launching task: ' . $e->getMessage(), 'ERROR');
