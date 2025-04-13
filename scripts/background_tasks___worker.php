@@ -32,7 +32,7 @@ require_once __DIR__.'/background_tasks___functions.php';
 require_once __DIR__.'/traits/ItemHandlerTrait.php';
 require_once __DIR__.'/traits/UserHandlerTrait.php';
 require_once __DIR__.'/traits/EmailTrait.php';
-require_once __DIR__ . '/TaskLogger.php';
+require_once __DIR__ . '/taskLogger.php';
 
 class TaskWorker {
     use ItemHandlerTrait;

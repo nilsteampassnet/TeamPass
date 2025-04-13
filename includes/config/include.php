@@ -51,7 +51,7 @@ define('OAUTH2_REDIRECTURI', 'index.php?post_type=oauth2');
 // Tasks Handler
 define('LOG_TASKS', false); // Can be used in order to log background tasks
 define('LOG_TASKS_FILE', '../files/teampass_tasks.log'); // By default, its is stored folder 'files', otherwize it is inside server error log. 🫸 Ensure you have the right to write in the log file
-define('TASKS_LOCK_FILE', ''); // By default, it is stored in folder 'files'. 🫸 Ensure you have the right to write in the lock file
+define('TASKS_LOCK_FILE', ''); // By default, it is stored in folder 'files'. 🫸 If you change this, ensure you have the right to write in the lock file
 
 // Internal constants
 define('ERR_NOT_ALLOWED', '1000');

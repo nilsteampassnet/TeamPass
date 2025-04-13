@@ -19,7 +19,7 @@
  * Certain components of this file may be under different licenses. For
  * details, see the `licenses` directory or individual file headers.
  * ---
- * @file      TaskLogger.php
+ * @file      taskLogger.php
  * @author    Nils Laumaillé (nils@teampass.net)
  * @copyright 2009-2025 Teampass.net
  * @license   GPL-3.0

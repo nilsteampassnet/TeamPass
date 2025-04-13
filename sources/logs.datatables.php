@@ -100,7 +100,7 @@ $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 $params = $request->query->all();
 
 // Init
-$searchValue = $sWhere = $sOrder = '';
+$searchValue = $sWhere = $sOrder = $sOutput = '';
 $aSortTypes = ['ASC', 'DESC'];
 $sLimitStart = $request->query->has('start') 
     ? $request->query->filter('start', 0, FILTER_VALIDATE_INT, ['options' => ['default' => 0, 'min_range' => 0]]) 

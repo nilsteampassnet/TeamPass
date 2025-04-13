@@ -30,7 +30,7 @@ use Symfony\Component\Process\Process;
 use TeampassClasses\ConfigManager\ConfigManager;
 
 require_once __DIR__.'/../sources/main.functions.php';
-require_once __DIR__ . '/TaskLogger.php';
+require_once __DIR__ . '/taskLogger.php';
 
 class BackgroundTasksHandler {
     private $settings;
