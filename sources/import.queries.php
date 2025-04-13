@@ -173,6 +173,7 @@ switch ($inputData['type']) {
         $items_number = 0;
         $batchInsert = [];
         $uniqueFolders = [];
+        $comment = '';
 
         // Vérifier si le fichier est accessible
         if (!file_exists($file) || !is_readable($file)) {
@@ -522,7 +523,16 @@ switch ($inputData['type']) {
         );
 
         //Get some info about personal folder
-        $personalFolder = in_array($dataReceived['folderId'], $session->get('user-personal_folders')) ? 1 : 0;        
+        $personalFolder = in_array($dataReceived['folderId'], $session->get('user-personal_folders')) ? 1 : 0;
+
+        // Prepare some variables
+        $targetFolderId = $dataReceived['folderId']; 
+        $targetFolderName = DB::queryFirstField(
+            'SELECT title
+            FROM '.prefixTable('nested_tree').'
+            WHERE id = %i',
+            $targetFolderId
+        );    
 
         // Get all folders from objects in DB
         if ($dataReceived['foldersNumber'] > 0) {
@@ -545,13 +555,6 @@ switch ($inputData['type']) {
                 $dataReceived['csvOperationId'],
                 $dataReceived['offset'],
                 $dataReceived['limit']
-            );
-            $targetFolderId = $dataReceived['folderId'];
-            $targetFolderName = DB::queryFirstField(
-                'SELECT title
-                FROM '.prefixTable('nested_tree').'
-                WHERE id = %i',
-                $targetFolderId
             );
         }
 
@@ -669,7 +672,6 @@ switch ($inputData['type']) {
                         'tags' => '',
                         'restricted_to' => '0',
                         'renewal_period' => '0',
-                        'timestamp' => time(),
                     )
                 );
 
@@ -955,7 +957,7 @@ switch ($inputData['type']) {
         );
 
         // get destination folder informations
-        $destinationFolderInfos = getFolderComplexity($post_folder_id, $session->get('user-personal_folders'));
+        $destinationFolderInfos = getFolderComplexity((int) $post_folder_id, $session->get('user-personal_folders'));
         $arrFolders[$post_folder_id] = [
             'id' => (int) $post_folder_id,
             'level' => 1,
