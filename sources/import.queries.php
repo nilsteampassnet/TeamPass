@@ -652,27 +652,6 @@ switch ($inputData['type']) {
                     )
                 );
 
-                //Add entry to cache table
-                DB::insert(
-                    prefixTable('cache'),
-                    array(
-                        'id' => $newId,
-                        'label' => substr($item['label'], 0, 500),
-                        'description' => empty($item['comment']) ? '' : $item['comment'],
-                        'id_tree' => is_null($item['folder_id']) === true ? $targetFolderId : (int) $item['folder_id'],
-                        'url' => '0',
-                        'perso' => $personalFolder === 0 ? 0 : 1,
-                        'login' => empty($item['login']) ? '' : substr($item['login'], 0, 500),
-                        'folder' => is_null($item['title']) === true ? $targetFolderName : $item['title'],
-                        'author' => $session->get('user-id'),
-                        'timestamp' => time(),
-                        'tags' => '',
-                        'restricted_to' => '0',
-                        'renewal_period' => '0',
-                        'timestamp' => time(),
-                    )
-                );
-
                 // Update items_importation table
                 DB::update(
                     prefixTable('items_importations'),

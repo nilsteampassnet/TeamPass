@@ -1323,12 +1323,7 @@ function makeThumbnail(string $src, string $dest, int $desired_width)
 function prefixTable(string $table): string
 {
     $safeTable = htmlspecialchars(DB_PREFIX . $table);
-    if (empty($safeTable) === false) {
-        // sanitize string
-        return $safeTable;
-    }
-    // stop error no table
-    return 'table_not_exists';
+    return $safeTable;
 }
 
 /**
@@ -1639,7 +1634,7 @@ function notifyChangesToSubscribers(int $item_id, string $label, array $changes,
                 'subject' => $lang->get('email_subject_item_updated'),
                 'body' => str_replace(
                     ['#item_label#', '#folder_name#', '#item_id#', '#url#', '#name#', '#lastname#', '#changes#'],
-                    [$label, $path, $item_id, $SETTINGS['cpassman_url'], $globalsName, $globalsLastname, $htmlChanges],
+                    [$label, $path, (string) $item_id, $SETTINGS['cpassman_url'], $globalsName, $globalsLastname, $htmlChanges],
                     $lang->get('email_body_item_updated')
                 ),
                 'receivers' => implode(',', $notification),
@@ -1836,7 +1831,7 @@ function checkCFconsistency(int $source_id, int $target_id): bool
     }
 
     $target_cf = [];
-    $rows = DB::QUERY(
+    $rows = DB::query(
         'SELECT id_category
             FROM ' . prefixTable('categories_folders') . '
             WHERE id_folder = %i',
@@ -2959,7 +2954,6 @@ function cleanStringForExport(string $text, bool $emptyCheckOnly = false): strin
 function isUserIdValid($userId): bool
 {
     if (is_null($userId) === false
-        && isset($userId) === true
         && empty($userId) === false
     ) {
         return true;
@@ -3115,9 +3109,9 @@ function isOneVarOfArrayEqualToValue(
  * @param string|int|null $value
  * @return boolean
  */
-function isValueSetNullEmpty(/*PHP8 - string|int|null*/ $value) : bool
+function isValueSetNullEmpty(string|int|null $value) : bool
 {
-    if (is_null($value) === true || isset($value) === false || empty($value) === true) {
+    if (is_null($value) || empty($value)) {
         return true;
     }
     return false;
@@ -3132,7 +3126,7 @@ function isValueSetNullEmpty(/*PHP8 - string|int|null*/ $value) : bool
  */
 function isValueSetEmpty($value, $boolean = true) : bool
 {
-    if (isset($value) === true && empty($value) === $boolean) {
+    if (empty($value) === $boolean) {
         return true;
     }
     return false;
@@ -4271,8 +4265,7 @@ function getCurrectPage($SETTINGS)
  */
 function returnIfSet($value, $retFalse = '', $retTrue = null): mixed
 {
-
-    return isset($value) === true ? ($retTrue === null ? $value : $retTrue) : $retFalse;
+    return $retTrue === null ? $value : $retTrue;
 }
 
 
