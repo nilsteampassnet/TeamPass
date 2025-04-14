@@ -1199,8 +1199,6 @@ return array(
     'oauth2_client_urlResourceOwnerDetails' => 'URL для отримання даних користувача',
     'oauth2_client_urlResourceOwnerDetails_tip' => 'URL для отримання даних користувача. Використовується для отримання даних користувача після автентифікації.',
     'duo_redirect_uri' => 'Перенаправлення до Duo Prompt',
-    'number_users_build_cache_tree' => 'Кількість користувачів для обробки завдання build_cache_tree під час кожного запуску планувальника.',
-    'number_users_build_cache_tree_tip' => 'Порада щодо кількості користувачів для обробки завдання build_cache_tree під час кожного запуску планувальника.',
     'user_password_expired' => 'Термін дії вашого пароля закінчився. Будь ласка, змініть його.',
     'user_password_policy_tip' => 'Новий пароль має відповідати таким вимогам:<br/> - Відрізнятися від попереднього<br/> - Містити принаймні 10 символів<br/> - Містити принаймні одну велику літеру та одну маленьку літеру<br/> - Містити принаймні одну цифру або спеціальний символ<br/> - Не містити ваше ім&apos;я, прізвище, ім&apos;я користувача чи електронну пошту.',
     'bruteforce_unlock_at' => 'Рахунок розблоковано (анти-брутфорс): ',
@@ -1236,5 +1234,10 @@ return array(
     'please_wait_items_in_construction' => 'Please wait, items are being constructed',
     'import_csv_keys_generation_strategy' => 'Keys generation strategy',
     'import_csv_keys_generation_strategy_tip' => 'When importing items, you can choose to generate new keys for the items on the fly or using task manager.',
+    'max_parallel_tasks' => 'Maximum number of parallel tasks',
+    'max_parallel_tasks_tip' => 'This option sets the maximum number of Process tasks that can run simultaneously. It is important to adjust this number based on the vCPUs capacity to avoid system overload. Start with a conservative number, and adjust according to observed performance.',
+    'item_copied' => 'Item copied',
+    'item_updated' => 'Item updated',
+    'done_tasks_history_delay_in_days' => 'Delay for which the tasks history is kept (in days)',
 
 );

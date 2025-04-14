@@ -1199,8 +1199,6 @@ return array(
     'oauth2_client_urlResourceOwnerDetails' => 'URL para obtener los detalles del usuario',
     'oauth2_client_urlResourceOwnerDetails_tip' => 'URL para obtener los detalles del usuario. Se utiliza para obtener los detalles del usuario después de la autenticación.',
     'duo_redirect_uri' => 'Redirigiendo al aviso de Duo',
-    'number_users_build_cache_tree' => 'Número de usuarios procesados para la tarea build_cache_tree.',
-    'number_users_build_cache_tree_tip' => 'Número de usuarios procesados para la tarea build_cache_tree en cada ejecución del programador.',
     'user_password_expired' => 'Tu contraseña ha expirado. Por favor, cámbiala.',
     'user_password_policy_tip' => 'La nueva contraseña debe cumplir con los siguientes requisitos:<br/> - Ser diferente a la anterior<br/> - Contener al menos 10 caracteres<br/> - Incluir al menos una letra mayúscula y una minúscula<br/> - Incluir al menos un número o un carácter especial<br/> - No contener tu nombre, apellidos, nombre de usuario o correo electrónico.',
     'bruteforce_unlock_at' => 'Cuenta desbloqueada a las (anti fuerza bruta): ',
@@ -1236,5 +1234,10 @@ return array(
     'please_wait_items_in_construction' => 'Please wait, items are being constructed',
     'import_csv_keys_generation_strategy' => 'Keys generation strategy',
     'import_csv_keys_generation_strategy_tip' => 'When importing items, you can choose to generate new keys for the items on the fly or using task manager.',
+    'max_parallel_tasks' => 'Maximum number of parallel tasks',
+    'max_parallel_tasks_tip' => 'This option sets the maximum number of Process tasks that can run simultaneously. It is important to adjust this number based on the vCPUs capacity to avoid system overload. Start with a conservative number, and adjust according to observed performance.',
+    'item_copied' => 'Item copied',
+    'item_updated' => 'Item updated',
+    'done_tasks_history_delay_in_days' => 'Delay for which the tasks history is kept (in days)',
 
 );

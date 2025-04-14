@@ -166,32 +166,6 @@ catch (Exception $e) {
 
                                     <h5><i class="fa-solid fa-hourglass-half mr-2"></i><?php echo $lang->get('frequency'); ?><i class="fa-solid fa-rotate fa-spin ml-2 hidden text-info" id="go_refresh"></i></h5>
 
-                                    <div class='row ml-1 mt-3 mb-2'>
-                                        <div class='col-9'>
-                                            <i class="fa-solid fa-inbox mr-2"></i><?php echo $lang->get('sending_emails')." (".$lang->get('in_minutes').")"; ?>
-                                            <span class="badge badge-secondary ml-2" id="sending_emails_job_frequency_badge"></span>
-                                        </div>
-                                        <div class='col-2'>
-                                            <input type='range' class='form-control form-control-sm form-control-range range-slider' id='sending_emails_job_frequency' min='1' max="59" value='<?php echo $SETTINGS['sending_emails_job_frequency'] ?? '2'; ?>'>
-                                        </div>
-                                        <div class='col-1'>
-                                            <input type='number' disabled class='form-control form-control-sm' id='sending_emails_job_frequency_text' value='<?php echo $SETTINGS['sending_emails_job_frequency'] ?? '2'; ?>'>
-                                        </div>
-                                    </div>
-
-                                    <div class='row ml-1 mb-2'>
-                                        <div class='col-9'>
-                                            <i class="fa-solid fa-user-cog mr-2"></i><?php echo $lang->get('user_keys_management')." (".$lang->get('in_minutes').")"; ?>
-                                            <span class="badge badge-secondary ml-2" id="user_keys_job_frequency_badge"></span>
-                                        </div>
-                                        <div class='col-2'>
-                                            <input type='range' class='form-control form-control-sm form-control-range range-slider' id='user_keys_job_frequency' min='1' max="59" value='<?php echo $SETTINGS['user_keys_job_frequency'] ?? '1'; ?>'>
-                                        </div>
-                                        <div class='col-1'>
-                                            <input type='number' disabled class='form-control form-control-sm' id='user_keys_job_frequency_text' value='<?php echo $SETTINGS['user_keys_job_frequency'] ?? '1'; ?>'>
-                                        </div>
-                                    </div>
-
                                     <div class='row ml-1 mb-2'>
                                         <div class='col-9'>
                                             <i class="fa-solid fa-tower-observation mr-2"></i><?php echo $lang->get('items_management')." (".$lang->get('in_minutes').")"; ?>
@@ -314,10 +288,58 @@ catch (Exception $e) {
 
                                     <div class='row mb-3 option'>
                                         <div class='col-10'>
-                                        <h5><i class="fa-solid fa-clock mr-2"></i><?php echo $lang->get('enable_refresh_task_last_execution'); ?></h5>
+                                        <h5><i class="fa-solid fa-calendar-days mr-2"></i><?php echo $lang->get('done_tasks_history_delay_in_days'); ?></h5>
                                         </div>
                                         <div class='col-2'>
-                                            <div class='toggle toggle-modern' id='enable_refresh_task_last_execution' data-toggle-on='<?php echo isset($SETTINGS['enable_refresh_task_last_execution']) === true && (int) $SETTINGS['enable_refresh_task_last_execution'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_refresh_task_last_execution_input' value='<?php echo isset($SETTINGS['enable_refresh_task_last_execution']) && (int) $SETTINGS['enable_refresh_task_last_execution'] === 1 ? 1 : 0; ?>' />
+                                            <input type='number' class='form-control form-control-sm' id='tasks_history_delay' value='<?php echo isset($SETTINGS['tasks_history_delay']) === true ? ((int) $SETTINGS['tasks_history_delay'] / 24 / 3600) : 604800; ?>'>
+                                        </div>
+                                    </div>
+
+                                    <div class='row mb-3 option'>
+                                        <div class='col-10'>
+                                        <h5><i class="fa-solid fa-hourglass-start mr-2"></i><?php echo $lang->get('maximum_time_script_allowed_to_run'); ?></h5>
+                                            <small id='passwordHelpBlock' class='form-text text-muted'>
+                                                <?php echo $lang->get('maximum_time_script_allowed_to_run_tip'); ?>
+                                            </small>
+                                        </div>
+                                        <div class='col-2'>
+                                            <input type='number' class='form-control form-control-sm' id='task_maximum_run_time' value='<?php echo isset($SETTINGS['task_maximum_run_time']) === true ? $SETTINGS['task_maximum_run_time'] : 600; ?>'>
+                                        </div>
+                                    </div>
+
+                                    <div class='row mb-3 option'>
+                                        <div class='col-10'>
+                                        <h5><i class="fa-solid fa-bars-progress mr-2"></i><?php echo $lang->get('max_parallel_tasks'); ?></h5>
+                                            <small id='passwordHelpBlock' class='form-text text-muted'>
+                                                <?php echo $lang->get('max_parallel_tasks_tip'); ?>
+                                            </small>
+                                        </div>
+                                        <div class='col-2'>
+                                            <input type='number' class='form-control form-control-sm' id='max_parallel_tasks' value='<?php echo isset($SETTINGS['max_parallel_tasks']) === true ? $SETTINGS['max_parallel_tasks'] : 2; ?>'>
+                                        </div>
+                                    </div>
+
+                                    <div class='row mb-3 option'>
+                                        <div class='col-10'>
+                                        <h5><i class="fa-solid fa-burger mr-2"></i><?php echo $lang->get('maximum_number_of_items_to_treat'); ?></h5>
+                                            <small id='passwordHelpBlock' class='form-text text-muted'>
+                                                <?php echo $lang->get('maximum_number_of_items_to_treat_tip'); ?>
+                                            </small>
+                                        </div>
+                                        <div class='col-2'>
+                                            <input type='number' class='form-control form-control-sm' id='maximum_number_of_items_to_treat' value='<?php echo isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH; ?>'>
+                                        </div>
+                                    </div>
+
+                                    <div class='row mb-3 option'>
+                                        <div class='col-10'>
+                                        <h5><i class="fa-solid fa-stopwatch-20 mr-2"></i><?php echo $lang->get('refresh_data_every_on_screen'); ?></h5>
+                                            <small id='passwordHelpBlock' class='form-text text-muted'>
+                                                <?php echo $lang->get('refresh_data_every_on_screen_tip'); ?>
+                                            </small>
+                                        </div>
+                                        <div class='col-2'>
+                                            <input type='number' class='form-control form-control-sm' id='tasks_manager_refreshing_period' value='<?php echo isset($SETTINGS['tasks_manager_refreshing_period']) === true ? $SETTINGS['tasks_manager_refreshing_period'] : 20; ?>'>
                                         </div>
                                     </div>
 
@@ -347,49 +369,10 @@ catch (Exception $e) {
 
                                     <div class='row mb-3 option'>
                                         <div class='col-10'>
-                                        <h5><i class="fa-solid fa-hourglass-start mr-2"></i><?php echo $lang->get('maximum_time_script_allowed_to_run'); ?></h5>
-                                            <small id='passwordHelpBlock' class='form-text text-muted'>
-                                                <?php echo $lang->get('maximum_time_script_allowed_to_run_tip'); ?>
-                                            </small>
+                                        <h5><i class="fa-solid fa-clock mr-2"></i><?php echo $lang->get('enable_refresh_task_last_execution'); ?></h5>
                                         </div>
                                         <div class='col-2'>
-                                            <input type='number' class='form-control form-control-sm' id='task_maximum_run_time' value='<?php echo isset($SETTINGS['task_maximum_run_time']) === true ? $SETTINGS['task_maximum_run_time'] : 600; ?>'>
-                                        </div>
-                                    </div>
-
-                                    <div class='row mb-3 option'>
-                                        <div class='col-10'>
-                                        <h5><i class="fa-solid fa-object-group mr-2"></i><?php echo $lang->get('maximum_number_of_items_to_treat'); ?></h5>
-                                            <small id='passwordHelpBlock' class='form-text text-muted'>
-                                                <?php echo $lang->get('maximum_number_of_items_to_treat_tip'); ?>
-                                            </small>
-                                        </div>
-                                        <div class='col-2'>
-                                            <input type='number' class='form-control form-control-sm' id='maximum_number_of_items_to_treat' value='<?php echo isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH; ?>'>
-                                        </div>
-                                    </div>
-
-                                    <div class='row mb-3 option'>
-                                        <div class='col-10'>
-                                        <h5><i class="fa-solid fa-database mr-2"></i><?php echo $lang->get('number_users_build_cache_tree'); ?></h5>
-                                            <small id='passwordHelpBlock' class='form-text text-muted'>
-                                                <?php echo $lang->get('number_users_build_cache_tree_tip'); ?>
-                                            </small>
-                                        </div>
-                                        <div class='col-2'>
-                                            <input type='number' class='form-control form-control-sm' id='number_users_build_cache_tree' value='<?php echo isset($SETTINGS['number_users_build_cache_tree']) === true ? $SETTINGS['number_users_build_cache_tree'] : 10; ?>'>
-                                        </div>
-                                    </div>
-
-                                    <div class='row mb-3 option'>
-                                        <div class='col-10'>
-                                        <h5><i class="fa-solid fa-stopwatch-20 mr-2"></i><?php echo $lang->get('refresh_data_every_on_screen'); ?></h5>
-                                            <small id='passwordHelpBlock' class='form-text text-muted'>
-                                                <?php echo $lang->get('refresh_data_every_on_screen_tip'); ?>
-                                            </small>
-                                        </div>
-                                        <div class='col-2'>
-                                            <input type='number' class='form-control form-control-sm' id='tasks_manager_refreshing_period' value='<?php echo isset($SETTINGS['tasks_manager_refreshing_period']) === true ? $SETTINGS['tasks_manager_refreshing_period'] : 20; ?>'>
+                                            <div class='toggle toggle-modern' id='enable_refresh_task_last_execution' data-toggle-on='<?php echo isset($SETTINGS['enable_refresh_task_last_execution']) === true && (int) $SETTINGS['enable_refresh_task_last_execution'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_refresh_task_last_execution_input' value='<?php echo isset($SETTINGS['enable_refresh_task_last_execution']) && (int) $SETTINGS['enable_refresh_task_last_execution'] === 1 ? 1 : 0; ?>' />
                                         </div>
                                     </div>
 

@@ -1199,8 +1199,6 @@ return array(
     'oauth2_client_urlResourceOwnerDetails' => 'URL para obter detalhes do usuário',
     'oauth2_client_urlResourceOwnerDetails_tip' => 'URL para obter detalhes do usuário. É usado para obter detalhes do usuário após autenticação.',
     'duo_redirect_uri' => 'Redirecionando para o Duo Prompt',
-    'number_users_build_cache_tree' => '',
-    'number_users_build_cache_tree_tip' => 'Número de usuários processados ​​para a tarefa build_cache_tree em cada execução do agendador.',
     'user_password_expired' => 'Sua senha expirou. Altere-a por favor.',
     'user_password_policy_tip' => 'A nova senha deve:<br/> - Ser diferente da anterior<br/> - Conter pelo menos 10 caracteres<br/> - Conter pelo menos uma letra maiúscula e uma letra minúscula<br/> - Conter pelo menos um número ou caractere especial<br/> - Não conter seu nome, nome, nome de usuário ou e-mail.',
     'bruteforce_unlock_at' => 'Conta desbloqueada em (anti força bruta):',
@@ -1236,5 +1234,10 @@ return array(
     'please_wait_items_in_construction' => 'Please wait, items are being constructed',
     'import_csv_keys_generation_strategy' => 'Keys generation strategy',
     'import_csv_keys_generation_strategy_tip' => 'When importing items, you can choose to generate new keys for the items on the fly or using task manager.',
+    'max_parallel_tasks' => 'Maximum number of parallel tasks',
+    'max_parallel_tasks_tip' => 'This option sets the maximum number of Process tasks that can run simultaneously. It is important to adjust this number based on the vCPUs capacity to avoid system overload. Start with a conservative number, and adjust according to observed performance.',
+    'item_copied' => 'Item copied',
+    'item_updated' => 'Item updated',
+    'done_tasks_history_delay_in_days' => 'Delay for which the tasks history is kept (in days)',
 
 );

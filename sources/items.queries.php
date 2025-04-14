@@ -1388,11 +1388,13 @@ switch ($inputData['type']) {
                                     $newId
                                 );
 
-                                array_push(
-                                    $tasksToBePerformed,
-                                    'item_field'
-                                );
-                                $encryptedFieldIsChanged = true;
+                                if ($encryptedFieldIsChanged === false) {
+                                    array_push(
+                                        $tasksToBePerformed,
+                                        'item_field'
+                                    );
+                                    $encryptedFieldIsChanged = true;
+                                }
                             } else {
                                 // update value
                                 DB::update(
@@ -1473,11 +1475,13 @@ switch ($inputData['type']) {
                                         true,   // delete all
                                     );
 
-                                    array_push(
-                                        $tasksToBePerformed,
-                                        'item_field'
-                                    );
-                                    $encryptedFieldIsChanged = true;
+                                    if ($encryptedFieldIsChanged === false) {
+                                        array_push(
+                                            $tasksToBePerformed,
+                                            'item_field'
+                                        );
+                                        $encryptedFieldIsChanged = true;
+                                    }
                                 } else {
                                     $encrypt['string'] = $field['value'];
                                     $encrypt['type'] = 'not_set';
@@ -1547,7 +1551,7 @@ switch ($inputData['type']) {
                 if (WIP === true) error_log('createTaskForItem - '.print_r($tasksToBePerformed, true));
                 createTaskForItem(
                     'item_update_create_keys',
-                    $tasksToBePerformed,
+                    array_unique($tasksToBePerformed),
                     (int) $inputData['itemId'],
                     (int) $session->get('user-id'),
                     $encrypted_password_key,
@@ -2327,7 +2331,7 @@ switch ($inputData['type']) {
                             doDataDecryption(
                                 $field['data'],
                                 decryptUserObjectKey(
-                                    $userKey['share_key'],
+                                    $userKey['share_key'] ?? '',
                                     $session->get('user-private_key')
                                 )
                             )
@@ -2397,7 +2401,7 @@ switch ($inputData['type']) {
                     $fileContent = decryptFile(
                         $record['file'],
                         $SETTINGS['path_to_upload_folder'],
-                        decryptUserObjectKey($record['share_key'], $session->get('user-private_key'))
+                        decryptUserObjectKey($record['share_key'] ?? '', $session->get('user-private_key'))
                     );
 
                     // Step2 - create file
@@ -4576,7 +4580,7 @@ switch ($inputData['type']) {
 
                 // Calculate the edition grace delay
                 if (isset($SETTINGS['delay_item_edition']) && $SETTINGS['delay_item_edition'] > 0 && empty($dataTmp['timestamp']) === false) {
-                    $delay = $SETTINGS['delay_item_edition'];
+                    $delay = $SETTINGS['delay_item_edition'] * 60; // delay in seconds
                 } else {
                     $delay = EDITION_LOCK_PERIOD; // One day delay
                 }

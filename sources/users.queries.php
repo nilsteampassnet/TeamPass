@@ -2514,95 +2514,9 @@ if (null !== $post_type) {
             $processId = DB::insertId();
 
             // Create tasks
-            DB::insert(
-                prefixTable('background_subtasks'),
-                array(
-                    'task_id' => $processId,
-                    'created_at' => time(),
-                    'task' => json_encode([
-                        'step' => 'step0',
-                        'index' => 0,
-                        'nb' => isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH,
-                    ]),
-                )
-            );
-
-            DB::insert(
-                prefixTable('background_subtasks'),
-                array(
-                    'task_id' => $processId,
-                    'created_at' => time(),
-                    'task' => json_encode([
-                        'step' => 'step10',
-                        'index' => 0,
-                        'nb' => isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH,
-                    ]),
-                )
-            );
-
-            DB::insert(
-                prefixTable('background_subtasks'),
-                array(
-                    'task_id' => $processId,
-                    'created_at' => time(),
-                    'task' => json_encode([
-                        'step' => 'step20',
-                        'index' => 0,
-                        'nb' => isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH,
-                    ]),
-                )
-            );
-
-            DB::insert(
-                prefixTable('background_subtasks'),
-                array(
-                    'task_id' => $processId,
-                    'created_at' => time(),
-                    'task' => json_encode([
-                        'step' => 'step30',
-                        'index' => 0,
-                        'nb' => isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH,
-                    ]),
-                )
-            );
-
-            DB::insert(
-                prefixTable('background_subtasks'),
-                array(
-                    'task_id' => $processId,
-                    'created_at' => time(),
-                    'task' => json_encode([
-                        'step' => 'step40',
-                        'index' => 0,
-                        'nb' => isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH,
-                    ]),
-                )
-            );
-
-            DB::insert(
-                prefixTable('background_subtasks'),
-                array(
-                    'task_id' => $processId,
-                    'created_at' => time(),
-                    'task' => json_encode([
-                        'step' => 'step50',
-                        'index' => 0,
-                        'nb' => isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH,
-                    ]),
-                )
-            );
-
-            DB::insert(
-                prefixTable('background_subtasks'),
-                array(
-                    'task_id' => $processId,
-                    'created_at' => time(),
-                    'task' => json_encode([
-                        'step' => 'step60',
-                        'index' => 0,
-                        'nb' => isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH,
-                    ]),
-                )
+            createUserTasks(
+                $processId,
+                isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH
             );
 
             //update user is not ready

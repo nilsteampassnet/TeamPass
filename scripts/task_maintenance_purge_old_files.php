@@ -72,6 +72,7 @@ function purgeTemporaryFiles(): void
 {
     // Load expected files
     require_once __DIR__. '/../sources/main.functions.php';
+    $SETTINGS = $SETTINGS ?? [];
 
     // $SETTINGS is set then read folder
     if (is_dir($SETTINGS['path_to_files_folder']) === true) {

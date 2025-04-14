@@ -70,7 +70,7 @@ $ret = [];
 $completTree = $tree->getDescendants(0, false, false, false);
 foreach ($completTree as $child) {
     // get count of Items in this folder
-    $get = DB::queryfirstrow(
+    $get = DB::queryFirstRow(
         'SELECT count(*) as num_results
         FROM ' . prefixTable('items') . '
         WHERE inactif = %i AND id_tree = %i',
@@ -86,7 +86,7 @@ foreach ($completTree as $child) {
 
     // get items number in subfolders
     if (count($nodeDescendants) > 0) {
-        $get = DB::queryfirstrow(
+        $get = DB::queryFirstRow(
             'SELECT count(*) as num_results
             FROM ' . prefixTable('items') . '
             WHERE inactif = %i AND id_tree IN (%l)',
@@ -186,6 +186,11 @@ foreach ($items as $item) {
 DB::query(
     'DELETE FROM '.prefixTable('items_operations').' WHERE created_at < DATE_SUB(NOW(), INTERVAL 20 MINUTE)'
 );
+
+/*
+* Release locks on items if they are older than defined time
+*/
+//deleteItemLocks();
 
 // log end
 doLog('end', '', (isset($SETTINGS['enable_tasks_log']) === true ? (int) $SETTINGS['enable_tasks_log'] : 0), $logID);

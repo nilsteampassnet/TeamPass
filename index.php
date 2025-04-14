@@ -429,7 +429,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                                 }
 
     // IMPORT menu
-    if (isset($SETTINGS['allow_import']) === true && (int) $SETTINGS['allow_import'] === 1) {
+    if (isset($SETTINGS['allow_import']) === true && (int) $SETTINGS['allow_import'] === 1 && (int) $session_user_admin === 0) {
         echo '
                     <li class="nav-item">
                         <a href="#" data-name="import" class="nav-link', $get['page'] === 'import' ? ' active' : '', '">
@@ -641,6 +641,15 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                         </a>
                     </li>';
         }
+        echo '
+                    <li class="nav-item">
+                        <a href="#" data-name="import" class="nav-link', $get['page'] === 'import' ? ' active' : '', '">
+                        <i class="nav-icon fa-solid fa-file-import"></i>
+                        <p>
+                            ' . $lang->get('import') . '
+                        </p>
+                        </a>
+                    </li>';
     }
 
     if (

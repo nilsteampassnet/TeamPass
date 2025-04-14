@@ -702,9 +702,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                     'arguments' => json_encode([
                         'user_id' => (int) $session->get('user-id'),
                     ], JSON_HEX_QUOT | JSON_HEX_TAG),
-                    'updated_at' => '',
-                    'finished_at' => '',
-                    'output' => '',
                 )
             );
         } else {
@@ -1520,6 +1517,7 @@ function externalAdCreateUser(
             'auth_type' => $authType,
             'otp_provided' => '1',
             'is_ready_for_usage' => '0',
+            'created_at' => time(),
         ]
     );
     $newUserId = DB::insertId();
