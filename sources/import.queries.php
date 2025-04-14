@@ -533,6 +533,16 @@ switch ($inputData['type']) {
             WHERE id = %i',
             $targetFolderId
         ); 
+        $personalFolder = in_array($dataReceived['folderId'], $session->get('user-personal_folders')) ? 1 : 0;
+
+        // Prepare some variables
+        $targetFolderId = $dataReceived['folderId']; 
+        $targetFolderName = DB::queryFirstField(
+            'SELECT title
+            FROM '.prefixTable('nested_tree').'
+            WHERE id = %i',
+            $targetFolderId
+        ); 
 
         // Get all folders from objects in DB
         if ($dataReceived['foldersNumber'] > 0) {
@@ -654,9 +664,6 @@ switch ($inputData['type']) {
                         'action' => 'at_creation',
                     )
                 );
-                
-                // Add item to cache table
-                updateCacheTable('add_value', (int) $newId);
                 
                 // Add item to cache table
                 updateCacheTable('add_value', (int) $newId);
