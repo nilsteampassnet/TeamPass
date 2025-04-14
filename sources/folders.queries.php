@@ -1210,26 +1210,6 @@ if (null !== $post_type) {
                             $session->get('user-login')
                         );
 
-                        //Add entry to cache table
-                        DB::insert(
-                            prefixTable('cache'),
-                            array(
-                                'id' => $newItemId,
-                                'label' => substr($record['label'], 0, 500),
-                                'description' => empty($record['comment']) ? '' : $record['comment'],
-                                'id_tree' => $newFolderId,
-                                'url' => '0',
-                                'perso' => (int) $nodeInfo->personal_folder,
-                                'login' => empty($record['login']) ? '' : substr($record['login'], 0, 500),
-                                'folder' => $nodeInfo->title,
-                                'author' => $session->get('user-id'),
-                                'timestamp' => time(),
-                                'tags' => '',
-                                'restricted_to' => '0',
-                                'renewal_period' => '0',
-                            )
-                        );
-
                         // Add item to cache table
                         updateCacheTable('add_value', (int) $newItemId);
                     }

@@ -173,6 +173,7 @@ switch ($inputData['type']) {
         $items_number = 0;
         $batchInsert = [];
         $uniqueFolders = [];
+        $comment = '';
 
         // Vérifier si le fichier est accessible
         if (!file_exists($file) || !is_readable($file)) {
@@ -522,7 +523,8 @@ switch ($inputData['type']) {
         );
 
         //Get some info about personal folder
-        $personalFolder = in_array($dataReceived['folderId'], $session->get('user-personal_folders')) ? 1 : 0;        
+        $personalFolder = in_array($dataReceived['folderId'], $session->get('user-personal_folders')) ? 1 : 0;  
+        $targetFolderId = $dataReceived['folderId'];      
 
         // Get all folders from objects in DB
         if ($dataReceived['foldersNumber'] > 0) {
@@ -546,7 +548,6 @@ switch ($inputData['type']) {
                 $dataReceived['offset'],
                 $dataReceived['limit']
             );
-            $targetFolderId = $dataReceived['folderId'];
             $targetFolderName = DB::queryFirstField(
                 'SELECT title
                 FROM '.prefixTable('nested_tree').'
@@ -934,7 +935,7 @@ switch ($inputData['type']) {
         );
 
         // get destination folder informations
-        $destinationFolderInfos = getFolderComplexity($post_folder_id, $session->get('user-personal_folders'));
+        $destinationFolderInfos = getFolderComplexity((int) $post_folder_id, $session->get('user-personal_folders'));
         $arrFolders[$post_folder_id] = [
             'id' => (int) $post_folder_id,
             'level' => 1,
@@ -1089,26 +1090,9 @@ switch ($inputData['type']) {
                     'raison' => 'at_import',
                 )
             );
-
-            //Add entry to cache table
-            DB::insert(
-                prefixTable('cache'),
-                array(
-                    'id' => $newId,
-                    'label' => substr(stripslashes($item['Title']), 0, 500),
-                    'description' => stripslashes($item['Notes']),
-                    'url' => substr(stripslashes($item['URL']), 0, 500),
-                    'tags' => '',
-                    'id_tree' => $post_folders[$item['parentFolderId']]['id'],
-                    'perso' => $post_folders[$item['parentFolderId']]['isPF'] === 0 ? 0 : 1,
-                    'login' => substr(stripslashes($item['UserName']), 0, 500),
-                    'restricted_to' => '0',
-                    'folder' => $destinationFolderMore['title'],
-                    'author' => $session->get('user-id'),
-                    'renewal_period' => '0',
-                    'timestamp' => time(),
-                )
-            );
+            
+            // Add item to cache table
+            updateCacheTable('add_value', (int) $newId);
 
             // prepare return
             $ret .= "<li>".substr(stripslashes($item['Title']), 0, 500)." [".$destinationFolderMore['title']."]</li>";
