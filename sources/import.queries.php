@@ -523,8 +523,16 @@ switch ($inputData['type']) {
         );
 
         //Get some info about personal folder
-        $personalFolder = in_array($dataReceived['folderId'], $session->get('user-personal_folders')) ? 1 : 0;  
-        $targetFolderId = $dataReceived['folderId'];      
+        $personalFolder = in_array($dataReceived['folderId'], $session->get('user-personal_folders')) ? 1 : 0;
+
+        // Prepare some variables
+        $targetFolderId = $dataReceived['folderId']; 
+        $targetFolderName = DB::queryFirstField(
+            'SELECT title
+            FROM '.prefixTable('nested_tree').'
+            WHERE id = %i',
+            $targetFolderId
+        );    
 
         // Get all folders from objects in DB
         if ($dataReceived['foldersNumber'] > 0) {
@@ -547,12 +555,6 @@ switch ($inputData['type']) {
                 $dataReceived['csvOperationId'],
                 $dataReceived['offset'],
                 $dataReceived['limit']
-            );
-            $targetFolderName = DB::queryFirstField(
-                'SELECT title
-                FROM '.prefixTable('nested_tree').'
-                WHERE id = %i',
-                $targetFolderId
             );
         }
 
@@ -581,7 +583,7 @@ switch ($inputData['type']) {
                     prefixTable('items'),
                     array(
                         'label' => substr($item['label'], 0, 500),
-                        'description' => empty($item['comment']) === true ? '' : $item['comment'],
+                        'description' => empty($item['description']) === true ? '' : $item['description'],
                         'pw' => $itemPassword,
                         'pw_iv' => '',
                         'url' => empty($item['url']) === true ? '' : substr($item['url'], 0, 500),
@@ -652,6 +654,9 @@ switch ($inputData['type']) {
                         'action' => 'at_creation',
                     )
                 );
+                
+                // Add item to cache table
+                updateCacheTable('add_value', (int) $newId);
 
                 // Update items_importation table
                 DB::update(

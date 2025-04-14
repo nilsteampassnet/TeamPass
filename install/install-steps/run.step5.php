@@ -1452,7 +1452,7 @@ class DatabaseInstaller
             `url` TEXT NULL,
             `description` TEXT NULL,
             `folder` VARCHAR(1000) NOT NULL,
-            `folder_id` INT(12) NULL DEFAULT NULL
+            `folder_id` INT(12) NULL DEFAULT NULL,
             `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             `imported_at` INT(12) NULL DEFAULT NULL
             ) CHARSET=utf8;"
