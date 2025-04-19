@@ -33,10 +33,15 @@ use TeampassClasses\SessionManager\SessionManager;
 use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use TeampassClasses\Language\Language;
 
+$session = SessionManager::getSession();
+$request = SymfonyRequest::createFromGlobals();
+$lang = new Language($session->get('user-language') ?? 'english');
+
 // Is maintenance on-going?
 if (
     isset($SETTINGS['maintenance_mode']) === true
     && (int) $SETTINGS['maintenance_mode'] === 1
+    && isset($session_user_admin)
     && ($session_user_admin === null
         || (int) $session_user_admin === 1)
 ) {
@@ -52,9 +57,6 @@ if (
     </script>
 <?php
 }
-$lang = new Language($session->get('user-language') ?? 'english');
-$session = SessionManager::getSession();
-$request = SymfonyRequest::createFromGlobals();
 ?>
 
 <script type="text/javascript">
@@ -1855,7 +1857,7 @@ $request = SymfonyRequest::createFromGlobals();
         );
 
         if (window.location.href.indexOf('page=items') === -1) {
-            location.replace('<?php echo $SETTINGS['cpassman_url']; ?>/index.php?page=items&group=' + itemDefinition.data().itemTreeId + '&id=' + itemDefinition.data().itemId);
+            location.replace('<?php echo isset($SETTINGS['cpassman_url']) ? $SETTINGS['cpassman_url'] : ''; ?>/index.php?page=items&group=' + itemDefinition.data().itemTreeId + '&id=' + itemDefinition.data().itemId);
         } else {
             $('#items_list').html('<ul class="liste_items" id="full_items_list"></ul>');
             Details(itemDefinition, 'show');

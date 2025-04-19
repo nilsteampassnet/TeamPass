@@ -356,7 +356,7 @@ if (null !== $post_type) {
             }
 
             // Get info about this folder
-            $dataFolder = DB::queryfirstrow(
+            $dataFolder = DB::queryFirstRow(
                 'SELECT *
                 FROM ' . prefixTable('nested_tree') . '
                 WHERE id = %i',
@@ -392,7 +392,7 @@ if (null !== $post_type) {
             }
 
             //check if parent folder is personal
-            $dataParent = DB::queryfirstrow(
+            $dataParent = DB::queryFirstRow(
                 'SELECT personal_folder, bloquer_creation, bloquer_modification
                 FROM ' . prefixTable('nested_tree') . '
                 WHERE id = %i',
@@ -421,7 +421,7 @@ if (null !== $post_type) {
                         || (int) $session->get('user-can_manage_all_users') !== 1)
                 ) {
                     // get complexity level for this folder
-                    $data = DB::queryfirstrow(
+                    $data = DB::queryFirstRow(
                         'SELECT valeur
                         FROM ' . prefixTable('misc') . '
                         WHERE intitule = %i AND type = %s',
@@ -592,7 +592,7 @@ if (null !== $post_type) {
             );
 
             // Check if parent folder is personal
-            $dataParent = DB::queryfirstrow(
+            $dataParent = DB::queryFirstRow(
                 'SELECT personal_folder
                 FROM ' . prefixTable('nested_tree') . '
                 WHERE id = %i',
@@ -721,7 +721,7 @@ if (null !== $post_type) {
 
             foreach ($post_folders as $folderId) {
                 // Check if parent folder is personal
-                $dataParent = DB::queryfirstrow(
+                $dataParent = DB::queryFirstRow(
                     'SELECT personal_folder
                     FROM ' . prefixTable('nested_tree') . '
                     WHERE id = %i',
@@ -919,7 +919,7 @@ if (null !== $post_type) {
             }
 
             // Check if target parent folder is personal
-            $dataParent = DB::queryfirstrow(
+            $dataParent = DB::queryFirstRow(
                 'SELECT personal_folder
                 FROM ' . prefixTable('nested_tree') . '
                 WHERE id = %i',
@@ -973,7 +973,7 @@ if (null !== $post_type) {
                 $nodeInfo = $tree->getNode($node->id);
 
                 // get complexity of current node
-                $nodeComplexity = DB::queryfirstrow(
+                $nodeComplexity = DB::queryFirstRow(
                     'SELECT valeur
                     FROM ' . prefixTable('misc') . '
                     WHERE intitule = %i AND type= %s',
@@ -1037,7 +1037,7 @@ if (null !== $post_type) {
                     //add access to this new folder
                     foreach (explode(';', $session->get('user-roles')) as $role) {
                         if (empty($role) === false) {
-                            DB::insert(
+                            DB::insertUpdate(
                                 prefixTable('roles_values'),
                                 array(
                                     'role_id' => $role,
@@ -1057,24 +1057,15 @@ if (null !== $post_type) {
                     $parentId
                 );
                 foreach ($rows as $record) {
-                    // Add access to this subfolder after checking that it is not already set
-                    DB::query(
-                        'SELECT *
-                        FROM ' . prefixTable('roles_values') . '
-                        WHERE folder_id = %i AND role_id = %i',
-                        $newFolderId,
-                        $record['role_id']
+                    // Add access to this subfolder
+                    DB::insertUpdate(
+                        prefixTable('roles_values'),
+                        array(
+                            'role_id' => $record['role_id'],
+                            'folder_id' => $newFolderId,
+                            'type' => $record['type'],
+                        )
                     );
-                    if (DB::count() === 0) {
-                        DB::insert(
-                            prefixTable('roles_values'),
-                            array(
-                                'role_id' => $record['role_id'],
-                                'folder_id' => $newFolderId,
-                                'type' => $record['type'],
-                            )
-                        );
-                    }
                 }
 
                 // if parent folder has Custom Fields Categories then add to this child one too
