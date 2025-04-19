@@ -289,8 +289,7 @@ function passwordHandler(string $post_type, /*php8 array|null|string*/ $dataRece
             return /** @scrutinizer ignore-call */ changeUserLDAPAuthenticationPassword(
                 (int) $session->get('user-id'),
                 filter_var($dataReceived['previous_password'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                filter_var($userPassword),
-                $SETTINGS
+                filter_var($userPassword)
             );
 
         /*
@@ -359,7 +358,7 @@ function userHandler(string $post_type, array|null|string $dataReceived, array $
 
     if (isset($dataReceived['user_id'])) {
         // Get info about user to modify
-        $targetUserInfos = DB::queryfirstrow(
+        $targetUserInfos = DB::queryFirstRow(
             'SELECT admin, gestionnaire, can_manage_all_users, isAdministratedByRole FROM ' . prefixTable('users') . '
             WHERE id = %i',
             $dataReceived['user_id']
@@ -508,7 +507,7 @@ function mailHandler(string $post_type, /*php8 array|null|string */$dataReceived
          */
         case 'mail_me'://action_mail
             // Get info about user to send email
-            $data_user = DB::queryfirstrow(
+            $data_user = DB::queryFirstRow(
                 'SELECT admin, gestionnaire, can_manage_all_users, isAdministratedByRole FROM ' . prefixTable('users') . '
                 WHERE email = %s',
                 filter_var($dataReceived['receipt'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)
@@ -621,7 +620,7 @@ function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived,
 
     if (isset($dataReceived['user_id'])) {
         // Get info about user to modify
-        $targetUserInfos = DB::queryfirstrow(
+        $targetUserInfos = DB::queryFirstRow(
             'SELECT admin, gestionnaire, can_manage_all_users, isAdministratedByRole FROM ' . prefixTable('users') . '
             WHERE id = %i',
             $dataReceived['user_id']
@@ -1118,7 +1117,7 @@ function changePassword(
         }
 
         // check if expected security level is reached
-        $dataUser = DB::queryfirstrow(
+        $dataUser = DB::queryFirstRow(
             'SELECT *
             FROM ' . prefixTable('users') . ' WHERE id = %i',
             $post_user_id
@@ -1258,14 +1257,14 @@ function generateQRCode(
     // Check if user exists
     if (isValueSetNullEmpty($post_id) === true) {
         // Get data about user
-        $dataUser = DB::queryfirstrow(
+        $dataUser = DB::queryFirstRow(
             'SELECT id, email, pw
             FROM ' . prefixTable('users') . '
             WHERE login = %s',
             $post_login
         );
     } else {
-        $dataUser = DB::queryfirstrow(
+        $dataUser = DB::queryFirstRow(
             'SELECT id, login, email, pw
             FROM ' . prefixTable('users') . '
             WHERE id = %i',
@@ -1319,7 +1318,7 @@ function generateQRCode(
     }
 
     // Check if token already used
-    $dataToken = DB::queryfirstrow(
+    $dataToken = DB::queryFirstRow(
         'SELECT end_timestamp, reason
         FROM ' . prefixTable('tokens') . '
         WHERE token = %s AND user_id = %i',
@@ -1697,6 +1696,9 @@ function generateBugReport(
         }
     }
 
+    if (defined('DB_PASSWD_CLEAR') === false) {
+        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+    }
     $link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, (int) DB_PORT, null);
 
     // Now prepare text
@@ -1980,7 +1982,7 @@ function initializeUserPassword(
         );
         if (DB::count() > 0 && empty($userData['email']) === false) {
             // If user pwd is empty then generate a new one and send it to user
-            if (isset($post_user_password) === false || empty($post_user_password) === true) {
+            if (empty($post_user_password) === true) {
                 // Generate new password
                 $post_user_password = generateQuickPassword();
             }

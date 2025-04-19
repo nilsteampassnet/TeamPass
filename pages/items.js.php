@@ -5594,6 +5594,17 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
                             // Finished
                             return false;
+                        } else {
+                            // Retrieve the password
+                            getItemPassword(
+                                'at_password_shown_edit_form',
+                                'item_id',
+                                id
+                            ).then(item_pwd => {
+                                if (item_pwd) {
+                                    $('#form-item-password').val(item_pwd);
+                                }
+                            });
                         }
                     });
                 }

@@ -140,27 +140,27 @@ switch ($post_type) {
         $tables = array();
         $result = DB::query('SHOW TABLES');
         foreach ($result as $row) {
-            $tables[] = $row['Tables_in_' . $database];
+            $tables[] = $row['Tables_in_' . DB_NAME];
         }
 
         //cycle through
         foreach ($tables as $table) {
             if (defined('DB_PREFIX') || substr_count($table, DB_PREFIX) > 0) {
                 // Do query
-                $result = DB::queryRaw('SELECT * FROM ' . $table);
-                DB::queryRaw(
+                $result = DB::query('SELECT * FROM ' . $table);
+                DB::query(
                     'SELECT *
                     FROM INFORMATION_SCHEMA.COLUMNS
                     WHERE table_schema = %s
                     AND table_name = %s',
-                    $database,
+                    DB_NAME,
                     $table
                 );
                 $numFields = DB::count();
 
                 // prepare a drop table
                 $return .= 'DROP TABLE ' . $table . ';';
-                $row2 = DB::queryfirstrow('SHOW CREATE TABLE ' . $table);
+                $row2 = DB::queryFirstRow('SHOW CREATE TABLE ' . $table);
                 $return .= "\n\n" . $row2['Create Table'] . ";\n\n";
 
                 //prepare all fields and datas
@@ -305,7 +305,7 @@ switch ($post_type) {
             $query .= fgets($handle, 4096);
             if (substr(rtrim($query), -1) === ';') {
                 //launch query
-                DB::queryRaw($query);
+                DB::query($query);
                 $query = '';
             }
         }
@@ -630,6 +630,11 @@ switch ($post_type) {
             break;
         }
 
+        // Do init
+        $nb_of_items = 0;
+        $error = $nextStart = '';
+
+
         // what objects to treat
         if (empty($post_object) === true) {
             // no more object to treat
@@ -940,11 +945,10 @@ switch ($post_type) {
                 } else {
                     // now finishing
                     $nextAction = 'finishing';
-                    $nb_of_items = $error = $nextStart = '';
                 }
             } else {
                 $nextAction = $post_object;
-                $nb_of_items = '';
+                $nb_of_items = 0;
             }
         }
 
@@ -954,7 +958,7 @@ switch ($post_type) {
                 'error' => false,
                 'message' => '',
                 'nextAction' => $nextAction,
-                'nextStart' => $nextStart,
+                'nextStart' => (int) $nextStart,
                 'nbOfItems' => $nb_of_items,
                 'oldsk' => $session->get('user-reencrypt_old_salt'),
                 'newsk' => $session->get('user-reencrypt_new_salt'),
@@ -1042,6 +1046,7 @@ switch ($post_type) {
         }
 
         // delete files
+        $previous_saltkey_filename = '';
         $rows = DB::query(
             'SELECT current_table, value, value2, current_sql
             FROM ' . prefixTable('sk_reencrypt_backup')
@@ -1457,7 +1462,7 @@ switch ($post_type) {
         foreach ($post_list as $file) {
             if ($cpt < 5) {
                 // Get file name
-                $file_info = DB::queryfirstrow(
+                $file_info = DB::queryFirstRow(
                     'SELECT file
                     FROM ' . prefixTable('files') . '
                     WHERE id = %i',
@@ -1918,7 +1923,7 @@ switch ($post_type) {
         }
 
         // send data
-        echo '[{"result" : "' . addslashes($LANG['done']) . '" , "error" : ""}]';
+        echo '[{"result" : "' . addslashes($lang['done']) . '" , "error" : ""}]';
         break;
 
     case 'save_agses_options':
@@ -2033,7 +2038,7 @@ switch ($post_type) {
         }
 
         // send data
-        echo '[{"result" : "' . addslashes($LANG['done']) . '" , "error" : ""}]';
+        echo '[{"result" : "' . addslashes($lang['done']) . '" , "error" : ""}]';
         break;
 
     case 'save_option_change':
@@ -2492,7 +2497,7 @@ function tablesIntegrityCheck(): array
         }
 
         if ($tableFound === true) {
-            $createTable = DB::queryfirstrow("SHOW CREATE TABLE ".DB_PREFIX."$table");
+            $createTable = DB::queryFirstRow("SHOW CREATE TABLE ".DB_PREFIX."$table");
             $currentHash = hash('sha256', $createTable['Create Table']);
             if ($currentHash !== $tableHash) {
                 $tablesInError[] = DB_PREFIX.$table;

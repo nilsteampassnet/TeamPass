@@ -223,7 +223,8 @@ switch ($inputData['type']) {
         }
 
         // init
-        $returnValues = array();
+        $returnValues = [];
+        $arrData = [];
         // decrypt and retreive data in JSON format
         $dataReceived = prepareExchangedData(
             $inputData['data'],
@@ -379,7 +380,7 @@ switch ($inputData['type']) {
             }
 
             // Get folder complexity
-            $folderComplexity = DB::queryfirstrow(
+            $folderComplexity = DB::queryFirstRow(
                 'SELECT valeur
                 FROM ' . prefixTable('misc') . '
                 WHERE type = %s AND intitule = %i',
@@ -405,7 +406,7 @@ switch ($inputData['type']) {
             // check if element doesn't already exist
             $itemExists = 0;
             $newID = '';
-            $data = DB::queryfirstrow(
+            $data = DB::queryFirstRow(
                 'SELECT * FROM ' . prefixTable('items') . '
                 WHERE label = %s AND inactif = %i',
                 $inputData['label'],
@@ -424,7 +425,6 @@ switch ($inputData['type']) {
                 isset($SETTINGS['duplicate_item']) === true
                 && (int) $SETTINGS['duplicate_item'] === 0
                 && (int) $post_folder_is_personal === 1
-                && isset($post_folder_is_personal) === true
             ) {
                 $itemExists = 0;
             }
@@ -470,10 +470,9 @@ switch ($inputData['type']) {
                         'inactif' => 0,
                         'restricted_to' => empty($post_restricted_to) === true ?
                             '' : (is_array($post_restricted_to) === true ? implode(';', $post_restricted_to) : $post_restricted_to),
-                        'perso' => (isset($post_folder_is_personal) === true && (int) $post_folder_is_personal === 1) ?
+                        'perso' => ((int) $post_folder_is_personal === 1) ?
                             1 : 0,
-                        'anyone_can_modify' => (isset($post_anyone_can_modify) === true
-                            && $post_anyone_can_modify === 'on') ? 1 : 0,
+                        'anyone_can_modify' => ($post_anyone_can_modify === 'on') ? 1 : 0,
                         'complexity_level' => $post_complexity_level,
                         'encryption_type' => 'teampass_aes',
                         'fa_icon' => $post_fa_icon,
@@ -565,7 +564,6 @@ switch ($inputData['type']) {
                 if (
                     isset($SETTINGS['item_creation_templates']) === true
                     && (int) $SETTINGS['item_creation_templates'] === 1
-                    && isset($post_template_id) === true
                     && empty($post_template_id) === false
                 ) {
                     DB::queryFirstRow(
@@ -639,7 +637,7 @@ switch ($inputData['type']) {
                 ) {
                     foreach ($post_restricted_to as $userRest) {
                         if (empty($userRest) === false) {
-                            $dataTmp = DB::queryfirstrow('SELECT login FROM ' . prefixTable('users') . ' WHERE id= %i', $userRest);
+                            $dataTmp = DB::queryFirstRow('SELECT login FROM ' . prefixTable('users') . ' WHERE id= %i', $userRest);
                             if (empty($listOfRestricted)) {
                                 $listOfRestricted = $dataTmp['login'];
                             } else {
@@ -657,7 +655,7 @@ switch ($inputData['type']) {
                     if (empty($data['restricted_to']) === false) {
                         foreach (explode(';', $data['restricted_to']) as $userRest) {
                             if (empty($userRest) === false) {
-                                $dataTmp = DB::queryfirstrow(
+                                $dataTmp = DB::queryFirstRow(
                                     'SELECT login
                                     FROM ' . prefixTable('users') . '
                                     WHERE id= %i',
@@ -786,7 +784,7 @@ switch ($inputData['type']) {
                                     $lang->get('email_subject_item_updated'),
                                     str_replace(
                                         array('#label', '#link'),
-                                            array($path, $SETTINGS['email_server_url'] . '/index.php?page=items&group=' . $inputData['folderId'] . '&id=' . $newID . $txt['email_body3']),
+                                            array($path, $SETTINGS['email_server_url'] . '/index.php?page=items&group=' . $inputData['folderId'] . '&id=' . $newID . $lang['email_body3']),
                                             $lang->get('new_item_email_body')
                                     ),
                                     $emailAddress,
@@ -1000,7 +998,7 @@ switch ($inputData['type']) {
         }
 
         // Get folder complexity
-        $folderComplexity = DB::queryfirstrow(
+        $folderComplexity = DB::queryFirstRow(
             'SELECT valeur
             FROM ' . prefixTable('misc') . '
             WHERE type = %s AND intitule = %i',
@@ -1045,7 +1043,7 @@ switch ($inputData['type']) {
         $encrypted_password_key = '';
 
         // Get all informations for this item
-        $dataItem = DB::queryfirstrow(
+        $dataItem = DB::queryFirstRow(
             'SELECT *
             FROM ' . prefixTable('items') . ' as i
             INNER JOIN ' . prefixTable('log_items') . ' as l ON (l.id_item = i.id)
@@ -1126,6 +1124,14 @@ switch ($inputData['type']) {
             $restrictionActive = false;
         }
 
+        // DO init        
+        $listOfRestricted = $oldRestrictionList = '';
+        $arrayOfUsersRestriction = [];
+        $arrayOfUsersIdRestriction = [];
+        $diffUsersRestiction = [];
+        $diffRolesRestiction = [];
+        $arrayOfRestrictionRoles = [];
+
         $session__list_restricted_folders_for_items = $session->get('system-list_restricted_folders_for_items') ?? [];
         if ((in_array($dataItem['id_tree'], $session->get('user-accessible_folders')) === true
                 && ((int) $dataItem['perso'] === 0
@@ -1145,7 +1151,7 @@ switch ($inputData['type']) {
                 && $restrictionActive === false)
         ) {
             // Get existing values
-            $data = DB::queryfirstrow(
+            $data = DB::queryFirstRow(
                 'SELECT i.id as id, i.label as label, i.description as description, i.pw as pw, i.url as url, i.id_tree as id_tree, i.perso as perso, i.login as login, 
                 i.inactif as inactif, i.restricted_to as restricted_to, i.anyone_can_modify as anyone_can_modify, i.email as email, i.notification as notification,
                 u.login as user_login, u.email as user_email
@@ -1561,7 +1567,6 @@ switch ($inputData['type']) {
             if (
                 isset($SETTINGS['item_creation_templates']) === true
                 && (int) $SETTINGS['item_creation_templates'] === 1
-                && isset($post_template_id) === true
             ) {
                 DB::queryFirstRow(
                     'SELECT *
@@ -1696,11 +1701,6 @@ switch ($inputData['type']) {
             }
 
             // get readable list of restriction
-            $listOfRestricted = $oldRestrictionList = '';
-            $arrayOfUsersRestriction = array();
-            $arrayOfUsersIdRestriction = array();
-            $diffUsersRestiction = array();
-            $diffRolesRestiction = array();
             if (
                 is_array($post_restricted_to) === true
                 && count($post_restricted_to) > 0
@@ -1709,7 +1709,7 @@ switch ($inputData['type']) {
             ) {
                 foreach ($post_restricted_to as $userId) {
                     if (empty($userId) === false) {
-                        $dataTmp = DB::queryfirstrow(
+                        $dataTmp = DB::queryFirstRow(
                             'SELECT id, name, lastname
                             FROM ' . prefixTable('users') . '
                             WHERE id= %i',
@@ -1783,7 +1783,7 @@ switch ($inputData['type']) {
                                 'item_id' => $inputData['itemId'],
                             )
                         );
-                        $dataTmp = DB::queryfirstrow(
+                        $dataTmp = DB::queryFirstRow(
                             'SELECT title
                             FROM ' . prefixTable('roles_title') . '
                             WHERE id = %i',
@@ -2032,7 +2032,7 @@ switch ($inputData['type']) {
             }
 
             // Reload new values
-            $dataItem = DB::queryfirstrow(
+            $dataItem = DB::queryFirstRow(
                 'SELECT *
                 FROM ' . prefixTable('items') . ' as i
                 INNER JOIN ' . prefixTable('log_items') . ' as l ON (l.id_item = i.id)
@@ -2078,7 +2078,7 @@ switch ($inputData['type']) {
                             $lang->get('email_subject_item_updated'),
                             str_replace(
                                 array('#item_label#', '#item_category#', '#item_id#', '#url#', '#name#', '#lastname#', '#folder_name#'),
-                                array($inputData['label'], $inputData['folderId'], $inputData['itemId'], $SETTINGS['cpassman_url'], $session->get('user-name'), $session->get('user-lastname'), $dataFolderSettings['title']),
+                                array($inputData['label'], (string) $inputData['folderId'], (string) $inputData['itemId'], $SETTINGS['cpassman_url'], $session->get('user-name'), $session->get('user-lastname'), $dataFolderSettings['title']),
                                 $lang->get('email_body_item_updated')
                             ),
                             $emailAddress,
@@ -2198,7 +2198,7 @@ switch ($inputData['type']) {
             && empty($post_dest_id) === false
         ) {
             // load the original record into an array
-            $originalRecord = DB::queryfirstrow(
+            $originalRecord = DB::queryFirstRow(
                 'SELECT * FROM ' . prefixTable('items') . '
                 WHERE id = %i',
                 $inputData['itemId']
@@ -2217,7 +2217,7 @@ switch ($inputData['type']) {
             }
 
             // Load the destination folder record into an array
-            $dataDestination = DB::queryfirstrow(
+            $dataDestination = DB::queryFirstRow(
                 'SELECT personal_folder FROM ' . prefixTable('nested_tree') . '
                 WHERE id = %i',
                 $post_dest_id
@@ -2272,7 +2272,7 @@ switch ($inputData['type']) {
                     $aSet[$key] = $post_new_label;
                 } elseif ($key === 'viewed_no') {
                     $aSet['viewed_no'] = '0';
-                } elseif ($key === 'pw' && empty($pw) === false) {
+                } elseif ($key === 'pw') {
                     $aSet['pw'] = $originalRecord['pw'];
                     $aSet['pw_iv'] = '';
                 } elseif ($key === 'perso') {
@@ -2577,6 +2577,7 @@ switch ($inputData['type']) {
             : '';
         $post_item_rights = filter_var($dataReceived['rights'], FILTER_SANITIZE_NUMBER_INT);
 
+        $pwIsEmptyNormal = false;
         $arrData = array();
         // return ID
         $arrData['id'] = (int) $inputData['id'];
@@ -2622,7 +2623,7 @@ switch ($inputData['type']) {
         }
 
         // Get all informations for this item
-        $dataItem = DB::queryfirstrow(
+        $dataItem = DB::queryFirstRow(
             'SELECT *
             FROM ' . prefixTable('items') . ' as i
             INNER JOIN ' . prefixTable('log_items') . ' as l ON (l.id_item = i.id)
@@ -2632,7 +2633,7 @@ switch ($inputData['type']) {
         );
 
         // Notification
-        DB::queryfirstrow(
+        DB::queryFirstRow(
             'SELECT *
             FROM ' . prefixTable('notification') . '
             WHERE item_id = %i AND user_id = %i',
@@ -2727,7 +2728,7 @@ switch ($inputData['type']) {
                 $pw = '';
             }
         } else {
-            $pwIsEmptyNormal == true;
+            $pwIsEmptyNormal = true;
             $decryptedObject = decryptUserObjectKey($userKey['share_key'], $session->get('user-private_key'));
             // if null then we have an error.
             // suspecting bad password
@@ -2988,7 +2989,7 @@ switch ($inputData['type']) {
 
             // Now get the selected template (if exists)
             if (isset($SETTINGS['item_creation_templates']) && (int) $SETTINGS['item_creation_templates'] === 1) {
-                $rows_tmp = DB::queryfirstrow(
+                $rows_tmp = DB::queryFirstRow(
                     'SELECT category_id
                     FROM ' . prefixTable('templates') . '
                     WHERE item_id = %i',
@@ -3005,7 +3006,7 @@ switch ($inputData['type']) {
             $arrData['to_be_deleted'] = '';
 
             // Evaluate if item is ready for all users
-            $rows_tmp = DB::queryfirstrow(
+            $rows_tmp = DB::queryFirstRow(
                 'SELECT finished_at
                 FROM ' . prefixTable('background_tasks') . '
                 WHERE item_id = %i',
@@ -3022,7 +3023,7 @@ switch ($inputData['type']) {
             // Decrement the number before being deleted
             if (isset($SETTINGS['enable_delete_after_consultation']) && (int) $SETTINGS['enable_delete_after_consultation'] === 1) {
                 // Is the Item to be deleted?
-                $dataDelete = DB::queryfirstrow(
+                $dataDelete = DB::queryFirstRow(
                     'SELECT * 
                     FROM ' . prefixTable('automatic_del') . '
                     WHERE item_id = %i',
@@ -3103,7 +3104,7 @@ switch ($inputData['type']) {
             if (empty($dataItem['restricted_to']) === false) {
                 foreach (explode(';', $dataItem['restricted_to']) as $userRest) {
                     if (empty($userRest) === false) {
-                        $dataTmp = DB::queryfirstrow(
+                        $dataTmp = DB::queryFirstRow(
                             'SELECT login
                             FROM ' . prefixTable('users') . '
                             WHERE id= %i',
@@ -3478,8 +3479,7 @@ switch ($inputData['type']) {
         
         $inputData = dataSanitizer(
             $data,
-            $filters,
-            $SETTINGS['cpassman_dir']
+            $filters
         );
         
         if (empty($inputData['itemId']) === true && (empty($inputData['itemKey']) === true || is_null($inputData['itemKey']) === true)) {
@@ -3707,7 +3707,7 @@ switch ($inputData['type']) {
         }
 
         // query on folder
-        $data = DB::queryfirstrow(
+        $data = DB::queryFirstRow(
             'SELECT parent_id, personal_folder
             FROM ' . prefixTable('nested_tree') . '
             WHERE id = %i',
@@ -3717,7 +3717,7 @@ switch ($inputData['type']) {
         // check if complexity level is good
         // if manager or admin don't care
         if ($session->get('user-admin') !== 1 && $session->get('user-manager') !== 1 && $data['personal_folder'] === '0') {
-            $data = DB::queryfirstrow(
+            $data = DB::queryFirstRow(
                 'SELECT valeur
                 FROM ' . prefixTable('misc') . '
                 WHERE intitule = %i AND type = %s',
@@ -3783,7 +3783,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => $lang->get('error_not_allowed_to')." BOOH 2",
+                    'message' => $lang->get('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -3859,7 +3859,7 @@ switch ($inputData['type']) {
             // CHeck if roles have 'allow_pw_change' set to true
             $forceItemEditPrivilege = false;
             foreach ($session->get('user-roles_array') as $role) {
-                $roleQ = DB::queryfirstrow(
+                $roleQ = DB::queryFirstRow(
                     'SELECT allow_pw_change
                     FROM ' . prefixTable('roles_title') . '
                     WHERE id = %i',
@@ -4104,9 +4104,6 @@ switch ($inputData['type']) {
                     . " WHERE action = 'at_modification' AND raison = 'at_pw'
                     AND id_item=i.id ORDER BY date DESC LIMIT 1)";
                 $where->add('l.date=%l', $sql_e);
-                if (empty($limited_to_items) === false) {
-                    $where->add('i.id IN %ls', explode(',', $limited_to_items));
-                }
 
                 $query_limit = ' LIMIT ' .
                     $start . ',' .
@@ -4174,7 +4171,7 @@ switch ($inputData['type']) {
 
                     // Does this item has restriction to groups of users?
                     $item_is_restricted_to_role = false;
-                    DB::queryfirstrow(
+                    DB::queryFirstRow(
                         'SELECT role_id
                         FROM ' . prefixTable('restriction_to_roles') . '
                         WHERE item_id = %i',
@@ -4390,7 +4387,7 @@ switch ($inputData['type']) {
                 $idManaged = $record['id'];
             }
 
-            $rights = recupDroitCreationSansComplexite($inputData['id']);
+            $rights = recupDroitCreationSansComplexite((int) $inputData['id']);
         }
 
         // DELETE - 2.1.19 - AND (l.action = 'at_creation' OR (l.action = 'at_modification' AND l.raison LIKE 'at_pw :%'))
@@ -4462,7 +4459,7 @@ switch ($inputData['type']) {
         }
 
         // Get item details and its sharekey
-        $dataItem = DB::queryfirstrow(
+        $dataItem = DB::queryFirstRow(
             'SELECT i.pw AS pw, s.share_key AS share_key, i.id AS id,
                     i.label AS label, i.id_tree AS id_tree
             FROM ' . prefixTable('items') . ' AS i
@@ -4558,117 +4555,18 @@ switch ($inputData['type']) {
     case 'get_complixity_level':
         // get some info about ITEM
         if (null !== $inputData['itemId'] && empty($inputData['itemId']) === false) {
-            // get if existing edition lock
-            $dataItemEditionLocks = DB::query(
-                'SELECT timestamp, user_id
-                FROM ' . prefixTable('items_edition') . '
-                WHERE item_id = %i 
-                ORDER BY increment_id DESC',
-                $inputData['itemId']
-            );
-            
-            if (WIP === true) error_log('Existing edition locks: '.DB::count());
-
-            // Check if item has no edition lock
-            if ((int) DB::count() > 0 ) {
-                // get last edition lock
-                $dataLastItemEditionLock = $dataItemEditionLocks[0];
-
-                // Calculate the edition grace delay
-                if (isset($SETTINGS['delay_item_edition']) && $SETTINGS['delay_item_edition'] > 0 && empty($dataTmp['timestamp']) === false) {
-                    $delay = $SETTINGS['delay_item_edition'];
-                } else {
-                    $delay = EDITION_LOCK_PERIOD; // One day delay
-                }
-                if (WIP === true) error_log('delay: ' . $delay);
-
-                // We remove old edition locks if delay is expired meaning more than 1 day long
-                if (round(abs(time() - $dataTmp['timestamp']),0) > $delay) {
-                    // Case where time is expired
-                    // In this case, delete edition lock and possible ongoing processes
-                    // and continue editing this time
-                    // We coonsidere if the most recent item is still locked then all other locks can be removed
-                    if (WIP === true)  error_log('Delay is expired, removing old locks');
-                    foreach ($dataItemEditionLocks as $itemEditionLock) {
-                        // delete lock
-                        DB::delete(
-                            prefixTable('items_edition'), 
-                            'item_id = %i', 
-                            $inputData['itemId']
-                        );
-
-                        // Get process Id
-                        $processDetail = DB::queryFirstRow(
-                            'SELECT increment_id
-                            FROM ' . prefixTable('background_tasks') . '
-                            WHERE item_id = %i AND finished_at = ""',
-                            $inputData['itemId']
-                        );
-
-                        // Delete related Task Process
-                        if (DB::count() > 0) {
-                            deleteProcessAndRelatedTasks((int) $processDetail['increment_id']);
-                        }
-                    }
-                }
-
-                // check if user is currently the one that is editing
-                if ((int) $dataItemEditionLock['user_id'] === (int) $session->get('user-id')) {
-                    // CASE where no encryption process is pending
-                    // get if existing process ongoing for this item
-                    $dataItemProcessOngoing = DB::queryFirstRow(
-                        'SELECT JSON_EXTRACT(arguments, "$.all_users_except_id") AS all_users_except_id
-                        FROM ' . prefixTable('background_tasks') . '
-                        WHERE item_id = %i AND finished_at = ""
-                        ORDER BY increment_id DESC',
-                        $inputData['itemId']
-                    );
-
-                    if ((int) DB::count() === 0) {
-                        // Delete the existing edition lock and let the user edit
-                        DB::delete(
-                            prefixTable('items_edition'), 
-                            'item_id = %i AND user_id = %i', 
-                            $inputData['itemId'],
-                            $session->get('user-id')
-                        );
-                    } else {
-                        // Case where encryption process is pending
-                        // Then no edition is possible
-                        $returnValues = array(
-                            'error' => true,
-                            'message' => $lang->get('error_no_edition_possible_locked'),
-                        );
-                        echo (string) prepareExchangedData(
-                            $returnValues,
-                            'encode'
-                        );
-                        break;
-                    }
-                } elseif (round(abs(time() - $dataTmp['timestamp']),0) <= $delay) {
-                    // Case where edition lock is already taken by another user
-                    // Then no edition is possible
-                    $returnValues = array(
-                        'error' => true,
-                        'message' => $lang->get('error_no_edition_possible_locked'),
-                    );
-                    echo (string) prepareExchangedData(
-                        $returnValues,
-                        'encode'
-                    );
-                    break;
-                }
+            // Is this item locked?
+            if (isItemLocked((int) $inputData['itemId'], $session, (int) $session->get('user-id'))) {
+                $returnValues = array(
+                    'error' => true,
+                    'message' => $lang->get('error_no_edition_possible_locked'),
+                );
+                echo (string) prepareExchangedData(
+                    $returnValues,
+                    'encode'
+                );
+                break;
             }
-
-            // create edition lock on this item for this user
-            DB::insert(
-                prefixTable('items_edition'),
-                array(
-                    'timestamp' => time(),
-                    'item_id' => $inputData['itemId'],
-                    'user_id' => (int) $session->get('user-id'),
-                )
-            );
         }
 
         // do query on this folder
@@ -4883,7 +4781,7 @@ switch ($inputData['type']) {
             'rolesList' => $listOptionsForRoles,
             'setting_restricted_to_roles' => isset($SETTINGS['restricted_to_roles']) === true
                 && (int) $SETTINGS['restricted_to_roles'] === 1 ? 1 : 0,
-            'itemAccessRight' => isset($accessLevel) === true ? $accessLevel : '',
+            'itemAccessRight' => $accessLevel,
         );
         echo (string) prepareExchangedData(
             $returnValues,
@@ -5051,7 +4949,7 @@ switch ($inputData['type']) {
                 $session->get('user-id')
             );
             // Update SESSION with this new favourite
-            $data = DB::queryfirstrow(
+            $data = DB::queryFirstRow(
                 'SELECT label,id_tree
                 FROM ' . prefixTable('items') . '
                 WHERE id = %i',
@@ -5129,7 +5027,7 @@ switch ($inputData['type']) {
         $inputData['itemId'] = (int) filter_var($dataReceived['item_id'], FILTER_SANITIZE_NUMBER_INT);
 
         // get data about item
-        $dataSource = DB::queryfirstrow(
+        $dataSource = DB::queryFirstRow(
             'SELECT i.pw, f.personal_folder,i.id_tree, f.title,i.label
             FROM ' . prefixTable('items') . ' as i
             INNER JOIN ' . prefixTable('nested_tree') . ' as f ON (i.id_tree=f.id)
@@ -5174,7 +5072,7 @@ switch ($inputData['type']) {
         }
 
         // get data about new folder
-        $dataDestination = DB::queryfirstrow(
+        $dataDestination = DB::queryFirstRow(
             'SELECT personal_folder, title
             FROM ' . prefixTable('nested_tree') . '
             WHERE id = %i',
@@ -5484,7 +5382,7 @@ switch ($inputData['type']) {
         foreach (explode(';', $post_item_ids) as $item_id) {
             if (empty($item_id) === false) {
                 // get data about item
-                $dataSource = DB::queryfirstrow(
+                $dataSource = DB::queryFirstRow(
                     'SELECT i.pw, f.personal_folder,i.id_tree, f.title,i.label
                     FROM ' . prefixTable('items') . ' as i
                     INNER JOIN ' . prefixTable('nested_tree') . ' as f ON (i.id_tree=f.id)
@@ -5508,7 +5406,7 @@ switch ($inputData['type']) {
                 }
 
                 // get data about new folder
-                $dataDestination = DB::queryfirstrow(
+                $dataDestination = DB::queryFirstRow(
                     'SELECT personal_folder, title FROM ' . prefixTable('nested_tree') . ' WHERE id = %i',
                     $inputData['folderId']
                 );
@@ -5825,7 +5723,7 @@ switch ($inputData['type']) {
         foreach (explode(';', $post_item_ids) as $item_id) {
             if (empty($item_id) === false) {
                 // get info
-                $dataSource = DB::queryfirstrow(
+                $dataSource = DB::queryFirstRow(
                     'SELECT label, id_tree
                     FROM ' . prefixTable('items') . '
                     WHERE id=%i',
@@ -5926,14 +5824,14 @@ switch ($inputData['type']) {
         }
         if ($inputData['cat'] === 'request_access_to_author') {
             // Variables
-            $dataAuthor = DB::queryfirstrow(
+            $dataAuthor = DB::queryFirstRow(
                 'SELECT email,login
                 FROM ' . prefixTable('users') . '
                 WHERE id = %i',
                 $post_content[1]
             );
 
-            $dataItem = DB::queryfirstrow(
+            $dataItem = DB::queryFirstRow(
                 'SELECT label, id_tree
                 FROM ' . prefixTable('items') . '
                 WHERE id = %i',
@@ -5959,7 +5857,7 @@ switch ($inputData['type']) {
                 ""
             );
         } elseif ($inputData['cat'] === 'share_this_item') {
-            $dataItem = DB::queryfirstrow(
+            $dataItem = DB::queryFirstRow(
                 'SELECT label,id_tree
                 FROM ' . prefixTable('items') . '
                 WHERE id= %i',
@@ -6031,7 +5929,7 @@ switch ($inputData['type']) {
         $session__user_list_folders_limited = $session->get('user-list_folders_limited');
 
         // Get all informations for this item
-        $dataItem = DB::queryfirstrow(
+        $dataItem = DB::queryFirstRow(
             'SELECT *
             FROM ' . prefixTable('items') . ' as i
             INNER JOIN ' . prefixTable('log_items') . ' as l ON (l.id_item = i.id)
@@ -6066,7 +5964,7 @@ switch ($inputData['type']) {
                 (string) dateToStamp($date.' '.$time, $SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'])
             );
             // Prepare new line
-            $data = DB::queryfirstrow(
+            $data = DB::queryFirstRow(
                 'SELECT * FROM ' . prefixTable('log_items') . ' WHERE id_item = %i ORDER BY date DESC',
                 $item_id
             );
@@ -6304,7 +6202,7 @@ switch ($inputData['type']) {
         }
 
         // get file info
-        $file_info = DB::queryfirstrow(
+        $file_info = DB::queryFirstRow(
             'SELECT f.id AS id, f.file AS file, f.name AS name, f.status AS status,
             f.extension AS extension, f.type AS type,
             s.share_key AS share_key
@@ -6760,7 +6658,7 @@ switch ($inputData['type']) {
             array(
                 'item_id' => $item_id,
                 'label' => $label,
-                'pw' => $encrypt['string'],
+                'pw' => $cryptedStuff['encrypted'],
                 'login' => $login,
                 'email' => $email,
                 'url' => $url,
@@ -6782,11 +6680,11 @@ switch ($inputData['type']) {
         );
 
         // get some info to add to the notification email
-        $resp_user = DB::queryfirstrow(
+        $resp_user = DB::queryFirstRow(
             'SELECT login FROM ' . prefixTable('users') . ' WHERE id = %i',
             $session->get('user-id')
         );
-        $resp_folder = DB::queryfirstrow(
+        $resp_folder = DB::queryFirstRow(
             'SELECT title FROM ' . prefixTable('nested_tree') . ' WHERE id = %i',
             $folder
         );
@@ -6840,7 +6738,7 @@ switch ($inputData['type']) {
         $inputData['itemId'] = (int) filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT);
 
         // Send email
-        $dataItem = DB::queryfirstrow(
+        $dataItem = DB::queryFirstRow(
             'SELECT label, id_tree
             FROM ' . prefixTable('items') . '
             WHERE id = %i',
@@ -7214,6 +7112,11 @@ function getCurrentAccessRights(int $userId, int $itemId, int $treeId): array
     // Check if the item is locked and whether the current user can edit it
     $editionLock = isItemLocked($itemId, $session, $userId);
 
+    // Check if the item is being processed by another user
+    if (isProcessOnGoing($itemId)) {
+        return getAccessResponse(false, true, false, false);
+    }
+
     // Retrieve user's visible folders from the cache_tree table
     $visibleFolders = getUserVisibleFolders($userId);
 
@@ -7259,24 +7162,120 @@ function isItemLocked(int $itemId, $session, int $userId): bool
 {
     global $SETTINGS;
 
-    // Retrieve the current lock information for the item
-    $itemLockInfo = DB::queryFirstRow('SELECT timestamp, user_id FROM ' . prefixTable('items_edition') . ' WHERE item_id = %i', $itemId);
+    $now = time();
+    $editionLocks = DB::query(
+        'SELECT timestamp, user_id, increment_id
+         FROM ' . prefixTable('items_edition') . '
+         WHERE item_id = %i 
+         ORDER BY increment_id DESC',
+        $itemId
+    );
 
-    // Check if the item is locked by another user
-    if ($itemLockInfo && $itemLockInfo['user_id'] !== $userId) {
-        // Determine the delay period, using the setting or a default value
-        $delay = ($SETTINGS['delay_item_edition'] ?? EDITION_LOCK_PERIOD) * 60;
-        $lockExpired = (time() - $itemLockInfo['timestamp']) > $delay;
+    // Check if there are any locks for this item
+    if (count($editionLocks) === 0) {
+        // No locks found, create a new lock
+        createEditionLock($itemId, $userId, $now);
+        return false;
+    }
 
-        // If the lock hasn't expired, mark the item as locked
-        if (!$lockExpired) {
-            return true;
+    // Check if the last lock is older than the defined period
+    $lastLock = $editionLocks[0];
+
+    // If the lock is for the current user, update the timestamp
+    if ((int) $lastLock['user_id'] === $userId) {
+        DB::update(
+            prefixTable('items_edition'),
+            ['timestamp' => $now],
+            'increment_id = %i',
+            $lastLock['increment_id']
+        );
+        return false;
+    }
+
+    // Calculate the delay for the lock
+    $delay = isset($SETTINGS['delay_item_edition']) && $SETTINGS['delay_item_edition'] > 0
+        ? $SETTINGS['delay_item_edition'] * 60
+        : EDITION_LOCK_PERIOD;
+
+    // Calculate the elapsed time since the last lock
+    $elapsed = abs($now - (int) $lastLock['timestamp']);
+
+    // Check if the lock has expired
+    if ($elapsed > $delay) {
+        // Delete all edition locks for this item
+        DB::delete(prefixTable('items_edition'), 'item_id = %i', $itemId);
+
+        // Delete related background tasks if any
+        $task = DB::queryFirstRow(
+            'SELECT increment_id FROM ' . prefixTable('background_tasks') . '
+             WHERE item_id = %i AND finished_at = ""',
+            $itemId
+        );
+
+        // If a task is found, delete its related tasks
+        if (!empty($task)) {
+            deleteProcessAndRelatedTasks((int) $task['increment_id']);
         }
 
-        // If the lock has expired, remove the lock for the current user
-        DB::delete(prefixTable('items_edition'), 'item_id = %i AND user_id = %i', $itemId, $session->get('user-id'));
+        // Check if encryption process is still running
+        DB::queryFirstRow(
+            'SELECT JSON_EXTRACT(arguments, "$.all_users_except_id") AS all_users_except_id
+             FROM ' . prefixTable('background_tasks') . '
+             WHERE item_id = %i AND finished_at = ""
+             ORDER BY increment_id DESC',
+            $itemId
+        );
+
+        // If encryption process is not running, delete the lock        
+        if (DB::count() === 0) {
+            DB::update(
+                prefixTable('items_edition'),
+                ['timestamp' => $now],
+                'item_id = %i AND user_id = %i',
+                $itemId,
+                $userId
+            );
+            return false;
+        }
+
+        return true; // Encryption in progress
     }
-    
+
+    // Lock still valid and owned by another user
+    return true;
+}
+
+/**
+ * Creates an edition lock for a given item and user
+ * 
+ * @param int $itemId The ID of the item to lock
+ * @param int $userId The ID of the user who is locking the item
+ * @param int $timestamp The timestamp of the lock
+ * 
+ * @return void
+ */
+function createEditionLock(int $itemId, int $userId, int $timestamp): void
+{
+    DB::insert(
+        prefixTable('items_edition'),
+        [
+            'timestamp' => $timestamp,
+            'item_id' => $itemId,
+            'user_id' => $userId,
+        ]
+    );
+}
+
+
+/**
+ * Checks if there is an ongoing background encryption process for the given item.
+ * 
+ * @param int $itemId The ID of the item to check
+ * 
+ * @return bool True if an ongoing process is found, false otherwise
+ */
+function isProcessOnGoing(int $itemId): bool
+{
     // Check if there's an ongoing background encryption process for the item
     $ongoingProcess = DB::queryFirstRow(
         'SELECT 1 FROM ' . prefixTable('background_tasks') . ' WHERE item_id = %i AND finished_at = "" LIMIT 1', 
