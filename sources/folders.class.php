@@ -459,9 +459,9 @@ class FolderManager
                     'created_at' => time(),
                     'process_type' => 'user_build_cache_tree',
                     'arguments' => $arguments,
-                    'updated_at' => '',
-                    'finished_at' => '',
-                    'output' => '',
+                    'updated_at' => null,
+                    'finished_at' => null,
+                    'output' => null,
                 )
             );
         }

@@ -831,9 +831,9 @@ if (null !== $post_type) {
                         'arguments' => json_encode([
                             'user_id' => (int) $session->get('user-id'),
                         ], JSON_HEX_QUOT | JSON_HEX_TAG),
-                        'updated_at' => '',
-                        'finished_at' => '',
-                        'output' => '',
+                        'updated_at' => null,
+                        'finished_at' => null,
+                        'output' => null,
                     )
                 );
             }
