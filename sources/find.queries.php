@@ -426,6 +426,8 @@ if (null === $request->query->get('type')) {
     include_once 'main.functions.php';
     include_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $session->get('user-language') . '.php';
 
+    $totalItems = $request->query->filter('totalItems', null, FILTER_SANITIZE_NUMBER_INT);
+
     $arr_data = [];
     foreach ($rows as $record) {
         $displayItem = false;
@@ -688,9 +690,10 @@ if (null === $request->query->get('type')) {
 
     $returnValues = [
         'html_json' => filter_var_array($arr_data, FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-        'message' => (string) $iTotal.' '.$lang->get('find_message'),
+        'message' => ' '.$lang->get('find_message'),
         'total' => (int) $iTotal,
         'start' => (int) (null !== $request->query->get('start') && (int) $request->query->get('length') !== -1) ? $request->query->filter('start', FILTER_SANITIZE_NUMBER_INT) + $request->query->filter('length', FILTER_SANITIZE_NUMBER_INT) : -1,
+        'totalItems' => (int) $totalItems + (int) count($arr_data),
     ];
     echo prepareExchangedData(
         $returnValues,
