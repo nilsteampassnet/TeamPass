@@ -1697,7 +1697,7 @@ function generateBugReport(
     }
 
     if (defined('DB_PASSWD_CLEAR') === false) {
-        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD));
     }
     $link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, (int) DB_PORT, null);
 

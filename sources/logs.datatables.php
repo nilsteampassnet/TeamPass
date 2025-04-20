@@ -100,7 +100,7 @@ $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 $params = $request->query->all();
 
 // Init
-$searchValue = $sWhere = $sOrder = '';
+$searchValue = $sWhere = $sOrder = $sOutput = '';
 $aSortTypes = ['ASC', 'DESC'];
 $sLimitStart = $request->query->has('start') 
     ? $request->query->filter('start', 0, FILTER_VALIDATE_INT, ['options' => ['default' => 0, 'min_range' => 0]]) 
@@ -421,7 +421,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         //col4
         if (empty($record['field_1']) === false) {
             // get user name
-            $info = DB::queryfirstrow(
+            $info = DB::queryFirstRow(
                 'SELECT u.login as login, u.name AS name, u.lastname AS lastname
                     FROM '.prefixTable('users').' as u
                     WHERE u.id = %i',
@@ -899,7 +899,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
 
         // col5
         if (in_array($record['process_type'], array('create_user_keys', 'item_copy')) === true) {
-            $data_user = DB::queryfirstrow(
+            $data_user = DB::queryFirstRow(
                 'SELECT name, lastname FROM ' . prefixTable('users') . '
                 WHERE id = %i',
                 json_decode($record['arguments'], true)['new_user_id']
@@ -1004,7 +1004,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         $arguments = json_decode($record['arguments'], true);
         $newUserId = array_key_exists('new_user_id', $arguments) ? $arguments['new_user_id'] : null;
         if ($record['process_type'] === 'create_user_keys' && is_null($newUserId) === false && empty($newUserId) === false) {
-            $data_user = DB::queryfirstrow(
+            $data_user = DB::queryFirstRow(
                 'SELECT name, lastname, login FROM ' . prefixTable('users') . '
                 WHERE id = %i',
                 $newUserId
@@ -1020,7 +1020,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
             $sOutput .= '"'.(is_null($user) === true || empty($user) === true ? '<i class=\"fa-solid fa-user-slash\"></i>' : $user).'"';
         } elseif ($record['process_type'] === 'user_build_cache_tree') {
             $user = json_decode($record['arguments'], true)['user_id'];
-            $data_user = DB::queryfirstrow(
+            $data_user = DB::queryFirstRow(
                 'SELECT name, lastname, login FROM ' . prefixTable('users') . '
                 WHERE id = %i',
                 $user

@@ -124,7 +124,7 @@ $inputData = dataSanitizer(
     $filters
 );
 
-$lastFolderChange = DB::queryfirstrow(
+$lastFolderChange = DB::queryFirstRow(
     'SELECT valeur FROM ' . prefixTable('misc') . '
     WHERE type = %s AND intitule = %s',
     'timestamp',
@@ -771,7 +771,7 @@ function loadTreeStrategy(
     }
 
     // Does this user has a tree cache
-    $userCacheTree = DB::queryfirstrow(
+    $userCacheTree = DB::queryFirstRow(
         'SELECT data
         FROM ' . prefixTable('cache_tree') . '
         WHERE user_id = %i',

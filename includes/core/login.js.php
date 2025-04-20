@@ -29,6 +29,14 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
+/**
+ * @var TeampassClasses\Language\Language $lang
+ * @var TeampassClasses\ConfigManager\ConfigManager $configManager
+ * @var Symfony\Component\HttpFoundation\Session\Session $session
+ * @var Symfony\Component\HttpFoundation\Request $request
+ * @var array $SETTINGS
+ */
+
 ?>
 <script type="text/javascript">
     var debugJavascript = false;

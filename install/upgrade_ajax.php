@@ -40,7 +40,7 @@ function settingsConsistencyCheck(): array
 {
     $settingsFile = __DIR__.'/../includes/config/settings.php';
     require_once $settingsFile;
-    require_once 'tp.functions.php';
+    require_once __DIR__.'/tp.functions.php';
 
     if (defined('DB_PASSWD') === false && isset($pass) === true) {
         // We need to convert settings.php file from V2 to V3 format
@@ -112,26 +112,26 @@ function settingsConsistencyCheck(): array
         
         $settingsTxt = '<?php
 // DATABASE connexion parameters
-define("DB_HOST", "' . trim($server) . '");
-define("DB_USER", "' . trim($user) . '");
-define("DB_PASSWD", "' . trim($pass) . '");
-define("DB_NAME", "' . trim($database) . '");
-define("DB_PREFIX", "' . trim($pre) . '");
-define("DB_PORT", "' . trim($port) . '");
-define("DB_ENCODING", "' . trim($encoding) . '");
+define("DB_HOST", "' . DB_HOST . '");
+define("DB_USER", "' . DB_USER . '");
+define("DB_PASSWD", "' . DB_PASSWD . '");
+define("DB_NAME", "' . DB_NAME . '");
+define("DB_PREFIX", "' . DB_PREFIX . '");
+define("DB_PORT", "' . DB_PORT . '");
+define("DB_ENCODING", "' . DB_ENCODING . '");
 define("DB_SSL", false); // if DB over SSL then comment this line
 // if DB over SSL then uncomment the following lines
-//define("DB_SSL", array(
-//    "key" => "",
-//    "cert" => "",
-//    "ca_cert" => "",
-//    "ca_path" => "",
-//    "cipher" => ""
-//));
+define("DB_SSL", array(
+    "key" => "' . DB_SSL['key'] . '",
+    "cert" => "' . DB_SSL['cert'] . '",
+    "ca_cert" => "' . DB_SSL['ca_cert'] . '",
+    "ca_path" => "' . DB_SSL['ca_path'] . '",
+    "cipher" => "' . DB_SSL['cipher'] . '"
+));
 define("DB_CONNECT_OPTIONS", array(
     MYSQLI_OPT_CONNECT_TIMEOUT => 10
 ));
-define("SECUREPATH", "' . str_replace("\\", "\\\\", SECUREPATH) . '");
+define("SECUREPATH", "' . SECUREPATH . '");
 define("SECUREFILE", "' . SECUREFILE. '");';
 
 		if (defined('IKEY') === true) $settingsTxt .= '
@@ -170,17 +170,6 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                 'value' => false
             ];
         }
-        
-        define("DB_HOST", "' . $server . '");
-        define("DB_USER", "' . $user . '");
-        define("DB_PASSWD", "' . $pass . '");
-        define("DB_NAME", "' . $database . '");
-        define("DB_PREFIX", "' . $pre . '");
-        define("DB_PORT", "' . $port . '");
-        define("DB_SSL", "false");
-        define("DB_CONNECT_OPTIONS", array(
-            MYSQLI_OPT_CONNECT_TIMEOUT => 10
-        ));
 
         return [
             'error' => '',
@@ -476,8 +465,8 @@ if (isset($post_type)) {
                     phpversion() . ' is OK<i class=\"fa-solid fa-circle-check text-success ml-2\"></i>' .
                     '</span><br />';
             }
-            $mysqlVersion = version_compare($db_link -> server_version, MIN_MYSQL_VERSION, '<') ;
-            $mariadbVersion = version_compare($db_link -> server_version, MIN_MARIADB_VERSION, '<') ;
+            $mysqlVersion = version_compare((string) $db_link -> server_version, MIN_MYSQL_VERSION, '<') ;
+            $mariadbVersion = version_compare((string) $db_link -> server_version, MIN_MARIADB_VERSION, '<') ;
             if ($mysqlVersion && $mariadbVersion) {
                 if ($mariadbVersion === '') {
                     $txt .= '<span>MySQL version ' .

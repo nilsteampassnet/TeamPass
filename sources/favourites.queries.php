@@ -102,15 +102,14 @@ if (null !== $post_type) {
         //CASE adding a new function
         case 'del_fav':
             //Get actual favourites
-            $data = DB::queryfirstrow('SELECT favourites FROM '.prefixTable('users').' WHERE id = %i', $session->get('user-id'));
-            $tmp = explode(';', $data['favourites']);
-            $arrayFavorites = array_diff($tmp, [$post_id]);
+            $data = DB::queryFirstRow('SELECT favourites FROM '.prefixTable('users').' WHERE id = %i', $session->get('user-id'));
+            $arrayFavorites = array_diff(explode(';', $data['favourites']), [$post_id]);
 
             //update user's account
             DB::update(
                 prefixTable('users'),
                 array(
-                    'favourites' => $favorites,
+                    'favourites' => implode(';', $arrayFavorites),
                 ),
                 'id = %i',
                 $session->get('user-id')

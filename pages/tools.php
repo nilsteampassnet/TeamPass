@@ -290,6 +290,7 @@ foreach ($users as $user) {
                     </div>
                     <?php                            
 // Check if table  exists
+$backups = [];
 $result = DB::queryFirstField(
     'SELECT COUNT(*) FROM information_schema.tables 
     WHERE table_schema = %s AND table_name = %s',

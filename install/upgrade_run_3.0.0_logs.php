@@ -67,11 +67,11 @@ $next = ($post_nb + $post_start);
 
 // Test DB connexion
 $pass = defuse_return_decrypted(DB_PASSWD);
-$server = DB_HOST;
-$pre = DB_PREFIX;
-$database = DB_NAME;
-$port = DB_PORT;
-$user = DB_USER;
+$server = (string) DB_HOST;
+$pre = (string) DB_PREFIX;
+$database = (string) DB_NAME;
+$port = (int) DB_PORT;
+$user = (string) DB_USER;
 
 $db_link = mysqli_connect(
     $server,

@@ -65,9 +65,15 @@ class FolderManager
      */
     public function createNewFolder(array $params, array $options = []): array
     {
-        // Décomposer les paramètres pour une meilleure lisibilité
-        extract($params);
-        extract($options);
+            // Decompose parameters
+            $title = $params['title'] ?? '';
+            $parent_id = $params['parent_id'] ?? 0;
+            $personal_folder = $params['personal_folder'] ?? 0;
+            $complexity = $params['complexity'] ?? 0;
+            $user_is_admin = $params['user_is_admin'] ?? 0;
+            $user_accessible_folders = $params['user_accessible_folders'] ?? [];
+            $user_can_create_root_folder = $params['user_can_create_root_folder'] ?? 0;
+
 
         if ($this->isTitleNumeric($title)) {
             return $this->errorResponse($this->lang->get('error_only_numbers_in_folder_name'));
@@ -84,7 +90,7 @@ class FolderManager
         $parentFolderData = $this->getParentFolderData($parent_id);
 
         $parentComplexity = $this->checkComplexityLevel($parentFolderData, $complexity, $parent_id);
-        if (isset($parentComplexity ['error']) && $parentComplexity['error'] === true) {
+        if (isset($parentComplexity['error']) && $parentComplexity['error'] === true) {
             return $this->errorResponse($this->lang->get('error_folder_complexity_lower_than_top_folder') . " [<b>{$this->settings['TP_PW_COMPLEXITY'][$parentComplexity['valeur']][1]}</b>]");
         }
 
@@ -160,7 +166,7 @@ class FolderManager
     private function getParentFolderData($parent_id)
     {
         //check if parent folder is personal
-        $data = DB::queryfirstrow(
+        $data = DB::queryFirstRow(
             'SELECT personal_folder, bloquer_creation, bloquer_modification
             FROM ' . prefixTable('nested_tree') . '
             WHERE id = %i',
@@ -197,9 +203,9 @@ class FolderManager
         $parent_id
     )
     {
-        if (isset($data) === false || (int) $data['isPersonal'] === 0) {    
+        if ((int) $data['isPersonal'] === 0) {    
             // get complexity level for this folder
-            $data = DB::queryfirstrow(
+            $data = DB::queryFirstRow(
                 'SELECT valeur
                 FROM ' . prefixTable('misc') . '
                 WHERE intitule = %i AND type = %s',
@@ -228,8 +234,18 @@ class FolderManager
      */
     private function createFolder($params, $parentFolderData, $options)
     {
-        extract($params);
-        extract($parentFolderData);
+        // Decompose parameters
+        $title = $params['title'] ?? '';
+        $parent_id = $params['parent_id'] ?? 0;
+        $isPersonal = $params['personal_folder'] ?? 0;
+        $complexity = $params['complexity'] ?? 0;
+        $access_rights = $params['access_rights'] ?? '';
+        $user_is_admin = $params['user_is_admin'] ?? 0;
+        $user_is_manager = $params['user_is_manager'] ?? 0;
+        $user_can_create_root_folder = $params['user_can_create_root_folder'] ?? 0;
+        $user_can_manage_all_users = $params['user_can_manage_all_users'] ?? 0;
+        $user_id = $params['user_id'] ?? 0;
+        $user_roles = $params['user_roles'] ?? '';    
 
         if ($this->canCreateFolder($isPersonal, $user_is_admin, $user_is_manager, $user_can_manage_all_users, $user_can_create_root_folder)) {
             $newId = $this->insertFolder($params, $parentFolderData);

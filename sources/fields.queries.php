@@ -579,7 +579,7 @@ if (null !== $post_type) {
                     $post_fieldId
                 );
                 foreach ($rowsF as $recordF) {
-                    $encryption_type = '';
+                    $encryption_type = $encrypt = '';
                     // decrypt/encrypt
                     if ($post_encrypted === '0' && $recordF['encryption_type'] === 'defuse') {
                         $encrypt = cryption(

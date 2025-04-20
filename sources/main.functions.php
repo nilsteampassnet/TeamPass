@@ -212,10 +212,10 @@ function defuse_validate_personal_key(string $psk, string $protected_key_encoded
  *
  * @return string Decrypted string
  */
-function defuseReturnDecrypted(string $value, $SETTINGS): string
+function defuseReturnDecrypted(string $value): string
 {
     if (substr($value, 0, 3) === 'def') {
-        $value = cryption($value, '', 'decrypt', $SETTINGS)['string'];
+        $value = cryption($value, '', 'decrypt')['string'];
     }
 
     return $value;
@@ -4231,7 +4231,7 @@ function loadClasses(string $className = ''): void
     require_once __DIR__.'/../vendor/autoload.php';
 
     if (defined('DB_PASSWD_CLEAR') === false) {
-        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, []));
+        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD));
     }
 
     if (empty($className) === false) {

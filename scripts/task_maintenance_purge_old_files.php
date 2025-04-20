@@ -70,6 +70,7 @@ doLog('end', '', 1, $logID);
  */
 function purgeTemporaryFiles(): void
 {
+    global $SETTINGS;
     // Load expected files
     require_once __DIR__. '/../sources/main.functions.php';
 
