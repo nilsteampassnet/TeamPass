@@ -3112,7 +3112,6 @@ function isOneVarOfArrayEqualToValue(
  * @return boolean
  */
 function isValueSetNullEmpty(string|int|null $value) : bool
-function isValueSetNullEmpty(string|int|null $value) : bool
 {
     if (is_null($value) === true || empty($value) === true) {
         return true;
