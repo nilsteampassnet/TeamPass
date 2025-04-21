@@ -27,7 +27,6 @@
  */
 
 use TeampassClasses\Language\Language;
-use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\ConfigManager\ConfigManager;
 use TeampassClasses\SessionManager\SessionManager;
 
