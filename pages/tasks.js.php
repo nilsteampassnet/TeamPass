@@ -582,6 +582,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 if (data.enabled === true){
                     let tasks = JSON.parse(data.task);
                     for (let i = 0; i < tasks.length; i++) {
+                        console.log(tasks[i].task+" - "+tasks[i].datetime);
                         $('#'+tasks[i].task+'_badge').text(tasks[i].datetime);
 
                     }

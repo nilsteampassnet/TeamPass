@@ -29,7 +29,6 @@
 use TeampassClasses\Language\Language;
 use TeampassClasses\ConfigManager\ConfigManager;
 
-
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
 
@@ -56,13 +55,13 @@ set_time_limit($SETTINGS['task_maximum_run_time']);
 require_once __DIR__.'/background_tasks___functions.php';
 
 // log start
-$logID = doLog('start', 'do_maintenance - clean-orphan-objects', 1);
+$logID = doLog('ongoing', 'do_maintenance - clean-orphan-objects', 1);
 
 // Perform maintenance tasks
 cleanOrphanObjects();
 
 // log end
-doLog('end', '', 1, $logID);
+doLog('completed', '', 1, $logID);
 
 /**
  * Delete all orphan objects from DB
@@ -73,65 +72,38 @@ function cleanOrphanObjects(): void
 {
     // Delete all item keys for which no user exist
     DB::query(
-        'DELETE k FROM ' . prefixTable('sharekeys_items') . ' k
+        'DELETE k.* FROM ' . prefixTable('sharekeys_items') . ' k
         LEFT JOIN ' . prefixTable('users') . ' u ON k.user_id = u.id
         WHERE u.id IS NULL OR u.deleted_at IS NOT NULL'
     );
 
-    // Delete all files keys for which no user exist
+    // Delete all files keys for which no item exist
     DB::query(
-        'DELETE k FROM ' . prefixTable('sharekeys_files') . ' k
-        LEFT JOIN ' . prefixTable('users') . ' u ON k.user_id = u.id
-        WHERE u.id IS NULL OR u.deleted_at IS NOT NULL'
+        'DELETE k.* FROM ' . prefixTable('sharekeys_files') . ' k
+        LEFT JOIN ' . prefixTable('items') . ' i ON k.object_id = i.id
+        WHERE i.id IS NULL'
     );
 
-    // Delete all fields keys for which no user exist
+    // Delete all fields keys for which no item exist
     DB::query(
-        'DELETE k FROM ' . prefixTable('sharekeys_fields') . ' k
-        LEFT JOIN ' . prefixTable('users') . ' u ON k.user_id = u.id
-        WHERE u.id IS NULL OR u.deleted_at IS NOT NULL'
+        'DELETE k.* FROM ' . prefixTable('sharekeys_fields') . ' k
+        LEFT JOIN ' . prefixTable('categories_items') . ' c ON k.object_id = c.id
+        LEFT JOIN ' . prefixTable('items') . ' i ON c.item_id = i.id
+        WHERE c.id IS NULL OR i.id IS NULL'
     );
 
     // Delete all item logs for which no user exist
     DB::query(
-        'DELETE l FROM ' . prefixTable('log_items') . ' l
-        LEFT JOIN ' . prefixTable('users') . ' u ON l.id_user = u.id
-        WHERE u.id IS NULL OR u.deleted_at IS NOT NULL'
+        'DELETE l.* FROM ' . prefixTable('log_items') . ' l
+        LEFT JOIN ' . prefixTable('items') . ' i ON l.id_item = i.id
+        WHERE i.id IS NULL'
     );
 
     // Delete all system logs for which no user exist
     DB::query(
-        'DELETE l FROM ' . prefixTable('log_system') . ' l
+        'DELETE l.* FROM ' . prefixTable('log_system') . ' l
         LEFT JOIN ' . prefixTable('users') . ' u ON l.qui = u.id
         WHERE u.id IS NULL OR u.deleted_at IS NOT NULL'
-    );
-
-    // Delete all item keys for which no object exist
-    DB::query(
-        'DELETE k FROM ' . prefixTable('sharekeys_items') . ' k
-        LEFT JOIN ' . prefixTable('items') . ' i ON k.object_id = i.id
-        WHERE i.id IS NULL'
-    );
-
-    // Delete all files keys for which no object exist
-    DB::query(
-        'DELETE k FROM ' . prefixTable('sharekeys_files') . ' k
-        LEFT JOIN ' . prefixTable('items') . ' i ON k.object_id = i.id
-        WHERE i.id IS NULL'
-    );
-
-    // Delete all fields keys for which no object exist
-    DB::query(
-        'DELETE k FROM ' . prefixTable('sharekeys_fields') . ' k
-        LEFT JOIN ' . prefixTable('items') . ' i ON k.object_id = i.id
-        WHERE i.id IS NULL'
-    );
-
-    // Delete all item logs for which no object exist
-    DB::query(
-        'DELETE l FROM ' . prefixTable('log_items') . ' l
-        LEFT JOIN ' . prefixTable('items') . ' i ON l.id_item = i.id
-        WHERE i.id IS NULL'
     );
 
 

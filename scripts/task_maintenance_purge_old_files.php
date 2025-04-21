@@ -56,13 +56,14 @@ set_time_limit($SETTINGS['task_maximum_run_time']);
 require_once __DIR__.'/background_tasks___functions.php';
 
 // log start
-$logID = doLog('start', 'do_maintenance - purge-old-files', 1);
+$logID = doLog('ongoing', 'do_maintenance - purge-old-files', 1);
 
 // Perform maintenance tasks
 purgeTemporaryFiles();
 
 // log end
-doLog('end', '', 1, $logID);
+doLog('completed', '', 1, $logID);
+
 /**
  * Purge old files in FILES and UPLOAD folders.
  *
@@ -70,6 +71,7 @@ doLog('end', '', 1, $logID);
  */
 function purgeTemporaryFiles(): void
 {
+    global $SETTINGS;
     // Load expected files
     require_once __DIR__. '/../sources/main.functions.php';
     $SETTINGS = $SETTINGS ?? [];

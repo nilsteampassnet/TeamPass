@@ -28,7 +28,6 @@
 
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\SessionManager\SessionManager;
-use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use TeampassClasses\Language\Language;
 use TeampassClasses\ConfigManager\ConfigManager;
 
@@ -59,13 +58,13 @@ set_time_limit($SETTINGS['task_maximum_run_time']);
 require_once __DIR__.'/background_tasks___functions.php';
 
 // log start
-$logID = doLog('start', 'do_maintenance - users-personal-folder', 1);
+$logID = doLog('ongoing', 'do_maintenance - users-personal-folder', 1);
 
 // Perform maintenance tasks
 createUserPersonalFolder();
 
 // log end
-doLog('end', '', 1, $logID);
+doLog('completed', '', 1, $logID);
 
 /**
  * Permits to create the personal folder for each user.

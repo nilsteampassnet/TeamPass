@@ -63,7 +63,7 @@ require_once __DIR__.'/background_tasks___functions.php';
 $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
 // log start
-$logID = doLog('start', 'do_calculation', (isset($SETTINGS['enable_tasks_log']) === true ? (int) $SETTINGS['enable_tasks_log'] : 0));
+$logID = doLog('ongoing', 'do_calculation', (isset($SETTINGS['enable_tasks_log']) === true ? (int) $SETTINGS['enable_tasks_log'] : 0));
 
 // Loop on tree
 $ret = [];
@@ -179,18 +179,10 @@ foreach ($items as $item) {
     );
 }
 
-
-/*
-* Clear items_operations table from old entries (older than 20 minutes)
-*/
-DB::query(
-    'DELETE FROM '.prefixTable('items_operations').' WHERE created_at < DATE_SUB(NOW(), INTERVAL 20 MINUTE)'
-);
-
 /*
 * Release locks on items if they are older than defined time
 */
 //deleteItemLocks();
 
 // log end
-doLog('end', '', (isset($SETTINGS['enable_tasks_log']) === true ? (int) $SETTINGS['enable_tasks_log'] : 0), $logID);
+doLog('completed', 'do_calculation', (isset($SETTINGS['enable_tasks_log']) === true ? (int) $SETTINGS['enable_tasks_log'] : 0), $logID);
