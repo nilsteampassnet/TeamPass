@@ -202,6 +202,12 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 
         requestRunning = true;
 
+        // Manage special cases
+        // WHere data needs to be adapted
+        if (field === 'tasks_history_delay') {
+            value = parseInt(value) * 3600 * 24;
+        }
+
         var data = {
             "field": field,
             "value": value,

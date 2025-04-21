@@ -537,7 +537,9 @@ function identUser(
     );
     // Folders and Roles numbers
     DB::queryFirstRow('SELECT id FROM ' . prefixTable('nested_tree') . '');
+    DB::queryFirstRow('SELECT id FROM ' . prefixTable('nested_tree') . '');
     $session->set('user-nb_folders', DB::count());
+    DB::queryFirstRow('SELECT id FROM ' . prefixTable('roles_title'));
     DB::queryFirstRow('SELECT id FROM ' . prefixTable('roles_title'));
     $session->set('user-nb_roles', DB::count());
     // check if change proposals on User's items
@@ -3713,6 +3715,7 @@ function handleUserKeys(
  */
 function createUserTasks($processId, $nbItemsToTreat): void
 {
+    // Create subtask for step 0
     DB::insert(
         prefixTable('background_subtasks'),
         array(
@@ -3726,83 +3729,65 @@ function createUserTasks($processId, $nbItemsToTreat): void
         )
     );
 
-    DB::insert(
-        prefixTable('background_subtasks'),
-        array(
-            'task_id' => $processId,
-            'created_at' => time(),
-            'task' => json_encode([
-                'step' => 'step10',
-                'index' => 0,
-                'nb' => $nbItemsToTreat,
-            ]),
-        )
-    );
+    // Prepare the subtask queries
+    $queries = [
+        'step20' => 'SELECT * FROM ' . prefixTable('items'),
 
-    DB::insert(
-        prefixTable('background_subtasks'),
-        array(
-            'task_id' => $processId,
-            'created_at' => time(),
-            'task' => json_encode([
-                'step' => 'step20',
-                'index' => 0,
-                'nb' => $nbItemsToTreat,
-            ]),
-        )
-    );
+        'step30' => 'SELECT * FROM ' . prefixTable('log_items') . 
+                    ' WHERE raison LIKE "at_pw :%" AND encryption_type = "teampass_aes"',
 
-    DB::insert(
-        prefixTable('background_subtasks'),
-        array(
-            'task_id' => $processId,
-            'created_at' => time(),
-            'task' => json_encode([
-                'step' => 'step30',
-                'index' => 0,
-                'nb' => $nbItemsToTreat,
-            ]),
-        )
-    );
+        'step40' => 'SELECT * FROM ' . prefixTable('categories_items') . 
+                    ' WHERE encryption_type = "teampass_aes"',
 
-    DB::insert(
-        prefixTable('background_subtasks'),
-        array(
-            'task_id' => $processId,
-            'created_at' => time(),
-            'task' => json_encode([
-                'step' => 'step40',
-                'index' => 0,
-                'nb' => $nbItemsToTreat,
-            ]),
-        )
-    );
+        'step50' => 'SELECT * FROM ' . prefixTable('suggestion'),
 
-    DB::insert(
-        prefixTable('background_subtasks'),
-        array(
-            'task_id' => $processId,
-            'created_at' => time(),
-            'task' => json_encode([
-                'step' => 'step50',
-                'index' => 0,
-                'nb' => $nbItemsToTreat,
-            ]),
-        )
-    );
+        'step60' => 'SELECT * FROM ' . prefixTable('files') . ' AS f
+                        INNER JOIN ' . prefixTable('items') . ' AS i ON i.id = f.id_item
+                        WHERE f.status = "' . TP_ENCRYPTION_NAME . '"'
+    ];
 
+    // Perform loop on $queries to create sub-tasks
+    foreach ($queries as $step => $query) {
+        DB::query($query);
+        createAllSubTasks($step, DB::count(), $nbItemsToTreat, $processId);
+    }
+
+    // Create subtask for step 99
     DB::insert(
         prefixTable('background_subtasks'),
         array(
             'task_id' => $processId,
             'created_at' => time(),
             'task' => json_encode([
-                'step' => 'step60',
-                'index' => 0,
-                'nb' => $nbItemsToTreat,
+                'step' => 'step99',
             ]),
         )
     );
+}
+
+/**
+ * Create all subtasks for a given action
+ * @param string $action The action to be performed
+ * @param int $totalElements Total number of elements to process
+ * @param int $elementsPerIteration Number of elements per iteration
+ * @param int $taskId The ID of the task
+ */
+function createAllSubTasks($action, $totalElements, $elementsPerIteration, $taskId) {
+    // Calculate the number of iterations
+    $iterations = ceil($totalElements / $elementsPerIteration);
+
+    // Create the subtasks
+    for ($i = 0; $i < $iterations; $i++) {
+        DB::insert(prefixTable('background_subtasks'), [
+            'task_id' => $taskId,
+            'created_at' => time(),
+            'task' => json_encode([
+                "step" => $action,
+                "index" => $i * $elementsPerIteration,
+                "nb" => $elementsPerIteration,
+            ]),
+        ]);
+    }
 }
 
 /**
@@ -4282,10 +4267,7 @@ function getCurrectPage($SETTINGS)
  */
 function returnIfSet($value, $retFalse = '', $retTrue = null): mixed
 {
-    if (!empty($value)) {
-        return is_null($retTrue) ? $value : $retTrue;
-    }
-    return $retFalse;
+    return $retTrue === null ? $value : $retTrue;
 }
 
 

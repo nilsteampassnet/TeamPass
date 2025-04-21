@@ -532,7 +532,17 @@ switch ($inputData['type']) {
             FROM '.prefixTable('nested_tree').'
             WHERE id = %i',
             $targetFolderId
-        );    
+        ); 
+        $personalFolder = in_array($dataReceived['folderId'], $session->get('user-personal_folders')) ? 1 : 0;
+
+        // Prepare some variables
+        $targetFolderId = $dataReceived['folderId']; 
+        $targetFolderName = DB::queryFirstField(
+            'SELECT title
+            FROM '.prefixTable('nested_tree').'
+            WHERE id = %i',
+            $targetFolderId
+        ); 
 
         // Get all folders from objects in DB
         if ($dataReceived['foldersNumber'] > 0) {
@@ -654,26 +664,9 @@ switch ($inputData['type']) {
                         'action' => 'at_creation',
                     )
                 );
-
-                //Add entry to cache table
-                DB::insert(
-                    prefixTable('cache'),
-                    array(
-                        'id' => $newId,
-                        'label' => substr($item['label'], 0, 500),
-                        'description' => empty($item['description']) ? '' : $item['description'],
-                        'id_tree' => is_null($item['folder_id']) === true ? $targetFolderId : (int) $item['folder_id'],
-                        'url' => '0',
-                        'perso' => $personalFolder === 0 ? 0 : 1,
-                        'login' => empty($item['login']) ? '' : substr($item['login'], 0, 500),
-                        'folder' => is_null($item['title']) === true ? $targetFolderName : $item['title'],
-                        'author' => $session->get('user-id'),
-                        'timestamp' => time(),
-                        'tags' => '',
-                        'restricted_to' => '0',
-                        'renewal_period' => '0',
-                    )
-                );
+                
+                // Add item to cache table
+                updateCacheTable('add_value', (int) $newId);
 
                 // Update items_importation table
                 DB::update(
@@ -1112,26 +1105,9 @@ switch ($inputData['type']) {
                     'raison' => 'at_import',
                 )
             );
-
-            //Add entry to cache table
-            DB::insert(
-                prefixTable('cache'),
-                array(
-                    'id' => $newId,
-                    'label' => substr(stripslashes($item['Title']), 0, 500),
-                    'description' => stripslashes($item['Notes']),
-                    'url' => substr(stripslashes($item['URL']), 0, 500),
-                    'tags' => '',
-                    'id_tree' => $post_folders[$item['parentFolderId']]['id'],
-                    'perso' => $post_folders[$item['parentFolderId']]['isPF'] === 0 ? 0 : 1,
-                    'login' => substr(stripslashes($item['UserName']), 0, 500),
-                    'restricted_to' => '0',
-                    'folder' => $destinationFolderMore['title'],
-                    'author' => $session->get('user-id'),
-                    'renewal_period' => '0',
-                    'timestamp' => time(),
-                )
-            );
+            
+            // Add item to cache table
+            updateCacheTable('add_value', (int) $newId);
 
             // prepare return
             $ret .= "<li>".substr(stripslashes($item['Title']), 0, 500)." [".$destinationFolderMore['title']."]</li>";
