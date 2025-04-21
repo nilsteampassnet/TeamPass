@@ -52,17 +52,14 @@ require_once '../includes/config/settings.php';
 require_once 'tp.functions.php';
 require_once 'libs/aesctr.php';
 
-// Get the encrypted password
-define('DB_PASSWD_CLEAR', defuse_return_decrypted(DB_PASSWD));
-
 // DataBase
 // Test DB connexion
-$pass = DB_PASSWD_CLEAR;
-$server = DB_HOST;
-$pre = DB_PREFIX;
-$database = DB_NAME;
-$port = DB_PORT;
-$user = DB_USER;
+$pass = defuse_return_decrypted(DB_PASSWD);
+$server = (string) DB_HOST;
+$pre = (string) DB_PREFIX;
+$database = (string) DB_NAME;
+$port = (int) DB_PORT;
+$user = (string) DB_USER;
 
 $db_link = mysqli_connect(
     $server,
@@ -681,6 +678,16 @@ if (tableHasColumn($pre . 'notification', 'id')) {
 // Is TP_USER_ID created?
 $tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "users` WHERE id = " . TP_USER_ID));
 if (intval($tmp) === 0) {
+    // Get encryption key
+    $secureFilePath = rtrim(SECUREPATH, '/') . '/' . SECUREFILE;
+    if (!file_exists($secureFilePath) || !is_readable($secureFilePath)) {
+        return [
+            'success' => false,
+            'message' => "Encryption key file not found or not readable: " . $secureFilePath,
+        ];
+    }
+    $encryptionKey = file_get_contents($secureFilePath);
+
     // Generate a random password for the user
     $userPassword = GenerateCryptKey(25, true, true, true, true);
     $encryptedUserPassword = cryption(

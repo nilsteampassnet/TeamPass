@@ -211,7 +211,7 @@ if ($file) {
 
     // Validate upload
     if ($file->getError() !== UPLOAD_ERR_OK) {
-        echo handleUploadError($uploadErrors[$file->getError()]);
+        echo handleUploadError($file->getError());
         return false;
     }
 
@@ -318,13 +318,9 @@ if ($cleanupTargetDir && is_dir($targetDir) && ($dir = opendir($targetDir))) {
 }
 
 // Look for the content type header
-if (isset($_SERVER['HTTP_CONTENT_TYPE'])) {
-    $contentType = $_SERVER['HTTP_CONTENT_TYPE'];
-}
-
-if (isset($_SERVER['CONTENT_TYPE'])) {
-    $contentType = $_SERVER['CONTENT_TYPE'];
-}
+$contentType = $_SERVER['CONTENT_TYPE']
+    ?? $_SERVER['HTTP_CONTENT_TYPE']
+    ?? '';
 
 // Handle non multipart uploads older WebKit versions didn't support multipart in HTML5
 if (strpos($contentType, 'multipart') !== false) {

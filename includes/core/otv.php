@@ -41,7 +41,7 @@ use TeampassClasses\ConfigManager\ConfigManager;
 // Load functions
 require_once __DIR__.'/../../sources/main.functions.php';
 loadClasses('DB');
-
+$session = SessionManager::getSession();
 $request = SymfonyRequest::createFromGlobals();
 $lang = new Language($session->get('user-language') ?? 'english');
 $antiXSS = new AntiXSS();
@@ -79,7 +79,7 @@ if (empty($request->query->get('code')) === false
     }
 
     // check session validity
-    $data = DB::queryfirstrow(
+    $data = DB::queryFirstRow(
         'SELECT *
         FROM '.prefixTable('otv').'
         WHERE code = %s',
@@ -107,7 +107,7 @@ if (empty($request->query->get('code')) === false
             }
 
             // get from DB
-            $dataItem = DB::queryfirstrow(
+            $dataItem = DB::queryFirstRow(
                 'SELECT *
                 FROM '.prefixTable('items').' as i
                 INNER JOIN '.prefixTable('log_items').' as l ON (l.id_item = i.id)
@@ -118,7 +118,7 @@ if (empty($request->query->get('code')) === false
             );
             // is Item still valid regarding number of times being seen
             // Decrement the number before being deleted
-            $dataDelete = DB::queryfirstrow(
+            $dataDelete = DB::queryFirstRow(
                 'SELECT * FROM '.prefixTable('automatic_del').' WHERE item_id=%i',
                 $data['item_id']
             );
@@ -150,7 +150,7 @@ if (empty($request->query->get('code')) === false
                         );
                         // log
                         logItems(
-                            $SETTIGNS,
+                            $SETTINGS,
                             (int) $data['item_id'],
                             $dataItem['label'],
                             (int) OTV_USER_ID,
@@ -159,7 +159,7 @@ if (empty($request->query->get('code')) === false
                             'at_automatically_deleted'
                         );
                         echo '<div style="padding:10px; margin:90px 30px 30px 30px; text-align:center;" class="ui-widget-content ui-state-error ui-corner-all"><i class="fas fa-warning fa-2x"></i>&nbsp;'.
-                        addslashes($LANG['not_allowed_to_see_pw_is_expired']).'</div>';
+                        addslashes($lang['not_allowed_to_see_pw_is_expired']).'</div>';
                         return false;
                     }
                 }

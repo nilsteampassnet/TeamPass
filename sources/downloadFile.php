@@ -126,7 +126,7 @@ if (null !== $request->query->get('pathIsFiles') && (int) $get_pathIsFiles === 1
     readfile($SETTINGS['path_to_files_folder'] . '/' . basename($get_filename));
 } else {
     // get file key
-    $file_info = DB::queryfirstrow(
+    $file_info = DB::queryFirstRow(
         'SELECT f.id AS id, f.file AS file, f.name AS name, f.status AS status, f.extension AS extension,
         s.share_key AS share_key
         FROM ' . prefixTable('files') . ' AS f
@@ -147,7 +147,7 @@ if (null !== $request->query->get('pathIsFiles') && (int) $get_pathIsFiles === 1
         );
     } else {
         // if not encrypted
-        $file_info = DB::queryfirstrow(
+        $file_info = DB::queryFirstRow(
             'SELECT f.id AS id, f.file AS file, f.name AS name, f.status AS status, f.extension AS extension
             FROM ' . prefixTable('files') . ' AS f
             WHERE f.id = %i',

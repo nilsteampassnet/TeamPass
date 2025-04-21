@@ -231,7 +231,7 @@ if (null !== $post_type) {
 
             // Folders restore
             foreach ($post_folders as $folderId) {
-                $data = DB::queryfirstrow(
+                $data = DB::queryFirstRow(
                     'SELECT valeur
                     FROM ' . prefixTable('misc') . "
                     WHERE type = 'folder_deleted'
@@ -366,7 +366,7 @@ if (null !== $post_type) {
 
             // Folders to delete
             foreach ($post_folders as $folderId) {
-                $data = DB::queryfirstrow(
+                $data = DB::queryFirstRow(
                     'SELECT valeur
                     FROM ' . prefixTable('misc') . "
                     WHERE type = 'folder_deleted'
@@ -513,7 +513,7 @@ if (null !== $post_type) {
                     DB::delete(
                         prefixTable('sharekeys_files'),
                         'object_id = %i',
-                        $field
+                        $file
                     );
                 }
                 DB::delete(
@@ -745,7 +745,7 @@ if (null !== $post_type) {
             $post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
 
             // Get info about task
-            $taskInfo = DB::queryfirstrow(
+            $taskInfo = DB::queryFirstRow(
                 'SELECT p.process_type as process_type
                 FROM ' . prefixTable('background_tasks') . ' as p
                 WHERE p.increment_id = %i',

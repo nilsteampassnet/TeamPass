@@ -3514,6 +3514,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 'search_for_items',
                 $('#limited-search').is(":checked") === true ? store.get('teampassApplication').selectedFolder : false,
                 criteria,
+                0,
                 0
             );
         }
@@ -3522,7 +3523,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
     /**
      * 
      */
-    function finishingItemsFind(type, limited, criteria, start) {
+    function finishingItemsFind(type, limited, criteria, start, totalItems) {
         // send query
         $.get(
             'sources/find.queries.php', {
@@ -3531,6 +3532,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 search: criteria,
                 start: start,
                 length: 10,
+                totalItems: totalItems,
                 key: '<?php echo $session->get('key'); ?>'
             },
             function(data) {
@@ -3538,7 +3540,8 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     icon_login,
                     incon_link,
                     icon_pwd,
-                    icon_favorite;
+                    icon_favorite,
+                    total_items = 0;
 
                 data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>', 'find.queries.php', type);
                 if (debugJavascript === true) {
@@ -3552,6 +3555,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
                 // Show Items list
                 sList(data.html_json);
+                total_items = parseInt(data.totalItems);
 
                 if (data.start !== -1 && (data.start <= data.total)) {
                     // Continu the list of results
@@ -3560,12 +3564,13 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                         $('#limited-search').is(":checked") === true ?
                         store.get('teampassApplication').selectedFolder : false,
                         criteria,
-                        data.start
+                        data.start,
+                        total_items
                     )
                 } else {
                     toastr.remove();
                     toastr.info(
-                        data.message,
+                        total_items + data.message,
                         '', {
                             timeOut: 5000,
                             progressBar: true
@@ -5594,6 +5599,17 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
                             // Finished
                             return false;
+                        } else {
+                            // Retrieve the password
+                            getItemPassword(
+                                'at_password_shown_edit_form',
+                                'item_id',
+                                id
+                            ).then(item_pwd => {
+                                if (item_pwd) {
+                                    $('#form-item-password').val(item_pwd);
+                                }
+                            });
                         }
                     });
                 }

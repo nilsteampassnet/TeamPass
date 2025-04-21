@@ -54,17 +54,14 @@ require_once '../includes/config/settings.php';
 require_once 'tp.functions.php';
 require_once 'libs/aesctr.php';
 
-// Get the encrypted password
-define('DB_PASSWD_CLEAR', defuse_return_decrypted(DB_PASSWD));
-
 // DataBase
 // Test DB connexion
-$pass = DB_PASSWD_CLEAR;
-$server = DB_HOST;
-$pre = DB_PREFIX;
-$database = DB_NAME;
-$port = DB_PORT;
-$user = DB_USER;
+$pass = defuse_return_decrypted(DB_PASSWD);
+$server = (string) DB_HOST;
+$pre = (string) DB_PREFIX;
+$database = (string) DB_NAME;
+$port = (int) DB_PORT;
+$user = (string) DB_USER;
 
 $db_link = mysqli_connect(
     $server,

@@ -141,6 +141,7 @@ if (isset($_SERVER['HTTPS'])) {
     $protocol = 'http://';
 }
 
+$conversion_utf8 = false;
 
 // HEADER
 echo '
@@ -302,7 +303,7 @@ if (!isset($_GET['step']) && !isset($post_step)) {
     }
     require_once '../sources/main.functions.php';
     if (defined('DB_PASSWD_CLEAR') === false) {
-        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD, $SETTINGS));
+        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD));
     }
     //ETAPE 2
     echo '

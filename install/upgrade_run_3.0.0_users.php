@@ -69,11 +69,11 @@ $next = ($post_nb + $post_start);
 
 // Test DB connexion
 $pass = defuse_return_decrypted(DB_PASSWD);
-$server = DB_HOST;
-$pre = DB_PREFIX;
-$database = DB_NAME;
-$port = DB_PORT;
-$user = DB_USER;
+$server = (string) DB_HOST;
+$pre = (string) DB_PREFIX;
+$database = (string) DB_NAME;
+$port = (int) DB_PORT;
+$user = (string) DB_USER;
 
 if ($db_link = mysqli_connect(
         $server,
@@ -87,7 +87,6 @@ if ($db_link = mysqli_connect(
 } else {
     $res = 'Impossible to get connected to server. Error is: ' . addslashes(mysqli_connect_error());
     echo '[{"finish":"1", "error":"Impossible to get connected to server. Error is: ' . addslashes(mysqli_connect_error()) . '!"}]';
-    mysqli_close($db_link);
     exit();
 }
 
@@ -135,7 +134,7 @@ if (null !== $post_step) {
                 if (intval($tmp) === 0) {
                     // generate key for password
                     $pwd = GenerateCryptKey(25, true, true, true, true);
-                    $salt = file_get_contents(SECUREPATH . '/' . SECUREFILE);
+                    $salt = file_get_contents(rtrim(SECUREPATH, '/') . '/' . SECUREFILE);
                     $encrypted_pwd = cryption(
                         $pwd,
                         $salt,
@@ -171,6 +170,20 @@ if (null !== $post_step) {
                         )
                     );
 
+                    // Generate new random string
+                    $small_letters = range('a', 'z');
+                    $big_letters = range('A', 'Z');
+                    $digits = range(0, 9);
+                    $symbols = array('#', '_', '-', '@', '$', '+', '&');
+
+                    $res = array_merge($small_letters, $big_letters, $digits, $symbols);
+                    $c = count($res);
+                    $random_string_lenght = 20;
+                    $random_string = '';
+                    for ($i = 0; $i < $random_string_lenght; ++$i) {
+                        $random_string .= $res[random_int(0, $c - 1)];
+                    }
+
                     $usersArray = array(
                         'id' => TP_USER_ID,
                         'otp' => $random_string,
@@ -190,6 +203,7 @@ if (null !== $post_step) {
             
             // Treat the 1st user in the list
             if (count($listOfUsers) > 0 || (count($listOfUsers) === 0 && empty($post_number) === false && $post_extra !== 'all_users_created')) {
+                $usersArray = [];
                 // Get info about user
                 $userQuery = mysqli_fetch_array(
                     mysqli_query(
@@ -238,31 +252,31 @@ if (null !== $post_step) {
                         $db_link,
                         'DELETE  
                         FROM ' . $pre . 'sharekeys_items
-                        WHERE user_id = ' . (int) $userInfo['id']
+                        WHERE user_id = ' . (int) $userQuery['id']
                     );
                     mysqli_query(
                         $db_link,
                         'DELETE  
                         FROM ' . $pre . 'sharekeys_logs
-                        WHERE user_id = ' . (int) $userInfo['id']
+                        WHERE user_id = ' . (int) $userQuery['id']
                     );
                     mysqli_query(
                         $db_link,
                         'DELETE  
                         FROM ' . $pre . 'sharekeys_fields
-                        WHERE user_id = ' . (int) $userInfo['id']
+                        WHERE user_id = ' . (int) $userQuery['id']
                     );
                     mysqli_query(
                         $db_link,
                         'DELETE  
                         FROM ' . $pre . 'sharekeys_suggestions
-                        WHERE user_id = ' . (int) $userInfo['id']
+                        WHERE user_id = ' . (int) $userQuery['id']
                     );
                     mysqli_query(
                         $db_link,
                         'DELETE  
                         FROM ' . $pre . 'sharekeys_files
-                        WHERE user_id = ' . (int) $userInfo['id']
+                        WHERE user_id = ' . (int) $userQuery['id']
                     );
 
                     $usersArray = array(

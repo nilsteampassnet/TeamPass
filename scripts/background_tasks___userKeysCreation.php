@@ -66,7 +66,7 @@ $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 // Get PHP binary
 $phpBinaryPath = getPHPBinary();
 
-$processToPerform = DB::queryfirstrow(
+$processToPerform = DB::queryFirstRow(
     'SELECT *
     FROM ' . prefixTable('background_tasks') . '
     WHERE (finished_at IS NULL OR finished_at = "") AND process_type = %s

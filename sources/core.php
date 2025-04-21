@@ -38,6 +38,7 @@ use TeampassClasses\ConfigManager\ConfigManager;
 
 require_once 'main.functions.php';
 
+$session = SessionManager::getSession();
 $request = SymfonyRequest::createFromGlobals();
 $lang = new Language($session->get('user-language') ?? 'english');
 
@@ -386,7 +387,7 @@ if (
 /* LOAD INFORMATION CONCERNING USER */
 if ($session->has('user-timezone') && null !== $session->get('user-id') && empty($session->get('user-id')) === false) {
     // query on user
-    $data = DB::queryfirstrow(
+    $data = DB::queryFirstRow(
         'SELECT login, admin, gestionnaire, can_manage_all_users, groupes_visibles, groupes_interdits, fonction_id, last_connexion, roles_from_ad_groups, auth_type, last_pw_change FROM ' . prefixTable('users') . ' WHERE id=%i',
         $session->get('user-id')
     );

@@ -29,7 +29,6 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
-use LdapRecord\Connection;
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\SessionManager\SessionManager;
 use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
@@ -148,7 +147,7 @@ if (null !== $post_type) {
                     $arrNode['path'] = $parentClass;
 
                     // Role access
-                    $role_detail = DB::queryfirstrow(
+                    $role_detail = DB::queryFirstRow(
                         'SELECT *
                         FROM '.prefixTable('roles_values').'
                         WHERE folder_id = %i AND role_id = %i',
@@ -456,7 +455,7 @@ if (null !== $post_type) {
                         $session->set('user-nb_roles', $session->get('user-nb_roles') + 1);
 
                         // get some data
-                        $data_tmp = DB::queryfirstrow(
+                        $data_tmp = DB::queryFirstRow(
                             'SELECT fonction_id FROM '.prefixTable('users').' WHERE id = %s',
                             $session->get('user-id')
                         );
@@ -671,7 +670,7 @@ if (null !== $post_type) {
                 // Handle successful retrieval of groups
                 // exists in Teampass
                 foreach($groupsData['userGroups'] as $key => $group) {
-                    $role_detail = DB::queryfirstrow(
+                    $role_detail = DB::queryFirstRow(
                         'SELECT a.increment_id as increment_id, a.role_id as role_id, r.title as title
                         FROM '.prefixTable('ldap_groups_roles').' AS a
                         INNER JOIN '.prefixTable('roles_title').' AS r ON r.id = a.role_id
@@ -741,8 +740,9 @@ if (null !== $post_type) {
             $post_role_id = filter_var($dataReceived['roleId'], FILTER_SANITIZE_NUMBER_INT);
             $post_adgroup_id = filter_var($dataReceived['adGroupId'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $post_adgroup_label = filter_var($dataReceived['adGroupLabel'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $new_id = '';
 
-            $data = DB::queryfirstrow(
+            $data = DB::queryFirstRow(
                 'SELECT *
                 FROM '.prefixTable('ldap_groups_roles').'
                 WHERE ldap_group_id = %s',
@@ -771,7 +771,6 @@ if (null !== $post_type) {
                             'increment_id = %i',
                             $data['increment_id']
                         );
-                        $new_id = '';
                     }
                 }
             } else {

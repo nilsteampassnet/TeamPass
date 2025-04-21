@@ -75,7 +75,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         explode(';', $session->get('user-roles')),
         explode(',', str_replace(['"', '[', ']'], '', $SETTINGS['roles_allowed_to_print_select']))
     )) === 0
-    || (int) $session_user_admin === 1
+    || (isset($session_user_admin) && (int) $session_user_admin === 1)
 ) {
     // Not allowed page
     $session->set('system-error_code', ERR_NOT_ALLOWED);
