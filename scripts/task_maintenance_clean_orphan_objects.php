@@ -55,13 +55,13 @@ set_time_limit($SETTINGS['task_maximum_run_time']);
 require_once __DIR__.'/background_tasks___functions.php';
 
 // log start
-$logID = doLog('start', 'do_maintenance - clean-orphan-objects', 1);
+$logID = doLog('ongoing', 'do_maintenance - clean-orphan-objects', 1);
 
 // Perform maintenance tasks
 cleanOrphanObjects();
 
 // log end
-doLog('end', '', 1, $logID);
+doLog('completed', '', 1, $logID);
 
 /**
  * Delete all orphan objects from DB
@@ -70,76 +70,23 @@ doLog('end', '', 1, $logID);
  */
 function cleanOrphanObjects(): void
 {
-    /*
-    //Libraries call
-    $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
-
-    //init
-    $foldersIds = array();
-
-    // Get an array of all folders
-    $folders = $tree->getDescendants();
-    foreach ($folders as $folder) {
-        if (!in_array($folder->id, $foldersIds)) {
-            array_push($foldersIds, $folder->id);
-        }
-    }
-
-    $items = DB::query('SELECT id,label FROM ' . prefixTable('items') . ' WHERE id_tree NOT IN %li', $foldersIds);
-    foreach ($items as $item) {
-        //Delete item
-        DB::DELETE(prefixTable('items'), 'id = %i', $item['id']);
-
-        // Delete if template related to item
-        DB::delete(
-            prefixTable('templates'),
-            'item_id = %i',
-            $item['id']
-        );
-
-        //log
-        DB::DELETE(prefixTable('log_items'), 'id_item = %i', $item['id']);
-    }*/
-
-    /*
-    // delete orphan items
-    $rows = DB::query(
-        'SELECT id
-        FROM ' . prefixTable('items') . '
-        ORDER BY id ASC'
-    );
-    foreach ($rows as $item) {
-        DB::query(
-            'SELECT * FROM ' . prefixTable('log_items') . ' WHERE id_item = %i AND action = %s',
-            $item['id'],
-            'at_creation'
-        );
-        $counter = DB::count();
-        if ($counter === 0) {
-            DB::DELETE(prefixTable('items'), 'id = %i', $item['id']);
-            DB::DELETE(prefixTable('categories_items'), 'item_id = %i', $item['id']);
-            DB::DELETE(prefixTable('log_items'), 'id_item = %i', $item['id']);
-        }
-    }
-    */
-
     // Delete all item keys for which no user exist
     DB::query(
-        'DELETE k FROM ' . prefixTable('sharekeys_items') . ' k
+        'DELETE k.* FROM ' . prefixTable('sharekeys_items') . ' k
         LEFT JOIN ' . prefixTable('users') . ' u ON k.user_id = u.id
         WHERE u.id IS NULL OR u.deleted_at IS NOT NULL'
     );
 
     // Delete all files keys for which no item exist
     DB::query(
-        'DELETE k FROM ' . prefixTable('sharekeys_files') . ' k
+        'DELETE k.* FROM ' . prefixTable('sharekeys_files') . ' k
         LEFT JOIN ' . prefixTable('items') . ' i ON k.object_id = i.id
-        WHERE u.id IS NULL'
+        WHERE i.id IS NULL'
     );
 
     // Delete all fields keys for which no item exist
     DB::query(
-        'DELETE k FROM ' . prefixTable('sharekeys_fields') . ' k
+        'DELETE k.* FROM ' . prefixTable('sharekeys_fields') . ' k
         LEFT JOIN ' . prefixTable('categories_items') . ' c ON k.object_id = c.id
         LEFT JOIN ' . prefixTable('items') . ' i ON c.item_id = i.id
         WHERE c.id IS NULL OR i.id IS NULL'
@@ -147,44 +94,16 @@ function cleanOrphanObjects(): void
 
     // Delete all item logs for which no user exist
     DB::query(
-        'DELETE l FROM ' . prefixTable('log_items') . ' l
+        'DELETE l.* FROM ' . prefixTable('log_items') . ' l
         LEFT JOIN ' . prefixTable('items') . ' i ON l.id_item = i.id
-        WHERE u.id IS NULL'
+        WHERE i.id IS NULL'
     );
 
     // Delete all system logs for which no user exist
     DB::query(
-        'DELETE l FROM ' . prefixTable('log_system') . ' l
+        'DELETE l.* FROM ' . prefixTable('log_system') . ' l
         LEFT JOIN ' . prefixTable('users') . ' u ON l.qui = u.id
         WHERE u.id IS NULL OR u.deleted_at IS NOT NULL'
-    );
-
-    // Delete all item keys for which no object exist
-    DB::query(
-        'DELETE k FROM ' . prefixTable('sharekeys_items') . ' k
-        LEFT JOIN ' . prefixTable('items') . ' i ON k.object_id = i.id
-        WHERE i.id IS NULL'
-    );
-
-    // Delete all files keys for which no object exist
-    DB::query(
-        'DELETE k FROM ' . prefixTable('sharekeys_files') . ' k
-        LEFT JOIN ' . prefixTable('items') . ' i ON k.object_id = i.id
-        WHERE i.id IS NULL'
-    );
-
-    // Delete all fields keys for which no object exist
-    DB::query(
-        'DELETE k FROM ' . prefixTable('sharekeys_fields') . ' k
-        LEFT JOIN ' . prefixTable('items') . ' i ON k.object_id = i.id
-        WHERE i.id IS NULL'
-    );
-
-    // Delete all item logs for which no object exist
-    DB::query(
-        'DELETE l FROM ' . prefixTable('log_items') . ' l
-        LEFT JOIN ' . prefixTable('items') . ' i ON l.id_item = i.id
-        WHERE i.id IS NULL'
     );
 
 

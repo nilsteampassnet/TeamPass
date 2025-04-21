@@ -1141,6 +1141,7 @@ if (null !== $post_type) {
                             );
                             break;
                         }
+                        
 
                         // Decrypt / Encrypt the password
                         $cryptedStuff = doDataEncryption(
@@ -1159,166 +1160,30 @@ if (null !== $post_type) {
                         DB::insert(
                             prefixTable('items'),
                             array(
-                                'label' => 'duplicate',
+                                'label' => substr($record['label'], 0, 500),
+                                'description' => empty($record['description']) === true ? '' : $record['description'],
                                 'id_tree' => $newFolderId,
                                 'pw' => $cryptedStuff['encrypted'],
                                 'pw_iv' => '',
+                                'url' => empty($record['url']) === true ? '' : substr($record['url'], 0, 500),
+                                'login' => empty($record['login']) === true ? '' : substr($record['login'], 0, 200),
                                 'viewed_no' => 0,
+                                'encryption_type' => 'teampass_aes',
+                                'item_key' => uniqidReal(50),
+                                'created_at' => time(),
                             )
                         );
                         $newItemId = DB::insertId();
 
-                        // Create sharekeys for users of this new ITEM
-                        storeUsersShareKey(
-                            prefixTable('sharekeys_items'),
-                            (int) $record['perso'],
+                        // Create task for the new item
+                        storeTask(
+                            'item_copy',
+                            $session->get('user-id'),
+                            (int) $nodeInfo->personal_folder,
+                            (int) $newFolderId,
                             (int) $newItemId,
                             $cryptedStuff['objectKey'],
                         );
-
-                        // Generate the query to update the new record with the previous values
-                        $aSet = [];
-                        foreach ($record as $key => $value) {
-                            if (
-                                $key !== 'id' && $key !== 'key' && $key !== 'id_tree'
-                                && $key !== 'viewed_no' && $key !== 'pw' && $key !== 'pw_iv'
-                            ) {
-                                $aSet[$key] = $value;
-                            }
-                        }
-                        DB::update(
-                            prefixTable('items'),
-                            $aSet,
-                            'id = %i',
-                            $newItemId
-                        );
-
-                        // --------------------
-                        // Manage Custom Fields
-                        $categories = DB::query(
-                            'SELECT *
-                            FROM ' . prefixTable('categories_items') . '
-                            WHERE item_id = %i',
-                            $record['id']
-                        );
-                        foreach ($categories as $field) {
-                            // Create the entry for the new item
-
-                            // Is the data encrypted
-                            if ((int) $field['encryption_type'] === TP_ENCRYPTION_NAME) {
-                                $cryptedStuff = doDataEncryption($field['data']);
-                            }
-
-                            // store field text
-                            DB::insert(
-                                prefixTable('categories_items'),
-                                array(
-                                    'item_id' => $newItemId,
-                                    'field_id' => $field['field_id'],
-                                    'data' => (int) $field['encryption_type'] === TP_ENCRYPTION_NAME ?
-                                        $cryptedStuff['encrypted'] : $field['data'],
-                                    'data_iv' => '',
-                                    'encryption_type' => (int) $field['encryption_type'] === TP_ENCRYPTION_NAME ?
-                                        TP_ENCRYPTION_NAME : 'not_set',
-                                )
-                            );
-                            $newFieldId = DB::insertId();
-
-                            // Create sharekeys for users
-                            if ((int) $field['encryption_type'] === TP_ENCRYPTION_NAME) {
-                                storeUsersShareKey(
-                                    prefixTable('sharekeys_fields'),
-                                    (int) $record['id'],
-                                    (int) $newFieldId,
-                                    $cryptedStuff['objectKey'],
-                                );
-                            }
-                        }
-                        // <---
-
-                        // ------------------
-                        // Manage attachments
-
-                        // get file key
-                        $files = DB::query(
-                            'SELECT f.id AS id, f.file AS file, f.name AS name, f.status AS status, f.extension AS extension,
-                            f.size AS size, f.type AS type, s.share_key AS share_key
-                            FROM ' . prefixTable('files') . ' AS f
-                            INNER JOIN ' . prefixTable('sharekeys_files') . ' AS s ON (f.id = s.object_id)
-                            WHERE s.user_id = %i AND f.id_item = %i',
-                            $session->get('user-id'),
-                            $record['id']
-                        );
-                        foreach ($files as $file) {
-                            // Check if file still exists
-                            if (file_exists($SETTINGS['path_to_upload_folder'] . DIRECTORY_SEPARATOR . TP_FILE_PREFIX . base64_decode($file['file'])) === true) {
-                                // Step1 - decrypt the file
-                                $fileContent = decryptFile(
-                                    $file['file'],
-                                    $SETTINGS['path_to_upload_folder'],
-                                    decryptUserObjectKey($file['share_key'], $session->get('user-private_key'))
-                                );
-                                if (!is_string($fileContent)) {
-                                    // Case where $fileContent is not a string
-                                    echo prepareExchangedData(
-                                        array(
-                                            'error' => true,
-                                            'message' => 'Invalid file content',
-                                        ),
-                                        'encode'
-                                    );
-                                    break;
-                                }
-
-                                // Step2 - create file
-                                // deepcode ignore InsecureHash: Is not a password, just a random string for a file name
-                                $newFileName = md5(time() . '_' . $file['id']) . '.' . $file['extension'];
-
-                                $outstream = fopen($SETTINGS['path_to_upload_folder'] . DIRECTORY_SEPARATOR . $newFileName, 'ab');
-                                if ($outstream === false) {
-                                    echo prepareExchangedData(
-                                        array(
-                                            'error' => true,
-                                            'message' => $lang->get('error_cannot_open_file'),
-                                        ),
-                                        'encode'
-                                    );
-                                    break;
-                                }
-                                fwrite(
-                                    $outstream,
-                                    base64_decode((string) $fileContent)
-                                );
-
-                                // Step3 - encrypt the file
-                                $newFile = encryptFile($newFileName, $SETTINGS['path_to_upload_folder']);
-
-                                // Step4 - store in database
-                                DB::insert(
-                                    prefixTable('files'),
-                                    array(
-                                        'id_item' => $newItemId,
-                                        'name' => $file['name'],
-                                        'size' => $file['size'],
-                                        'extension' => $file['extension'],
-                                        'type' => $file['type'],
-                                        'file' => $newFile['fileHash'],
-                                        'status' => TP_ENCRYPTION_NAME,
-                                        'confirmed' => 1,
-                                    )
-                                );
-                                $newFileId = DB::insertId();
-
-                                // Step5 - create sharekeys
-                                storeUsersShareKey(
-                                    prefixTable('sharekeys_files'),
-                                    (int) $record['perso'],
-                                    (int) $newFileId,
-                                    $newFile['objectKey'],
-                                );
-                            }
-                        }
-                        // <---
 
                         // Add this duplicate in logs
                         logItems(

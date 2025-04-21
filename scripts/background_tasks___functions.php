@@ -27,7 +27,6 @@
  */
 
 use TeampassClasses\NestedTree\NestedTree;
-use TeampassClasses\ConfigManager\ConfigManager;
 
 // Load config
 require_once __DIR__.'/../includes/config/include.php';

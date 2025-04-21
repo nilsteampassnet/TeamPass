@@ -27,6 +27,7 @@
  */
 
 use TeampassClasses\Language\Language;
+use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\ConfigManager\ConfigManager;
 use TeampassClasses\SessionManager\SessionManager;
 
@@ -57,13 +58,13 @@ set_time_limit($SETTINGS['task_maximum_run_time']);
 require_once __DIR__.'/background_tasks___functions.php';
 
 // log start
-$logID = doLog('start', 'do_maintenance - reload-cache-table', 1);
+$logID = doLog('ongoing', 'do_maintenance - reload-cache-table', 1);
 
 // Perform maintenance tasks
 reloadCacheTable();
 
 // log end
-doLog('end', '', 1, $logID);
+doLog('completed', '', 1, $logID);
 
 /**
  * Relead cache table
