@@ -189,8 +189,10 @@ trait UserHandlerTrait {
             FROM ' . prefixTable('items') . '
             WHERE perso =  %i
             ORDER BY id ASC
-            LIMIT ' . $taskData['index'] . ', ' . $taskData['nb'],
-            ($arguments['only_personal_items'] ?? 0) === 1 ? 1 : 0
+            LIMIT %i, %i',
+            ($arguments['only_personal_items'] ?? 0) === 1 ? 1 : 0,
+            $taskData['index'],
+            $taskData['nb']
         );
 
         foreach ($rows as $record) {
@@ -359,7 +361,9 @@ trait UserHandlerTrait {
             FROM ' . prefixTable('categories_items') . '
             WHERE encryption_type = "teampass_aes"
             ORDER BY id ASC
-            LIMIT ' . $taskData['index'] . ', ' . $taskData['nb']
+            LIMIT %i, %i',
+            $taskData['index'],
+            $taskData['nb']
         );
         foreach ($rows as $record) {
             // Get itemKey from current user
@@ -437,7 +441,9 @@ trait UserHandlerTrait {
             'SELECT id
             FROM ' . prefixTable('suggestion') . '
             ORDER BY id ASC
-            LIMIT ' . $taskData['index'] . ', ' . $taskData['nb']
+            LIMIT %i, %i',
+            $taskData['index'],
+            $taskData['nb']
         );
         foreach ($rows as $record) {
             // Get itemKey from current user
@@ -519,7 +525,9 @@ trait UserHandlerTrait {
             FROM ' . prefixTable('files') . ' AS f
             INNER JOIN ' . prefixTable('items') . ' AS i ON i.id = f.id_item
             WHERE f.status = "' . TP_ENCRYPTION_NAME . '"
-            LIMIT ' . $taskData['index'] . ', ' . $taskData['nb']
+            LIMIT %i, %i',
+            $taskData['index'],
+            $taskData['nb']
         ); //aes_encryption
         foreach ($rows as $record) {
             // Get itemKey from current user
@@ -627,7 +635,7 @@ trait UserHandlerTrait {
         // COnfig 4: send new encryption code
         if (isset($arguments['send_email']) === true && (int) $arguments['send_email'] === 1) {
             sendMailToUser(
-                filter_var($userInfo['email'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                filter_var($userInfo['email'], FILTER_SANITIZE_EMAIL),
                 // @scrutinizer ignore-type
                 empty($arguments['email_body']) === false ? $arguments['email_body'] : $lang->get('email_body_user_config_1'),
                 'TEAMPASS - ' . $lang->get('login_credentials'),

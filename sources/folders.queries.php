@@ -1179,7 +1179,7 @@ if (null !== $post_type) {
                                 'created_at' => time(),
                             )
                         );
-                        $newItemId = DB::insertId();                        
+                        $newItemId = DB::insertId();
 
                         // Create task for the new item
                         storeTask(

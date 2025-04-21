@@ -179,10 +179,5 @@ foreach ($items as $item) {
     );
 }
 
-/*
-* Release locks on items if they are older than defined time
-*/
-//deleteItemLocks();
-
 // log end
 doLog('completed', 'do_calculation', (isset($SETTINGS['enable_tasks_log']) === true ? (int) $SETTINGS['enable_tasks_log'] : 0), $logID);
