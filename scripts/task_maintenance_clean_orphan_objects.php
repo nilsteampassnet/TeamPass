@@ -29,7 +29,6 @@
 use TeampassClasses\Language\Language;
 use TeampassClasses\ConfigManager\ConfigManager;
 
-
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
 
@@ -131,25 +130,26 @@ function cleanOrphanObjects(): void
         WHERE u.id IS NULL OR u.deleted_at IS NOT NULL'
     );
 
-    // Delete all files keys for which no user exist
+    // Delete all files keys for which no item exist
     DB::query(
         'DELETE k FROM ' . prefixTable('sharekeys_files') . ' k
-        LEFT JOIN ' . prefixTable('users') . ' u ON k.user_id = u.id
-        WHERE u.id IS NULL OR u.deleted_at IS NOT NULL'
+        LEFT JOIN ' . prefixTable('items') . ' i ON k.object_id = i.id
+        WHERE u.id IS NULL'
     );
 
-    // Delete all fields keys for which no user exist
+    // Delete all fields keys for which no item exist
     DB::query(
         'DELETE k FROM ' . prefixTable('sharekeys_fields') . ' k
-        LEFT JOIN ' . prefixTable('users') . ' u ON k.user_id = u.id
-        WHERE u.id IS NULL OR u.deleted_at IS NOT NULL'
+        LEFT JOIN ' . prefixTable('categories_items') . ' c ON k.object_id = c.id
+        LEFT JOIN ' . prefixTable('items') . ' i ON c.item_id = i.id
+        WHERE c.id IS NULL OR i.id IS NULL'
     );
 
     // Delete all item logs for which no user exist
     DB::query(
         'DELETE l FROM ' . prefixTable('log_items') . ' l
-        LEFT JOIN ' . prefixTable('users') . ' u ON l.id_user = u.id
-        WHERE u.id IS NULL OR u.deleted_at IS NOT NULL'
+        LEFT JOIN ' . prefixTable('items') . ' i ON l.id_item = i.id
+        WHERE u.id IS NULL'
     );
 
     // Delete all system logs for which no user exist

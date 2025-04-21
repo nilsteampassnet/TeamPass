@@ -35,7 +35,6 @@ use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\SessionManager\SessionManager;
 use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use TeampassClasses\Language\Language;
-use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\ConfigManager\ConfigManager;
 use GibberishAES\GibberishAES;
@@ -175,7 +174,7 @@ if (null !== $post_type) {
                                         || (in_array($session->get('user-id'), explode(';', $record['restricted_to'])) === true)))
                             ) {
                                 // Run query
-                                $dataItem = DB::queryfirstrow(
+                                $dataItem = DB::queryFirstRow(
                                     'SELECT i.pw AS pw, s.share_key AS share_key
                                     FROM ' . prefixTable('items') . ' AS i
                                     INNER JOIN ' . prefixTable('sharekeys_items') . ' AS s ON (s.object_id = i.id)
@@ -401,7 +400,7 @@ if (null !== $post_type) {
                             //exclude this case
                         } else {
                             // Run query
-                            $dataItem = DB::queryfirstrow(
+                            $dataItem = DB::queryFirstRow(
                                 'SELECT i.pw AS pw, s.share_key AS share_key
                                 FROM ' . prefixTable('items') . ' AS i
                                 INNER JOIN ' . prefixTable('sharekeys_items') . ' AS s ON (s.object_id = i.id)
@@ -849,10 +848,9 @@ if (null !== $post_type) {
             $inputData['file_link'] = (string) filter_var($dataReceived['file_link'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $inputData['export_tag'] = (string) filter_var($dataReceived['export_tag'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
-            //print_r($inputData);
-
             $full_listing = array();
             $items_id_list = array();
+            $outstream = '';
             include $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
 
             // query

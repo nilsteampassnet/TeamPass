@@ -134,7 +134,7 @@ if (null === $post_user_token) {
         handleAttachmentError('File exceeds the maximum allowed size', 120, 413);
         die();
     }
-    error_log('POST_MAX_SIZE: ' . $POST_MAX_SIZE." - CONTENT_LENGTH: ".$_SERVER['CONTENT_LENGTH']." - UNIT: ".$unit." - MAX: ".$maxSize." - MULTIPLIER: ".$multiplier." - FILE_SIZE: ".$post_fileSize);
+    if (WIP === true) error_log('POST_MAX_SIZE: ' . $POST_MAX_SIZE." - CONTENT_LENGTH: ".$_SERVER['CONTENT_LENGTH']." - UNIT: ".$unit." - MAX: ".$maxSize." - MULTIPLIER: ".$multiplier." - FILE_SIZE: ".$post_fileSize);
     
     // delete expired tokens
     DB::delete(prefixTable('tokens'), 'end_timestamp < %i', time());
@@ -246,7 +246,7 @@ if ($file_size <= 0) {
 if (!isset($_FILES['file'])) {
     handleAttachmentError('No upload found in $_FILES for Filedata', 121);
 } elseif (isset($_FILES['file']['error']) && $_FILES['file']['error'] != 0) {
-    handleAttachmentError($uploadErrors[$_FILES['Filedata']['error']], 122);
+    handleAttachmentError($_FILES['Filedata']['error'], 122);
 } elseif (!isset($_FILES['file']['tmp_name']) || !@is_uploaded_file($_FILES['file']['tmp_name'])) {
     handleAttachmentError('Upload failed is_uploaded_file test.', 123);
 } elseif (!isset($_FILES['file']['name'])) {
@@ -328,13 +328,9 @@ if ($cleanupTargetDir && is_dir($targetDir) && ($dir = opendir($targetDir))) {
 }
 
 // Look for the content type header
-if (isset($_SERVER['HTTP_CONTENT_TYPE'])) {
-    $contentType = $_SERVER['HTTP_CONTENT_TYPE'];
-}
-
-if (isset($_SERVER['CONTENT_TYPE'])) {
-    $contentType = $_SERVER['CONTENT_TYPE'];
-}
+$contentType = $_SERVER['CONTENT_TYPE']
+    ?? $_SERVER['HTTP_CONTENT_TYPE']
+    ?? '';
 
 // Handle non multipart uploads older WebKit versions didn't support multipart in HTML5
 if (strpos($contentType, 'multipart') !== false) {
@@ -399,6 +395,7 @@ if (!$chunks || $chunk == $chunks - 1) {
 
 // Encrypt the file if requested
 $newFile = encryptFile($fileName, $targetDir);
+$newID = 0;
 
 // Case ITEM ATTACHMENTS - Store to database
 if (null !== $post_type_upload && $post_type_upload === 'item_attachments') {
@@ -459,11 +456,7 @@ if (null !== $post_type_upload && $post_type_upload === 'item_attachments') {
     }
 
     // Log upload into databse
-    if (
-        isset($post_isNewItem) === false
-        || (isset($post_isNewItem) === true
-            && ($post_isNewItem === false || (int) $post_isNewItem !== 1))
-    ) {
+    if ($post_isNewItem === false || (int) $post_isNewItem !== 1) {
         DB::insert(
             prefixTable('log_items'),
             array(

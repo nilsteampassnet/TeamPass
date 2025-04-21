@@ -32,8 +32,12 @@ declare(strict_types=1);
 use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use TeampassClasses\Language\Language;
 use TeampassClasses\OAuth2Controller\OAuth2Controller;
+use TeampassClasses\SessionManager\SessionManager;
+use TeampassClasses\ConfigManager\ConfigManager;
+
 // Automatic redirection
 $nextUrl = '';
+$server = $server ?? [];
 if (strpos($server['request_uri'], '?') > 0) {
     $nextUrl = filter_var(
         substr($server['request_uri'], strpos($server['request_uri'], '?')),
@@ -41,8 +45,15 @@ if (strpos($server['request_uri'], '?') > 0) {
     );
 }
 
+// Load config
+$configManager = new ConfigManager();
+$SETTINGS = $configManager->getAllSettings();
+
+loadClasses();
+$session = SessionManager::getSession();
 $request = SymfonyRequest::createFromGlobals();
 $lang = new Language($session->get('user-language') ?? 'english');
+
 $get = [];
 $postType = $request->query->get('post_type', '');
 $postType = filter_var($postType, FILTER_SANITIZE_SPECIAL_CHARS);
@@ -96,7 +107,7 @@ if (null !== $session->get('userOauth2Info') && empty($session->get('userOauth2I
 }
 
 echo '
-<body class="hold-transition login-page '.$theme_body.'">
+<body class="hold-transition login-page '.($theme_body ?? '').'">
 <div class="login-box">
     <div class="login-logo"><div style="margin:30px;">',
     isset($SETTINGS['custom_logo']) === true && empty($SETTINGS['custom_logo']) === false ?

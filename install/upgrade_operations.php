@@ -70,12 +70,12 @@ define('DB_PASSWD_CLEAR', defuse_return_decrypted(DB_PASSWD));
 
 // DataBase
 // Test DB connexion
-$pass = DB_PASSWD_CLEAR;
-$server = DB_HOST;
-$pre = DB_PREFIX;
-$database = DB_NAME;
-$port = DB_PORT;
-$user = DB_USER;
+$pass = (string) DB_PASSWD_CLEAR;
+$server = (string) DB_HOST;
+$pre = (string) DB_PREFIX;
+$database = (string) DB_NAME;
+$port = (int) DB_PORT;
+$user = (string) DB_USER;
 
 $db_link = mysqli_connect(
     $server,
@@ -95,6 +95,7 @@ if ($db_link) {
 $post_operation = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
 if (isset($post_operation) === true && empty($post_operation) === false && strpos($post_operation, 'step') === false) {
+    $total = 0;
     if ($post_operation === '20230604_1') {
         // ---->
         // OPERATION - 20230604_1 - generate key for item_key
@@ -271,9 +272,16 @@ function populateItemsTable_DeletedAt($pre)
  * @param integer $user_id
  * @return void
  */
-function installPurgeUnnecessaryKeys(bool $allUsers = true, int $user_id=0, string $pre)
+function installPurgeUnnecessaryKeys(bool $allUsers, int $user_id, string $pre)
 {
     global $db_link;
+
+    // Do init
+    $allUsers = $allUsers === true ? true : false;
+    if (is_null($user_id)) {
+        $user_id = 0;
+    }
+
     if ($allUsers === true) {
         $users = mysqli_query(
             $db_link,
@@ -296,9 +304,14 @@ function installPurgeUnnecessaryKeys(bool $allUsers = true, int $user_id=0, stri
  * @param integer $user_id
  * @return void
  */
-function installPurgeUnnecessaryKeysForUser(int $user_id=0, string $pre)
+function installPurgeUnnecessaryKeysForUser(int $user_id, string $pre)
 {
     global $db_link;
+
+    if (is_null($user_id)) {
+        $user_id = 0;
+    }
+
     // Start transaction to avoid autocommit
     mysqli_begin_transaction($db_link, MYSQLI_TRANS_START_READ_WRITE);
 

@@ -52,7 +52,7 @@ set_time_limit($SETTINGS['task_maximum_run_time']);
 
 // --------------------------------- //
 
-$subtask = DB::queryfirstrow(
+$subtask = DB::queryFirstRow(
     'SELECT *
     FROM ' . prefixTable('background_subtasks') . '
     WHERE process_id = %i AND finished_at IS NULL
@@ -82,7 +82,7 @@ if ($args['step'] === 'create_users_files_key') {
             false,
             false,
             [],
-            array_key_exists('all_users_except_id', $ProcessArguments) === true ? $ProcessArguments['all_users_except_id'] : -1,
+            array_key_exists('all_users_except_id', $args) === true ? $args['all_users_except_id'] : -1,
         );
     }
 } elseif ($args['step'] === 'create_users_fields_key') {
@@ -98,18 +98,18 @@ if ($args['step'] === 'create_users_files_key') {
             false,
             false,
             [],
-            array_key_exists('all_users_except_id', $ProcessArguments) === true ? $ProcessArguments['all_users_except_id'] : -1,
+            array_key_exists('all_users_except_id', $args) === true ? $args['all_users_except_id'] : -1,
         );
     }
 } elseif ($args['step'] === 'create_users_pwd_key') {
     storeUsersShareKey(
         prefixTable('sharekeys_items'),
         0,
-        (int) $ProcessArguments['item_id'],
-        (string) (array_key_exists('pwd', $ProcessArguments) === true ? $ProcessArguments['pwd'] : (array_key_exists('object_key', $ProcessArguments) === true ? $ProcessArguments['object_key'] : '')),
+        (int) $args['item_id'],
+        (string) (array_key_exists('pwd', $args) === true ? $args['pwd'] : (array_key_exists('object_key', $args) === true ? $args['object_key'] : '')),
         false,
         false,
         [],
-        array_key_exists('all_users_except_id', $ProcessArguments) === true ? $ProcessArguments['all_users_except_id'] : -1
+        array_key_exists('all_users_except_id', $args) === true ? $args['all_users_except_id'] : -1
     );
 }

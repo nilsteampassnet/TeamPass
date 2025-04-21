@@ -62,25 +62,14 @@ if ($ret['error'] === true) {
     exit();
 }
 
-// Get the encrypted password
-define('DB_PASSWD_CLEAR', defuse_return_decrypted(DB_PASSWD));
-
-//Build tree
-$tree = new NestedTree(
-    $pre . 'nested_tree',
-    'id',
-    'parent_id',
-    'title'
-);
-
 // DataBase
 // Test DB connexion
-$pass = DB_PASSWD_CLEAR;
-$server = DB_HOST;
-$pre = DB_PREFIX;
-$database = DB_NAME;
-$port = DB_PORT;
-$user = DB_USER;
+$pass = defuse_return_decrypted(DB_PASSWD);
+$server = (string) DB_HOST;
+$pre = (string) DB_PREFIX;
+$database = (string) DB_NAME;
+$port = (int) DB_PORT;
+$user = (string) DB_USER;
 
 $db_link = mysqli_connect(
     $server,
@@ -99,11 +88,6 @@ if ($db_link) {
 // Load libraries
 $superGlobal = new SuperGlobal();
 $lang = new Language(); 
-
-// Set Session
-$superGlobal->put('db_encoding', 'utf8', 'SESSION');
-$superGlobal->put('fullurl', $post_fullurl, 'SESSION');
-$superGlobal->put('abspath', $abspath, 'SESSION');
 
 // Get POST with user info
 $post_user_info = json_decode(base64_decode(filter_input(INPUT_POST, 'info', FILTER_SANITIZE_FULL_SPECIAL_CHARS)));//print_r($post_user_info);
@@ -127,6 +111,14 @@ if ((int) $CurrentTPversion[0] === 3) {
     $TPIsBranch3 = false;
 }
 
+//Build tree
+$tree = new NestedTree(
+    $pre . 'nested_tree',
+    'id',
+    'parent_id',
+    'title'
+);
+
 
 // Populate table MISC
 $val = array(
@@ -142,8 +134,7 @@ foreach ($val as $elem) {
         WHERE type='".$elem[0]."' AND intitule='".$elem[1]."'"
     );
     if (mysqli_error($db_link)) {
-        echo '[{"finish":"1", "msg":"", "error":"MySQL Error! Last input is "'.$elem[1].' - '.
-            addslashes($queryRes).'"}]';
+        echo '[{"finish":"1", "msg":"", "error":"MySQL Error! Last input is "'.$elem[1].'"}]';
         exit();
     } else {
         $resTmp = mysqli_fetch_row($queryRes);

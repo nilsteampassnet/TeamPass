@@ -702,9 +702,9 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                     'arguments' => json_encode([
                         'user_id' => (int) $session->get('user-id'),
                     ], JSON_HEX_QUOT | JSON_HEX_TAG),
-                    'updated_at' => '',
-                    'finished_at' => '',
-                    'output' => '',
+                    'updated_at' => null,
+                    'finished_at' => null,
+                    'output' => null,
                 )
             );
         } else {
@@ -719,7 +719,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             && (int) $sessionAdmin !== 1
         ) {
             // get all Admin users
-            $val = DB::queryfirstrow('SELECT email FROM ' . prefixTable('users') . " WHERE admin = %i and email != ''", 1);
+            $val = DB::queryFirstRow('SELECT email FROM ' . prefixTable('users') . " WHERE admin = %i and email != ''", 1);
             if (DB::count() > 0) {
                 // Add email to table
                 prepareSendingEmail(
@@ -1375,79 +1375,6 @@ function finalizeAuthentication(
 /**
  * Undocumented function.
  *
- * @param string|array|resource $dataReceived Received data
- * @param string                $userInfo     Result of query
- * @param array                 $SETTINGS     Teampass settings
- *
- * @return array
- */
-function yubicoMFACheck($dataReceived, string $userInfo, array $SETTINGS): array
-{
-    $session = SessionManager::getSession();
-    $lang = new Language($session->get('user-language') ?? 'english');
-    $sessionAdmin = $session->get('user-admin');
-    $sessionUrl = $session->get('user-initial_url');
-    $sessionPwdAttempts = $session->get('pwd_attempts');
-    // Init
-    $yubico_key = htmlspecialchars_decode($dataReceived['yubico_key']);
-    $yubico_user_key = htmlspecialchars_decode($dataReceived['yubico_user_key']);
-    $yubico_user_id = htmlspecialchars_decode($dataReceived['yubico_user_id']);
-    if (empty($yubico_user_key) === false && empty($yubico_user_id) === false) {
-        // save the new yubico in user's account
-        DB::update(
-            prefixTable('users'),
-            [
-                'yubico_user_key' => $yubico_user_key,
-                'yubico_user_id' => $yubico_user_id,
-            ],
-            'id=%i',
-            $userInfo['id']
-        );
-    } else {
-        // Check existing yubico credentials
-        if ($userInfo['yubico_user_key'] === 'none' || $userInfo['yubico_user_id'] === 'none') {
-            return [
-                'error' => true,
-                'value' => '',
-                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : '',
-                'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
-                'pwd_attempts' => (int) $sessionPwdAttempts,
-                'message' => 'no_user_yubico_credentials',
-                'proceedIdentification' => false,
-            ];
-        }
-        $yubico_user_key = $userInfo['yubico_user_key'];
-        $yubico_user_id = $userInfo['yubico_user_id'];
-    }
-
-    // Now check yubico validity
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Authentication/Yubico/Yubico.php';
-    $yubi = new Auth_Yubico($yubico_user_id, $yubico_user_key);
-    $auth = $yubi->verify($yubico_key);
-    //, null, null, null, 60
-
-    if (PEAR::isError($auth)) {
-        return [
-            'error' => true,
-            'value' => '',
-            'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : '',
-            'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
-            'pwd_attempts' => (int) $sessionPwdAttempts,
-            'message' => $lang->get('yubico_bad_code'),
-            'proceedIdentification' => false,
-        ];
-    }
-
-    return [
-        'error' => false,
-        'message' => '',
-        'proceedIdentification' => true,
-    ];
-}
-
-/**
- * Undocumented function.
- *
  * @param string $username      User name
  * @param string $passwordClear User password in clear
  * @param array $retLDAP       Received data from LDAP
@@ -1803,7 +1730,7 @@ function duoMFAPerform(
         }
         
         // Somethimes Duo return success but fail to return a URL, double check if the URL has been created
-        if (!empty($duo_redirect_url) && isset($duo_redirect_url) && filter_var($duo_redirect_url,FILTER_SANITIZE_URL)) {
+        if (!empty($duo_redirect_url) && filter_var($duo_redirect_url,FILTER_SANITIZE_URL)) {
             // Since Duo Universal requires a redirect, let's store some info when the user get's back after completing the Duo prompt
             $key = hash('sha256', $duo_state);
             $iv = substr(hash('sha256', $duo_state), 0, 16);
@@ -2194,8 +2121,8 @@ function identifyDoInitialChecks(
             'error' => true,
             'array' => [
                 'value' => '2fa_not_set',
-                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
-                'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
+                'user_admin' => (int) $sessionAdmin,
+                'initial_url' => $sessionUrl,
                 'pwd_attempts' => (int) $sessionPwdAttempts,
                 'error' => '2fa_not_set',
                 'message' => $lang->get('select_valid_2fa_credentials'),
@@ -2214,8 +2141,8 @@ function identifyDoInitialChecks(
             'error' => true,
             'array' => [
                 'value' => '',
-                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
-                'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
+                'user_admin' => $sessionAdmin,
+                'initial_url' => $sessionUrl,
                 'pwd_attempts' => (int) $sessionPwdAttempts,
                 'error' => true,
                 'message' => $lang->get('remove_install_folder'),
@@ -2260,8 +2187,8 @@ function identifyDoLDAPChecks(
                 'error' => true,
                 'array' => [
                     'value' => '',
-                    'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
-                    'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
+                    'user_admin' => $sessionAdmin,
+                    'initial_url' => $sessionUrl,
                     'pwd_attempts' => (int) $sessionPwdAttempts,
                     'error' => true,
                     'message' => $lang->get('error_bad_credentials'),
@@ -2521,21 +2448,6 @@ function identifyDoMFAChecks(
                 'mfaQRCodeInfos' => $userInitialData['user_mfa_mode'] === 'google'
                 && count($ret['firstTime']) > 0 ? true : false,
             ];
-
-        case 'yubico':
-            $ret = yubicoMFACheck(
-                $dataReceived,
-                $userInfo,
-                $SETTINGS
-            );
-            if ($ret['error'] !== false) {
-                return [
-                    'error' => true,
-                    'mfaData' => $ret,
-                    'mfaQRCodeInfos' => false,
-                ];
-            }
-            break;
         
         case 'duo':
             // Prepare Duo connection if set up
@@ -2674,7 +2586,7 @@ function handleFailedAttempts($source, $value, $limit) {
         $lang = new Language($SETTINGS['default_language']);
 
         // Get user email
-        $userInfos = DB::QueryFirstRow(
+        $userInfos = DB::queryFirstRow(
             'SELECT email, name
              FROM '.prefixTable('users').'
              WHERE login = %s',

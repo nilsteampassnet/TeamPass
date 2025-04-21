@@ -124,7 +124,7 @@ $inputData = dataSanitizer(
     $filters
 );
 
-$lastFolderChange = DB::queryfirstrow(
+$lastFolderChange = DB::queryFirstRow(
     'SELECT valeur FROM ' . prefixTable('misc') . '
     WHERE type = %s AND intitule = %s',
     'timestamp',
@@ -241,9 +241,9 @@ if ($goTreeRefresh['state'] === true || empty($inputData['nodeId']) === false ||
             'arguments' => json_encode([
                 'user_id' => (int) $inputData['userId'],
             ], JSON_HEX_QUOT | JSON_HEX_TAG),
-            'updated_at' => '',
-            'finished_at' => '',
-            'output' => '',
+            'updated_at' => null,
+            'finished_at' => null,
+            'output' => null,
         )
     );
 
@@ -771,7 +771,7 @@ function loadTreeStrategy(
     }
 
     // Does this user has a tree cache
-    $userCacheTree = DB::queryfirstrow(
+    $userCacheTree = DB::queryFirstRow(
         'SELECT data
         FROM ' . prefixTable('cache_tree') . '
         WHERE user_id = %i',

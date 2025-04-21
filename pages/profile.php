@@ -29,6 +29,7 @@ declare(strict_types=1);
  * @see       https://www.teampass.net
  */
 
+use TeampassClasses\SessionManager\SessionManager;
 use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use TeampassClasses\Language\Language;
 use TeampassClasses\PerformChecks\PerformChecks;
@@ -39,7 +40,7 @@ require_once __DIR__.'/../sources/main.functions.php';
 
 // init
 loadClasses('DB');
-
+$session = SessionManager::getSession();
 $request = SymfonyRequest::createFromGlobals();
 $lang = new Language($session->get('user-language') ?? 'english');
 
@@ -294,7 +295,7 @@ foreach ($session->get('user-roles_array') as $role) {
                                         ) {
                                             $numDaysBeforePwExpiration = '';
                                         } else {
-                                            $numDaysBeforePwExpiration = $LANG['index_pw_expiration'] . ' ' . $session->get('user-num_days_before_exp') . ' ' . $LANG['days'] . '.';
+                                            $numDaysBeforePwExpiration = $lang['index_pw_expiration'] . ' ' . $session->get('user-num_days_before_exp') . ' ' . $lang['days'] . '.';
                                         }
                                         echo '
                                     <li class="list-group-item">
