@@ -106,7 +106,7 @@ $post_data = filter_input(
 // manage action required
 if (null !== $post_type) {
     switch ($post_type) {
-            //CASE adding a new function
+        //CASE adding a new function
         case 'onthefly_backup':
             // Check KEY
             if ($post_key !== $session->get('key')) {
@@ -128,31 +128,56 @@ if (null !== $post_type) {
                 );
                 break;
             }
-
+        
             // Decrypt and retrieve data in JSON format
             $dataReceived = prepareExchangedData(
                 $post_data,
                 'decode'
             );
-
+        
             // Prepare variables
             $post_key = filter_var($dataReceived['encryptionKey'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-
+        
             require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
-            $return = '';
-
+        
+            // get a token
+            $token = GenerateCryptKey(20, false, true, true, false, true);
+        
+            //save file
+            $filename = time() . '-' . $token . '.sql';
+            $filepath = $SETTINGS['path_to_files_folder'] . '/' . $filename;
+            $handle = fopen($filepath, 'w+');
+            
+            if ($handle === false) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => 'Could not create backup file',
+                    ),
+                    'encode'
+                );
+                break;
+            }
+        
             //Get all tables
             $tables = array();
             $result = DB::query('SHOW TABLES');
             foreach ($result as $row) {
                 $tables[] = $row['Tables_in_' . DB_NAME];
             }
-
+        
+            $backupSuccess = true;
+        
             //cycle through
             foreach ($tables as $table) {
                 if (empty($pre) || substr_count($table, $pre) > 0) {
-                    // Do query
-                    $result = DB::query('SELECT * FROM ' . $table);
+                    $table = safeString($table);
+                    // Write table drop and creation
+                    fwrite($handle, 'DROP TABLE IF EXISTS ' . $table . ";\n");
+                    $row2 = DB::queryFirstRow('SHOW CREATE TABLE ' . $table);
+                    fwrite($handle, safeString($row2['Create Table']) . ";\n\n");
+        
+                    // Get field information
                     DB::query(
                         'SELECT *
                         FROM INFORMATION_SCHEMA.COLUMNS
@@ -162,92 +187,92 @@ if (null !== $post_type) {
                         $table
                     );
                     $numFields = DB::count();
-
-                    // prepare a drop table
-                    $return .= 'DROP TABLE ' . $table . ';';
-                    $row2 = DB::queryFirstRow('SHOW CREATE TABLE ' . $table);
-                    $return .= "\n\n" . $row2['Create Table'] . ";\n\n";
-
-                    //prepare all fields and datas
-                    for ($i = 0; $i < $numFields; ++$i) {
-                        while ($row = $result->fetch_row()) {
-                            $return .= 'INSERT INTO ' . $table . ' VALUES(';
-                            for ($j = 0; $j < $numFields; ++$j) {
+                    
+                    // Process table data in chunks to reduce memory usage
+                    $offset = 0;
+                    $limit = 1000; // Process 1000 rows at a time
+                    
+                    while (true) {
+                        // Fetch a chunk of rows
+                        $rows = DB::query("SELECT * FROM $table LIMIT $limit OFFSET $offset");
+                        if (empty($rows)) {
+                            break; // No more rows to process
+                        }
+                        
+                        foreach ($rows as $record) {
+                            $insertQuery = 'INSERT INTO ' . $table . ' VALUES(';
+                            $values = array();
+                            
+                            foreach ($record as $value) {
                                 // Manage NULL values
-                                $value = $row[$j] === null ? 'NULL' : '"' . addslashes(preg_replace("/\n/", '\\n', $row[$j])) . '"';                    
-                                $return .= $value;
-                                if ($j < ($numFields - 1)) {
-                                    $return .= ',';
+                                if ($value === null) {
+                                    $values[] = 'NULL';
+                                } else {
+                                    $values[] = '"' . addslashes(preg_replace("/\n/", '\\n', $value)) . '"';
                                 }
                             }
-                            $return .= ");\n";
+                            
+                            $insertQuery .= implode(',', $values) . ");\n";
+                            fwrite($handle, $insertQuery);
+                            
+                            // Flush buffer periodically to free memory
+                            if (fmod($offset + count($values), 100) == 0) {
+                                fflush($handle);
+                            }
                         }
+                        
+                        // Move to next chunk
+                        $offset += $limit;
+                        
+                        // Flush after each chunk
+                        fflush($handle);
                     }
-                    $return .= "\n\n\n";
+                    
+                    fwrite($handle, "\n\n");
+                    // Flush after each table
+                    fflush($handle);
                 }
             }
-
-            if (empty($return) === false) {
-                // get a token
-                $token = GenerateCryptKey(20, false, true, true, false, true);
-
-                //save file
-                $filename = time() . '-' . $token . '.sql';
-                $handle = fopen($SETTINGS['path_to_files_folder'] . '/' . $filename, 'w+');
-                if ($handle !== false) {
-                    //write file
-                    fwrite($handle, $return);
-                    fclose($handle);
-                }
-                
+        
+            fclose($handle);
+            
+            // Encrypt the file
+            if (empty($post_key) === false) {
                 // Encrypt the file
-                if (empty($post_key) === false) {
-                    // Encrypt the file
-                    prepareFileWithDefuse(
-                        'encrypt',
-                        $SETTINGS['path_to_files_folder'] . '/' . $filename,
-                        $SETTINGS['path_to_files_folder'] . '/defuse_temp_' . $filename,
-                        $post_key
-                    );
-
-                    // Do clean
-                    unlink($SETTINGS['path_to_files_folder'] . '/' . $filename);
-                    rename(
-                        $SETTINGS['path_to_files_folder'] . '/defuse_temp_' . $filename,
-                        $SETTINGS['path_to_files_folder'] . '/' . $filename
-                    );
-                }
-
-                //generate 2d key
-                $session->set('user-key_tmp', GenerateCryptKey(16, false, true, true, false, true));
-
-                //update LOG
-                logEvents(
-                    $SETTINGS,
-                    'admin_action',
-                    'dataBase backup',
-                    (string) $session->get('user-id'),
-                    $session->get('user-login')
+                prepareFileWithDefuse(
+                    'encrypt',
+                    $filepath,
+                    $SETTINGS['path_to_files_folder'] . '/defuse_temp_' . $filename,
+                    $post_key
                 );
-
-                echo prepareExchangedData(
-                    array(
-                        'error' => false,
-                        'message' => '',
-                        'download' => 'sources/downloadFile.php?name=' . urlencode($filename) .
-                            '&sub=files&file=' . $filename . '&type=sql&key=' . $session->get('key') . '&key_tmp=' .
-                            $session->get('user-key_tmp') . '&pathIsFiles=1',
-                    ),
-                    'encode'
+        
+                // Do clean
+                unlink($filepath);
+                rename(
+                    $SETTINGS['path_to_files_folder'] . '/defuse_temp_' . $filename,
+                    $filepath
                 );
-
-                break;
             }
-
+        
+            // Generate 2d key
+            $session->set('user-key_tmp', GenerateCryptKey(16, false, true, true, false, true));
+        
+            // Update LOG
+            logEvents(
+                $SETTINGS,
+                'admin_action',
+                'dataBase backup',
+                (string) $session->get('user-id'),
+                $session->get('user-login')
+            );
+        
             echo prepareExchangedData(
                 array(
-                    'error' => true,
+                    'error' => false,
                     'message' => '',
+                    'download' => 'sources/downloadFile.php?name=' . urlencode($filename) .
+                        '&sub=files&file=' . $filename . '&type=sql&key=' . $session->get('key') . '&key_tmp=' .
+                        $session->get('user-key_tmp') . '&pathIsFiles=1',
                 ),
                 'encode'
             );
@@ -274,13 +299,13 @@ if (null !== $post_type) {
                 );
                 break;
             }
-
+        
             // Decrypt and retrieve data in JSON format
             $dataReceived = prepareExchangedData(
                 $post_data,
                 'decode'
             );
-
+        
             // Prepare variables
             $post_key = filter_var($dataReceived['encryptionKey'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $post_backupFile = filter_var($dataReceived['backupFile'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
@@ -288,23 +313,28 @@ if (null !== $post_type) {
             $post_offset = (int) filter_var($dataReceived['offset'], FILTER_SANITIZE_NUMBER_INT);
             $post_totalSize = (int) filter_var($dataReceived['totalSize'], FILTER_SANITIZE_NUMBER_INT);
             $batchSize = 500;
-
+            $errors = array(); // Pour collecter les erreurs éventuelles
+        
             // Check if the offset is greater than the total size
             if (empty($post_offset) === false && $post_offset >= $post_totalSize) {
                 echo prepareExchangedData(
                     array(
                         'error' => false,
                         'message' => 'operation_finished',
+                        'finished' => true,
                     ),
                     'encode'
                 );
                 break;
             }
             
-            if (WIP === true) error_log('DEBUG: Offset -> '.$post_offset.'/'.$post_totalSize.' | File -> '.$post_clearFilename.' | key -> '.$post_key);
-
+            // Log debug information if in development mode
+            if (defined('WIP') && WIP === true) {
+                error_log('DEBUG: Offset -> '.$post_offset.'/'.$post_totalSize.' | File -> '.$post_clearFilename.' | key -> '.$post_key);
+            }
+        
             include_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
-
+        
             if (empty($post_clearFilename) === true) {
                 // Get filename from database
                 $data = DB::queryFirstRow(
@@ -313,20 +343,44 @@ if (null !== $post_type) {
                     WHERE increment_id = %i',
                     $post_backupFile
                 );
-
+        
+                if ($data === null) {
+                    echo prepareExchangedData(
+                        array(
+                            'error' => true,
+                            'message' => 'Backup file reference not found in database.',
+                            'finished' => false,
+                        ),
+                        'encode'
+                    );
+                    break;
+                }
+        
                 // Delete operation id
                 DB::delete(
                     prefixTable('misc'),
                     'increment_id = %i',
                     $post_backupFile
                 );
-
-                $post_backupFile = $data['valeur'];
+        
+                $post_backupFile = safeString($data['valeur']);
+                
+                // Verify file exists
+                if (!file_exists($SETTINGS['path_to_files_folder'] . '/' . $post_backupFile)) {
+                    echo prepareExchangedData(
+                        array(
+                            'error' => true,
+                            'message' => 'Backup file not found on server.',
+                            'finished' => false,
+                        ),
+                        'encode'
+                    );
+                    break;
+                }
                 
                 // Decrypt the file
                 if (empty($post_key) === false) {
                     // Decrypt the file
-                    
                     $ret = prepareFileWithDefuse(
                         'decrypt',
                         $SETTINGS['path_to_files_folder'] . '/' . $post_backupFile,
@@ -338,13 +392,14 @@ if (null !== $post_type) {
                         echo prepareExchangedData(
                             array(
                                 'error' => true,
-                                'message' => 'An error occurred.',
+                                'message' => 'Decryption failed. Invalid key or corrupted file.',
+                                'finished' => false,
                             ),
                             'encode'
                         );
                         break;
                     }
-
+        
                     // Do clean
                     fileDelete($SETTINGS['path_to_files_folder'] . '/' . $post_backupFile, $SETTINGS);
                     $post_backupFile = $SETTINGS['path_to_files_folder'] . '/defuse_temp_' . $post_backupFile;
@@ -353,6 +408,7 @@ if (null !== $post_type) {
                         array(
                             'error' => true,
                             'message' => 'An error occurred. No encryption key provided.',
+                            'finished' => false,
                         ),
                         'encode'
                     );
@@ -361,69 +417,141 @@ if (null !== $post_type) {
             } else {
                 $post_backupFile = $post_clearFilename;
             }
-                 
-
-            //read sql file
+                    
+            // Read sql file
             $handle = fopen($post_backupFile, 'r');
-
-            // get total file size
-            if ((int) $post_totalSize === 0) {
-                $post_totalSize = filesize($post_backupFile);
-            }
-
-            if ($handle !== false) {
-                // Move the file pointer to the current offset
-                fseek($handle, $post_offset);
-                $query = '';
-                $executedQueries = 0;
-                while (!feof($handle) && $executedQueries < $batchSize) {
-                    $line = fgets($handle);
-                    // Check if not false
-                    if ($line !== false) {
-                        // Check if the line is part of an SQL statement
-                        if (substr(trim($line), -1) != ';') {
-                            $query .= $line;
-                        } else {
-                            // Execute the complete SQL statement
-                            $query .= $line;
-                            DB::query($query);
-                            $query = '';
-                            $executedQueries++;
-                        }
-                    }
-                }
-
-                // Calculate the new offset
-                $newOffset = ftell($handle);
-
-                // Check if the end of the file has been reached
-                $isEndOfFile = feof($handle);
-                fclose($handle);
-
-                // Respond with the new offset
-                echo prepareExchangedData(
-                    array(
-                        'error' => false,
-                        'newOffset' => $newOffset,
-                        'totalSize' => $post_totalSize,
-                        'clearFilename' => $post_backupFile,
-                    ),
-                    'encode'
-                );
-
-                // Check if the end of the file has been reached to delete the file
-                if ($isEndOfFile) {
-                    error_log('DEBUG: End of file reached. Deleting file '.$post_backupFile);
-                    unlink($post_backupFile);
-                }
-            } else {
-                // Handle file opening error
+        
+            if ($handle === false) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
                         'message' => 'Unable to open backup file.',
+                        'finished' => false,
                     ),
                     'encode'
+                );
+                break;
+            }
+        
+            // Get total file size
+            if ((int) $post_totalSize === 0) {
+                $post_totalSize = filesize($post_backupFile);
+            }
+        
+            // Move the file pointer to the current offset
+            fseek($handle, $post_offset);
+            $query = '';
+            $executedQueries = 0;
+            $inMultiLineComment = false;
+            
+            try {
+                // Start transaction to ensure database consistency
+                DB::startTransaction();
+                
+                while (!feof($handle) && $executedQueries < $batchSize) {
+                    $line = fgets($handle);
+                    
+                    // Check if not false
+                    if ($line !== false) {
+                        $trimmedLine = trim($line);
+                        
+                        // Skip empty lines or comments
+                        if (empty($trimmedLine) || 
+                            (strpos($trimmedLine, '--') === 0) || 
+                            (strpos($trimmedLine, '#') === 0)) {
+                            continue;
+                        }
+                        
+                        // Handle multi-line comments
+                        if (strpos($trimmedLine, '/*') === 0 && strpos($trimmedLine, '*/') === false) {
+                            $inMultiLineComment = true;
+                            continue;
+                        }
+                        
+                        if ($inMultiLineComment) {
+                            if (strpos($trimmedLine, '*/') !== false) {
+                                $inMultiLineComment = false;
+                            }
+                            continue;
+                        }
+                        
+                        // Add line to current query
+                        $query .= $line;
+                        
+                        // Execute if this is the end of a statement
+                        if (substr($trimmedLine, -1) === ';') {
+                            try {
+                                DB::query($query);
+                                $executedQueries++;
+                            } catch (Exception $e) {
+                                $errors[] = "Error executing query: " . $e->getMessage() . " - Query: " . substr($query, 0, 100) . "...";
+                            }
+                            $query = '';
+                        }
+                    }
+                }
+                
+                // Commit the transaction if no errors
+                if (empty($errors)) {
+                    DB::commit();
+                } else {
+                    DB::rollback();
+                }
+            } catch (Exception $e) {
+                // Rollback transaction on any exception
+                DB::rollback();
+                $errors[] = "Transaction failed: " . $e->getMessage();
+            }
+        
+            // Calculate the new offset
+            $newOffset = ftell($handle);
+        
+            // Check if the end of the file has been reached
+            $isEndOfFile = feof($handle);
+            fclose($handle);
+        
+            // Handle errors if any
+            if (!empty($errors)) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => 'Errors occurred during import: ' . implode('; ', $errors),
+                        'newOffset' => $newOffset,
+                        'totalSize' => $post_totalSize,
+                        'clearFilename' => $post_backupFile,
+                        'finished' => false,
+                    ),
+                    'encode'
+                );
+                break;
+            }
+        
+            // Respond with the new offset
+            echo prepareExchangedData(
+                array(
+                    'error' => false,
+                    'newOffset' => $newOffset,
+                    'totalSize' => $post_totalSize,
+                    'clearFilename' => $post_backupFile,
+                    'finished' => false,
+                ),
+                'encode'
+            );
+        
+            // Check if the end of the file has been reached to delete the file
+            if ($isEndOfFile) {
+                if (defined('WIP') && WIP === true) {
+                    error_log('DEBUG: End of file reached. Deleting file '.$post_backupFile);
+                }
+                unlink($post_backupFile);
+                
+                // Log the restore operation
+                logEvents(
+                    $SETTINGS,
+                    'admin_action',
+                    'dataBase restore completed',
+                    (string) $session->get('user-id'),
+                    $session->get('user-login')
                 );
             }
             break;
