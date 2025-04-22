@@ -1590,9 +1590,6 @@ if (
 
 
     function loadSettings() {
-        /*if (Number.isInteger(<?php echo $session->get('user-id'); ?>) === false) {
-            return false;
-        }*/
         if (debugJavascript === true) {
             console.log('Key appel get_teampass_settings : <?php echo $session->get('key'); ?>');
         }
