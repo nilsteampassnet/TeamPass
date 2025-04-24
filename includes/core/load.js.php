@@ -1663,13 +1663,13 @@ if (
                             teampassUser['user_manager'] = <?php echo returnIfSet($session->get('user-manager'), 0); ?>;
                             teampassUser['user_can_manage_all_users'] = <?php echo returnIfSet($session->get('user-can_manage_all_users'), 0); ?>;
                             teampassUser['user_read_only'] = <?php echo returnIfSet($session->get('user-read_only'), 0); ?>;
-                            teampassUser['key'] = '<?php echo returnIfSet($session->get('key'), 0); ?>';
-                            teampassUser['login'] = "<?php echo returnIfSet($session->get('user-login'), 0); ?>";
-                            teampassUser['lastname'] = "<?php echo returnIfSet($session->get('user-lastname'), 0); ?>";
-                            teampassUser['name'] = "<?php echo returnIfSet($session->get('user-name'), 0); ?>";
+                            teampassUser['key'] = '<?php echo returnIfSet($session->get('key'), ''); ?>';
+                            teampassUser['login'] = "<?php echo returnIfSet($session->get('user-login'), ''); ?>";
+                            teampassUser['lastname'] = "<?php echo returnIfSet($session->get('user-lastname'), ''); ?>";
+                            teampassUser['name'] = "<?php echo returnIfSet($session->get('user-name'), ''); ?>";
                             teampassUser['pskDefinedInDatabase'] = <?php echo returnIfSet($session->get('user-encrypted_psk'), 0, 1); ?>;
                             teampassUser['can_create_root_folder'] = <?php echo returnIfSet($session->get('user-can_create_root_folder'), 0); ?>;
-                            teampassUser['special'] = '<?php echo returnIfSet($session->get('user-special'), 0); ?>';
+                            teampassUser['special'] = '<?php echo returnIfSet($session->get('user-special'), ''); ?>';
                         }
                     );
                 }

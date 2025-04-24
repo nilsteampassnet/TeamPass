@@ -4267,8 +4267,8 @@ function getCurrectPage($SETTINGS)
  */
 function returnIfSet($value, $retFalse = '', $retTrue = null): mixed
 {
-    if ($value !== '') {
-        return $retTrue === null ? $value : $retTrue;
+    if (!empty($value)) {
+        return is_null($retTrue) ? $value : $retTrue;
     }
     return $retFalse;
 }
