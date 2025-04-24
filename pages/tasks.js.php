@@ -226,7 +226,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     if (row[0] === '') {
                         return '<i class="fas fa-square text-success"></i>';
                     } else {
-                        return '<i class="fas fa-square text-danger" title="'+row[0]+'" style="cursor: pointer;"></i>';
+                        return '<i class="fas fa-square text-danger" title="'+simplePurifier(row[0])+'" style="cursor: pointer;"></i>';
                     }
                 }
             }],

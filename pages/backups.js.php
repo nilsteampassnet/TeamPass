@@ -237,7 +237,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         function(response) {
                         data = decodeQueryReturn(response, '<?php echo $session->get('key'); ?>');
                         if (!data.error) {
-                            if (data.newOffset !== offset) {
+                            if (data.finished === false) {
                                 // block time counter
                                 ProcessInProgress = true;
                                 

@@ -146,6 +146,7 @@ switch ($post_type) {
         //cycle through
         foreach ($tables as $table) {
             if (defined('DB_PREFIX') || substr_count($table, DB_PREFIX) > 0) {
+                $table = (is_string($table) ? $table : strval($table));
                 // Do query
                 $result = DB::query('SELECT * FROM ' . $table);
                 DB::query(
@@ -161,25 +162,27 @@ switch ($post_type) {
                 // prepare a drop table
                 $return .= 'DROP TABLE ' . $table . ';';
                 $row2 = DB::queryFirstRow('SHOW CREATE TABLE ' . $table);
-                $return .= "\n\n" . $row2['Create Table'] . ";\n\n";
+                $return .= "\n\n" . strval($row2['Create Table']) . ";\n\n";
 
                 //prepare all fields and datas
                 for ($i = 0; $i < $numFields; ++$i) {
-                    while ($row = $result->fetch_row()) {
-                        $return .= 'INSERT INTO ' . $table . ' VALUES(';
-                        for ($j = 0; $j < $numFields; ++$j) {
-                            $row[$j] = addslashes($row[$j]);
-                            $row[$j] = preg_replace("/\n/", '\\n', $row[$j]);
-                            if (isset($row[$j])) {
-                                $return .= '"' . $row[$j] . '"';
-                            } else {
-                                $return .= 'NULL';
+                    if (is_object($result)) {
+                        while ($row = $result->fetch_row()) {
+                            $return .= 'INSERT INTO ' . $table . ' VALUES(';
+                            for ($j = 0; $j < $numFields; ++$j) {
+                                $row[$j] = addslashes($row[$j]);
+                                $row[$j] = preg_replace("/\n/", '\\n', $row[$j]);
+                                if (isset($row[$j])) {
+                                    $return .= '"' . $row[$j] . '"';
+                                } else {
+                                    $return .= 'NULL';
+                                }
+                                if ($j < ($numFields - 1)) {
+                                    $return .= ',';
+                                }
                             }
-                            if ($j < ($numFields - 1)) {
-                                $return .= ',';
-                            }
+                            $return .= ");\n";
                         }
-                        $return .= ");\n";
                     }
                 }
                 $return .= "\n\n\n";
@@ -266,7 +269,7 @@ switch ($post_type) {
             $file
         );
 
-        $file = $data['valeur'];
+        $file = is_string($data['valeur']) ? $data['valeur'] : '';
 
         // Delete operation id
         DB::delete(
@@ -348,6 +351,7 @@ switch ($post_type) {
         $alltables = DB::query('SHOW TABLES');
         foreach ($alltables as $table) {
             foreach ($table as $i => $tablename) {
+                $tablename = (is_string($tablename) ? $tablename : strval($tablename));
                 if (substr_count($tablename, DB_PREFIX) > 0) {
                     // launch optimization quieries
                     DB::query('ANALYZE TABLE `' . $tablename . '`');
