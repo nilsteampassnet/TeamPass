@@ -4267,7 +4267,10 @@ function getCurrectPage($SETTINGS)
  */
 function returnIfSet($value, $retFalse = '', $retTrue = null): mixed
 {
-    return $retTrue === null ? $value : $retTrue;
+    if (!empty($value)) {
+        return is_null($retTrue) ? $value : $retTrue;
+    }
+    return $retFalse;
 }
 
 
@@ -4433,4 +4436,50 @@ function isPasswordStrong($password) {
            && $hasLowercase
            && ($hasNumber || $hasSpecialChar)
            && !$passwordManager->verifyPassword($userHash, $password);
+}
+
+
+/**
+ * Converts a value to a string, handling various types and cases.
+ *
+ * @param mixed $value La valeur à convertir
+ * @param string $default Valeur par défaut si la conversion n'est pas possible
+ * @return string
+ */
+function safeString($value, string $default = ''): string
+{
+    // Simple cases
+    if (is_string($value)) {
+        return $value;
+    }
+    
+    if (is_scalar($value)) {
+        return (string) $value;
+    }
+    
+    // Special cases
+    if (is_null($value)) {
+        return $default;
+    }
+    
+    if (is_array($value)) {
+        return empty($value) ? $default : json_encode($value, JSON_UNESCAPED_UNICODE);
+    }
+    
+    if (is_object($value)) {
+        // Vérifie si l'objet implémente __toString()
+        if (method_exists($value, '__toString')) {
+            return (string) $value;
+        }
+        
+        // Alternative: serialize ou json selon le contexte
+        return get_class($value) . (method_exists($value, 'getId') ? '#' . $value->getId() : '');
+    }
+    
+    if (is_resource($value)) {
+        return 'Resource#' . get_resource_id($value) . ' of type ' . get_resource_type($value);
+    }
+    
+    // Cas par défaut
+    return $default;
 }

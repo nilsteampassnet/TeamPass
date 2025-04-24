@@ -78,25 +78,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
 
 <script type='text/javascript'>
-    // Manage memory
-    browserSession(
-        'init',
-        'teampassApplication', {
-            lastItemSeen: '',
-            selectedFolder: '',
-            itemsListStop: '',
-            itemsListStart: '',
-            selectedFolder: '',
-            itemsListFolderId: '',
-            itemsListRestricted: '',
-            itemsShownByQuery: '',
-            foldersList: [],
-            personalSaltkeyRequired: 0,
-            uploadedFileId: '',
-            rolesSelectOptions: '',
-        }
-    );
-
     // Globals
     var currentThis = '';
 
