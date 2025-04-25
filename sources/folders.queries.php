@@ -161,7 +161,7 @@ if (null !== $post_type) {
                     $node_data = DB::queryFirstRow(
                         'SELECT m.valeur AS valeur, n.renewal_period AS renewal_period,
                         n.bloquer_creation AS bloquer_creation, n.bloquer_modification AS bloquer_modification,
-                        n.fa_icon, n.fa_icon_selected
+                        n.fa_icon AS fa_icon, n.fa_icon_selected AS fa_icon_selected
                         FROM ' . prefixTable('misc') . ' AS m,
                         ' . prefixTable('nested_tree') . ' AS n
                         WHERE m.type=%s AND m.intitule = n.id AND m.intitule = %i',
@@ -206,8 +206,8 @@ if (null !== $post_type) {
                     );
                     $arrayColumns['add_is_blocked'] = (int) $data7['bloquer_creation'];
                     $arrayColumns['edit_is_blocked'] = (int) $data7['bloquer_modification'];
-                    $arrayColumns['icon'] = (string) is_null($node_data) === false ? $node_data['fa_icon'] : '';
-                    $arrayColumns['iconSelected'] = (string) is_null($node_data) === false ? $node_data['fa_icon_selected'] : '';
+                    $arrayColumns['icon'] = (string) !is_null($node_data) ? $node_data['fa_icon'] : '';
+                    $arrayColumns['iconSelected'] = (string) !is_null($node_data) ? $node_data['fa_icon_selected'] : '';
 
                     array_push($arrData, $arrayColumns);
                 }

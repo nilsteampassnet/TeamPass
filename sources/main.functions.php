@@ -1243,9 +1243,9 @@ function prepareExchangedData($data, string $type, ?string $key = null)
             $data,
             JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP
         );
-
+        
         // Now encrypt
-        if ($session->get('encryptClientServer') === 1) {
+        if ($session->get('teampass-settings')['encryptClientServer'] === 1) {
             $data = Encryption::encrypt(
                 $data,
                 $key
@@ -1257,7 +1257,7 @@ function prepareExchangedData($data, string $type, ?string $key = null)
 
     if ($type === 'decode' && is_array($data) === false) {
         // Decrypt if needed
-        if ($session->get('encryptClientServer') === 1) {
+        if ($session->get('teampass-settings')['encryptClientServer'] === 1) {
             $data = (string) Encryption::decrypt(
                 (string) $data,
                 $key
