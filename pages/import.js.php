@@ -651,81 +651,36 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     processCsvItemsBatch(csvOperationId, folderId, processedItems, totalItems, batchSizeItems, insertedItems);
                 } else {
                     // All items processed successfully
-                    finishingCSVImport(totalItems, insertedItems);
+                    finishingCSVImport(csvOperationId, totalItems, insertedItems);
                 }
             }
         );
     }
 
     // STEP 4 - Finish the CSV import process
-    function finishingCSVImport(totalItems = 0, insertedItems = 0) {
-        // Show status
-        toastr.remove();
-        toastr.success(
-            '<i class="fa-solid fa-check-circle fa-lg mr-2"></i><?php echo addslashes($lang->get('csv_import_success')); ?>',
-            '', {
-                timeOut: 2000,
-                closeButton: true,
-                progressBar: true
-            }
-        );
-
-        // Clear form
-        $('.csv-setup, #csv-setup-progress').addClass('hidden');
-        $('#csv-file-info').html('');
-        $('#import-csv-attach-pickfile-csv-text').val('');
-        $('.import-csv-cb').iCheck('uncheck');
-        $('#import-csv-access-right, #import-csv-target-folder, #import-csv-keys-strategy, #import-csv-complexity').val('');
-
-        $('#import-feedback').removeClass('hidden');
-        $('#import-feedback-progress-text').html(
-            '<i class="fa-solid fa-check-circle fa-lg mr-2"></i><?php echo addslashes($lang->get('csv_import_success')); ?>' +
-            '<br>' +
-            '<i class="fa-solid fa-key mr-2"></i><?php echo addslashes($lang->get('number_of_items_imported')); ?>: ' + insertedItems +
-            '<br>' +
-            '<i class="fa-solid fa-exclamation-triangle mr-2"></i><?php echo addslashes($lang->get('number_of_items_failed')); ?>: ' + failedItems.length +
-            '<br>' +
-            (failedItems.length > 0 ? 
-                failedItems.map((item) => `<i class="fa-solid fa-exclamation-triangle mr-2"></i>${item}`).join('<br>')
-                : ''
-            )
-        );
-
-        // Show message
-        
-        // restart time expiration counter
-        ProcessInProgress = false; 
-    }
-
-/*
-        dataFolders = {
-            'csvOperationId': $('#csv-operation-id').text(),
-            'folderId': parseInt($("#import-csv-target-folder").val()),
+    function finishingCSVImport(csvOperationId = 0, totalItems = 0, insertedItems = 0) {
+        // Delete items in temporary table
+        let data = {
+            'csvOperationId': csvOperationId,
         };
-
-        if (debugJavascript === true) {
-            console.log("Folders creation", dataFolders);
-        }
-
-        // Premier appel AJAX : création des répertoires
         $.post(
             "sources/import.queries.php",
             {
-                type: "import_csv_folders",
-                data: prepareExchangedData(JSON.stringify(dataFolders), "encode", "<?php echo $session->get('key'); ?>"),
+                type: "import_csv_items_finalization",
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
                 key: '<?php echo $session->get('key'); ?>'
             },
             function(response) {
                 response = prepareExchangedData(response, "decode", "<?php echo $session->get('key'); ?>");
 
                 if (debugJavascript === true) {
-                    console.log("Réponse création des répertoires", response);
+                    console.log("Finalization response", response);
                 }
 
                 if (response.error === true) {
                     toastr.remove();
                     toastr.error(
-                        '<i class="fa-solid fa-ban fa-lg mr-2"></i><?php echo addslashes($lang->get('import_error_folder_creation')); ?>',
+                        '<i class="fa-solid fa-ban fa-lg mr-2"></i><?php echo addslashes($lang->get('import_error_item_creation')); ?>',
                         '', {
                             timeOut: 10000,
                             closeButton: true,
@@ -734,78 +689,45 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     );
                     return;
                 }
-                console.log('Folders created')
+                // Show status
                 toastr.remove();
-                toastr.info('<i class="fa-solid fa-cog fa-spin fa-1x mr-3"></i><?php echo $lang->get('please_wait_items_in_construction'); ?>');
-                return;
-
-                processCSVItems();
-
-                // Si les répertoires sont créés avec succès, on lance l'import des objets CSV
-                dataItems = {
-                    'editAll': $('#import-csv-edit-all-checkbox').prop('checked') ? 1 : 0,
-                    'editRole': $('#import-csv-edit-role-checkbox').prop('checked') ? 1 : 0,
-                    'folderId': parseInt($("#import-csv-target-folder").val()),
-                    'csvOperationId': $('#csv-operation-id').text(),
-                };
-
-                if (debugJavascript === true) {
-                    console.log("Insertion des objets", dataItems);
-                }
-
-                $.post(
-                    "sources/import.queries.php",
-                    {
-                        type: "import_csv_items",
-                        data: prepareExchangedData(JSON.stringify(dataItems), "encode", "<?php echo $session->get('key'); ?>"),
-                        key: '<?php echo $session->get('key'); ?>'
-                    },
-                    function(response) {
-                        response = prepareExchangedData(response, "decode", "<?php echo $session->get('key'); ?>");
-
-                        if (debugJavascript === true) {
-                            console.log("Réponse insertion des objets", response);
-                        }
-
-                        if (response.error === true) {
-                            toastr.remove();
-                            toastr.error(
-                                '<i class="fa-solid fa-ban fa-lg mr-2"></i><?php echo addslashes($lang->get('import_error_no_read_possible')); ?>',
-                                '', {
-                                    timeOut: 10000,
-                                    closeButton: true,
-                                    progressBar: true
-                                }
-                            );
-
-                            $('#import-feedback').removeClass('hidden');
-                            $('#import-feedback div').html('');
-                        } else {
-                            var counter_treated_items = 0;
-
-                            // Désactiver les checkboxes après l'import
-                            $.each(response.items, function(i, value) {
-                                $("#importcsv-" + value).parent().closest('.icheckbox_flat-blue').addClass('disabled');
-                                $('#csv-items-number').html(parseInt($('#csv-items-number').text()) - 1);
-                                counter_treated_items++;
-                            });
-
-                            // Affichage du succès
-                            toastr.remove();
-                            toastr.success(
-                                '<?php echo $lang->get('number_of_items_imported'); ?> : ' + counter_treated_items,
-                                response.message, {
-                                    timeOut: 5000,
-                                    progressBar: true
-                                }
-                            );
-                        }
+                toastr.success(
+                    '<i class="fa-solid fa-check-circle fa-lg mr-2"></i><?php echo addslashes($lang->get('csv_import_success')); ?>',
+                    '', {
+                        timeOut: 2000,
+                        closeButton: true,
+                        progressBar: true
                     }
                 );
+
+                // Clear form
+                $('.csv-setup, #csv-setup-progress').addClass('hidden');
+                $('#csv-file-info').html('');
+                $('#import-csv-attach-pickfile-csv-text').val('');
+                $('.import-csv-cb').iCheck('uncheck');
+                $('#import-csv-access-right, #import-csv-target-folder, #import-csv-keys-strategy, #import-csv-complexity').val('');
+
+                $('#import-feedback').removeClass('hidden');
+                $('#import-feedback-progress-text').html(
+                    '<i class="fa-solid fa-check-circle fa-lg mr-2"></i><?php echo addslashes($lang->get('csv_import_success')); ?>' +
+                    '<br>' +
+                    '<i class="fa-solid fa-key mr-2"></i><?php echo addslashes($lang->get('number_of_items_imported')); ?>: ' + insertedItems +
+                    '<br>' +
+                    '<i class="fa-solid fa-exclamation-triangle mr-2"></i><?php echo addslashes($lang->get('number_of_items_failed')); ?>: ' + failedItems.length +
+                    '<br>' +
+                    (failedItems.length > 0 ? 
+                        failedItems.map((item) => `<i class="fa-solid fa-exclamation-triangle mr-2"></i>${item}`).join('<br>')
+                        : ''
+                    )
+                );
+
+                // Show message
+                
+                // restart time expiration counter
+                ProcessInProgress = false;
             }
         );
     }
-    */
 
     // **************  K E E P A S S  *************** //
 

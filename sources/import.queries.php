@@ -286,6 +286,7 @@ switch ($inputData['type']) {
                             $uniqueFolders[$folder] = $folder;
                         }
                     }
+                    $label = '';
                 }
                 // Update current variables
                 $comment = $comments;
@@ -700,6 +701,42 @@ switch ($inputData['type']) {
         );
         break;
 
+    case 'import_csv_items_finalization':
+        // Check KEY and rights
+        if ($inputData['key'] !== $session->get('key')) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        // Decrypt and retreive data in JSON format
+        $receivedParameters = prepareExchangedData(
+            $inputData['data'],
+            'decode'
+        );
+        $csvOperationId = filter_var($receivedParameters['csvOperationId'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+
+        // Delete operation id
+        DB::delete(
+            prefixTable('items_importations'),
+            'operation_id = %i',
+            $csvOperationId
+        );
+
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => '',
+            ),
+            'encode'
+        );
+        break;
+
 
     //Check if import KEEPASS file format is what expected
     case 'import_file_format_keepass':
@@ -721,7 +758,6 @@ switch ($inputData['type']) {
             'decode'
         );
         $post_operation_id = filter_var($receivedParameters['file'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-        $post_folder_id = filter_var($receivedParameters['folder-id'], FILTER_SANITIZE_NUMBER_INT);
 
         // Get filename from database
         $data = DB::queryFirstRow(
