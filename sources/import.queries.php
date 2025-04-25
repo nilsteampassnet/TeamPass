@@ -758,6 +758,7 @@ switch ($inputData['type']) {
             'decode'
         );
         $post_operation_id = filter_var($receivedParameters['file'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        $post_folder_id = filter_var($receivedParameters['folder_id'], FILTER_SANITIZE_NUMBER_INT);
 
         // Get filename from database
         $data = DB::queryFirstRow(
