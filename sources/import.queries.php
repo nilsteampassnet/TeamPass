@@ -241,7 +241,7 @@ switch ($inputData['type']) {
         // Process lines
         foreach ($valuesToImport as $row) {
             // Check that each line has 6 columns
-            if (count($row) != 6) {
+            if (count($row) !== 6) {
                 echo prepareExchangedData(
                     array('error' => true, 'message' => $lang->get('import_error_invalid_structure')),
                     'encode'
@@ -264,12 +264,12 @@ switch ($inputData['type']) {
                 $comment .= " " . $label;
             } else {
                 // Insert previous line if changing line
-                if (!empty($account)) {
+                if (!empty($label)) {
                     $items_number++;
 
                     // Insert in batch
                     $batchInsert[] = array(
-                        'label'        => $account,
+                        'label'        => $label,
                         'description'  => $comment,
                         'pwd'          => $pwd,
                         'url'          => $url,
@@ -288,19 +288,18 @@ switch ($inputData['type']) {
                     }
                 }
                 // Update current variables
-                $account = $label;
                 $comment = $comments;
                 $continue_on_next_line = false;
             }
         }
 
         // Insert last line
-        if (!empty($account)) {
+        if (!empty($label)) {
             $items_number++;
 
             // Insert in batch
             $batchInsert[] = array(
-                'label'        => $account,
+                'label'        => $label,
                 'description'  => $comment,
                 'pwd'          => $pwd,
                 'url'          => $url,
