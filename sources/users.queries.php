@@ -39,6 +39,7 @@ use TeampassClasses\ConfigManager\ConfigManager;
 use TeampassClasses\PasswordManager\PasswordManager;
 use TeampassClasses\EmailService\EmailService;
 use TeampassClasses\EmailService\EmailSettings;
+use TeampassClasses\OAuth2Controller\OAuth2Controller;
 
 // Load functions
 require_once 'main.functions.php';
@@ -2355,6 +2356,132 @@ if (null !== $post_type) {
                     'message' => '',
                     'error' => false,
                 ),
+                'encode'
+            );
+
+            break;
+        
+
+        /*
+        * GET OAUTH2 LIST OF USERS
+        */
+        case 'get_list_of_users_in_oauth2':
+            // Check KEY
+            if ($post_key !== $session->get('key')) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // Création d'une instance du contrôleur
+            $OAuth2 = new OAuth2Controller($SETTINGS);
+
+            // Traitement de la réponse de callback Azure
+            $usersList = $OAuth2->getAllUsers();            
+
+            // Get all groups in Teampass
+            $teampassRoles = array();
+            $titleToIdMap = [];
+            $rows = DB::query('SELECT id,title FROM ' . prefixTable('roles_title'));
+            foreach ($rows as $record) {
+                array_push(
+                    $teampassRoles,
+                    array(
+                        'id' => $record['id'],
+                        'title' => $record['title']
+                    )
+                );
+                $titleToIdMap[$record['title']] = $record['id'];
+            }
+
+            // Do init
+            $adUsersToSync = [];
+            $adRoles = [];
+            $usersAlreadyInTeampass = [];
+
+            function nameFromEmail($email) {
+                // Utiliser une expression régulière pour extraire le texte avant le domaine
+                if (preg_match('/^(.+)@/', $email, $matches)) {
+                    return $matches[1];
+                } else {
+                    return false;
+                }
+            }
+            
+            foreach ($usersList as $oAuthUser) {
+                // Build the list of all groups in AD
+                if (isset($oAuthUser['groups']) === true) {
+                    foreach ($oAuthUser['groups'] as $group) {
+                        if (isset($group['displayName']) && !in_array($group['displayName'], $adRoles)) {
+                            $adRoles[] = $group['displayName'];
+                        }
+                    }
+                }
+
+                // Is user in Teampass ?
+                $userLogin = nameFromEmail($oAuthUser['userPrincipalName']);
+                if (null !== $userLogin) {
+                    //error_log(print_r($oAuthUser,true));
+                    // Get his ID
+                    $userInfo = DB::queryFirstRow(
+                        'SELECT id, login, fonction_id, auth_type
+                        FROM ' . prefixTable('users') . '
+                        WHERE login = %s',
+                        $userLogin
+                    );
+                    // Get array of groups
+                    $userGroupsInTeampass = explode(';', (string) is_null($userInfo) ? '' : $userInfo['fonction_id']);
+                    // Loop on all user attributes
+                    $userADInfos = [
+                        'userInTeampass' => isset($userInfo) ? (int) $userInfo['id'] : 0,
+                        'userAuthType' => isset($userInfo) ? $userInfo['auth_type'] : 0,     
+                        'login' => $userLogin,
+                        'mail' => '',
+                    ];
+                    foreach ($oAuthUser as $key => $value) {
+                        if ($key !== 'groups') {
+                            $userADInfos[$key] = $value;
+                        } else {
+                            $userADInfos[$key] = array_column($value, 'displayName');
+                        }
+                    }
+
+                    // Mettre à jour $user['groups']
+                    $updatedGroups = array();
+                    foreach ($userADInfos['groups'] as $groupName) {
+                        if (isset($titleToIdMap[$groupName])) {
+                            $updatedGroups[] = array(
+                                'name' => $groupName,
+                                'id' => $titleToIdMap[$groupName],
+                                'insideGroupInTeampass' => in_array($titleToIdMap[$groupName], $userGroupsInTeampass) ? 1 : 0,
+                            );
+                        } else {
+                            $updatedGroups[] = array(
+                                'name' => $groupName,
+                                'id' => null,
+                                'insideGroupInTeampass' => 0,
+                            );
+                        }
+                    }
+
+                    // Mettre à jour $user['groups'] avec les nouveaux groupes
+                    $userADInfos['groups'] = $updatedGroups;
+                    array_push($adUsersToSync, $userADInfos);
+                }
+            }
+
+            echo (string) prepareExchangedData(
+                array(
+                    'error' => false,
+                    'ad_users' => $adUsersToSync,
+                    'ad_groups' => $adRoles,
+                    'teampass_groups' => $teampassRoles,
+                ), 
                 'encode'
             );
 
