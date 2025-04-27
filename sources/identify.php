@@ -2309,13 +2309,8 @@ function checkOauth2User(
     if ((int) $SETTINGS['oauth2_enabled'] === 1
         && $username !== 'admin'
         && filter_var($userInfo['oauth2_user_not_exists'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) === true
-        && $userLdapHasBeenCreated === 0
+        && (int) $userLdapHasBeenCreated === 0
     ) {
-        $session = SessionManager::getSession();
-        $lang = new Language($session->get('user-language') ?? 'english');
-
-        if (WIP === true) error_log("--- USER OAUTH2 NOT EXISTS IN TEAMPASS ---");
-
         return [
             'error' => true,
             'message' => 'error_bad_credentials',
@@ -2348,9 +2343,7 @@ function checkOauth2User(
         }
 
         // Oauth2 user already exists and authenticated
-        if (WIP === true) error_log("--- USER AUTHENTICATED ---");
         $userInfo['has_been_created'] = 0;
-
         $passwordManager = new PasswordManager();
 
         // Update user hash un database if needed
