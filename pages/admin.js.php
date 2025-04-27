@@ -276,11 +276,75 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
         // Perform DB integrity check
         setTimeout(
             performDBIntegrityCheck,
-            2500
+            2000
         );
     });
 
+    /**
+     * Perform project files integrity check
+     */
+    function performProjectFilesIntegrityCheck()
+    {
+        $.post(
+            "sources/admin.queries.php", {
+                type: "filesIntegrityCheck",
+                key: "<?php echo $session->get('key'); ?>"
+            },
+            function(data) {
+                // Handle server answer
+                try {
+                    data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
+                } catch (e) {
+                    // error
+                    toastr.remove();
+                    toastr.error(
+                        '<?php echo $lang->get('server_answer_error') . '<br />' . $lang->get('server_returned_data') . ':<br />'; ?>' + data.error,
+                        '', {
+                            closeButton: true,
+                            positionClass: 'toast-bottom-right'
+                        }
+                    );
+                    return false;
+                }
+                
+                let html = '';
+                if (data.error === false) {
+                    html = '<i class="fa-solid fa-circle-check text-success mr-2"></i>Project files integrity check is successfull';
+                } else {
+                    // Create a list
+                    let ul = '<ul id="files-integrity-result" class="hidden">';
+                    let files = JSON.parse(data.files);
+                    let numberOfFiles = Object.keys(files).length;
+                    $.each(files, function(i, value) {
+                        ul += '<li>' + value + '</li>';
+                    });
 
+                    // Prepare the HTML
+                    html = '<i class="fa-solid fa-circle-xmark text-danger mr-2"></i>Project files integrity check performed!<br>'
+                        + numberOfFiles + ' files are not part of the project' + 
+                        '<i class="fa-regular fa-eye infotip ml-2 text-info pointer" id="button-show-files-integrity-result" title="show_files"></i>' +
+                        ul + '</ul>';                        
+
+                    // Create the button to show/hide the list
+                    $(document).on('click', '#button-show-files-integrity-result', function(event) {
+                        if ($('#files-integrity-result').hasClass('hidden')) {
+                            $('#files-integrity-result').removeClass('hidden');
+                            $('#button-show-files-integrity-result').attr('title', '<?php echo $lang->get('hide'); ?>');
+                        } else {
+                            $('#files-integrity-result').addClass('hidden');
+                            $('#button-show-files-integrity-result').attr('title', '<?php echo $lang->get('show_files'); ?>');
+                        }
+                    });
+                }
+                // Display the result
+                $('#project-files-check-status').html(html);
+            }
+        );
+    }
+
+    /**
+     * Perform DB integrity check
+     */
     function performDBIntegrityCheck()
     {
         $.post(
@@ -304,7 +368,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                     );
                     return false;
                 }
-                console.log(data)
+                
                 let html = '',
                     tablesInError = '',
                     cnt = 0,
@@ -337,6 +401,12 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                 $('.infotip').tooltip();
 
                 requestRunning = false;
+                
+                // Perform project files integrity check
+                setTimeout(
+                    performProjectFilesIntegrityCheck,
+                    500
+                );
             }
         );
     }

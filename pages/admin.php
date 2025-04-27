@@ -239,6 +239,9 @@ catch (Exception $e) {
                         // Check DB integrity
                         echo '<div class="mt-3 hidden" id="db-integrity-check-status"><i class="fa-solid fa-circle-notch fa-spin"></i></div>';
 
+                        // Check project files
+                        echo '<div class="mt-3" id="project-files-check-status"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i>Checking files integrity</div>';
+
                         // Status on users passwords migration to new encryption Symfony Password
                         DB::query("SELECT id FROM ".prefixTable('users')." WHERE pw LIKE '$2y$10$%' AND pw NOT LIKE '$2y$13$%' AND id NOT IN (9999991,9999997,9999998,9999999)");
                         if (DB::count() > 0) {

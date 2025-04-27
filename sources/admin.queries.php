@@ -2455,8 +2455,124 @@ switch ($post_type) {
         );
 
         break;
+
+    case "filesIntegrityCheck":
+        // Check KEY and rights
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        $ret = filesIntegrityCheck($SETTINGS['cpassman_dir']);
+        
+        echo prepareExchangedData(
+            array(
+                'error' => $ret['error'],
+                'message' => $ret['message'],
+                'files' => json_encode($ret['array'], JSON_FORCE_OBJECT),
+            ),
+            'encode'
+        );
+
+        break;
+    
 }
 
+
+function filesIntegrityCheck($baseDir)
+{
+    $referenceFile = __DIR__ . '/../files_reference.txt';
+
+    $unknownFiles = findUnknownFiles($baseDir, $referenceFile);
+
+    if (empty($unknownFiles)) {
+        return [
+            'error' => false,
+            'array' => [],
+            'message' => ''
+        ];
+    }
+    // Check if the files are in the integrity file
+    return [
+        'error' => true,
+        'array' => $unknownFiles,
+        'message' => ''
+    ];
+}
+
+function getAllFiles($dir) {
+    $files = [];
+    $excludeDirs = ['upload', 'files', 'install', '_tools', 'random_compat', 'avatars']; // Répertoires à exclure
+    $excludeFilePrefixes = ['csrfp.config.php', 'settings.php', 'version-commit.php', 'phpstan.neon']; // Fichiers à exclure par préfixe
+
+    $iterator = new RecursiveIteratorIterator(
+        new RecursiveCallbackFilterIterator(
+            new RecursiveDirectoryIterator(
+                $dir,
+                FilesystemIterator::SKIP_DOTS
+            ),
+            function ($current, $key, $iterator) {
+                // Ignorer les fichiers/dossiers cachés
+                if ($current->getFilename()[0] === '.') {
+                    return false;
+                }
+                return true;
+            }
+        ),
+        RecursiveIteratorIterator::SELF_FIRST
+    );
+
+    foreach ($iterator as $file) {
+        try {
+            if ($file->isFile()) {
+                $relativePath = str_replace($dir . DIRECTORY_SEPARATOR, '', $file->getPathname());
+                $relativePath = str_replace('\\', '/', $relativePath); // Normalisation Windows/Linux
+
+                // Découper le chemin en morceaux (dossiers)
+                $pathParts = explode('/', $relativePath);
+
+                // Vérifier si un des dossiers est à exclure
+                foreach ($pathParts as $part) {
+                    if (in_array($part, $excludeDirs, true)) {
+                        continue 2; // Sauter ce fichier
+                    }
+                }
+
+                // Vérifier exclusion par préfixe de fichier
+                $filename = basename($relativePath);
+                foreach ($excludeFilePrefixes as $prefix) {
+                    if (strpos($filename, $prefix) === 0) {
+                        continue 2; // Sauter ce fichier
+                    }
+                }
+
+                // Si OK, ajouter à la liste
+                $files[] = $relativePath;
+            }
+        } catch (UnexpectedValueException $e) {
+            continue; // Ignorer proprement les erreurs d'accès
+        }
+    }
+
+    return $files;
+}
+
+
+
+function findUnknownFiles($baseDir, $referenceFile) {
+    $currentFiles = getAllFiles($baseDir);
+    $referenceFiles = file($referenceFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+
+    $unknownFiles = array_diff($currentFiles, $referenceFiles);
+
+    return $unknownFiles;
+}
 
 /**
  * Check the integrity of the tables
