@@ -285,8 +285,8 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         return false;
     }
 
-    // Should we create new oauth2 user?
-    $userOauth2 = createOauth2User(
+    // Is oauth2 user exists?
+    $userOauth2 = checkOauth2User(
         (array) $SETTINGS,
         (array) $userInfo,
         (string) $username,
@@ -304,6 +304,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             [
                 'error' => true,
                 'message' => $lang->get($userOauth2['message']),
+                'extra' => 'oauth2_user_not_found',
             ],
             'encode'
         );
@@ -954,7 +955,7 @@ function prepareUserEncryptionKeys($userInfo, $passwordClear) : array
     }
     
     // Don't perform this in case of special login action
-    if ($userInfo['special'] === 'otc_is_required_on_next_login' || $userInfo['special'] === 'user_added_from_ldap') {
+    if ($userInfo['special'] === 'otc_is_required_on_next_login' || $userInfo['special'] === 'user_added_from_ad') {
         return [
             'public_key' => $userInfo['public_key'],
             'private_key_clear' => '',
@@ -1345,7 +1346,7 @@ function finalizeAuthentication(
         (int) $userInfo['id']
     );
     
-    if (empty($userInfo['pw']) === true || $userInfo['special'] === 'user_added_from_ldap') {
+    if (empty($userInfo['pw']) === true || $userInfo['special'] === 'user_added_from_ad') {
         // 2 cases are managed here:
         // Case where user has never been connected then erase current pwd with the ldap's one
         // Case where user has been added from LDAP and never being connected to TP
@@ -1958,19 +1959,17 @@ class initialChecks {
         }
     
         // We cannot create a user with LDAP if the OAuth2 login is ongoing
-        $oauth2LoginOngoing = $session->get('userOauth2Info')['oauth2LoginOngoing'] ?? false;
-        $oauth2LoginOngoing = filter_var($oauth2LoginOngoing, FILTER_VALIDATE_BOOLEAN) ?? false;
+        $data['oauth2_login_ongoing'] = filter_var($session->get('userOauth2Info')['oauth2LoginOngoing'] ?? false, FILTER_VALIDATE_BOOLEAN) ?? false;
     
-        $data['oauth2_login_ongoing'] = $oauth2LoginOngoing;
         $data['ldap_user_to_be_created'] = (
             filter_var($enable_ad_user_auto_creation, FILTER_VALIDATE_BOOLEAN) &&
             DB::count() === 0 &&
-            !$oauth2LoginOngoing
+            !$data['oauth2_login_ongoing']
         );
-        $data['oauth2_user_to_be_created'] = (
+        $data['oauth2_user_not_exists'] = (
             filter_var($oauth2_enabled, FILTER_VALIDATE_BOOLEAN) &&
             DB::count() === 0 &&
-            $oauth2LoginOngoing
+            $data['oauth2_login_ongoing']
         );
     
         return $data;
@@ -2298,7 +2297,7 @@ function shouldUserAuthWithOauth2(
     ];
 }
 
-function createOauth2User(
+function checkOauth2User(
     array $SETTINGS,
     array $userInfo,
     string $username,
@@ -2306,51 +2305,20 @@ function createOauth2User(
     int $userLdapHasBeenCreated
 ): array
 {
-    // Prepare creating the new oauth2 user in Teampass
+    // Is oauth2 user in Teampass?
     if ((int) $SETTINGS['oauth2_enabled'] === 1
         && $username !== 'admin'
-        && filter_var($userInfo['oauth2_user_to_be_created'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) === true
-        && $userLdapHasBeenCreated !== 1
+        && filter_var($userInfo['oauth2_user_not_exists'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) === true
+        && $userLdapHasBeenCreated === 0
     ) {
         $session = SessionManager::getSession();
         $lang = new Language($session->get('user-language') ?? 'english');
-        
-        // Create Oauth2 user if not exists and tasks enabled
-        $ret = externalAdCreateUser(
-            $username,
-            $passwordClear,
-            $userInfo['mail'],
-            is_null($userInfo['givenname']) ? (is_null($userInfo['givenName']) ? '' : $userInfo['givenName']) : $userInfo['givenname'],
-            is_null($userInfo['surname']) ? '' : $userInfo['surname'],
-            'oauth2',
-            is_null($userInfo['groups']) ? [] : $userInfo['groups'],
-            $SETTINGS
-        );
-        $userInfo = array_merge($userInfo, $ret);
 
-        // prepapre background tasks for item keys generation  
-        handleUserKeys(
-            (int) $userInfo['id'],
-            (string) $passwordClear,
-            (int) (isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH),
-            uniqidReal(20),
-            true,
-            true,
-            true,
-            false,
-            $lang->get('email_body_user_config_2'),
-        );
-
-        // Complete $userInfo
-        $userInfo['has_been_created'] = 1;
-
-        if (WIP === true) error_log("--- USER CREATED ---");
+        if (WIP === true) error_log("--- USER OAUTH2 NOT EXISTS IN TEAMPASS ---");
 
         return [
-            'error' => false,
-            'retExternalAD' => $userInfo,
-            'oauth2Connection' => true,
-            'userPasswordVerified' => true,
+            'error' => true,
+            'message' => 'error_bad_credentials',
         ];
     
     } elseif (isset($userInfo['id']) === true && empty($userInfo['id']) === false) {

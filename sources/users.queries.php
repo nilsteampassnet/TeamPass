@@ -2109,9 +2109,9 @@ if (null !== $post_type) {
             break;
 
         /*
-         * ADD USER FROM LDAP
+         * ADD USER FROM LDAP OR OAUTH2
          */
-        case 'add_user_from_ldap':
+        case 'add_user_from_ad':
             // Check KEY
             if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
@@ -2133,6 +2133,7 @@ if (null !== $post_type) {
                 $dataReceived['roles'],
                 FILTER_SANITIZE_NUMBER_INT
             );
+            $post_authType = filter_var($dataReceived['authType'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
             // Empty user
             if (empty($post_login) === true || empty($post_email) === true) {
@@ -2219,8 +2220,8 @@ if (null !== $post_type) {
                     'isAdministratedByRole' => (isset($SETTINGS['ldap_new_user_is_administrated_by']) === true && empty($SETTINGS['ldap_new_user_is_administrated_by']) === false) ? $SETTINGS['ldap_new_user_is_administrated_by'] : 0,
                     'public_key' => $userKeys['public_key'],
                     'private_key' => $userKeys['private_key'],
-                    'special' => 'user_added_from_ldap',
-                    'auth_type' => 'ldap',
+                    'special' => 'user_added_from_ad',
+                    'auth_type' => $post_authType,
                     'is_ready_for_usage' => isset($SETTINGS['enable_tasks_manager']) === true && (int) $SETTINGS['enable_tasks_manager'] === 1 ? 0 : 1,
                     'created_at' => time(),
                 )

@@ -86,7 +86,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         constVisibleOTP = false,
         userClipboard,
         ProcessInProgress = false,
-        debugJavascript = false;
+        debugJavascript = true;
 
     browserSession(
         'init',
@@ -2205,7 +2205,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             });
                             html += '</td><td>';
                             // Action icons
-                            html += (entry.userInTeampass === 0 ? '<i class="fa-solid fa-user-plus text-warning ml-2 infotip pointer add-user-icon" title="<?php echo $lang->get('add_user_in_teampass'); ?>" data-user-login="' + userLogin + '" data-user-email="' + (entry.mail !== undefined ? entry.mail[0] : '') + '" data-user-name="' + (entry.givenname !== undefined ? entry.givenname[0] : '') + '" data-user-lastname="' + (entry.sn !== undefined ? entry.sn[0] : '') + '"></i>' : '');
+                            html += (entry.userInTeampass === 0 ? '<i class="fa-solid fa-user-plus text-warning ml-2 infotip pointer add-user-icon" title="<?php echo $lang->get('add_user_in_teampass'); ?>" data-user-login="' + userLogin + '" data-user-email="' + (entry.mail !== undefined ? entry.mail[0] : '') + '" data-user-name="' + (entry.givenname !== undefined ? entry.givenname[0] : '') + '" data-user-lastname="' + (entry.sn !== undefined ? entry.sn[0] : '') + '" data-user-auth-type="ldap"></i>' : '');
 
                             // Only of not admin
                             /*if (userLogin !== 'admin') {
@@ -2329,7 +2329,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             // Action icons
                             html += (user.userInTeampass === 0 ? 
                                  (user.mail !== null ? 
-                                    '<i class="fa-solid fa-user-plus text-warning ml-2 infotip pointer add-user-icon" title="<?php echo $lang->get('add_user_in_teampass'); ?>" data-user-login="' + userLogin + '" data-user-email="' + (user.mail !== undefined ? user.mail : '') + '" data-user-name="' + (user.givenname !== undefined ? user.givenname : '') + '" data-user-lastname="' + (user.id !== undefined ? user.id : '') + '"></i>'
+                                    '<i class="fa-solid fa-user-plus text-warning ml-2 infotip pointer add-user-icon" title="<?php echo $lang->get('add_user_in_teampass'); ?>" data-user-login="' + user.login + '" data-user-email="' + user.mail + '" data-user-name="' + user.surname + '" data-user-lastname="' + user.givenName + '" data-user-auth-type="oauth2"></i>'
                                     : '<i class="fa-solid fa-user-large-slash text-danger ml-2 infotip" title="<?php echo $lang->get('oauth2_user_has_no_mail'); ?>"></i>'
                                 )
                                 : ''
@@ -2573,14 +2573,14 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
      *
      * @return void
      */
-    function addUserInTeampass() {
+    function addUserInTeampass(authType) {
         $('#warningModal').modal('hide');
         toastr.remove();
         toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i><span class="close-toastr-progress"></span>');
 
         // what roles
         var roles = [];
-        $("#ldap-user-roles option:selected").each(function() {
+        $("#auth-user-roles option:selected").each(function() {
             roles.push($(this).val())
         });
         
@@ -2597,13 +2597,14 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             'name': simplePurifier($('.selected-user').data('user-name') === '' ? $('#ldap-user-name').val() : $('.selected-user').data('user-name')),
             'lastname': simplePurifier($('.selected-user').data('user-lastname')),
             'email': simplePurifier($('.selected-user').data('user-email')),
-            'roles' : roles,
+            'roles': roles,
+            'authType': authType,
         };
         if (debugJavascript === true) console.log(data)
 
         $.post(
             'sources/users.queries.php', {
-                type: 'add_user_from_ldap',
+                type: 'add_user_from_ad',
                 data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
                 key: "<?php echo $session->get('key'); ?>"
             },
@@ -2624,14 +2625,14 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         }
                     );
                 } else {                    
-                    generateUserKeys(data, userTemporaryCode);
+                    generateUserKeys(data, userTemporaryCode, authType);
                 }
             }
         );
     }
 
 
-    function generateUserKeys(data, userTemporaryCode)
+    function generateUserKeys(data, userTemporaryCode, authType)
     {
         // manage keys encryption for new user
         // Case where we need to encrypt new keys for the user
@@ -2727,7 +2728,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                 $('.close-toastr-progress').closest('.toast').remove();
                                 
                                 // refresh the list of users in LDAP not added in Teampass
-                                refreshListUsersLDAP();    
+                                if (authType === 'ldap') {
+                                    refreshListUsersLDAP();
+                                } else if (authType === 'oauth2') {
+                                    refreshListUsersOAuth2();
+                                }  
 
                                 // Rrefresh list of users in Teampass
                                 oTable.ajax.reload();
@@ -2797,32 +2802,33 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
             showModalDialogBox(
                 '#warningModal',
-                '<i class="fa-solid fa-user-plus fa-lg warning mr-2"></i><?php echo $lang->get('new_ldap_user_info'); ?> <b>'+$(this)[0].dataset.userLogin+'</b>',
+                '<h3><i class="fa-solid fa-user-plus fa-lg warning mr-2"></i><?php echo $lang->get('new_ldap_user_info'); ?> <span class="badge badge-primary">'+$(this)[0].dataset.userLogin+'</span></h3>',
                 '<div class="form-group">'+
-                    '<label for="ldap-user-name"><?php echo $lang->get('name'); ?></label>'+
-                    '<input readonly type="text" class="form-control required" id="ldap-user-name" value="'+ $(this).attr('data-user-name')+'">'+
+                    '<label for="auth-user-name"><?php echo $lang->get('name'); ?></label>'+
+                    '<input readonly type="text" class="form-control required" id="auth-user-name" value="'+ $(this).attr('data-user-name')+'">'+
                 '</div>'+
                 '<div class="form-group">'+
-                    '<label for="ldap-user-name"><?php echo $lang->get('lastname'); ?></label>'+
-                    '<input readonly type="text" class="form-control required" id="ldap-user-lastname" value="'+ $(this).attr('data-user-lastname')+'">'+
+                    '<label for="auth-user-name"><?php echo $lang->get('lastname'); ?></label>'+
+                    '<input readonly type="text" class="form-control required" id="auth-user-lastname" value="'+ $(this).attr('data-user-lastname')+'">'+
                 '</div>'+
                 '<div class="form-group">'+
-                    '<label for="ldap-user-name"><?php echo $lang->get('email'); ?></label>'+
-                    '<input readonly type="text" class="form-control required" id="ldap-user-email" value="'+ $(this).attr('data-user-email')+'">'+
+                    '<label for="auth-user-name"><?php echo $lang->get('email'); ?></label>'+
+                    '<input readonly type="text" class="form-control required" id="auth-user-email" value="'+ $(this).attr('data-user-email')+'">'+
                 '</div>'+
                 '<div class="form-group">'+
-                    '<label for="ldap-user-roles"><?php echo $lang->get('roles'); ?></label>'+
-                    '<select id="ldap-user-roles" class="form-control form-item-control select2 required" style="width:100%;" multiple="multiple">'+
+                    '<label for="auth-user-roles"><?php echo $lang->get('roles'); ?></label>'+
+                    '<select id="auth-user-roles" class="form-control form-item-control select2 required" style="width:100%;" multiple="multiple">'+
                     '<?php echo $optionsRoles ?? ''; ?></select>'+
-                '</div>',
+                '</div>'+
+                '<input type="hidden" id="auth-user-type" value="'+ $(this).attr('data-user-auth-type')+'">',
                 '<?php echo $lang->get('perform'); ?>',
                 '<?php echo $lang->get('cancel'); ?>'
             );
             $(document).one('click', '#warningModalButtonAction', function(event) {
                 event.preventDefault();
                 event.stopPropagation();
-                if ($('#ldap-user-name').val() !== "" && $('#ldap-user-roles :selected').length > 0) {
-                    addUserInTeampass();
+                if ($('#auth-user-name').val() !== "" && $('#auth-user-roles :selected').length > 0) {
+                    addUserInTeampass($('#auth-user-type').val());
                     $(thisElement).removeClass('selected-user');
                 }
             });

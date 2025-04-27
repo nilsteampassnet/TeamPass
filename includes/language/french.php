@@ -1240,5 +1240,9 @@ return array(
     'item_copied' => 'Objet copié',
     'item_updated' => 'Objet mis à jour',
     'done_tasks_history_delay_in_days' => 'Durée de conservation (en jours) de l&apos;historique des taches',
+    'oauth2_synchronization' => 'Synchronisation OAuth2',
+    'oauth2_user_has_no_mail' => 'L&apos;utilisateur n&apos;a pas d&apos;email',
+    'role_not_exists_in_teampass' => 'Le rôle n&apos;existe pas dans Teampass',
+    'toggle_user_authentifcation' => 'Basculer l&apos;autentification de l&apos;utilisateur',
 
 );
