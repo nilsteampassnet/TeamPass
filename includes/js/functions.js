@@ -412,6 +412,29 @@ function simplePurifier(
 }
 
 /**
+ * Permits to purify the content of an object using simplePurifier
+ * Usefyll for ajax answers
+ */
+function purifyData(obj) {
+    if (Array.isArray(obj)) {
+        return obj.map(item => purifyData(item));
+    } else if (typeof obj === 'object' && obj !== null) {
+        let purifiedObject = {};
+        for (let key in obj) {
+            if (obj.hasOwnProperty(key)) {
+                purifiedObject[key] = purifyData(obj[key]);
+            }
+        }
+        return purifiedObject;
+    } else if (typeof obj === 'string') {
+        return simplePurifier(obj);
+    } else {
+        return obj;
+    }
+}
+
+
+/**
  * Permits to purify the content of a string using domPurify
  * @param {*} field 
  * @param {*} bHtml 

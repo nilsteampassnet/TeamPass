@@ -1242,6 +1242,7 @@ return array(
     'oauth2_synchronization' => 'OAuth2 synchronization',
     'oauth2_user_has_no_mail' => 'User has no email address',
     'role_not_exists_in_teampass' => 'Role does not exist in Teampass',
-    'toggle_user_authentifcation' => 'Toggle user authentication',
+    'toggle_user_authentification' => 'Toggle user authentication',
+    'show_files' => 'Show files',
 
 );

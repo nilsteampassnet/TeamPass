@@ -86,7 +86,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         constVisibleOTP = false,
         userClipboard,
         ProcessInProgress = false,
-        debugJavascript = false;
+        debugJavascript = true;
 
     browserSession(
         'init',
@@ -2282,12 +2282,15 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         }
                     );
                 } else {
-                    // loop on users list
+                    // PUrify data
+                    data = purifyData(data);
+                    // Do init
                     var html = '',
                         groupsNumber = 0,
                         userLogin,
                         group;
                     var entry;
+                    // loop on users list
                     $.each(data.ad_users, function(i, user) {
                         // CHeck if not empty
                         if (userLogin !== '') {
@@ -2302,7 +2305,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                 '"></i>' +
                                 '</td><td>' +
                                 (user.userInTeampass === 0 ? '' :
-                                '<i class="fa-solid ' + (user.userAuthType === 'oauth2' ? 'fa-toggle-on text-info ' : 'fa-toggle-off ') + 'mr-1 text-center pointer action-change-oauth2-synchronization" data-user-id="' + user.userInTeampass + '" data-user-auth-type="' + user.userAuthType + '" infotip title="<?php echo $lang->get('toggle_user_authentifcation'); ?>"></i>') +
+                                '<i class="fa-solid ' + (user.userAuthType === 'oauth2' ? 'fa-toggle-on text-info ' : 'fa-toggle-off ') + 'mr-1 text-center pointer action-change-oauth2-synchronization" data-user-id="' + user.userInTeampass + '" data-user-auth-type="' + user.userAuthType + '" infotip title="<?php echo $lang->get('toggle_user_authentification'); ?>"></i>') +
                                 '</td><td>';
                             groupsNumber = 0;
                             $.each(user.groups, function(j, group) {
@@ -2347,14 +2350,15 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     $('#oauth2-new-role-selection')
                         .empty()
                         .append('<option value="">--- <?php echo $lang->get('select'); ?> ---</option>');
+                    let htmlGroups = '';
                     $.each(data.ad_groups, function(i, group) {
                         tmp = data.teampass_groups.filter(p => p.title === group);
                         if (tmp.length === 0) {
-                            $('#oauth2-new-role-selection').append(
-                                '<option value="' + group + '">' + group + '</option>'
-                            );
+                            group = simplePurifier(group)
+                            htmlGroups += '<option value="' + group + '">' + group + '</option>';
                         }
                     });
+                    $('#oauth2-new-role-selection').append(htmlGroups);
 
                     // Inform user
                     toastr.success(

@@ -35,7 +35,7 @@ return array(
     'oauth2_synchronization' => 'OAuth2 synchronization',
     'oauth2_user_has_no_mail' => 'User has no email address',
     'role_not_exists_in_teampass' => 'Role does not exist in Teampass',
-    'toggle_user_authentifcation' => 'Toggle user authentication',
+    'toggle_user_authentification' => 'Toggle user authentication',
     'max_parallel_tasks' => 'Maximum number of parallel tasks',
     'max_parallel_tasks_tip' => 'This option sets the maximum number of Process tasks that can run simultaneously. It is important to adjust this number based on the vCPUs capacity to avoid system overload. Start with a conservative number, and adjust according to observed performance.',
     'item_copied' => 'Item copied',

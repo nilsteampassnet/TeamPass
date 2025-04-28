@@ -1243,6 +1243,7 @@ return array(
     'oauth2_synchronization' => 'Synchronisation OAuth2',
     'oauth2_user_has_no_mail' => 'L&apos;utilisateur n&apos;a pas d&apos;email',
     'role_not_exists_in_teampass' => 'Le rôle n&apos;existe pas dans Teampass',
-    'toggle_user_authentifcation' => 'Basculer l&apos;autentification de l&apos;utilisateur',
+    'toggle_user_authentification' => 'Basculer l&apos;autentification de l&apos;utilisateur',
+    'show_files' => 'Afficher les fichiers',
 
 );
