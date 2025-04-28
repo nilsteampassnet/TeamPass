@@ -32,6 +32,7 @@
  // - selected_items_to_be_imported
 
 return array(
+    'show_files' => 'Show files',
     'max_parallel_tasks' => 'Maximum number of parallel tasks',
     'max_parallel_tasks_tip' => 'This option sets the maximum number of Process tasks that can run simultaneously. It is important to adjust this number based on the vCPUs capacity to avoid system overload. Start with a conservative number, and adjust according to observed performance.',
     'item_copied' => 'Item copied',

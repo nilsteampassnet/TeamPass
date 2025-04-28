@@ -1239,5 +1239,10 @@ return array(
     'item_copied' => 'Item copied',
     'item_updated' => 'Item updated',
     'done_tasks_history_delay_in_days' => 'Delay for which the tasks history is kept (in days)',
+    'oauth2_synchronization' => 'OAuth2 synchronization',
+    'oauth2_user_has_no_mail' => 'User has no email address',
+    'role_not_exists_in_teampass' => 'Role does not exist in Teampass',
+    'toggle_user_authentifcation' => 'Toggle user authentication',
+    'show_files' => 'Show files',
 
 );
