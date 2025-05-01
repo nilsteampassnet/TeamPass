@@ -2328,12 +2328,6 @@ function checkOauth2User(
                 'error' => true,
                 'message' => 'error_bad_credentials',
             ];
-        } elseif ((int) $userInfo['is_ready_for_usage'] !== 1 && (int) $userInfo['ongoing_process_id'] >= 0) {
-            // User is in construction, please wait for email
-            return [
-                'error' => true,
-                'message' => 'account_in_construction_please_wait_email',
-            ];
         } else {
             // Self registration is allowed
             // Create user in Teampass
@@ -2348,6 +2342,14 @@ function checkOauth2User(
         }
     
     } elseif (isset($userInfo['id']) === true && empty($userInfo['id']) === false) {
+        // User is in construction, please wait for email
+        if (isset($userInfo['is_ready_for_usage']) && (int) $userInfo['is_ready_for_usage'] !== 1 && (int) $userInfo['ongoing_process_id'] >= 0) {
+            return [
+                'error' => true,
+                'message' => 'account_in_construction_please_wait_email',
+            ];
+        }
+
         // CHeck if user should use oauth2
         $ret = shouldUserAuthWithOauth2(
             $SETTINGS,
