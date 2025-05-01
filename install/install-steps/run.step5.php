@@ -590,6 +590,9 @@ class DatabaseInstaller
             array('admin', 'highlight_selected', '0'),
             array('admin', 'highlight_favorites', '0'),
             array('admin', 'tasks_history_delay', '604800'),
+            array('admin', 'oauth_new_user_is_administrated_by', '0'),
+            array('admin', 'oauth_selfregistered_user_belongs_to_role', '0'),
+            array('admin', 'oauth_self_register_groups', ''),
         );
         foreach ($aMiscVal as $elem) {
             //Check if exists before inserting

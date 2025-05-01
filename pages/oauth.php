@@ -116,14 +116,6 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
                         <div class='card-body'>
 
                             <div class='row mb-2'>
-                                <div class='col-12'>
-                                    <div class="alert alert-warning" role="alert">
-                                    <i class="fa-solid fa-flask-vial mr-3"></i>Expiremental feature. Use at your own risk.
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class='row mb-2'>
                                 <div class='col-10'>
                                     <?php echo $lang->get('settings_oauth_mode'); ?>
                                     <small id='passwordHelpBlock' class='form-text text-muted'>
@@ -231,6 +223,41 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
                                 </div>
                                 <div class='col-7'>
                                     <input type='text' class='form-control form-control-sm setting-oauth' id='oauth2_client_token' value='<?php echo $SETTINGS['oauth2_client_token'] ?? 'https://login.microsoftonline.com/{tenant-id}/oauth2/v2.0/token'; ?>'>
+                                </div>
+                            </div>
+
+                            <div class='row mb-2'>
+                                <div class='col-5'>
+                                    <?php echo $lang->get('newly_created_user_is_administrated_by'); ?>
+                                </div>
+                                <div class='col-7'>
+                                    <select class='form-control form-control-sm select2' id='oauth_new_user_is_administrated_by'>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class='row mb-2'>
+                                <div class='col-5'>
+                                    <?php echo $lang->get('oauth_self_register_groups'); ?>
+                                    <small id='passwordHelpBlock' class='form-text text-muted'>
+                                        <?php echo $lang->get('oauth_self_register_groups_tip'); ?>
+                                    </small>
+                                </div>
+                                <div class='col-7'>
+                                    <input type='text' class='form-control form-control-sm setting-oauth' id='oauth_self_register_groups' value='<?php echo $SETTINGS['oauth_self_register_groups'] ?? ''; ?>'>
+                                </div>
+                            </div>
+
+                            <div class='row mb-2'>
+                                <div class='col-5'>
+                                    <?php echo $lang->get('oauth_selfregistered_user_belongs_to_role'); ?>
+                                    <small id='passwordHelpBlock' class='form-text text-muted'>
+                                        <?php echo $lang->get('oauth_selfregistered_user_belongs_to_role_tip'); ?>
+                                    </small>
+                                </div>
+                                <div class='col-7'>
+                                    <select class='form-control form-control-sm select2' id='oauth_selfregistered_user_belongs_to_role'>
+                                    </select>
                                 </div>
                             </div>
 

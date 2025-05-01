@@ -2217,7 +2217,7 @@ if (null !== $post_type) {
                     'last_pw_change' => time(),
                     'user_language' => $SETTINGS['default_language'],
                     'encrypted_psk' => '',
-                    'isAdministratedByRole' => (isset($SETTINGS['ldap_new_user_is_administrated_by']) === true && empty($SETTINGS['ldap_new_user_is_administrated_by']) === false) ? $SETTINGS['ldap_new_user_is_administrated_by'] : 0,
+                    'isAdministratedByRole' => (isset($SETTINGS['oauth_new_user_is_administrated_by']) === true && empty($SETTINGS['oauth_new_user_is_administrated_by']) === false) ? $SETTINGS['oauth_new_user_is_administrated_by'] : 0,
                     'public_key' => $userKeys['public_key'],
                     'private_key' => $userKeys['private_key'],
                     'special' => 'user_added_from_ad',
@@ -2418,7 +2418,10 @@ if (null !== $post_type) {
                 // Build the list of all groups in AD
                 if (isset($oAuthUser['groups']) === true) {
                     foreach ($oAuthUser['groups'] as $group) {
-                        if (isset($group['displayName']) && !in_array($group['displayName'], $adRoles)) {
+                        if (
+                            isset($group['displayName']) && !in_array($group['displayName'], $adRoles)
+                            && $SETTINGS['oauth_self_register_groups'] !== $group['displayName']
+                        ) {
                             $adRoles[] = $group['displayName'];
                         }
                     }

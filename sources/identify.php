@@ -1421,6 +1421,10 @@ function externalAdCreateUser(
     } else {
         $userGroups = '';
     }
+    
+    if (empty($userGroups) && !empty($SETTINGS['oauth_selfregistered_user_belongs_to_role'])) {
+        $userGroups = $SETTINGS['oauth_selfregistered_user_belongs_to_role'];
+    }
 
     // Insert user in DB
     DB::insert(
@@ -1441,7 +1445,13 @@ function externalAdCreateUser(
             'last_pw_change' => (int) time(),
             'user_language' => (string) $SETTINGS['default_language'],
             'encrypted_psk' => '',
-            'isAdministratedByRole' => isset($SETTINGS['ldap_new_user_is_administrated_by']) === true && empty($SETTINGS['ldap_new_user_is_administrated_by']) === false ? $SETTINGS['ldap_new_user_is_administrated_by'] : 0,
+            'isAdministratedByRole' => $authType === 'ldap' ?
+                (isset($SETTINGS['ldap_new_user_is_administrated_by']) === true && empty($SETTINGS['ldap_new_user_is_administrated_by']) === false ? $SETTINGS['ldap_new_user_is_administrated_by'] : 0)
+                : (
+                    $authType === 'oauth2' ?
+                    (isset($SETTINGS['oauth_new_user_is_administrated_by']) === true && empty($SETTINGS['oauth_new_user_is_administrated_by']) === false ? $SETTINGS['oauth_new_user_is_administrated_by'] : 0)
+                    : 0
+                ),
             'public_key' => $userKeys['public_key'],
             'private_key' => $userKeys['private_key'],
             'special' => 'none',
@@ -2311,10 +2321,31 @@ function checkOauth2User(
         && filter_var($userInfo['oauth2_user_not_exists'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) === true
         && (int) $userLdapHasBeenCreated === 0
     ) {
-        return [
-            'error' => true,
-            'message' => 'error_bad_credentials',
-        ];
+        // Is allowed to self register with oauth2?
+        if (empty($SETTINGS['oauth_self_register_groups'])) {
+            // No self registration is allowed
+            return [
+                'error' => true,
+                'message' => 'error_bad_credentials',
+            ];
+        } elseif ((int) $userInfo['is_ready_for_usage'] !== 1 && (int) $userInfo['ongoing_process_id'] >= 0) {
+            // User is in construction, please wait for email
+            return [
+                'error' => true,
+                'message' => 'account_in_construction_please_wait_email',
+            ];
+        } else {
+            // Self registration is allowed
+            // Create user in Teampass
+            $userInfo['oauth2_user_to_be_created'] = true;
+            return createOauth2User(
+                $SETTINGS,
+                $userInfo,
+                $username,
+                $passwordClear,
+                true
+            );
+        }
     
     } elseif (isset($userInfo['id']) === true && empty($userInfo['id']) === false) {
         // CHeck if user should use oauth2
@@ -2375,6 +2406,141 @@ function checkOauth2User(
     ];
 }
 
+
+/* * Create the user in Teampass
+ *
+ * @param array $SETTINGS
+ * @param array $userInfo
+ * @param string $username
+ * @param string $passwordClear
+ *
+ * @return array
+ */
+function createOauth2User(
+    array $SETTINGS,
+    array $userInfo,
+    string $username,
+    string $passwordClear,
+    bool $userSelfRegister = false
+): array
+{
+    // Prepare creating the new oauth2 user in Teampass
+    if ((int) $SETTINGS['oauth2_enabled'] === 1
+        && $username !== 'admin'
+        && filter_var($userInfo['oauth2_user_to_be_created'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) === true
+    ) {
+        $session = SessionManager::getSession();    
+        $lang = new Language($session->get('user-language') ?? 'english');
+
+        // Prepare user groups
+        foreach ($userInfo['groups'] as $key => $group) {
+            // Check if the group is in the list of groups allowed to self register
+            // If the group is in the list, we remove it
+            if ($userSelfRegister === true && $group["displayName"] === $SETTINGS['oauth_self_register_groups']) {
+                unset($userInfo['groups'][$key]);
+            }
+        }
+        // Rebuild indexes
+        $userInfo['groups'] = array_values($userInfo['groups']);
+        
+        // Create Oauth2 user if not exists and tasks enabled
+        $ret = externalAdCreateUser(
+            $username,
+            $passwordClear,
+            $userInfo['mail'],
+            is_null($userInfo['givenname']) ? (is_null($userInfo['givenName']) ? '' : $userInfo['givenName']) : $userInfo['givenname'],
+            is_null($userInfo['surname']) ? '' : $userInfo['surname'],
+            'oauth2',
+            is_null($userInfo['groups']) ? [] : $userInfo['groups'],
+            $SETTINGS
+        );
+        $userInfo = array_merge($userInfo, $ret);
+
+        // prepapre background tasks for item keys generation  
+        handleUserKeys(
+            (int) $userInfo['id'],
+            (string) $passwordClear,
+            (int) (isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH),
+            uniqidReal(20),
+            true,
+            true,
+            true,
+            false,
+            $lang->get('email_body_user_config_2'),
+        );
+
+        // Complete $userInfo
+        $userInfo['has_been_created'] = 1;
+
+        if (WIP === true) error_log("--- USER CREATED ---");
+
+        return [
+            'error' => false,
+            'retExternalAD' => $userInfo,
+            'oauth2Connection' => true,
+            'userPasswordVerified' => true,
+        ];
+    
+    } elseif (isset($userInfo['id']) === true && empty($userInfo['id']) === false) {
+        // CHeck if user should use oauth2
+        $ret = shouldUserAuthWithOauth2(
+            $SETTINGS,
+            $userInfo,
+            $username
+        );
+        if ($ret['error'] === true) {
+            return [
+                'error' => true,
+                'message' => $ret['message'],
+            ];
+        }
+
+        // login/password attempt on a local account:
+        // Return to avoid overwrite of user password that can allow a user
+        // to steal a local account.
+        if (!$ret['oauth2Connection'] || !$ret['userPasswordVerified']) {
+            return [
+                'error' => false,
+                'message' => $ret['message'],
+                'ldapConnection' => false,
+                'userPasswordVerified' => false,        
+            ];
+        }
+
+        // Oauth2 user already exists and authenticated
+        if (WIP === true) error_log("--- USER AUTHENTICATED ---");
+        $userInfo['has_been_created'] = 0;
+
+        $passwordManager = new PasswordManager();
+
+        // Update user hash un database if needed
+        if (!$passwordManager->verifyPassword($userInfo['pw'], $passwordClear)) {
+            DB::update(
+                prefixTable('users'),
+                [
+                    'pw' => $passwordManager->hashPassword($passwordClear),
+                ],
+                'id = %i',
+                $userInfo['id']
+            );
+        }
+
+        return [
+            'error' => false,
+            'retExternalAD' => $userInfo,
+            'oauth2Connection' => $ret['oauth2Connection'],
+            'userPasswordVerified' => $ret['userPasswordVerified'],
+        ];
+    }
+
+    // return if no admin
+    return [
+        'error' => false,
+        'retLDAP' => [],
+        'ldapConnection' => false,
+        'userPasswordVerified' => false,
+    ];
+}
 
 function identifyDoMFAChecks(
     $SETTINGS,
