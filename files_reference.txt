@@ -101,6 +101,7 @@ error.php
 favicon.ico
 files/.htaccess
 files/empty_file.txt
+files_reference.txt
 includes/.externals/readme.md
 includes/.externals/settings.php
 includes/.externals/tp.config.php

@@ -283,8 +283,20 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
     /**
      * Perform project files integrity check
      */
-    function performProjectFilesIntegrityCheck()
+    function performProjectFilesIntegrityCheck(refreshingData = false)
     {
+        if (requestRunning === true) {
+            return false;
+        }
+
+        requestRunning = true;
+
+        // Remove the file from the list
+        if (refreshingData === false) {
+            $('#files-integrity-result').remove();
+            $('#files-integrity-result-container').addClass('hidden');
+        }
+    
         $.post(
             "sources/admin.queries.php", {
                 type: "filesIntegrityCheck",
@@ -312,32 +324,124 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                     html = '<i class="fa-solid fa-circle-check text-success mr-2"></i>Project files integrity check is successfull';
                 } else {
                     // Create a list
-                    let ul = '<ul id="files-integrity-result" class="hidden">';
+                    let ul = '<ul id="files-integrity-result">';
                     let files = JSON.parse(data.files);
                     let numberOfFiles = Object.keys(files).length;
                     $.each(files, function(i, value) {
-                        ul += '<li>' + value + '</li>';
+                        ul += '<li value="'+i+'">' + value + '</li>';
                     });
 
                     // Prepare the HTML
                     html = '<i class="fa-solid fa-circle-xmark text-danger mr-2"></i>Project files integrity check performed!<br>'
-                        + numberOfFiles + ' files are not part of the project' + 
-                        '<i class="fa-regular fa-eye infotip ml-2 text-info pointer" id="button-show-files-integrity-result" title="show_files"></i>' +
-                        ul + '</ul>';                        
+                        + '<b>' + numberOfFiles + '</b> files are not part of the project.' + 
+                        '<i class="fa-regular fa-eye infotip ml-2 text-info pointer text-warning infotip pointer" id="button-show-files-integrity-result" title="show_files"></i>' +
+                        '<div class="alert alert-light' + (refreshingData ? '' : ' hidden') + '" role="alert" id="files-integrity-result-container">' +
+                        '<div class="alert alert-warning" role="alert"><?php echo $lang->get('unknown_files_should_be_deleted'); ?>' +
+                        '<div class="btn-group ml-2" role="group">'+
+                            '<button type="button" class="btn btn-primary btn-sm infotip" id="refresh_unknown_files" title="<?php echo $lang->get('refresh'); ?>"><i class="fa-solid fa-arrows-rotate"></i></button>' +
+                            '<button type="button" class="btn btn-danger btn-sm infotip" id="delete_unknown_files" title="<?php echo $lang->get('delete'); ?>"><i class="fa-solid fa-trash"></i></button>' +
+                            '<button type="button" class="btn btn-info btn-sm infotip" id="hide_files" title="<?php echo $lang->get('hide'); ?>"><i class="fa-solid fa-eye-slash"></i></button>' +
+                        '</div></div>' +
+                        ul + '</ul></div>';                        
 
                     // Create the button to show/hide the list
-                    $(document).on('click', '#button-show-files-integrity-result', function(event) {
-                        if ($('#files-integrity-result').hasClass('hidden')) {
-                            $('#files-integrity-result').removeClass('hidden');
-                            $('#button-show-files-integrity-result').attr('title', '<?php echo $lang->get('hide'); ?>');
-                        } else {
-                            $('#files-integrity-result').addClass('hidden');
-                            $('#button-show-files-integrity-result').attr('title', '<?php echo $lang->get('show_files'); ?>');
-                        }
-                    });
+                    $(document)
+                        .on('click', '#button-show-files-integrity-result', function(event) {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            $('#files-integrity-result-container').removeClass('hidden');
+                        })
+                        .on('click', '#refresh_unknown_files', function(event) {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            // Show loader
+                            $('#files-integrity-result').html('<i class="fa-solid fa-spinner fa-spin"></i>');
+                            // Launch the integrity check
+                            performProjectFilesIntegrityCheck(true);
+                        })
+                        .on('click', '#hide_files', function(event) {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            $('#files-integrity-result-container').addClass('hidden');
+                        })
+                        .on('click', '#delete_unknown_files', function(event) {   
+                            event.preventDefault();
+                            event.stopPropagation();                         
+                            // Ask the user if he wants to delete the files
+                            if (confirm('<?php echo $lang->get('delete_unknown_files'); ?>')) {
+                                // Show loader
+                                $('#files-integrity-result').html('<i class="fa-solid fa-spinner fa-spin"></i>');
+                            } else {
+                                // Cancel
+                                return false;
+                            }
+                            // Launch delete unknown files
+                            performDeleteFilesIntegrityCheck();
+                        });
                 }
                 // Display the result
                 $('#project-files-check-status').html(html);
+                requestRunning = false;
+            }
+        );
+    }
+
+    /**
+     * Perform delete unknown files
+     */
+    function performDeleteFilesIntegrityCheck()
+    {
+        $.post(
+            "sources/admin.queries.php", {
+                type: "deleteFilesIntegrityCheck",
+                key: "<?php echo $session->get('key'); ?>"
+            },
+            function(data) {
+                // Handle server answer
+                try {
+                    data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
+                } catch (e) {
+                    // error
+                    toastr.remove();
+                    toastr.error(
+                        '<?php echo $lang->get('server_answer_error') . '<br />' . $lang->get('server_returned_data') . ':<br />'; ?>' + data.error,
+                        '', {
+                            closeButton: true,
+                            positionClass: 'toast-bottom-right'
+                        }
+                    );
+                    return false;
+                }
+
+                if (data.deletionResults === '') {
+                    // No files to delete
+                    $('#files-integrity-result').html('<i class="fa-solid fa-circle-check text-success mr-2"></i><?php echo $session->get('done'); ?>');
+                    return false;
+                }
+
+                // Display the result as a list
+                // Initialize the HTML output
+                let output = '<ul style="margin-left:-60px;">';
+                let showSuccessful = true;
+                
+                // Process each file result
+                $.each(data.deletionResults, function(file, result) {
+                    // Skip successful operations if not showing them
+                    if (!showSuccessful && result.success) {
+                        return true; // continue to next iteration
+                    }
+                    
+                    //const className = result.success ? 'success' : 'error';
+                    const icon = result.success ? '<i class="fa-solid fa-check text-success mr-1"></i>' : '<i class="fa-solid fa-xmark text-danger mr-1"></i>';
+                    const message = result.success ? '<?php echo $lang->get('server_returned_data');?>' : 'Error: ' + result.error;
+                    
+                    output += '<li>' + icon + '<b>' + file + '</b><br/>' + message + '</li>';
+                });
+                
+                output += '</ul>';
+
+                $('#files-integrity-result').html(output);
+
             }
         );
     }

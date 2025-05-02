@@ -2469,13 +2469,133 @@ switch ($post_type) {
             break;
         }
 
-        $ret = filesIntegrityCheck($SETTINGS['cpassman_dir']);
+        $ret = filesIntegrityCheck($SETTINGS['cpassman_dir']);        
+
+        $ignoredFiles = DB::queryFirstField(
+            'SELECT valeur 
+            FROM ' . prefixTable('misc') . ' 
+            WHERE type = %s AND intitule = %s',
+            'admin',
+            'ignored_unknown_files'
+        );
+        $ignoredFilesKeys = !is_null($ignoredFiles) && !empty($ignoredFiles) ? json_decode($ignoredFiles) : [];
         
         echo prepareExchangedData(
             array(
                 'error' => $ret['error'],
                 'message' => $ret['message'],
                 'files' => json_encode($ret['array'], JSON_FORCE_OBJECT),
+                'ignoredNumber' => count($ignoredFilesKeys),
+            ),
+            'encode'
+        );
+
+        break;
+
+    case "ignoreFile":
+        // Check KEY and rights
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        // decrypt and retrieve data in JSON format
+        $dataReceived = prepareExchangedData(
+            $post_data,
+            'decode'
+        );
+
+        $post_id = isset($dataReceived['id']) === true ? filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT) : '';
+
+        // Get ignored unknown files
+        $existingData = DB::queryFirstRow(
+            'SELECT valeur 
+            FROM ' . prefixTable('misc') . ' 
+            WHERE type = %s AND intitule = %s',
+            'admin',
+            'ignored_unknown_files'
+        );
+
+        // Get the json list ignored unknown files
+        $unknownFilesArray = [];
+        if (!empty($existingData) && !empty($existingData['valeur'])) {
+            $unknownFilesArray = json_decode($existingData['valeur'], true) ?: [];
+        }
+
+        // Add the new file to the list
+        $unknownFilesArray[] = $post_id;
+
+        // Save the new list
+        DB::insertUpdate(
+            prefixTable('misc'),
+            [
+                'type' => 'admin',
+                'intitule' => 'ignored_unknown_files',
+                'valeur' => json_encode($unknownFilesArray),
+                'created_at' => time(),
+            ],
+            [
+                'valeur' => json_encode($unknownFilesArray),
+                'updated_at' => time(),
+            ]
+        );
+
+        
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => '',
+            ),
+            'encode'
+        );
+
+        break;
+
+    case "deleteFilesIntegrityCheck":
+        // Check KEY and rights
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        // Get the list of files to delete
+        $filesToDelete = DB::queryFirstField(
+            'SELECT valeur 
+            FROM ' . prefixTable('misc') . ' 
+            WHERE type = %s AND intitule = %s',
+            'admin',
+            'unknown_files'
+        );
+
+        if (is_null($filesToDelete)) {
+            echo prepareExchangedData(
+                array(
+                    'deletionResults' => null,
+                ),
+                'encode'
+            );
+            break;
+        }
+        $referenceFiles = (array) json_decode($filesToDelete);
+        
+        //  Launch
+        $ret = deleteFiles($referenceFiles, true);
+        
+        echo prepareExchangedData(
+            array(
+                'deletionResults' => $ret,
             ),
             'encode'
         );
@@ -2484,8 +2604,100 @@ switch ($post_type) {
     
 }
 
+/**
+ * Delete multiple files with cross-platform compatibility
+ * 
+ * This function deletes a list of files while ensuring compatibility
+ * across different operating systems (Windows, Linux, etc.)
+ * 
+ * @param array $files Array of file paths to delete
+ * @param bool $ignoreErrors If true, continues execution even if a file cannot be deleted
+ * @return array Results of deletion operations (success/failure for each file)
+ */
+function deleteFiles(array $files, bool $ignoreErrors = false): array
+{
+    $session = SessionManager::getSession();
+    $lang = new Language($session->get('user-language') ?? 'english');
 
-function filesIntegrityCheck($baseDir)
+    $results = [];
+    $fullPath = __DIR__ . '/../';
+    
+    foreach ($files as $file) {
+        // Normalize path separators for cross-platform compatibility
+        $normalizedPath = str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $fullPath.$file);
+        
+        // Check if file exists
+        if (!file_exists($normalizedPath)) {
+            $results[$normalizedPath] = [
+                'success' => false,
+                'error' => $lang->get('file_not_exists')
+            ];
+            
+            if (!$ignoreErrors) {
+                return $results;
+            }
+            
+            continue;
+        }
+        
+        // Check if path is actually a file (not a directory)
+        if (!is_file($normalizedPath)) {
+            $results[$normalizedPath] = [
+                'success' => false,
+                'error' => $lang->get('path_not_a_file')
+            ];
+            
+            if (!$ignoreErrors) {
+                return $results;
+            }
+            
+            continue;
+        }
+        
+        // Check if file is writable (can be deleted)
+        if (!is_writable($normalizedPath)) {
+            $results[$normalizedPath] = [
+                'success' => false,
+                'error' => $lang->get('file_not_writable')
+            ];
+            
+            if (!$ignoreErrors) {
+                return $results;
+            }
+            
+            continue;
+        }
+        
+        // Try to delete the file
+        $deleteResult = '';//@unlink($normalizedPath);
+        
+        if ($deleteResult) {
+            $results[$normalizedPath] = [
+                'success' => true,
+                'error' => '',
+            ];
+        } else {
+            $results[$normalizedPath] = [
+                'success' => false,
+                'error' => $lang->get('failed_to_delete')
+            ];
+            
+            if (!$ignoreErrors) {
+                return $results;
+            }
+        }
+    }
+    
+    return $results;
+}
+
+/**
+ * Check the integrity of the files
+ * 
+ * @param string $baseDir
+ * @return array
+ */
+function filesIntegrityCheck($baseDir): array
 {
     $referenceFile = __DIR__ . '/../files_reference.txt';
 
@@ -2498,6 +2710,7 @@ function filesIntegrityCheck($baseDir)
             'message' => ''
         ];
     }
+
     // Check if the files are in the integrity file
     return [
         'error' => true,
@@ -2506,7 +2719,14 @@ function filesIntegrityCheck($baseDir)
     ];
 }
 
-function getAllFiles($dir) {
+/*
+ * Get all files in a directory
+ * 
+ * @param string $dir
+ * @return array
+ */
+function getAllFiles($dir): array
+{
     $files = [];
     $excludeDirs = ['upload', 'files', 'install', '_tools', 'random_compat', 'avatars']; // Répertoires à exclure
     $excludeFilePrefixes = ['csrfp.config.php', 'settings.php', 'version-commit.php', 'phpstan.neon']; // Fichiers à exclure par préfixe
@@ -2518,7 +2738,7 @@ function getAllFiles($dir) {
                 FilesystemIterator::SKIP_DOTS
             ),
             function ($current, $key, $iterator) {
-                // Ignorer les fichiers/dossiers cachés
+                // Ignore hidden files and folders
                 if ($current->getFilename()[0] === '.') {
                     return false;
                 }
@@ -2534,42 +2754,76 @@ function getAllFiles($dir) {
                 $relativePath = str_replace($dir . DIRECTORY_SEPARATOR, '', $file->getPathname());
                 $relativePath = str_replace('\\', '/', $relativePath); // Normalisation Windows/Linux
 
-                // Découper le chemin en morceaux (dossiers)
+                // Split relatif path into parts
                 $pathParts = explode('/', $relativePath);
 
-                // Vérifier si un des dossiers est à exclure
+                // Check if any part of the path is in the excludeDirs array
                 foreach ($pathParts as $part) {
                     if (in_array($part, $excludeDirs, true)) {
-                        continue 2; // Sauter ce fichier
+                        continue 2; // Skip the file
                     }
                 }
 
-                // Vérifier exclusion par préfixe de fichier
+                // Check if the file name starts with any of the prefixes in excludeFilePrefixes
                 $filename = basename($relativePath);
                 foreach ($excludeFilePrefixes as $prefix) {
                     if (strpos($filename, $prefix) === 0) {
-                        continue 2; // Sauter ce fichier
+                        continue 2; // Skip the file
                     }
                 }
 
-                // Si OK, ajouter à la liste
+                // If OK then add to the list
                 $files[] = $relativePath;
             }
         } catch (UnexpectedValueException $e) {
-            continue; // Ignorer proprement les erreurs d'accès
+            continue; // Ignore the file if an error occurs
         }
     }
 
     return $files;
 }
 
-
-
-function findUnknownFiles($baseDir, $referenceFile) {
+/**
+ * Find unknown files
+ * 
+ * @param string $baseDir
+ * @param string $referenceFile
+ * @return array
+ */
+function findUnknownFiles($baseDir, $referenceFile): array
+{
     $currentFiles = getAllFiles($baseDir);
     $referenceFiles = file($referenceFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
 
+    // Remove empty lines and comments from the reference file
     $unknownFiles = array_diff($currentFiles, $referenceFiles);
+
+    // Save list to DB
+    DB::insertUpdate(
+        prefixTable('misc'),
+        array(
+            'type' => 'admin',
+            'intitule' => 'unknown_files',
+            'valeur' => json_encode($unknownFiles),
+            'created_at' => time(),
+        ),
+        [
+            'valeur' => json_encode($unknownFiles),
+            'updated_at' => time(),
+        ]
+    );
+
+    // NOw remove ignored files from the list returned to user
+    // Get ignored files
+    $ignoredFiles = DB::queryFirstField(
+        'SELECT valeur 
+        FROM ' . prefixTable('misc') . ' 
+        WHERE type = %s AND intitule = %s',
+        'admin',
+        'ignored_unknown_files'
+    );
+    $ignoredFilesKeys = !is_null($ignoredFiles) && !empty($ignoredFiles) ? array_flip(json_decode($ignoredFiles)) : [];
+    $unknownFiles = array_diff_key($unknownFiles, $ignoredFilesKeys);
 
     return $unknownFiles;
 }
