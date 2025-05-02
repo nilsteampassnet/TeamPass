@@ -392,7 +392,7 @@ class DatabaseInstaller
             `increment_id` int(12) NOT null AUTO_INCREMENT,
             `type` varchar(50) NOT NULL,
             `intitule` varchar(100) NOT NULL,
-            `valeur` varchar(500) NOT NULL,
+            `valeur` text NOT NULL,
             `created_at` varchar(255) NULL DEFAULT NULL,
             `updated_at` varchar(255) NULL DEFAULT NULL,
             `is_encrypted` tinyint(1) NOT NULL DEFAULT '0',
