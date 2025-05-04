@@ -572,6 +572,12 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
     function cleanInstall(): array
     {
         try {
+            // Delete table _install
+            DB::query(
+                "DROP TABLE IF EXISTS " . $this->inputData['tablePrefix'] . "_install;"
+            );
+
+            // Save the installation status
             DB::query(
                 "INSERT INTO " . $this->inputData['tablePrefix'] . "misc 
                     (`type`, `intitule`, `valeur`) VALUES 
