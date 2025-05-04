@@ -608,7 +608,7 @@ class DatabaseInstaller
                     'type'         => $elem[0],
                     'intitule'     => $elem[1],
                     'valeur'       => str_replace("'", '', $elem[2]),
-                    'created_at'   => $elem[1],
+                    'created_at'   => time(),
                     'is_encrypted' => $value
                 ]);
             }
