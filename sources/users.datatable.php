@@ -262,7 +262,7 @@ foreach ($rows as $record) {
             .
             ((int) $record['user_ip'] > 0 ? '<i class=\"fas fa-street-view infotip text-info ml-1\" title=\"'.$lang->get('ip').": ".($record['user_ip']).'\"></i>' : '')
             .
-            ($record['auth_type'] === 'ldap' ? '<i class=\"far fa-address-book infotip text-warning ml-1\" title=\"'.$lang->get('managed_through_ad').'\"></i>' : '')
+            (($record['auth_type'] === 'ldap' || $record['auth_type'] === 'oauth2') ? '<i class=\"far fa-address-book infotip text-warning ml-1\" title=\"'.$lang->get('managed_through_ad').'\"></i>' : '')
             .
             ((in_array($record['id'], [OTV_USER_ID, TP_USER_ID, SSH_USER_ID, API_USER_ID]) === false && (int) $record['admin'] !== 1 && ((int) $SETTINGS['duo'] === 1 || (int) $SETTINGS['google_authentication'] === 1)) ?
                 ((int) $record['mfa_enabled'] === 1 ? '' : '<i class=\"fa-solid fa-fingerprint infotip ml-1\" style=\"color:Tomato\" title=\"'.$lang->get('mfa_disabled_for_user').'\"></i>') :

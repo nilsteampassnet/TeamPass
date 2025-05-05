@@ -86,7 +86,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         constVisibleOTP = false,
         userClipboard,
         ProcessInProgress = false,
-        debugJavascript = false;
+        debugJavascript = true;
 
     browserSession(
         'init',
@@ -147,24 +147,24 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 'render': function(data, type, row, meta) {
                     return '<div class="group-btn btn-user-action">' +
                         '' +
-                        '<button type="button" class="btn btn-info dropdown-toggle" data-toggle="dropdown"><i class="fas fa-cog"></i>&nbsp;' +
+                        '<button type="button" class="btn btn-info dropdown-toggle" data-toggle="dropdown"><i class="fa-solid fa-cog"></i>&nbsp;' +
                         '</button>' +
                         '<ul class="dropdown-menu" role="menu">' +
                         ($(data).data('auth-type') === 'local' ?
-                            '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="new-password"><i class="fas fa-lock mr-2"></i><?php echo $lang->get('change_login_password'); ?></li>' :
+                            '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="new-password"><i class="fa-solid fa-lock mr-2"></i><?php echo $lang->get('change_login_password'); ?></li>' :
                             ''
                         ) +
-                        '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="edit"><i class="fas fa-pen mr-2"></i><?php echo $lang->get('edit'); ?></li>' +
+                        '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="edit"><i class="fa-solid fa-pen mr-2"></i><?php echo $lang->get('edit'); ?></li>' +
                         ($(data).data('otp-provided') !== ""?
-                            '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="new-otp"><i class="fas fa-mask mr-2"></i><?php echo $lang->get('generate_new_otp'); ?></li>' :
+                            '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="new-otp"><i class="fa-solid fa-mask mr-2"></i><?php echo $lang->get('generate_new_otp'); ?></li>' :
                             ''
                         ) +
-                        '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '" data-action="reset-antibruteforce"><i class="fas fa-lock mr-2"></i><?php echo $lang->get('bruteforce_reset_account'); ?></li>' +
-                        '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '" data-action="logs"><i class="fas fa-newspaper mr-2"></i><?php echo $lang->get('see_logs'); ?></li>' +
-                        '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="qrcode"><i class="fas fa-qrcode mr-2"></i><?php echo $lang->get('user_ga_code'); ?></li>' +
-                        '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '"data-action="access-rights"><i class="fas fa-sitemap mr-2"></i><?php echo $lang->get('user_folders_rights'); ?></li>' +
-                        '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '"data-action="disable-user"><i class="fas fa-user-slash text-warning mr-2" disabled></i><?php echo $lang->get('disable_enable'); ?></li>' +
-                        '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '"data-action="delete-user"><i class="fas fa-user-minus text-danger mr-2" disabled></i><?php echo $lang->get('delete'); ?></li>' +
+                        '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '" data-action="reset-antibruteforce"><i class="fa-solid fa-lock mr-2"></i><?php echo $lang->get('bruteforce_reset_account'); ?></li>' +
+                        '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '" data-action="logs"><i class="fa-solid fa-newspaper mr-2"></i><?php echo $lang->get('see_logs'); ?></li>' +
+                        '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="qrcode"><i class="fa-solid fa-qrcode mr-2"></i><?php echo $lang->get('user_ga_code'); ?></li>' +
+                        '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '"data-action="access-rights"><i class="fa-solid fa-sitemap mr-2"></i><?php echo $lang->get('user_folders_rights'); ?></li>' +
+                        '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '"data-action="disable-user"><i class="fa-solid fa-user-slash text-warning mr-2" disabled></i><?php echo $lang->get('disable_enable'); ?></li>' +
+                        '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '"data-action="delete-user"><i class="fa-solid fa-user-minus text-danger mr-2" disabled></i><?php echo $lang->get('delete'); ?></li>' +
                         '</ul>' +
                         '</div>';
                 }
@@ -199,7 +199,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         ],
         'preDrawCallback': function() {
             toastr.info(
-                '<?php echo $lang->get('loading'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i><span class="close-toastr-progress"></span>',
+                '<?php echo $lang->get('loading'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i><span class="close-toastr-progress"></span>',
                 ''
             );
         },
@@ -230,7 +230,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     $("#warnings_display").on("ifChanged", function() {
         $('.form').addClass('hidden');
         $('#users-list').removeClass('hidden');
-        toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+        toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
         oTable.ajax.reload();
     });
 
@@ -312,7 +312,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
         showModalDialogBox(
             '#warningModal',
-            '<i class="fas fa-user-shield fa-lg warning mr-2"></i><?php echo $lang->get('caution'); ?>',
+            '<i class="fa-solid fa-user-shield fa-lg warning mr-2"></i><?php echo $lang->get('caution'); ?>',
             '<?php echo $lang->get('sending_email_message'); ?>',
             '',
             '',
@@ -533,7 +533,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             // Inform user
             $("#warningModalBody").html('<b><?php echo $lang->get('encryption_keys'); ?> - ' +
                 stepText + '</b> [' + start + ' - ' + (parseInt(start) + <?php echo NUMBER_ITEMS_IN_BATCH;?>) + ']<span id="warningModalBody_extra">' + $nbItemsToConvert + '</span> ' +
-                '... <?php echo $lang->get('please_wait'); ?><i class="fas fa-spinner fa-pulse ml-3 text-primary"></i>');
+                '... <?php echo $lang->get('please_wait'); ?><i class="fa-solid fa-spinner fa-pulse ml-3 text-primary"></i>');
 
             // If expected, show the OPT to the admin
             if (constVisibleOTP === true) {
@@ -614,8 +614,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             // Ask user
             showModalDialogBox(
                 '#warningModal',
-                '<i class="fas fa-envelope-open-text fa-lg warning mr-2"></i><?php echo $lang->get('information'); ?>',
-                '<i class="fas fa-info-circle mr-2"></i><?php echo $lang->get('send_user_password_by_email'); ?>'+
+                '<i class="fa-solid fa-envelope-open-text fa-lg warning mr-2"></i><?php echo $lang->get('information'); ?>',
+                '<i class="fa-solid fa-info-circle mr-2"></i><?php echo $lang->get('send_user_password_by_email'); ?>'+
                 '<div class="row">'+
                     (store.get('teampassApplication').formUserAction === "add_new_user" ?
                     '<div class="col-lg-2"><button type="button" class="btn btn-block btn-secondary mr-2"  id="warningModal-button-user-pwd"><?php echo $lang->get('show_user_password'); ?></button></div>'+
@@ -718,7 +718,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         } else if ($(this).data('action') === 'edit') {
             // SHow user
             toastr.remove();
-            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
 
             // EDIT EXISTING USER
             $('#row-list, #group-create-special-folder, #group-delete-user').addClass('hidden');
@@ -929,7 +929,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
                 // SHow user
                 toastr.remove();
-                toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+                toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
 
                 // Get number of items to treat
                 data_tmp = {
@@ -1086,7 +1086,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             );
         } else if ($(this).data('action') === 'qrcode') {
             toastr.remove();
-            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
 
             // This sends a GA Code by email to user
             data = {
@@ -1185,7 +1185,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
         } else if ($(this).data('action') === 'reset-antibruteforce') {
             toastr.remove();
-            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
 
             const data = {
                 'user_id': $(this).data('id'),
@@ -1272,7 +1272,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 ],
                 'preDrawCallback': function() {
                     toastr.remove();
-                    toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+                    toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
                 },
                 'drawCallback': function() {
                     // Tooltips
@@ -1299,7 +1299,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
             // Show spinner
             toastr.remove();
-            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
 
             $('#row-folders-results').html('');
 
@@ -1348,7 +1348,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             var userID = $(this).data('id');
             showModalDialogBox(
                 '#warningModal',
-                '<i class="fas fa-exclamation-circle fa-lg warning mr-2"></i><?php echo $lang->get('your_attention_please'); ?>',
+                '<i class="fa-solid fa-exclamation-circle fa-lg warning mr-2"></i><?php echo $lang->get('your_attention_please'); ?>',
                 '<div class="form-group">'+
                     '<span class="mr-3"><?php echo $lang->get('user_disable_status'); ?></span>'+
                     '<input type="checkbox" class="form-check-input form-control flat-blue" id="user-disabled">' +
@@ -1363,7 +1363,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
                 // Show spinner
                 toastr.remove();
-                toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+                toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
                 $('#warningModal').modal('hide');
 
                 var data = {
@@ -1395,7 +1395,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         } else {
                             // Show icon or not
                             if ($('#user-disabled').prop('checked') === true) {
-                                $('#user-login-'+userID).before('<i class="fas fa-user-slash infotip text-danger mr-2" title="<?php echo $lang->get('account_is_locked');?>" id="user-disable-'+userID+'"></i>');
+                                $('#user-login-'+userID).before('<i class="fa-solid fa-user-slash infotip text-danger mr-2" title="<?php echo $lang->get('account_is_locked');?>" id="user-disable-'+userID+'"></i>');
                             } else {
                                 $('#user-disable-'+userID).remove();
                             }
@@ -1424,7 +1424,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             var userID = $(this).data('id');
             showModalDialogBox(
                 '#warningModal',
-                '<i class="fas fa-exclamation-circle fa-lg warning mr-2"></i><?php echo $lang->get('your_attention_please'); ?>',
+                '<i class="fa-solid fa-exclamation-circle fa-lg warning mr-2"></i><?php echo $lang->get('your_attention_please'); ?>',
                 '<div class="form-group">'+
                     '<span class="mr-3"><?php echo $lang->get('by_clicking_this_checkbox_confirm_user_deletion'); ?></span>'+
                     '<input type="checkbox" class="form-check-input form-control flat-blue" id="user-to-delete">' +
@@ -1443,7 +1443,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
                 // Show spinner
                 toastr.remove();
-                toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+                toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
                 $('#warningModal').modal('hide');
 
                 var data = {
@@ -1495,9 +1495,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             // --- END
             //
         } else if ($(this).data('action') === 'refresh') {
-            $('.form').addClass('hidden');
+            $('.extra-form, .form').addClass('hidden');
             $('#users-list').removeClass('hidden');
-            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
             oTable.ajax.reload();
             //
             // --- END
@@ -1508,7 +1508,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
             // Show spinner
             toastr.remove();
-            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
 
             // Load list of users
             $.post(
@@ -1561,7 +1561,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         } else if ($(this).data('action') === 'do-propagate') {
             // Show spinner
             toastr.remove();
-            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
 
 
             // destination users
@@ -1644,7 +1644,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             // --- END
             //
         } else if ($(this).data('action') === 'ldap-sync') {
-            $('.form').addClass('hidden');
+            $('.extra-form, .form').addClass('hidden');
             $('#row-ldap').removeClass('hidden');
 
             refreshListUsersLDAP();
@@ -1652,8 +1652,17 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             //
             // --- END
             //
+        } else if ($(this).data('action') === 'oauth2-sync') {
+            $('.extra-form, .form').addClass('hidden');
+            $('#row-oauth2').removeClass('hidden');
+
+            refreshListUsersOAuth2();
+
+            //
+            // --- END
+            //
         } else if ($(this).data('action') === 'close') {
-            $('.extra-form').addClass('hidden');
+            $('.extra-form, .form').addClass('hidden');
             $('#users-list').removeClass('hidden');
 
             //
@@ -1742,6 +1751,97 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             //
             // --- END
             //
+        } else if ($(this).data('action') === 'oauth2-existing-users') {
+            refreshListUsersOAuth2();
+
+            //
+            // --- END
+            //
+        } else if ($(this).data('action') === 'oauth2-add-role') {
+            $('#oauth2-users-table').addClass('hidden');
+            $('#oauth2-new-role').removeClass('hidden');
+
+            //
+            // --- END
+            //
+        } else if ($(this).data('action') === 'close-new-role-oauth2') {
+            $('#oauth2-users-table').removeClass('hidden');
+            $('#oauth2-new-role').addClass('hidden');
+
+            //
+            // --- END
+            //
+        } else if ($(this).data('action') === 'add-new-role-oauth2') {
+            if ($('#oauth2-new-role-selection').val() === '') {
+                // ERROR
+                toastr.remove();
+                toastr.error(
+                    '<?php echo $lang->get('error_field_is_mandatory'); ?>',
+                    '<?php echo $lang->get('caution'); ?>', {
+                        timeOut: 5000,
+                        progressBar: true
+                    }
+                );
+            } else {
+                // Add new role to Teampasstoastr.remove();
+                toastr.error(
+                    '<?php echo $lang->get('please_wait'); ?>',
+                    '',
+                    {
+                        timeOut: 5000,
+                        progressBar: true
+                    }
+                );
+
+                // Prepare data
+                var data = {
+                    'label': simplePurifier($('#oauth2-new-role-selection').val()),
+                    'complexity': $('#oauth2-new-role-complexity').val(),
+                    'allowEdit': 0,
+                    'action': 'add_role',
+                    'folderId' : -1,
+                }
+
+                if (debugJavascript === true) console.log(data);
+                
+                $.post(
+                    'sources/roles.queries.php', {
+                        type: 'change_role_definition',
+                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                        key: '<?php echo $session->get('key'); ?>'
+                    },
+                    function(data) {
+                        //decrypt data
+                        data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>');
+                        if (debugJavascript === true) console.log(data);
+
+                        if (data.error === true) {
+                            // ERROR
+                            toastr.remove();
+                            toastr.error(
+                                data.message,
+                                '<?php echo $lang->get('caution'); ?>', {
+                                    timeOut: 5000,
+                                    progressBar: true
+                                }
+                            );
+                        } else {
+                            $('#oauth2-new-role-selection').val('');
+                            $('#oauth2-users-table').removeClass('hidden');
+                            $('#row-oauth2-body').html('');
+                            $('#oauth2-new-role').addClass('hidden');
+
+                            refreshListUsersOAuth2();
+                        }
+                    }
+                );
+
+            }
+
+            /**/
+            //
+            // --- END
+            //
         } else if ($(this).data('action') === 'new-otp') {// Check if no tasks on-going for this user
             const userID = $(this).data('id');
 
@@ -1782,7 +1882,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         } else {  
                             showModalDialogBox(
                                 '#warningModal',
-                                '<i class="fas fa-exclamation-circle fa-lg warning mr-2"></i><?php echo $lang->get('your_attention_please'); ?>',
+                                '<i class="fa-solid fa-exclamation-circle fa-lg warning mr-2"></i><?php echo $lang->get('your_attention_please'); ?>',
                                 '<div class="form-group">'+
                                     '<span class="mr-3"><?php echo $lang->get('generate_new_otp_informations'); ?></span>'+
                                 '</div>',
@@ -1795,7 +1895,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
                                 // Show spinner
                                 toastr.remove();
-                                toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i><span class="close-toastr-progress"></span>');
+                                toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i><span class="close-toastr-progress"></span>');
 
                                 // generate keys
                                 generateUserKeys(
@@ -1925,7 +2025,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         // Show select
         $("#select-managedBy")
             .insertAfter('#' + $(this).attr('id'))
-            .after('<i class="fas fa-close text-danger pointer temp-button mr-3" id="select-managedBy-close"></i>');
+            .after('<i class="fa-solid fa-close text-danger pointer temp-button mr-3" id="select-managedBy-close"></i>');
         $('#select-managedBy option[value="' + $(this).data('value') + '"]').prop('selected', true);
 
         // Store current width and change it
@@ -1971,7 +2071,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     function saveChange(item, currentText, change, field) {
         if (change.val() !== currentText) {
             change
-                .after('<i class="fas fa-refresh fa-spin fa-fw tmp-loader"></i>');
+                .after('<i class="fa-solid fa-refresh fa-spin fa-fw tmp-loader"></i>');
 
             // prepare data
             var data = {
@@ -2034,7 +2134,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         }
 
         // FIND ALL USERS IN LDAP
-        toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i><span class="close-toastr-progress"></span>');
+        toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i><span class="close-toastr-progress"></span>');
 
         $('#row-ldap-body')
             .addClass('overlay')
@@ -2074,14 +2174,14 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                 '<td>' + userLogin +
                                 '</td>' +
                                 '<td>' +
-                                '<i class="fas fa-info-circle ml-3 infotip text-info pointer text-center" data-toggle="tooltip" data-html="true" title="' +
+                                '<i class="fa-solid fa-info-circle ml-3 infotip text-info pointer text-center" data-toggle="tooltip" data-html="true" title="' +
                                 '<p class=\'text-left\'><i class=\'fas fa-user mr-1\'></i>' +
                                 (entry.displayname !== undefined ? '' + entry.displayname[0] + '' : '') + '</p>' +
                                 '<p class=\'text-left\'><i class=\'fas fa-envelope mr-1\'></i>' + (entry.mail !== undefined ? '' + entry.mail[0] + '' : '') + '</p>' +
                                 '"></i>' +
                                 '</td><td>' +
                                 (entry.userInTeampass === 0 ? '' :
-                                '<i class="fas ' + (entry.userAuthType !== undefined && entry.userAuthType === 'ldap' ? 'fa-toggle-on text-info ' : 'fa-toggle-off ') + 'mr-1 text-center pointer action-change-ldap-synchronization" data-user-id="' + entry.userInTeampass + '" data-user-auth-type="' + entry.userAuthType + '"></i>') +
+                                '<i class="fa-solid ' + (entry.userAuthType !== undefined && entry.userAuthType === 'ldap' ? 'fa-toggle-on text-info ' : 'fa-toggle-off ') + 'mr-1 text-center pointer action-change-ldap-synchronization" data-user-id="' + entry.userInTeampass + '" data-user-auth-type="' + entry.userAuthType + '"></i>') +
                                 '</td><td>';
                             groupsNumber = 0;
                             $.each(entry.memberof, function(j, group) {
@@ -2095,7 +2195,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                         // Check if this group exists in Teampass and propose to add it
                                         tmp = data.teampass_groups.filter(p => p.title === group);
                                         if (tmp.length > 0 && entry.userInTeampass === 0) {
-                                            html += group + '<i class="fas fa-user-graduate text-primary ml-2 pointer infotip action-add-role-to-user" title="<?php echo $lang->get('add_user_to_role'); ?>" data-user-id="' + entry.userInTeampass + '" data-role-id="' + tmp[0].id + '"></i><br>';
+                                            html += group + '<i class="fa-solid fa-user-graduate text-primary ml-2 pointer infotip action-add-role-to-user" title="<?php echo $lang->get('add_user_to_role'); ?>" data-user-id="' + entry.userInTeampass + '" data-role-id="' + tmp[0].id + '"></i><br>';
                                         } else {
                                             html += group + '<br>';
                                         }
@@ -2105,11 +2205,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             });
                             html += '</td><td>';
                             // Action icons
-                            html += (entry.userInTeampass === 0 ? '<i class="fas fa-user-plus text-warning ml-2 infotip pointer add-user-icon" title="<?php echo $lang->get('add_user_in_teampass'); ?>" data-user-login="' + userLogin + '" data-user-email="' + (entry.mail !== undefined ? entry.mail[0] : '') + '" data-user-name="' + (entry.givenname !== undefined ? entry.givenname[0] : '') + '" data-user-lastname="' + (entry.sn !== undefined ? entry.sn[0] : '') + '"></i>' : '');
+                            html += (entry.userInTeampass === 0 ? '<i class="fa-solid fa-user-plus text-warning ml-2 infotip pointer add-user-icon" title="<?php echo $lang->get('add_user_in_teampass'); ?>" data-user-login="' + userLogin + '" data-user-email="' + (entry.mail !== undefined ? entry.mail[0] : '') + '" data-user-name="' + (entry.givenname !== undefined ? entry.givenname[0] : '') + '" data-user-lastname="' + (entry.sn !== undefined ? entry.sn[0] : '') + '" data-user-auth-type="ldap"></i>' : '');
 
                             // Only of not admin
                             /*if (userLogin !== 'admin') {
-                                html += (entry.teampass.auth === 'ldap' ? '<i class="fas fa-link text-success ml-2 infotip pointer auth-local" title="<?php echo $lang->get('ldap_user_password_is_used_for_authentication'); ?>" data-user-id="' + entry.teampass.id + '"></i>' : '<i class="fas fa-unlink text-orange ml-2 infotip pointer auth-ldap" title="<?php echo $lang->get('local_user_password_is_used_for_authentication'); ?>" data-user-id="' + entry.teampass.id + '"></i>');
+                                html += (entry.teampass.auth === 'ldap' ? '<i class="fa-solid fa-link text-success ml-2 infotip pointer auth-local" title="<?php echo $lang->get('ldap_user_password_is_used_for_authentication'); ?>" data-user-id="' + entry.teampass.id + '"></i>' : '<i class="fa-solid fa-unlink text-orange ml-2 infotip pointer auth-ldap" title="<?php echo $lang->get('local_user_password_is_used_for_authentication'); ?>" data-user-id="' + entry.teampass.id + '"></i>');
                             }*/
 
                             html += '</td></tr>';
@@ -2148,6 +2248,131 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         );
     }
 
+    function refreshListUsersOAuth2() {
+        // IS LDAP enabled? (#3800)
+        if (parseInt(<?php echo $SETTINGS['oauth2_enabled']; ?>) === 0) {
+            console.log("OAuth2 is enabled, refreshing list of users from OAuth2 "+parseInt(<?php echo $SETTINGS['oauth2_enabled']; ?>));
+            return false;
+        }
+
+        // FIND ALL USERS IN LDAP
+        toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i><span class="close-toastr-progress"></span>');
+
+        $('#row-oauth2-body')
+            .addClass('overlay')
+            .html('');
+
+        $.post(
+            "sources/users.queries.php", {
+                type: "get_list_of_users_in_oauth2",
+                key: "<?php echo $session->get('key'); ?>"
+            },
+            function(data) {
+                //decrypt data
+                data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>');
+                if (debugJavascript === true) console.log(data)
+
+                if (data.error === true) {
+                    // ERROR
+                    toastr.error(
+                        data.message,
+                        '<?php echo $lang->get('caution'); ?>', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
+                } else {
+                    // PUrify data
+                    data = purifyData(data);
+                    // Do init
+                    var html = '',
+                        groupsNumber = 0,
+                        userLogin,
+                        group;
+                    var entry;
+                    // loop on users list
+                    $.each(data.ad_users, function(i, user) {
+                        // CHeck if not empty
+                        if (userLogin !== '') {
+                            html += '<tr>' +
+                                '<td>' + user.login +
+                                '</td>' +
+                                '<td>' +
+                                '<i class="fa-solid fa-info-circle ml-3 infotip text-info pointer text-center" data-toggle="tooltip" data-html="true" title="' +
+                                '<p class=\'text-left\'><i class=\'fas fa-user mr-1\'></i> ' +
+                                user.displayName + '</p>' +
+                                '<p class=\'text-left\'><i class=\'fas fa-envelope mr-1\'></i>' + (user.mail !== null ? '' + user.mail + '' : '') + '</p>' +
+                                '"></i>' +
+                                '</td><td>' +
+                                (user.userInTeampass === 0 ? '' :
+                                '<i class="fa-solid ' + (user.userAuthType === 'oauth2' ? 'fa-toggle-on text-info ' : 'fa-toggle-off ') + 'mr-1 text-center pointer action-change-oauth2-synchronization" data-user-id="' + user.userInTeampass + '" data-user-auth-type="' + user.userAuthType + '" infotip title="<?php echo $lang->get('toggle_user_authentification'); ?>"></i>') +
+                                '</td><td>';
+                            groupsNumber = 0;
+                            $.each(user.groups, function(j, group) {
+                                let icon = '';
+
+                                if (group.id === null) {
+                                    // Le groupe n'existe pas dans Teampass
+                                    icon = '<i class="far fa-circle-xmark text-danger ml-2 infotip" title="<?php echo $lang->get('role_not_exists_in_teampass'); ?>"></i>';
+                                } else if (user.userInTeampass !== 0) {
+                                    if (group.insideGroupInTeampass === 1) {
+                                        // L'utilisateur est déjà dans ce groupe dans Teampass
+                                        icon = '<i class="far fa-check-circle text-success ml-2 infotip" title="<?php echo $lang->get('user_has_this_role_in_teampass'); ?>"></i>';
+                                    } else if (user.userAuthType === 'oauth2') {
+                                        // Proposer d'ajouter l'utilisateur au groupe
+                                        icon = '<i class="fa-solid fa-user-graduate text-primary ml-2 pointer infotip action-add-role-to-user" title="<?php echo $lang->get('add_user_to_role'); ?>" data-user-id="' + user.userInTeampass + '" data-role-id="' + group.id + '"></i>';
+                                    }
+                                }
+
+                                html += group.name + icon + '<br>';
+                                groupsNumber++;
+                            });
+
+                            html += '</td><td>';
+                            // Action icons
+                            html += (user.userInTeampass === 0 ? 
+                                 (user.mail !== null ? 
+                                    '<i class="fa-solid fa-user-plus text-warning ml-2 infotip pointer add-user-icon" title="<?php echo $lang->get('add_user_in_teampass'); ?>" data-user-login="' + user.login + '" data-user-email="' + user.mail + '" data-user-name="' + user.surname + '" data-user-lastname="' + user.givenName + '" data-user-auth-type="oauth2"></i>'
+                                    : '<i class="fa-solid fa-user-large-slash text-danger ml-2 infotip" title="<?php echo $lang->get('oauth2_user_has_no_mail'); ?>"></i>'
+                                )
+                                : ''
+                            );
+
+                            html += '</td></tr>';
+                        }
+                    });
+                    
+                    $('#row-oauth2-body').html(html);
+                    $('#row-oauth2-body').removeClass('overlay');
+                    $('.infotip').tooltip('update');
+
+                    // Build list box of new roles that could be created
+                    $('#oauth2-new-role-selection')
+                        .empty()
+                        .append('<option value="">--- <?php echo $lang->get('select'); ?> ---</option>');
+                    let htmlGroups = '';
+                    $.each(data.ad_groups, function(i, group) {
+                        tmp = data.teampass_groups.filter(p => p.title === group);
+                        if (tmp.length === 0) {
+                            group = simplePurifier(group)
+                            htmlGroups += '<option value="' + group + '">' + group + '</option>';
+                        }
+                    });
+                    $('#oauth2-new-role-selection').append(htmlGroups);
+
+                    // Inform user
+                    toastr.success(
+                        '<?php echo $lang->get('done'); ?>',
+                        '', {
+                            timeOut: 1000
+                        }
+                    );
+                    $('.close-toastr-progress').closest('.toast').remove();
+                }
+            }
+        );
+    }
+
     /**
      * Permits to add a role to a Teampass user
      *
@@ -2155,7 +2380,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
      */
     function addRoleToUser() {
         toastr.remove();
-        toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+        toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
 
         // prepare data
         var data = {
@@ -2223,7 +2448,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     // Enable/disable ldap sync on user
     $(document).on('click', '.action-change-ldap-synchronization', function() {
         toastr.remove();
-        toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+        toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
 
         // prepare data
         var data = {
@@ -2283,20 +2508,83 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         );
     });
 
+    // Enable/disable ldap sync on user
+    $(document).on('click', '.action-change-oauth2-synchronization', function() {
+        toastr.remove();
+        toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+
+        // prepare data
+        var data = {
+            'user_id': $(this).data('user-id'),
+            'field': 'auth_type',
+            'value': $(this).hasClass('fa-toggle-off') === true ? 'oauth2' : 'local',
+            'context': ''
+        },
+        selectedIcon = $(this);
+
+        $.post(
+            'sources/users.queries.php', {
+                type: 'save_user_change',
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                key: "<?php echo $session->get('key'); ?>"
+            },
+            function(data) {
+                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+                if (debugJavascript === true) console.log(data);
+
+                if (data.error !== false) {
+                    // Show error
+                    toastr.remove();
+                    toastr.error(
+                        data.message,
+                        '<?php echo $lang->get('caution'); ?>', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
+                } else {
+                    // CHange icon format
+                    if (selectedIcon.hasClass('fa-toggle-off') === true) {
+                        selectedIcon
+                            .removeClass('fa-toggle-off')
+                            .addClass('fa-toggle-on text-info')
+                            .prop('data-user-auth-type', 'oauth2');
+                    } else {
+                        selectedIcon
+                            .removeClass('fa-toggle-on text-info')
+                            .addClass('fa-toggle-off')
+                            .prop('data-user-auth-type', 'local');
+                    }
+
+                    $('.infotip').tooltip();
+
+                    // Inform user
+                    toastr.remove();
+                    toastr.success(
+                        '<?php echo $lang->get('done'); ?>',
+                        '', {
+                            timeOut: 1000
+                        }
+                    );
+                }
+            }
+        );
+    });
+
 
     /**
      * Permits to add an AD user in Teampass
      *
      * @return void
      */
-    function addUserInTeampass() {
+    function addUserInTeampass(authType) {
         $('#warningModal').modal('hide');
         toastr.remove();
-        toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i><span class="close-toastr-progress"></span>');
+        toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i><span class="close-toastr-progress"></span>');
 
         // what roles
         var roles = [];
-        $("#ldap-user-roles option:selected").each(function() {
+        $("#auth-user-roles option:selected").each(function() {
             roles.push($(this).val())
         });
         
@@ -2313,13 +2601,14 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             'name': simplePurifier($('.selected-user').data('user-name') === '' ? $('#ldap-user-name').val() : $('.selected-user').data('user-name')),
             'lastname': simplePurifier($('.selected-user').data('user-lastname')),
             'email': simplePurifier($('.selected-user').data('user-email')),
-            'roles' : roles,
+            'roles': roles,
+            'authType': authType,
         };
         if (debugJavascript === true) console.log(data)
 
         $.post(
             'sources/users.queries.php', {
-                type: 'add_user_from_ldap',
+                type: 'add_user_from_ad',
                 data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
                 key: "<?php echo $session->get('key'); ?>"
             },
@@ -2340,14 +2629,14 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         }
                     );
                 } else {                    
-                    generateUserKeys(data, userTemporaryCode);
+                    generateUserKeys(data, userTemporaryCode, authType);
                 }
             }
         );
     }
 
 
-    function generateUserKeys(data, userTemporaryCode)
+    function generateUserKeys(data, userTemporaryCode, authType)
     {
         // manage keys encryption for new user
         // Case where we need to encrypt new keys for the user
@@ -2443,7 +2732,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                 $('.close-toastr-progress').closest('.toast').remove();
                                 
                                 // refresh the list of users in LDAP not added in Teampass
-                                refreshListUsersLDAP();    
+                                if (authType === 'ldap') {
+                                    refreshListUsersLDAP();
+                                } else if (authType === 'oauth2') {
+                                    refreshListUsersOAuth2();
+                                }  
 
                                 // Rrefresh list of users in Teampass
                                 oTable.ajax.reload();
@@ -2470,7 +2763,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
      */
     function changeUserAuthType(auth) {
         toastr.remove();
-        toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+        toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
 
         // prepare data
         var data = {
@@ -2513,32 +2806,33 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
             showModalDialogBox(
                 '#warningModal',
-                '<i class="fas fa-user-plus fa-lg warning mr-2"></i><?php echo $lang->get('new_ldap_user_info'); ?> <b>'+$(this)[0].dataset.userLogin+'</b>',
+                '<h3><i class="fa-solid fa-user-plus fa-lg warning mr-2"></i><?php echo $lang->get('new_ldap_user_info'); ?> <span class="badge badge-primary">'+$(this)[0].dataset.userLogin+'</span></h3>',
                 '<div class="form-group">'+
-                    '<label for="ldap-user-name"><?php echo $lang->get('name'); ?></label>'+
-                    '<input readonly type="text" class="form-control required" id="ldap-user-name" value="'+ $(this).attr('data-user-name')+'">'+
+                    '<label for="auth-user-name"><?php echo $lang->get('name'); ?></label>'+
+                    '<input readonly type="text" class="form-control required" id="auth-user-name" value="'+ $(this).attr('data-user-name')+'">'+
                 '</div>'+
                 '<div class="form-group">'+
-                    '<label for="ldap-user-name"><?php echo $lang->get('lastname'); ?></label>'+
-                    '<input readonly type="text" class="form-control required" id="ldap-user-lastname" value="'+ $(this).attr('data-user-lastname')+'">'+
+                    '<label for="auth-user-name"><?php echo $lang->get('lastname'); ?></label>'+
+                    '<input readonly type="text" class="form-control required" id="auth-user-lastname" value="'+ $(this).attr('data-user-lastname')+'">'+
                 '</div>'+
                 '<div class="form-group">'+
-                    '<label for="ldap-user-name"><?php echo $lang->get('email'); ?></label>'+
-                    '<input readonly type="text" class="form-control required" id="ldap-user-email" value="'+ $(this).attr('data-user-email')+'">'+
+                    '<label for="auth-user-name"><?php echo $lang->get('email'); ?></label>'+
+                    '<input readonly type="text" class="form-control required" id="auth-user-email" value="'+ $(this).attr('data-user-email')+'">'+
                 '</div>'+
                 '<div class="form-group">'+
-                    '<label for="ldap-user-roles"><?php echo $lang->get('roles'); ?></label>'+
-                    '<select id="ldap-user-roles" class="form-control form-item-control select2 required" style="width:100%;" multiple="multiple">'+
+                    '<label for="auth-user-roles"><?php echo $lang->get('roles'); ?></label>'+
+                    '<select id="auth-user-roles" class="form-control form-item-control select2 required" style="width:100%;" multiple="multiple">'+
                     '<?php echo $optionsRoles ?? ''; ?></select>'+
-                '</div>',
+                '</div>'+
+                '<input type="hidden" id="auth-user-type" value="'+ $(this).attr('data-user-auth-type')+'">',
                 '<?php echo $lang->get('perform'); ?>',
                 '<?php echo $lang->get('cancel'); ?>'
             );
             $(document).one('click', '#warningModalButtonAction', function(event) {
                 event.preventDefault();
                 event.stopPropagation();
-                if ($('#ldap-user-name').val() !== "" && $('#ldap-user-roles :selected').length > 0) {
-                    addUserInTeampass();
+                if ($('#auth-user-name').val() !== "" && $('#auth-user-roles :selected').length > 0) {
+                    addUserInTeampass($('#auth-user-type').val());
                     $(thisElement).removeClass('selected-user');
                 }
             });

@@ -32,6 +32,16 @@
  // - selected_items_to_be_imported
 
 return array(
+    'account_in_construction_please_wait_email' => 'Your account is currently being created. You will receive an email when it is ready.',
+    'newly_created_user_belongs_to_role' => 'Newly created user belongs to role',
+    'oauth_selfregistered_user_belongs_to_role' => 'Self-registered user belongs to role',
+    'oauth_selfregistered_user_belongs_to_role_tip' => ' This role will be assigned to the user when he is created if he is not belonging to groups existing in Teampass.',
+    'oauth_self_register_groups' => 'Allowed groups for self-registration',
+    'oauth_self_register_groups_tip' => 'Comma separated list of groups that are allowed to self-register. Leave empty if you want to disable self-registration. Self-registration permits to create a user account in Teampass without the need of an administrator. The user will be able to log in with his AD credentials and will be automatically created in Teampass.',
+    'oauth2_synchronization' => 'OAuth2 synchronization',
+    'oauth2_user_has_no_mail' => 'User has no email address',
+    'role_not_exists_in_teampass' => 'Role does not exist in Teampass',
+    'toggle_user_authentification' => 'Toggle user authentication',
     'max_parallel_tasks' => 'Maximum number of parallel tasks',
     'max_parallel_tasks_tip' => 'This option sets the maximum number of Process tasks that can run simultaneously. It is important to adjust this number based on the vCPUs capacity to avoid system overload. Start with a conservative number, and adjust according to observed performance.',
     'item_copied' => 'Item copied',

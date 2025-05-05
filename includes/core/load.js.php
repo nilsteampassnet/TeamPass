@@ -227,12 +227,13 @@ if (
                             
                             // ----
                         } else if (
-                            (data.error === false && data.queryResults.special === 'user_added_from_ldap' && data.queryResults.auth_type === 'ldap')
+                            (data.error === false && data.queryResults.special === 'user_added_from_ad'
+                            && (data.queryResults.auth_type === 'ldap' || data.queryResults.auth_type === 'oauth2'))
                             || (typeof data.queryResults !== 'undefined' && data.queryResults.special === 'otc_is_required_on_next_login')
                             || parseInt(data.queryResults.otp_provided) === 0
                         ) {
                             // USer's password has been reseted, he shall change it
-                            if (debugJavascript === true) console.log('NEW LDAP user password - we need to encrypt items')
+                            if (debugJavascript === true) console.log('NEW AD user password - we need to encrypt items')
                             // HIde
                             $('.content-header, .content').addClass('hidden');
 
@@ -685,7 +686,7 @@ if (
 
                             const user_pwd = store.get('teampassUser').auth_type !== 'oauth2'
                                     ? $('#encryption-otp').val() // User password (local or ldap)
-                                    : hashUserId(store.get('userOauth2Info').sub); // Oauth
+                                    : hashUserId(store.get('userOauth2Info').id); // Oauth
 
                             // update the process
                             // add all tasks
@@ -1367,7 +1368,7 @@ if (
         // Add OAuth password in hidden field.
         if (store.get('teampassUser').auth_type === 'oauth2') {
             $('#dialog-ldap-user-build-keys-database-userpassword')
-                .val(hashUserId(store.get('userOauth2Info').sub));
+                .val(hashUserId(store.get('userOauth2Info').id));
         }
 
         if ($('#dialog-ldap-user-build-keys-database-code').val() === ''

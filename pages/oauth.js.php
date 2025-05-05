@@ -95,10 +95,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             }
 
             $.post(
-                "sources/ldap.queries.php", {
-                    type: "ldap_test_configuration",
-                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
-                    key: "<?php echo $session->get('key'); ?>"
+                'sources/ldap.queries.php', {
+                    type: 'ldap_test_configuration',
+                    data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $session->get('key'); ?>'),
+                    key: '<?php echo $session->get('key'); ?>'
                 },
                 function(data) {
                     data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
@@ -133,73 +133,113 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             // END
             // ---
         }
-    });
+    });    
+        
+    /**
+     * Update fields with tenant ID
+     * 
+     * @param {string} tenantId 
+     */
+    function updateFieldsWithTenantId(tenantId) {
+        // Update field oauth2_client_endpoint
+        let endpointUrl = $('#oauth2_client_endpoint').val();
+        endpointUrl = endpointUrl.replace(/([^\/]*)\/oauth2\/v2.0\/authorize/, tenantId + '/oauth2/v2.0/authorize');
+        $('#oauth2_client_endpoint').val(endpointUrl);
 
+        // Update field oauth2_client_token
+        let tokenUrl = $('#oauth2_client_token').val();
+        tokenUrl = tokenUrl.replace(/([^\/]*)\/oauth2\/v2.0\/token/, tenantId + '/oauth2/v2.0/token');
+        $('#oauth2_client_token').val(tokenUrl);
+    }
+
+    /**
+     * Update a setting in DB
+     * 
+     * @param {string} field 
+     * @param {string} value 
+     * @returns {Promise}
+     */
+    function updateTeampassSetting(field, value)
+    {
+        // Check if field and value are not empty
+        if (field === '' || value === '') {
+            return false;
+        }
+        
+        // Launch the request
+        return $.Deferred(function(defer) {
+            $.post(
+                'sources/admin.queries.php', {
+                    type: 'save_option_change',
+                    data: prepareExchangedData(
+                        JSON.stringify({'field': field, 'value': value}),
+                        'encode',
+                        '<?php echo $session->get('key'); ?>'
+                    ),
+                    key: '<?php echo $session->get('key'); ?>'
+                },
+                function(data) {
+                    // Handle server answer
+                    try {
+                        data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+                    } catch (e) {
+                        // error
+                        defer.reject(e.error);
+                    }
+                    
+                    if (data.error === false) {
+                        defer.resolve(data);
+                    } else {
+                        defer.reject(data.error);
+                    }
+                }
+            );
+        }).promise();
+    }
+    
     /**
      * On page loaded
      */
     $(function() {
-        /**
-         * Update fields with tenant ID
-         * 
-         * @param {string} tenantId 
-         */
-        function updateFieldsWithTenantId(tenantId) {
-            // Update field oauth2_client_endpoint
-            let endpointUrl = $('#oauth2_client_endpoint').val();
-            endpointUrl = endpointUrl.replace(/([^\/]*)\/oauth2\/v2.0\/authorize/, tenantId + '/oauth2/v2.0/authorize');
-            $('#oauth2_client_endpoint').val(endpointUrl);
-
-            // Update field oauth2_client_token
-            let tokenUrl = $('#oauth2_client_token').val();
-            tokenUrl = tokenUrl.replace(/([^\/]*)\/oauth2\/v2.0\/token/, tenantId + '/oauth2/v2.0/token');
-            $('#oauth2_client_token').val(tokenUrl);
+        // Load list of groups
+        $('#oauth_new_user_is_administrated_by, #oauth_selfregistered_user_belongs_to_role').empty();  
+        var data = {
+            'source_page': 'oauth',
         }
+        $.post(
+            'sources/admin.queries.php', {
+                type: 'get_list_of_roles',
+                data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $session->get('key'); ?>'),
+                key: '<?php echo $session->get('key'); ?>'
+            },
+            function(data) {
+                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+                var html_admin_by = '<option value="">-- <?php echo $lang->get('select'); ?> --</option>',
+                    html_roles = '<option value="">-- <?php echo $lang->get('select'); ?> --</option>',
+                    selected_admin_by = 0,
+                    selected_role = '';
 
-        /**
-         * Update a setting in DB
-         * 
-         * @param {string} field 
-         * @param {string} value 
-         * @returns {Promise}
-         */
-        function updateTeampassSetting(field, value)
-        {
-            // Check if field and value are not empty
-            if (field === '' || value === '') {
-                return false;
-            }
-            
-            // Launch the request
-            return $.Deferred(function(defer) {
-                $.post(
-                    "sources/admin.queries.php", {
-                        type: "save_option_change",
-                        data: prepareExchangedData(
-                            JSON.stringify({"field": field, "value": value}),
-                            "encode",
-                            "<?php echo $session->get('key'); ?>"
-                        ),
-                        key: "<?php echo $session->get('key'); ?>"
-                    },
-                    function(data) {
-                        // Handle server answer
-                        try {
-                            data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
-                        } catch (e) {
-                            // error
-                            defer.reject(e.error);
-                        }
-                        
-                        if (data.error === false) {
-                            defer.resolve(data);
-                        } else {
-                            defer.reject(data.error);
-                        }
+                for (var i = 0; i < data.length; i++) {
+                    if (data[i].selected_administrated_by === 1) {
+                        selected_admin_by = data[i].id;
                     }
-                );
-            }).promise();
-        }
+                    if (data[i].selected_role === 1) {
+                        selected_role = data[i].id;
+                    }
+                    html_admin_by += '<option value="' + data[i].id + '"><?php echo $lang->get('managers_of') . ' '; ?>' + data[i].title + '</option>';
+                    html_roles += '<option value="' + data[i].id + '">' + data[i].title + '</option>';
+                }
+                $('#oauth_new_user_is_administrated_by')
+                    .append(html_admin_by)
+                    .val(selected_admin_by);
+                $('#oauth_selfregistered_user_belongs_to_role')
+                    .append(html_roles);
+                console.log(selected_role);
+                if (selected_role !== '') {
+                    $('#oauth_selfregistered_user_belongs_to_role').val(selected_role);
+                }
+            }
+        );
 
         $('#oauth2_tenant_id').change(function() {
             let tenantId = $(this).val();

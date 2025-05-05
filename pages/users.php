@@ -164,6 +164,12 @@ foreach ($treeDesc as $t) {
                             <i class="fa-solid fa-address-card mr-2"></i>' . $lang->get('ldap_synchronization') . '
                         </button>' : '';
                                     ?>
+                        </button><?php
+                                    echo isset($SETTINGS['oauth2_enabled']) === true && (int) $SETTINGS['oauth2_enabled'] === 1 && (int) $session->get('user-admin') === 1 ?
+                                        '<button type="button" class="btn btn-primary btn-sm tp-action mr-2" data-action="oauth2-sync">
+                            <i class="fa-solid fa-plug mr-2"></i>' . $lang->get('oauth2_synchronization') . '
+                        </button>' : '';
+                                    ?>
                     </h3>
                 </div>
 
@@ -192,7 +198,6 @@ foreach ($treeDesc as $t) {
             </div>
         </div>
     </div>
-
 
 
     <!-- USER LDAP SYNCHRONIZATION -->
@@ -257,6 +262,83 @@ foreach ($treeDesc as $t) {
                                         </tr>
                                     </thead>
                                     <tbody id="row-ldap-body">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-footer">
+                        <button type="button" class="btn btn-default float-right tp-action" data-action="close"><?php echo $lang->get('close'); ?></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- USER OAUTH2 SYNCHRONIZATION -->
+    <div class="row hidden extra-form" id="row-oauth2">
+        <div class="col-12">
+            <div class="card card-primary">
+                <div class="card-header">
+                    <h3 class="card-title"><?php echo $lang->get('oauth2_synchronization'); ?> <span id="row-logs-title"></span></h3>
+                </div>
+
+                <!-- /.card-header -->
+                <!-- table start -->
+                <div class="card-body">
+                    <div class="row col-12">
+                        <button type="button" class="btn btn-secondary btn-sm tp-action mr-2" data-action="oauth2-existing-users">
+                            <i class="fa-solid fa-sync-alt mr-2"></i><?php echo $lang->get('list_users'); ?>
+                        </button>
+                        <button type="button" class="btn btn-secondary btn-sm tp-action mr-2" data-action="oauth2-add-role">
+                            <i class="fa-solid fa-graduation-cap mr-2"></i><?php echo $lang->get('add_role_tip'); ?>
+                        </button>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card hidden mt-4 mb-5 card-info" id="oauth2-new-role">
+                                <div class="card-header">
+                                    <i class="fa-solid fa-graduation-cap mr-2"></i><?php echo $lang->get('add_role_tip'); ?>
+                                </div>
+                                <div class="card-body">
+                                    <div class="callout callout-info">
+                                        <i class="fa-solid fa-info-circle text-info mr-2"></i><?php echo $lang->get('adding_ldap_role_to_teampass'); ?>
+                                    </div>
+                                    <div class="form-group row">
+                                        <label for="oauth2-new-role-selection"><?php echo $lang->get('select_role_to_create'); ?></label>
+                                        <select class="form-control form-item-control" style="width:100%;" id="oauth2-new-role-selection"></select>
+                                    </div>
+                                    <div class="form-group row">
+                                        <label for="oauth2-new-role-complexity"><?php echo $lang->get('complexity'); ?></label>
+                                        <select id="oauth2-new-role-complexity" class="form-control form-item-control" style="width:100%;">
+                                            <?php
+                                            foreach (TP_PW_COMPLEXITY as $entry) {
+                                                echo '
+                                            <option value="' . $entry[0] . '">' . addslashes($entry[1]) . '</option>';
+                                            }
+                                            ?>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="card-footer">
+                                    <button type="button" class="btn btn-default float-left tp-action btn-info" data-action="add-new-role-oauth2"><?php echo $lang->get('submit'); ?></button>
+                                    <button type="button" class="btn btn-default float-right tp-action" data-action="close-new-role-oauth2"><?php echo $lang->get('close'); ?></button>
+                                </div>
+                            </div>
+                            <div class="card-body table-responsive p-0" id="oauth2-users-table">
+                                <table class="table table-hover table-responsive">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 25%;"><i class="fa-solid fa-id-badge mr-1"></i><?php echo $lang->get('login'); ?></th>
+                                            <th style="width: 60px; text-align:center;"><i class="fa-solid fa-info infotip pointer" title="<?php echo $lang->get('more_information'); ?>"></i></th>
+                                            <th style="width: 60px;"><i class="fa-solid fa-sync-alt infotip pointer" title="<?php echo $lang->get('synchronized'); ?>"></i></th>
+                                            <th><i class="fa-solid fa-graduation-cap mr-1"></i><?php echo $lang->get('roles'); ?></th>
+                                            <th style="width: 15%;"><i class="fa-solid fa-wrench mr-1"></i><?php echo $lang->get('action'); ?></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="row-oauth2-body">
                                     </tbody>
                                 </table>
                             </div>

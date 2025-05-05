@@ -2337,14 +2337,37 @@ switch ($post_type) {
             break;
         }
 
+        // decrypt and retreive data in JSON format
+        $dataReceived = prepareExchangedData(
+            $post_data,
+            'decode'
+        );
+
+        // prepare data
+        $sourcePage = filter_var($dataReceived['source_page'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        if ($sourcePage === 'ldap') {
+            $selected_administrated_by = isset($SETTINGS['ldap_new_user_is_administrated_by']) && $SETTINGS['ldap_new_user_is_administrated_by'] === '0' ? 1 : 0;
+            $selected_new_user_role = isset($SETTINGS['ldap_new_user_role']) && $SETTINGS['ldap_new_user_role'] === '0' ? 1 : 0;
+        } elseif ($sourcePage === 'oauth') {
+            $selected_administrated_by = isset($SETTINGS['oauth_new_user_is_administrated_by']) && $SETTINGS['oauth_new_user_is_administrated_by'] === '0' ? 1 : 0;
+            $selected_new_user_role = isset($SETTINGS['oauth_selfregistered_user_belongs_to_role']) && $SETTINGS['oauth_selfregistered_user_belongs_to_role'] === '0' ? 1 : '';
+        } else {
+            echo prepareExchangedData(
+                [], 
+                'encode'
+            );
+    
+            break;
+        }
+
         $json = array();
         array_push(
             $json,
             array(
-                'id' => 0,
+                'id' => '0',
                 'title' => $lang->get('god'),
-                'selected_administrated_by' => isset($SETTINGS['ldap_new_user_is_administrated_by']) && $SETTINGS['ldap_new_user_is_administrated_by'] === '0' ? 1 : 0,
-                'selected_role' => isset($SETTINGS['ldap_new_user_role']) && $SETTINGS['ldap_new_user_role'] === '0' ? 1 : 0,
+                'selected_administrated_by' => $selected_administrated_by,
+                'selected_role' => $selected_new_user_role,
             )
         );
 
@@ -2354,13 +2377,20 @@ switch ($post_type) {
                 ORDER BY title ASC'
         );
         foreach ($rows as $record) {
+            if ($sourcePage === 'ldap') {
+                $selected_administrated_by = isset($SETTINGS['ldap_new_user_is_administrated_by']) && $SETTINGS['ldap_new_user_is_administrated_by'] === $record['id'] ? 1 : 0;
+                $selected_new_user_role = isset($SETTINGS['ldap_new_user_role']) && $SETTINGS['ldap_new_user_role'] === $record['id'] ? 1 : 0;
+            } elseif ($sourcePage === 'oauth') {
+                $selected_administrated_by = isset($SETTINGS['oauth_new_user_is_administrated_by']) && $SETTINGS['oauth_new_user_is_administrated_by'] === $record['id'] ? 1 : 0;
+                $selected_new_user_role = isset($SETTINGS['oauth_selfregistered_user_belongs_to_role']) && $SETTINGS['oauth_selfregistered_user_belongs_to_role'] === $record['id'] ? 1 : 0;
+            }
             array_push(
                 $json,
                 array(
                     'id' => $record['id'],
                     'title' => addslashes($record['title']),
-                    'selected_administrated_by' => isset($SETTINGS['ldap_new_user_is_administrated_by']) === true && $SETTINGS['ldap_new_user_is_administrated_by'] === $record['id'] ? 1 : 0,
-                    'selected_role' => isset($SETTINGS['ldap_new_user_role']) === true && $SETTINGS['ldap_new_user_role'] === $record['id'] ? 1 : 0,
+                    'selected_administrated_by' => $selected_administrated_by,
+                    'selected_role' => $selected_new_user_role,
                 )
             );
         }

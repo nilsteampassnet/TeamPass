@@ -1240,5 +1240,15 @@ return array(
     'item_copied' => 'Objet copié',
     'item_updated' => 'Objet mis à jour',
     'done_tasks_history_delay_in_days' => 'Durée de conservation (en jours) de l&apos;historique des taches',
+    'oauth2_synchronization' => 'Synchronisation OAuth2',
+    'oauth2_user_has_no_mail' => 'L&apos;utilisateur n&apos;a pas d&apos;email',
+    'role_not_exists_in_teampass' => 'Le rôle n&apos;existe pas dans Teampass',
+    'toggle_user_authentification' => 'Basculer l&apos;autentification de l&apos;utilisateur',
+    'show_files' => 'Afficher les fichiers',
+    'account_in_construction_please_wait_email' => 'Compte utilisateur en cours de finalisation. Un email sera envoyé quand il sera prêt.',
+    'oauth_selfregistered_user_belongs_to_role' => 'Tout utilisateur créé de façon autonome appartient au rôle',
+    'oauth_self_register_groups' => 'Groupes autorisés à l&apos;auto-enregistrement',
+    'oauth_self_register_groups_tip' => 'Liste séparée par des virgules des groupes autorisés à s&apos;auto-enregistrer. Laissez vide si vous souhaitez désactiver l&apos;auto-enregistrement. L&apos;auto-enregistrement permet de créer un compte utilisateur dans Teampass sans avoir besoin d&apos;un administrateur. L&apos;utilisateur pourra se connecter avec ses identifiants AD et sera automatiquement créé dans Teampass.',
+    'oauth_selfregistered_user_belongs_to_role_tip' => 'Ce rôle est assigné au nouvel utilisateur si celui-ci n&apos;appartient pas à des rôles existants dans Teampass.',
 
 );
