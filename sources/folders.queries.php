@@ -623,7 +623,14 @@ if (null !== $post_type) {
                 'user_id' => (int) $session->get('user-id'),
                 'user_roles' => (string) $session->get('user-roles')
             ];
-            $creationStatus = $folderManager->createNewFolder($params);
+            $options = [
+                'rebuildFolderTree' => true,
+                'setFolderCategories' => false,
+                'manageFolderPermissions' => true,
+                'copyCustomFieldsCategories' => false,
+                'refreshCacheForUsersWithSimilarRoles' => true,
+            ];
+            $creationStatus = $folderManager->createNewFolder($params, $options);
 
             // User created the folder
             // Add new ID to list of visible ones

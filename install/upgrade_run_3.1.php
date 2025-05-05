@@ -852,6 +852,30 @@ if (intval($tmp) === 0) {
     );
 }
 
+
+// Releated to #4701
+// Perform a clean up of table roles_values
+// Ensure that all entries in roles_values are linked to a folder
+// Delete all entries where folder doesn't exist anymore
+mysqli_query(
+    $db_link,
+    "DELETE FROM `" . $pre . "roles_values`
+    WHERE folder_id NOT IN (
+        SELECT id FROM `" . $pre . "nested_tree`
+    );"
+);
+// Delete entries in duplicate
+// We keep the one with the highest increment_id
+mysqli_query(
+    $db_link,
+    "DELETE FROM `" . $pre . "roles_values`
+    WHERE increment_id NOT IN (
+        SELECT MAX(trv2.increment_id)
+        FROM `" . $pre . "roles_values` trv2
+        GROUP BY trv2.folder_id, trv2.role_id
+    );"
+);
+
 //---<END 3.1.4
 
 
