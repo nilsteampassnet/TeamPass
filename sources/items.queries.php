@@ -6363,7 +6363,7 @@ switch ($inputData['type']) {
                         || (is_array($listRestrictedFoldersForItemsKeys) === true && in_array($node, $listRestrictedFoldersForItemsKeys) === true)
                     ) {
                         $displayThisNode = true;
-                        //break;
+                        break;
                     }
                 }
 
@@ -6399,7 +6399,7 @@ switch ($inputData['type']) {
 
             // update session
             $session->set('user-folders_list', $arr_data['folders']);
-
+            
             // update cache
             cacheTreeUserHandler(
                 (int) $session->get('user-id'),

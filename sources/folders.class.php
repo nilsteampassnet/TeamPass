@@ -376,27 +376,40 @@ class FolderManager
             "is_visible_active" => 0,
         ];
 
-        $cache_tree = DB::queryFirstRow('SELECT increment_id, folders, visible_folders FROM ' . prefixTable('cache_tree') . ' WHERE user_id = %i', (int)$user_id);
+        $cache_tree = DB::queryFirstRow(
+            'SELECT increment_id, folders, visible_folders 
+            FROM ' . prefixTable('cache_tree') . ' 
+            WHERE user_id = %i', 
+            (int) $user_id
+        );
 
         if (empty($cache_tree)) {
-            DB::insert(prefixTable('cache_tree'), [
-                'user_id' => $user_id,
-                'folders' => json_encode([$newId]),
-                'visible_folders' => json_encode($new_json),
-                'timestamp' => time(),
-                'data' => '[{}]',
-            ]);
+            DB::insert(
+                prefixTable('cache_tree'), 
+                [
+                    'user_id' => $user_id,
+                    'folders' => json_encode([$newId]),
+                    'visible_folders' => json_encode($new_json),
+                    'timestamp' => time(),
+                    'data' => '[{}]',
+                ]
+            );
         } else {
             $folders = json_decode($cache_tree['folders'] ?? '[]', true);
             $visible_folders = json_decode($cache_tree['visible_folders'] ?? '[]', true);
             $folders[] = $newId;
             $visible_folders[] = $new_json;
 
-            DB::update(prefixTable('cache_tree'), [
-                'folders' => json_encode($folders),
-                'visible_folders' => json_encode($visible_folders),
-                'timestamp' => time(),
-            ], 'increment_id = %i', (int)$cache_tree['increment_id']);
+            DB::update(
+                prefixTable('cache_tree'), 
+                [
+                    'folders' => json_encode($folders),
+                    'visible_folders' => json_encode($visible_folders),
+                    'timestamp' => time(),
+                ],
+                'increment_id = %i', 
+                (int) $cache_tree['increment_id']
+            );
         }
     }
 
