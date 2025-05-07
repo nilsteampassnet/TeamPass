@@ -7324,7 +7324,7 @@ function getRoleBasedAccess($session, int $treeId): array
 
     // Query the access rights for the given roles and folder
     $accessTypes = DB::queryFirstColumn(
-        'SELECT type FROM ' . prefixTable('roles_values') . ' WHERE role_id IN %ls AND folder_id = %i', 
+        'SELECT DISTINCT type FROM ' . prefixTable('roles_values') . ' WHERE role_id IN %ls AND folder_id = %i', 
         $roles, 
         $treeId
     );
@@ -7335,15 +7335,13 @@ function getRoleBasedAccess($session, int $treeId): array
     
     // Check if $check_value exists
     if (in_array($check_value, $accessTypes)) {
-        // Use the foreach loop to delete all matches
-        foreach ($accessTypes as $key => $value) {
-            if ($value === $delete_value) {
-                // Delete matching values
-                unset($accessTypes[$key]);  
-            }
+        // Find the index of $delete_value in the array
+        $key = array_search($delete_value, $accessTypes);
+
+        // If the value is found, delete
+        if ($key !== false) {
+            unset($accessTypes[$key]);
         }
-        // Reindex array
-        $accessTypes = array_values($accessTypes);
     }
     // Determine access rights based on the retrieved types
     foreach ($accessTypes as $access) {
