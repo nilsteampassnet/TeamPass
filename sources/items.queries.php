@@ -7328,16 +7328,22 @@ function getRoleBasedAccess($session, int $treeId): array
         $roles, 
         $treeId
     );
+    // Values ​​to be checked
     $check_value = 'W';
+    // Values ​​to be deleted
     $delete_value = 'R';
+    
+    // Check if $check_value exists
     if (in_array($check_value, $accessTypes)) {
-        // Find the index of $delete_value in the array
-        $key = array_search($delete_value, $accessTypes);
-        
-        // If the value is found, delete
-        if ($key !== false) {
-            unset($accessTypes[$key]);
+        // Use the foreach loop to delete all matches
+        foreach ($accessTypes as $key => $value) {
+            if ($value === $delete_value) {
+                // Delete matching values
+                unset($accessTypes[$key]);  
+            }
         }
+        // Reindex array
+        $accessTypes = array_values($accessTypes);
     }
     // Determine access rights based on the retrieved types
     foreach ($accessTypes as $access) {
