@@ -807,7 +807,7 @@ function cacheTableRefresh(): void
                     'perso' => $record['perso'],
                     'restricted_to' => isset($record['restricted_to']) && ! empty($record['restricted_to']) ? $record['restricted_to'] : '0',
                     'login' => $record['login'] ?? '',
-                    'folder' => implode(' > ', $folder),
+                    'folder' => implode(' » ', $folder),
                     'author' => $record['id_user'],
                     'renewal_period' => $resNT['renewal_period'] ?? '0',
                     'timestamp' => $record['date'],
