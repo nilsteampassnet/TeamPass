@@ -210,7 +210,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         $SETTINGS,
         (string) $server['PHP_AUTH_USER'],
         (string) $server['PHP_AUTH_PW'],
-        (string) $dataReceived['pw'],   // THis is a password, so no need to escape
+        (string) filter_var($dataReceived['pw'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
         (string) filter_var($dataReceived['login'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)
     );
     $username = $userCredentials['username'];
