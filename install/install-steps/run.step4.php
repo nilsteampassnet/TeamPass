@@ -138,7 +138,7 @@ function checks($inputData)
 
         DB::insertUpdate('_install', [
             'key' => 'adminPassword',
-            'value' => $inputData['adminPassword'],
+            'value' => filter_var($inputData['adminPassword'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
         ]);
 
         DB::insertUpdate('_install', [
