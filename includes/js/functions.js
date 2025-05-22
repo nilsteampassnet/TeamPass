@@ -165,7 +165,7 @@ function prepareExchangedData(data, type, key, fileName = '', functionName = '')
     if (type === 'decode') {
         if (parseInt($('#encryptClientServerStatus').val()) === 0) {
             try {
-                return $.parseJSON(data);
+                return purifyData($.parseJSON(data));
             }
             catch (e) {
                 return jsonErrorHdl(data);
@@ -173,7 +173,7 @@ function prepareExchangedData(data, type, key, fileName = '', functionName = '')
         } else {
             try {
                 let encryption = new Encryption();
-                return JSON.parse(encryption.decrypt(data, key));
+                return purifyData(JSON.parse(encryption.decrypt(data, key)));
             }
             catch (e) {
                 return jsonErrorHdl('<b>Next error occurred</b><div>' + e + '</div>'
@@ -183,10 +183,10 @@ function prepareExchangedData(data, type, key, fileName = '', functionName = '')
         }
     } else if (type === 'encode') {
         if (parseInt($('#encryptClientServerStatus').val()) === 0) {
-            return data;
+            return purifyData(data);
         } else {
             let encryption = new Encryption();
-            return encryption.encrypt(data, key);
+            return purifyData(encryption.encrypt(data, key));
         }
     } else {
         return false;
@@ -410,6 +410,29 @@ function simplePurifier(
         )
     );
 }
+
+/**
+ * Permits to purify the content of an object using simplePurifier
+ * Usefyll for ajax answers
+ */
+function purifyData(obj) {
+    if (Array.isArray(obj)) {
+        return obj.map(item => purifyData(item));
+    } else if (typeof obj === 'object' && obj !== null) {
+        let purifiedObject = {};
+        for (let key in obj) {
+            if (obj.hasOwnProperty(key)) {
+                purifiedObject[key] = purifyData(obj[key]);
+            }
+        }
+        return purifiedObject;
+    } else if (typeof obj === 'string') {
+        return simplePurifier(obj);
+    } else {
+        return obj;
+    }
+}
+
 
 /**
  * Permits to purify the content of a string using domPurify

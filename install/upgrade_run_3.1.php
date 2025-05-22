@@ -852,6 +852,33 @@ if (intval($tmp) === 0) {
     );
 }
 
+// Add new setting 'oauth_new_user_is_administrated_by'
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'oauth_new_user_is_administrated_by'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'oauth_new_user_is_administrated_by', '0')"
+    );
+}
+
+// Add new setting 'oauth_selfregistered_user_belongs_to_role'
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'oauth_selfregistered_user_belongs_to_role'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'oauth_selfregistered_user_belongs_to_role', '0')"
+    );
+}
+
+// Add new setting 'oauth_self_register_groups'
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'oauth_self_register_groups'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'oauth_self_register_groups', '')"
+    );
+}
+
 
 // Releated to #4701
 // Perform a clean up of table roles_values
