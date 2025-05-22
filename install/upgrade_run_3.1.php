@@ -737,7 +737,7 @@ if (mysqli_num_rows($tableImportationsExists) == 0) {
         `url` TEXT NULL,
         `description` TEXT NULL,
         `folder` VARCHAR(255) NOT NULL,
-        `folder_id` INT(12) NULL DEFAULT NULL
+        `folder_id` INT(12) NULL DEFAULT NULL,
         `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         `imported_at` INT(12) NULL DEFAULT NULL
         ) CHARSET=utf8;"
@@ -849,6 +849,33 @@ if (intval($tmp) === 0) {
     mysqli_query(
         $db_link,
         "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'tasks_history_delay', '604800')"
+    );
+}
+
+// Add new setting 'oauth_new_user_is_administrated_by'
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'oauth_new_user_is_administrated_by'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'oauth_new_user_is_administrated_by', '0')"
+    );
+}
+
+// Add new setting 'oauth_selfregistered_user_belongs_to_role'
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'oauth_selfregistered_user_belongs_to_role'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'oauth_selfregistered_user_belongs_to_role', '0')"
+    );
+}
+
+// Add new setting 'oauth_self_register_groups'
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'oauth_self_register_groups'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'oauth_self_register_groups', '')"
     );
 }
 

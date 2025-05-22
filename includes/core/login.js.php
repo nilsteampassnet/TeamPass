@@ -828,16 +828,40 @@ declare(strict_types=1);
                 }
 
                 if (data.error === true) {
-                    if (typeof data.extra !== 'undefined' && data.extra === 'ad_user_created') {
-                        toastr.remove();
-                        toastr.info(
-                            '<?php echo $lang->get('your_attention_please'); ?>',
-                            '<?php echo $lang->get('ad_user_created_automatically'); ?>', {
-                                timeOut: 0,
-                                positionClass: "toast-top-center"
-                            }
-                        );
-                        return false;
+                    if (typeof data.extra !== 'undefined') {
+                        if (data.extra === 'ad_user_created') {
+                            toastr.remove();
+                            toastr.info(
+                                '<?php echo $lang->get('your_attention_please'); ?>',
+                                '<?php echo $lang->get('ad_user_created_automatically'); ?>', {
+                                    timeOut: 0,
+                                    positionClass: "toast-top-center"
+                                }
+                            );
+                            return false;
+                        } else if (data.extra === 'oauth2_user_not_found') {
+                            toastr.remove();
+                            toastr.error(
+                                data.message,
+                                '<?php echo $lang->get('caution'); ?>', {
+                                    timeOut: 5000,
+                                    progressBar: true,
+                                    positionClass: "toast-bottom-right"
+                                }
+                            );
+                            $('.login-box').show();
+                            return false;
+                        } else if (data.extra === 'oauth2_user_created') {
+                            toastr.remove();
+                            toastr.info(
+                                '<?php echo $lang->get('your_attention_please'); ?>',
+                                '<?php echo $lang->get('oauth2_user_created_automatically'); ?>', {
+                                    timeOut: 0,
+                                    positionClass: "toast-top-center"
+                                }
+                            );
+                            return false;
+                        }
                     }  else if (data.error === true || data.error !== '') {
                         toastr.remove();
                         toastr.error(

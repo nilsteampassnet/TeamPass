@@ -143,9 +143,13 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         //requestRunning = true;
         // Load list of groups
         $("#ldap_new_user_is_administrated_by").empty();
+        var data = {
+            'source_page': 'ldap',
+        }
         $.post(
             "sources/admin.queries.php", {
                 type: "get_list_of_roles",
+                data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $session->get('key'); ?>'),
                 key: "<?php echo $session->get('key'); ?>"
             },
             function(data) {

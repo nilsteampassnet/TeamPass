@@ -205,4 +205,66 @@ class OAuth2Controller
             ];
         }
     }
+
+    public function getAllUsers($token = null)
+    {
+        try {
+            // Exchange the authorization code for an access token
+            $token = $this->provider->getAccessToken('client_credentials', [
+                'scope' => 'https://graph.microsoft.com/.default',
+            ]);
+
+            if ($this->provider instanceof Azure) {
+                // Appel API Graph pour récupérer les utilisateurs
+                $graphUrl = 'https://graph.microsoft.com/v1.0/users?$select=id,displayName,userPrincipalName,givenName,surname,mail,accountEnabled,lastPasswordChangeDateTime';
+                $response = $this->provider->getAuthenticatedRequest('GET', $graphUrl, $token->getToken());
+                $usersResponse = $this->provider->getParsedResponse($response);
+
+                $usersList = [];
+
+                if (isset($usersResponse['value']) && is_array($usersResponse['value'])) {
+                    foreach ($usersResponse['value'] as $user) {
+                        // Requête pour récupérer les groupes du user
+                        $userGroups = [];
+                        $groupsUrl = "https://graph.microsoft.com/v1.0/users/{$user['id']}/memberOf";
+                        $groupsRequest = $this->provider->getAuthenticatedRequest('GET', $groupsUrl, $token->getToken());
+                        $groupsResponse = $this->provider->getParsedResponse($groupsRequest);
+
+                        if (isset($groupsResponse['value']) && is_array($groupsResponse['value'])) {
+                            foreach ($groupsResponse['value'] as $group) {
+                                if ($group['@odata.type'] === '#microsoft.graph.group') {
+                                    $userGroups[] = [
+                                        'id' => $group['id'] ?? null,
+                                        'displayName' => $group['displayName'] ?? null,
+                                    ];
+                                }
+                            }
+                        }
+
+                        // Ajout de l'utilisateur avec ses groupes à la liste
+                        $usersList[] = [
+                            'id' => $user['id'] ?? null,
+                            'displayName' => $user['displayName'] ?? null,
+                            'userPrincipalName' => $user['userPrincipalName'] ?? null,
+                            'givenName' => $user['givenName'] ?? null,
+                            'surname' => $user['surname'] ?? null,
+                            'mail' => $user['mail'] ?? null,
+                            'accountEnabled' => $user['accountEnabled'] ?? null,
+                            'lastPasswordChangeDateTime' => $user['lastPasswordChangeDateTime'] ?? null,
+                            'groups' => $userGroups,
+                        ];
+                    }
+                }
+
+                return $usersList;
+            }
+
+        } catch (Exception $e) {
+            return [
+                'error' => true,
+                'message' => 'Error while getting users: ' . $e->getMessage(),
+            ];
+        }
+    }
+
 }
