@@ -1256,5 +1256,6 @@ return array(
     'failed_to_delete' => 'La suppression a échoué',
     'successfully_deleted' => 'Supprimé',
     'delete_unknown_files' => 'Supprimer ces fichiers inconnus ?',
-    'unknown_files_should_be_deleted' => 'Il est recommandé de supprimer ces fichiers qui peuvent provoquer une forme d&apos;instabilité'
+    'unknown_files_should_be_deleted' => 'Il est recommandé de supprimer ces fichiers qui peuvent provoquer une forme d&apos;instabilité',
+
 );
