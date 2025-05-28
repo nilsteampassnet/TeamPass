@@ -1250,5 +1250,11 @@ return array(
     'oauth_self_register_groups' => 'Groupes autorisés à l&apos;auto-enregistrement',
     'oauth_self_register_groups_tip' => 'Liste séparée par des virgules des groupes autorisés à s&apos;auto-enregistrer. Laissez vide si vous souhaitez désactiver l&apos;auto-enregistrement. L&apos;auto-enregistrement permet de créer un compte utilisateur dans Teampass sans avoir besoin d&apos;un administrateur. L&apos;utilisateur pourra se connecter avec ses identifiants AD et sera automatiquement créé dans Teampass.',
     'oauth_selfregistered_user_belongs_to_role_tip' => 'Ce rôle est assigné au nouvel utilisateur si celui-ci n&apos;appartient pas à des rôles existants dans Teampass.',
-
+    'file_not_exists' => 'Le fichier n&apos;existe pas',
+    'path_not_a_file' => 'Le chemin n&apos;est pas un fichier',
+    'file_not_writable' => 'Le fichier est protégé',
+    'failed_to_delete' => 'La suppression a échoué',
+    'successfully_deleted' => 'Supprimé',
+    'delete_unknown_files' => 'Supprimer ces fichiers inconnus ?',
+    'unknown_files_should_be_deleted' => 'Il est recommandé de supprimer ces fichiers qui peuvent provoquer une forme d&apos;instabilité'
 );
