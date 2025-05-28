@@ -32,8 +32,17 @@
  // - selected_items_to_be_imported
 
 return array(
-    'account_in_construction_please_wait_email' => 'Your account is currently being created. You will receive an email when it is ready.',
     'newly_created_user_belongs_to_role' => 'Newly created user belongs to role',
+    'show_files' => 'Show files list',
+    'file_not_exists' => 'File does not exist',
+    'path_not_a_file' => 'Path is not a file',
+    'file_not_writable' => 'File is not writable',
+    'failed_to_delete' => 'Failed to delete',
+    'successfully_deleted' => 'Successfully deleted',
+    'delete_unknown_files' => 'Delete unknown files?',
+    'unknown_files_should_be_deleted' => 'It is recommended to delete those files to prevent against mix of versions.',
+    'ignore_file' => 'Ignore file',
+    'account_in_construction_please_wait_email' => 'Your account is currently being created. You will receive an email when it is ready.',
     'oauth_selfregistered_user_belongs_to_role' => 'Self-registered user belongs to role',
     'oauth_selfregistered_user_belongs_to_role_tip' => ' This role will be assigned to the user when he is created if he is not belonging to groups existing in Teampass.',
     'oauth_self_register_groups' => 'Allowed groups for self-registration',
