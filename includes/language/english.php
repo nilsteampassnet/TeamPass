@@ -32,7 +32,6 @@
  // - selected_items_to_be_imported
 
 return array(
-    'account_in_construction_please_wait_email' => 'Your account is currently being created. You will receive an email when it is ready.',
     'newly_created_user_belongs_to_role' => 'Newly created user belongs to role',
     'show_files' => 'Show files list',
     'file_not_exists' => 'File does not exist',
