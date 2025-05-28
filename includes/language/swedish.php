@@ -1256,5 +1256,6 @@ e new password must:<br/> - Be different from the previous one<br/> - Contain at
     'failed_to_delete' => 'Failed to delete',
     'successfully_deleted' => 'Successfully deleted',
     'delete_unknown_files' => 'Delete unknown files?',
-    'unknown_files_should_be_deleted' => 'It is recommended to delete those files to prevent against mix of versions.'
+    'unknown_files_should_be_deleted' => 'It is recommended to delete those files to prevent against mix of versions.',
+
 );
