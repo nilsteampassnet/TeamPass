@@ -1257,5 +1257,7 @@ e new password must:<br/> - Be different from the previous one<br/> - Contain at
     'successfully_deleted' => 'Successfully deleted',
     'delete_unknown_files' => 'Delete unknown files?',
     'unknown_files_should_be_deleted' => 'It is recommended to delete those files to prevent against mix of versions.',
+    'remaining_lock_time' => 'Remaining lock time',
+    'seconds' => 'seconds',
 
 );
