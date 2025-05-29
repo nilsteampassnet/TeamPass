@@ -105,7 +105,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         initialPageLoad = true,
         previousSelectedFolder = -1,
         intervalId = false,
-        debugJavascript = true;
+        debugJavascript = false;
 
     // Manage memory
     browserSession(
@@ -4551,7 +4551,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             'itemId': parseInt(itemId),
             'treeId': parseInt(treeId),
             'userId': parseInt(userId),
-            'actionType': actionType,
+            'action': actionType,
         };
         if (debugJavascript === true) {
             console.log(data);
@@ -4642,7 +4642,12 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             if (actionType === 'edit' && retData.edition_locked === true) {
                 toastr.remove();
                 toastr.error(
-                    '<?php echo $lang->get('error_item_currently_being_updated'); ?>',
+                    '<?php echo $lang->get('error_item_currently_being_updated').'<br/>'.
+                        $lang->get('remaining_lock_time'); ?>' +
+                        (retData.edition_locked_delay === null ? 
+                        '' 
+                        :
+                        ' : ' + retData.edition_locked_delay + ' <?php echo $lang->get('seconds');?>'),
                     '', {
                         timeOut: 5000,
                         progressBar: true

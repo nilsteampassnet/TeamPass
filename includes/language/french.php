@@ -1257,5 +1257,7 @@ return array(
     'successfully_deleted' => 'Supprimé',
     'delete_unknown_files' => 'Supprimer ces fichiers inconnus ?',
     'unknown_files_should_be_deleted' => 'Il est recommandé de supprimer ces fichiers qui peuvent provoquer une forme d&apos;instabilité',
+    'remaining_lock_time' => 'Durée avant déverrouillage',
+    'seconds' => 'secondes',
 
 );
