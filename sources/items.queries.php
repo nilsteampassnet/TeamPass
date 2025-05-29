@@ -1052,15 +1052,16 @@ switch ($inputData['type']) {
             'at_creation'
         );
 
+        // Always check what rights user has on requested folder
+        $checkRights = getCurrentAccessRights(
+            $session->get('user-id'),
+            $inputData['itemId'],
+            $inputData['folderId'],
+        );
+
         // If source and destination folder are different -> move item
         if ((int) $dataItem['id_tree'] !== $inputData['folderId']) {
             // Check that user can delete on old folder
-            $checkRights = getCurrentAccessRights(
-                $session->get('user-id'),
-                $inputData['itemId'],
-                (int) $dataItem['id_tree'],
-            );
-
             if ($checkRights['error'] || !$checkRights['delete']) {
                 echo (string) prepareExchangedData(
                     array(
@@ -1072,13 +1073,6 @@ switch ($inputData['type']) {
                 break;
             }
         }
-
-        // Always check that user can write on requested folder
-        $checkRights = getCurrentAccessRights(
-            $session->get('user-id'),
-            $inputData['itemId'],
-            $inputData['folderId'],
-        );
 
         if ($checkRights['error'] || !$checkRights['edit']) {
             echo (string) prepareExchangedData(
@@ -4560,10 +4554,12 @@ switch ($inputData['type']) {
         // get some info about ITEM
         if (null !== $inputData['itemId'] && empty($inputData['itemId']) === false) {
             // Is this item locked?
-            if (isItemLocked((int) $inputData['itemId'], $session, (int) $session->get('user-id'))) {
+            $itemIsLocked = isItemLocked((int) $inputData['itemId'], $session, (int) $session->get('user-id'));
+            if ($itemIsLocked['status'] === true) {
                 $returnValues = array(
                     'error' => true,
                     'message' => $lang->get('error_no_edition_possible_locked'),
+                    'delay' => $itemIsLocked['delay'],
                 );
                 echo (string) prepareExchangedData(
                     $returnValues,
@@ -7002,17 +6998,13 @@ switch ($inputData['type']) {
             $inputData['data'],
             'decode'
         );
-        
-        // prepare variables
-        $inputData['userId'] = (int) filter_var($dataReceived['userId'], FILTER_SANITIZE_NUMBER_INT);
-        $inputData['itemId'] = (int) filter_var($dataReceived['itemId'], FILTER_SANITIZE_NUMBER_INT);
-        $inputData['treeId'] = (int) filter_var($dataReceived['treeId'], FILTER_SANITIZE_NUMBER_INT);
 
         // Check rights
         $data = getCurrentAccessRights(
-            $inputData['userId'],
-            $inputData['itemId'],
-            $inputData['treeId'],
+            (int) filter_var($dataReceived['userId'], FILTER_SANITIZE_NUMBER_INT),
+            (int) filter_var($dataReceived['itemId'], FILTER_SANITIZE_NUMBER_INT),
+            (int) filter_var($dataReceived['treeId'], FILTER_SANITIZE_NUMBER_INT),
+            (string) filter_var($dataReceived['action'], FILTER_SANITIZE_SPECIAL_CHARS),
         );
 
         // send data
@@ -7106,15 +7098,16 @@ function fileFormatImage($ext)
  * @param int $userId ID of user.
  * @param int $itemId ID of item.
  * @param int $treeId ID of folder.
+ * @param string $action Type of action (e.g., 'edit', 'delete').
  * 
  * @return array with access rights.
  */
-function getCurrentAccessRights(int $userId, int $itemId, int $treeId): array
+function getCurrentAccessRights(int $userId, int $itemId, int $treeId, string $action = ''): array
 {
     $session = SessionManager::getSession();
     
     // Check if the item is locked and whether the current user can edit it
-    $editionLock = isItemLocked($itemId, $session, $userId);
+    $editionLock = isItemLocked($itemId, $session, $userId, $action);
 
     // Check if the item is being processed by another user
     if (isProcessOnGoing($itemId)) {
@@ -7159,10 +7152,11 @@ function getCurrentAccessRights(int $userId, int $itemId, int $treeId): array
  * @param int $itemId The ID of the item to check
  * @param object $session The current session object
  * @param int $userId The ID of the current user
+ * @param string $actionType The type of action being performed (e.g., 'edit', 'delete')
  * 
- * @return bool True if the item is locked, false otherwise
+ * @return array True if the item is locked, false otherwise
  */
-function isItemLocked(int $itemId, $session, int $userId): bool
+function isItemLocked(int $itemId, $session, int $userId, string $actionType = ''): array
 {
     global $SETTINGS;
 
@@ -7176,10 +7170,12 @@ function isItemLocked(int $itemId, $session, int $userId): bool
     );
 
     // Check if there are any locks for this item
-    if (count($editionLocks) === 0) {
-        // No locks found, create a new lock
+    if (count($editionLocks) === 0 && $actionType === 'edit') {
+        // If no locks exist and the action is 'edit', create a new lock
         createEditionLock($itemId, $userId, $now);
-        return false;
+        return [
+            'status' => false,
+        ];
     }
 
     // Check if the last lock is older than the defined period
@@ -7193,7 +7189,9 @@ function isItemLocked(int $itemId, $session, int $userId): bool
             'increment_id = %i',
             $lastLock['increment_id']
         );
-        return false;
+        return [
+            'status' => false,
+        ];
     }
 
     // Calculate the delay for the lock
@@ -7239,14 +7237,22 @@ function isItemLocked(int $itemId, $session, int $userId): bool
                 $itemId,
                 $userId
             );
-            return false;
+            return [
+                'status' => false,
+            ];
         }
 
-        return true; // Encryption in progress
+        return [
+            'status' => true,   // Encryption in progress
+            'delay' => $delay - $elapsed, // Time remaining before the lock expires
+        ];
     }
 
     // Lock still valid and owned by another user
-    return true;
+    return [
+        'status' => true,
+        'delay' => $delay - $elapsed, // Time remaining before the lock expires
+    ];
 }
 
 /**
@@ -7377,13 +7383,14 @@ function getRoleBasedAccess($session, int $treeId): array
  * 
  * @return array An array containing the access rights information
  */
-function getAccessResponse(bool $error, bool $access, bool $edit, bool $delete, bool $editionLocked = false): array
+function getAccessResponse(bool $error, bool $access, bool $edit, bool $delete, array $editionLocked = []): array
 {
     return [
         'error' => $error,
         'access' => $access,
         'edit' => $edit,
         'delete' => $delete,
-        'edition_locked' => $editionLocked,
+        'edition_locked' => $editionLocked['status'] ?? false,
+        'edition_locked_delay' => $editionLocked['delay'] ?? null,
     ];
 }
