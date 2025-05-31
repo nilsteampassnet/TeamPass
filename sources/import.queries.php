@@ -200,7 +200,7 @@ switch ($inputData['type']) {
             break;
         }
 
-        // Initialisation du tableau de stockage des valeurs
+        // Initialize the array to store values to import
         $valuesToImport = [];
 
         // Configuration du parser CSV
@@ -208,9 +208,14 @@ switch ($inputData['type']) {
         $lexer = new Lexer($config);
         $config->setIgnoreHeaderLine(true);
 
-        // Fonction pour construire la liste des encodages disponibles
-        function getAvailableEncodings() {
-            // Liste des encodages que nous voulons supporter (par ordre de priorité)
+        /**
+         * Get the list of available encodings.
+         * 
+         * @return array List of available encodings.
+         */
+        function getAvailableEncodings(): array
+        {
+            // List of encodings we want to support (in order of priority)
             $desiredEncodings = [
                 'UTF-8',
                 'UTF-16',
@@ -241,10 +246,10 @@ switch ($inputData['type']) {
                 'Windows-1256',  // Arabe
             ];
             
-            // Récupérer les encodages supportés par le système
+            // Get the list of encodings supported by the system
             $systemEncodings = mb_list_encodings();
             
-            // Filtrer pour ne garder que ceux qui sont disponibles
+            // Filter to keep only those that are available
             $availableEncodings = [];
             foreach ($desiredEncodings as $encoding) {
                 if (in_array($encoding, $systemEncodings)) {
@@ -252,7 +257,7 @@ switch ($inputData['type']) {
                 }
             }
             
-            // S'assurer qu'UTF-8 est toujours présent (normalement le cas)
+            // Ensure UTF-8 is always present
             if (!in_array('UTF-8', $availableEncodings)) {
                 array_unshift($availableEncodings, 'UTF-8');
             }
@@ -260,7 +265,6 @@ switch ($inputData['type']) {
             return $availableEncodings;
         }
 
-        // Fonction pour détecter l'encodage avec les encodages disponibles
         /**
          * Detects the encoding of a file using available encodings.
          * @param string $filepath The path to the file to be checked.

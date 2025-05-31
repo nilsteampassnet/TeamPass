@@ -743,7 +743,12 @@ if (null !== $post_type) {
                 $selected = '';
                 $users_functions = array_filter(array_unique(explode(';', empty($rowUser['fonction_id'].';'.$rowUser['roles_from_ad_groups']) === true ? '' : $rowUser['fonction_id'].';'.$rowUser['roles_from_ad_groups'])));
 
-                $rows = DB::query('SELECT id,title,creator_id FROM ' . prefixTable('roles_title'));
+                $rows = DB::query('
+                    SELECT id,title,creator_id 
+                    FROM ' . prefixTable('roles_title') .'
+                    WHERE id IN %li',
+                    $session->get('user-roles_array')
+                );
                 foreach ($rows as $record) {
                     if (
                         (int) $session->get('user-admin') === 1
