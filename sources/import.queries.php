@@ -200,7 +200,7 @@ switch ($inputData['type']) {
             break;
         }
 
-        // Initialisation du tableau de stockage des valeurs
+        // Initialize the array to store values to import
         $valuesToImport = [];
 
         // Configuration du parser CSV
@@ -208,7 +208,83 @@ switch ($inputData['type']) {
         $lexer = new Lexer($config);
         $config->setIgnoreHeaderLine(true);
 
-        // Observer pour récupérer les données et respecter l'ordre des colonnes
+        /**
+         * Get the list of available encodings.
+         * 
+         * @return array List of available encodings.
+         */
+        function getAvailableEncodings(): array
+        {
+            // List of encodings we want to support (in order of priority)
+            $desiredEncodings = [
+                'UTF-8',
+                'UTF-16',
+                'UTF-16LE',
+                'UTF-16BE',
+                'ISO-8859-1',
+                'ISO-8859-15',
+                'Windows-1252',
+                'Windows-1251',  // Cyrillique
+                'CP1251',        // Cyrillique alternatif
+                'KOI8-R',        // Cyrillique russe
+                'Shift_JIS',     // Japonais
+                'EUC-JP',        // Japonais
+                'ISO-2022-JP',   // Japonais
+                'TIS-620',       // Thaï
+                'Windows-874',   // Thaï Windows
+                'Big5',          // Chinois traditionnel
+                'GB2312',        // Chinois simplifié
+                'GBK',           // Chinois simplifié étendu
+                'EUC-KR',        // Coréen
+                'ISO-8859-2',    // Europe centrale
+                'ISO-8859-5',    // Cyrillique ISO
+                'ISO-8859-7',    // Grec
+                'Windows-1250',  // Europe centrale
+                'Windows-1253',  // Grec
+                'Windows-1254',  // Turc
+                'Windows-1255',  // Hébreu
+                'Windows-1256',  // Arabe
+            ];
+            
+            // Get the list of encodings supported by the system
+            $systemEncodings = mb_list_encodings();
+            
+            // Filter to keep only those that are available
+            $availableEncodings = [];
+            foreach ($desiredEncodings as $encoding) {
+                if (in_array($encoding, $systemEncodings)) {
+                    $availableEncodings[] = $encoding;
+                }
+            }
+            
+            // Ensure UTF-8 is always present
+            if (!in_array('UTF-8', $availableEncodings)) {
+                array_unshift($availableEncodings, 'UTF-8');
+            }
+            
+            return $availableEncodings;
+        }
+
+        /**
+         * Detects the encoding of a file using available encodings.
+         * @param string $filepath The path to the file to be checked.
+         * @return string The detected encoding or 'UTF-8' if detection fails.
+         */
+        function detectFileEncoding($filepath): string
+        {
+            $content = file_get_contents($filepath);
+            $availableEncodings = getAvailableEncodings();
+            
+            $detected = mb_detect_encoding($content, $availableEncodings, true);
+            return $detected ?: 'UTF-8';
+        }
+
+        // Detect file encoding and set it in the config
+        $detectedEncoding = detectFileEncoding($file);
+        $config->setFromCharset($detectedEncoding);
+        $config->setToCharset('UTF-8');
+
+        // Get the data and ensure columns are correctly mapped
         $interpreter = new Interpreter();
         $interpreter->addObserver(function (array $row) use (&$valuesToImport, $header) {
             $rowData = array_combine($header, $row);
@@ -239,6 +315,8 @@ switch ($inputData['type']) {
         }
         
         // Process lines
+        $continue_on_next_line = false;
+        $comment = "";
         foreach ($valuesToImport as $row) {
             // Check that each line has 6 columns
             if (count($row) !== 6) {
@@ -261,7 +339,7 @@ switch ($inputData['type']) {
             // Handle multiple lignes description
             if (strpos($comments, '<br>') !== false || strpos($label, '<br>') !== false) {
                 $continue_on_next_line = true;
-                $comment .= " " . $label;
+                $comment .= " " . $label . " " . $comments;
             } else {
                 // Insert previous line if changing line
                 if (!empty($label)) {
@@ -270,7 +348,7 @@ switch ($inputData['type']) {
                     // Insert in batch
                     $batchInsert[] = array(
                         'label'        => $label,
-                        'description'  => $comment,
+                        'description'  => $comment . $comments,
                         'pwd'          => $pwd,
                         'url'          => $url,
                         'folder'       => ((int) $session->get('user-admin') === 1 || (int) $session->get('user-manager') === 1 || (int) $session->get('user-can_manage_all_users') === 1) ? $folder : '',
@@ -289,7 +367,7 @@ switch ($inputData['type']) {
                     $label = '';
                 }
                 // Update current variables
-                $comment = $comments;
+                $comment = '';
                 $continue_on_next_line = false;
             }
         }
@@ -301,7 +379,7 @@ switch ($inputData['type']) {
             // Insert in batch
             $batchInsert[] = array(
                 'label'        => $label,
-                'description'  => $comment,
+                'description'  => $comment . $comments,
                 'pwd'          => $pwd,
                 'url'          => $url,
                 'folder'       => ((int) $session->get('user-admin') === 1 || (int) $session->get('user-manager') === 1 || (int) $session->get('user-can_manage_all_users') === 1) ? $folder : '',
