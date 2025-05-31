@@ -86,13 +86,18 @@ class PasswordManager
     private function isPasswordLibHash(string $hashedPassword): bool
     {
         // Check if the password has been hashed with passwordlib
-        return strpos($hashedPassword, '$2y$10$') === 0;
+        return strpos($hashedPassword, '$2y$10$');
     }
-
-    // Vous devrez implémenter cette fonction pour utiliser la vérification de passwordlib
+    
+    /**
+     * Verify a password using PasswordLib.
+     *
+     * @param string $hashedPassword The hashed password to verify against.
+     * @param string $plainPassword The plain text password to verify.
+     * @return bool True if the password matches, false otherwise.
+     */
     private function passwordLibVerify(string $hashedPassword, string $plainPassword): bool
     {
-        // Vérification avec passwordlib
         $pwdlib = new PasswordLib();
         return $pwdlib->verifyPasswordHash($plainPassword, $hashedPassword);
     }
