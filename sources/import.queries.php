@@ -208,7 +208,79 @@ switch ($inputData['type']) {
         $lexer = new Lexer($config);
         $config->setIgnoreHeaderLine(true);
 
-        // Observer pour récupérer les données et respecter l'ordre des colonnes
+        // Fonction pour construire la liste des encodages disponibles
+        function getAvailableEncodings() {
+            // Liste des encodages que nous voulons supporter (par ordre de priorité)
+            $desiredEncodings = [
+                'UTF-8',
+                'UTF-16',
+                'UTF-16LE',
+                'UTF-16BE',
+                'ISO-8859-1',
+                'ISO-8859-15',
+                'Windows-1252',
+                'Windows-1251',  // Cyrillique
+                'CP1251',        // Cyrillique alternatif
+                'KOI8-R',        // Cyrillique russe
+                'Shift_JIS',     // Japonais
+                'EUC-JP',        // Japonais
+                'ISO-2022-JP',   // Japonais
+                'TIS-620',       // Thaï
+                'Windows-874',   // Thaï Windows
+                'Big5',          // Chinois traditionnel
+                'GB2312',        // Chinois simplifié
+                'GBK',           // Chinois simplifié étendu
+                'EUC-KR',        // Coréen
+                'ISO-8859-2',    // Europe centrale
+                'ISO-8859-5',    // Cyrillique ISO
+                'ISO-8859-7',    // Grec
+                'Windows-1250',  // Europe centrale
+                'Windows-1253',  // Grec
+                'Windows-1254',  // Turc
+                'Windows-1255',  // Hébreu
+                'Windows-1256',  // Arabe
+            ];
+            
+            // Récupérer les encodages supportés par le système
+            $systemEncodings = mb_list_encodings();
+            
+            // Filtrer pour ne garder que ceux qui sont disponibles
+            $availableEncodings = [];
+            foreach ($desiredEncodings as $encoding) {
+                if (in_array($encoding, $systemEncodings)) {
+                    $availableEncodings[] = $encoding;
+                }
+            }
+            
+            // S'assurer qu'UTF-8 est toujours présent (normalement le cas)
+            if (!in_array('UTF-8', $availableEncodings)) {
+                array_unshift($availableEncodings, 'UTF-8');
+            }
+            
+            return $availableEncodings;
+        }
+
+        // Fonction pour détecter l'encodage avec les encodages disponibles
+        /**
+         * Detects the encoding of a file using available encodings.
+         * @param string $filepath The path to the file to be checked.
+         * @return string The detected encoding or 'UTF-8' if detection fails.
+         */
+        function detectFileEncoding($filepath): string
+        {
+            $content = file_get_contents($filepath);
+            $availableEncodings = getAvailableEncodings();
+            
+            $detected = mb_detect_encoding($content, $availableEncodings, true);
+            return $detected ?: 'UTF-8';
+        }
+
+        // Detect file encoding and set it in the config
+        $detectedEncoding = detectFileEncoding($file);
+        $config->setFromCharset($detectedEncoding);
+        $config->setToCharset('UTF-8');
+
+        // Get the data and ensure columns are correctly mapped
         $interpreter = new Interpreter();
         $interpreter->addObserver(function (array $row) use (&$valuesToImport, $header) {
             $rowData = array_combine($header, $row);
