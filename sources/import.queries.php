@@ -239,6 +239,8 @@ switch ($inputData['type']) {
         }
         
         // Process lines
+        $continue_on_next_line = false;
+        $comment = "";
         foreach ($valuesToImport as $row) {
             // Check that each line has 6 columns
             if (count($row) !== 6) {
@@ -261,7 +263,7 @@ switch ($inputData['type']) {
             // Handle multiple lignes description
             if (strpos($comments, '<br>') !== false || strpos($label, '<br>') !== false) {
                 $continue_on_next_line = true;
-                $comment .= " " . $label;
+                $comment .= " " . $label . " " . $comments;
             } else {
                 // Insert previous line if changing line
                 if (!empty($label)) {
@@ -270,7 +272,7 @@ switch ($inputData['type']) {
                     // Insert in batch
                     $batchInsert[] = array(
                         'label'        => $label,
-                        'description'  => $comment,
+                        'description'  => $comment . $comments,
                         'pwd'          => $pwd,
                         'url'          => $url,
                         'folder'       => ((int) $session->get('user-admin') === 1 || (int) $session->get('user-manager') === 1 || (int) $session->get('user-can_manage_all_users') === 1) ? $folder : '',
@@ -289,7 +291,7 @@ switch ($inputData['type']) {
                     $label = '';
                 }
                 // Update current variables
-                $comment = $comments;
+                $comment = '';
                 $continue_on_next_line = false;
             }
         }
@@ -301,7 +303,7 @@ switch ($inputData['type']) {
             // Insert in batch
             $batchInsert[] = array(
                 'label'        => $label,
-                'description'  => $comment,
+                'description'  => $comment . $comments,
                 'pwd'          => $pwd,
                 'url'          => $url,
                 'folder'       => ((int) $session->get('user-admin') === 1 || (int) $session->get('user-manager') === 1 || (int) $session->get('user-can_manage_all_users') === 1) ? $folder : '',
