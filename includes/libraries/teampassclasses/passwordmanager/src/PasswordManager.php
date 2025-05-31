@@ -86,7 +86,7 @@ class PasswordManager
     private function isPasswordLibHash(string $hashedPassword): bool
     {
         // Check if the password has been hashed with passwordlib
-        return strpos($hashedPassword, '$2y$10$') === 0;
+        return strpos($hashedPassword, '$2y$10$');
     }
 
     // Vous devrez implémenter cette fonction pour utiliser la vérification de passwordlib
