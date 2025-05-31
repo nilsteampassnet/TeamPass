@@ -36,6 +36,10 @@ class PasswordManager
 {
     private $hasherFactory;
 
+    /**
+     * PasswordManager constructor.
+     * Initializes the password hasher factory with the default configuration.
+     */
     public function __construct()
     {
         // Hasher configuration
@@ -44,12 +48,25 @@ class PasswordManager
         ]);
     }
 
+    /**
+     * Hash a password using the configured password hasher.
+     *
+     * @param string $password The plain text password to hash.
+     * @return string The hashed password.
+     */
     public function hashPassword(string $password): string
     {
         $hasher = $this->hasherFactory->getPasswordHasher('common');
         return $hasher->hash($password);
     }
 
+    /**
+     * Verify a password against a hashed password.
+     *
+     * @param string $hashedPassword The hashed password to verify against.
+     * @param string $plainPassword The plain text password to verify.
+     * @return bool True if the password matches, false otherwise.
+     */
     public function verifyPassword(string $hashedPassword, string $plainPassword): bool
     {
         $hasher = $this->hasherFactory->getPasswordHasher('common');
@@ -59,7 +76,7 @@ class PasswordManager
     // --- Handle migration from PasswordLib to Symfony PasswordHasher
     public function migratePassword(string $hashedPassword, string $plainPassword, int $userId): string
     {
-        // Vérifiez si le mot de passe a été haché avec passwordlib
+        // If the password has been hashed with PasswordLib
         if ($this->isPasswordLibHash($hashedPassword)) {
             // Utilisez la vérification de passwordlib ici
             if ($this->passwordLibVerify($hashedPassword, html_entity_decode($plainPassword))) {
@@ -70,6 +87,9 @@ class PasswordManager
                 // Update user password in DB
                 $this->updateInDatabase($newHashedPassword, $userId);
 
+                // Launch tasks to encrypt user keys, etc.
+                $this->launchUserTasks($userId, $plainPassword);
+
                 if (WIP === true) error_log("migratePassword performed for user ".$userId." | Old hash: ".$hashedPassword." | New hash: ".$newHashedPassword);
                 // Return new hashed password
                 return $newHashedPassword;
@@ -79,17 +99,29 @@ class PasswordManager
             }
         }
 
-        // Le mot de passe a déjà été haché avec le nouveau système
+        // Return the existing hashed password
         return $hashedPassword;
     }
 
+    /**
+     * Check if the password has been hashed with PasswordLib.
+     *
+     * @param string $hashedPassword The hashed password to check.
+     * @return bool True if the password is a PasswordLib hash, false otherwise.
+     */
     private function isPasswordLibHash(string $hashedPassword): bool
     {
         // Check if the password has been hashed with passwordlib
         return strpos($hashedPassword, '$2y$10$');
     }
 
-    // Vous devrez implémenter cette fonction pour utiliser la vérification de passwordlib
+    /**
+     * Verify a password using PasswordLib.
+     *
+     * @param string $hashedPassword The hashed password to verify against.
+     * @param string $plainPassword The plain text password to verify.
+     * @return bool True if the password matches, false otherwise.
+     */
     private function passwordLibVerify(string $hashedPassword, string $plainPassword): bool
     {
         // Vérification avec passwordlib
@@ -97,6 +129,12 @@ class PasswordManager
         return $pwdlib->verifyPasswordHash($plainPassword, $hashedPassword);
     }
 
+    /**
+     * Updates the user password in the database.
+     *
+     * @param string $hashedPassword The hashed password to store.
+     * @param int $userId The ID of the user whose password is being updated.
+     */
     private function updateInDatabase(string $hashedPassword, int $userId): void
     {
         // Update user password in DB
@@ -107,6 +145,30 @@ class PasswordManager
             ],
             'id = %i',
             $userId
+        );
+    }
+
+    /**
+     * Launches tasks related to user keys and configurations.
+     *
+     * @param int $userId The ID of the user.
+     * @param string $plainPassword The plain text password of the user.
+     */
+    private function launchUserTasks($userId, $plainPassword): void
+    {
+        handleUserKeys(
+            (int) $userId,
+            (string) $plainPassword,
+            (int) NUMBER_ITEMS_IN_BATCH,
+            '',
+            true,
+            true,
+            true,
+            false,
+            'email_body_user_config_4',
+            true,
+            '',
+            '',
         );
     }
 }
