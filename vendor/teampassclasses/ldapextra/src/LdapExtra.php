@@ -56,7 +56,7 @@ class LdapExtra
             'timeout' => 5,
             'follow_referrals' => false,
             'options' => [
-                LDAP_OPT_X_TLS_REQUIRE_CERT => isset($this->settings['ldap_tls_certiface_check']) ? $this->settings['ldap_tls_certiface_check'] : LDAP_OPT_X_TLS_HARD,
+                LDAP_OPT_X_TLS_REQUIRE_CERT => isset($this->settings['ldap_tls_certifacte_check']) ? $this->settings['ldap_tls_certifacte_check'] : LDAP_OPT_X_TLS_HARD,
             ],
         ];
 
