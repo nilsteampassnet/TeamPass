@@ -1257,7 +1257,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 'retrieve': false,
                 'autoWidth': false,
                 'ajax': {
-                    url: '<?php $SETTINGS['cpassman_url'] = ''; echo $SETTINGS['cpassman_url']; ?>/sources/users.logs.datatable.php',
+                    url: '<?php echo $SETTINGS['cpassman_url']; ?>/sources/users.logs.datatable.php',
                     data: function(d) {
                         d.userId = userID;
                     }
