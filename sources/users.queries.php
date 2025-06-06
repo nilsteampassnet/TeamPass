@@ -743,6 +743,7 @@ if (null !== $post_type) {
                 $selected = '';
                 $users_functions = array_filter(array_unique(explode(';', empty($rowUser['fonction_id'].';'.$rowUser['roles_from_ad_groups']) === true ? '' : $rowUser['fonction_id'].';'.$rowUser['roles_from_ad_groups'])));
 
+                $session->set('user-roles_array', explode(';', $session->get('user-roles')));
                 $rows = DB::query('
                     SELECT id,title,creator_id 
                     FROM ' . prefixTable('roles_title') .'
