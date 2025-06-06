@@ -4705,8 +4705,8 @@ switch ($inputData['type']) {
         $accessLevel = 0;
         if ($folder_is_personal === 0) {
             $arrTmp = [];
+            $session->set('user-roles_array', explode(';', $session->get('user-roles')));
             foreach ($session->get('user-roles_array') as $role) {
-                //db::debugmode(true);
                 $access = DB::queryFirstRow(
                     'SELECT type
                     FROM ' . prefixTable('roles_values') . '
@@ -4714,7 +4714,6 @@ switch ($inputData['type']) {
                     $role,
                     $inputData['folderId']
                 );
-                //db::debugmode(false);
                 if (DB::count()>0) {
                     if ($access['type'] === 'R') {
                         array_push($arrTmp, 10);
