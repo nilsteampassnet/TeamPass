@@ -140,7 +140,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             },
             error: function(d) {
                 loadingToast.remove();
-                toastr.error(<?php echo $lang->get('fetch_users_error'); ?>, '', {timeOut: 5000, progressBar: true, extendedCloseButton: true});
+                toastr.error("<?php echo $lang->get('users_fetch_error'); ?>", '', {timeOut: 5000, progressBar: true, extendedCloseButton: true});
             }
         },
         'language': {
