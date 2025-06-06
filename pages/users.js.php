@@ -117,6 +117,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             e.preventDefault();
         });
 
+    var loadingToast = null;
 
     //Launch the datatables pluggin
     var oTable = $('#table-users').DataTable({
@@ -133,13 +134,17 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         'stateSave': true,
         'autoWidth': true,
         'ajax': {
-            url: '<?php echo $SETTINGS['cpassman_url']; ?>/sources/users.datatable.php',
+            url: '<?php $SETTINGS['cpassman_url']= ''; echo $SETTINGS['cpassman_url']; ?>/sources/users.datatable.php',
             data: function(d) {
                 d.display_warnings = $('#warnings_display').is(':checked');
+            },
+            error: function(d) {
+                loadingToast.remove();
+                toastr.error(<?php echo $lang->get('fetch_users_error'); ?>, '', {timeOut: 5000, progressBar: true, extendedCloseButton: true});
             }
         },
         'language': {
-            'url': '<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $session->get('user-language'); ?>.txt'
+            'url': '<?php $SETTINGS['cpassman_url'] = ''; echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $session->get('user-language'); ?>.txt'
         },
         'columns': [{
                 'width': '80px',
@@ -198,7 +203,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             }
         ],
         'preDrawCallback': function() {
-            toastr.info(
+            loadingToast = toastr.info(
                 '<?php echo $lang->get('loading'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i><span class="close-toastr-progress"></span>',
                 ''
             );
@@ -1252,7 +1257,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 'retrieve': false,
                 'autoWidth': false,
                 'ajax': {
-                    url: '<?php echo $SETTINGS['cpassman_url']; ?>/sources/users.logs.datatable.php',
+                    url: '<?php $SETTINGS['cpassman_url'] = ''; echo $SETTINGS['cpassman_url']; ?>/sources/users.logs.datatable.php',
                     data: function(d) {
                         d.userId = userID;
                     }
