@@ -556,7 +556,7 @@ class DatabaseInstaller
             array('admin', 'tasks_manager_refreshing_period', '20'),
             array('admin', 'maximum_number_of_items_to_treat', '100'),
             array('admin', 'number_users_build_cache_tree', '10'),
-            array('admin', 'ldap_tls_certifacte_check', 'LDAP_OPT_X_TLS_NEVER'),
+            array('admin', 'ldap_tls_certificate_check', 'LDAP_OPT_X_TLS_NEVER'),
             array('admin', 'enable_tasks_log', '0'),
             array('admin', 'upgrade_timestamp', time()),
             array('admin', 'enable_ad_users_with_ad_groups', '0'),

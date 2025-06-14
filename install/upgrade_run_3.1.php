@@ -917,6 +917,21 @@ try {
     mysqli_rollback($db_link);
 }
 
+// Update setting from 'ldap_tls_certifacte_check' to 'ldap_tls_certificate_check'
+$result = mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'ldap_tls_certifacte_check'");
+$tmp = mysqli_num_rows($result);
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'ldap_tls_certificate_check', 'LDAP_OPT_X_TLS_NEVER')"
+    );
+} else {
+    mysqli_query(
+        $db_link,
+        "UPDATE `" . $pre . "misc` SET intitule = 'ldap_tls_certificate_check' WHERE type = 'admin' AND intitule = 'ldap_tls_certifacte_check'"
+    );
+}
+
 //---<END 3.1.4
 
 
