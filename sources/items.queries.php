@@ -1810,19 +1810,50 @@ switch ($inputData['type']) {
             // Manage OTP status
             // Get current status
             $otpStatus = DB::queryFirstRow(
-                'SELECT enabled as otp_is_enabled
+                'SELECT enabled as otp_is_enabled, phone_number, secret
                 FROM ' . prefixTable('items_otp') . '
                 WHERE item_id = %i',
                 $inputData['itemId']
             );
 
-            // Check if status has changed
-            if (DB::count() > 0 && (int) $otpStatus['otp_is_enabled'] !== (int) $post_otp_is_enabled) {
+            // If previous OTP secret is not empty, decrypt it
+            if (DB::count() > 0 && $otpStatus['secret'] !== '') {
+                // Get current secret
+                $currentsecret = cryption(
+                    $otpStatus['secret'],
+                    '',
+                    'decrypt'
+                )['string'];
+            } else {
+                $currentsecret='';
+            }
+
+            // If OTP secret provided then encrypt it
+            if (empty($post_otp_secret) === false) {
+                // Encrypt secret
+                $encryptedSecret = cryption(
+                    $post_otp_secret,
+                    '',
+                    'encrypt'
+                );
+           }
+
+            // Check if status or secret or phone number has changed
+            if (DB::count() > 0
+                && (
+                    ((int) $otpStatus['otp_is_enabled'] !== (int) $post_otp_is_enabled)
+                    || ($otpStatus['phone_number'] !== $post_otp_phone_number)
+                    || ($currentsecret !== $post_otp_secret)
+                )
+            ) {
                 // Update status
                 DB::update(
                     prefixTable('items_otp'),
                     array(
                         'enabled' => (int) $post_otp_is_enabled,
+                        'secret' => $encryptedSecret['string'],
+                        'phone_number' => $post_otp_phone_number,
+                        'timestamp' => time(),
                     ),
                     'item_id = %i',
                     $inputData['itemId']
@@ -1835,25 +1866,42 @@ switch ($inputData['type']) {
                 );
 
                 // update LOG
-                logItems(
-                    $SETTINGS,
-                    (int) $inputData['itemId'],
-                    $inputData['label'],
-                    $session->get('user-id'),
-                    'at_modification',
-                    $session->get('user-login'),
-                    'at_otp_status:' . ((int) $post_otp_is_enabled === 0 ? 'disabled' : 'enabled')
-                );
+                if ((int) $otpStatus['otp_is_enabled'] !== (int) $post_otp_is_enabled) {
+                    logItems(
+                        $SETTINGS,
+                        (int) $inputData['itemId'],
+                        $inputData['label'],
+                        $session->get('user-id'),
+                        'at_modification',
+                        $session->get('user-login'),
+                        'at_otp_status:' . ((int) $post_otp_is_enabled === 0 ? 'disabled' : 'enabled')
+                    );
+                }
+                if ($otpStatus['phone_number'] !== $post_otp_phone_number) {
+                    logItems(
+                        $SETTINGS,
+                        (int) $inputData['itemId'],
+                        $inputData['label'],
+                        $session->get('user-id'),
+                        'at_modification',
+                        $session->get('user-login'),
+                        'at_phone_number:' . $otpStatus['phone_number'] . ' => ' . $post_otp_phone_number
+                    );
+                }
+                if ($currentsecret !== $post_otp_secret) {
+                    logItems(
+                        $SETTINGS,
+                        (int) $inputData['itemId'],
+                        $inputData['label'],
+                        $session->get('user-id'),
+                        'at_modification',
+                        $session->get('user-login'),
+                        'at_otp_secret:'.$currentsecret
+                    );
+                }
             } elseif (DB::count() === 0 && empty($post_otp_secret) === false) {
                 // Create the entry in items_otp table
                 // OTP doesn't exist then create it
-
-                // Encrypt secret
-                $encryptedSecret = cryption(
-                    $post_otp_secret,
-                    '',
-                    'encrypt'
-                );
                 
                 // insert in table
                 DB::insert(
@@ -4705,8 +4753,8 @@ switch ($inputData['type']) {
         $accessLevel = 0;
         if ($folder_is_personal === 0) {
             $arrTmp = [];
+            $session->set('user-roles_array', explode(';', $session->get('user-roles')));
             foreach ($session->get('user-roles_array') as $role) {
-                //db::debugmode(true);
                 $access = DB::queryFirstRow(
                     'SELECT type
                     FROM ' . prefixTable('roles_values') . '
@@ -4714,7 +4762,6 @@ switch ($inputData['type']) {
                     $role,
                     $inputData['folderId']
                 );
-                //db::debugmode(false);
                 if (DB::count()>0) {
                     if ($access['type'] === 'R') {
                         array_push($arrTmp, 10);
@@ -6567,7 +6614,7 @@ switch ($inputData['type']) {
                         $lang->get('no_previous_value') : $lang->get('previous_value') . ': <span class="font-weight-light">' . $tmp[0] . ' </span>';
                 } elseif ($reason[0] === 'at_automatic_del') {
                     $detail = $lang->get($reason[1]);
-                } elseif ($reason[0] === 'at_anyoneconmodify' || $reason[0] === 'at_otp_status') {
+                } elseif ($reason[0] === 'at_anyoneconmodify' || $reason[0] === 'at_otp_status' || $reason[0] === 'at_otp_secret' || $reason[0] === 'at_phone_number') {
                     $detail = $lang->get($reason[1]);
                 } elseif ($reason[0] === 'at_add_file' || $reason[0] === 'at_del_file') {
                     $tmp = explode(':', $reason[1]);

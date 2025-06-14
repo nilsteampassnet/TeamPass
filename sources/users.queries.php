@@ -743,6 +743,7 @@ if (null !== $post_type) {
                 $selected = '';
                 $users_functions = array_filter(array_unique(explode(';', empty($rowUser['fonction_id'].';'.$rowUser['roles_from_ad_groups']) === true ? '' : $rowUser['fonction_id'].';'.$rowUser['roles_from_ad_groups'])));
 
+                $session->set('user-roles_array', explode(';', $session->get('user-roles')));
                 $rows = DB::query('
                     SELECT id,title,creator_id 
                     FROM ' . prefixTable('roles_title') .'
@@ -1977,7 +1978,7 @@ if (null !== $post_type) {
                 // Custom LDAP Options
                 'options' => [
                     // See: http://php.net/ldap_set_option
-                    LDAP_OPT_X_TLS_REQUIRE_CERT => isset($SETTINGS['ldap_tls_certifacte_check']) === false ? 'LDAP_OPT_X_TLS_NEVER' : $SETTINGS['ldap_tls_certifacte_check'],
+                    LDAP_OPT_X_TLS_REQUIRE_CERT => isset($SETTINGS['ldap_tls_certificate_check']) === false ? 'LDAP_OPT_X_TLS_NEVER' : $SETTINGS['ldap_tls_certificate_check'],
                 ]
             ];
             //prepare connection

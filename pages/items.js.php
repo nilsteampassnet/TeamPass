@@ -3169,7 +3169,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     }
                     return false;
                 }
-                    
+
                 //prepare data
                 var data = {
                     'anyone_can_modify': $('#form-item-anyoneCanModify').is(':checked') ? 1 : 0,
@@ -3212,11 +3212,14 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     }
                 );
 
+                // Purify now
+                data = purifyData(data, true, false, false);
+
                 //Send query
                 $.post(
                     "sources/items.queries.php", {
                         type: $('#form-item-button-save').data('action'),
-                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>", '', '', false),   // don't purify, already done
                         key: "<?php echo $session->get('key'); ?>"
                     },
                     function(data) {
@@ -4268,7 +4271,8 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                             (value.link !== '' ? '<i class="fa-solid fa-link mr-1 ml-2"></i>' + value.link : '');
                     }
                 }
-                // Add Description 
+                // Add Description
+                value.desc = htmlDecode(value.desc)
                 description = (value.desc.replace(/<.*>/gi, '').trim() !== '' ? '<i>'+itemLabel + '</i><i class="fa-solid fa-heading mr-1 ml-2"></i>' + value.desc : '<i>'+itemLabel + '</i>');
                 // Consolidate item label
                 if (description !== '') {
@@ -4961,7 +4965,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     const itemIcon = (data.fa_icon !== "") ? '<i class="'+data.fa_icon+' mr-1"></i>' : '';
                     $('#card-item-label, #form-item-title').html(itemIcon + data.label);
                     $('#form-item-label, #form-item-suggestion-label').val($('<div>').html(data.label).text());
-                    $('#card-item-description, #form-item-suggestion-description').html(data.description);
+                    $('#card-item-description, #form-item-suggestion-description').html(htmlDecode(data.description));
                     if (data.description === '') {
                         $('#card-item-description').addClass('hidden');
                     } else {
@@ -4991,7 +4995,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                         console.log('>>>> create summernote');
                     }
                     $('#form-item-description')
-                        .html(data.description)
+                        .html(htmlDecode(data.description))
                         .summernote({
                             toolbar: [
                                 ['style', ['style']],
@@ -5020,7 +5024,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     //.summernote('editor.insertText', data.description);
 
                     $('#form-item-suggestion-description')
-                        .html(data.description)
+                        .html(htmlDecode(data.description))
                         .summernote({
                             toolbar: [
                                 ['style', ['style']],

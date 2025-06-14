@@ -117,6 +117,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             e.preventDefault();
         });
 
+    var loadingToast = null;
 
     //Launch the datatables pluggin
     var oTable = $('#table-users').DataTable({
@@ -136,6 +137,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             url: '<?php echo $SETTINGS['cpassman_url']; ?>/sources/users.datatable.php',
             data: function(d) {
                 d.display_warnings = $('#warnings_display').is(':checked');
+            },
+            error: function(d) {
+                loadingToast.remove();
+                toastr.error("<?php echo $lang->get('users_fetch_error'); ?>", '', {timeOut: 5000, progressBar: true, extendedCloseButton: true});
             }
         },
         'language': {
@@ -198,7 +203,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             }
         ],
         'preDrawCallback': function() {
-            toastr.info(
+            loadingToast = toastr.info(
                 '<?php echo $lang->get('loading'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i><span class="close-toastr-progress"></span>',
                 ''
             );

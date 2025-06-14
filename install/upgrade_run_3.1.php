@@ -907,14 +907,29 @@ mysqli_query(
 try {
     $alter_table_query = "
         ALTER TABLE `" . $pre . "misc`
-        CHANGE `valeur` `valeur` TEXT CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL
+        CHANGE `valeur` `valeur` MEDIUMTEXT CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL
     ";
     mysqli_begin_transaction($db_link);
     mysqli_query($db_link, $alter_table_query);
     mysqli_commit($db_link);
 } catch (Exception $e) {
-    // Rollback transaction if field already exists.
+    // Rollback transaction if sql error.
     mysqli_rollback($db_link);
+}
+
+// Update setting from 'ldap_tls_certifacte_check' to 'ldap_tls_certificate_check'
+$result = mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'ldap_tls_certifacte_check'");
+$tmp = mysqli_num_rows($result);
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'ldap_tls_certificate_check', 'LDAP_OPT_X_TLS_NEVER')"
+    );
+} else {
+    mysqli_query(
+        $db_link,
+        "UPDATE `" . $pre . "misc` SET intitule = 'ldap_tls_certificate_check' WHERE type = 'admin' AND intitule = 'ldap_tls_certifacte_check'"
+    );
 }
 
 //---<END 3.1.4

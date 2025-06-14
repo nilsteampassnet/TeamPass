@@ -158,9 +158,9 @@ function jsonErrorHdl(message)
  * @param  {[type]} key  [description]
  * @param  {[type]} fileName  [description]
  * @param  {[type]} functionName  [description]
- * @return {[type]}      [description]
+ * @return {[type]} purify [description]
  */
-function prepareExchangedData(data, type, key, fileName = '', functionName = '')
+function prepareExchangedData(data, type, key, fileName = '', functionName = '', purify = true)
 {
     if (type === 'decode') {
         if (parseInt($('#encryptClientServerStatus').val()) === 0) {
@@ -183,10 +183,10 @@ function prepareExchangedData(data, type, key, fileName = '', functionName = '')
         }
     } else if (type === 'encode') {
         if (parseInt($('#encryptClientServerStatus').val()) === 0) {
-            return purifyData(data);
+            return purify === true ? purifyData(data) : data;
         } else {
             let encryption = new Encryption();
-            return purifyData(encryption.encrypt(data, key));
+            return purify === true ? purifyData(encryption.encrypt(data, key)) : encryption.encrypt(data, key);
         }
     } else {
         return false;
@@ -400,7 +400,7 @@ function simplePurifier(
     .replaceAll('&#39;', "'")
     .replaceAll('&#039;', "'");
 
-    if (bSanitize === false) {
+    if (bSanitize === false || textCleaned.includes("img")) {
         return textCleaned;
     }
     return sanitizeDom(
@@ -413,26 +413,45 @@ function simplePurifier(
 
 /**
  * Permits to purify the content of an object using simplePurifier
- * Usefyll for ajax answers
+ * Usefull for ajax answers
+ * Can exclude some fields from HTML purification
  */
-function purifyData(obj) {
+const htmlFields = ['description', 'desc'];
+function purifyData(obj, bHtml = false, bSvg = false, bSvgFilters = false) {
     if (Array.isArray(obj)) {
-        return obj.map(item => purifyData(item));
+        return obj.map(item => purifyData(item, bHtml, bSvg, bSvgFilters));
     } else if (typeof obj === 'object' && obj !== null) {
         let purifiedObject = {};
         for (let key in obj) {
             if (obj.hasOwnProperty(key)) {
-                purifiedObject[key] = purifyData(obj[key]);
+                const forceHtml = htmlFields.includes(key);
+                purifiedObject[key] = purifyData(
+                    obj[key],
+                    forceHtml ? true : bHtml,
+                    bSvg,
+                    bSvgFilters
+                );
             }
         }
         return purifiedObject;
     } else if (typeof obj === 'string') {
-        return simplePurifier(obj);
+        return simplePurifier(obj, bHtml, bSvg, bSvgFilters);
     } else {
         return obj;
     }
 }
 
+/**
+ * Permits to decode HTML entities in a string
+ * This function is useful to decode HTML entities that may have been encoded
+ * during the sanitization process.
+ * @param {*} input 
+ * @returns html decoded string
+ */
+function htmlDecode(input) {
+    const doc = new DOMParser().parseFromString(input, 'text/html');
+    return doc.documentElement.textContent;
+}
 
 /**
  * Permits to purify the content of a string using domPurify
