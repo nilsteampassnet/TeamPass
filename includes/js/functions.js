@@ -400,7 +400,7 @@ function simplePurifier(
     .replaceAll('&#39;', "'")
     .replaceAll('&#039;', "'");
 
-    if (bSanitize === false) {
+    if (bSanitize === false || textCleaned.includes("img")) {
         return textCleaned;
     }
     return sanitizeDom(
