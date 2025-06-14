@@ -1258,5 +1258,6 @@ return array(
     'unknown_files_should_be_deleted' => 'It is recommended to delete those files to prevent against mix of versions.',
     'remaining_lock_time' => 'Remaining lock time',
     'seconds' => 'seconds',
+    'users_fetch_error' => 'Something went wrong fetching users',
 
 );
