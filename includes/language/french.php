@@ -1259,5 +1259,8 @@ return array(
     'unknown_files_should_be_deleted' => 'Il est recommandé de supprimer ces fichiers qui peuvent provoquer une forme d&apos;instabilité',
     'remaining_lock_time' => 'Durée avant déverrouillage',
     'seconds' => 'secondes',
+    'users_fetch_error' => 'Une erreur est survenue en traitant les utilisateurs',
+    'at_phone_number' => 'Numéro de téléphone',
+    'at_otp_secret' => 'Clé de l&apos;OTP',
 
 );
