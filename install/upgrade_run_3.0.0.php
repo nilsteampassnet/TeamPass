@@ -1593,15 +1593,6 @@ mysqli_query(
 
 //--->BEGIN 3.0.0.20
 
-// Add new setting 'ldap_tls_certifacte_check'
-$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'ldap_tls_certifacte_check'"));
-if (intval($tmp) === 0) {
-    mysqli_query(
-        $db_link,
-        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'ldap_tls_certifacte_check', 'LDAP_OPT_X_TLS_NEVER')"
-    );
-}
-
 // Add new field in table languages
 try {
     mysqli_query(
