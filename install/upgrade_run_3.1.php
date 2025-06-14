@@ -907,13 +907,13 @@ mysqli_query(
 try {
     $alter_table_query = "
         ALTER TABLE `" . $pre . "misc`
-        CHANGE `valeur` `valeur` TEXT CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL
+        CHANGE `valeur` `valeur` MEDIUMTEXT CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL
     ";
     mysqli_begin_transaction($db_link);
     mysqli_query($db_link, $alter_table_query);
     mysqli_commit($db_link);
 } catch (Exception $e) {
-    // Rollback transaction if field already exists.
+    // Rollback transaction if sql error.
     mysqli_rollback($db_link);
 }
 
