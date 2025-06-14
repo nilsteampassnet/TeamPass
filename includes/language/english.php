@@ -32,6 +32,8 @@
  // - selected_items_to_be_imported
 
 return array(
+    'at_phone_number' => 'Phone number',
+    'at_otp_secret' => 'OTP secret key',
     'newly_created_user_belongs_to_role' => 'Newly created user belongs to role',
     'show_files' => 'Show files list',
     'file_not_exists' => 'File does not exist',
