@@ -415,8 +415,10 @@ function simplePurifier(
  * Permits to purify the content of an object using simplePurifier
  * Usefull for ajax answers
  * Can exclude some fields from HTML purification
+ * Can exclude some fields from purification
  */
 const htmlFields = ['description', 'desc'];
+const ignoredFields = ['pw'];
 function purifyData(obj, bHtml = false, bSvg = false, bSvgFilters = false) {
     if (Array.isArray(obj)) {
         return obj.map(item => purifyData(item, bHtml, bSvg, bSvgFilters));
@@ -424,13 +426,17 @@ function purifyData(obj, bHtml = false, bSvg = false, bSvgFilters = false) {
         let purifiedObject = {};
         for (let key in obj) {
             if (obj.hasOwnProperty(key)) {
-                const forceHtml = htmlFields.includes(key);
-                purifiedObject[key] = purifyData(
-                    obj[key],
-                    forceHtml ? true : bHtml,
-                    bSvg,
-                    bSvgFilters
-                );
+                if (ignoredFields.includes(key)) {
+                    purifiedObject[key] = obj[key]; // Skip purification
+                } else {
+                    const forceHtml = htmlFields.includes(key);
+                    purifiedObject[key] = purifyData(
+                        obj[key],
+                        forceHtml ? true : bHtml,
+                        bSvg,
+                        bSvgFilters
+                    );
+                }
             }
         }
         return purifiedObject;
