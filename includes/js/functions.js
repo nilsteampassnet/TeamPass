@@ -637,3 +637,53 @@ function doAjaxQuery(type, url, data) {
         });
     });
 }
+
+/**
+ * Permits to check if a string is a valid base64 encoded string
+ * @param {*} str 
+ * @returns 
+ */
+function isBase64(str) {
+    if (typeof str !== 'string') return false;
+
+    // If the prefix is there, it's clearly base64
+    if (str.startsWith('b64:')) return true;
+
+    // Check if the string contains only valid base64 characters
+    if (!/^[A-Za-z0-9+/=]+$/.test(str)) return false;
+
+    // Base64 strings should be a multiple of 4 in length
+    if (str.length % 4 !== 0) return false;
+
+    try {
+        const decoded = atob(str);
+        // Test if the decoded string can be re-encoded to the same base64 string
+        return btoa(decoded).replace(/=+$/, '') === str.replace(/=+$/, '');
+    } catch (e) {
+        return false;
+    }
+}
+
+/**
+ * Permits to decode a filename that may be encoded in base64
+ * @param {*} encodedName 
+ * @returns 
+ */
+function decodeFilename(encodedName) {
+    try {
+        if (typeof encodedName !== 'string') return encodedName;
+
+        if (encodedName.startsWith('b64:')) {
+            return atob(encodedName.substring(4));
+        }
+
+        if (isBase64(encodedName)) {
+            return atob(encodedName);
+        }
+
+        // Else, return the string as is
+        return encodedName;
+    } catch (e) {
+        return encodedName; // If atob fails, return the original string
+    }
+}

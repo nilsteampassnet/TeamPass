@@ -412,7 +412,7 @@ if (null !== $post_type_upload && $post_type_upload === 'item_attachments') {
         prefixTable('files'),
         array(
             'id_item' => $post_itemId,
-            'name' => $fileName,
+            'name' => 'b64:' . $fileName,   // add "b64:" prefix to indicate that the file name is base64 encoded
             'size' => $post_fileSize,
             'extension' => $fileInfo['extension'],
             'type' => $_FILES['file']['type'],

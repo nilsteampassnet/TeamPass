@@ -157,7 +157,8 @@ if (null !== $request->query->get('pathIsFiles') && (int) $get_pathIsFiles === 1
     }
 
     // Set the filename of the download
-    $filename = basename($file_info['name'], '.'.$file_info['extension']);
+    $filename = str_replace('b64:','', $file_info['name']);
+    $filename = basename($filename, '.'.$file_info['extension']);
     $filename = isBase64($filename) === true ? base64_decode($filename) : $filename;
     $filename = $filename . '.' . $file_info['extension'];
     // Get the full path to the file to be downloaded
