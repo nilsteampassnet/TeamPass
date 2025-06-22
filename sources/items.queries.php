@@ -1845,6 +1845,7 @@ switch ($inputData['type']) {
                     || ($otpStatus['phone_number'] !== $post_otp_phone_number)
                     || ($currentsecret !== $post_otp_secret)
                 )
+                && isset($encryptedSecret['string']) === true
             ) {
                 // Update status
                 DB::update(

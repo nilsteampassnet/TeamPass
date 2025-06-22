@@ -6,19 +6,19 @@ declare(strict_types=1);
  * Teampass - a collaborative passwords manager.
  * ---
  * This file is part of the TeamPass project.
- * 
+ *
  * TeamPass is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by
  * the Free Software Foundation, version 3 of the License.
- * 
+ *
  * TeamPass is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
- * 
+ *
  * Certain components of this file may be under different licenses. For
  * details, see the `licenses` directory or individual file headers.
  * ---
@@ -158,7 +158,7 @@ switch ($inputData['type']) {
             WHERE increment_id = %i AND type = "temp_file"',
             $post_operation_id
         );
-        
+
         // Delete operation id
         DB::delete(
             prefixTable('misc'),
@@ -210,7 +210,7 @@ switch ($inputData['type']) {
 
         /**
          * Get the list of available encodings.
-         * 
+         *
          * @return array List of available encodings.
          */
         function getAvailableEncodings(): array
@@ -245,10 +245,10 @@ switch ($inputData['type']) {
                 'Windows-1255',  // Hébreu
                 'Windows-1256',  // Arabe
             ];
-            
+
             // Get the list of encodings supported by the system
             $systemEncodings = mb_list_encodings();
-            
+
             // Filter to keep only those that are available
             $availableEncodings = [];
             foreach ($desiredEncodings as $encoding) {
@@ -256,12 +256,12 @@ switch ($inputData['type']) {
                     $availableEncodings[] = $encoding;
                 }
             }
-            
+
             // Ensure UTF-8 is always present
             if (!in_array('UTF-8', $availableEncodings)) {
                 array_unshift($availableEncodings, 'UTF-8');
             }
-            
+
             return $availableEncodings;
         }
 
@@ -274,7 +274,7 @@ switch ($inputData['type']) {
         {
             $content = file_get_contents($filepath);
             $availableEncodings = getAvailableEncodings();
-            
+
             $detected = mb_detect_encoding($content, $availableEncodings, true);
             return $detected ?: 'UTF-8';
         }
@@ -313,7 +313,7 @@ switch ($inputData['type']) {
             unlink($file);
             break;
         }
-        
+
         // Process lines
         $continue_on_next_line = false;
         $comment = "";
@@ -327,7 +327,7 @@ switch ($inputData['type']) {
                 unlink($file);
                 break;
             }
-        
+
             // CLean data
             $label    = cleanInput($row['Label']);
             $login    = cleanInput($row['Login']);
@@ -335,7 +335,7 @@ switch ($inputData['type']) {
             $url      = cleanInput($row['url']);
             $folder   = cleanInput($row['Folder']);
             $comments = cleanInput($row['Comments']);
-        
+
             // Handle multiple lignes description
             if (strpos($comments, '<br>') !== false || strpos($label, '<br>') !== false) {
                 $continue_on_next_line = true;
@@ -396,18 +396,18 @@ switch ($inputData['type']) {
                 }
             }
         }
-        
+
         // Insert in database (with batch optimisation)
         if (!empty($batchInsert)) {
             $tableName = prefixTable('items_importations');
             $values = [];
-        
+
             foreach ($batchInsert as $data) {
                 $values[] = "('" . implode("','", array_map('addslashes', $data)) . "')";
             }
-        
+
             $sql = "INSERT INTO `$tableName` (`label`, `description`, `pwd`, `url`, `folder`, `login`, `operation_id`) VALUES " . implode(',', $values);
-            
+
             DB::query($sql);
         }
 
@@ -416,13 +416,13 @@ switch ($inputData['type']) {
             array('error' => false,
                 'operation_id' => $post_operation_id,
                 'items_number' => $items_number,
-                'folders_number' => count($uniqueFolders),        
+                'folders_number' => count($uniqueFolders),
                 'userCanManageFolders' => ((int) $session->get('user-admin') === 1 || (int) $session->get('user-manager') === 1 || (int) $session->get('user-can_manage_all_users') === 1) ? 1 : 0
             ),
             'encode'
         );
-        
-        // Delete file after processing	
+
+        // Delete file after processing
         unlink($file);
         break;
 
@@ -475,7 +475,7 @@ switch ($inputData['type']) {
 
         // Save matches "path -> ID" to prevent against multiple insertions
         $folderIdMap = $dataReceived['folderIdMap'] ?? [];
-        
+
         require_once 'folders.class.php';
         $folderManager = new FolderManager($lang);
 
@@ -512,7 +512,7 @@ switch ($inputData['type']) {
                     // Insert folder and get its ID
                     $params = [
                         'title' => (string) $currentFolder,
-                        'parent_id' => (int) $parentId,
+                        'parent_id' => isset($parentId) && $parentId !== null ? (int) $parentId : 0,
                         'personal_folder' => (int) $personalFolder,
                         'complexity' => $dataReceived['folderPasswordComplexity'] ?? 0,
                         'duration' => 0,
@@ -575,7 +575,7 @@ switch ($inputData['type']) {
             ),
             'encode'
         );
-        
+
         break;
 
 
@@ -592,7 +592,7 @@ switch ($inputData['type']) {
             );
             break;
         }
-        
+
 
         // Decrypt and retreive data in JSON format
         $dataReceived = prepareExchangedData(
@@ -604,23 +604,23 @@ switch ($inputData['type']) {
         $personalFolder = in_array($dataReceived['folderId'], $session->get('user-personal_folders')) ? 1 : 0;
 
         // Prepare some variables
-        $targetFolderId = $dataReceived['folderId']; 
+        $targetFolderId = $dataReceived['folderId'];
         $targetFolderName = DB::queryFirstField(
             'SELECT title
             FROM '.prefixTable('nested_tree').'
             WHERE id = %i',
             $targetFolderId
-        ); 
+        );
         $personalFolder = in_array($dataReceived['folderId'], $session->get('user-personal_folders')) ? 1 : 0;
 
         // Prepare some variables
-        $targetFolderId = $dataReceived['folderId']; 
+        $targetFolderId = $dataReceived['folderId'];
         $targetFolderName = DB::queryFirstField(
             'SELECT title
             FROM '.prefixTable('nested_tree').'
             WHERE id = %i',
             $targetFolderId
-        ); 
+        );
 
         // Get all folders from objects in DB
         if ($dataReceived['foldersNumber'] > 0) {
@@ -651,10 +651,10 @@ switch ($inputData['type']) {
         $failedItems = [];
 
         // Loop on items
-        foreach ($items as $item) {         
+        foreach ($items as $item) {
             try {
                 // Handle case where password is empty
-                if (($session->has('user-create_item_without_password') && 
+                if (($session->has('user-create_item_without_password') &&
                     null !== $session->get('user-create_item_without_password') &&
                     (int) $session->get('user-create_item_without_password') !== 1) ||
                     !empty($item['pwd'])) {
@@ -665,7 +665,7 @@ switch ($inputData['type']) {
                     $cryptedStuff['objectKey'] = '';
                 }
                 $itemPassword = $cryptedStuff['encrypted'];
-            
+
                 // Insert new item in table ITEMS
                 DB::insert(
                     prefixTable('items'),
@@ -685,10 +685,12 @@ switch ($inputData['type']) {
                 );
                 $newId = DB::insertId();
 
+                error_log('New item created with ID: ' . $newId);
+
                 // Create new task for the new item
                 // If it is not a personnal one
                 if ((int) $personalFolder === 0) {
-                    if ($dataReceived['keysGenerationWithTasksHandler' === 'tasksHandler']) {
+                    if ($dataReceived['keysGenerationWithTasksHandler'] === 'tasksHandler') {
                         // Create task for the new item
                         storeTask(
                             'new_item',
@@ -742,7 +744,7 @@ switch ($inputData['type']) {
                         'action' => 'at_creation',
                     )
                 );
-                
+
                 // Add item to cache table
                 updateCacheTable('add_value', (int) $newId);
 
@@ -872,18 +874,18 @@ switch ($inputData['type']) {
 
         /**
          * Recursive function to process the Keepass XML structure.
-         * 
+         *
          * @param array $array The current array to process.
          * @param string $previousFolder The parent folder ID.
          * @param array $newItemsToAdd The new items to add to the database.
          * @param int $level The current level of the recursion.
-         * 
+         *
          * @return array The new items to add to the database.
          */
         function recursive($array, $previousFolder, $newItemsToAdd, $level) : array
         {
             // Handle entries (items)
-            if (isset($array['Entry'])) {
+            if (isset($array['Entry']) && is_array($array['Entry'])) {
                 $newItemsToAdd = handleEntries($array['Entry'], $previousFolder, $newItemsToAdd);
             }
 
@@ -898,11 +900,11 @@ switch ($inputData['type']) {
         /**
          * Handle entries (items) within the structure.
          * It processes each entry and adds it to the new items list.
-         * 
+         *
          * @param array $entries The entries to process.
          * @param string $previousFolder The parent folder ID.
          * @param array $newItemsToAdd The new items to add to the database.
-         * 
+         *
          * @return array The new items to add to the database.
          */
         function handleEntries(array $entries, string $previousFolder, array $newItemsToAdd) : array
@@ -911,7 +913,7 @@ switch ($inputData['type']) {
                 // Check if the entry has a 'String' field and process it
                 if (isset($value['String'])) {
                     $newItemsToAdd['items'][] = buildItemDefinition($value['String'], $previousFolder);
-                } 
+                }
                 // If it's a direct 'String' item, build a simple item
                 elseif ($key === 'String') {
                     $newItemsToAdd['items'][] = buildSimpleItem($value, $previousFolder);
@@ -924,10 +926,10 @@ switch ($inputData['type']) {
         /**
          * Build an item definition from the 'String' fields.
          * Converts the key-value pairs into a usable item format.
-         * 
+         *
          * @param array $strings The 'String' fields to process.
          * @param string $previousFolder The parent folder ID.
-         * 
+         *
          * @return array The item definition.
          */
         function buildItemDefinition(array $strings, string $previousFolder) : array
@@ -950,10 +952,10 @@ switch ($inputData['type']) {
         /**
          * Build a simple item with predefined fields.
          * This is used when there is no associated key, just ordered values.
-         * 
+         *
          * @param array $value The ordered values to process.
          * @param string $previousFolder The parent folder ID.
-         * 
+         *
          * @return array The simple item definition.
          */
         function buildSimpleItem(array $value, string $previousFolder) : array
@@ -971,11 +973,11 @@ switch ($inputData['type']) {
         /**
          * Handle groups (folders) within the structure.
          * It processes each group and recursively goes deeper into subgroups and subentries.
-         * 
+         *
          * @param array $groups The groups to process.
          * @param string $previousFolder The parent folder ID.
          * @param array $newItemsToAdd The new items to add to the database.
-         * 
+         *
          * @return array The new items to add to the database.
          */
         function handleGroups($groups, string $previousFolder, array $newItemsToAdd, int $level) : array
@@ -1023,7 +1025,7 @@ switch ($inputData['type']) {
             1,
         );
 
-        
+
         echo prepareExchangedData(
             array(
                 'error' => false,
@@ -1079,7 +1081,7 @@ switch ($inputData['type']) {
             // create folder in DB
             $folderId = createFolder(
                 $folder['folderName'],
-                $parentId['id'],
+                is_null($parentId['id']) ? 0 : (int) $parentId['id'],
                 $folder['level'],
                 $startPathLevel,
                 $destinationFolderInfos['levelPwComplexity']
@@ -1174,7 +1176,7 @@ switch ($inputData['type']) {
                     'pw' => $cryptedStuff['encrypted'],
                     'pw_iv' => '',
                     'url' => substr($item['URL'], 0, 500),
-                    'id_tree' => $post_folders[$item['parentFolderId']]['id'],
+                    'id_tree' => isset($post_folders[$item['parentFolderId']]['id']) ? (int)$post_folders[$item['parentFolderId']]['id'] : 0,
                     'login' => substr($item['UserName'], 0, 500),
                     'anyone_can_modify' => $$inputData['editAll'],
                     'encryption_type' => 'teampass_aes',
@@ -1219,7 +1221,7 @@ switch ($inputData['type']) {
                     'raison' => 'at_import',
                 )
             );
-            
+
             // Add item to cache table
             updateCacheTable('add_value', (int) $newId);
 
@@ -1270,9 +1272,9 @@ function createFolder($folderTitle, $parentId, $folderLevel, $startPathLevel, $l
         DB::insert(
             prefixTable('nested_tree'),
             array(
-                'parent_id' => $parentId,
-                'title' => stripslashes($folderTitle),
-                'nlevel' => $folderLevel,
+                'parent_id' => (int) $parentId,
+                'title' => (string) stripslashes($folderTitle),
+                'nlevel' => (int) $folderLevel,
                 'categories' => '',
             )
         );
@@ -1282,8 +1284,8 @@ function createFolder($folderTitle, $parentId, $folderLevel, $startPathLevel, $l
             prefixTable('misc'),
             array(
                 'type' => 'complex',
-                'intitule' => $id,
-                'valeur' => $levelPwComplexity,
+                'intitule' => (int) $id,
+                'valeur' => (int) $levelPwComplexity,
                 'created_at' => time(),
             )
         );
@@ -1317,7 +1319,7 @@ function createFolder($folderTitle, $parentId, $folderLevel, $startPathLevel, $l
 
         return $id;
     }
-    
+
     //get folder actual ID
     $data = DB::queryFirstRow(
         'SELECT id FROM '.prefixTable('nested_tree').'
@@ -1329,12 +1331,12 @@ function createFolder($folderTitle, $parentId, $folderLevel, $startPathLevel, $l
     return $data['id'];
 }
 
-/** 
+/**
  * getFolderComplexity
- * 
+ *
  * @param int $folderId
  * @param boolean $isFolderPF
- * 
+ *
  * @return array
 */
 function getFolderComplexity($folderId, $isFolderPF)
@@ -1417,9 +1419,9 @@ function cleanOutput(&$value)
 
 /**
  * Clean a string.
- * 
+ *
  * @param string $value The string to clean.
- * 
+ *
  * @return string The cleaned string.
  */
 function cleanInput($value): string
