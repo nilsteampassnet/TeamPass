@@ -191,7 +191,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     );
 
                     // Now perform import
-                    console.log('START IMPORT')
+                    if (debugJavascript === true) {
+                        console.log('START IMPORT');
+                    }
                     ImportCSV();
                 }
                 upldr.splice(); // clear the file queue
@@ -430,7 +432,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         // If user can manage folders, process folders first
         if ($('#userCanManageFolders').val() === '1') {
             // Set total folder count and start recursive processing
-            totalFolders = parseInt($('#csv-items-number').text()) || 0;
+            totalFolders = parseInt($('#csv-folders-number').text()) || 0;
             if (totalFolders > 0 && processedFolders <= totalFolders) {
                 processCsvFoldersBatch(csvOperationId, folderId, processedFolders, totalFolders, batchSizeFolders,);
             } else {
@@ -646,7 +648,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 failedItems = failedItems.concat(response.failedItems || []);
 
                 // If there are more folders to process, continue recursively
-                console.log('Processed items', processedItems, totalItems)
+                if (debugJavascript === true) {
+                    console.log('Processed items', processedItems, totalItems)
+                }
                 if (processedItems < totalItems) {
                     processCsvItemsBatch(csvOperationId, folderId, processedItems, totalItems, batchSizeItems, insertedItems);
                 } else {
@@ -715,8 +719,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     '<br>' +
                     '<i class="fa-solid fa-exclamation-triangle mr-2"></i><?php echo addslashes($lang->get('number_of_items_failed')); ?>: ' + failedItems.length +
                     '<br>' +
-                    (failedItems.length > 0 ? 
-                        failedItems.map((item) => `<i class="fa-solid fa-exclamation-triangle mr-2"></i>${item}`).join('<br>')
+                    (failedItems.length > 0
+                        ? failedItems.map((item) =>
+                            `<i class="fa-solid fa-exclamation-triangle mr-2"></i>ID ${item.increment_id} : ${item.error}`
+                        ).join('<br>')
                         : ''
                     )
                 );
