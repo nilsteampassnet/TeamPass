@@ -5493,6 +5493,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
                             // Show VIEW image icon
                             if (value.is_image === 1) {
+                                // Prepare filename
+                                let filename = decodeFilename(value.filename);
+
                                 html +=
                                     '<i class="fa-solid fa-eye infotip preview-image pointer mr-2" ' +
                                     'title="<?php echo $lang->get('see'); ?>" ' +
@@ -5506,18 +5509,19 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                                 '<i class="fa-solid fa-file-download"></i></a>';
                             html += downloadIcon;
 
+                            // Prepare filename
+                            let filename = decodeFilename(value.filename);
+
                             // Show other info
                             html +=
-                                '<span class="font-weight-bold mr-3">' +
-                                (isBase64(value.filename) === true ? atob(value.filename) : value.filename) + '</span>' +
+                                '<span class="font-weight-bold mr-3">' + filename + '</span>' +
                                 '<span class="mr-2 font-weight-light">(' + value.extension + ')</span>' +
                                 '<span class="font-italic">' + value.size + '</span>' +
                                 '</div></div>';
 
                             htmlFull += '<div class="col-6 edit-attachment-div"><div class="info-box bg-secondary-gradient">' +
                                 '<span class="info-box-icon bg-info"><i class="' + value.icon + '"></i></span>' +
-                                '<div class="info-box-content"><span class="info-box-text">' +
-                                (isBase64(value.filename) === true ? atob(value.filename) : value.filename) + '.' + value.extension + '</span>' +
+                                '<div class="info-box-content"><span class="info-box-text">' + filename + '.' + value.extension + '</span>' +
                                 '<span class="info-box-text">' + downloadIcon +'</span>' +
                                 '<span class="info-box-text"><i class="fa-solid fa-trash pointer delete-file" data-file-id="' + value.id + '"></i></span></div>' +
                                 '</div></div>';

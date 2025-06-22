@@ -415,8 +415,10 @@ function simplePurifier(
  * Permits to purify the content of an object using simplePurifier
  * Usefull for ajax answers
  * Can exclude some fields from HTML purification
+ * Can exclude some fields from purification
  */
 const htmlFields = ['description', 'desc'];
+const ignoredFields = ['pw'];
 function purifyData(obj, bHtml = false, bSvg = false, bSvgFilters = false) {
     if (Array.isArray(obj)) {
         return obj.map(item => purifyData(item, bHtml, bSvg, bSvgFilters));
@@ -424,13 +426,17 @@ function purifyData(obj, bHtml = false, bSvg = false, bSvgFilters = false) {
         let purifiedObject = {};
         for (let key in obj) {
             if (obj.hasOwnProperty(key)) {
-                const forceHtml = htmlFields.includes(key);
-                purifiedObject[key] = purifyData(
-                    obj[key],
-                    forceHtml ? true : bHtml,
-                    bSvg,
-                    bSvgFilters
-                );
+                if (ignoredFields.includes(key)) {
+                    purifiedObject[key] = obj[key]; // Skip purification
+                } else {
+                    const forceHtml = htmlFields.includes(key);
+                    purifiedObject[key] = purifyData(
+                        obj[key],
+                        forceHtml ? true : bHtml,
+                        bSvg,
+                        bSvgFilters
+                    );
+                }
             }
         }
         return purifiedObject;
@@ -630,4 +636,54 @@ function doAjaxQuery(type, url, data) {
             }
         });
     });
+}
+
+/**
+ * Permits to check if a string is a valid base64 encoded string
+ * @param {*} str 
+ * @returns 
+ */
+function isBase64(str) {
+    if (typeof str !== 'string') return false;
+
+    // If the prefix is there, it's clearly base64
+    if (str.startsWith('b64:')) return true;
+
+    // Check if the string contains only valid base64 characters
+    if (!/^[A-Za-z0-9+/=]+$/.test(str)) return false;
+
+    // Base64 strings should be a multiple of 4 in length
+    if (str.length % 4 !== 0) return false;
+
+    try {
+        const decoded = atob(str);
+        // Test if the decoded string can be re-encoded to the same base64 string
+        return btoa(decoded).replace(/=+$/, '') === str.replace(/=+$/, '');
+    } catch (e) {
+        return false;
+    }
+}
+
+/**
+ * Permits to decode a filename that may be encoded in base64
+ * @param {*} encodedName 
+ * @returns 
+ */
+function decodeFilename(encodedName) {
+    try {
+        if (typeof encodedName !== 'string') return encodedName;
+
+        if (encodedName.startsWith('b64:')) {
+            return atob(encodedName.substring(4));
+        }
+
+        if (isBase64(encodedName)) {
+            return atob(encodedName);
+        }
+
+        // Else, return the string as is
+        return encodedName;
+    } catch (e) {
+        return encodedName; // If atob fails, return the original string
+    }
 }
