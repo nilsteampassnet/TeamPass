@@ -322,7 +322,7 @@ $zones = timezone_list();
                                     // get list of all timezones
                                     foreach ($zones as $key => $zone) {
                                         echo '
-                                <option value="' . $key . '"', isset($SETTINGS['timezone']) === true && $SETTINGS['timezone'] === $key ? ' selected' : '', '>' . $zone . '</option>';
+                                <option value="' . $key . '"', isset($SETTINGS['timezone']) === true && (int) $SETTINGS['timezone'] === $key ? ' selected' : '', '>' . $zone . '</option>';
                                     }
                                     ?>
                                 </select>
@@ -374,7 +374,7 @@ $zones = timezone_list();
                                     $languagesList = $languagesList ?? [];
                                     foreach ($languagesList as $teampassLang) {
                                         echo '
-                                <option value="' . $teampassLang . '"', isset($SETTINGS['default_language']) === true && $SETTINGS['default_language'] === $teampassLang ? ' selected' : '', '>' . $teampassLang . '</option>';
+                                <option value="' . $teampassLang . '"', isset($SETTINGS['default_language']) === true && (int) $SETTINGS['default_language'] === $teampassLang ? ' selected' : '', '>' . $teampassLang . '</option>';
                                     }
                                     ?>
                                 </select>
@@ -416,7 +416,7 @@ $zones = timezone_list();
                                 <?php echo $lang->get('settings_log_connections'); ?>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='log_connections' data-toggle-on='<?php echo isset($SETTINGS['log_connections']) === true && $SETTINGS['log_connections'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='log_connections_input' value='<?php echo isset($SETTINGS['log_connections']) && $SETTINGS['log_connections'] === '1' ? '1' : '0'; ?>' />
+                                <div class='toggle toggle-modern' id='log_connections' data-toggle-on='<?php echo isset($SETTINGS['log_connections']) === true && (int) $SETTINGS['log_connections'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='log_connections_input' value='<?php echo isset($SETTINGS['log_connections']) && (int) $SETTINGS['log_connections'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
                         -->
@@ -426,7 +426,7 @@ $zones = timezone_list();
                                 <?php echo $lang->get('settings_log_accessed'); ?>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='log_accessed' data-toggle-on='<?php echo isset($SETTINGS['log_accessed']) === true && $SETTINGS['log_accessed'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='log_accessed_input' value='<?php echo isset($SETTINGS['log_accessed']) && $SETTINGS['log_accessed'] === '1' ? '1' : '0'; ?>' />
+                                <div class='toggle toggle-modern' id='log_accessed' data-toggle-on='<?php echo isset($SETTINGS['log_accessed']) === true && (int) $SETTINGS['log_accessed'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='log_accessed_input' value='<?php echo isset($SETTINGS['log_accessed']) && (int) $SETTINGS['log_accessed'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
 
@@ -438,7 +438,7 @@ $zones = timezone_list();
                                 </small>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='enable_pf_feature' data-toggle-on='<?php echo isset($SETTINGS['enable_pf_feature']) === true && $SETTINGS['enable_pf_feature'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_pf_feature_input' value='<?php echo isset($SETTINGS['enable_pf_feature']) && $SETTINGS['enable_pf_feature'] === '1' ? '1' : '0'; ?>' />
+                                <div class='toggle toggle-modern' id='enable_pf_feature' data-toggle-on='<?php echo isset($SETTINGS['enable_pf_feature']) === true && (int) $SETTINGS['enable_pf_feature'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_pf_feature_input' value='<?php echo isset($SETTINGS['enable_pf_feature']) && (int) $SETTINGS['enable_pf_feature'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
 
@@ -448,7 +448,7 @@ $zones = timezone_list();
                           <?php echo $lang->get('enable_personal_saltkey_cookie'); ?>
                       </div>
                       <div class='col-2'>
-                          <div class='toggle toggle-modern' id='enable_personal_saltkey_cookie' data-toggle-on='<?php echo isset($SETTINGS['enable_personal_saltkey_cookie']) === true && $SETTINGS['enable_personal_saltkey_cookie'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_personal_saltkey_cookie_input' value='<?php echo isset($SETTINGS['enable_personal_saltkey_cookie']) && $SETTINGS['enable_personal_saltkey_cookie'] === '1' ? '1' : '0'; ?>' />
+                          <div class='toggle toggle-modern' id='enable_personal_saltkey_cookie' data-toggle-on='<?php echo isset($SETTINGS['enable_personal_saltkey_cookie']) === true && (int) $SETTINGS['enable_personal_saltkey_cookie'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_personal_saltkey_cookie_input' value='<?php echo isset($SETTINGS['enable_personal_saltkey_cookie']) && (int) $SETTINGS['enable_personal_saltkey_cookie'] === 1 ? 1 : 0; ?>' />
                       </div>
                   </div>
 
@@ -471,7 +471,7 @@ $zones = timezone_list();
                                 <?php
                                 foreach (TP_PW_COMPLEXITY as $complex) {
                                     echo '
-                                <option value="' . $complex[0] . '"', isset($SETTINGS['personal_saltkey_security_level']) === true && $SETTINGS['personal_saltkey_security_level'] === $complex[0] ? ' selected' : '', '>' . $complex[1] . '</option>';
+                                <option value="' . $complex[0] . '"', isset($SETTINGS['personal_saltkey_security_level']) === true && (int) $SETTINGS['personal_saltkey_security_level'] === $complex[0] ? ' selected' : '', '>' . $complex[1] . '</option>';
                                 }
                                 ?>
                             </select>
@@ -486,7 +486,7 @@ $zones = timezone_list();
                           </small>
                       </div>
                       <div class='col-2'>
-                          <div class='toggle toggle-modern' id='enable_attachment_encryption' data-toggle-on='<?php echo isset($SETTINGS['enable_attachment_encryption']) === true && $SETTINGS['enable_attachment_encryption'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_attachment_encryption_input' value='<?php echo isset($SETTINGS['enable_attachment_encryption']) && $SETTINGS['enable_attachment_encryption'] === '1' ? '1' : '0'; ?>' />
+                          <div class='toggle toggle-modern' id='enable_attachment_encryption' data-toggle-on='<?php echo isset($SETTINGS['enable_attachment_encryption']) === true && (int) $SETTINGS['enable_attachment_encryption'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_attachment_encryption_input' value='<?php echo isset($SETTINGS['enable_attachment_encryption']) && (int) $SETTINGS['enable_attachment_encryption'] === 1 ? 1 : 0; ?>' />
                       </div>
                   </div>
                   -->
@@ -499,7 +499,7 @@ $zones = timezone_list();
                                 </small>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='secure_display_image' data-toggle-on='<?php echo isset($SETTINGS['secure_display_image']) === true && $SETTINGS['secure_display_image'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='secure_display_image_input' value='<?php echo isset($SETTINGS['secure_display_image']) && $SETTINGS['secure_display_image'] === '1' ? '1' : '0'; ?>' />
+                                <div class='toggle toggle-modern' id='secure_display_image' data-toggle-on='<?php echo isset($SETTINGS['secure_display_image']) === true && (int) $SETTINGS['secure_display_image'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='secure_display_image_input' value='<?php echo isset($SETTINGS['secure_display_image']) && (int) $SETTINGS['secure_display_image'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
 
@@ -511,7 +511,7 @@ $zones = timezone_list();
                                 </small>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='enable_kb' data-toggle-on='<?php echo isset($SETTINGS['enable_kb']) === true && $SETTINGS['enable_kb'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_kb_input' value='<?php echo isset($SETTINGS['enable_kb']) && $SETTINGS['enable_kb'] === '1' ? '1' : '0'; ?>' />
+                                <div class='toggle toggle-modern' id='enable_kb' data-toggle-on='<?php echo isset($SETTINGS['enable_kb']) === true && (int) $SETTINGS['enable_kb'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_kb_input' value='<?php echo isset($SETTINGS['enable_kb']) && (int) $SETTINGS['enable_kb'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
 
@@ -523,7 +523,7 @@ $zones = timezone_list();
                                 </small>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='enable_suggestion' data-toggle-on='<?php echo isset($SETTINGS['enable_suggestion']) === true && $SETTINGS['enable_suggestion'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_suggestion_input' value='<?php echo isset($SETTINGS['enable_suggestion']) && $SETTINGS['enable_suggestion'] === '1' ? '1' : '0'; ?>' />
+                                <div class='toggle toggle-modern' id='enable_suggestion' data-toggle-on='<?php echo isset($SETTINGS['enable_suggestion']) === true && (int) $SETTINGS['enable_suggestion'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_suggestion_input' value='<?php echo isset($SETTINGS['enable_suggestion']) && (int) $SETTINGS['enable_suggestion'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
 
@@ -535,7 +535,7 @@ $zones = timezone_list();
                                 </small>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='get_tp_info' data-toggle-on='<?php echo isset($SETTINGS['get_tp_info']) === true && $SETTINGS['get_tp_info'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='get_tp_info_input' value='<?php echo isset($SETTINGS['get_tp_info']) && $SETTINGS['get_tp_info'] === '1' ? '1' : '0'; ?>' />
+                                <div class='toggle toggle-modern' id='get_tp_info' data-toggle-on='<?php echo isset($SETTINGS['get_tp_info']) === true && (int) $SETTINGS['get_tp_info'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='get_tp_info_input' value='<?php echo isset($SETTINGS['get_tp_info']) && (int) $SETTINGS['get_tp_info'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
 
@@ -557,7 +557,7 @@ $zones = timezone_list();
                                     <?php echo $lang->get('otv_is_enabled'); ?>
                                 </div>
                                 <div class='col-2'>
-                                    <div class='toggle toggle-modern' id='otv_is_enabled' data-toggle-on='<?php echo isset($SETTINGS['otv_is_enabled']) === true && $SETTINGS['otv_is_enabled'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='otv_is_enabled_input' value='<?php echo isset($SETTINGS['otv_is_enabled']) && $SETTINGS['otv_is_enabled'] === '1' ? '1' : '0'; ?>' />
+                                    <div class='toggle toggle-modern' id='otv_is_enabled' data-toggle-on='<?php echo isset($SETTINGS['otv_is_enabled']) === true && (int) $SETTINGS['otv_is_enabled'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='otv_is_enabled_input' value='<?php echo isset($SETTINGS['otv_is_enabled']) && (int) $SETTINGS['otv_is_enabled'] === 1 ? 1 : 0; ?>' />
                                 </div>
                             </div>
 
@@ -614,7 +614,7 @@ $zones = timezone_list();
                                 <?php echo $lang->get('settings_manager_edit'); ?>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='manager_edit' data-toggle-on='<?php echo isset($SETTINGS['manager_edit']) === true && $SETTINGS['manager_edit'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='manager_edit_input' value='<?php echo isset($SETTINGS['manager_edit']) && $SETTINGS['manager_edit'] === '1' ? '1' : '0'; ?>' />
+                                <div class='toggle toggle-modern' id='manager_edit' data-toggle-on='<?php echo isset($SETTINGS['manager_edit']) === true && (int) $SETTINGS['manager_edit'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='manager_edit_input' value='<?php echo isset($SETTINGS['manager_edit']) && (int) $SETTINGS['manager_edit'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
 
@@ -623,7 +623,7 @@ $zones = timezone_list();
                                 <?php echo $lang->get('settings_manager_move_item'); ?>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='manager_move_item' data-toggle-on='<?php echo isset($SETTINGS['manager_move_item']) === true && $SETTINGS['manager_move_item'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='manager_move_item_input' value='<?php echo isset($SETTINGS['manager_move_item']) && $SETTINGS['manager_move_item'] === '1' ? '1' : '0'; ?>' />
+                                <div class='toggle toggle-modern' id='manager_move_item' data-toggle-on='<?php echo isset($SETTINGS['manager_move_item']) === true && (int) $SETTINGS['manager_move_item'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='manager_move_item_input' value='<?php echo isset($SETTINGS['manager_move_item']) && (int) $SETTINGS['manager_move_item'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
 
@@ -641,7 +641,7 @@ $zones = timezone_list();
                                 <?php echo $lang->get('duplicate_folder'); ?>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='duplicate_folder' data-toggle-on='<?php echo isset($SETTINGS['duplicate_folder']) === true && $SETTINGS['duplicate_folder'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='duplicate_folder_input' value='<?php echo isset($SETTINGS['duplicate_folder']) && $SETTINGS['duplicate_folder'] === '1' ? '1' : '0'; ?>' />
+                                <div class='toggle toggle-modern' id='duplicate_folder' data-toggle-on='<?php echo isset($SETTINGS['duplicate_folder']) === true && (int) $SETTINGS['duplicate_folder'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='duplicate_folder_input' value='<?php echo isset($SETTINGS['duplicate_folder']) && (int) $SETTINGS['duplicate_folder'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
 
@@ -650,7 +650,7 @@ $zones = timezone_list();
                                 <?php echo $lang->get('duplicate_item'); ?>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='duplicate_item' data-toggle-on='<?php echo isset($SETTINGS['duplicate_item']) === true && $SETTINGS['duplicate_item'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='duplicate_item_input' value='<?php echo isset($SETTINGS['duplicate_item']) && $SETTINGS['duplicate_item'] === '1' ? '1' : '0'; ?>' />
+                                <div class='toggle toggle-modern' id='duplicate_item' data-toggle-on='<?php echo isset($SETTINGS['duplicate_item']) === true && (int) $SETTINGS['duplicate_item'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='duplicate_item_input' value='<?php echo isset($SETTINGS['duplicate_item']) && (int) $SETTINGS['duplicate_item'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
 
@@ -659,7 +659,7 @@ $zones = timezone_list();
                                 <?php echo $lang->get('duplicate_item_in_folder'); ?>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='item_duplicate_in_same_folder' data-toggle-on='<?php echo isset($SETTINGS['item_duplicate_in_same_folder']) === true && $SETTINGS['item_duplicate_in_same_folder'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='item_duplicate_in_same_folder_input' value='<?php echo isset($SETTINGS['item_duplicate_in_same_folder']) && $SETTINGS['item_duplicate_in_same_folder'] === '1' ? '1' : '0'; ?>' />
+                                <div class='toggle toggle-modern' id='item_duplicate_in_same_folder' data-toggle-on='<?php echo isset($SETTINGS['item_duplicate_in_same_folder']) === true && (int) $SETTINGS['item_duplicate_in_same_folder'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='item_duplicate_in_same_folder_input' value='<?php echo isset($SETTINGS['item_duplicate_in_same_folder']) && (int) $SETTINGS['item_duplicate_in_same_folder'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
 
@@ -671,7 +671,7 @@ $zones = timezone_list();
                                 </small>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='show_only_accessible_folders' data-toggle-on='<?php echo isset($SETTINGS['show_only_accessible_folders']) === true && $SETTINGS['show_only_accessible_folders'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='show_only_accessible_folders_input' value='<?php echo isset($SETTINGS['show_only_accessible_folders']) && $SETTINGS['show_only_accessible_folders'] === '1' ? '1' : '0'; ?>' />
+                                <div class='toggle toggle-modern' id='show_only_accessible_folders' data-toggle-on='<?php echo isset($SETTINGS['show_only_accessible_folders']) === true && (int) $SETTINGS['show_only_accessible_folders'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='show_only_accessible_folders_input' value='<?php echo isset($SETTINGS['show_only_accessible_folders']) && (int) $SETTINGS['show_only_accessible_folders'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
 
@@ -683,7 +683,7 @@ $zones = timezone_list();
                                 </small>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='subfolder_rights_as_parent' data-toggle-on='<?php echo isset($SETTINGS['subfolder_rights_as_parent']) === true && $SETTINGS['subfolder_rights_as_parent'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='subfolder_rights_as_parent_input' value='<?php echo isset($SETTINGS['subfolder_rights_as_parent']) && $SETTINGS['subfolder_rights_as_parent'] === '1' ? '1' : '0'; ?>' />
+                                <div class='toggle toggle-modern' id='subfolder_rights_as_parent' data-toggle-on='<?php echo isset($SETTINGS['subfolder_rights_as_parent']) === true && (int) $SETTINGS['subfolder_rights_as_parent'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='subfolder_rights_as_parent_input' value='<?php echo isset($SETTINGS['subfolder_rights_as_parent']) && (int) $SETTINGS['subfolder_rights_as_parent'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
 
@@ -692,7 +692,7 @@ $zones = timezone_list();
                                 <?php echo $lang->get('create_item_without_password'); ?>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='create_item_without_password' data-toggle-on='<?php echo isset($SETTINGS['create_item_without_password']) === true && $SETTINGS['create_item_without_password'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='create_item_without_password_input' value='<?php echo isset($SETTINGS['create_item_without_password']) && $SETTINGS['create_item_without_password'] === '1' ? '1' : '0'; ?>' />
+                                <div class='toggle toggle-modern' id='create_item_without_password' data-toggle-on='<?php echo isset($SETTINGS['create_item_without_password']) === true && (int) $SETTINGS['create_item_without_password'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='create_item_without_password_input' value='<?php echo isset($SETTINGS['create_item_without_password']) && (int) $SETTINGS['create_item_without_password'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
 
@@ -701,7 +701,7 @@ $zones = timezone_list();
                                 <?php echo $lang->get('disable_user_edit_profile'); ?>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='disable_user_edit_profile' data-toggle-on='<?php echo isset($SETTINGS['disable_user_edit_profile']) === true && $SETTINGS['disable_user_edit_profile'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='disable_user_edit_profile_input' value='<?php echo isset($SETTINGS['disable_user_edit_profile']) && $SETTINGS['disable_user_edit_profile'] === '1' ? '1' : '0'; ?>' />
+                                <div class='toggle toggle-modern' id='disable_user_edit_profile' data-toggle-on='<?php echo isset($SETTINGS['disable_user_edit_profile']) === true && (int) $SETTINGS['disable_user_edit_profile'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='disable_user_edit_profile_input' value='<?php echo isset($SETTINGS['disable_user_edit_profile']) && (int) $SETTINGS['disable_user_edit_profile'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
 
@@ -710,7 +710,7 @@ $zones = timezone_list();
                                 <?php echo $lang->get('disable_user_edit_language'); ?>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='disable_user_edit_language' data-toggle-on='<?php echo isset($SETTINGS['disable_user_edit_language']) === true && $SETTINGS['disable_user_edit_language'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='disable_user_edit_language_input' value='<?php echo isset($SETTINGS['disable_user_edit_language']) && $SETTINGS['disable_user_edit_language'] === '1' ? '1' : '0'; ?>' />
+                                <div class='toggle toggle-modern' id='disable_user_edit_language' data-toggle-on='<?php echo isset($SETTINGS['disable_user_edit_language']) === true && (int) $SETTINGS['disable_user_edit_language'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='disable_user_edit_language_input' value='<?php echo isset($SETTINGS['disable_user_edit_language']) && (int) $SETTINGS['disable_user_edit_language'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
 
@@ -719,7 +719,7 @@ $zones = timezone_list();
                                 <?php echo $lang->get('disable_user_edit_timezone'); ?>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='disable_user_edit_timezone' data-toggle-on='<?php echo isset($SETTINGS['disable_user_edit_timezone']) === true && $SETTINGS['disable_user_edit_timezone'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='disable_user_edit_timezone_input' value='<?php echo isset($SETTINGS['disable_user_edit_timezone']) && $SETTINGS['disable_user_edit_timezone'] === '1' ? '1' : '0'; ?>' />
+                                <div class='toggle toggle-modern' id='disable_user_edit_timezone' data-toggle-on='<?php echo isset($SETTINGS['disable_user_edit_timezone']) === true && (int) $SETTINGS['disable_user_edit_timezone'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='disable_user_edit_timezone_input' value='<?php echo isset($SETTINGS['disable_user_edit_timezone']) && (int) $SETTINGS['disable_user_edit_timezone'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
 
@@ -728,7 +728,7 @@ $zones = timezone_list();
                                 <?php echo $lang->get('disable_drag_drop'); ?>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='disable_drag_drop' data-toggle-on='<?php echo isset($SETTINGS['disable_drag_drop']) === true && $SETTINGS['disable_drag_drop'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='disable_drag_drop_input' value='<?php echo isset($SETTINGS['disable_drag_drop']) && $SETTINGS['disable_drag_drop'] === '1' ? '1' : '0'; ?>' />
+                                <div class='toggle toggle-modern' id='disable_drag_drop' data-toggle-on='<?php echo isset($SETTINGS['disable_drag_drop']) === true && (int) $SETTINGS['disable_drag_drop'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='disable_drag_drop_input' value='<?php echo isset($SETTINGS['disable_drag_drop']) && (int) $SETTINGS['disable_drag_drop'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
 
@@ -737,7 +737,7 @@ $zones = timezone_list();
                                 <?php echo $lang->get('disable_user_edit_tree_load_strategy'); ?>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='disable_user_edit_tree_load_strategy' data-toggle-on='<?php echo isset($SETTINGS['disable_user_edit_tree_load_strategy']) === true && $SETTINGS['disable_user_edit_tree_load_strategy'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='disable_user_edit_tree_load_strategy_input' value='<?php echo isset($SETTINGS['disable_user_edit_tree_load_strategy']) && $SETTINGS['disable_user_edit_tree_load_strategy'] === '1' ? '1' : '0'; ?>' />
+                                <div class='toggle toggle-modern' id='disable_user_edit_tree_load_strategy' data-toggle-on='<?php echo isset($SETTINGS['disable_user_edit_tree_load_strategy']) === true && (int) $SETTINGS['disable_user_edit_tree_load_strategy'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='disable_user_edit_tree_load_strategy_input' value='<?php echo isset($SETTINGS['disable_user_edit_tree_load_strategy']) && (int) $SETTINGS['disable_user_edit_tree_load_strategy'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
 
@@ -746,7 +746,7 @@ $zones = timezone_list();
                                 <?php echo $lang->get('enable_favourites'); ?>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='enable_favourites' data-toggle-on='<?php echo isset($SETTINGS['enable_favourites']) === true && $SETTINGS['enable_favourites'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_favourites_input' value='<?php echo isset($SETTINGS['enable_favourites']) && $SETTINGS['enable_favourites'] === '1' ? '1' : '0'; ?>' />
+                                <div class='toggle toggle-modern' id='enable_favourites' data-toggle-on='<?php echo isset($SETTINGS['enable_favourites']) === true && (int) $SETTINGS['enable_favourites'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_favourites_input' value='<?php echo isset($SETTINGS['enable_favourites']) && (int) $SETTINGS['enable_favourites'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
 
@@ -755,7 +755,7 @@ $zones = timezone_list();
                                 <?php echo $lang->get('enable_user_can_create_folders'); ?>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='enable_user_can_create_folders' data-toggle-on='<?php echo isset($SETTINGS['enable_user_can_create_folders']) === true && $SETTINGS['enable_user_can_create_folders'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_user_can_create_folders_input' value='<?php echo isset($SETTINGS['enable_user_can_create_folders']) && $SETTINGS['enable_user_can_create_folders'] === '1' ? '1' : '0'; ?>' />
+                                <div class='toggle toggle-modern' id='enable_user_can_create_folders' data-toggle-on='<?php echo isset($SETTINGS['enable_user_can_create_folders']) === true && (int) $SETTINGS['enable_user_can_create_folders'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_user_can_create_folders_input' value='<?php echo isset($SETTINGS['enable_user_can_create_folders']) && (int) $SETTINGS['enable_user_can_create_folders'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
 
@@ -764,7 +764,7 @@ $zones = timezone_list();
                                 <?php echo $lang->get('can_create_root_folder'); ?>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='can_create_root_folder' data-toggle-on='<?php echo isset($SETTINGS['can_create_root_folder']) === true && $SETTINGS['can_create_root_folder'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='can_create_root_folder_input' value='<?php echo isset($SETTINGS['can_create_root_folder']) && $SETTINGS['can_create_root_folder'] === '1' ? '1' : '0'; ?>' />
+                                <div class='toggle toggle-modern' id='can_create_root_folder' data-toggle-on='<?php echo isset($SETTINGS['can_create_root_folder']) === true && (int) $SETTINGS['can_create_root_folder'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='can_create_root_folder_input' value='<?php echo isset($SETTINGS['can_create_root_folder']) && (int) $SETTINGS['can_create_root_folder'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
 
@@ -776,7 +776,7 @@ $zones = timezone_list();
                                 </small>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='enable_massive_move_delete' data-toggle-on='<?php echo isset($SETTINGS['enable_massive_move_delete']) === true && $SETTINGS['enable_massive_move_delete'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_massive_move_delete_input' value='<?php echo isset($SETTINGS['enable_massive_move_delete']) && $SETTINGS['enable_massive_move_delete'] === '1' ? '1' : '0'; ?>' />
+                                <div class='toggle toggle-modern' id='enable_massive_move_delete' data-toggle-on='<?php echo isset($SETTINGS['enable_massive_move_delete']) === true && (int) $SETTINGS['enable_massive_move_delete'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_massive_move_delete_input' value='<?php echo isset($SETTINGS['enable_massive_move_delete']) && (int) $SETTINGS['enable_massive_move_delete'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
 
@@ -800,7 +800,7 @@ $zones = timezone_list();
                                 </small>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='activate_expiration' data-toggle-on='<?php echo isset($SETTINGS['activate_expiration']) === true && $SETTINGS['activate_expiration'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='activate_expiration_input' value='<?php echo isset($SETTINGS['activate_expiration']) && $SETTINGS['activate_expiration'] === '1' ? '1' : '0'; ?>' />
+                                <div class='toggle toggle-modern' id='activate_expiration' data-toggle-on='<?php echo isset($SETTINGS['activate_expiration']) === true && (int) $SETTINGS['activate_expiration'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='activate_expiration_input' value='<?php echo isset($SETTINGS['activate_expiration']) && (int) $SETTINGS['activate_expiration'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
 
@@ -812,7 +812,7 @@ $zones = timezone_list();
                                 </small>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='enable_delete_after_consultation' data-toggle-on='<?php echo isset($SETTINGS['enable_delete_after_consultation']) === true && $SETTINGS['enable_delete_after_consultation'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_delete_after_consultation_input' value='<?php echo isset($SETTINGS['enable_delete_after_consultation']) && $SETTINGS['enable_delete_after_consultation'] === '1' ? '1' : '0'; ?>' />
+                                <div class='toggle toggle-modern' id='enable_delete_after_consultation' data-toggle-on='<?php echo isset($SETTINGS['enable_delete_after_consultation']) === true && (int) $SETTINGS['enable_delete_after_consultation'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_delete_after_consultation_input' value='<?php echo isset($SETTINGS['enable_delete_after_consultation']) && (int) $SETTINGS['enable_delete_after_consultation'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
 
@@ -824,7 +824,7 @@ $zones = timezone_list();
                                 </small>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='allow_print' data-toggle-on='<?php echo isset($SETTINGS['allow_print']) === true && $SETTINGS['allow_print'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='allow_print_input' value='<?php echo isset($SETTINGS['allow_print']) && $SETTINGS['allow_print'] === '1' ? '1' : '0'; ?>' />
+                                <div class='toggle toggle-modern' id='allow_print' data-toggle-on='<?php echo isset($SETTINGS['allow_print']) === true && (int) $SETTINGS['allow_print'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='allow_print_input' value='<?php echo isset($SETTINGS['allow_print']) && (int) $SETTINGS['allow_print'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
 
@@ -861,7 +861,7 @@ $zones = timezone_list();
                                 <?php echo $lang->get('settings_importing'); ?>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='allow_import' data-toggle-on='<?php echo isset($SETTINGS['allow_import']) === true && $SETTINGS['allow_import'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='allow_import_input' value='<?php echo isset($SETTINGS['allow_import']) && $SETTINGS['allow_import'] === '1' ? '1' : '0'; ?>' />
+                                <div class='toggle toggle-modern' id='allow_import' data-toggle-on='<?php echo isset($SETTINGS['allow_import']) === true && (int) $SETTINGS['allow_import'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='allow_import_input' value='<?php echo isset($SETTINGS['allow_import']) && (int) $SETTINGS['allow_import'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
 
@@ -873,16 +873,16 @@ $zones = timezone_list();
                                 </small>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='anyone_can_modify' data-toggle-on='<?php echo isset($SETTINGS['anyone_can_modify']) === true && $SETTINGS['anyone_can_modify'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='anyone_can_modify_input' value='<?php echo isset($SETTINGS['anyone_can_modify']) && $SETTINGS['anyone_can_modify'] === '1' ? '1' : '0'; ?>' />
+                                <div class='toggle toggle-modern' id='anyone_can_modify' data-toggle-on='<?php echo isset($SETTINGS['anyone_can_modify']) === true && (int) $SETTINGS['anyone_can_modify'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='anyone_can_modify_input' value='<?php echo isset($SETTINGS['anyone_can_modify']) && (int) $SETTINGS['anyone_can_modify'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
 
-                        <div class='row mb-2 option <?php echo isset($SETTINGS['anyone_can_modify']) === true && $SETTINGS['anyone_can_modify'] === '1' ? '' : 'hidden'; ?>' id="form-item-row-modify" data-keywords="role restriction modify right">
+                        <div class='row mb-2 option <?php echo isset($SETTINGS['anyone_can_modify']) === true && (int) $SETTINGS['anyone_can_modify'] === '1' ? '' : 'hidden'; ?>' id="form-item-row-modify" data-keywords="role restriction modify right">
                             <div class='col-10'>
                                 <?php echo $lang->get('settings_anyone_can_modify_bydefault'); ?>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='anyone_can_modify_bydefault' data-toggle-on='<?php echo isset($SETTINGS['anyone_can_modify_bydefault']) === true && $SETTINGS['anyone_can_modify_bydefault'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='anyone_can_modify_bydefault_input' value='<?php echo isset($SETTINGS['anyone_can_modify_bydefault']) && $SETTINGS['anyone_can_modify_bydefault'] === '1' ? '1' : '0'; ?>' />
+                                <div class='toggle toggle-modern' id='anyone_can_modify_bydefault' data-toggle-on='<?php echo isset($SETTINGS['anyone_can_modify_bydefault']) === true && (int) $SETTINGS['anyone_can_modify_bydefault'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='anyone_can_modify_bydefault_input' value='<?php echo isset($SETTINGS['anyone_can_modify_bydefault']) && (int) $SETTINGS['anyone_can_modify_bydefault'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
 
@@ -891,16 +891,16 @@ $zones = timezone_list();
                                 <?php echo $lang->get('settings_restricted_to'); ?>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='restricted_to' data-toggle-on='<?php echo isset($SETTINGS['restricted_to']) === true && $SETTINGS['restricted_to'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='restricted_to_input' value='<?php echo isset($SETTINGS['restricted_to']) && $SETTINGS['restricted_to'] === '1' ? '1' : '0'; ?>' />
+                                <div class='toggle toggle-modern' id='restricted_to' data-toggle-on='<?php echo isset($SETTINGS['restricted_to']) === true && (int) $SETTINGS['restricted_to'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='restricted_to_input' value='<?php echo isset($SETTINGS['restricted_to']) && (int) $SETTINGS['restricted_to'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
 
-                        <div class='row mb-2 option <?php echo isset($SETTINGS['restricted_to']) === true && $SETTINGS['restricted_to'] === '1' ? '' : 'hidden'; ?>' id="form-item-row-restricted" data-keywords="role restriction">
+                        <div class='row mb-2 option <?php echo isset($SETTINGS['restricted_to']) === true && (int) $SETTINGS['restricted_to'] === '1' ? '' : 'hidden'; ?>' id="form-item-row-restricted" data-keywords="role restriction">
                             <div class='col-10'>
                                 <?php echo $lang->get('restricted_to_roles'); ?>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='restricted_to_roles' data-toggle-on='<?php echo isset($SETTINGS['restricted_to_roles']) === true && $SETTINGS['restricted_to_roles'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='restricted_to_roles_input' value='<?php echo isset($SETTINGS['restricted_to_roles']) && $SETTINGS['restricted_to_roles'] === '1' ? '1' : '0'; ?>' />
+                                <div class='toggle toggle-modern' id='restricted_to_roles' data-toggle-on='<?php echo isset($SETTINGS['restricted_to_roles']) === true && (int) $SETTINGS['restricted_to_roles'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='restricted_to_roles_input' value='<?php echo isset($SETTINGS['restricted_to_roles']) && (int) $SETTINGS['restricted_to_roles'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
 
@@ -912,7 +912,7 @@ $zones = timezone_list();
                                 </small>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='copy_to_clipboard_small_icons' data-toggle-on='<?php echo isset($SETTINGS['copy_to_clipboard_small_icons']) === true && $SETTINGS['copy_to_clipboard_small_icons'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='copy_to_clipboard_small_icons_input' value='<?php echo isset($SETTINGS['copy_to_clipboard_small_icons']) && $SETTINGS['copy_to_clipboard_small_icons'] === '1' ? '1' : '0'; ?>' />
+                                <div class='toggle toggle-modern' id='copy_to_clipboard_small_icons' data-toggle-on='<?php echo isset($SETTINGS['copy_to_clipboard_small_icons']) === true && (int) $SETTINGS['copy_to_clipboard_small_icons'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='copy_to_clipboard_small_icons_input' value='<?php echo isset($SETTINGS['copy_to_clipboard_small_icons']) && (int) $SETTINGS['copy_to_clipboard_small_icons'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
 
@@ -936,7 +936,7 @@ $zones = timezone_list();
                                 </small>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='show_item_data' data-toggle-on='<?php echo isset($SETTINGS['show_item_data']) === true && $SETTINGS['show_item_data'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='show_item_data_input' value='<?php echo isset($SETTINGS['show_item_data']) && $SETTINGS['show_item_data'] === '1' ? '1' : '0'; ?>' />
+                                <div class='toggle toggle-modern' id='show_item_data' data-toggle-on='<?php echo isset($SETTINGS['show_item_data']) === true && (int) $SETTINGS['show_item_data'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='show_item_data_input' value='<?php echo isset($SETTINGS['show_item_data']) && (int) $SETTINGS['show_item_data'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
 
@@ -946,11 +946,11 @@ $zones = timezone_list();
                                 <?php echo $lang->get('settings_show_description'); ?>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='show_description' data-toggle-on='<?php echo isset($SETTINGS['show_description']) === true && $SETTINGS['show_description'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='show_description_input' value='<?php echo isset($SETTINGS['show_description']) && $SETTINGS['show_description'] === '1' ? '1' : '0'; ?>' />
+                                <div class='toggle toggle-modern' id='show_description' data-toggle-on='<?php echo isset($SETTINGS['show_description']) === true && (int) $SETTINGS['show_description'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='show_description_input' value='<?php echo isset($SETTINGS['show_description']) && (int) $SETTINGS['show_description'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
 <?php
-if (isset($SETTINGS['show_description']) === true && $SETTINGS['show_description'] === '1') {
+if (isset($SETTINGS['show_description']) === true && (int) $SETTINGS['show_description'] === '1') {
     ?>
                         <div class='row mb-2 option' data-keywords="display tree counter">
                             <div class='col-10'>
@@ -960,7 +960,7 @@ if (isset($SETTINGS['show_description']) === true && $SETTINGS['show_description
                                 </small>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='tree_counters' data-toggle-on='<?php echo isset($SETTINGS['tree_counters']) === true && $SETTINGS['tree_counters'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='tree_counters_input' value='<?php echo isset($SETTINGS['tree_counters']) && $SETTINGS['tree_counters'] === '1' ? '1' : '0'; ?>' />
+                                <div class='toggle toggle-modern' id='tree_counters' data-toggle-on='<?php echo isset($SETTINGS['tree_counters']) === true && (int) $SETTINGS['tree_counters'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='tree_counters_input' value='<?php echo isset($SETTINGS['tree_counters']) && (int) $SETTINGS['tree_counters'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
 <?php
@@ -975,7 +975,7 @@ if (isset($SETTINGS['show_description']) === true && $SETTINGS['show_description
                                 </small>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='limited_search_default' data-toggle-on='<?php echo isset($SETTINGS['limited_search_default']) === true && $SETTINGS['limited_search_default'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='limited_search_default_input' value='<?php echo isset($SETTINGS['limited_search_default']) && $SETTINGS['limited_search_default'] === '1' ? '1' : '0'; ?>' />
+                                <div class='toggle toggle-modern' id='limited_search_default' data-toggle-on='<?php echo isset($SETTINGS['limited_search_default']) === true && (int) $SETTINGS['limited_search_default'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='limited_search_default_input' value='<?php echo isset($SETTINGS['limited_search_default']) && (int) $SETTINGS['limited_search_default'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
 
@@ -987,7 +987,7 @@ if (isset($SETTINGS['show_description']) === true && $SETTINGS['show_description
                                 </small>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='highlight_selected' data-toggle-on='<?php echo isset($SETTINGS['highlight_selected']) === true && $SETTINGS['highlight_selected'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='highlight_selected_input' value='<?php echo isset($SETTINGS['highlight_selected']) && $SETTINGS['highlight_selected'] === '1' ? '1' : '0'; ?>' />
+                                <div class='toggle toggle-modern' id='highlight_selected' data-toggle-on='<?php echo isset($SETTINGS['highlight_selected']) === true && (int) $SETTINGS['highlight_selected'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='highlight_selected_input' value='<?php echo isset($SETTINGS['highlight_selected']) && (int) $SETTINGS['highlight_selected'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
 
@@ -999,7 +999,7 @@ if (isset($SETTINGS['show_description']) === true && $SETTINGS['show_description
                                 </small>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='highlight_favorites' data-toggle-on='<?php echo isset($SETTINGS['highlight_favorites']) === true && $SETTINGS['highlight_favorites'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='highlight_favorites_input' value='<?php echo isset($SETTINGS['highlight_favorites']) && $SETTINGS['highlight_favorites'] === '1' ? '1' : '0'; ?>' />
+                                <div class='toggle toggle-modern' id='highlight_favorites' data-toggle-on='<?php echo isset($SETTINGS['highlight_favorites']) === true && (int) $SETTINGS['highlight_favorites'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='highlight_favorites_input' value='<?php echo isset($SETTINGS['highlight_favorites']) && (int) $SETTINGS['highlight_favorites'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
 
@@ -1020,7 +1020,7 @@ if (isset($SETTINGS['show_description']) === true && $SETTINGS['show_description
                                 <?php echo $lang->get('enable_send_email_on_user_login'); ?>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='enable_send_email_on_user_login' data-toggle-on='<?php echo isset($SETTINGS['enable_send_email_on_user_login']) === true && $SETTINGS['enable_send_email_on_user_login'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_send_email_on_user_login_input' value='<?php echo isset($SETTINGS['enable_send_email_on_user_login']) && $SETTINGS['enable_send_email_on_user_login'] === '1' ? '1' : '0'; ?>' />
+                                <div class='toggle toggle-modern' id='enable_send_email_on_user_login' data-toggle-on='<?php echo isset($SETTINGS['enable_send_email_on_user_login']) === true && (int) $SETTINGS['enable_send_email_on_user_login'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_send_email_on_user_login_input' value='<?php echo isset($SETTINGS['enable_send_email_on_user_login']) && (int) $SETTINGS['enable_send_email_on_user_login'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
 
@@ -1029,7 +1029,7 @@ if (isset($SETTINGS['show_description']) === true && $SETTINGS['show_description
                                 <?php echo $lang->get('enable_email_notification_on_item_shown'); ?>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='enable_email_notification_on_item_shown' data-toggle-on='<?php echo isset($SETTINGS['enable_email_notification_on_item_shown']) === true && $SETTINGS['enable_email_notification_on_item_shown'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_email_notification_on_item_shown_input' value='<?php echo isset($SETTINGS['enable_email_notification_on_item_shown']) && $SETTINGS['enable_email_notification_on_item_shown'] === '1' ? '1' : '0'; ?>' />
+                                <div class='toggle toggle-modern' id='enable_email_notification_on_item_shown' data-toggle-on='<?php echo isset($SETTINGS['enable_email_notification_on_item_shown']) === true && (int) $SETTINGS['enable_email_notification_on_item_shown'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_email_notification_on_item_shown_input' value='<?php echo isset($SETTINGS['enable_email_notification_on_item_shown']) && (int) $SETTINGS['enable_email_notification_on_item_shown'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
 
@@ -1038,7 +1038,7 @@ if (isset($SETTINGS['show_description']) === true && $SETTINGS['show_description
                                 <?php echo $lang->get('enable_email_notification_on_user_pw_change'); ?>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='enable_email_notification_on_user_pw_change' data-toggle-on='<?php echo isset($SETTINGS['enable_email_notification_on_user_pw_change']) === true && $SETTINGS['enable_email_notification_on_user_pw_change'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_email_notification_on_user_pw_change_input' value='<?php echo isset($SETTINGS['enable_email_notification_on_user_pw_change']) && $SETTINGS['enable_email_notification_on_user_pw_change'] === '1' ? '1' : '0'; ?>' />
+                                <div class='toggle toggle-modern' id='enable_email_notification_on_user_pw_change' data-toggle-on='<?php echo isset($SETTINGS['enable_email_notification_on_user_pw_change']) === true && (int) $SETTINGS['enable_email_notification_on_user_pw_change'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_email_notification_on_user_pw_change_input' value='<?php echo isset($SETTINGS['enable_email_notification_on_user_pw_change']) && (int) $SETTINGS['enable_email_notification_on_user_pw_change'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
 
@@ -1050,7 +1050,7 @@ if (isset($SETTINGS['show_description']) === true && $SETTINGS['show_description
                                 </small>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='insert_manual_entry_item_history' data-toggle-on='<?php echo isset($SETTINGS['insert_manual_entry_item_history']) === true && $SETTINGS['insert_manual_entry_item_history'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='insert_manual_entry_item_history_input' value='<?php echo isset($SETTINGS['insert_manual_entry_item_history']) && $SETTINGS['insert_manual_entry_item_history'] === '1' ? '1' : '0'; ?>' />
+                                <div class='toggle toggle-modern' id='insert_manual_entry_item_history' data-toggle-on='<?php echo isset($SETTINGS['insert_manual_entry_item_history']) === true && (int) $SETTINGS['insert_manual_entry_item_history'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='insert_manual_entry_item_history_input' value='<?php echo isset($SETTINGS['insert_manual_entry_item_history']) && (int) $SETTINGS['insert_manual_entry_item_history'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
 
@@ -1062,7 +1062,7 @@ if (isset($SETTINGS['show_description']) === true && $SETTINGS['show_description
                                 </small>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='settings_offline_mode' data-toggle-on='<?php echo isset($SETTINGS['settings_offline_mode']) === true && $SETTINGS['settings_offline_mode'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='settings_offline_mode_input' value='<?php echo isset($SETTINGS['settings_offline_mode']) && $SETTINGS['settings_offline_mode'] === '1' ? '1' : '0'; ?>' />
+                                <div class='toggle toggle-modern' id='settings_offline_mode' data-toggle-on='<?php echo isset($SETTINGS['settings_offline_mode']) === true && (int) $SETTINGS['settings_offline_mode'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='settings_offline_mode_input' value='<?php echo isset($SETTINGS['settings_offline_mode']) && (int) $SETTINGS['settings_offline_mode'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
 
@@ -1075,7 +1075,7 @@ if (isset($SETTINGS['show_description']) === true && $SETTINGS['show_description
                                     <?php
                                     foreach (TP_PW_COMPLEXITY as $complex) {
                                         echo '
-                                <option value="' . $complex[0] . '"', isset($SETTINGS['offline_key_level']) === true && $SETTINGS['offline_key_level'] === $complex[0] ? ' selected' : '', '>' . $complex[1] . '</option>';
+                                <option value="' . $complex[0] . '"', isset($SETTINGS['offline_key_level']) === true && (int) $SETTINGS['offline_key_level'] === $complex[0] ? ' selected' : '', '>' . $complex[1] . '</option>';
                                     }
                                     ?>
                                 </select>
@@ -1087,7 +1087,7 @@ if (isset($SETTINGS['show_description']) === true && $SETTINGS['show_description
                                 <?php echo $lang->get('syslog_enable'); ?>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='syslog_enable' data-toggle-on='<?php echo isset($SETTINGS['syslog_enable']) === true && $SETTINGS['syslog_enable'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='syslog_enable_input' value='<?php echo isset($SETTINGS['syslog_enable']) && $SETTINGS['syslog_enable'] === '1' ? '1' : '0'; ?>' />
+                                <div class='toggle toggle-modern' id='syslog_enable' data-toggle-on='<?php echo isset($SETTINGS['syslog_enable']) === true && (int) $SETTINGS['syslog_enable'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='syslog_enable_input' value='<?php echo isset($SETTINGS['syslog_enable']) && (int) $SETTINGS['syslog_enable'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
 
@@ -1117,7 +1117,7 @@ if (isset($SETTINGS['show_description']) === true && $SETTINGS['show_description
                                 </small>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern disabled' id='enable_server_password_change' data-toggle-on='<?php echo isset($SETTINGS['enable_server_password_change']) === true && $SETTINGS['enable_server_password_change'] === '1' ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_server_password_change_input' value='<?php echo isset($SETTINGS['enable_server_password_change']) && $SETTINGS['enable_server_password_change'] === '1' ? '1' : '0'; ?>' />
+                                <div class='toggle toggle-modern disabled' id='enable_server_password_change' data-toggle-on='<?php echo isset($SETTINGS['enable_server_password_change']) === true && (int) $SETTINGS['enable_server_password_change'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_server_password_change_input' value='<?php echo isset($SETTINGS['enable_server_password_change']) && (int) $SETTINGS['enable_server_password_change'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
 

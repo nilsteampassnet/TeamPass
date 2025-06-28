@@ -2057,12 +2057,13 @@ switch ($post_type) {
             );
             break;
         }
+        
         // decrypt and retreive data in JSON format
         $dataReceived = prepareExchangedData(
             $post_data,
             'decode'
         );
-
+        
         // prepare data
         $post_value = filter_var($dataReceived['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         $post_field = filter_var($dataReceived['field'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
@@ -2182,11 +2183,11 @@ switch ($post_type) {
             );
         }
 
-        // Avoid break tp.config.php file with ' in parameter.
-        $dataReceived['value'] = addslashes((string) $dataReceived['value']);
-
-        // store in SESSION
-        $SETTINGS[$post_field] = $post_value;
+        // Update last settings change timestamp
+        // This to ensure that the settings are refreshed in the session
+        $settings = $session->get('teampass-settings');
+        $settings['timestamp'] = time();
+        $session->set('teampass-settings', $settings);
 
         // Encrypt data to return
         echo prepareExchangedData(

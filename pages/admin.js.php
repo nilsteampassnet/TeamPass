@@ -84,7 +84,8 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 ?>
 
 <script type="text/javascript">
-    var requestRunning = false;
+    var requestRunning = false,
+        debugJavascript = false;
     
     // Manage memory
     browserSession(
@@ -153,7 +154,10 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
             "field": e.target.id,
             "value": $("#" + e.target.id + "_input").val(),
         }
-        console.log(data)
+        if (debugJavascript === true) {
+            console.log('Sending to server:');
+            console.log(data);
+        }
         // Store in DB   
         $.post(
             "sources/admin.queries.php", {
@@ -177,7 +181,10 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                     );
                     return false;
                 }
-                console.log(data)
+                if (debugJavascript === true) {
+                    console.log('Response from server:');
+                    console.log(data);
+                }
                 if (data.error === false) {
                     toastr.remove();
                     toastr.success(
