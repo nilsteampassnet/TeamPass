@@ -48,7 +48,7 @@ class ConfigManager
         $lastModified = $this->getLastModificationTimestamp();
 
         // Check if the settings have been loaded before and if a setting hasn't been modified since the last load
-        if ($session->has('teampass-settings') && isset($session->get('teampass-settings')['timestamp']) === true && $session->get('teampass-settings')['timestamp'] >= $lastModified && is_null($lastModified) === false) {
+        if ($session->has('teampass-settings') && isset($session->get('teampass-settings')['timestamp']) === true && $session->get('teampass-settings')['timestamp'] > $lastModified && is_null($lastModified) === false) {
             $this->settings = $session->get('teampass-settings');
         } else {
             // Load settings from DB
