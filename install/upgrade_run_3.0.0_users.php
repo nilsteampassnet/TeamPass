@@ -798,16 +798,13 @@ if (null !== $post_step) {
             if (empty($userEmail['email']) === false) {
                 // Send email
                 try {
-                    sendEmail(
-                        '[Teampass] Your One Time Code',
-                        str_replace(
-                            array('#tp_password#'),
-                            array($userInfo['otp']),
-                            'Hello '.$userEmail['userName'].',<br><br>This is a generated email from Teampass passwords manager.<br><br>Teampass administrator has performed an update which includes a change of encryption protocol. During your next login in Teampass, a One Time Code will be asked in order to re-encrypt your data.<br><br>Please use on demand (it is unique for your account):<br><br><b>#tp_password#</b><br><br>This process might take a couple of minutes depending of the number of items existing in the database.<br><br>Cheers'
-                        ),
+                    sendMailToUser(
                         $userEmail['email'],
-                        $SETTINGS,
-                        '',
+                        'Hello '.$userEmail['userName'].',<br><br>This is a generated email from Teampass passwords manager.<br><br>Teampass administrator has performed an update which includes a change of encryption protocol. During your next login in Teampass, a One Time Code will be asked in order to re-encrypt your data.<br><br>Please use on demand (it is unique for your account):<br><br><b>#tp_password#</b><br><br>This process might take a couple of minutes depending of the number of items existing in the database.<br><br>Cheers',
+                        '[Teampass] Your One Time Code',
+                        [
+                            '#tp_password#' => $userInfo['otp'],
+                        ],
                         true
                     );
                 } catch (Exception $e) {
