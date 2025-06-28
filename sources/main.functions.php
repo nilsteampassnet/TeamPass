@@ -30,7 +30,6 @@ declare(strict_types=1);
  */
 
 use LdapRecord\Connection;
-use ForceUTF8\Encoding;
 use Elegant\Sanitizer\Sanitizer;
 use voku\helper\AntiXSS;
 use Hackzilla\PasswordGenerator\Generator\ComputerPasswordGenerator;
@@ -44,11 +43,7 @@ use Defuse\Crypto\Crypto;
 use Defuse\Crypto\KeyProtectedByPassword;
 use Defuse\Crypto\File as CryptoFile;
 use Defuse\Crypto\Exception as CryptoException;
-use Elegant\Sanitizer\Filters\Uppercase;
-use PHPMailer\PHPMailer\PHPMailer;
 use TeampassClasses\PasswordManager\PasswordManager;
-use Symfony\Component\Process\Exception\ProcessFailedException;
-use Symfony\Component\Process\Process;
 use Symfony\Component\Process\PhpExecutableFinder;
 use TeampassClasses\Encryption\Encryption;
 use TeampassClasses\ConfigManager\ConfigManager;
