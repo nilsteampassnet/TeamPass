@@ -42,18 +42,18 @@ trait ServiceMethodsSubscriberTrait
             }
 
             if ($method->isStatic() || $method->isAbstract() || $method->isGenerator() || $method->isInternal() || $method->getNumberOfRequiredParameters()) {
-                throw new \LogicException(sprintf('Cannot use "%s" on method "%s::%s()" (can only be used on non-static, non-abstract methods with no parameters).', SubscribedService::class, self::class, $method->name));
+                throw new \LogicException(\sprintf('Cannot use "%s" on method "%s::%s()" (can only be used on non-static, non-abstract methods with no parameters).', SubscribedService::class, self::class, $method->name));
             }
 
             if (!$returnType = $method->getReturnType()) {
-                throw new \LogicException(sprintf('Cannot use "%s" on methods without a return type in "%s::%s()".', SubscribedService::class, $method->name, self::class));
+                throw new \LogicException(\sprintf('Cannot use "%s" on methods without a return type in "%s::%s()".', SubscribedService::class, $method->name, self::class));
             }
 
             /* @var SubscribedService $attribute */
             $attribute = $attribute->newInstance();
             $attribute->key ??= self::class.'::'.$method->name;
             $attribute->type ??= $returnType instanceof \ReflectionNamedType ? $returnType->getName() : (string) $returnType;
-            $attribute->nullable = $returnType->allowsNull();
+            $attribute->nullable = $attribute->nullable ?: $returnType->allowsNull();
 
             if ($attribute->attributes) {
                 $services[] = $attribute;

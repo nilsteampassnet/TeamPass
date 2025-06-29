@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /*
  * This file is part of the JsonSchema package.
  *
@@ -9,6 +11,7 @@
 
 namespace JsonSchema\Constraints;
 
+use JsonSchema\ConstraintError;
 use JsonSchema\Entity\JsonPointer;
 
 /**
@@ -20,46 +23,37 @@ interface ConstraintInterface
 {
     /**
      * returns all collected errors
-     *
-     * @return array
      */
-    public function getErrors();
+    public function getErrors(): array;
 
     /**
      * adds errors to this validator
-     *
-     * @param array $errors
      */
-    public function addErrors(array $errors);
+    public function addErrors(array $errors): void;
 
     /**
      * adds an error
      *
-     * @param JsonPointer|null $path
-     * @param string           $message
-     * @param string           $constraint the constraint/rule that is broken, e.g.: 'minLength'
-     * @param array            $more       more array elements to add to the error
+     * @param ConstraintError $constraint the constraint/rule that is broken, e.g.: ConstraintErrors::LENGTH_MIN()
+     * @param array           $more       more array elements to add to the error
      */
-    public function addError(?JsonPointer $path, $message, $constraint='', ?array $more = null);
+    public function addError(ConstraintError $constraint, ?JsonPointer $path = null, array $more = []): void;
 
     /**
      * checks if the validator has not raised errors
-     *
-     * @return bool
      */
-    public function isValid();
+    public function isValid(): bool;
 
     /**
      * invokes the validation of an element
      *
      * @abstract
      *
-     * @param mixed            $value
-     * @param mixed            $schema
-     * @param JsonPointer|null $path
-     * @param mixed            $i
+     * @param mixed $value
+     * @param mixed $schema
+     * @param mixed $i
      *
      * @throws \JsonSchema\Exception\ExceptionInterface
      */
-    public function check(&$value, $schema = null, ?JsonPointer $path = null, $i = null);
+    public function check(&$value, $schema = null, ?JsonPointer $path = null, $i = null): void;
 }

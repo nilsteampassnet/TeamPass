@@ -1,43 +1,34 @@
 <?php
 
-/*
- * This file is part of the JsonSchema package.
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
+declare(strict_types=1);
 
 namespace JsonSchema\Constraints;
 
+use JsonSchema\ConstraintError;
 use JsonSchema\Constraints\TypeCheck\LooseTypeCheck;
 use JsonSchema\Entity\JsonPointer;
 use JsonSchema\Exception\ValidationException;
+use JsonSchema\Tool\DeepCopy;
 use JsonSchema\Uri\UriResolver;
 
-/**
- * The UndefinedConstraint Constraints
- *
- * @author Robert Schönthal <seroscho@googlemail.com>
- * @author Bruno Prieto Reis <bruno.p.reis@gmail.com>
- */
 #[\AllowDynamicProperties]
 class UndefinedConstraint extends Constraint
 {
     /**
-     * @var array List of properties to which a default value has been applied
+     * @var list<string> List of properties to which a default value has been applied
      */
-    protected $appliedDefaults = array();
+    protected $appliedDefaults = [];
 
     /**
      * {@inheritdoc}
-     */
-    public function check(&$value, $schema = null, ?JsonPointer $path = null, $i = null, $fromDefault = false)
+     * */
+    public function check(&$value, $schema = null, ?JsonPointer $path = null, $i = null, bool $fromDefault = false): void
     {
         if (is_null($schema) || !is_object($schema)) {
             return;
         }
 
-        $path = $this->incrementPath($path ?: new JsonPointer(''), $i);
+        $path = $this->incrementPath($path, $i);
         if ($fromDefault) {
             $path->setFromDefault();
         }
@@ -68,9 +59,10 @@ class UndefinedConstraint extends Constraint
         }
 
         // check object
-        if (LooseTypeCheck::isObject($value)) { // object processing should always be run on assoc arrays,
-                                                // so use LooseTypeCheck here even if CHECK_MODE_TYPE_CAST
-                                                // is not set (i.e. don't use $this->getTypeCheck() here).
+        if (LooseTypeCheck::isObject($value)) {
+            // object processing should always be run on assoc arrays,
+            // so use LooseTypeCheck here even if CHECK_MODE_TYPE_CAST
+            // is not set (i.e. don't use $this->getTypeCheck() here).
             $this->checkObject(
                 $value,
                 $schema,
@@ -95,6 +87,11 @@ class UndefinedConstraint extends Constraint
         // check enum
         if (isset($schema->enum)) {
             $this->checkEnum($value, $schema, $path, $i);
+        }
+
+        // check const
+        if (isset($schema->const)) {
+            $this->checkConst($value, $schema, $path, $i);
         }
     }
 
@@ -134,9 +131,10 @@ class UndefinedConstraint extends Constraint
                 foreach ($schema->required as $required) {
                     if (!$this->getTypeCheck()->propertyExists($value, $required)) {
                         $this->addError(
-                            $this->incrementPath($path ?: new JsonPointer(''), $required),
-                            'The property ' . $required . ' is required',
-                            'required'
+                            ConstraintError::REQUIRED(),
+                            $this->incrementPath($path, $required), [
+                                'property' => $required
+                            ]
                         );
                     }
                 }
@@ -145,11 +143,7 @@ class UndefinedConstraint extends Constraint
                 if ($schema->required && $value instanceof self) {
                     $propertyPaths = $path->getPropertyPaths();
                     $propertyName = end($propertyPaths);
-                    $this->addError(
-                        $path,
-                        'The property ' . $propertyName . ' is required',
-                        'required'
-                    );
+                    $this->addError(ConstraintError::REQUIRED(), $path, ['property' => $propertyName]);
                 }
             } else {
                 // if the value is both undefined and not required, skip remaining checks
@@ -175,7 +169,7 @@ class UndefinedConstraint extends Constraint
 
             // if no new errors were raised it must be a disallowed value
             if (count($this->getErrors()) == count($initErrors)) {
-                $this->addError($path, 'Disallowed value was matched', 'disallow');
+                $this->addError(ConstraintError::DISALLOW(), $path);
             } else {
                 $this->errors = $initErrors;
             }
@@ -187,7 +181,7 @@ class UndefinedConstraint extends Constraint
 
             // if no new errors were raised then the instance validated against the "not" schema
             if (count($this->getErrors()) == count($initErrors)) {
-                $this->addError($path, 'Matched a schema which it should not', 'not');
+                $this->addError(ConstraintError::NOT(), $path);
             } else {
                 $this->errors = $initErrors;
             }
@@ -238,7 +232,7 @@ class UndefinedConstraint extends Constraint
      * @param mixed       $schema
      * @param JsonPointer $path
      */
-    protected function applyDefaultValues(&$value, $schema, $path)
+    protected function applyDefaultValues(&$value, $schema, $path): void
     {
         // only apply defaults if feature is enabled
         if (!$this->factory->getConfig(self::CHECK_MODE_APPLY_DEFAULTS)) {
@@ -246,7 +240,7 @@ class UndefinedConstraint extends Constraint
         }
 
         // apply defaults if appropriate
-        $requiredOnly = $this->factory->getConfig(self::CHECK_MODE_ONLY_REQUIRED_DEFAULTS);
+        $requiredOnly = (bool) $this->factory->getConfig(self::CHECK_MODE_ONLY_REQUIRED_DEFAULTS);
         if (isset($schema->properties) && LooseTypeCheck::isObject($value)) {
             // $value is an object or assoc array, and properties are defined - treat as an object
             foreach ($schema->properties as $currentProperty => $propertyDefinition) {
@@ -266,7 +260,7 @@ class UndefinedConstraint extends Constraint
                 }
             }
         } elseif (isset($schema->items) && LooseTypeCheck::isArray($value)) {
-            $items = array();
+            $items = [];
             if (LooseTypeCheck::isArray($schema->items)) {
                 $items = $schema->items;
             } elseif (isset($schema->minItems) && count($value) < $schema->minItems) {
@@ -320,19 +314,22 @@ class UndefinedConstraint extends Constraint
                 $isValid = $isValid && (count($this->getErrors()) == count($initErrors));
             }
             if (!$isValid) {
-                $this->addError($path, 'Failed to match all schemas', 'allOf');
+                $this->addError(ConstraintError::ALL_OF(), $path);
             }
         }
 
         if (isset($schema->anyOf)) {
             $isValid = false;
             $startErrors = $this->getErrors();
-            $caughtException = null;
+            $coerceOrDefaults = $this->factory->getConfig(self::CHECK_MODE_COERCE_TYPES | self::CHECK_MODE_APPLY_DEFAULTS);
+
             foreach ($schema->anyOf as $anyOf) {
                 $initErrors = $this->getErrors();
                 try {
-                    $this->checkUndefined($value, $anyOf, $path, $i);
-                    if ($isValid = (count($this->getErrors()) == count($initErrors))) {
+                    $anyOfValue = $coerceOrDefaults ? DeepCopy::copyOf($value) : $value;
+                    $this->checkUndefined($anyOfValue, $anyOf, $path, $i);
+                    if ($isValid = (count($this->getErrors()) === count($initErrors))) {
+                        $value = $anyOfValue;
                         break;
                     }
                 } catch (ValidationException $e) {
@@ -340,22 +337,26 @@ class UndefinedConstraint extends Constraint
                 }
             }
             if (!$isValid) {
-                $this->addError($path, 'Failed to match at least one schema', 'anyOf');
+                $this->addError(ConstraintError::ANY_OF(), $path);
             } else {
                 $this->errors = $startErrors;
             }
         }
 
         if (isset($schema->oneOf)) {
-            $allErrors = array();
-            $matchedSchemas = 0;
+            $allErrors = [];
+            $matchedSchemas = [];
             $startErrors = $this->getErrors();
+            $coerceOrDefaults = $this->factory->getConfig(self::CHECK_MODE_COERCE_TYPES | self::CHECK_MODE_APPLY_DEFAULTS);
+
             foreach ($schema->oneOf as $oneOf) {
                 try {
-                    $this->errors = array();
-                    $this->checkUndefined($value, $oneOf, $path, $i);
-                    if (count($this->getErrors()) == 0) {
-                        $matchedSchemas++;
+                    $this->errors = [];
+
+                    $oneOfValue = $coerceOrDefaults ? DeepCopy::copyOf($value) : $value;
+                    $this->checkUndefined($oneOfValue, $oneOf, $path, $i);
+                    if (count($this->getErrors()) === 0) {
+                        $matchedSchemas[] = ['schema' => $oneOf, 'value' => $oneOfValue];
                     }
                     $allErrors = array_merge($allErrors, array_values($this->getErrors()));
                 } catch (ValidationException $e) {
@@ -363,11 +364,12 @@ class UndefinedConstraint extends Constraint
                     // other schema options in the OneOf field.
                 }
             }
-            if ($matchedSchemas !== 1) {
+            if (count($matchedSchemas) !== 1) {
                 $this->addErrors(array_merge($allErrors, $startErrors));
-                $this->addError($path, 'Failed to match exactly one schema', 'oneOf');
+                $this->addError(ConstraintError::ONE_OF(), $path);
             } else {
                 $this->errors = $startErrors;
+                $value = $matchedSchemas[0]['value'];
             }
         }
     }
@@ -387,13 +389,19 @@ class UndefinedConstraint extends Constraint
                 if (is_string($dependency)) {
                     // Draft 3 string is allowed - e.g. "dependencies": {"bar": "foo"}
                     if (!$this->getTypeCheck()->propertyExists($value, $dependency)) {
-                        $this->addError($path, "$key depends on $dependency and $dependency is missing", 'dependencies');
+                        $this->addError(ConstraintError::DEPENDENCIES(), $path, [
+                            'key' => $key,
+                            'dependency' => $dependency
+                        ]);
                     }
                 } elseif (is_array($dependency)) {
                     // Draft 4 must be an array - e.g. "dependencies": {"bar": ["foo"]}
                     foreach ($dependency as $d) {
                         if (!$this->getTypeCheck()->propertyExists($value, $d)) {
-                            $this->addError($path, "$key depends on $d and $d is missing", 'dependencies');
+                            $this->addError(ConstraintError::DEPENDENCIES(), $path, [
+                                'key' => $key,
+                                'dependency' => $dependency
+                            ]);
                         }
                     }
                 } elseif (is_object($dependency)) {

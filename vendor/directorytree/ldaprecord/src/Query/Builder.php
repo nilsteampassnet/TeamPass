@@ -428,6 +428,8 @@ class Builder
      */
     public function chunk(int $pageSize, Closure $callback, bool $isCritical = false, bool $isolate = false): bool
     {
+        $this->limit(0);
+
         $start = microtime(true);
 
         $chunk = function (Builder $query) use ($pageSize, $callback, $isCritical) {

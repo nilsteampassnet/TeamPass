@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /*
  * This file is part of the JsonSchema package.
  *
@@ -11,6 +13,7 @@ namespace JsonSchema;
 
 use JsonSchema\Constraints\BaseConstraint;
 use JsonSchema\Constraints\Constraint;
+use JsonSchema\Constraints\TypeCheck\LooseTypeCheck;
 
 /**
  * A JsonSchema Constraint
@@ -22,12 +25,12 @@ use JsonSchema\Constraints\Constraint;
  */
 class Validator extends BaseConstraint
 {
-    const SCHEMA_MEDIA_TYPE = 'application/schema+json';
+    public const SCHEMA_MEDIA_TYPE = 'application/schema+json';
 
-    const ERROR_NONE                    = 0x00000000;
-    const ERROR_ALL                     = 0xFFFFFFFF;
-    const ERROR_DOCUMENT_VALIDATION     = 0x00000001;
-    const ERROR_SCHEMA_VALIDATION       = 0x00000002;
+    public const ERROR_NONE                    = 0;
+    public const ERROR_ALL                     = -1;
+    public const ERROR_DOCUMENT_VALIDATION     = 1;
+    public const ERROR_SCHEMA_VALIDATION       = 2;
 
     /**
      * Validates the given data against the schema and returns an object containing the results
@@ -35,13 +38,17 @@ class Validator extends BaseConstraint
      * The validation works as defined by the schema proposal in http://json-schema.org.
      *
      * Note that the first argument is passed by reference, so you must pass in a variable.
+     *
+     * @param mixed $value
+     * @param mixed $schema
+     *
+     * @phpstan-param int-mask-of<Constraint::CHECK_MODE_*> $checkMode
+     * @phpstan-return int-mask-of<Validator::ERROR_*>
      */
-    public function validate(&$value, $schema = null, $checkMode = null)
+    public function validate(&$value, $schema = null, ?int $checkMode = null): int
     {
-        // make sure $schema is an object
-        if (is_array($schema)) {
-            $schema = self::arrayToObjectRecursive($schema);
-        }
+        // reset errors prior to validation
+        $this->reset();
 
         // set checkMode
         $initialCheckMode = $this->factory->getConfig();
@@ -50,10 +57,9 @@ class Validator extends BaseConstraint
         }
 
         // add provided schema to SchemaStorage with internal URI to allow internal $ref resolution
-        if (is_object($schema) && property_exists($schema, 'id')) {
-            $schemaURI = $schema->id;
-        } else {
-            $schemaURI = SchemaStorage::INTERNAL_PROVIDED_SCHEMA_URI;
+        $schemaURI = SchemaStorage::INTERNAL_PROVIDED_SCHEMA_URI;
+        if (LooseTypeCheck::propertyExists($schema, 'id')) {
+            $schemaURI = LooseTypeCheck::propertyGet($schema, 'id');
         }
         $this->factory->getSchemaStorage()->addSchema($schemaURI, $schema);
 
@@ -72,16 +78,30 @@ class Validator extends BaseConstraint
 
     /**
      * Alias to validate(), to maintain backwards-compatibility with the previous API
+     *
+     * @deprecated since 6.0.0, use Validator::validate() instead, to be removed in 7.0
+     *
+     * @param mixed $value
+     * @param mixed $schema
+     *
+     * @phpstan-return int-mask-of<Validator::ERROR_*>
      */
-    public function check($value, $schema)
+    public function check($value, $schema): int
     {
         return $this->validate($value, $schema);
     }
 
     /**
      * Alias to validate(), to maintain backwards-compatibility with the previous API
+     *
+     * @deprecated since 6.0.0, use Validator::validate() instead, to be removed in 7.0
+     *
+     * @param mixed $value
+     * @param mixed $schema
+     *
+     * @phpstan-return int-mask-of<Validator::ERROR_*>
      */
-    public function coerce(&$value, $schema)
+    public function coerce(&$value, $schema): int
     {
         return $this->validate($value, $schema, Constraint::CHECK_MODE_COERCE_TYPES);
     }

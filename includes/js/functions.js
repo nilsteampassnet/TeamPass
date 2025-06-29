@@ -403,12 +403,29 @@ function simplePurifier(
     if (bSanitize === false || textCleaned.includes("img")) {
         return textCleaned;
     }
-    return sanitizeDom(
-        DOMPurify.sanitize(
-            textCleaned,
-            {USE_PROFILES: {html:bHtml, svg:bSvg, svgFilters: bSvgFilters}}
-        )
+
+    // If no HTML, SVG or SVG filters are requested, return the cleaned text
+    if (bHtml === true) {
+        return sanitizeDom(
+            DOMPurify.sanitize(
+                textCleaned,
+                {USE_PROFILES: {html:bHtml, svg:bSvg, svgFilters: bSvgFilters}}
+            )
+        );
+    }
+      
+    // Sanitize with DOMPurify
+    const sanitized = DOMPurify.sanitize(
+        textCleaned,
+        { USE_PROFILES: { html: bHtml, svg: bSvg, svgFilters: bSvgFilters } }
     );
+
+    // Convert sanitized text to plain text
+    const div = document.createElement('div');
+    div.innerHTML = sanitized;
+    const plainText = div.textContent;
+    div.remove();
+    return plainText;
 }
 
 /**
@@ -481,7 +498,7 @@ function fieldDomPurifier(
     }
     let string = '';
     text = (text === '') ? $(field).val() : text;
-
+    
     // Purify string
     string = simplePurifier(text, bHtml, bSvg, bSvgFilters);
     
@@ -570,7 +587,6 @@ function fieldDomPurifierWithWarning(
     let string = '',
         currentString = $(field).val();
 
-        console.log(currentString);
     // if bSetting is true, we use the setting value
     // remove any closing ', string that could corrupt the setting
     if (bSetting === true && Array.isArray(currentString) === false) {
@@ -605,7 +621,7 @@ function fieldDomPurifierWithWarning(
 const sanitizeDom = (str) => {
     const div = document.createElement('div');
     div.textContent = str;
-    newString = div.innerHTML;
+    const newString = div.innerHTML;
     div.remove();
     return newString;
 }

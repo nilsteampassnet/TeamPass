@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /*
  * This file is part of the JsonSchema package.
  *
@@ -22,7 +24,7 @@ class JsonPointer
     private $filename;
 
     /** @var string[] */
-    private $propertyPaths = array();
+    private $propertyPaths = [];
 
     /**
      * @var bool Whether the value at this path was set from a schema default
@@ -54,7 +56,7 @@ class JsonPointer
      */
     private function decodePropertyPaths($propertyPathString)
     {
-        $paths = array();
+        $paths = [];
         foreach (explode('/', trim($propertyPathString, '/')) as $path) {
             $path = $this->decodePath($path);
             if (is_string($path) && '' !== $path) {
@@ -71,7 +73,7 @@ class JsonPointer
     private function encodePropertyPaths()
     {
         return array_map(
-            array($this, 'encodePath'),
+            [$this, 'encodePath'],
             $this->getPropertyPaths()
         );
     }
@@ -83,7 +85,7 @@ class JsonPointer
      */
     private function decodePath($path)
     {
-        return strtr($path, array('~1' => '/', '~0' => '~', '%25' => '%'));
+        return strtr($path, ['~1' => '/', '~0' => '~', '%25' => '%']);
     }
 
     /**
@@ -93,7 +95,7 @@ class JsonPointer
      */
     private function encodePath($path)
     {
-        return strtr($path, array('/' => '~1', '~' => '~0', '%' => '%25'));
+        return strtr($path, ['/' => '~1', '~' => '~0', '%' => '%25']);
     }
 
     /**
@@ -120,7 +122,7 @@ class JsonPointer
     public function withPropertyPaths(array $propertyPaths)
     {
         $new = clone $this;
-        $new->propertyPaths = $propertyPaths;
+        $new->propertyPaths = array_map(function ($p): string { return (string) $p; }, $propertyPaths);
 
         return $new;
     }
@@ -144,7 +146,7 @@ class JsonPointer
     /**
      * Mark the value at this path as being set from a schema default
      */
-    public function setFromDefault()
+    public function setFromDefault(): void
     {
         $this->fromDefault = true;
     }
