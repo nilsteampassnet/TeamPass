@@ -25,7 +25,8 @@ class ServiceMethodsSubscriberTraitTest extends TestCase
     {
         $expected = [
             TestService::class.'::aService' => Service2::class,
-            TestService::class.'::nullableService' => '?'.Service2::class,
+            TestService::class.'::nullableInAttribute' => '?'.Service2::class,
+            TestService::class.'::nullableReturnType' => '?'.Service2::class,
             new SubscribedService(TestService::class.'::withAttribute', Service2::class, true, new Required()),
         ];
 
@@ -46,7 +47,7 @@ class ServiceMethodsSubscriberTraitTest extends TestCase
         $container = new class([]) implements ContainerInterface {
             use ServiceLocatorTrait;
         };
-        $service = new class() extends ParentWithMagicCall {
+        $service = new class extends ParentWithMagicCall {
             use ServiceMethodsSubscriberTrait;
         };
 
@@ -59,7 +60,7 @@ class ServiceMethodsSubscriberTraitTest extends TestCase
         $container = new class([]) implements ContainerInterface {
             use ServiceLocatorTrait;
         };
-        $service = new class() {
+        $service = new class {
             use ServiceMethodsSubscriberTrait;
         };
 
@@ -104,8 +105,18 @@ class TestService extends ParentTestService implements ServiceSubscriberInterfac
         return $this->container->get(__METHOD__);
     }
 
+    #[SubscribedService(nullable: true)]
+    public function nullableInAttribute(): Service2
+    {
+        if (!$this->container->has(__METHOD__)) {
+            throw new \LogicException();
+        }
+
+        return $this->container->get(__METHOD__);
+    }
+
     #[SubscribedService]
-    public function nullableService(): ?Service2
+    public function nullableReturnType(): ?Service2
     {
         return $this->container->get(__METHOD__);
     }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /*
  * This file is part of the JsonSchema package.
  *
@@ -22,7 +24,7 @@ use JsonSchema\Validator;
 class Factory
 {
     /**
-     * @var SchemaStorage
+     * @var SchemaStorageInterface
      */
     protected $schemaStorage;
 
@@ -33,13 +35,15 @@ class Factory
 
     /**
      * @var int
+     * @phpstan-var int-mask-of<Constraint::CHECK_MODE_*>
      */
     private $checkMode = Constraint::CHECK_MODE_NORMAL;
 
     /**
-     * @var TypeCheck\TypeCheckInterface[]
+     * @var array<int, TypeCheck\TypeCheckInterface>
+     * @phpstan-var array<int-mask-of<Constraint::CHECK_MODE_*>, TypeCheck\TypeCheckInterface>
      */
-    private $typeCheck = array();
+    private $typeCheck = [];
 
     /**
      * @var int Validation context
@@ -49,7 +53,7 @@ class Factory
     /**
      * @var array
      */
-    protected $constraintMap = array(
+    protected $constraintMap = [
         'array' => 'JsonSchema\Constraints\CollectionConstraint',
         'collection' => 'JsonSchema\Constraints\CollectionConstraint',
         'object' => 'JsonSchema\Constraints\ObjectConstraint',
@@ -58,25 +62,24 @@ class Factory
         'string' => 'JsonSchema\Constraints\StringConstraint',
         'number' => 'JsonSchema\Constraints\NumberConstraint',
         'enum' => 'JsonSchema\Constraints\EnumConstraint',
+        'const' => 'JsonSchema\Constraints\ConstConstraint',
         'format' => 'JsonSchema\Constraints\FormatConstraint',
         'schema' => 'JsonSchema\Constraints\SchemaConstraint',
         'validator' => 'JsonSchema\Validator'
-    );
+    ];
 
     /**
      * @var array<ConstraintInterface>
      */
-    private $instanceCache = array();
+    private $instanceCache = [];
 
     /**
-     * @param SchemaStorage         $schemaStorage
-     * @param UriRetrieverInterface $uriRetriever
-     * @param int                   $checkMode
+     * @phpstan-param int-mask-of<Constraint::CHECK_MODE_*> $checkMode
      */
     public function __construct(
         ?SchemaStorageInterface $schemaStorage = null,
         ?UriRetrieverInterface $uriRetriever = null,
-        $checkMode = Constraint::CHECK_MODE_NORMAL
+        int $checkMode = Constraint::CHECK_MODE_NORMAL
     ) {
         // set provided config options
         $this->setConfig($checkMode);
@@ -89,8 +92,9 @@ class Factory
      * Set config values
      *
      * @param int $checkMode Set checkMode options - does not preserve existing flags
+     * @phpstan-param int-mask-of<Constraint::CHECK_MODE_*> $checkMode
      */
-    public function setConfig($checkMode = Constraint::CHECK_MODE_NORMAL)
+    public function setConfig(int $checkMode = Constraint::CHECK_MODE_NORMAL): void
     {
         $this->checkMode = $checkMode;
     }
@@ -98,9 +102,9 @@ class Factory
     /**
      * Enable checkMode flags
      *
-     * @param int $options
+     * @phpstan-param int-mask-of<Constraint::CHECK_MODE_*> $options
      */
-    public function addConfig($options)
+    public function addConfig(int $options): void
     {
         $this->checkMode |= $options;
     }
@@ -108,9 +112,9 @@ class Factory
     /**
      * Disable checkMode flags
      *
-     * @param int $options
+     * @phpstan-param int-mask-of<Constraint::CHECK_MODE_*> $options
      */
-    public function removeConfig($options)
+    public function removeConfig(int $options): void
     {
         $this->checkMode &= ~$options;
     }
@@ -118,11 +122,12 @@ class Factory
     /**
      * Get checkMode option
      *
-     * @param int $options Options to get, if null then return entire bitmask
+     * @param int|null $options Options to get, if null then return entire bitmask
+     * @phpstan-param int-mask-of<Constraint::CHECK_MODE_*>|null $options Options to get, if null then return entire bitmask
      *
-     * @return int
+     * @phpstan-return int-mask-of<Constraint::CHECK_MODE_*>
      */
-    public function getConfig($options = null)
+    public function getConfig(?int $options = null): int
     {
         if ($options === null) {
             return $this->checkMode;
@@ -131,20 +136,17 @@ class Factory
         return $this->checkMode & $options;
     }
 
-    /**
-     * @return UriRetrieverInterface
-     */
-    public function getUriRetriever()
+    public function getUriRetriever(): UriRetrieverInterface
     {
         return $this->uriRetriever;
     }
 
-    public function getSchemaStorage()
+    public function getSchemaStorage(): SchemaStorageInterface
     {
         return $this->schemaStorage;
     }
 
-    public function getTypeCheck()
+    public function getTypeCheck(): TypeCheck\TypeCheckInterface
     {
         if (!isset($this->typeCheck[$this->checkMode])) {
             $this->typeCheck[$this->checkMode] = ($this->checkMode & Constraint::CHECK_MODE_TYPE_CAST)
@@ -155,13 +157,7 @@ class Factory
         return $this->typeCheck[$this->checkMode];
     }
 
-    /**
-     * @param string $name
-     * @param string $class
-     *
-     * @return Factory
-     */
-    public function setConstraintClass($name, $class)
+    public function setConstraintClass(string $name, string $class): Factory
     {
         // Ensure class exists
         if (!class_exists($class)) {
@@ -183,7 +179,8 @@ class Factory
      *
      * @throws InvalidArgumentException if is not possible create the constraint instance
      *
-     * @return ConstraintInterface|ObjectConstraint
+     * @return ConstraintInterface&BaseConstraint
+     * @phpstan-return ConstraintInterface&BaseConstraint
      */
     public function createInstanceFor($constraintName)
     {
@@ -201,9 +198,9 @@ class Factory
     /**
      * Get the error context
      *
-     * @return string
+     * @phpstan-return Validator::ERROR_DOCUMENT_VALIDATION|Validator::ERROR_SCHEMA_VALIDATION
      */
-    public function getErrorContext()
+    public function getErrorContext(): int
     {
         return $this->errorContext;
     }
@@ -211,9 +208,9 @@ class Factory
     /**
      * Set the error context
      *
-     * @param string $validationContext
+     * @phpstan-param Validator::ERROR_DOCUMENT_VALIDATION|Validator::ERROR_SCHEMA_VALIDATION $errorContext
      */
-    public function setErrorContext($errorContext)
+    public function setErrorContext(int $errorContext): void
     {
         $this->errorContext = $errorContext;
     }

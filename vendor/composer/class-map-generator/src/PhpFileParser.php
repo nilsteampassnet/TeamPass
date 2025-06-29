@@ -30,6 +30,9 @@ class PhpFileParser
     {
         $extraTypes = self::getExtraTypes();
 
+        if (!function_exists('php_strip_whitespace')) {
+            throw new \RuntimeException('Classmap generation relies on the php_strip_whitespace function, but it has been disabled by the disable_functions directive.');
+        }
         // Use @ here instead of Silencer to actively suppress 'unhelpful' output
         // @link https://github.com/composer/composer/pull/4886
         $contents = @php_strip_whitespace($path);

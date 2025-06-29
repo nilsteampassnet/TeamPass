@@ -222,18 +222,23 @@ class ZipDownloader extends ArchiveDownloader
                 $archiveSize = filesize($file);
                 $totalFiles = $zipArchive->count();
                 if ($totalFiles > 0) {
-                    for ($i = 0; $i < min($totalFiles, 5); $i++) {
-                        $stat = $zipArchive->statIndex(random_int(0, $totalFiles - 1));
+                    $inspectAll = false;
+                    $filesToInspect = min($totalFiles, 5);
+                    for ($i = 0; $i < $filesToInspect; $i++) {
+                        $stat = $zipArchive->statIndex($inspectAll ? $i : random_int(0, $totalFiles - 1));
                         if ($stat === false) {
                             continue;
                         }
                         $totalSize += $stat['size'];
-                        if ($stat['size'] > $stat['comp_size'] * 200) {
-                            throw new \RuntimeException('Invalid zip file with compression ratio >99% (possible zip bomb)');
+                        if (!$inspectAll && $stat['size'] > $stat['comp_size'] * 200) {
+                            $totalSize = 0;
+                            $inspectAll = true;
+                            $i = -1;
+                            $filesToInspect = $totalFiles;
                         }
                     }
                     if ($archiveSize !== false && $totalSize > $archiveSize * 100 && $totalSize > 50*1024*1024) {
-                        throw new \RuntimeException('Invalid zip file with compression ratio >99% (possible zip bomb)');
+                        throw new \RuntimeException('Invalid zip file for "'.$package->getName().'" with compression ratio >99% (possible zip bomb)');
                     }
                 }
 
@@ -245,12 +250,12 @@ class ZipDownloader extends ArchiveDownloader
                     return \React\Promise\resolve(null);
                 }
 
-                $processError = new \RuntimeException(rtrim("There was an error extracting the ZIP file, it is either corrupted or using an invalid format.\n"));
+                $processError = new \RuntimeException(rtrim("There was an error extracting the ZIP file for \"{$package->getName()}\", it is either corrupted or using an invalid format.\n"));
             } else {
                 $processError = new \UnexpectedValueException(rtrim($this->getErrorMessage($retval, $file)."\n"), $retval);
             }
         } catch (\ErrorException $e) {
-            $processError = new \RuntimeException('The archive may contain identical file names with different capitalization (which fails on case insensitive filesystems): '.$e->getMessage(), 0, $e);
+            $processError = new \RuntimeException('The archive for "'.$package->getName().'" may contain identical file names with different capitalization (which fails on case insensitive filesystems): '.$e->getMessage(), 0, $e);
         } catch (\Throwable $e) {
             $processError = $e;
         }

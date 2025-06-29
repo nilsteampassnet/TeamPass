@@ -25,7 +25,7 @@ class Factory
      */
     public function make(array $data, array $filters)
     {
-        $sanitizer = new Sanitizer($data, $filters, $this->extensions);
+        $sanitizer = new Sanitizer($data, $filters);
         $sanitizer->addExtensions($this->extensions);
         return $sanitizer;
     }
