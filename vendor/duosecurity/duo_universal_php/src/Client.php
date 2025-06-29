@@ -38,7 +38,7 @@ class Client
     const JWT_LEEWAY = 60;
     const SUCCESS_STATUS_CODE = 200;
 
-    const USER_AGENT = "duo_universal_php/1.0.2";
+    const USER_AGENT = "duo_universal_php/1.1.0";
     const SIG_ALGORITHM = "HS512";
     const GRANT_TYPE = "authorization_code";
     const CLIENT_ASSERTION_TYPE = "urn:ietf:params:oauth:client-assertion-type:jwt-bearer";

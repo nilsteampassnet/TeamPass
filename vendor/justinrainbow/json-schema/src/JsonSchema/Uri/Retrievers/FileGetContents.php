@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /*
  * This file is part of the JsonSchema package.
  *
@@ -68,7 +70,7 @@ class FileGetContents extends AbstractRetriever
      */
     private function fetchContentType(array $headers)
     {
-        foreach ($headers as $header) {
+        foreach (array_reverse($headers) as $header) {
             if ($this->contentType = self::getContentTypeMatchInHeader($header)) {
                 return true;
             }

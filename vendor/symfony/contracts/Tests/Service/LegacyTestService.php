@@ -41,8 +41,18 @@ class LegacyTestService extends LegacyParentTestService implements ServiceSubscr
         return $this->container->get(__METHOD__);
     }
 
+    #[SubscribedService(nullable: true)]
+    public function nullableInAttribute(): Service2
+    {
+        if (!$this->container->has(__METHOD__)) {
+            throw new \LogicException();
+        }
+
+        return $this->container->get(__METHOD__);
+    }
+
     #[SubscribedService]
-    public function nullableService(): ?Service2
+    public function nullableReturnType(): ?Service2
     {
         return $this->container->get(__METHOD__);
     }
@@ -56,7 +66,7 @@ class LegacyTestService extends LegacyParentTestService implements ServiceSubscr
 
 class LegacyChildTestService extends LegacyTestService
 {
-    #[SubscribedService()]
+    #[SubscribedService]
     public function aChildService(): LegacyService3
     {
         return $this->container->get(__METHOD__);

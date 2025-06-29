@@ -3,6 +3,7 @@
 namespace Elegant\Sanitizer;
 
 use Closure;
+use Illuminate\Container\Container;
 use InvalidArgumentException;
 use UnexpectedValueException;
 use Illuminate\Support\Arr;
@@ -26,6 +27,11 @@ class Sanitizer
      * @var array
      */
     protected $filters;
+
+    /**
+     * The Laravel dependency container.
+     */
+    protected Container $container;
 
     /**
      * Available filters as [name => classPath].
@@ -56,6 +62,7 @@ class Sanitizer
     {
         $this->data = $data;
         $this->filters = $this->parseFilters($filters);
+        $this->container = Container::getInstance();
     }
 
     /**
@@ -123,7 +130,7 @@ class Sanitizer
 
         if (strpos($filter, ':') !== false) {
             [$name, $options] = explode(':', $filter, 2);
-            $options = str_getcsv($options);
+            $options = str_getcsv($options, ',', '"', '\\');
         } else {
             $name = $filter;
             $options = [];
@@ -154,7 +161,9 @@ class Sanitizer
 
         // If the filter name is a class
         if (class_exists($name) and in_array(Filter::class, class_implements($name))) {
-            return (new $name)->apply($value, $options);
+            /** @var Filter $filter_instance */
+            $filter_instance = $this->container->make($name);
+            return $filter_instance->apply($value, $options);
         }
 
         // If the filter name, is not a class, then it should be inside availableFilters array

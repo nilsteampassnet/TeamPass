@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /*
  * This file is part of the JsonSchema package.
  *
@@ -41,7 +43,7 @@ class Curl extends AbstractRetriever
         curl_setopt($ch, CURLOPT_URL, $uri);
         curl_setopt($ch, CURLOPT_HEADER, true);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array('Accept: ' . Validator::SCHEMA_MEDIA_TYPE));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Accept: ' . Validator::SCHEMA_MEDIA_TYPE]);
 
         $response = curl_exec($ch);
         if (false === $response) {

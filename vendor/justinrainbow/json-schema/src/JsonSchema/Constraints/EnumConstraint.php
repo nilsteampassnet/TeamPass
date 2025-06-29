@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /*
  * This file is part of the JsonSchema package.
  *
@@ -9,7 +11,9 @@
 
 namespace JsonSchema\Constraints;
 
+use JsonSchema\ConstraintError;
 use JsonSchema\Entity\JsonPointer;
+use JsonSchema\Tool\DeepComparer;
 
 /**
  * The EnumConstraint Constraints, validates an element against a given set of possibilities
@@ -22,7 +26,7 @@ class EnumConstraint extends Constraint
     /**
      * {@inheritdoc}
      */
-    public function check(&$element, $schema = null, ?JsonPointer $path = null, $i = null)
+    public function check(&$element, $schema = null, ?JsonPointer $path = null, $i = null): void
     {
         // Only validate enum if the attribute exists
         if ($element instanceof UndefinedConstraint && (!isset($schema->required) || !$schema->required)) {
@@ -32,23 +36,24 @@ class EnumConstraint extends Constraint
 
         foreach ($schema->enum as $enum) {
             $enumType = gettype($enum);
-            if ($this->factory->getConfig(self::CHECK_MODE_TYPE_CAST) && $type == 'array' && $enumType == 'object') {
-                if ((object) $element == $enum) {
-                    return;
-                }
+
+            if ($enumType === 'object'
+                && $type === 'array'
+                && $this->factory->getConfig(self::CHECK_MODE_TYPE_CAST)
+                && DeepComparer::isEqual((object) $element, $enum)
+            ) {
+                return;
             }
 
-            if ($type === gettype($enum)) {
-                if ($type == 'object') {
-                    if ($element == $enum) {
-                        return;
-                    }
-                } elseif ($element === $enum) {
-                    return;
-                }
+            if (($type === $enumType) && DeepComparer::isEqual($element, $enum)) {
+                return;
+            }
+
+            if (is_numeric($element) && is_numeric($enum) && DeepComparer::isEqual((float) $element, (float) $enum)) {
+                return;
             }
         }
 
-        $this->addError($path, 'Does not have a value in the enumeration ' . json_encode($schema->enum), 'enum', array('enum' => $schema->enum));
+        $this->addError(ConstraintError::ENUM(), $path, ['enum' => $schema->enum]);
     }
 }
