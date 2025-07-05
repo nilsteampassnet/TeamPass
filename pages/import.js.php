@@ -79,7 +79,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
 
 <script type='text/javascript'>
-    var debugJavascript = false;
+    var debugJavascript = true;
 
     // Checkbox
     $('input[type="checkbox"].flat-blue, input[type="radio"].flat-blue').iCheck({
@@ -154,6 +154,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 // Show spinner
                 toastr.remove();
                 toastr.info('<i class="fa-solid fa-ellipsis fa-2x fa-fade ml-2"></i>');
+                $('#import-feedback').addClass('hidden');   // Hide any previous results
+                $('#import-feedback-progress-text').html('');   // Clear previous progress text
             },
             FileUploaded: function(upldr, file, object) {
                 var data = prepareExchangedData(object.response, "decode", "<?php echo $session->get('key'); ?>");
@@ -360,6 +362,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     }
                     $('.csv-setup').removeClass('hidden');
 
+                    // Enable buttons
+                    $('#form-item-import-perform').prop('disabled', false); // Enable button to allow next import
+                    $('#form-item-import-cancel').prop('disabled', false); // Enable cancel button
+
                     toastr.remove();
                     toastr.success(
                         '<?php echo $lang->get('done'); ?>',
@@ -410,6 +416,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             );
             return false;
         }
+
+        $('#form-item-import-perform').prop('disabled', true); // Disable button to avoid multiple clicks
+        $('#form-item-import-cancel').prop('disabled', true); // Disable cancel button
 
         // Show spinner
         toastr.remove();
@@ -709,7 +718,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 $('#csv-file-info').html('');
                 $('#import-csv-attach-pickfile-csv-text').val('');
                 $('.import-csv-cb').iCheck('uncheck');
-                $('#import-csv-access-right, #import-csv-target-folder, #import-csv-keys-strategy, #import-csv-complexity').val('');
+                $('#import-csv-access-right, #import-csv-keys-strategy, #import-csv-complexity').val('');
+                $('#import-csv-target-folder').val(null).trigger('change');
 
                 $('#import-feedback').removeClass('hidden');
                 $('#import-feedback-progress-text').html(
@@ -726,8 +736,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         : ''
                     )
                 );
-
-                // Show message
                 
                 // restart time expiration counter
                 ProcessInProgress = false;

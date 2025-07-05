@@ -649,9 +649,12 @@ switch ($inputData['type']) {
         // Init some variables
         $insertedItems = $dataReceived['insertedItems'] ?? 0;
         $failedItems = [];
-
+        
         // Loop on items
         foreach ($items as $item) {
+            if (is_null($item['folder_id']) && is_null($targetFolderId)) {
+                continue; // Skip if folder_id is null
+            }
             try {
                 // Handle case where password is empty
                 if (($session->has('user-create_item_without_password') &&
@@ -684,8 +687,6 @@ switch ($inputData['type']) {
                     )
                 );
                 $newId = DB::insertId();
-
-                error_log('New item created with ID: ' . $newId);
 
                 // Create new task for the new item
                 // If it is not a personnal one
@@ -748,17 +749,7 @@ switch ($inputData['type']) {
                 // Add item to cache table
                 updateCacheTable('add_value', (int) $newId);
 
-                // Update items_importation table
-                DB::update(
-                    prefixTable('items_importations'),
-                    array(
-                        'increment_id' => $newId,
-                        'imported_at'=> time(),
-                    ),
-                    "increment_id=%i",
-                    $item['increment_id']
-                );
-
+                // Update the counter of inserted items
                 $insertedItems++;
 
             } catch (Exception $e) {
@@ -767,6 +758,12 @@ switch ($inputData['type']) {
                     'increment_id' => $item['increment_id'],
                     'error' => $e->getMessage(),
                 ];
+
+                error_log(
+                    'SQL Error during import | increment_id: ' . $item['increment_id'] .
+                    ' | Message: ' . $e->getMessage() .
+                    ' | StackTrace: ' . $e->getTraceAsString()
+                );
             }
         }
 
