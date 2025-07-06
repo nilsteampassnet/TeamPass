@@ -838,7 +838,7 @@ switch ($inputData['type']) {
             'decode'
         );
         $post_operation_id = filter_var($receivedParameters['file'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-        $post_folder_id = filter_var($receivedParameters['folder_id'], FILTER_SANITIZE_NUMBER_INT);
+        $destinationFolderId = filter_var($receivedParameters['folder_id'], FILTER_SANITIZE_NUMBER_INT);
 
         // Get filename from database
         $data = DB::queryFirstRow(
@@ -1017,7 +1017,7 @@ switch ($inputData['type']) {
                 ['Entry' => $newArr['Root']['Group']['Entry']],
                 ['Group' => $newArr['Root']['Group']['Group']],
             ),
-            $post_folder_id,
+            $destinationFolderId,
             [
                 'folders' => [],
                 'items' => []
@@ -1025,7 +1025,7 @@ switch ($inputData['type']) {
             1,
         );
 
-
+error_log(print_r($ret, true));
         echo prepareExchangedData(
             array(
                 'error' => false,
@@ -1057,18 +1057,18 @@ switch ($inputData['type']) {
             'decode'
         );
 
-        $post_folder_id = filter_var($receivedParameters['folder-id'], FILTER_SANITIZE_NUMBER_INT);
-        $$inputData['editAll'] = filter_var($receivedParameters['edit-all'], FILTER_SANITIZE_NUMBER_INT);
-        $$inputData['editRole'] = filter_var($receivedParameters['edit-role'], FILTER_SANITIZE_NUMBER_INT);
+        $destinationFolderId = filter_var($receivedParameters['folder-id'], FILTER_SANITIZE_NUMBER_INT);
+        $inputData['editAll'] = filter_var($receivedParameters['edit-all'], FILTER_SANITIZE_NUMBER_INT);
+        $inputData['editRole'] = filter_var($receivedParameters['edit-role'], FILTER_SANITIZE_NUMBER_INT);
         $post_folders = filter_var_array(
             $receivedParameters['folders'],
             FILTER_SANITIZE_FULL_SPECIAL_CHARS
         );
 
         // get destination folder informations
-        $destinationFolderInfos = getFolderComplexity((int) $post_folder_id, $session->get('user-personal_folders'));
-        $arrFolders[$post_folder_id] = [
-            'id' => (int) $post_folder_id,
+        $destinationFolderInfos = getFolderComplexity((int) $destinationFolderId, $session->get('user-personal_folders'));
+        $arrFolders[$destinationFolderId] = [
+            'id' => (int) $destinationFolderId,
             'level' => 1,
             'isPF' => false,
         ];
@@ -1076,12 +1076,17 @@ switch ($inputData['type']) {
 
         foreach($post_folders as $folder) {
             // get parent id
-            $parentId = $arrFolders[$folder['parentFolderId']];
+            if (!isset($arrFolders[$folder['parentFolderId']])) {
+                // If parent folder is not in the array, it means it is the destination folder
+                $parentId = $destinationFolderId;
+            } else {
+                $parentId = $arrFolders[$folder['parentFolderId']]['id'];
+            }
 
             // create folder in DB
             $folderId = createFolder(
                 $folder['folderName'],
-                is_null($parentId['id']) ? 0 : (int) $parentId['id'],
+                is_null($parentId) ? 0 : (int) $parentId,
                 $folder['level'],
                 $startPathLevel,
                 $destinationFolderInfos['levelPwComplexity']
@@ -1139,7 +1144,7 @@ switch ($inputData['type']) {
             $receivedParameters['items'],
             FILTER_SANITIZE_FULL_SPECIAL_CHARS
         );
-        $ret = '';
+        $returnedItems = array();
 
         // Start transaction for better performance
         DB::startTransaction();
@@ -1226,7 +1231,10 @@ switch ($inputData['type']) {
             updateCacheTable('add_value', (int) $newId);
 
             // prepare return
-            $ret .= "<li>".substr(stripslashes($item['Title']), 0, 500)." [".$destinationFolderMore['title']."]</li>";
+            $returnedItems[] = array(
+                'title' => substr(stripslashes($item['Title']), 0, 500),
+                'folder' => $destinationFolderMore['title']
+            );
         }
 
         // Commit transaction.
@@ -1236,7 +1244,7 @@ switch ($inputData['type']) {
             array(
                 'error' => false,
                 'message' => '',
-                'info' => "<ul>".$ret."</ul>",
+                'items' => $returnedItems,
             ),
             'encode'
         );
@@ -1259,6 +1267,10 @@ switch ($inputData['type']) {
 function createFolder($folderTitle, $parentId, $folderLevel, $startPathLevel, $levelPwComplexity)
 {
     $session = SessionManager::getSession();
+
+    // Is parent folder a personal folder?
+    $isPersonalFolder = in_array($parentId, $session->get('user-personal_folders')) ? 1 : 0;
+
     //create folder - if not exists at the same level
     DB::query(
         'SELECT * FROM '.prefixTable('nested_tree').'
@@ -1273,7 +1285,7 @@ function createFolder($folderTitle, $parentId, $folderLevel, $startPathLevel, $l
             prefixTable('nested_tree'),
             array(
                 'parent_id' => (int) $parentId,
-                'title' => (string) stripslashes($folderTitle),
+                'title' => (string) html_entity_decode(stripslashes($folderTitle), ENT_QUOTES, 'UTF-8'),
                 'nlevel' => (int) $folderLevel,
                 'categories' => '',
             )
@@ -1303,15 +1315,20 @@ function createFolder($folderTitle, $parentId, $folderLevel, $startPathLevel, $l
         );
 
         //For each role to which the user depends on, add the folder just created.
-        foreach ($session->get('system-array_roles') as $role) {
-            DB::insert(
-                prefixTable('roles_values'),
-                array(
-                    'role_id' => $role['id'],
-                    'folder_id' => $id,
-                    'type' => 'W',
-                )
-            );
+        // (if not personal, otherwise, add to user-personal_folders)
+        if ( $isPersonalFolder ) {
+            SessionManager::addRemoveFromSessionArray('user-personal_folders', [$id], 'add');
+        } else {
+            foreach ($session->get('system-array_roles') as $role) {
+                DB::insert(
+                    prefixTable('roles_values'),
+                    array(
+                        'role_id' => $role['id'],
+                        'folder_id' => $id,
+                        'type' => 'W',
+                    )
+                );
+            }
         }
 
         //Add this new folder to the list of visible folders for the user.

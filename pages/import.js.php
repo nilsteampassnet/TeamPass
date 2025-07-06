@@ -956,7 +956,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                 }
                                 itemsNumber = itemsToAdd.length;
                                 counter = 1;
-                                console.info("Now creating items")
                                 if (debugJavascript === true) {
                                     console.log(data);
                                 }
@@ -967,6 +966,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                 // recursive action
                                 function callRecurive(itemsList, foldersList, counter, itemsNumber) {
                                     var dfd = $.Deferred();
+                                    let nbItemsToTreat = 10; // Number of items to treat at once
 
                                     // Isolate first item
                                     if (itemsList.length > 0) {
@@ -974,12 +974,12 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                             .html('<i class="fa-solid fa-cog fa-spin ml-4 mr-2"></i><?php echo $lang->get('operation_progress');?> ('+((counter*100)/itemsNumber).toFixed(2)+'%) - <i id="item-title"></i>');
 
                                         // XSS Filtering :
-                                        $('#import-feedback-progress-text').text(itemsList[0].Title);
+                                        //$('#import-feedback-progress-text').text(itemsList[0].Title);
 
                                         data = {
                                             'edit-all': $('#import-keepass-edit-all-checkbox').prop('checked') === true ? 1 : 0,
                                             'edit-role': $('#import-keepass-edit-role-checkbox').prop('checked') === true ? 1 : 0,
-                                            'items': itemsToAdd.slice(0, 500),
+                                            'items': itemsToAdd.slice(0, nbItemsToTreat),
                                             'folders': foldersList,
                                         }
                                         if (debugJavascript === true) {
@@ -1014,12 +1014,16 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                                     $('#import-feedback, #import-feedback-progress').addClass('hidden');
                                                     $('#import-feedback-result').html('');
                                                 } else {
-                                                    // Done for this item
-                                                    // Add results
-                                                    $('#import-feedback-result').append(data.info+"<br>");
+                                                    // Done for this iteration
+                                                    // Show results
+                                                    var $list = $('<ul>');
+                                                    data.items.forEach(function(item) {
+                                                        $list.append('<li>' + item.title + ' [' + item.folder + ']</li>');
+                                                    });
+                                                    $('#import-feedback-result').append('<div><p>' + $list + '</p></div>');
 
                                                     // Remove item from list
-                                                    itemsToAdd.splice(0, 500);
+                                                    itemsToAdd.splice(0, nbItemsToTreat);
 
                                                     // Do recursive call until step = finished
                                                     counter++
@@ -1041,7 +1045,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                         // Show results
                                         $('#import-feedback-progress').addClass('hidden');
                                         $('#import-feedback div').removeClass('hidden');
-                                        $('#import-feedback-result').append(data.info)
                                         $('#import-feedback-progress-text').html('');
                                         
                                         // Show
