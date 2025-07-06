@@ -978,6 +978,23 @@ foreach ($rows as $reccord) {
                     <div class="card-title w-100">
                         <div class="row">
                             <div class="col">
+                                <div class="btn-group float-left">
+                                    <button type="button" class="btn btn-primary btn-sm dropdown-toggle" data-toggle="dropdown">
+                                        <i class="fa-solid fa-bars"></i>
+                                        <span class="caret"></span>
+                                    </button>
+                                    <div class="dropdown-menu">
+                                        <a class="dropdown-item tp-action" href="#" data-folder-action="items-checkbox"><i class="fa-regular fa-square-check mr-2"></i><?php echo $lang->get('item_checkbox'); ?></a>
+                                        <a class="dropdown-item tp-action" href="#" data-folder-action="items-delete"><i class="fa-regular fa-trash-can mr-2"></i><?php echo $lang->get('delete_items'); ?></a>
+                                        <div class="dropdown-divider show-delete-checkbox hidden"></div>
+                                        <a class="dropdown-item tp-action show-delete-checkbox hidden" href="#" data-folder-action="">
+                                            <div class="input-group input-group-sm">
+                                                <input type="checkbox" class="flat-blue mr-2" id="items-selection-checkbox">
+                                                <label for="import-keepass-edit-all-checkbox" class="ml-2"><?php echo $lang->get('select_all'); ?></label>
+                                            </div>
+                                        </a>
+                                    </div>
+                                </div>
                                 <div class="btn-group" id="btn-new-item">
                                     <button type="button" class="btn btn-primary btn-sm tp-action" data-item-action="new">
                                         <i class="fa-solid fa-plus mr-2"></i><?php echo $lang->get('new_item'); ?>
@@ -996,7 +1013,7 @@ foreach ($rows as $reccord) {
                                         </button>
                                         <div class="dropdown-menu">
                                             <div class="dropdown-item">
-                                                <input type="checkbox" class=" mr-2" id="limited-search">
+                                                <input type="checkbox" class="mr-2" id="limited-search">
                                                 <label class="form-check-label" for="limited-search"><?php echo $lang->get('limited_search'); ?></label>
                                             </div>
                                         </div>
@@ -1028,6 +1045,21 @@ foreach ($rows as $reccord) {
                 </div>
             </div>
             <!-- /. box -->
+        </div>
+
+        <!-- DELETE ITEMS CONFIRM -->
+        <div class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" id="items-delete-user-confirm">
+            <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                <h4 class="modal-title"><?php echo $lang->get('please_confirm_deletion'); ?></h4>
+                </div>
+                <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="modal-btn-items-delete-launch" data-id=""><?php echo $lang->get('yes'); ?></button>
+                <button type="button" class="btn btn-default" id="modal-btn-items-delete-cancel"><?php echo $lang->get('cancel'); ?></button>
+                </div>
+            </div>
+            </div>
         </div>
 
         

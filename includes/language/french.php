@@ -1262,5 +1262,6 @@ return array(
     'users_fetch_error' => 'Une erreur est survenue en traitant les utilisateurs',
     'at_phone_number' => 'Numéro de téléphone',
     'at_otp_secret' => 'Clé de l&apos;OTP',
+    'item_checkbox' => 'Sélection d&apos;objet',
 
 );

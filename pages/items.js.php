@@ -1068,9 +1068,167 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     positionClass: 'toast-bottom-right'
                 }
             );
+
+            //
+            // > END <
+            //
+        } else if ($(this).data('folder-action') === 'items-checkbox') {
+            // Vérifier si les cases à cocher existent déjà
+            var checkboxesExist = $('.list-item-description .icon-container input[type="checkbox"]').length > 0;
+
+            // Reset the checkbox
+            $('#items-selection-checkbox').iCheck('uncheck');
+            
+            if (!checkboxesExist) {
+                // Ajouter les cases à cocher
+                $('.list-item-description .icon-container').each(function() {
+                    var $container = $(this);
+                    var $row = $container.closest('tr');
+                    var itemId = $row.data('item-id');
+                    
+                    // Créer la case à cocher
+                    var checkbox = '<input type="checkbox" class="item-checkbox mr-2" data-item-id="' + itemId + '" value="' + itemId + '">';
+                    
+                    // Insérer la case à cocher au début du conteneur
+                    $container.prepend(checkbox);
+                });
+
+                $('.show-delete-checkbox').removeClass('hidden');
+            } else {
+                // Supprimer les cases à cocher si elles existent déjà
+                $('.list-item-description .icon-container .item-checkbox').remove();
+                $('#select-all-checkbox').closest('th').remove();
+                $('.show-delete-checkbox').addClass('hidden');
+            }
+
+            // Remove loader.
+            toastr.remove();
+
+            //
+            // > END <
+            //
+        } else if ($(this).data('folder-action') === 'items-delete') {
+            // Fonction utilitaire pour obtenir les IDs des éléments sélectionnés
+            function getSelectedItemIds() {
+                var selectedIds = [];
+                $('.item-checkbox:checked').each(function() {
+                    selectedIds.push($(this).data('item-id'));
+                });
+                return selectedIds;
+            }
+
+            
+            $("#items-delete-user-confirm").modal('show');
+
+            // Handle delete task
+            $("#modal-btn-items-delete-launch").on("click", function() {
+                toastr.remove();
+                toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+                
+                var selectedItemIds = getSelectedItemIds();
+
+                if (selectedItemIds.length === 0) {
+                    toastr.remove();
+                    toastr.error(
+                        '<?php echo $lang->get('no_item_selected'); ?>',
+                        '', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
+                    $("#items-delete-user-confirm").modal('hide');
+                    return false;
+                }
+
+                var data = {
+                    'selectedItemIds': JSON.stringify(selectedItemIds),
+                }
+                
+                $.post(
+                    "sources/items.queries.php", {
+                        type: "items_delete",
+                        data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $session->get('key'); ?>'),
+                        key: "<?php echo $session->get('key'); ?>"
+                    },
+                    function(data) {
+                        data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
+
+                        $("#items-delete-user-confirm").modal('hide');
+
+                        if (data.error === true) {
+                            toastr.remove();
+                            toastr.error(
+                                data.message,
+                                '', {
+                                    timeOut: 5000,
+                                    progressBar: true
+                                }
+                            );
+                            return false;
+                        }
+                        
+                        // Inform user
+                        toastr.remove();
+                        toastr.success(
+                            '<?php echo $lang->get('message'); ?>',
+                            '', {
+                                timeOut: 3000
+                            }
+                        );
+
+                        // Reset the checkbox
+                        $('#items-selection-checkbox').iCheck('uncheck');
+
+                        // Force refresh of the tree
+                        refreshVisibleFolders(true)
+
+                        // Reload items list
+                        ListerItems(
+                            store.get('teampassItem').folderId,
+                            '',
+                            0,
+                            0,
+                            true
+                        );
+                        
+                        // Inform user
+                        toastr.remove();
+                        toastr.success(
+                            '<?php echo $lang->get('message'); ?>',
+                            '', {
+                                timeOut: 3000
+                            }
+                        );
+                    }
+                );
+            });
+
+            $("#modal-btn-items-delete-cancel").on("click", function(){
+                $("#items-delete-user-confirm").modal('hide');
+            });
+
+            //
+            // > END <
+            //
         }
 
         return false;
+    });
+
+    
+    // Gestionnaire pour la case "Sélectionner tout"
+    $('#items-selection-checkbox').on('change', function() {
+        var isChecked = $(this).prop('checked');
+        
+        // Cocher/décocher toutes les cases à cocher des éléments
+        $('.item-checkbox').prop('checked', isChecked);
+        
+        // Optionnel : Ajouter une classe visuelle aux lignes sélectionnées
+        if (isChecked) {
+            $('.item-checkbox').closest('tr').addClass('selected-row');
+        } else {
+            $('.item-checkbox').closest('tr').removeClass('selected-row');
+        }
     });
 
     /**
@@ -3832,7 +3990,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
     /**
      * 
      */
-    function ListerItems(groupe_id, restricted, start, stop_listing_current_folder) {
+    function ListerItems(groupe_id, restricted, start, stop_listing_current_folder = 0, showToastr = false) {
         var me = $(this);
         stop_listing_current_folder = stop_listing_current_folder || '0';
         if (debugJavascript === true) console.log('LIST OF ITEMS FOR FOLDER ' + groupe_id);
@@ -3923,10 +4081,12 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             }
 
             // Inform user
-            toastr.remove();
-            toastr.info(
-                '<?php echo $lang->get('opening_folder'); ?><i class="fa-solid fa-circle-notch fa-spin ml-2"></i>'
-            );
+            if (showToastr === true) {
+                toastr.remove();
+                toastr.info(
+                    '<?php echo $lang->get('opening_folder'); ?><i class="fa-solid fa-circle-notch fa-spin ml-2"></i>'
+                );
+            }
 
             // clear storage 
             store.update(

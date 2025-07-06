@@ -1262,5 +1262,6 @@ e new password must:<br/> - Be different from the previous one<br/> - Contain at
     'users_fetch_error' => 'Something went wrong fetching users',
     'at_phone_number' => 'Phone number',
     'at_otp_secret' => 'OTP secret key',
+    'item_checkbox' => 'Item checkbox',
 
 );
