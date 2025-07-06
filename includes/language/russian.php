@@ -1261,5 +1261,6 @@ return array(
     'users_fetch_error' => 'Something went wrong fetching users',
     'at_phone_number' => 'Phone number',
     'at_otp_secret' => 'OTP secret key',
+    'item_checkbox' => 'Item checkbox',
 
 );
