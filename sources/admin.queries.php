@@ -2500,8 +2500,9 @@ switch ($post_type) {
             break;
         }
 
+        // New hash-based integrity check
         $SETTINGS['cpassman_dir'] = rtrim($SETTINGS['cpassman_dir'], '/');
-        $ret = filesIntegrityCheck($SETTINGS['cpassman_dir']);
+        $ret = verifyFileHashes($SETTINGS['cpassman_dir'], __DIR__.'/../files_reference.txt');
 
         $ignoredFiles = DB::queryFirstField(
             'SELECT valeur 
@@ -2915,4 +2916,108 @@ function tablesIntegrityCheck(): array
         'array' => $tablesInError,
         'message' => ""
     ];
+}
+
+/**
+ * Verify file integrity by checking presence & MD5 hashes.
+ *
+ * This function compares the current files in the project directory against a reference file
+ * containing expected file paths and their MD5 hashes. It reports any missing files or files
+ * whose hashes do not match the reference.
+ *
+ * Steps:
+ *  - Load reference file data (file => hash)
+ *  - Get all current files in the base directory
+ *  - For each file, check if it exists in the reference; if so, compare hashes
+ *  - Collect issues for missing or changed files
+ *
+ * @param string $baseDir        Base directory to scan for files
+ * @param string $referenceFile  Path to reference file with known hashes
+ * @return array                 Result with 'error', 'array' of issues, and 'message'
+ */
+function verifyFileHashes($baseDir, $referenceFile): array
+{
+    // Load reference data (file => hash)
+    $referenceData = parseReferenceFile($referenceFile);
+    // Get list of all current files in the project
+    $allFiles = getAllFiles($baseDir);
+
+    // Debug output
+    error_log("DEBUG: Reference keys: " . json_encode(array_keys($referenceData)));
+    error_log("DEBUG: Current files: " . json_encode($allFiles));
+
+    $issues = [];
+
+    // Compare current files to reference
+    foreach ($allFiles as $file) {
+        // Check if file exists in reference list
+        if (!isset($referenceData[$file])) {
+            error_log("DEBUG: File not found in reference: $file");
+            $issues[] = "$file is not listed in reference file";
+            continue;
+        }
+
+        // Compare hashes
+        $expectedHash = $referenceData[$file];
+        $actualHash = md5_file($baseDir . '/' . $file);
+
+        if ($expectedHash !== $actualHash) {
+            error_log("DEBUG: Hash mismatch for $file => expected: $expectedHash, actual: $actualHash");
+            $issues[] = "$file (expected: $expectedHash, actual: $actualHash)";
+        }
+    }
+
+    // Return summary
+    return [
+        'error' => !empty($issues),
+        'array' => $issues,
+        'message' => empty($issues) ? 'Project files integrity check is successful.' : 'Integrity issues found.'
+    ];
+}
+
+/**
+ * Parse the reference file into an associative array.
+ *
+ * Each line in the reference file should be of the form: "path hash".
+ * The function returns an array mapping file paths to their expected MD5 hashes.
+ *
+ * @param string $referenceFile  Path to reference file
+ * @return array                 [ 'file/path' => 'md5hash' ]
+ */
+function parseReferenceFile($referenceFile) {
+    $data = [];
+    $lines = file($referenceFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        [$path, $hash] = explode(' ', $line, 2);
+        $data[$path] = trim($hash);
+    }
+    return $data;
+}
+
+/**
+ * Get all files in a directory with their md5 hashes.
+ *
+ * Recursively scans a directory, returning an associative array of file paths
+ * (relative to $dir) mapped to their MD5 hashes. Paths are normalized for cross-platform compatibility.
+ *
+ * @param string $dir    Directory to scan
+ * @return array         [ 'file/path' => 'md5hash' ]
+ */
+function getAllFilesWithHashes(string $dir): array
+{
+    $files = [];
+    $iterator = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS)
+    );
+
+    foreach ($iterator as $file) {
+        if ($file->isFile()) {
+            // Build relative path
+            $relativePath = str_replace($dir . DIRECTORY_SEPARATOR, '', $file->getPathname());
+            $relativePath = str_replace('\\', '/', $relativePath); // Normalize for Windows
+            // Calculate hash
+            $files[$relativePath] = md5_file($file->getPathname());
+        }
+    }
+    return $files;
 }
