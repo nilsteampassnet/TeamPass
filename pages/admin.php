@@ -240,7 +240,12 @@ catch (Exception $e) {
                         echo '<div class="mt-3 hidden" id="db-integrity-check-status"><i class="fa-solid fa-circle-notch fa-spin"></i></div>';
 
                         // Check project files
-                        echo '<div class="mt-3" id="project-files-check-status"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i>Checking files integrity</div>';
+                        echo '<div class="mt-3" id="project-files-check-status">
+                            <i class="fa-solid fa-file-shield mr-2 text-info"></i>'.$lang->get('perform_file_integrity_check').'
+                            <button type="button" class="btn btn-primary ml-2" id="check-project-files-btn" onclick="performProjectFilesIntegrityCheck()">
+                                <i class="fas fa-caret-right"></i>
+                            </button>
+                        </div>';
 
                         // Status on users passwords migration to new encryption Symfony Password
                         DB::query(

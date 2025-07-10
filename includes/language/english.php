@@ -32,6 +32,9 @@
  // - selected_items_to_be_imported
 
 return array(
+    'files_are_not_expected_ones' => 'files are not expected ones',
+    'perform_file_integrity_check' => 'Perform files integrity check',
+    'files_integrity_check' => 'Files integrity check',
     'item_checkbox' => 'Item checkbox',
     'at_phone_number' => 'Phone number',
     'at_otp_secret' => 'OTP secret key',
