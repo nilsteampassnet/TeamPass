@@ -6883,6 +6883,14 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
     }
 
     $(document).ready(function() {
+        // Prevent Enter key from propagating in label and password fields
+        $('#form-item-label, #form-item-password').on('keydown keyup keypress', function(e) {
+            if (e.key === 'Enter' || e.which === 13) {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            }
+        });
         // Event listener for path elems
         $(document).on('click', '.path-elem', function() {
             // Read folder id
