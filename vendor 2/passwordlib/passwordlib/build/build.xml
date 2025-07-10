@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="PHP-PasswordLib" default="build-lite" basedir="../">
+    <property file="build/build.properties" />
+	<import file="${path.build}/phing/document.xml" />
+	<import file="${path.build}/phing/package.xml" />
+	<import file="${path.build}/phing/quality.xml" />
+	<import file="${path.build}/phing/test.xml" />
+
+    <target name="clean">
+        <delete dir="${path.results}" />
+		<mkdir dir="${path.results}" />
+        <mkdir dir="${path.results}/logs" />
+    </target>
+
+    <target name="build">
+		<phingcall target="clean" />
+		<phingcall target="test" />
+		<phingcall target="quality" />
+		<phingcall target="document" />
+		<phingcall target="package" />
+	</target>
+
+    <target name="build-lite">
+		<phingcall target="clean" />
+		<phingcall target="test-lite" />
+		<phingcall target="quality-lite" />
+	</target>
+
+</project>

@@ -99,7 +99,7 @@ return array(
     'show_item_data' => 'Show item data in items list',
     'show_item_data_tip' => 'Permits to display extra information in the items list (username, email and url). This could be useful to have a quick view of the item content.',
     'server_connected_to_internet' => 'Server is connected to internet',
-    'server_not_connected_to_internet' => 'Server is connected to internet',
+    'server_not_connected_to_internet' => 'Server is not connected to internet',
     'server_not_connected_to_internet_tip' => 'This could lead to several functionnalities not working properly. Especially MFA.',
     'tools' => 'Tools',
     'user_config_not_compliant' => 'User configuration is not compliant',
