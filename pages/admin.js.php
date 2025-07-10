@@ -297,6 +297,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
         }
 
         requestRunning = true;
+        $('#check-project-files-btn').html('<i class="fa-solid fa-spinner fa-spin"></i>');
 
         // Remove the file from the list
         if (refreshingData === false) {
@@ -331,7 +332,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                     html = '<i class="fa-solid fa-circle-check text-success mr-2"></i>Project files integrity check is successfull';
                 } else {
                     // Create a list
-                    let ul = '<ul id="files-integrity-result">';
+                    let ul = '<div class="border rounded p-2" style="max-height: 400px; overflow-y: auto;"><ul id="files-integrity-result" class="">';
                     let files = JSON.parse(data.files);
                     let numberOfFiles = Object.keys(files).length;
                     $.each(files, function(i, value) {
@@ -339,25 +340,17 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                     });
 
                     // Prepare the HTML
-                    html = '<i class="fa-solid fa-circle-xmark text-danger mr-2"></i>Project files integrity check performed!<br>'
-                        + '<b>' + numberOfFiles + '</b> files are not part of the project.' + 
-                        '<i class="fa-regular fa-eye infotip ml-2 text-info pointer text-warning infotip pointer" id="button-show-files-integrity-result" title="show_files"></i>' +
-                        '<div class="alert alert-light' + (refreshingData ? '' : ' hidden') + '" role="alert" id="files-integrity-result-container">' +
+                    html = '<b>' + numberOfFiles + '</b> <?php echo $lang->get('files_are_not_expected_ones'); ?>.' + 
+                        '<div class="alert alert-light" role="alert" id="files-integrity-result-container">' +
                         '<div class="alert alert-warning" role="alert"><?php echo $lang->get('unknown_files_should_be_deleted'); ?>' +
                         '<div class="btn-group ml-2" role="group">'+
                             '<button type="button" class="btn btn-primary btn-sm infotip" id="refresh_unknown_files" title="<?php echo $lang->get('refresh'); ?>"><i class="fa-solid fa-arrows-rotate"></i></button>' +
                             '<button type="button" class="btn btn-danger btn-sm infotip" id="delete_unknown_files" title="<?php echo $lang->get('delete'); ?>"><i class="fa-solid fa-trash"></i></button>' +
-                            '<button type="button" class="btn btn-info btn-sm infotip" id="hide_files" title="<?php echo $lang->get('hide'); ?>"><i class="fa-solid fa-eye-slash"></i></button>' +
                         '</div></div>' +
-                        ul + '</ul></div>';                        
+                        ul + '</ul></div></div>';                        
 
                     // Create the button to show/hide the list
                     $(document)
-                        .on('click', '#button-show-files-integrity-result', function(event) {
-                            event.preventDefault();
-                            event.stopPropagation();
-                            $('#files-integrity-result-container').removeClass('hidden');
-                        })
                         .on('click', '#refresh_unknown_files', function(event) {
                             event.preventDefault();
                             event.stopPropagation();
@@ -365,11 +358,6 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                             $('#files-integrity-result').html('<i class="fa-solid fa-spinner fa-spin"></i>');
                             // Launch the integrity check
                             performProjectFilesIntegrityCheck(true);
-                        })
-                        .on('click', '#hide_files', function(event) {
-                            event.preventDefault();
-                            event.stopPropagation();
-                            $('#files-integrity-result-container').addClass('hidden');
                         })
                         .on('click', '#delete_unknown_files', function(event) {   
                             event.preventDefault();
@@ -387,7 +375,25 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                         });
                 }
                 // Display the result
-                $('#project-files-check-status').html(html);
+                //$('#project-files-check-status').html(html);
+
+                // Prepare modal
+                showModalDialogBox(
+                    '#warningModal',
+                    '<i class="fas fa-eye fa-lg warning mr-2"></i><?php echo $lang->get('files_integrity_check'); ?>',
+                    html,
+                    '',
+                    '<?php echo $lang->get('close'); ?>',
+                    true
+                );
+
+                // Actions on modal buttons
+                $(document).on('click', '#warningModalButtonClose', function() {
+                    // Nothing
+                });
+
+                $('#check-project-files-btn').html('<i class="fas fa-caret-right"></i>');
+
                 requestRunning = false;
             }
         );
@@ -512,12 +518,6 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                 $('.infotip').tooltip();
 
                 requestRunning = false;
-                
-                // Perform project files integrity check
-                setTimeout(
-                    performProjectFilesIntegrityCheck,
-                    500
-                );
             }
         );
     }

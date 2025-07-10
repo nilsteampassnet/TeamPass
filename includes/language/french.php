@@ -1263,5 +1263,8 @@ return array(
     'at_phone_number' => 'Numéro de téléphone',
     'at_otp_secret' => 'Clé de l&apos;OTP',
     'item_checkbox' => 'Sélection d&apos;objet',
+    'files_are_not_expected_ones' => 'fichiers ne sont pas ceux attendus',
+    'perform_file_integrity_check' => 'Vérifier l&apos;intégrité des fichiers',
+    'files_integrity_check' => 'Vérification de l&apos;intégrité des fichiers',
 
 );

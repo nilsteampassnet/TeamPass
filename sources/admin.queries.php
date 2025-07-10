@@ -2941,19 +2941,13 @@ function verifyFileHashes($baseDir, $referenceFile): array
     $referenceData = parseReferenceFile($referenceFile);
     // Get list of all current files in the project
     $allFiles = getAllFiles($baseDir);
-
-    // Debug output
-    error_log("DEBUG: Reference keys: " . json_encode(array_keys($referenceData)));
-    error_log("DEBUG: Current files: " . json_encode($allFiles));
-
     $issues = [];
 
     // Compare current files to reference
     foreach ($allFiles as $file) {
         // Check if file exists in reference list
         if (!isset($referenceData[$file])) {
-            error_log("DEBUG: File not found in reference: $file");
-            $issues[] = "$file is not listed in reference file";
+            $issues[] = "<i>$file</i> is not listed in reference file";
             continue;
         }
 
@@ -2962,8 +2956,7 @@ function verifyFileHashes($baseDir, $referenceFile): array
         $actualHash = md5_file($baseDir . '/' . $file);
 
         if ($expectedHash !== $actualHash) {
-            error_log("DEBUG: Hash mismatch for $file => expected: $expectedHash, actual: $actualHash");
-            $issues[] = "$file (expected: $expectedHash, actual: $actualHash)";
+            $issues[] = "$file (expected: <i>$expectedHash</i>, actual: <i>$actualHash</i>)";
         }
     }
 
