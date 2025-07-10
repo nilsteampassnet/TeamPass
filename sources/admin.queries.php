@@ -2500,7 +2500,8 @@ switch ($post_type) {
             break;
         }
 
-        $ret = filesIntegrityCheck($SETTINGS['cpassman_dir']);        
+        $SETTINGS['cpassman_dir'] = rtrim($SETTINGS['cpassman_dir'], '/');
+        $ret = filesIntegrityCheck($SETTINGS['cpassman_dir']);
 
         $ignoredFiles = DB::queryFirstField(
             'SELECT valeur 
