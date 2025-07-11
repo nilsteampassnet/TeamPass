@@ -6883,11 +6883,19 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
     }
 
     $(document).ready(function() {
-        // Prevent Enter key from propagating in label and password fields
+        let saveInProgress = false;
+
+        // Prevent Enter key from propagating in label and password fields and do single save
         $('#form-item-label, #form-item-password').on('keydown keyup keypress', function(e) {
-            if (e.key === 'Enter' || e.which === 13) {
+            if ((e.key === 'Enter' || e.which === 13)) {
                 e.preventDefault();
                 e.stopPropagation();
+                if (!saveInProgress) {
+                    saveInProgress = true;
+                    $('#form-item-button-save').click();
+                    // Optionally unlock after a delay if your save is async
+                    setTimeout(() => { saveInProgress = false; }, 1000);
+                }
                 return false;
             }
         });
