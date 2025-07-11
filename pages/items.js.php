@@ -6883,6 +6883,31 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
     }
 
     $(document).ready(function() {
+        let saveInProgress = false;
+
+        // Prevent Enter key from propagating in label and password fields and do single save
+        // Enter triggers save in these:
+        $('#form-item-label, #form-item-password').on('keydown keyup keypress', function(e) {
+            if ((e.key === 'Enter' || e.which === 13)) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (!saveInProgress) {
+                    saveInProgress = true;
+                    $('#form-item-button-save').click();
+                    setTimeout(() => { saveInProgress = false; }, 1000);
+                }
+                return false;
+            }
+        });
+
+        // Enter does nothing in these:
+        $('#form-item-login, #form-item-email, #form-item-url, #form-item-icon').on('keydown keyup keypress', function(e) {
+            if ((e.key === 'Enter' || e.which === 13)) {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            }
+        });
         // Event listener for path elems
         $(document).on('click', '.path-elem', function() {
             // Read folder id
