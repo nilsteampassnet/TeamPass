@@ -380,41 +380,72 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
     // Manage the password show button
     // including autohide after a couple of seconds
-    $(document).on('click', '#card-item-pwd-show-button', function() {
-        if ($(this).hasClass('pwd-shown') === false) {
-            $(this).addClass('pwd-shown');
+    let isPasswordVisible = false;
+    let passwordTimeout = null;
+    $(document).on('click', '#card-item-pwd-toggle-button', function () {
+        const $icon = $('.pwd-toggle-icon');
+        const $button = $(this);
+        const $pwdField = $('#card-item-pwd');
 
+        // Toggle password visibility
+        if (!isPasswordVisible) {
+            // Get the password
             getItemPassword(
                 'at_password_shown',
                 'item_id',
                 store.get('teampassItem').id
             ).then(item_pwd => {
                 if (item_pwd) {
-                    $('.pwd-show-spinner')
-                        .removeClass('fa-regular fa-eye')
-                        .addClass('fa-solid fa-eye fa-beat-fade text-warning');
+                    isPasswordVisible = true;
 
-                    // display raw password
-                    $('#card-item-pwd')
+                    // Update UI
+                    $icon
+                        .removeClass('fa-regular fa-eye')
+                        .addClass('fa-solid fa-eye-slash text-warning');
+
+                    $pwdField
                         .text(item_pwd)
                         .addClass('pointer_none');
 
-                    // Autohide
-                    setTimeout(() => {
-                        $(this).removeClass('pwd-shown');
-                        $('#card-item-pwd')
-                            .html('<?php echo $var['hidden_asterisk']; ?>')
-                            .removeClass('pointer_none');
-                        $('.pwd-show-spinner')
-                            .removeClass('fa-solid fa-eye fa-beat-fade text-warning')
-                            .addClass('fa-regular fa-eye');
+                    // Optional auto-hide after delay
+                    clearTimeout(passwordTimeout);
+                    passwordTimeout = setTimeout(() => {
+                        hidePassword($icon, $pwdField);
                     }, <?php echo isset($SETTINGS['password_overview_delay']) && (int) $SETTINGS['password_overview_delay'] > 0 ? $SETTINGS['password_overview_delay'] * 1000 : 4000; ?>);
                 }
             });
         } else {
-            $('#card-item-pwd').html('<?php echo $var['hidden_asterisk']; ?>');
+            // Hide password immediately
+            clearTimeout(passwordTimeout);
+            hidePassword($icon, $pwdField);
         }
     });
+
+    function hidePassword($icon, $pwdField) {
+        isPasswordVisible = false;
+        $icon
+            .removeClass('fa-solid fa-eye-slash text-warning')
+            .addClass('fa-regular fa-eye');
+        $pwdField
+            .html('<?php echo $var['hidden_asterisk']; ?>')
+            .removeClass('pointer_none');
+    }
+
+    function resetPasswordDisplay() {
+        const $icon = $('.pwd-toggle-icon');
+        const $pwdField = $('#card-item-pwd');
+
+        isPasswordVisible = false;
+        clearTimeout(passwordTimeout);
+
+        $icon
+            .removeClass('fa-solid fa-eye-slash text-warning')
+            .addClass('fa-regular fa-eye');
+
+        $pwdField
+            .html('<?php echo $var['hidden_asterisk']; ?>')
+            .removeClass('pointer_none');
+    }
 
 
     // Manage folders action
@@ -1324,6 +1355,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
     // Quit item details card back to items list
     $('.but-back-to-list').click(function() {
         closeItemDetailsCard();
+        resetPasswordDisplay();
     });
 
 
@@ -2517,6 +2549,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             if (clipboardOTPCode) {
                 clipboardOTPCode.destroy();
             }
+
+            // Refresh password visibility
+            resetPasswordDisplay();
 
             // Load item info
             Details(
