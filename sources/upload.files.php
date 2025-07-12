@@ -250,15 +250,19 @@ if ($file) {
         $SETTINGS['upload_docext'] . ',' . $SETTINGS['upload_imagesext'] .
             ',' . $SETTINGS['upload_pkgext'] . ',' . $SETTINGS['upload_otherext']
     );
-    if (
-        !in_array($ext, $allowed_extensions) 
-        && $post_type_upload !== 'import_items_from_keepass'
-        && $post_type_upload !== 'import_items_from_csv'
-        && $post_type_upload !== 'restore_db'
-        && $post_type_upload !== 'upload_profile_photo'
-    ) {
-        echo handleUploadError('Invalid file extension.');
-        return false;
+
+    // Check if we should enforce extensions
+    if (($SETTINGS['upload_all_extensions_file'] ?? '0') !== '1') {
+        if (
+            !in_array($ext, $allowed_extensions)
+            && $post_type_upload !== 'import_items_from_keepass'
+            && $post_type_upload !== 'import_items_from_csv'
+            && $post_type_upload !== 'restore_db'
+            && $post_type_upload !== 'upload_profile_photo'
+        ) {
+            echo handleUploadError('Invalid file extension.');
+            return false;
+        }
     }
 } else {
     echo handleUploadError('No upload found for Filedata');
