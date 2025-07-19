@@ -161,6 +161,11 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         );
     }
 
+    // Base64 decode sensitive data
+    if (isset($dataReceived['pw'])) {
+        $dataReceived['pw'] = base64_decode($dataReceived['pw']);
+    }
+
     // Check if Duo auth is in progress and pass the pw and login back to the standard login process
     if(
         isKeyExistingAndEqual('duo', 1, $SETTINGS) === true
