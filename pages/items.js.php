@@ -380,41 +380,72 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
     // Manage the password show button
     // including autohide after a couple of seconds
-    $(document).on('click', '#card-item-pwd-show-button', function() {
-        if ($(this).hasClass('pwd-shown') === false) {
-            $(this).addClass('pwd-shown');
+    let isPasswordVisible = false;
+    let passwordTimeout = null;
+    $(document).on('click', '#card-item-pwd-toggle-button', function () {
+        const $icon = $('.pwd-toggle-icon');
+        const $button = $(this);
+        const $pwdField = $('#card-item-pwd');
 
+        // Toggle password visibility
+        if (!isPasswordVisible) {
+            // Get the password
             getItemPassword(
                 'at_password_shown',
                 'item_id',
                 store.get('teampassItem').id
             ).then(item_pwd => {
                 if (item_pwd) {
-                    $('.pwd-show-spinner')
-                        .removeClass('fa-regular fa-eye')
-                        .addClass('fa-solid fa-eye fa-beat-fade text-warning');
+                    isPasswordVisible = true;
 
-                    // display raw password
-                    $('#card-item-pwd')
+                    // Update UI
+                    $icon
+                        .removeClass('fa-regular fa-eye')
+                        .addClass('fa-solid fa-eye-slash text-warning');
+
+                    $pwdField
                         .text(item_pwd)
                         .addClass('pointer_none');
 
-                    // Autohide
-                    setTimeout(() => {
-                        $(this).removeClass('pwd-shown');
-                        $('#card-item-pwd')
-                            .html('<?php echo $var['hidden_asterisk']; ?>')
-                            .removeClass('pointer_none');
-                        $('.pwd-show-spinner')
-                            .removeClass('fa-solid fa-eye fa-beat-fade text-warning')
-                            .addClass('fa-regular fa-eye');
+                    // Optional auto-hide after delay
+                    clearTimeout(passwordTimeout);
+                    passwordTimeout = setTimeout(() => {
+                        hidePassword($icon, $pwdField);
                     }, <?php echo isset($SETTINGS['password_overview_delay']) && (int) $SETTINGS['password_overview_delay'] > 0 ? $SETTINGS['password_overview_delay'] * 1000 : 4000; ?>);
                 }
             });
         } else {
-            $('#card-item-pwd').html('<?php echo $var['hidden_asterisk']; ?>');
+            // Hide password immediately
+            clearTimeout(passwordTimeout);
+            hidePassword($icon, $pwdField);
         }
     });
+
+    function hidePassword($icon, $pwdField) {
+        isPasswordVisible = false;
+        $icon
+            .removeClass('fa-solid fa-eye-slash text-warning')
+            .addClass('fa-regular fa-eye');
+        $pwdField
+            .html('<?php echo $var['hidden_asterisk']; ?>')
+            .removeClass('pointer_none');
+    }
+
+    function resetPasswordDisplay() {
+        const $icon = $('.pwd-toggle-icon');
+        const $pwdField = $('#card-item-pwd');
+
+        isPasswordVisible = false;
+        clearTimeout(passwordTimeout);
+
+        $icon
+            .removeClass('fa-solid fa-eye-slash text-warning')
+            .addClass('fa-regular fa-eye');
+
+        $pwdField
+            .html('<?php echo $var['hidden_asterisk']; ?>')
+            .removeClass('pointer_none');
+    }
 
 
     // Manage folders action
@@ -1324,6 +1355,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
     // Quit item details card back to items list
     $('.but-back-to-list').click(function() {
         closeItemDetailsCard();
+        resetPasswordDisplay();
     });
 
 
@@ -2518,6 +2550,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 clipboardOTPCode.destroy();
             }
 
+            // Refresh password visibility
+            resetPasswordDisplay();
+
             // Load item info
             Details(
                 //$(this).hasClass('but-prev-item') === true ? $('#list-item-row_' + $(this).attr('data-prev-item-key')) : $('#list-item-row_' + $(this).attr('data-next-item-key')),
@@ -3157,6 +3192,13 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
             return false;
         }
+
+        // Show loading
+        toastr.remove();
+        toastr.info(
+            '<i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>',
+            '<?php echo $lang->get('please_wait'); ?>'
+        );
 
         // Loop on all changed fields
         $('.form-item-field-custom').each(function(i, obj) {
@@ -4359,7 +4401,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             value.enable_favourites = parseInt(value.enable_favourites);
 
             // Check access restriction
-            if (value.rights > 0) {
+            if (value.rights > 0 && value.user_restriction_allowed_for_user === true) {
                 // Should I populate previous item with this new id
                 if (debugJavascript === true) {
                     console.log('current id: '+value.item_id);
@@ -4375,7 +4417,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 }
                 
                 // Prepare anyone can modify icon
-                if (value.anyone_can_modify === 1 || value.open_edit === 1) {
+                if ((value.anyone_can_modify === 1 || value.open_edit === 1)) {
                     icon_all_can_modify = '<span class="fa-stack fa-clickable pointer infotip list-item-clicktoedit mr-2" title="<?php echo $lang->get('edit'); ?>"><i class="fa-solid fa-circle fa-stack-2x"></i><i class="fa-solid fa-pen fa-stack-1x fa-inverse"></i></span>';
                 }
 
@@ -5266,13 +5308,13 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                             }
                         } else {
                             // Show expected categories
-                            $('.no-item-fields, .form-item-category').addClass('hidden');
+                            $('.no-item-fields, .form-item-category, .card-item-category').addClass('hidden');
 
                             // In edition mode, show all fields in expected Categories
                             $(data.categories).each(function(index, category) {
                                 $('#form-item-field, #form-item-category-' + category).removeClass('hidden');
                             });
-
+                            
                             // Now show expected fields and values
                             $(data.fields).each(function(index, field) {
                                 // Show cateogry
@@ -5427,7 +5469,12 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                         $('#card-item-pwd-button').attr('data-id', data.id);
 
                         // Prepare clipboard using async function
-                        document.getElementById('card-item-pwd-button').addEventListener('click', async function() {
+                        const button = document.getElementById('card-item-pwd-button');
+                        // Clone button in order to avoid issues with event listeners
+                        const newButton = button.cloneNode(true);
+                        button.parentNode.replaceChild(newButton, button);
+                        // Add event listener to the new button
+                        newButton.addEventListener('click', async function() {
                             try {
                                 // Retrieve the password
                                 const password = await getItemPassword('at_password_copied', 'item_id', data.id);
@@ -6883,6 +6930,31 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
     }
 
     $(document).ready(function() {
+        let saveInProgress = false;
+
+        // Prevent Enter key from propagating in label and password fields and do single save
+        // Enter triggers save in these:
+        $('#form-item-label, #form-item-password').on('keydown keyup keypress', function(e) {
+            if ((e.key === 'Enter' || e.which === 13)) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (!saveInProgress) {
+                    saveInProgress = true;
+                    $('#form-item-button-save').click();
+                    setTimeout(() => { saveInProgress = false; }, 1000);
+                }
+                return false;
+            }
+        });
+
+        // Enter does nothing in these:
+        $('#form-item-login, #form-item-email, #form-item-url, #form-item-icon').on('keydown keyup keypress', function(e) {
+            if ((e.key === 'Enter' || e.which === 13)) {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            }
+        });
         // Event listener for path elems
         $(document).on('click', '.path-elem', function() {
             // Read folder id

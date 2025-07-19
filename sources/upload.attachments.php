@@ -261,17 +261,21 @@ if (strlen($file_name) == 0 || strlen($file_name) > $MAX_FILENAME_LENGTH) {
 
 // Validate file extension
 $ext = strtolower(getFileExtension($_REQUEST['name']));
-if (
-    in_array(
-        $ext,
-        explode(
-            ',',
-            $SETTINGS['upload_docext'] . ',' . $SETTINGS['upload_imagesext'] .
-                ',' . $SETTINGS['upload_pkgext'] . ',' . $SETTINGS['upload_otherext']
-        )
-    ) === false
-) {
-    handleAttachmentError('Invalid file extension.', 115, 415);
+
+// Check if we should enforce extensions
+if (($SETTINGS['upload_all_extensions_file'] ?? '0') !== '1') {
+    if (
+        in_array(
+            $ext,
+            explode(
+                ',',
+                $SETTINGS['upload_docext'] . ',' . $SETTINGS['upload_imagesext'] .
+                    ',' . $SETTINGS['upload_pkgext'] . ',' . $SETTINGS['upload_otherext']
+            )
+        ) === false
+    ) {
+        handleAttachmentError('Invalid file extension.', 115, 415);
+    }
 }
 
 // 5 minutes execution time

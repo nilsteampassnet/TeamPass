@@ -1158,10 +1158,10 @@ foreach ($rows as $reccord) {
                                     <button type="button" class="float-right btn btn-secondary btn-sm mr-1 hidden" id="card-item-password-history-button">
                                     <i class="fa-solid fa-clock-rotate-left"></i>
                                     </button>
-                                    <button type="button" class="float-right btn btn-secondary btn-sm mr-1" id="card-item-pwd-show-button">
-                                        <i class="fa-regular fa-eye pwd-show-spinner"></i>
+                                    <button type="button" class="float-right btn btn-secondary btn-sm mr-1" id="card-item-pwd-toggle-button">
+                                        <i class="fa-regular fa-eye pwd-toggle-icon"></i>
                                     </button>
-                                    <span id="card-item-pwd" class="float-right unhide_masked_data pointer mr-2"></span>
+                                    <span id="card-item-pwd" class="float-right pointer mr-2"></span>
                                     <input id="hidden-item-pwd" type="hidden">
                                 </li>
                                 <li class="list-group-item">
