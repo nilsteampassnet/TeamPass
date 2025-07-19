@@ -407,8 +407,8 @@ pages/folders.php 522b29ad368b3889c73c0fbf6ea6135d
 pages/import.js.php 03c0725b4b20456027a4040ff2d1488d
 pages/import.php 37cff9324d17d97da3423568349d7461
 pages/index.html 5f1f28d1adcb7eac03989f0ca3e7068e
-pages/items.js.php 70984c7523a48af2ed38c02b8afd1f5d
-pages/items.php 761ddddcb8f7d9e995b6ef14b4971f8d
+pages/items.js.php b401d8fb22ead46f61d93d6495d0d247
+pages/items.php 347ea5d88457d4e264f6f7b080338ee9
 pages/ldap.js.php e3dea22c27e6fb4cba1de55ef4ed2c29
 pages/ldap.php 9659d31f97963aec777d2ac43df7846c
 pages/oauth.js.php 11d2e3336c4697d5a5264432f848c3a7
@@ -3141,6 +3141,7 @@ plugins/jquery.pwstrength/locales/ru.json f4adfb6c540606d2ac1836b60ebf99aa
 plugins/jquery.pwstrength/locales/sk.json 6fcbfb4f694149f0a61a27437b11bd3f
 plugins/jquery.pwstrength/locales/th.json dc910a60970bb0235f5844cc25deef83
 plugins/jquery.pwstrength/locales/tr.json ac96d9501b363a880ff274434c69a5d1
+plugins/jquery.pwstrength/locales/uk.json 05b9531a6187d9e0bc4c01db61e8edbc
 plugins/jquery.pwstrength/locales/zh-TW.json 5178b961b67daed97d8f46be2747bdc8
 plugins/jquery.pwstrength/pwstrength-bootstrap.js 89c26082dbeb4ec8a7c9be5c851bc078
 plugins/jquery.pwstrength/pwstrength-bootstrap.min.js 4eda4c34ee0c428ff0fc25abe89247d6
@@ -3696,7 +3697,7 @@ sources/identify.php 346395c0d7ca7347d053d5a662af4d78
 sources/import.queries.php 5083bac9e4da3814d43e372ccb72555a
 sources/index.html 5f1f28d1adcb7eac03989f0ca3e7068e
 sources/items.logs.php 3b9eaeb8fa7a487161bfbfd771aa7c4b
-sources/items.queries.php 2325231558ba7c463ef76642af1bc679
+sources/items.queries.php 13b403925e92ab5ec6a4ba3a0f23b03d
 sources/ldap.queries.php 8347f492f841663828410a9a72e829ac
 sources/logs.datatables.php 762156d1ffdbe9970d232e8a2c9764ed
 sources/main.functions.php 221096dde4a198c0d6631d3ad03556e9
@@ -3707,8 +3708,8 @@ sources/scheduler.php f2b3bd68de593c6e8575e4ebd9a53652
 sources/tasks.queries.php c351023d1689478f4c0c6b43865002ab
 sources/tools.queries.php d5dbda2b21e4a33c8ede848ea58cbfb6
 sources/tree.php 8150b28291c19b65ef34728ab927551b
-sources/upload.attachments.php 8f9c457897aa917a8b0e644820f1c692
-sources/upload.files.php a3bee769167faa7be9d621e5e418310a
+sources/upload.attachments.php 1eefb284977157b2277ce392512ed1b6
+sources/upload.files.php e3ab35f97b6bbd67810a0faefe82ce7d
 sources/users.datatable.php 08e4bf5bfc1c7357782ac509849d95df
 sources/users.logs.datatable.php 9c97fa077823190f6442b97d751eebda
 sources/users.queries.php bad78b6a6f3d2f62dac025c45413c575
