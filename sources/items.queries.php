@@ -4283,6 +4283,7 @@ switch ($inputData['type']) {
                     $html_json[$record['id']]['link'] = $record['link'];
                     $html_json[$record['id']]['email'] = $record['email'] ?? '';
                     $html_json[$record['id']]['fa_icon'] = $record['fa_icon'];
+                    $html_json[$record['id']]['user_restriction_allowed_for_user'] = ((!empty($record['restricted_to']) && $user_is_in_restricted_list === true) || empty($record['restricted_to'])) ? true : false;
 
                     // Possible values:
                     // 0 -> no access to item
@@ -7285,6 +7286,12 @@ function getCurrentAccessRights(int $userId, int $itemId, int $treeId, string $a
     // Check if the item is locked and whether the current user can edit it
     $editionLock = isItemLocked($itemId, $session, $userId, $action);
 
+    // Check if user is allowed restriction list of users
+    // If the item is restricted to specific users, check if the current user is in that list
+    if (getItemRestrictedUsersList($itemId, $userId) === false) {
+        return getAccessResponse(false, false, false, false);
+    }
+
     // Check if the item is being processed by another user
     if (isProcessOnGoing($itemId)) {
         return getAccessResponse(false, true, false, false);
@@ -7319,6 +7326,34 @@ function getCurrentAccessRights(int $userId, int $itemId, int $treeId, string $a
     }
 
     return getAccessResponse(false, true, $edit, $delete, $editionLock);
+}
+
+/**
+* Get user access restriction response.
+*
+* @param int $itemId The ID of the item to check
+* @param int $userId The ID of the current user
+*
+* @return bool Restricted to user response.
+*/
+function getItemRestrictedUsersList($itemId, $userId)
+{
+    // Get item date
+    $itemRestrictedUsersList = DB::queryFirstRow(
+        'SELECT restricted_to
+         FROM ' . prefixTable('items') . '
+         WHERE id = %i',
+        $itemId
+    );
+    // Check if user is in the list of restriction if the item is restricted
+    if (empty($itemRestrictedUsersList['restricted_to']) === false) {
+        $restrictedUsers = array_map('intval', explode(';', $itemRestrictedUsersList['restricted_to']));
+        if (!in_array($userId, $restrictedUsers, true)) {
+            return false;
+        }
+    }    
+
+    return true;
 }
 
 /**
