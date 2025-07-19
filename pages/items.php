@@ -1161,7 +1161,7 @@ foreach ($rows as $reccord) {
                                     <button type="button" class="float-right btn btn-secondary btn-sm mr-1" id="card-item-pwd-toggle-button">
                                         <i class="fa-regular fa-eye pwd-toggle-icon"></i>
                                     </button>
-                                    <span id="card-item-pwd" class="float-right pointer mr-2"><?php echo $var['hidden_asterisk']; ?></span>
+                                    <span id="card-item-pwd" class="float-right pointer mr-2"></span>
                                     <input id="hidden-item-pwd" type="hidden">
                                 </li>
                                 <li class="list-group-item">

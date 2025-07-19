@@ -4401,7 +4401,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             value.enable_favourites = parseInt(value.enable_favourites);
 
             // Check access restriction
-            if (value.rights > 0) {
+            if (value.rights > 0 && value.user_restriction_allowed_for_user === true) {
                 // Should I populate previous item with this new id
                 if (debugJavascript === true) {
                     console.log('current id: '+value.item_id);
@@ -4417,7 +4417,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 }
                 
                 // Prepare anyone can modify icon
-                if (value.anyone_can_modify === 1 || value.open_edit === 1) {
+                if ((value.anyone_can_modify === 1 || value.open_edit === 1)) {
                     icon_all_can_modify = '<span class="fa-stack fa-clickable pointer infotip list-item-clicktoedit mr-2" title="<?php echo $lang->get('edit'); ?>"><i class="fa-solid fa-circle fa-stack-2x"></i><i class="fa-solid fa-pen fa-stack-1x fa-inverse"></i></span>';
                 }
 
