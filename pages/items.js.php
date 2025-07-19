@@ -3193,6 +3193,13 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             return false;
         }
 
+        // Show loading
+        toastr.remove();
+        toastr.info(
+            '<i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>',
+            '<?php echo $lang->get('please_wait'); ?>'
+        );
+
         // Loop on all changed fields
         $('.form-item-field-custom').each(function(i, obj) {
             if ($(this).data('change-ongoing') === true) {
@@ -5301,13 +5308,13 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                             }
                         } else {
                             // Show expected categories
-                            $('.no-item-fields, .form-item-category').addClass('hidden');
+                            $('.no-item-fields, .form-item-category, .card-item-category').addClass('hidden');
 
                             // In edition mode, show all fields in expected Categories
                             $(data.categories).each(function(index, category) {
                                 $('#form-item-field, #form-item-category-' + category).removeClass('hidden');
                             });
-
+                            
                             // Now show expected fields and values
                             $(data.fields).each(function(index, field) {
                                 // Show cateogry
@@ -6918,6 +6925,31 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
     }
 
     $(document).ready(function() {
+        let saveInProgress = false;
+
+        // Prevent Enter key from propagating in label and password fields and do single save
+        // Enter triggers save in these:
+        $('#form-item-label, #form-item-password').on('keydown keyup keypress', function(e) {
+            if ((e.key === 'Enter' || e.which === 13)) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (!saveInProgress) {
+                    saveInProgress = true;
+                    $('#form-item-button-save').click();
+                    setTimeout(() => { saveInProgress = false; }, 1000);
+                }
+                return false;
+            }
+        });
+
+        // Enter does nothing in these:
+        $('#form-item-login, #form-item-email, #form-item-url, #form-item-icon').on('keydown keyup keypress', function(e) {
+            if ((e.key === 'Enter' || e.which === 13)) {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            }
+        });
         // Event listener for path elems
         $(document).on('click', '.path-elem', function() {
             // Read folder id
