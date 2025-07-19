@@ -5469,7 +5469,12 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                         $('#card-item-pwd-button').attr('data-id', data.id);
 
                         // Prepare clipboard using async function
-                        document.getElementById('card-item-pwd-button').addEventListener('click', async function() {
+                        const button = document.getElementById('card-item-pwd-button');
+                        // Clone button in order to avoid issues with event listeners
+                        const newButton = button.cloneNode(true);
+                        button.parentNode.replaceChild(newButton, button);
+                        // Add event listener to the new button
+                        newButton.addEventListener('click', async function() {
                             try {
                                 // Retrieve the password
                                 const password = await getItemPassword('at_password_copied', 'item_id', data.id);
