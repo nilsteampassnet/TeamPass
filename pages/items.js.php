@@ -3158,6 +3158,13 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             return false;
         }
 
+        // Show loading
+        toastr.remove();
+        toastr.info(
+            '<i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>',
+            '<?php echo $lang->get('please_wait'); ?>'
+        );
+
         // Loop on all changed fields
         $('.form-item-field-custom').each(function(i, obj) {
             if ($(this).data('change-ongoing') === true) {
@@ -5266,13 +5273,13 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                             }
                         } else {
                             // Show expected categories
-                            $('.no-item-fields, .form-item-category').addClass('hidden');
+                            $('.no-item-fields, .form-item-category, .card-item-category').addClass('hidden');
 
                             // In edition mode, show all fields in expected Categories
                             $(data.categories).each(function(index, category) {
                                 $('#form-item-field, #form-item-category-' + category).removeClass('hidden');
                             });
-
+                            
                             // Now show expected fields and values
                             $(data.fields).each(function(index, field) {
                                 // Show cateogry
