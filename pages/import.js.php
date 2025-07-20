@@ -79,7 +79,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
 
 <script type='text/javascript'>
-    var debugJavascript = true;
+    var debugJavascript = false;
 
     // Checkbox
     $('input[type="checkbox"].flat-blue, input[type="radio"].flat-blue').iCheck({
@@ -349,7 +349,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         '<i class="fa-solid fa-key ml-4 mr-1"></i><span id="csv-items-number">' + data.items_number + '</span>' +
                         (data.userCanManageFolders === 1 ?
                         '<i class="fa-solid fa-folder ml-4 mr-1"></i><span id="csv-folders-number">' + data.folders_number + '</span>'
-                        : '') +
+                        : '<i class="fa-solid fa-triangle-exclamation ml-4 mr-1 text-danger pointer infotip" title="Uploading in folders is limited to Manager account. Items will be imported flat in target folder."></i></span>') +
                         '<input type="hidden" id="csv-operation-id" value="' + data.operation_id + '">' +
                         '<input type="hidden" id="userCanManageFolders" value="' + data.userCanManageFolders + '">'
                     );
@@ -503,6 +503,21 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             progressBar: true
                         }
                     );
+
+                    $('#csv-setup-progress').addClass('hidden');
+                    $('#import-feedback').removeClass('hidden');
+
+                    // Display error message
+                    const errorMessages = JSON.parse(response.message);
+                    let errorHtml = '<ul>';
+                    errorMessages.forEach(function(error) {
+                        errorHtml += '<li><?php echo $lang->get('import_error_folder_creation');?> "<b>'+error.errorPath+'</b>": '+error.errorMessage+'</li>';
+                    });
+
+                    $('#import-feedback-progress-text').html(
+                        errorHtml
+                    );
+
                     return;
                 }
 

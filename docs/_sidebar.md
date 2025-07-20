@@ -9,6 +9,7 @@
 - **Features**
 - [Authentication](features/authentication.md)
 - [Items](features/items.md)
+- [Import](features/import.md)
 - [Export](features/export.md)
 - [Keys](features/keys.md)
 - [Roles](features/roles.md)

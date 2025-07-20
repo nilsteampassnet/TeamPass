@@ -276,7 +276,7 @@ echo $complexitySelect;
                         <h5><i class="icon fas fa-info-circle mr-2"></i><?php echo $lang->get('info'); ?></h5>
                         <div class="row hidden" id="import-feedback-result"></div>
                         <div class="form-group col-12" id="import-feedback-progress">
-                            <span id="import-feedback-progress-text"></span>
+                            <div id="import-feedback-progress-text"></div>
                         </div>
                     </div>
                 </div>

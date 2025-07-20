@@ -1175,7 +1175,7 @@ return array(
     'login_with_sso' => 'Login with SSO',
     'server_connected_to_internet' => 'Server ist mit dem Internet verbunden',
     'server_not_connected_to_internet' => 'Server ist nicht mit dem Internet verbunden',
-    'server_not_connected_to_internet_tip' => 'Dies kann einige Funktionen beeinträchtigen. Insbesondere MFA',
+    'server_not_connected_to_internet_tip' => 'Dies kann einige Funktionen beeinträchtigen. Insbesondere MFA.',
     'tools' => 'Tools',
     'user_config_not_compliant' => 'User configuration is not compliant',
     'fix_personal_items_empty' => 'Fix personal items are empty',
@@ -1266,5 +1266,6 @@ e new password must:<br/> - Be different from the previous one<br/> - Contain at
     'files_are_not_expected_ones' => 'files are not expected ones',
     'perform_file_integrity_check' => 'Perform files integrity check',
     'files_integrity_check' => 'Files integrity check',
+    'import_error_folder_creation' => 'Error while creating folder',
 
 );

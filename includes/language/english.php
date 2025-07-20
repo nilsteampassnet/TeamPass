@@ -32,6 +32,7 @@
  // - selected_items_to_be_imported
 
 return array(
+    'import_error_folder_creation' => 'Error while creating folder',
     'files_are_not_expected_ones' => 'files are not expected ones',
     'perform_file_integrity_check' => 'Perform files integrity check',
     'files_integrity_check' => 'Files integrity check',

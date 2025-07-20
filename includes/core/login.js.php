@@ -772,14 +772,21 @@ declare(strict_types=1);
     //Identify user
     function identifyUser(redirect, psk, data, randomstring, oauth2Info) {
         var old_data = data;
-        // Check if session is still existing
+
+        // Base64 encode sensitive data
+        const sharedData = {
+            ...data,
+            pw: btoa(unescape(encodeURIComponent(data.pw))),
+            ...oauth2Info
+        };
+        
         //send query
         $.post(
             "sources/identify.php", {
                 type: "identify_user",
                 login: $('#login').val(),
                 data: prepareExchangedData(
-                    JSON.stringify({...data, ...oauth2Info}),
+                    JSON.stringify(sharedData),
                     'encode',
                     '<?php echo $session->get('key'); ?>'
                 ),
