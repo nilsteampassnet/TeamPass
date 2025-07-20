@@ -1265,5 +1265,6 @@ return array(
     'files_are_not_expected_ones' => 'files are not expected ones',
     'perform_file_integrity_check' => 'Perform files integrity check',
     'files_integrity_check' => 'Files integrity check',
+    'import_error_folder_creation' => 'Error while creating folder',
 
 );

@@ -1174,8 +1174,8 @@ return array(
     'folder_created' => 'Folder created',
     'login_with_sso' => 'Login with SSO',
     'server_connected_to_internet' => 'Server is connected to internet',
-    'server_not_connected_to_internet' => 'Server is connected to internet',
-    'server_not_connected_to_internet_tip' => 'This could lead to several functionnalities not working properly. Especially MFA',
+    'server_not_connected_to_internet' => 'Server is not connected to internet',
+    'server_not_connected_to_internet_tip' => 'This could lead to several functionnalities not working properly. Especially MFA.',
     'tools' => 'Tools',
     'user_config_not_compliant' => 'User configuration is not compliant',
     'fix_personal_items_empty' => 'Fix personal items are empty',
@@ -1266,5 +1266,6 @@ e new password must:<br/> - Be different from the previous one<br/> - Contain at
     'files_are_not_expected_ones' => 'files are not expected ones',
     'perform_file_integrity_check' => 'Perform files integrity check',
     'files_integrity_check' => 'Files integrity check',
+    'import_error_folder_creation' => 'Error while creating folder',
 
 );

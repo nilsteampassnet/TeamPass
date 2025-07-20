@@ -1175,7 +1175,7 @@ return array(
     'login_with_sso' => 'Вхід за допомогою SSO',
     'server_connected_to_internet' => 'Сервер підключений до інтернету',
     'server_not_connected_to_internet' => 'Сервер не підключений до інтернету',
-    'server_not_connected_to_internet_tip' => 'Це може призвести до неправильної роботи кількох функцій, особливо MFA',
+    'server_not_connected_to_internet_tip' => 'Це може призвести до неправильної роботи кількох функцій, особливо MFA.',
     'tools' => 'Інструменти',
     'user_config_not_compliant' => 'Конфігурація користувача не відповідає вимогам',
     'fix_personal_items_empty' => 'Виправити порожні особисті елементи',
@@ -1265,5 +1265,6 @@ return array(
     'files_are_not_expected_ones' => 'files are not expected ones',
     'perform_file_integrity_check' => 'Perform files integrity check',
     'files_integrity_check' => 'Files integrity check',
+    'import_error_folder_creation' => 'Error while creating folder',
 
 );

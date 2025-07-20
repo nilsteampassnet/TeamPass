@@ -479,6 +479,9 @@ switch ($inputData['type']) {
         require_once 'folders.class.php';
         $folderManager = new FolderManager($lang);
 
+        // Prepare some variables
+        $folderCreationError = [];
+
         // Get all folders from objects in DB
         foreach ($itemsPath as $item) {
             $path = $item['folder'];
@@ -546,6 +549,13 @@ switch ($inputData['type']) {
                         // Save ID in map to avoid recreating it
                         $folderIdMap[$currentPath] = $newFolderId;
                         $parentId = $newFolderId;
+                    } elseif ($creationStatus['error'] === true && $creationStatus['message'] !== '' && empty($creationStatus['newId'])) {
+                        // Error during folder creation
+                        $folderCreationError[] = [
+                            'path' => $currentPath,
+                            'message' => $creationStatus['message'],
+                            'importId' => $importId,
+                        ];
                     } else {
                         // Get ID of existing folder
                         $ret = DB::queryFirstRow(
@@ -562,8 +572,37 @@ switch ($inputData['type']) {
 
             // Update the importation entry with the new folder ID
             DB::update(prefixTable('items_importations'), [
-                'folder_id' => $parentId
+                'folder_id' => $parentId,
             ], "increment_id=%i", $importId);
+        }
+
+        if (count($folderCreationError) > 0) {
+            $errorMessage = [];
+            $existingPaths = [];
+            foreach ($folderCreationError as $error) {
+                $path = $error['path'];
+                
+                // Check if the path already exists in the error message
+                // to avoid duplicates in the response
+                if (!isset($existingPaths[$path])) {
+                    $existingPaths[$path] = true;
+                    
+                    $errorMessage[] = [
+                        'errorPath' => $path,
+                        'errorMessage' => $error['message'],
+                    ];
+                }
+            }
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => json_encode($errorMessage),
+                    'processedCount' => count($itemsPath),
+                    'folderIdMap' => $folderIdMap,
+                ),
+                'encode'
+            );
+            break;
         }
 
         echo prepareExchangedData(
@@ -656,6 +695,8 @@ switch ($inputData['type']) {
                 continue; // Skip if folder_id is null
             }
             try {
+                $importId = $item['increment_id']; // Entry ID in items_importations
+
                 // Handle case where password is empty
                 if (($session->has('user-create_item_without_password') &&
                     null !== $session->get('user-create_item_without_password') &&
@@ -749,6 +790,11 @@ switch ($inputData['type']) {
                 // Add item to cache table
                 updateCacheTable('add_value', (int) $newId);
 
+                // Update the importation entry with the importation date
+                DB::update(prefixTable('items_importations'), [
+                    'imported_at' => time(),
+                ], "increment_id=%i", $importId);
+
                 // Update the counter of inserted items
                 $insertedItems++;
 
@@ -803,6 +849,13 @@ switch ($inputData['type']) {
             prefixTable('items_importations'),
             'operation_id = %i',
             $csvOperationId
+        );
+
+        // Clean previous not imported items
+        DB::delete(
+            prefixTable('items_importations'),
+            'imported_at IS NULL AND created_at < %s',
+            date('Y-m-d')
         );
 
         echo prepareExchangedData(
@@ -1022,7 +1075,6 @@ switch ($inputData['type']) {
             1,
         );
 
-error_log(print_r($ret, true));
         echo prepareExchangedData(
             array(
                 'error' => false,
