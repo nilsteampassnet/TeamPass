@@ -32,7 +32,6 @@ declare(strict_types=1);
 use TeampassClasses\SessionManager\SessionManager;
 use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use TeampassClasses\Language\Language;
-use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\ConfigManager\ConfigManager;
 
@@ -84,6 +83,13 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 
 // --------------------------------- //
  
+if ((int) $session->get('user-admin') === 1) {
+    $folderOptions = '';
+    $rows = DB::query('SELECT id, title FROM ' . prefixTable('nested_tree') . ' WHERE personal_folder = %i', 0);
+    foreach ($rows as $record) {
+        $folderOptions .= '<option value="' . $record['id'] . '">' . htmlspecialchars($record['title'], ENT_QUOTES, 'UTF-8') . '</option>';
+    }
+}
 
 ?>
 
@@ -201,7 +207,11 @@ echo $complexitySelect;
 
                                     <div class="form-group">
                                         <label for="import-csv-target-folder"><?php echo $lang->get('target_folder'); ?></label>
-                                        <select id="import-csv-target-folder" class="form-control form-item-control select2" style="width:100%;"></select>
+                                        <select id="import-csv-target-folder" class="form-control form-item-control select2" style="width:100%;">
+<?php
+echo isset($folderOptions) ? $folderOptions : '';
+?>
+                                        </select>
                                     </div>
                                 </div>
                             </div>
@@ -264,7 +274,11 @@ echo $complexitySelect;
                                 <div class="form-group col-12">
                                     <h5><?php echo $lang->get('target_folder'); ?></h5>
                                     <label><?php echo $lang->get('where_shall_items_be_created'); ?></label>
-                                    <select class="form-control select2" style="width:100%;" id="import-keepass-target-folder"></select>
+                                    <select class="form-control select2" style="width:100%;" id="import-keepass-target-folder">
+<?php
+echo isset($folderOptions) ? $folderOptions : '';
+?>
+                                    </select>
                                 </div>
                             </div>
                         </div>
