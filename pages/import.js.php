@@ -79,7 +79,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
 
 <script type='text/javascript'>
-    var debugJavascript = false;
+    var debugJavascript = true;
 
     // Checkbox
     $('input[type="checkbox"].flat-blue, input[type="radio"].flat-blue').iCheck({
@@ -417,8 +417,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             return false;
         }
 
-        $('#form-item-import-perform').prop('disabled', true); // Disable button to avoid multiple clicks
-        $('#form-item-import-cancel').prop('disabled', true); // Disable cancel button
+        $('#form-item-import-perform, #form-item-import-cancel').prop('disabled', true); // Disable buttons to avoid multiple clicks
+        $('#import-feedback-progress-text').addClass('hidden').html('');
 
         // Show spinner
         toastr.remove();
@@ -517,6 +517,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     $('#import-feedback-progress-text').html(
                         errorHtml
                     );
+
+                    $('#form-item-import-perform, #form-item-import-cancel').prop('disabled', false);
 
                     return;
                 }
@@ -978,26 +980,24 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                     'items': itemsToAdd,
                                 }
                                 itemsNumber = itemsToAdd.length;
-                                counter = 1;
+                                counter = 0;
+                                var $resultsList = $('<ul>');
                                 if (debugJavascript === true) {
                                     console.log(data);
                                 }
 
                                 // Recursive loop on each item to add
-                                callRecurive(itemsToAdd, data.folders, counter, itemsNumber); 
+                                callRecurive(itemsToAdd, data.folders, counter, itemsNumber, $resultsList); 
 
                                 // recursive action
-                                function callRecurive(itemsList, foldersList, counter, itemsNumber) {
+                                function callRecurive(itemsList, foldersList, counter, itemsNumber, $resultsList) {
                                     var dfd = $.Deferred();
-                                    let nbItemsToTreat = 10; // Number of items to treat at once
+                                    let nbItemsToTreat = 5; // Number of items to treat at once
 
                                     // Isolate first item
                                     if (itemsList.length > 0) {
                                         $('#import-feedback-progress-text')
-                                            .html('<i class="fa-solid fa-cog fa-spin ml-4 mr-2"></i><?php echo $lang->get('operation_progress');?> ('+((counter*100)/itemsNumber).toFixed(2)+'%) - <i id="item-title"></i>');
-
-                                        // XSS Filtering :
-                                        //$('#import-feedback-progress-text').text(itemsList[0].Title);
+                                            .html('<i class="fa-solid fa-cog fa-spin ml-4 mr-2"></i><?php echo $lang->get('operation_progress');?> ('+((counter*100)/itemsNumber).toFixed(0)+'%)');
 
                                         data = {
                                             'edit-all': $('#import-keepass-edit-all-checkbox').prop('checked') === true ? 1 : 0,
@@ -1038,23 +1038,22 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                                     $('#import-feedback-result').html('');
                                                 } else {
                                                     // Done for this iteration
-                                                    // Show results
-                                                    var $list = $('<ul>');
+                                                    // Prepare results
                                                     data.items.forEach(function(item) {
-                                                        $list.append('<li>' + item.title + ' [' + item.folder + ']</li>');
-                                                    });
-                                                    $('#import-feedback-result').append('<div><p>' + $list + '</p></div>');
+                                                        $resultsList.append('<li>' + item.title + ' [' + item.folder + ']</li>');
+                                                    });                                                    
 
                                                     // Remove item from list
                                                     itemsToAdd.splice(0, nbItemsToTreat);
 
                                                     // Do recursive call until step = finished
-                                                    counter++
+                                                    counter += nbItemsToTreat;
                                                     callRecurive(
                                                         itemsList,
                                                         foldersList,
                                                         counter,
-                                                        itemsNumber
+                                                        itemsNumber,
+                                                        $resultsList
                                                     ).done(function(response) {
                                                         dfd.resolve(response);
                                                     });
@@ -1066,8 +1065,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                         // Table of items to import is empty
 
                                         // Show results
+                                        $('#import-feedback-result').append($resultsList);
                                         $('#import-feedback-progress').addClass('hidden');
-                                        $('#import-feedback div').removeClass('hidden');
+                                        $('#import-feedback div, #import-feedback-result').removeClass('hidden');
                                         $('#import-feedback-progress-text').html('');
                                         
                                         // Show
