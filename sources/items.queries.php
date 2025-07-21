@@ -3105,7 +3105,7 @@ switch ($inputData['type']) {
                     ) {
                         $arrData['show_details'] = 0;
                         // delete item
-                        DB::delete(prefixTable('automatic_del'), 'item_id = %i', $inputData['id']);
+                        //DB::delete(prefixTable('automatic_del'), 'item_id = %i', $inputData['id']);
                         // make inactive object
                         DB::update(
                             prefixTable('items'),
