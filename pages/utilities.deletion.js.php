@@ -160,11 +160,14 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             itemsHtml += '<tr class="icheck-toggle">' +
                                 '<td width="35px"><input type="checkbox" data-id="' + value.id + '" class="item-select"></td>' +
                                 '<td class="font-weight-bold">' + value.label + '</td>' +
-                                '<td class="font-weight-light"><i class="far fa-calendar-alt mr-1"></i>' + value.date + '</td>' +
-                                '<td class=""><i class="far fa-user mr-1"></i>' + value.name + ' [' + value.login + ']</td>' +
-                                '<td class="font-italic"><i class="far fa-folder mr-1"></i>' + value.folder_label + '</td>' +
+                                '<td class="font-weight-light"><i class="fa-regular fa-calendar-alt mr-1"></i>' + value.date + '</td>' +
+                                '<td class=""><i class="fa-regular fa-user mr-1"></i>' + value.name + ' [' + value.login + ']</td>' +
+                                '<td class="font-italic"><i class="fa-regular fa-folder mr-1"></i>' + value.folder_label + '</td>' +
                                 (value.folder_deleted === true ?
                                     '<td class=""><?php echo $lang->get('belong_of_deleted_folder'); ?></td>' :
+                                    '') +
+                                ((value.del_enabled === true && parseInt(value.del_type) === 1 && parseInt(value.del_value) === 0) ?
+                                    '<td><i class="fa-solid fa-trash-can mr-1 mt-1 pointer text-info" title="Automatic deletation after X views"></i></td>' :
                                     '') +
                                 '</tr>';
                         });
@@ -228,8 +231,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 .html('<div class="callout callout-info"><h5>' +
                     '<?php echo $lang->get('number_of_selected_objects'); ?>: <span id="objects_counter" class="text-bold">' +
                     $('input:checkbox:checked').length + '</span></h5>' +
-                    '<?php echo $lang->get('highlight_selected'); ?>:<i class="far fa-check-circle fa-lg ml-2 pointer text-success" id="highlight"></i>' +
-                    '<i class="far fa-times-circle fa-lg ml-2 pointer text-danger" id="highlight-cancel"></i></div>' +
+                    '<?php echo $lang->get('highlight_selected'); ?>:<i class="fa-regular fa-check-circle fa-lg ml-2 pointer text-success" id="highlight"></i>' +
+                    '<i class="fa-regular fa-times-circle fa-lg ml-2 pointer text-danger" id="highlight-cancel"></i></div>' +
                     '<div class="alert alert-info"><i class="fas fa-warning mr-2"></i><?php echo $lang->get('confirm_selection_restore'); ?></div>');
 
             // Hide other confirm box
@@ -246,8 +249,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 .html('<div class="callout callout-warning"><h5>' +
                     '<?php echo $lang->get('number_of_selected_objects'); ?>: <span id="objects_counter" class="text-bold">' +
                     $('input:checkbox:checked').length + '</span></h5>' +
-                    '<?php echo $lang->get('highlight_selected'); ?>:<i class="far fa-check-circle fa-lg ml-2 pointer text-success" id="highlight"></i>' +
-                    '<i class="far fa-times-circle fa-lg ml-2 pointer text-danger" id="highlight-cancel"></i></div>' +
+                    '<?php echo $lang->get('highlight_selected'); ?>:<i class="fa-regular fa-check-circle fa-lg ml-2 pointer text-success" id="highlight"></i>' +
+                    '<i class="fa-regular fa-times-circle fa-lg ml-2 pointer text-danger" id="highlight-cancel"></i></div>' +
                     '<div class="alert alert-warning"><i class="fas fa-warning mr-2"></i><?php echo $lang->get('confirm_selection_delete'); ?></div>');
 
             // Hide other confirm box
