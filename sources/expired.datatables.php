@@ -186,11 +186,15 @@ $iFilteredTotal = DB::count();
 /*
    * Output
 */
-
+$sOutput = '{';
+$sOutput .= '"sEcho": '. (int) $request->query->filter('draw', FILTER_SANITIZE_NUMBER_INT) . ', ';
+$sOutput .= '"iTotalRecords": '.$iTotal.', ';
+$sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
+$sOutput .= '"aaData": ';
 if ($iTotal > 0) {
-    $sOutput = '[';
+    $sOutput .= '[';
 } else {
-    $sOutput = '';
+    $sOutput .= '';
 }
 
 foreach ($rows as $record) {
@@ -211,14 +215,12 @@ foreach ($rows as $record) {
     $sOutput .= '"' . implode('<i class=\"fas fa-angle-right ml-1 mr-1\"></i>', $path) . '"],';
 }
 
-if ($iTotal > 0) {
-    if (strrchr($sOutput, '[') !== '[') {
-        $sOutput = substr_replace($sOutput, '', -1);
-    }
-    $sOutput .= ']}';
+if (count($rows) > 0) {
+    $sOutput = substr_replace($sOutput, '', -1);
+    $sOutput .= '] }';
 } else {
     $sOutput .= '[] }';
 }
 
 // finalize output
-echo '{"recordsTotal": ' . (int) $iTotal . ', "recordsFiltered": ' . (int) $iFilteredTotal . ', "data": ' . htmlspecialchars($sOutput);
+echo (string) $sOutput;

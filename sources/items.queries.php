@@ -3105,7 +3105,7 @@ switch ($inputData['type']) {
                     ) {
                         $arrData['show_details'] = 0;
                         // delete item
-                        DB::delete(prefixTable('automatic_del'), 'item_id = %i', $inputData['id']);
+                        //DB::delete(prefixTable('automatic_del'), 'item_id = %i', $inputData['id']);
                         // make inactive object
                         DB::update(
                             prefixTable('items'),
@@ -7320,11 +7320,17 @@ function getCurrentAccessRights(int $userId, int $itemId, int $treeId, string $a
     // Determine the user's access rights based on their roles for this folder
     [$edit, $delete] = getRoleBasedAccess($session, $treeId);
 
+    // Is this folder in the list of visible folders?
+    if (!in_array($treeId, array_column($visibleFolders, 'id'))) {
+        // If the folder is not visible to the user, they cannot edit or delete items in it
+        return getAccessResponse(false, false, false, false);
+    }
+
     // Log access rights information if logging is enabled
     if (LOG_TO_SERVER === true) {
         error_log("TEAMPASS - Folder: $treeId - User: $userId - edit: $edit - delete: $delete");
     }
-
+    
     return getAccessResponse(false, true, $edit, $delete, $editionLock);
 }
 

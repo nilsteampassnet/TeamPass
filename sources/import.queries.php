@@ -994,7 +994,7 @@ switch ($inputData['type']) {
             $itemDefinition['parentFolderId'] = $previousFolder;
             $itemDefinition['Notes'] = $itemDefinition['Notes'] ?? '';
             $itemDefinition['URL'] = $itemDefinition['URL'] ?? '';
-            $itemDefinition['Password'] = $itemDefinition['Password'] ?? '';
+            $itemDefinition['Password'] = base64_encode($itemDefinition['Password']) ?? '';
 
             return $itemDefinition;
         }
@@ -1214,7 +1214,8 @@ switch ($inputData['type']) {
                 empty($item['Password']) === false
             ) {
                 // NEW ENCRYPTION
-                $cryptedStuff = doDataEncryption($item['Password']);
+                $itemPassword = base64_decode($item['Password']);
+                $cryptedStuff = doDataEncryption($itemPassword);
             } else {
                 $cryptedStuff['encrypted'] = '';
                 $cryptedStuff['objectKey'] = '';

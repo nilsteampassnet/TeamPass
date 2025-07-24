@@ -149,11 +149,13 @@ if (null !== $post_type) {
             $rows = DB::query(
                 'SELECT u.login as login, u.name as name, u.lastname as lastname,
                 i.id as id, i.label as label,
-                i.id_tree as id_tree, l.date as date, n.title as folder_title
+                i.id_tree as id_tree, l.date as date, n.title as folder_title,
+                a.del_enabled as del_enabled, a.del_value as del_value, a.del_type as del_type
                 FROM ' . prefixTable('log_items') . ' as l
                 INNER JOIN ' . prefixTable('items') . ' as i ON (l.id_item=i.id)
                 LEFT JOIN ' . prefixTable('users') . ' as u ON (l.id_user=u.id)
                 LEFT JOIN ' . prefixTable('nested_tree') . ' as n ON (i.id_tree=n.id)
+                INNER JOIN ' . prefixTable('automatic_del') . ' as a ON (l.id_item = a.item_id)
                 WHERE i.inactif = %i
                 AND l.action = %s',
                 1,
@@ -178,6 +180,9 @@ if (null !== $post_type) {
                             'name' => $record['name'] . ' ' . $record['lastname'],
                             'folder_label' => $record['folder_title'],
                             'folder_deleted' => $thisFolder,
+                            'del_enabled' => (bool) $record['del_enabled'],
+                            'del_value' => (int) $record['del_type'] === 1 ? (int) $record['del_value'] : $record['del_value'],
+                            'del_type' => (int) $record['del_type'],
                         )
                     );
                 }
