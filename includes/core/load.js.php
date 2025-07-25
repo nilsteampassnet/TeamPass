@@ -92,6 +92,7 @@ if (
                 try {
                     // Retrieve the target defined by clipboard-target
                     const targetId = this.getAttribute('clipboard-target');
+                    console.log('Target ID:', targetId);
                     if (!targetId) {
                         return; // Stop if no target ID is defined
                     }
@@ -1896,11 +1897,11 @@ if (
                 data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $session->get('key'); ?>'),
                 key: '<?php echo $session->get('key'); ?>'
             },
-            function(data) {
-                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+            function(response) {
+                decodedData = prepareExchangedData(response, 'decode', '<?php echo $session->get('key'); ?>');
 
                 // Show data
-                $('#dialog-bug-report-text').html(data.html);
+                $('#dialog-bug-report-text').html(decodedData.report);
 
                 // Open Github
                 $('#dialog-bug-report-github-button').click(function() {

@@ -821,126 +821,198 @@ function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived,
 /**
  * Handler for all system tasks
  *
- * @param string $post_type
- * @param array|null|string $dataReceived
- * @param array $SETTINGS
- * @return string
+ * @param string $post_type Type of action to perform
+ * @param mixed $dataReceived Data received for processing
+ * @param array $SETTINGS Application settings
+ * @return string JSON-encoded response
  */
-function systemHandler(string $post_type, array|null|string $dataReceived, array $SETTINGS): string
+function systemHandler(string $post_type, $dataReceived, array $SETTINGS): string
 {
-    $session = SessionManager::getSession();
-    switch ($post_type) {
-        /*
-        * How many items for this user
-        */
-        case 'get_number_of_items_to_treat'://action_system
-            return getNumberOfItemsToTreat(
-                (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
-                $SETTINGS
-            );
+    try {
+        $session = SessionManager::getSession();
 
-        /*
-         * Sending statistics
-         */
-        case 'sending_statistics'://action_system
-            sendingStatistics(
-                $SETTINGS
-            );
-            return prepareExchangedData(
-                array(
-                    'error' => false,
-                ),
-                'encode'
-            );
-
-         /*
-         * Generate BUG report
-         */
-        case 'generate_bug_report'://action_system
-
-            // Only administrators can see this confidential informations.
-            if ((int) $session->get('user-admin') !== 1) {
-                return prepareExchangedData(
-                    array(
-                        'error' => false,
-                    ),
-                    'encode'
-                );
-            }
-
-            return generateBugReport(
-                (array) $dataReceived,
-                $SETTINGS
-            );
-
-        /*
-         * get_teampass_settings
-         */
-        case 'get_teampass_settings'://action_system
-
-            // Encrypt data to return
-            return prepareExchangedData(
-                array_intersect_key(
-                    $SETTINGS, 
-                    array(
-                        'ldap_user_attribute' => '',
-                        'enable_pf_feature' => '',
-                        'clipboard_life_duration' => '',
-                        'enable_favourites' => '',
-                        'copy_to_clipboard_small_icons' => '',
-                        'enable_attachment_encryption' => '',
-                        'google_authentication' => '',
-                        'agses_authentication_enabled' => '',
-                        'yubico_authentication' => '',
-                        'duo' => '',
-                        'personal_saltkey_security_level' => '',
-                        'enable_tasks_manager' => '',
-                        'insert_manual_entry_item_history' => '',
-                        'show_item_data' => '',
-                    )
-                ),
-                'encode'
-            );
-
-        /*
-         * Generates a TOKEN with CRYPT
-         */
-        case 'save_token'://action_system
-            $token = GenerateCryptKey(
-                null !== filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT) ? (int) filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT) : 20,
-                null !== filter_input(INPUT_POST, 'secure', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ? filter_input(INPUT_POST, 'secure', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : false,
-                null !== filter_input(INPUT_POST, 'numeric', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ? filter_input(INPUT_POST, 'numeric', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : false,
-                null !== filter_input(INPUT_POST, 'capital', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ? filter_input(INPUT_POST, 'capital', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : false,
-                null !== filter_input(INPUT_POST, 'symbols', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ? filter_input(INPUT_POST, 'symbols', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : false,
-                null !== filter_input(INPUT_POST, 'lowercase', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ? filter_input(INPUT_POST, 'lowercase', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : false
-            );
-            
-            // store in DB
-            DB::insert(
-                prefixTable('tokens'),
-                array(
-                    'user_id' => (int) $session->get('user-id'),
-                    'token' => $token,
-                    'reason' => filter_input(INPUT_POST, 'reason', FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                    'creation_timestamp' => time(),
-                    'end_timestamp' => time() + filter_input(INPUT_POST, 'duration', FILTER_SANITIZE_NUMBER_INT), // in secs
-                )
-            );
-
-            return '[{"token" : "' . $token . '"}]';
-
-        /*
-        * Default case
-        */
-        default :
-            return prepareExchangedData(
-                array(
-                    'error' => true,
-                ),
-                'encode'
-            );
+        switch ($post_type) {
+            case 'get_number_of_items_to_treat':
+                return handleGetNumberOfItems($dataReceived, $SETTINGS);
+            case 'sending_statistics':
+                return handleSendingStatistics($SETTINGS);
+            case 'generate_bug_report':
+                return handleGenerateBugReport($dataReceived, $SETTINGS, $session);
+            case 'get_teampass_settings':
+                return handleGetTeampassSettings($SETTINGS);
+            case 'save_token':
+                return handleSaveToken($session);
+            default:
+                return prepareErrorResponse('Unknown action type');
+        }
+    } catch (Exception $e) {
+        return prepareErrorResponse($e->getMessage());
     }
 }
+
+/**
+ * Handles the 'get_number_of_items_to_treat' action
+ */
+function handleGetNumberOfItems($dataReceived, array $SETTINGS): string
+{
+    $userId = getValidatedInput($dataReceived, 'user_id', FILTER_SANITIZE_NUMBER_INT);
+    if ($userId === false) {
+        return prepareErrorResponse('Invalid User ID');
+    }
+
+    return prepareSuccessResponse([
+        'count' => getNumberOfItemsToTreat((int)$userId, $SETTINGS)
+    ]);
+}
+
+/**
+ * Handles the 'sending_statistics' action
+ */
+function handleSendingStatistics(array $SETTINGS): string
+{
+    sendingStatistics($SETTINGS);
+    return prepareSuccessResponse();
+}
+
+/**
+ * Handles the 'generate_bug_report' action
+ */
+function handleGenerateBugReport($dataReceived, array $SETTINGS, $session): string
+{
+    if ((int) $session->get('user-admin') !== 1) {
+        return prepareSuccessResponse([]); // Return empty success for non-admins
+    }
+
+    if (!is_array($dataReceived)) {
+        return prepareErrorResponse('Invalid data format');
+    }
+
+    $reportContent = generateBugReport($dataReceived, $SETTINGS);
+    if ($reportContent['error'] === true) {
+        return prepareErrorResponse('Failed to generate bug report');
+    }
+
+    return prepareSuccessResponse([
+        'report' => $reportContent['report']
+    ]);
+}
+
+/**
+ * Handles the 'get_teampass_settings' action
+ */
+function handleGetTeampassSettings(array $SETTINGS): string
+{
+    $allowedSettings = [
+        'ldap_user_attribute', 'enable_pf_feature', 'clipboard_life_duration',
+        'enable_favourites', 'copy_to_clipboard_small_icons', 'enable_attachment_encryption',
+        'google_authentication', 'agses_authentication_enabled', 'yubico_authentication',
+        'duo', 'personal_saltkey_security_level', 'enable_tasks_manager',
+        'insert_manual_entry_item_history', 'show_item_data'
+    ];
+
+    return prepareSuccessResponse([
+        'settings' => array_intersect_key($SETTINGS, array_flip($allowedSettings))
+    ]);
+}
+
+/**
+ * Handles the 'save_token' action
+ */
+function handleSaveToken($session): string
+{
+    $tokenParams = [
+        'size' => FILTER_SANITIZE_NUMBER_INT,
+        'secure' => FILTER_VALIDATE_BOOLEAN,
+        'numeric' => FILTER_VALIDATE_BOOLEAN,
+        'capital' => FILTER_VALIDATE_BOOLEAN,
+        'symbols' => FILTER_VALIDATE_BOOLEAN,
+        'lowercase' => FILTER_VALIDATE_BOOLEAN,
+        'duration' => FILTER_SANITIZE_NUMBER_INT,
+        'reason' => FILTER_SANITIZE_FULL_SPECIAL_CHARS
+    ];
+
+    $params = [];
+    foreach ($tokenParams as $name => $filter) {
+        $params[$name] = getPostInput($name, $filter);
+    }
+
+    $defaults = [
+        'size' => 20,
+        'secure' => false,
+        'numeric' => false,
+        'capital' => false,
+        'symbols' => false,
+        'lowercase' => false,
+        'duration' => 3600,
+        'reason' => ''
+    ];
+
+    // Apply defaults where needed
+    foreach ($defaults as $key => $value) {
+        if ($params[$key] === null) {
+            $params[$key] = $value;
+        }
+    }
+
+    $token = GenerateCryptKey(
+        (int)$params['size'],
+        (bool)$params['secure'],
+        (bool)$params['numeric'],
+        (bool)$params['capital'],
+        (bool)$params['symbols'],
+        (bool)$params['lowercase']
+    );
+
+    DB::insert(prefixTable('tokens'), [
+        'user_id' => (int) $session->get('user-id'),
+        'token' => $token,
+        'reason' => $params['reason'],
+        'creation_timestamp' => time(),
+        'end_timestamp' => time() + (int)$params['duration'],
+    ]);
+
+    return prepareSuccessResponse(['token' => $token]);
+}
+
+/**
+ * Helper function to get and validate input
+ */
+function getValidatedInput(array $data, string $key, int $filter)
+{
+    if (!isset($data[$key])) {
+        return false;
+    }
+    return filter_var($data[$key], $filter);
+}
+
+/**
+ * Helper function to get POST input with default value
+ */
+function getPostInput(string $name, int $filter)
+{
+    return filter_input(INPUT_POST, $name, $filter);
+}
+
+/**
+ * Prepares a success response
+ */
+function prepareSuccessResponse(array $data = []): string
+{
+    $response = array_merge(['error' => false], $data);
+    return prepareExchangedData($response, 'encode');
+}
+
+/**
+ * Prepares an error response
+ */
+function prepareErrorResponse(string $message): string
+{
+    return prepareExchangedData([
+        'error' => true,
+        'message' => $message
+    ], 'encode');
+}
+
 
 
 function utilsHandler(string $post_type, array|null|string $dataReceived, array $SETTINGS): string
@@ -1608,9 +1680,9 @@ function sendingStatistics(
 function generateBugReport(
     array $data,
     array $SETTINGS
-): string
+): array
 {
-    $config_exclude_vars = array(
+    $excludedVars = array(
         'bck_script_passkey',
         'email_smtp_server',
         'email_auth_username',
@@ -1638,72 +1710,61 @@ function generateBugReport(
     $session = SessionManager::getSession();
     $lang = new Language($session->get('user-language') ?? 'english');
 
-    // Read config file
-    $list_of_options = '';
-    $url_found = '';
-    $anonym_url = '';
-    $sortedSettings = $SETTINGS;
-    ksort($sortedSettings);
-
-    foreach ($sortedSettings as $key => $value) {
-        // Identify url to anonymize it
-        if ($key === 'cpassman_url' && empty($url_found) === true) {
-            $url_found = $value;
-            if (empty($url_found) === false) {
-                $tmp = parse_url($url_found);
-                $anonym_url = $tmp['scheme'] . '://<anonym_url>' . (isset($tmp['path']) === true ? $tmp['path'] : '');
-                $value = $anonym_url;
-            } else {
-                $value = '';
-            }
-        }
-
-        // Anonymize all urls
-        if (empty($anonym_url) === false) {
-            $value = str_replace($url_found, $anonym_url, (string) $value);
-        }
-
-        // Clear some vars
-        foreach ($config_exclude_vars as $var) {
-            if ($key === $var) {
-                $value = '<removed>';
-            }
-        }
-
-        // Complete line to display
-        $list_of_options .= "'$key' => '$value'\n";
+    // Anonymisation URL
+    $urlFound = $SETTINGS['cpassman_url'] ?? '';
+    $anonymUrl = '';
+    if (!empty($urlFound)) {
+        $parsed = parse_url($urlFound);
+        $anonymUrl = $parsed['scheme'] . '://<anonym_url>' . ($parsed['path'] ?? '');
     }
 
-    // Get error
-    $err = error_get_last();
+    // Filtrage et tri des réglages
+    $listOfOptions = [];
+    ksort($SETTINGS);
 
-    // Get 10 latest errors in Teampass
-    $teampass_errors = '';
-    $rows = DB::query(
+    foreach ($SETTINGS as $key => $value) {
+        if (in_array($key, $excludedVars, true)) {
+            $value = '<removed>';
+        } elseif (!empty($anonymUrl)) {
+            $value = str_replace($urlFound, $anonymUrl, (string) $value);
+        }
+
+        $listOfOptions[] = "'$key' => '$value'";
+    }
+    $listOfOptions = implode("\n", $listOfOptions);
+
+    // Récupère dernière erreur PHP
+    $phpError = error_get_last();
+    $phpErrorMsg = $phpError
+        ? $phpError['message'] . ' - ' . $phpError['file'] . ' (' . $phpError['line'] . ')'
+        : $lang->get('no_error_logged');
+
+    // Dernières erreurs Teampass
+    $teampassErrors = [];
+    $errors = DB::query(
         'SELECT label, date AS error_date
-        FROM ' . prefixTable('log_system') . "
-        WHERE `type` LIKE 'error'
-        ORDER BY `date` DESC
-        LIMIT 0, 10"
+         FROM ' . prefixTable('log_system') . "
+         WHERE `type` = 'error'
+         ORDER BY `date` DESC
+         LIMIT 10"
     );
-    if (DB::count() > 0) {
-        foreach ($rows as $record) {
-            if (empty($teampass_errors) === true) {
-                $teampass_errors = ' * ' . date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['error_date']) . ' - ' . $record['label'];
-            } else {
-                $teampass_errors .= ' * ' . date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['error_date']) . ' - ' . $record['label'];
-            }
-        }
-    }
 
-    if (defined('DB_PASSWD_CLEAR') === false) {
+    foreach ($errors as $record) {
+        $teampassErrors[] = ' * ' . date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['error_date']) . ' - ' . $record['label'];
+    }
+    $teampassErrors = count($teampassErrors) > 0 ? implode("\n", $teampassErrors) : $lang->get('no_error_logged');
+
+    // Version DB
+    if (!defined('DB_PASSWD_CLEAR')) {
         define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD));
     }
-    $link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, (int) DB_PORT, null);
+    $dbLink = @mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, (int) DB_PORT);
+    $dbVersion = $dbLink ? mysqli_get_server_info($dbLink) : $lang->get('undefined');
 
     // Now prepare text
-    $txt = '### Page on which it happened
-' . $data['current_page'] . '
+    $reportContent = <<<REPORT
+### Page on which it happened
+{$data['current_page']}
 
 ### Steps to reproduce
 1.
@@ -1718,54 +1779,48 @@ Tell us what should happen
 Tell us what happens instead
 
 ### Server configuration
-**Operating system**: ' . php_uname() . '
-
-**Web server:** ' . $_SERVER['SERVER_SOFTWARE'] . '
-
-**Database:** ' . ($link === false ? $lang->get('undefined') : mysqli_get_server_info($link)) . '
-
-**PHP version:** ' . PHP_VERSION . '
-
-**Teampass version:** ' . TP_VERSION . '.' . TP_VERSION_MINOR . '
+**Operating system**: {php_uname()}
+**Web server**: {$_SERVER['SERVER_SOFTWARE']}
+**Database**: {$dbVersion}
+**PHP version**: {PHP_VERSION}
+**Teampass version**: {TP_VERSION}.{TP_VERSION_MINOR}
 
 **Teampass configuration variables:**
 ```
-' . $list_of_options . '
+{$listOfOptions}
 ```
 
 **Updated from an older Teampass or fresh install:**
 
 ### Client configuration
-
-**Browser:** ' . $data['browser_name'] . ' - ' . $data['browser_version'] . '
-
-**Operating system:** ' . $data['os'] . ' - ' . $data['os_archi'] . 'bits
+**Browser**: {$data['browser_name']} - {$data['browser_version']}
+**Operating system**: {$data['os']} - {$data['os_archi']} bits
 
 ### Logs
 
 #### Web server error log
 ```
-' . $err['message'] . ' - ' . $err['file'] . ' (' . $err['line'] . ')
+{$phpErrorMsg}
 ```
 
 #### Teampass 10 last system errors
 ```
-' . $teampass_errors . '
+{$teampassErrors}
 ```
 
 #### Log from the web-browser developer console (CTRL + SHIFT + i)
 ```
 Insert the log here and especially the answer of the query that failed.
 ```
-';
+REPORT;
 
-    return prepareExchangedData(
-        array(
-            'html' => $txt,
-            'error' => '',
-        ),
-        'encode'
-    );
+    // Now prepare text
+    $reportData = [
+        'report' => $reportContent,
+        'error' => false
+    ];
+
+    return $reportData;
 }
 
 /**

@@ -758,7 +758,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                         </div>
                     </div>
                     <div class="card-footer">
-                        <button class="btn btn-primary mr-2 clipboard-copy" data-clipboard-text="dialog-bug-report-text" id="dialog-bug-report-select-button"><?php echo $lang->get('copy_to_clipboard'); ?></button>
+                        <button class="btn btn-primary mr-2 clipboard-copy" clipboard-target="dialog-bug-report-text" id="dialog-bug-report-select-button"><?php echo $lang->get('copy_to_clipboard'); ?></button>
                         <button class="btn btn-primary" id="dialog-bug-report-github-button"><?php echo $lang->get('open_bug_report_in_github'); ?></button>
                         <button class="btn btn-default float-right close-element"><?php echo $lang->get('close'); ?></button>
                     </div>

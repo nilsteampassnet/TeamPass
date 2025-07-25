@@ -126,6 +126,7 @@ if ($post_type === 'identify_user') {
     return false;
 }
 
+
 /**
  * Complete authentication of user through Teampass
  *
@@ -136,548 +137,746 @@ if ($post_type === 'identify_user') {
  */
 function identifyUser(string $sentData, array $SETTINGS): bool
 {
-    $antiXss = new AntiXSS();
-    $session = SessionManager::getSession();
-    $request = SymfonyRequest::createFromGlobals();
-    $lang = new Language($session->get('user-language') ?? 'english');
-    $session = SessionManager::getSession();
-
-    // Prepare GET variables
-    $sessionAdmin = $session->get('user-admin');
-    $sessionPwdAttempts = $session->get('pwd_attempts');
-    $sessionUrl = $session->get('user-initial_url');
-    $server = [];
-    $server['PHP_AUTH_USER'] =  $request->getUser();
-    $server['PHP_AUTH_PW'] = $request->getPassword();
+    $authContext = new AuthenticationContext($sentData, $SETTINGS);
     
-    // decrypt and retreive data in JSON format
-    if ($session->get('key') === null) {
-        $dataReceived = $sentData;
-    } else {
-        $dataReceived = prepareExchangedData(
-            $sentData,
-            'decode',
-            $session->get('key')
-        );
-    }
-
-    // Base64 decode sensitive data
-    if (isset($dataReceived['pw'])) {
-        $dataReceived['pw'] = base64_decode($dataReceived['pw']);
-    }
-
-    // Check if Duo auth is in progress and pass the pw and login back to the standard login process
-    if(
-        isKeyExistingAndEqual('duo', 1, $SETTINGS) === true
-        && $dataReceived['user_2fa_selection'] === 'duo'
-        && $session->get('user-duo_status') === 'IN_PROGRESS'
-        && !empty($dataReceived['duo_state'])
-    ){
-        $key = hash('sha256', $dataReceived['duo_state']);
-        $iv = substr(hash('sha256', $dataReceived['duo_state']), 0, 16);
-        $duo_data_dec = openssl_decrypt(base64_decode($session->get('user-duo_data')), 'AES-256-CBC', $key, 0, $iv);
-        // Clear the data from the Duo process to continue clean with the standard login process
-        $session->set('user-duo_data','');
-        if($duo_data_dec === false) {
-            // Add failed authentication log
-            addFailedAuthentication(filter_var($dataReceived['login'], FILTER_SANITIZE_FULL_SPECIAL_CHARS), getClientIpServer());
-
-            echo prepareExchangedData(
-                [
-                    'error' => true,
-                    'message' => $lang->get('duo_error_decrypt'),
-                ],
-                'encode'
-            );
+    try {
+        // Step 1: Prepare and validate input data
+        $credentials = $authContext->prepareCredentials();
+        if (!$credentials) {
             return false;
         }
-        $duo_data = unserialize($duo_data_dec);
-        $dataReceived['pw'] = $duo_data['duo_pwd'];
-        $dataReceived['login'] = $duo_data['duo_login'];
-    }
 
-    if(isset($dataReceived['pw']) === false || isset($dataReceived['login']) === false) {
-        echo json_encode([
-            'data' => prepareExchangedData(
-                [
-                    'error' => true,
-                    'message' => $lang->get('ga_enter_credentials'),
-                ],
-                'encode'
-            ),
-            'key' => $session->get('key')
-        ]);
-        return false;
-    }
-
-    // prepare variables    
-    $userCredentials = identifyGetUserCredentials(
-        $SETTINGS,
-        (string) $server['PHP_AUTH_USER'],
-        (string) $server['PHP_AUTH_PW'],
-        (string) filter_var($dataReceived['pw'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-        (string) filter_var($dataReceived['login'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)
-    );
-    $username = $userCredentials['username'];
-    $passwordClear = $userCredentials['passwordClear'];
-
-    // DO initial checks
-    $userInitialData = identifyDoInitialChecks(
-        $SETTINGS,
-        (int) $sessionPwdAttempts,
-        (string) $username,
-        (int) $sessionAdmin,
-        (string) $sessionUrl,
-        (string) filter_var($dataReceived['user_2fa_selection'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)
-    );
-
-    // if user doesn't exist in Teampass then return error
-    if ($userInitialData['error'] === true) {
-        // Add log on error unless skip_anti_bruteforce flag is set to true
-        if (empty($userInitialData['skip_anti_bruteforce'])
-            || !$userInitialData['skip_anti_bruteforce']) {
-
-            // Add failed authentication log
-            addFailedAuthentication($username, getClientIpServer());
+        // Step 2: Initial user checks
+        $userInitialData = $authContext->performInitialChecks($credentials);
+        if (!$userInitialData) {
+            return false;
         }
 
-        echo prepareExchangedData(
-            $userInitialData['array'],
-            'encode'
+        // Step 3: External authentication (LDAP/OAuth2)
+        $externalAuthResult = $authContext->performExternalAuthentication($credentials, $userInitialData);
+        if (!$externalAuthResult) {
+            return false;
+        }
+
+        // Step 4: Credential verification
+        if (!$authContext->verifyCredentials($credentials, $userInitialData, $externalAuthResult)) {
+            return false;
+        }
+
+        // Step 5: MFA checks
+        $mfaResult = $authContext->performMFAChecks($credentials, $userInitialData);
+        if ($mfaResult !== true) {
+            return $mfaResult === 'continue' ? false : $mfaResult;
+        }
+
+        // Step 6: Final login checks and session setup
+        return $authContext->finalizeAuthentication($credentials, $userInitialData, $externalAuthResult);
+
+    } catch (AuthenticationException $e) {
+        $authContext->logFailedAuthentication($credentials['username'] ?? '');
+        $authContext->sendErrorResponse($e->getMessage(), $e->getExtra());
+        return false;
+    }
+}
+
+/**
+ * Authentication context class to handle the authentication process
+ */
+class AuthenticationContext
+{
+    private $sentData;
+    private $settings;
+    private $session;
+    private $request;
+    private $lang;
+    private $antiXss;
+
+    public function __construct(string $sentData, array $settings)
+    {
+        $this->sentData = $sentData;
+        $this->settings = $settings;
+        $this->session = SessionManager::getSession();
+        $this->request = SymfonyRequest::createFromGlobals();
+        $this->lang = new Language($this->session->get('user-language') ?? 'english');
+        $this->antiXss = new AntiXSS();
+    }
+
+    /**
+     * Prepare and validate credentials from sent data
+     */
+    public function prepareCredentials(): ?array
+    {
+        $server = [
+            'PHP_AUTH_USER' => $this->request->getUser(),
+            'PHP_AUTH_PW' => $this->request->getPassword()
+        ];
+
+        // Decrypt data
+        $dataReceived = $this->decryptSentData();
+        if (!$dataReceived) {
+            return null;
+        }
+
+        // Handle Duo authentication
+        $dataReceived = $this->handleDuoAuthentication($dataReceived);
+        if ($dataReceived === false) {
+            return null;
+        }
+
+        // Validate required fields
+        if (!isset($dataReceived['pw']) || !isset($dataReceived['login'])) {
+            $this->sendErrorResponse($this->lang->get('ga_enter_credentials'));
+            return null;
+        }
+
+        // Get user credentials
+        $userCredentials = identifyGetUserCredentials(
+            $this->settings,
+            (string) $server['PHP_AUTH_USER'],
+            (string) $server['PHP_AUTH_PW'],
+            (string) filter_var($dataReceived['pw'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+            (string) filter_var($dataReceived['login'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)
         );
-        return false;
+
+        return [
+            'username' => $userCredentials['username'],
+            'passwordClear' => $userCredentials['passwordClear'],
+            'dataReceived' => $dataReceived
+        ];
     }
 
-    $userInfo = $userInitialData['userInfo'] + $dataReceived;
-    $return = '';
-
-    // Check if LDAP is enabled and user is in AD
-    $userLdap = identifyDoLDAPChecks(
-        $SETTINGS,
-        $userInfo,
-        (string) $username,
-        (string) $passwordClear,
-        (int) $sessionAdmin,
-        (string) $sessionUrl,
-        (int) $sessionPwdAttempts
-    );
-    if ($userLdap['error'] === true) {
-        // Add failed authentication log
-        addFailedAuthentication($username, getClientIpServer());
-
-        // deepcode ignore ServerLeak: File and path are secured directly inside the function decryptFile()
-        echo prepareExchangedData(
-            $userLdap['array'],
-            'encode'
+    /**
+     * Perform initial user validation checks
+     */
+    public function performInitialChecks(array $credentials): ?array
+    {
+        $userInitialData = identifyDoInitialChecks(
+            $this->settings,
+            (int) $this->session->get('pwd_attempts'),
+            (string) $credentials['username'],
+            (int) $this->session->get('user-admin'),
+            (string) $this->session->get('user-initial_url'),
+            (string) filter_var($credentials['dataReceived']['user_2fa_selection'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)
         );
-        return false;
-    }
-    if (isset($userLdap['user_info']) === true && (int) $userLdap['user_info']['has_been_created'] === 1) {
-        // Add failed authentication log
-        addFailedAuthentication($username, getClientIpServer());
 
-        echo json_encode([
-            'data' => prepareExchangedData(
-                [
-                    'error' => true,
-                    'message' => '',
-                    'extra' => 'ad_user_created',
-                ],
-                'encode'
-            ),
-            'key' => $session->get('key')
-        ]);
-        return false;
+        if ($userInitialData['error'] === true) {
+            if (empty($userInitialData['skip_anti_bruteforce']) || !$userInitialData['skip_anti_bruteforce']) {
+                $this->logFailedAuthentication($credentials['username']);
+            }
+            
+            echo prepareExchangedData($userInitialData['array'], 'encode');
+            return null;
+        }
+
+        return $userInitialData['userInfo'] + $credentials['dataReceived'];
     }
 
-    // Is oauth2 user exists?
-    $userOauth2 = checkOauth2User(
-        (array) $SETTINGS,
-        (array) $userInfo,
-        (string) $username,
-        (string) $passwordClear,
-        (int) $userLdap['user_info']['has_been_created']
-    );
-    if ($userOauth2['error'] === true) {
-        $session->set('userOauth2Info', '');
+    /**
+     * Perform external authentication (LDAP/OAuth2)
+     */
+    public function performExternalAuthentication(array $credentials, array $userInfo): ?array
+    {
+        // LDAP checks
+        $userLdap = identifyDoLDAPChecks(
+            $this->settings,
+            $userInfo,
+            $credentials['username'],
+            $credentials['passwordClear'],
+            (int) $this->session->get('user-admin'),
+            (string) $this->session->get('user-initial_url'),
+            (int) $this->session->get('pwd_attempts')
+        );
 
-        // Add failed authentication log
-        addFailedAuthentication($username, getClientIpServer());
+        if ($userLdap['error'] === true) {
+            $this->logFailedAuthentication($credentials['username']);
+            echo prepareExchangedData($userLdap['array'], 'encode');
+            return null;
+        }
 
-        // deepcode ignore ServerLeak: File and path are secured directly inside the function decryptFile()        
-        echo prepareExchangedData(
-            [
+        // Handle new LDAP user creation
+        if (isset($userLdap['user_info']) && (int) $userLdap['user_info']['has_been_created'] === 1) {
+            $this->logFailedAuthentication($credentials['username']);
+            $this->sendErrorResponse('', 'ad_user_created');
+            return null;
+        }
+
+        // OAuth2 checks
+        $userOauth2 = checkOauth2User(
+            $this->settings,
+            $userInfo,
+            $credentials['username'],
+            $credentials['passwordClear'],
+            (int) $userLdap['user_info']['has_been_created']
+        );
+
+        if ($userOauth2['error'] === true) {
+            $this->session->set('userOauth2Info', '');
+            $this->logFailedAuthentication($credentials['username']);
+            echo prepareExchangedData([
                 'error' => true,
-                'message' => $lang->get($userOauth2['message']),
+                'message' => $this->lang->get($userOauth2['message']),
                 'extra' => 'oauth2_user_not_found',
-            ],
-            'encode'
-        );
-        return false;
+            ], 'encode');
+            return null;
+        }
+
+        return [
+            'ldap' => $userLdap,
+            'oauth2' => $userOauth2
+        ];
     }
 
-    // Check user and password
-    if ($userLdap['userPasswordVerified'] === false && $userOauth2['userPasswordVerified'] === false
-        && checkCredentials($passwordClear, $userInfo) !== true
-    ) {
-        // Add failed authentication log
-        addFailedAuthentication($username, getClientIpServer());
+    /**
+     * Verify user credentials
+     */
+    public function verifyCredentials(array $credentials, array $userInfo, array $externalAuthResult): bool
+    {
+        $ldapVerified = $externalAuthResult['ldap']['userPasswordVerified'] ?? false;
+        $oauth2Verified = $externalAuthResult['oauth2']['userPasswordVerified'] ?? false;
+        $credentialsValid = checkCredentials($credentials['passwordClear'], $userInfo);
 
-        echo prepareExchangedData(
-            [
+        if (!$ldapVerified && !$oauth2Verified && !$credentialsValid) {
+            $this->logFailedAuthentication($credentials['username']);
+            echo prepareExchangedData([
                 'value' => '',
                 'error' => true,
-                'message' => $lang->get('error_bad_credentials'),
-            ],
-            'encode'
-        );
-        return false;
-    }
-
-    // Check if MFA is required
-    if ((isOneVarOfArrayEqualToValue(
-                [
-                    (int) $SETTINGS['yubico_authentication'],
-                    (int) $SETTINGS['google_authentication'],
-                    (int) $SETTINGS['duo']
-                ],
-                1
-            ) === true)
-        && (((int) $userInfo['admin'] !== 1 && (int) $userInfo['mfa_enabled'] === 1 && $userInfo['mfa_auth_requested_roles'] === true)
-        || ((int) $SETTINGS['admin_2fa_required'] === 1 && (int) $userInfo['admin'] === 1))
-    ) {
-        // Check user against MFA method if selected
-        $userMfa = identifyDoMFAChecks(
-            $SETTINGS,
-            $userInfo,
-            $dataReceived,
-            $userInitialData,
-            (string) $username
-        );
-        if ($userMfa['error'] === true) {
-            // Add failed authentication log
-            addFailedAuthentication($username, getClientIpServer());
-
-            echo prepareExchangedData(
-                [
-                    'error' => true,
-                    'message' => $userMfa['mfaData']['message'],
-                    'mfaStatus' => $userMfa['mfaData']['mfaStatus'],
-                ],
-                'encode'
-            );
-            return false;
-        } elseif ($userMfa['mfaQRCodeInfos'] === true) {
-            // Add failed authentication log
-            addFailedAuthentication($username, getClientIpServer());
-
-            // Case where user has initiated Google Auth
-            // Return QR code
-            echo prepareExchangedData(
-                [
-                    'value' => $userMfa['mfaData']['value'],
-                    'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
-                    'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
-                    'pwd_attempts' => (int) $sessionPwdAttempts,
-                    'error' => false,
-                    'message' => $userMfa['mfaData']['message'],
-                    'mfaStatus' => $userMfa['mfaData']['mfaStatus'],
-                ],
-                'encode'
-            );
-            return false;
-        } elseif ($userMfa['duo_url_ready'] === true) {
-            // Add failed authentication log
-            addFailedAuthentication($username, getClientIpServer());
-
-            // Case where user has initiated Duo Auth
-            // Return the DUO redirect URL
-            echo prepareExchangedData(
-                [
-                    'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
-                    'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
-                    'pwd_attempts' => (int) $sessionPwdAttempts,
-                    'error' => false,
-                    'message' => $userMfa['mfaData']['message'],
-                    'duo_url_ready' => $userMfa['mfaData']['duo_url_ready'],
-                    'duo_redirect_url' => $userMfa['mfaData']['duo_redirect_url'],
-                    'mfaStatus' => $userMfa['mfaData']['mfaStatus'],
-                ],
-                'encode'
-            );
+                'message' => $this->lang->get('error_bad_credentials'),
+            ], 'encode');
             return false;
         }
+
+        return true;
     }
 
-    // Can connect if
-    // 1- no LDAP mode + user enabled + pw ok
-    // 2- LDAP mode + user enabled + ldap connection ok + user is not admin
-    // 3- LDAP mode + user enabled + pw ok + usre is admin
-    // This in order to allow admin by default to connect even if LDAP is activated
-    if (canUserGetLog(
-            $SETTINGS,
-            (int) $userInfo['disabled'],
-            $username,
-            $userLdap['ldapConnection']
-        ) === true
-    ) {
-        $session->set('pwd_attempts', 0);
+    /**
+     * Perform MFA checks if required
+     */
+    public function performMFAChecks(array $credentials, array $userInfo): mixed
+    {
+        if (!$this->isMFARequired($userInfo)) {
+            return true;
+        }
 
-        // Check if any unsuccessfull login tries exist
+        $userMfa = identifyDoMFAChecks(
+            $this->settings,
+            $userInfo,
+            $credentials['dataReceived'],
+            $userInfo, // userInitialData
+            $credentials['username']
+        );
+
+        if ($userMfa['error'] === true) {
+            $this->logFailedAuthentication($credentials['username']);
+            echo prepareExchangedData([
+                'error' => true,
+                'message' => $userMfa['mfaData']['message'],
+                'mfaStatus' => $userMfa['mfaData']['mfaStatus'],
+            ], 'encode');
+            return false;
+        }
+
+        if ($userMfa['mfaQRCodeInfos'] === true) {
+            return $this->handleMFAQRCode($userMfa, $credentials['username']);
+        }
+
+        if ($userMfa['duo_url_ready'] === true) {
+            return $this->handleDuoRedirect($userMfa, $credentials['username']);
+        }
+
+        return true;
+    }
+
+    /**
+     * Finalize authentication and setup user session
+     */
+    public function finalizeAuthentication(array $credentials, array $userInfo, array $externalAuthResult): bool
+    {
+        if (!canUserGetLog(
+            $this->settings,
+            (int) $userInfo['disabled'],
+            $credentials['username'],
+            $externalAuthResult['ldap']['ldapConnection']
+        )) {
+            return $this->handleAuthenticationFailure($credentials, $userInfo);
+        }
+
+        if ((int) $userInfo['disabled'] === 1) {
+            return $this->handleLockedAccount($credentials, $userInfo);
+        }
+
+        return $this->setupUserSession($credentials, $userInfo, $externalAuthResult);
+    }
+
+    /**
+     * Setup user session after successful authentication
+     */
+    private function setupUserSession(array $credentials, array $userInfo, array $externalAuthResult): bool
+    {
+        $this->session->set('pwd_attempts', 0);
+        
+        // Handle login attempts
         $attemptsInfos = handleLoginAttempts(
             $userInfo['id'],
             $userInfo['login'],
             $userInfo['last_connexion'],
-            $username,
-            $SETTINGS,
+            $credentials['username'],
+            $this->settings
         );
 
-        // Avoid unlimited session.
-        $max_time = isset($SETTINGS['maximum_session_expiration_time']) ? (int) $SETTINGS['maximum_session_expiration_time'] : 60;
-        $session_time = max(60, min($dataReceived['duree_session'], $max_time));
-        $lifetime = time() + ($session_time * 60);
+        // Setup session duration
+        $sessionDuration = $this->calculateSessionDuration($credentials['dataReceived']);
+        $lifetime = time() + ($sessionDuration * 60);
 
-        // Save old key
-        $old_key = $session->get('key');
+        // Reset session for security
+        $oldKey = $this->session->get('key');
+        $this->session->migrate();
+        $this->session->set('key', generateQuickPassword(30, false));
 
-        // Good practice: reset PHPSESSID and key after successful authentication
-        $session->migrate();
-        $session->set('key', generateQuickPassword(30, false));
-
-        // Save account in SESSION
-        $session->set('user-login', stripslashes($username));
-        $session->set('user-name', empty($userInfo['name']) === false ? stripslashes($userInfo['name']) : '');
-        $session->set('user-lastname', empty($userInfo['lastname']) === false ? stripslashes($userInfo['lastname']) : '');
-        $session->set('user-id', (int) $userInfo['id']);
-        $session->set('user-admin', (int) $userInfo['admin']);
-        $session->set('user-manager', (int) $userInfo['gestionnaire']);
-        $session->set('user-can_manage_all_users', $userInfo['can_manage_all_users']);
-        $session->set('user-read_only', $userInfo['read_only']);
-        $session->set('user-last_pw_change', $userInfo['last_pw_change']);
-        $session->set('user-last_pw', $userInfo['last_pw']);
-        $session->set('user-force_relog', $userInfo['force-relog']);
-        $session->set('user-can_create_root_folder', $userInfo['can_create_root_folder']);
-        $session->set('user-email', $userInfo['email']);
-        //$session->set('user-ga', $userInfo['ga']);
-        $session->set('user-avatar', $userInfo['avatar']);
-        $session->set('user-avatar_thumb', $userInfo['avatar_thumb']);
-        $session->set('user-upgrade_needed', $userInfo['upgrade_needed']);
-        $session->set('user-is_ready_for_usage', $userInfo['is_ready_for_usage']);
-        $session->set('user-personal_folder_enabled', $userInfo['personal_folder']);
-        $session->set(
-            'user-tree_load_strategy',
-            (isset($userInfo['treeloadstrategy']) === false || empty($userInfo['treeloadstrategy']) === true) ? 'full' : $userInfo['treeloadstrategy']
-        );
-        $session->set(
-            'user-split_view_mode',
-            (isset($userInfo['split_view_mode']) === false || empty($userInfo['split_view_mode']) === true) ? 0 : $userInfo['split_view_mode']
-        );
-        $session->set('user-language', $userInfo['user_language']);
-        $session->set('user-timezone', $userInfo['usertimezone']);
-        $session->set('user-keys_recovery_time', $userInfo['keys_recovery_time']);
+        // Setup user session data
+        $this->setUserSessionData($userInfo, $credentials, $lifetime);
         
-        // manage session expiration
-        $session->set('user-session_duration', (int) $lifetime);
+        // Setup user encryption keys
+        $this->setupUserEncryptionKeys($userInfo, $credentials['passwordClear']);
+        
+        // Setup user roles and permissions
+        $this->setupUserRoles($userInfo, $externalAuthResult);
+        
+        // Update database
+        $this->updateUserDatabase($userInfo, $credentials);
+        
+        // Setup user rights and cache
+        $this->setupUserRights($userInfo, $externalAuthResult);
+        
+        // Send notification email if enabled
+        $this->sendLoginNotificationEmail();
+        
+        // Prepare response
+        $this->sendSuccessResponse($credentials, $userInfo, $oldKey);
+        
+        return true;
+    }
 
-        // User signature keys
-        $returnKeys = prepareUserEncryptionKeys($userInfo, $passwordClear);  
-        $session->set('user-private_key', $returnKeys['private_key_clear']);
-        $session->set('user-public_key', $returnKeys['public_key']);
+    /**
+     * Helper methods for specific tasks
+     */
+    private function decryptSentData(): ?array
+    {
+        if ($this->session->get('key') === null) {
+            return json_decode($this->sentData, true);
+        }
+        
+        $dataReceived = prepareExchangedData($this->sentData, 'decode', $this->session->get('key'));
+        
+        if (isset($dataReceived['pw'])) {
+            $dataReceived['pw'] = base64_decode($dataReceived['pw']);
+        }
+        
+        return $dataReceived;
+    }
 
-        // Automatically detect LDAP password changes.
-        if ($userInfo['auth_type'] === 'ldap' && $returnKeys['private_key_clear'] === '') {
-            // Add special "recrypt-private-key" in database profile.
-            DB::update(
-                prefixTable('users'),
-                array(
-                    'special' => 'recrypt-private-key',
-                ),
-                'id = %i',
-                $userInfo['id']
-            );
-
-            // Store new value in userInfos.
-            $userInfo['special'] = 'recrypt-private-key';
+    private function handleDuoAuthentication(array $dataReceived): array|false
+    {
+        if (!$this->isDuoAuthInProgress($dataReceived)) {
+            return $dataReceived;
         }
 
-        // API key
-        $session->set(
-            'user-api_key',
-            empty($userInfo['api_key']) === false ? base64_decode(decryptUserObjectKey($userInfo['api_key'], $returnKeys['private_key_clear'])) : '',
+        $key = hash('sha256', $dataReceived['duo_state']);
+        $iv = substr(hash('sha256', $dataReceived['duo_state']), 0, 16);
+        $duoDataDecrypted = openssl_decrypt(
+            base64_decode($this->session->get('user-duo_data')), 
+            'AES-256-CBC', 
+            $key, 
+            0, 
+            $iv
         );
+
+        $this->session->set('user-duo_data', '');
+
+        if ($duoDataDecrypted === false) {
+            $this->logFailedAuthentication(filter_var($dataReceived['login'], FILTER_SANITIZE_FULL_SPECIAL_CHARS));
+            $this->sendErrorResponse($this->lang->get('duo_error_decrypt'));
+            return false;
+        }
+
+        $duoData = unserialize($duoDataDecrypted);
+        $dataReceived['pw'] = $duoData['duo_pwd'];
+        $dataReceived['login'] = $duoData['duo_login'];
+
+        return $dataReceived;
+    }
+
+    private function isDuoAuthInProgress(array $dataReceived): bool
+    {
+        return isKeyExistingAndEqual('duo', 1, $this->settings) === true
+            && ($dataReceived['user_2fa_selection'] ?? '') === 'duo'
+            && $this->session->get('user-duo_status') === 'IN_PROGRESS'
+            && !empty($dataReceived['duo_state']);
+    }
+
+    private function isMFARequired(array $userInfo): bool
+    {
+        $mfaMethodsEnabled = isOneVarOfArrayEqualToValue([
+            (int) $this->settings['yubico_authentication'],
+            (int) $this->settings['google_authentication'],
+            (int) $this->settings['duo']
+        ], 1) === true;
+
+        if (!$mfaMethodsEnabled) {
+            return false;
+        }
+
+        $userMfaRequired = (int) $userInfo['admin'] !== 1 
+            && (int) $userInfo['mfa_enabled'] === 1 
+            && $userInfo['mfa_auth_requested_roles'] === true;
+            
+        $adminMfaRequired = (int) $this->settings['admin_2fa_required'] === 1 
+            && (int) $userInfo['admin'] === 1;
+
+        return $userMfaRequired || $adminMfaRequired;
+    }
+
+    private function handleMFAQRCode(array $userMfa, string $username): bool
+    {
+        $this->logFailedAuthentication($username);
+        echo prepareExchangedData([
+            'value' => $userMfa['mfaData']['value'],
+            'user_admin' => $this->session->get('user-admin') ?? 0,
+            'initial_url' => $this->session->get('user-initial_url') ?? '',
+            'pwd_attempts' => (int) $this->session->get('pwd_attempts'),
+            'error' => false,
+            'message' => $userMfa['mfaData']['message'],
+            'mfaStatus' => $userMfa['mfaData']['mfaStatus'],
+        ], 'encode');
+        return false;
+    }
+
+    private function handleDuoRedirect(array $userMfa, string $username): bool
+    {
+        $this->logFailedAuthentication($username);
+        echo prepareExchangedData([
+            'user_admin' => $this->session->get('user-admin') ?? 0,
+            'initial_url' => $this->session->get('user-initial_url') ?? '',
+            'pwd_attempts' => (int) $this->session->get('pwd_attempts'),
+            'error' => false,
+            'message' => $userMfa['mfaData']['message'],
+            'duo_url_ready' => $userMfa['mfaData']['duo_url_ready'],
+            'duo_redirect_url' => $userMfa['mfaData']['duo_redirect_url'],
+            'mfaStatus' => $userMfa['mfaData']['mfaStatus'],
+        ], 'encode');
+        return false;
+    }
+
+    private function calculateSessionDuration(array $dataReceived): int
+    {
+        $maxTime = isset($this->settings['maximum_session_expiration_time']) 
+            ? (int) $this->settings['maximum_session_expiration_time'] 
+            : 60;
         
-        $session->set('user-special', $userInfo['special']);
-        $session->set('user-auth_type', $userInfo['auth_type']);
+        return max(60, min($dataReceived['duree_session'], $maxTime));
+    }
+
+    private function setUserSessionData(array $userInfo, array $credentials, int $lifetime): void
+    {
+        $sessionData = [
+            'user-login' => stripslashes($credentials['username']),
+            'user-name' => stripslashes($userInfo['name'] ?? ''),
+            'user-lastname' => stripslashes($userInfo['lastname'] ?? ''),
+            'user-id' => (int) $userInfo['id'],
+            'user-admin' => (int) $userInfo['admin'],
+            'user-manager' => (int) $userInfo['gestionnaire'],
+            'user-can_manage_all_users' => $userInfo['can_manage_all_users'],
+            'user-read_only' => $userInfo['read_only'],
+            'user-last_pw_change' => $userInfo['last_pw_change'],
+            'user-last_pw' => $userInfo['last_pw'],
+            'user-force_relog' => $userInfo['force-relog'],
+            'user-can_create_root_folder' => $userInfo['can_create_root_folder'],
+            'user-email' => $userInfo['email'],
+            'user-avatar' => $userInfo['avatar'],
+            'user-avatar_thumb' => $userInfo['avatar_thumb'],
+            'user-upgrade_needed' => $userInfo['upgrade_needed'],
+            'user-is_ready_for_usage' => $userInfo['is_ready_for_usage'],
+            'user-personal_folder_enabled' => $userInfo['personal_folder'],
+            'user-tree_load_strategy' => $userInfo['treeloadstrategy'] ?? 'full',
+            'user-split_view_mode' => $userInfo['split_view_mode'] ?? 0,
+            'user-language' => $userInfo['user_language'],
+            'user-timezone' => $userInfo['usertimezone'],
+            'user-keys_recovery_time' => $userInfo['keys_recovery_time'],
+            'user-session_duration' => $lifetime,
+            'user-special' => $userInfo['special'],
+            'user-auth_type' => $userInfo['auth_type'],
+            'user-favorites' => empty($userInfo['favourites']) === false ? explode(';', $userInfo['favourites']) : [],
+            'user-last_connection' => $userInfo['last_connexion'] ?? time(),
+            'user-latest_items' => empty($userInfo['latest_items']) === false ? explode(';', $userInfo['latest_items']) : [],
+            'user-accessible_folders' => empty($userInfo['groupes_visibles']) === false ? explode(';', $userInfo['groupes_visibles']) : [],
+            'user-no_access_folders' => empty($userInfo['groupes_interdits']) === false ? explode(';', $userInfo['groupes_interdits']) : [],
+        ];
+
+        foreach ($sessionData as $key => $value) {
+            $this->session->set($key, $value);
+        }
 
         // check feedback regarding user password validity
         $return = checkUserPasswordValidity(
             $userInfo,
-            (int) $session->get('user-num_days_before_exp'),
-            (int) $session->get('user-last_pw_change'),
-            $SETTINGS
+            (int) $this->session->get('user-num_days_before_exp'),
+            (int) $this->session->get('user-last_pw_change'),
+            $this->settings
         );
-        $session->set('user-validite_pw', $return['validite_pw']);
-        $session->set('user-last_pw_change', $return['last_pw_change']);
-        $session->set('user-num_days_before_exp', $return['numDaysBeforePwExpiration']);
-        $session->set('user-force_relog', $return['user_force_relog']);
-        
-        $session->set('user-last_connection', empty($userInfo['last_connexion']) === false ? (int) $userInfo['last_connexion'] : (int) time());
-        $session->set('user-latest_items', empty($userInfo['latest_items']) === false ? explode(';', $userInfo['latest_items']) : []);
-        $session->set('user-favorites', empty($userInfo['favourites']) === false ? explode(';', $userInfo['favourites']) : []);
-        $session->set('user-accessible_folders', empty($userInfo['groupes_visibles']) === false ? explode(';', $userInfo['groupes_visibles']) : []);
-        $session->set('user-no_access_folders', empty($userInfo['groupes_interdits']) === false ? explode(';', $userInfo['groupes_interdits']) : []);
-        
-        // User's roles
-        if (strpos($userInfo['fonction_id'] !== NULL ? (string) $userInfo['fonction_id'] : '', ',') !== -1) {
-            // Convert , to ;
-            $userInfo['fonction_id'] = str_replace(',', ';', (string) $userInfo['fonction_id']);
+        $this->session->set('user-validite_pw', $return['validite_pw']);
+        $this->session->set('user-last_pw_change', $return['last_pw_change']);
+        $this->session->set('user-num_days_before_exp', $return['numDaysBeforePwExpiration']);
+        $this->session->set('user-force_relog', $return['user_force_relog']);
+    }
+
+    private function setupUserEncryptionKeys(array $userInfo, string $passwordClear): void
+    {
+        $returnKeys = prepareUserEncryptionKeys($userInfo, $passwordClear);
+        $this->session->set('user-private_key', $returnKeys['private_key_clear']);
+        $this->session->set('user-public_key', $returnKeys['public_key']);
+
+        // Handle LDAP password changes
+        if ($userInfo['auth_type'] === 'ldap' && $returnKeys['private_key_clear'] === '') {
             DB::update(
                 prefixTable('users'),
-                [
-                    'fonction_id' => $userInfo['fonction_id'],
-                ],
+                ['special' => 'recrypt-private-key'],
                 'id = %i',
-                $session->get('user-id')
+                $userInfo['id']
+            );
+            $userInfo['special'] = 'recrypt-private-key';
+        }
+
+        // Setup API key
+        $apiKey = empty($userInfo['api_key']) ? '' : 
+            base64_decode(decryptUserObjectKey($userInfo['api_key'], $returnKeys['private_key_clear']));
+        $this->session->set('user-api_key', $apiKey);
+    }
+
+    private function setupUserRoles(array $userInfo, array $externalAuthResult): void
+    {
+        // Handle role format conversion
+        if (strpos($userInfo['fonction_id'], ',') !== false) {
+            $userInfo['fonction_id'] = str_replace(',', ';', $userInfo['fonction_id']);
+            DB::update(
+                prefixTable('users'),
+                ['fonction_id' => $userInfo['fonction_id']],
+                'id = %i',
+                $this->session->get('user-id')
             );
         }
-        // Append with roles from AD groups
-        if (is_null($userInfo['roles_from_ad_groups']) === false) {
-            $userInfo['fonction_id'] = empty($userInfo['fonction_id'])  === true ? $userInfo['roles_from_ad_groups'] : $userInfo['fonction_id']. ';' . $userInfo['roles_from_ad_groups'];
+
+        // Append AD group roles
+        if (!is_null($userInfo['roles_from_ad_groups'])) {
+            $userInfo['fonction_id'] = empty($userInfo['fonction_id']) 
+                ? $userInfo['roles_from_ad_groups'] 
+                : $userInfo['fonction_id'] . ';' . $userInfo['roles_from_ad_groups'];
         }
-        // store
-        $session->set('user-roles', $userInfo['fonction_id']);
-        $session->set('user-roles_array', array_unique(array_filter(explode(';', $userInfo['fonction_id']))));
+
+        $this->session->set('user-roles', $userInfo['fonction_id']);
+        $this->session->set('user-roles_array', array_unique(array_filter(explode(';', $userInfo['fonction_id']))));
+
+        // Process roles and permissions
+        $this->processUserRoles($userInfo);
+    }
+
+    private function processUserRoles(array &$userInfo): void
+    {
+        $this->session->set('user-pw_complexity', 0);
+        $this->session->set('system-array_roles', []);
+
+        if (count($this->session->get('user-roles_array')) === 0) {
+            return;
+        }
+
+        $rolesList = DB::query(
+            'SELECT id, title, complexity FROM ' . prefixTable('roles_title') . ' WHERE id IN %li',
+            $this->session->get('user-roles_array')
+        );
+
+        $shouldAdjustPermissions = $this->shouldAdjustUserPermissions();
+        if ($shouldAdjustPermissions) {
+            $userInfo['admin'] = $userInfo['gestionnaire'] = $userInfo['can_manage_all_users'] = $userInfo['read_only'] = 0;
+        }
+
+        foreach ($rolesList as $role) {
+            SessionManager::addRemoveFromSessionAssociativeArray(
+                'system-array_roles',
+                ['id' => $role['id'], 'title' => $role['title']],
+                'add'
+            );
+
+            if ($shouldAdjustPermissions) {
+                $this->adjustUserPermissionsByRole($userInfo, $role['title']);
+            }
+
+            // Update password complexity
+            if ($this->session->get('user-pw_complexity') < (int) $role['complexity']) {
+                $this->session->set('user-pw_complexity', (int) $role['complexity']);
+            }
+        }
+
+        if ($shouldAdjustPermissions) {
+            $this->updateUserPermissionsInSession($userInfo);
+        }
+    }
+
+    private function shouldAdjustUserPermissions(): bool
+    {
+        $excludeUser = isset($this->settings['exclude_user']) 
+            ? str_contains($this->session->get('user-login'), $this->settings['exclude_user']) 
+            : false;
+            
+        return $this->session->get('user-id') >= 1000000 
+            && !$excludeUser 
+            && (isset($this->settings['admin_needle']) 
+                || isset($this->settings['manager_needle']) 
+                || isset($this->settings['tp_manager_needle']) 
+                || isset($this->settings['read_only_needle']));
+    }
+
+    private function adjustUserPermissionsByRole(array &$userInfo, string $roleTitle): void
+    {
+        if (isset($this->settings['admin_needle']) && str_contains($roleTitle, $this->settings['admin_needle'])) {
+            $userInfo['gestionnaire'] = $userInfo['can_manage_all_users'] = $userInfo['read_only'] = 0;
+            $userInfo['admin'] = 1;
+        }
         
-        // build array of roles
-        $session->set('user-pw_complexity', 0);
-        $session->set('system-array_roles', []);
-        if (count($session->get('user-roles_array')) > 0) {
-            $rolesList = DB::query(
-                'SELECT id, title, complexity
-                FROM ' . prefixTable('roles_title') . '
-                WHERE id IN %li',
-                $session->get('user-roles_array')
-            );
-            $excludeUser = isset($SETTINGS['exclude_user']) ? str_contains($session->get('user-login'), $SETTINGS['exclude_user']) : false;
-            $adjustPermissions = ($session->get('user-id') >= 1000000 && !$excludeUser && (isset($SETTINGS['admin_needle']) || isset($SETTINGS['manager_needle']) || isset($SETTINGS['tp_manager_needle']) || isset($SETTINGS['read_only_needle'])));
-            if ($adjustPermissions) {
-                $userInfo['admin'] = $userInfo['gestionnaire'] = $userInfo['can_manage_all_users'] = $userInfo['read_only'] = 0;
-            }
-            foreach ($rolesList as $role) {
-                SessionManager::addRemoveFromSessionAssociativeArray(
-                    'system-array_roles',
-                    [
-                        'id' => $role['id'],
-                        'title' => $role['title'],
-                    ],
-                    'add'
-                );
-                
-                if ($adjustPermissions) {
-                    if (isset($SETTINGS['admin_needle']) && str_contains($role['title'], $SETTINGS['admin_needle'])) {
-                        $userInfo['gestionnaire'] = $userInfo['can_manage_all_users'] = $userInfo['read_only'] = 0;
-                        $userInfo['admin'] = 1;
-                    }    
-                    if (isset($SETTINGS['manager_needle']) && str_contains($role['title'], $SETTINGS['manager_needle'])) {
-                        $userInfo['admin'] = $userInfo['can_manage_all_users'] = $userInfo['read_only'] = 0;
-                        $userInfo['gestionnaire'] = 1;
-                    }
-                    if (isset($SETTINGS['tp_manager_needle']) && str_contains($role['title'], $SETTINGS['tp_manager_needle'])) {
-                        $userInfo['admin'] = $userInfo['gestionnaire'] = $userInfo['read_only'] = 0;
-                        $userInfo['can_manage_all_users'] = 1;
-                    }
-                    if (isset($SETTINGS['read_only_needle']) && str_contains($role['title'], $SETTINGS['read_only_needle'])) {
-                        $userInfo['admin'] = $userInfo['gestionnaire'] = $userInfo['can_manage_all_users'] = 0;
-                        $userInfo['read_only'] = 1;
-                    }
-                }
-
-                // get highest complexity
-                if ($session->get('user-pw_complexity') < (int) $role['complexity']) {
-                    $session->set('user-pw_complexity', (int) $role['complexity']);
-                }
-            }
-            if ($adjustPermissions) {
-                $session->set('user-admin', (int) $userInfo['admin']);
-                $session->set('user-manager', (int) $userInfo['gestionnaire']);
-                $session->set('user-can_manage_all_users',(int)  $userInfo['can_manage_all_users']);
-                $session->set('user-read_only', (int) $userInfo['read_only']);
-                DB::update(
-                    prefixTable('users'),
-                    [
-                        'admin' => $userInfo['admin'],
-                        'gestionnaire' => $userInfo['gestionnaire'],
-                        'can_manage_all_users' => $userInfo['can_manage_all_users'],
-                        'read_only' => $userInfo['read_only'],
-                    ],
-                    'id = %i',
-                    $session->get('user-id')
-                );
-            }
+        if (isset($this->settings['manager_needle']) && str_contains($roleTitle, $this->settings['manager_needle'])) {
+            $userInfo['admin'] = $userInfo['can_manage_all_users'] = $userInfo['read_only'] = 0;
+            $userInfo['gestionnaire'] = 1;
         }
+        
+        if (isset($this->settings['tp_manager_needle']) && str_contains($roleTitle, $this->settings['tp_manager_needle'])) {
+            $userInfo['admin'] = $userInfo['gestionnaire'] = $userInfo['read_only'] = 0;
+            $userInfo['can_manage_all_users'] = 1;
+        }
+        
+        if (isset($this->settings['read_only_needle']) && str_contains($roleTitle, $this->settings['read_only_needle'])) {
+            $userInfo['admin'] = $userInfo['gestionnaire'] = $userInfo['can_manage_all_users'] = 0;
+            $userInfo['read_only'] = 1;
+        }
+    }
 
-        // Set some settings
-        $SETTINGS['update_needed'] = '';
+    private function updateUserPermissionsInSession(array $userInfo): void
+    {
+        $this->session->set('user-admin', (int) $userInfo['admin']);
+        $this->session->set('user-manager', (int) $userInfo['gestionnaire']);
+        $this->session->set('user-can_manage_all_users', (int) $userInfo['can_manage_all_users']);
+        $this->session->set('user-read_only', (int) $userInfo['read_only']);
+        
+        DB::update(
+            prefixTable('users'),
+            [
+                'admin' => $userInfo['admin'],
+                'gestionnaire' => $userInfo['gestionnaire'],
+                'can_manage_all_users' => $userInfo['can_manage_all_users'],
+                'read_only' => $userInfo['read_only'],
+            ],
+            'id = %i',
+            $this->session->get('user-id')
+        );
+    }
 
-        // Update table
+    private function updateUserDatabase(array $userInfo, array $credentials): void
+    {
+        $returnKeys = prepareUserEncryptionKeys($userInfo, $credentials['passwordClear']);
+        
         DB::update(
             prefixTable('users'),
             array_merge(
                 [
-                    'key_tempo' => $session->get('key'),
+                    'key_tempo' => $this->session->get('key'),
                     'last_connexion' => time(),
                     'timestamp' => time(),
                     'disabled' => 0,
-                    'session_end' => $session->get('user-session_duration'),
-                    'user_ip' => $dataReceived['client'],
+                    'session_end' => $this->session->get('user-session_duration'),
+                    'user_ip' => $credentials['dataReceived']['client'],
                 ],
                 $returnKeys['update_keys_in_db']
             ),
             'id=%i',
             $userInfo['id']
         );
-        
-        // Get user's rights
-        if ($userLdap['user_initial_creation_through_external_ad'] === true || $userOauth2['retExternalAD']['has_been_created'] === 1) {
-            // is new LDAP user. Show only his personal folder
-            if ($SETTINGS['enable_pf_feature'] === '1') {
-                $session->set('user-personal_visible_folders', [$userInfo['id']]);
-                $session->set('user-personal_folders', [$userInfo['id']]);
-            } else {
-                $session->set('user-personal_visible_folders', []);
-                $session->set('user-personal_folders', []);
-            }
-            $session->set('user-all_non_personal_folders', []);
-            $session->set('user-roles_array', []);
-            $session->set('user-read_only_folders', []);
-            $session->set('user-list_folders_limited', []);
-            $session->set('system-list_folders_editable_by_role', []);
-            $session->set('system-list_restricted_folders_for_items', []);
-            $session->set('user-nb_folders', 1);
-            $session->set('user-nb_roles', 1);
+    }
+
+    private function setupUserRights(array $userInfo, array $externalAuthResult): void
+    {
+        $isNewExternalUser = ($externalAuthResult['ldap']['user_initial_creation_through_external_ad'] ?? false) 
+            || ($externalAuthResult['oauth2']['retExternalAD']['has_been_created'] ?? 0) === 1;
+
+        if ($isNewExternalUser) {
+            $this->setupNewExternalUserRights($userInfo);
         } else {
             identifyUserRights(
                 $userInfo['groupes_visibles'],
-                $session->get('user-no_access_folders'),
+                $this->session->get('user-no_access_folders'),
                 $userInfo['admin'],
                 $userInfo['fonction_id'],
-                $SETTINGS
+                $this->settings
             );
         }
-        // Get some more elements
-        $session->set('system-screen_height', $dataReceived['screenHeight']);
 
-        // Get last seen items
-        $session->set('user-latest_items_tab', []);
-        $session->set('user-nb_roles', 0);
-        foreach ($session->get('user-latest_items') as $item) {
-            if (! empty($item)) {
+        $this->setupUserCache($userInfo);
+        $this->setupUserLatestItems();
+    }
+
+    private function setupNewExternalUserRights(array $userInfo): void
+    {
+        if ($this->settings['enable_pf_feature'] === '1') {
+            $this->session->set('user-personal_visible_folders', [$userInfo['id']]);
+            $this->session->set('user-personal_folders', [$userInfo['id']]);
+        } else {
+            $this->session->set('user-personal_visible_folders', []);
+            $this->session->set('user-personal_folders', []);
+        }
+        
+        $this->session->set('user-all_non_personal_folders', []);
+        $this->session->set('user-roles_array', []);
+        $this->session->set('user-read_only_folders', []);
+        $this->session->set('user-list_folders_limited', []);
+        $this->session->set('system-list_folders_editable_by_role', []);
+        $this->session->set('system-list_restricted_folders_for_items', []);
+        $this->session->set('user-nb_folders', 1);
+        $this->session->set('user-nb_roles', 1);
+    }
+
+    private function setupUserCache(array $userInfo): void
+    {
+        $cacheTreeData = DB::queryFirstRow(
+            'SELECT visible_folders FROM ' . prefixTable('cache_tree') . ' WHERE user_id=%i',
+            (int) $this->session->get('user-id')
+        );
+
+        if (DB::count() > 0 && empty($cacheTreeData['visible_folders'])) {
+            $this->session->set('user-cache_tree', '');
+            
+            DB::insert(
+                prefixTable('background_tasks'),
+                [
+                    'created_at' => time(),
+                    'process_type' => 'user_build_cache_tree',
+                    'arguments' => json_encode(['user_id' => (int) $this->session->get('user-id')], JSON_HEX_QUOT | JSON_HEX_TAG),
+                    'updated_at' => null,
+                    'finished_at' => null,
+                    'output' => null,
+                ]
+            );
+        } else {
+            $this->session->set('user-cache_tree', $cacheTreeData['visible_folders']);
+        }
+    }
+
+    private function setupUserLatestItems(): void
+    {
+        $this->session->set('user-latest_items_tab', []);
+        $this->session->set('user-nb_roles', 0);
+        
+        foreach ($this->session->get('user-latest_items') as $item) {
+            if (!empty($item)) {
                 $dataLastItems = DB::queryFirstRow(
-                    'SELECT id,label,id_tree
-                    FROM ' . prefixTable('items') . '
-                    WHERE id=%i',
+                    'SELECT id,label,id_tree FROM ' . prefixTable('items') . ' WHERE id=%i',
                     $item
                 );
+                
                 SessionManager::addRemoveFromSessionAssociativeArray(
                     'user-latest_items_tab',
                     [
@@ -689,143 +888,155 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                 );
             }
         }
+    }
 
-        // Get cahce tree info
-        $cacheTreeData = DB::queryFirstRow(
-            'SELECT visible_folders
-            FROM ' . prefixTable('cache_tree') . '
-            WHERE user_id=%i',
-            (int) $session->get('user-id')
+    private function sendLoginNotificationEmail(): void
+    {
+        if (isKeyExistingAndEqual('enable_send_email_on_user_login', 1, $this->settings) !== true
+            || (int) $this->session->get('user-admin') === 1) {
+            return;
+        }
+
+        $adminUser = DB::queryFirstRow(
+            'SELECT email FROM ' . prefixTable('users') . " WHERE admin = %i and email != ''", 
+            1
         );
-        if (DB::count() > 0 && empty($cacheTreeData['visible_folders']) === true) {
-            $session->set('user-cache_tree', '');
-            // Prepare new task
-            DB::insert(
-                prefixTable('background_tasks'),
-                array(
-                    'created_at' => time(),
-                    'process_type' => 'user_build_cache_tree',
-                    'arguments' => json_encode([
-                        'user_id' => (int) $session->get('user-id'),
-                    ], JSON_HEX_QUOT | JSON_HEX_TAG),
-                    'updated_at' => null,
-                    'finished_at' => null,
-                    'output' => null,
-                )
-            );
-        } else {
-            $session->set('user-cache_tree', $cacheTreeData['visible_folders']);
-        }
-
-        // send back the random key
-        $return = $dataReceived['randomstring'];
-        // Send email
-        if (
-            isKeyExistingAndEqual('enable_send_email_on_user_login', 1, $SETTINGS) === true
-            && (int) $sessionAdmin !== 1
-        ) {
-            // get all Admin users
-            $val = DB::queryFirstRow('SELECT email FROM ' . prefixTable('users') . " WHERE admin = %i and email != ''", 1);
-            if (DB::count() > 0) {
-                // Add email to table
-                prepareSendingEmail(
-                    $lang->get('email_subject_on_user_login'),
-                    str_replace(
-                        [
-                            '#tp_user#',
-                            '#tp_date#',
-                            '#tp_time#',
-                        ],
-                        [
-                            ' ' . $session->get('user-login') . ' (IP: ' . getClientIpServer() . ')',
-                            date($SETTINGS['date_format'], (int) $session->get('user-last_connection')),
-                            date($SETTINGS['time_format'], (int) $session->get('user-last_connection')),
-                        ],
-                        $lang->get('email_body_on_user_login')
-                    ),
-                    $val['email'],
-                    $lang->get('administrator')
-                );
-            }
-        }
         
-        // Ensure Complexity levels are translated
-        defineComplexity();
-        echo prepareExchangedData(
-            [
-                'value' => $return,
-                'user_id' => $session->get('user-id') !== null ? $session->get('user-id') : '',
-                'user_admin' => null !== $session->get('user-admin') ? $session->get('user-admin') : 0,
-                'initial_url' => $antiXss->xss_clean($sessionUrl),
-                'pwd_attempts' => 0,
-                'error' => false,
-                'message' => $session->has('user-upgrade_needed') && (int) $session->get('user-upgrade_needed') && (int) $session->get('user-upgrade_needed') === 1 ? 'ask_for_otc' : '',
-                'first_connection' => $session->get('user-validite_pw') === 0 ? true : false,
-                'password_complexity' => TP_PW_COMPLEXITY[$session->get('user-pw_complexity')][1],
-                'password_change_expected' => $userInfo['special'] === 'password_change_expected' ? true : false,
-                'private_key_conform' => $session->get('user-id') !== null
-                    && empty($session->get('user-private_key')) === false
-                    && $session->get('user-private_key') !== 'none' ? true : false,
-                'session_key' => $session->get('key'),
-                'can_create_root_folder' => null !== $session->get('user-can_create_root_folder') ? (int) $session->get('user-can_create_root_folder') : '',
-                'upgrade_needed' => isset($userInfo['upgrade_needed']) === true ? (int) $userInfo['upgrade_needed'] : 0,
-                'special' => isset($userInfo['special']) === true ? (int) $userInfo['special'] : 0,
-                'split_view_mode' => isset($userInfo['split_view_mode']) === true ? (int) $userInfo['split_view_mode'] : 0,
-                'validite_pw' => $session->get('user-validite_pw') !== null ? $session->get('user-validite_pw') : '',
-                'num_days_before_exp' => $session->get('user-num_days_before_exp') !== null ? (int) $session->get('user-num_days_before_exp') : '',
-            ],
-            'encode',
-            $old_key
-        );
-    
-        return true;
+        if (DB::count() === 0) {
+            return;
+        }
 
-    } elseif ((int) $userInfo['disabled'] === 1) {
-        // User and password is okay but account is locked
-        echo prepareExchangedData(
-            [
-                'value' => $return,
-                'user_id' => $session->get('user-id') !== null ? (int) $session->get('user-id') : '',
-                'user_admin' => null !== $session->get('user-admin') ? $session->get('user-admin') : 0,
-                'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
-                'pwd_attempts' => 0,
-                'error' => 'user_is_locked',
-                'message' => $lang->get('account_is_locked'),
-                'first_connection' => $session->get('user-validite_pw') === 0 ? true : false,
-                'password_complexity' => TP_PW_COMPLEXITY[$session->get('user-pw_complexity')][1],
-                'password_change_expected' => $userInfo['special'] === 'password_change_expected' ? true : false,
-                'private_key_conform' => $session->has('user-private_key') && null !== $session->get('user-private_key')
-                    && empty($session->get('user-private_key')) === false
-                    && $session->get('user-private_key') !== 'none' ? true : false,
-                'session_key' => $session->get('key'),
-                'can_create_root_folder' => null !== $session->get('user-can_create_root_folder') ? (int) $session->get('user-can_create_root_folder') : '',
-            ],
-            'encode'
+        prepareSendingEmail(
+            $this->lang->get('email_subject_on_user_login'),
+            str_replace(
+                ['#tp_user#', '#tp_date#', '#tp_time#'],
+                [
+                    ' ' . $this->session->get('user-login') . ' (IP: ' . getClientIpServer() . ')',
+                    date($this->settings['date_format'], (int) $this->session->get('user-last_connection')),
+                    date($this->settings['time_format'], (int) $this->session->get('user-last_connection')),
+                ],
+                $this->lang->get('email_body_on_user_login')
+            ),
+            $adminUser['email'],
+            $this->lang->get('administrator')
         );
+    }
+
+    private function sendSuccessResponse(array $credentials, array $userInfo, string $oldKey): void
+    {
+        defineComplexity();
+        
+        echo prepareExchangedData([
+            'value' => $credentials['dataReceived']['randomstring'],
+            'user_id' => $this->session->get('user-id') ?? '',
+            'user_admin' => $this->session->get('user-admin') ?? 0,
+            'initial_url' => $this->antiXss->xss_clean($this->session->get('user-initial_url')),
+            'pwd_attempts' => 0,
+            'error' => false,
+            'message' => $this->session->has('user-upgrade_needed') && (int) $this->session->get('user-upgrade_needed') === 1 ? 'ask_for_otc' : '',
+            'first_connection' => $this->session->get('user-validite_pw') === 0,
+            'password_complexity' => TP_PW_COMPLEXITY[$this->session->get('user-pw_complexity')][1],
+            'password_change_expected' => $userInfo['special'] === 'password_change_expected',
+            'private_key_conform' => $this->session->get('user-id') !== null
+                && !empty($this->session->get('user-private_key'))
+                && $this->session->get('user-private_key') !== 'none',
+            'session_key' => $this->session->get('key'),
+            'can_create_root_folder' => $this->session->get('user-can_create_root_folder') ?? '',
+            'upgrade_needed' => (int) ($userInfo['upgrade_needed'] ?? 0),
+            'special' => (int) ($userInfo['special'] ?? 0),
+            'split_view_mode' => (int) ($userInfo['split_view_mode'] ?? 0),
+            'validite_pw' => $this->session->get('user-validite_pw') ?? '',
+            'num_days_before_exp' => (int) ($this->session->get('user-num_days_before_exp') ?? 0),
+        ], 'encode', $oldKey);
+    }
+
+    private function handleAuthenticationFailure(array $credentials, array $userInfo): bool
+    {
+        echo prepareExchangedData([
+            'value' => '',
+            'user_id' => $this->session->get('user-id') ?? '',
+            'user_admin' => $this->session->get('user-admin') ?? 0,
+            'initial_url' => $this->session->get('user-initial_url') ?? '',
+            'pwd_attempts' => (int) $this->session->get('pwd_attempts'),
+            'error' => true,
+            'message' => $this->lang->get('error_not_allowed_to_authenticate'),
+            'first_connection' => $this->session->get('user-validite_pw') === 0,
+            'password_complexity' => TP_PW_COMPLEXITY[$this->session->get('user-pw_complexity')][1],
+            'password_change_expected' => $userInfo['special'] === 'password_change_expected',
+            'private_key_conform' => $this->session->get('user-id') !== null
+                && !empty($this->session->get('user-private_key'))
+                && $this->session->get('user-private_key') !== 'none',
+            'session_key' => $this->session->get('key'),
+            'can_create_root_folder' => $this->session->get('user-can_create_root_folder') ?? '',
+        ], 'encode');
+        
         return false;
     }
 
-    echo prepareExchangedData(
-        [
-            'value' => $return,
-            'user_id' => $session->get('user-id') !== null ? (int) $session->get('user-id') : '',
-            'user_admin' => null !== $session->get('user-admin') ? $session->get('user-admin') : 0,
-            'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
-            'pwd_attempts' => (int) $sessionPwdAttempts,
+    private function handleLockedAccount(array $credentials, array $userInfo): bool
+    {
+        echo prepareExchangedData([
+            'value' => '',
+            'user_id' => $this->session->get('user-id') ?? '',
+            'user_admin' => $this->session->get('user-admin') ?? 0,
+            'initial_url' => $this->session->get('user-initial_url') ?? '',
+            'pwd_attempts' => 0,
+            'error' => 'user_is_locked',
+            'message' => $this->lang->get('account_is_locked'),
+            'first_connection' => $this->session->get('user-validite_pw') === 0,
+            'password_complexity' => TP_PW_COMPLEXITY[$this->session->get('user-pw_complexity')][1],
+            'password_change_expected' => $userInfo['special'] === 'password_change_expected',
+            'private_key_conform' => $this->session->has('user-private_key')
+                && $this->session->get('user-private_key') !== null
+                && !empty($this->session->get('user-private_key'))
+                && $this->session->get('user-private_key') !== 'none',
+            'session_key' => $this->session->get('key'),
+            'can_create_root_folder' => $this->session->get('user-can_create_root_folder') ?? '',
+        ], 'encode');
+        
+        return false;
+    }
+
+    public function logFailedAuthentication(string $username): void
+    {
+        addFailedAuthentication($username, getClientIpServer());
+    }
+
+    public function sendErrorResponse(string $message, string $extra = ''): void
+    {
+        $response = [
             'error' => true,
-            'message' => $lang->get('error_not_allowed_to_authenticate'),
-            'first_connection' => $session->get('user-validite_pw') === 0 ? true : false,
-            'password_complexity' => TP_PW_COMPLEXITY[$session->get('user-pw_complexity')][1],
-            'password_change_expected' => $userInfo['special'] === 'password_change_expected' ? true : false,
-            'private_key_conform' => $session->get('user-id') !== null
-                    && empty($session->get('user-private_key')) === false
-                    && $session->get('user-private_key') !== 'none' ? true : false,
-            'session_key' => $session->get('key'),
-            'can_create_root_folder' => null !== $session->get('user-can_create_root_folder') ? (int) $session->get('user-can_create_root_folder') : '',
-        ],
-        'encode'
-    );
-    return false;
+            'message' => $message,
+        ];
+        
+        if (!empty($extra)) {
+            $response['extra'] = $extra;
+        }
+
+        echo json_encode([
+            'data' => prepareExchangedData($response, 'encode'),
+            'key' => $this->session->get('key')
+        ]);
+    }
+}
+
+/**
+ * Custom exception for authentication errors
+ */
+class AuthenticationException extends Exception
+{
+    private $extra;
+
+    public function __construct(string $message, string $extra = '', int $code = 0, Throwable $previous = null)
+    {
+        parent::__construct($message, $code, $previous);
+        $this->extra = $extra;
+    }
+
+    public function getExtra(): string
+    {
+        return $this->extra;
+    }
 }
 
 /**
