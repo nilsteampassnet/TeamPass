@@ -143,7 +143,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         key: '<?php echo $session->get('key'); ?>'
                     },
                     function(data) {
-                        $('#profile-user-token').val(data[0].token);
+                        $('#profile-user-token').val(data.token);
 
                         up.setOption('multipart_params', {
                             PHPSESSID: '<?php echo $session->get('key'); ?>',

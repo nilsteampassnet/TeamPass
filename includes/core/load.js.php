@@ -61,7 +61,7 @@ if (
 
 <script type="text/javascript">
     var userScrollPosition = 0,
-        debugJavascript = false;
+        debugJavascript = true;
     let hourInMinutes = 60;
 
 
@@ -92,6 +92,7 @@ if (
                 try {
                     // Retrieve the target defined by clipboard-target
                     const targetId = this.getAttribute('clipboard-target');
+                    console.log('Target ID:', targetId);
                     if (!targetId) {
                         return; // Stop if no target ID is defined
                     }
@@ -1591,6 +1592,7 @@ if (
 
 
     function loadSettings() {
+        debugJavascript = true;
         if (debugJavascript === true) {
             console.log('Key appel get_teampass_settings : <?php echo $session->get('key'); ?>');
         }
@@ -1628,9 +1630,25 @@ if (
                     console.log('Loading settings result:');
                     console.log(data);
                 }
+                
+                // Get settings from response
+                if (data.error !== false) {
+                    // Show error
+                    toastr.remove();
+                    toastr.error(
+                        data.message,
+                        '<?php echo $lang->get('caution'); ?>', {
+                            timeOut: 5000,
+                            progressBar: true,
+                            positionClass: "toast-bottom-right"
+                        }
+                    );
+                    return false;
+                }
+                dataSettings = data.settings;
 
                 // Test if JSON object
-                if (typeof data === 'object') {
+                if (typeof dataSettings === 'object') {
                     // Store settings in localstorage
                     // except sensitive data
                     var sensitiveData = ['ldap_hosts','ldap_username','ldap_password','ldap_bdn','email','bck_script_passkey'];
@@ -1640,7 +1658,7 @@ if (
                     store.update(
                         'teampassSettings', {},
                         function(teampassSettings) {
-                            $.each(data, function(key, value) {
+                            $.each(dataSettings, function(key, value) {
                                 const containsKey = sensitiveData.some(element => {
                                     if (key.includes(element)) {
                                         return true;
@@ -1896,11 +1914,11 @@ if (
                 data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $session->get('key'); ?>'),
                 key: '<?php echo $session->get('key'); ?>'
             },
-            function(data) {
-                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+            function(response) {
+                decodedData = prepareExchangedData(response, 'decode', '<?php echo $session->get('key'); ?>');
 
                 // Show data
-                $('#dialog-bug-report-text').html(data.html);
+                $('#dialog-bug-report-text').html(decodedData.report);
 
                 // Open Github
                 $('#dialog-bug-report-github-button').click(function() {

@@ -31,6 +31,7 @@ use EZimuel\PHPSecureSession;
 use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\Language\Language;
 use TeampassClasses\ConfigManager\ConfigManager;
+use TeampassClasses\PasswordManager\PasswordManager;
 
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
@@ -133,7 +134,8 @@ if (null !== $post_step) {
                 $tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "users` WHERE id = '" . TP_USER_ID . "'"));
                 if (intval($tmp) === 0) {
                     // generate key for password
-                    $pwd = GenerateCryptKey(25, true, true, true, true);
+                    $passwordManager = new PasswordManager();
+                    $pwd = $passwordManager->generatePassword(25, true, true, true, true);
                     $salt = file_get_contents(rtrim(SECUREPATH, '/') . '/' . SECUREFILE);
                     $encrypted_pwd = cryption(
                         $pwd,

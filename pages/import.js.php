@@ -135,7 +135,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         store.update(
                             'teampassApplication',
                             function(teampassApplication) {
-                                teampassApplication.uploadedFileId = data[0].token;
+                                teampassApplication.uploadedFileId = data.token;
                             }
                         );
 
@@ -801,7 +801,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         store.update(
                             'teampassApplication',
                             function(teampassApplication) {
-                                teampassApplication.uploadedFileId = data[0].token;
+                                teampassApplication.uploadedFileId = data.token;
                             }
                         );
 

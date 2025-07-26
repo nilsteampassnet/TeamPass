@@ -686,7 +686,7 @@ function identUserGetPFList(
         $readOnlyFolders
     ), SORT_NUMERIC);
     // Exclude from allowed folders all the specific user forbidden folders
-    if (count($noAccessFolders) > 0) {
+    if (is_array($noAccessFolders) && count($noAccessFolders) > 0) {
         $allowedFolders = array_diff($allowedFolders, $noAccessFolders);
     }
 
@@ -1324,46 +1324,6 @@ function prefixTable(string $table): string
 }
 
 /**
- * GenerateCryptKey
- *
- * @param int     $size      Length
- * @param bool $secure Secure
- * @param bool $numerals Numerics
- * @param bool $uppercase Uppercase letters
- * @param bool $symbols Symbols
- * @param bool $lowercase Lowercase
- * 
- * @return string
- */
-function GenerateCryptKey(
-    int $size = 20,
-    bool $secure = false,
-    bool $numerals = false,
-    bool $uppercase = false,
-    bool $symbols = false,
-    bool $lowercase = false
-): string {
-    $generator = new ComputerPasswordGenerator();
-    $generator->setRandomGenerator(new Php7RandomGenerator());
-    
-    // Manage size
-    $generator->setLength((int) $size);
-    if ($secure === true) {
-        $generator->setSymbols(true);
-        $generator->setLowercase(true);
-        $generator->setUppercase(true);
-        $generator->setNumbers(true);
-    } else {
-        $generator->setLowercase($lowercase);
-        $generator->setUppercase($uppercase);
-        $generator->setNumbers($numerals);
-        $generator->setSymbols($symbols);
-    }
-
-    return $generator->generatePasswords()[0];
-}
-
-/**
  * GenerateGenericPassword
  *
  * @param int     $size      Length
@@ -1395,28 +1355,20 @@ function generateGenericPassword(
             'encode'
         );
     }
-    // Load libraries
-    $generator = new ComputerPasswordGenerator();
-    $generator->setRandomGenerator(new Php7RandomGenerator());
-
-    // Manage size
-    $generator->setLength(($size <= 0) ? 10 : $size);
-
-    if ($secure === true) {
-        $generator->setSymbols(true);
-        $generator->setLowercase(true);
-        $generator->setUppercase(true);
-        $generator->setNumbers(true);
-    } else {
-        $generator->setLowercase($lowercase);
-        $generator->setUppercase($capitalize);
-        $generator->setNumbers($numerals);
-        $generator->setSymbols($symbols);
-    }
+    // Generate password
+    $passwordManager = new PasswordManager();
+    $newPassword = $passwordManager->generatePassword(
+        $size,
+        $secure,
+        $lowercase,
+        $capitalize,
+        $numerals,
+        $symbols
+    );
 
     return prepareExchangedData(
         array(
-            'key' => $generator->generatePasswords(),
+            'key' => $newPassword,
             'error' => '',
         ),
         'encode'
@@ -1861,7 +1813,7 @@ function prepareFileWithDefuse(
     string $type,
     string $source_file,
     string $target_file,
-    string $password = null
+    ?string $password = null
 ) {
     // Load AntiXSS
     $antiXss = new AntiXSS();
@@ -1913,7 +1865,7 @@ function prepareFileWithDefuse(
 function defuseFileEncrypt(
     string $source_file,
     string $target_file,
-    string $password = null
+    ?string $password = null
 ) {
     $err = '';
     try {
@@ -1949,7 +1901,7 @@ function defuseFileEncrypt(
 function defuseFileDecrypt(
     string $source_file,
     string $target_file,
-    string $password = null
+    ?string $password = null
 ) {
     $err = '';
     try {
@@ -2306,7 +2258,7 @@ function encryptPrivateKey(string $userPwd, string $userPrivateKey): string
  *
  * @return array
  */
-function doDataEncryption(string $data, string $key = NULL): array
+function doDataEncryption(string $data, ?string $key = NULL): array
 {
     // Sanitize
     $antiXss = new AntiXSS();
@@ -3515,16 +3467,16 @@ function upgradeRequired(): bool
 /**
  * Permits to change the user keys on his demand
  *
- * @param integer $userId
+ * @param int $userId
  * @param string $passwordClear
- * @param integer $nbItemsToTreat
+ * @param int $nbItemsToTreat
  * @param string $encryptionKey
- * @param boolean $deleteExistingKeys
- * @param boolean $sendEmailToUser
- * @param boolean $encryptWithUserPassword
- * @param boolean $generate_user_new_password
+ * @param bool $deleteExistingKeys
+ * @param bool $sendEmailToUser
+ * @param bool $encryptWithUserPassword
+ * @param bool $generate_user_new_password
  * @param string $emailBody
- * @param boolean $user_self_change
+ * @param bool $user_self_change
  * @param string $recovery_public_key
  * @param string $recovery_private_key
  * @return string
@@ -3542,142 +3494,240 @@ function handleUserKeys(
     bool $user_self_change = false,
     string $recovery_public_key = '',
     string $recovery_private_key = ''
-): string
-{
-    $session = SessionManager::getSession();
-    $lang = new Language($session->get('user-language') ?? 'english');
+): string {
+    try {
+        $session = SessionManager::getSession();
+        $lang = new Language($session->get('user-language') ?? 'english');
 
-    // prepapre background tasks for item keys generation        
+        error_log('TEAMPASS Debug - handleUserKeys - userId: ' . $userId . ' - generate_user_new_password: ' . ($generate_user_new_password ? 'true' : 'false'));
+        // Validate user existence
+        $userTP = validateUserExistence($userId);
+        if ($userTP === null) {
+            return prepareErrorResponse($lang->get('user_not_exists'));
+        }
+
+        // Handle password generation if needed
+        $passwordClear = handlePasswordGeneration($passwordClear, $generate_user_new_password);
+
+        // Validate password
+        if (!validatePassword($passwordClear, $lang)) {
+            return prepareErrorResponse($lang->get('pw_hash_not_correct'));
+        }
+
+        // Validate recovery keys if provided
+        if (!empty($recovery_public_key) && !empty($recovery_private_key)) {
+            if (!validateRecoveryKeys($recovery_public_key, $recovery_private_key, $lang)) {
+                return prepareErrorResponse($lang->get('pw_encryption_error'));
+            }
+        }
+
+        // Generate user keys
+        $userKeys = generateUserKeysWrapper(
+            $passwordClear,
+            $user_self_change,
+            $recovery_public_key,
+            $recovery_private_key
+        );
+
+        // Save keys to database
+        if (!saveUserKeysToDatabase($userId, $passwordClear, $userKeys)) {
+            return prepareErrorResponse($lang->get('db_error'));
+        }
+
+        // Prepare encryption key
+        $finalEncryptionKey = prepareEncryptionKey($encryptionKey, $passwordClear, $encryptWithUserPassword);
+
+        // Create background process
+        $processId = createBackgroundProcess(
+            $userId,
+            $passwordClear,
+            $finalEncryptionKey,
+            $userTP,
+            $sendEmailToUser,
+            $emailBody,
+            $user_self_change,
+            $nbItemsToTreat,
+            $encryptWithUserPassword,
+            $lang
+        );
+
+        // Handle existing keys deletion if needed
+        if ($deleteExistingKeys) {
+            deleteExistingUserKeys($userId);
+        }
+
+        // Create user tasks
+        createUserTasks($processId, $nbItemsToTreat);
+
+        // Update user status
+        updateUserStatus($userId, $processId);
+
+        return prepareSuccessResponse([
+            'message' => '',
+            'user_password' => $generate_user_new_password ? $passwordClear : '',
+        ]);
+
+    } catch (Exception $e) {
+        return prepareErrorResponse($e->getMessage());
+    }
+}
+
+/**
+ * Prepares the encryption key based on parameters
+ */
+function prepareEncryptionKey(string $encryptionKey, string $passwordClear, bool $encryptWithUserPassword): string {
+    if (!empty($encryptionKey)) {
+        return $encryptionKey;
+    }
+    return $encryptWithUserPassword ? $passwordClear : uniqidReal(20);
+}
+
+/**
+ * Validates user existence in the database
+ */
+function validateUserExistence(int $userId): ?array {
     $userTP = DB::queryFirstRow(
         'SELECT pw, public_key, private_key
         FROM ' . prefixTable('users') . '
         WHERE id = %i',
         TP_USER_ID
     );
-    if (DB::count() === 0) {
-        return prepareExchangedData(
-            array(
-                'error' => true,
-                'message' => 'User not exists',
-            ),
-            'encode'
-        );
-    }
+    return DB::count() === 0 ? null : $userTP;
+}
 
-    // Do we need to generate new user password
-    if ($generate_user_new_password === true) {
-        // Generate a new password
-        $passwordClear = GenerateCryptKey(20, false, true, true, false, true);
+/**
+ * Handles password generation if needed
+ */
+function handlePasswordGeneration(string $passwordClear, bool $generateNewPassword): string {
+    if ($generateNewPassword) {
+        $passwordManager = new PasswordManager();
+        $newPassword = $passwordManager->generatePassword(20, false, true, true, false, true);
+        return $newPassword;
     }
+    return $passwordClear;
+}
 
-    // Create password hash
+/**
+ * Validates the password by hashing and verifying
+ */
+function validatePassword(string $passwordClear, Language $lang): bool {
     $passwordManager = new PasswordManager();
     $hashedPassword = $passwordManager->hashPassword($passwordClear);
-    if ($passwordManager->verifyPassword($hashedPassword, $passwordClear) === false) {
-        return prepareExchangedData(
-            array(
-                'error' => true,
-                'message' => $lang->get('pw_hash_not_correct'),
-            ),
-            'encode'
-        );
-    }
+    return $passwordManager->verifyPassword($hashedPassword, $passwordClear);
+}
 
-    // Check if valid public/private keys
-    if ($recovery_public_key !== '' && $recovery_private_key !== '') {
-        try {
-            // Generate random string
-            $random_str = generateQuickPassword(12, false);
-            // Encrypt random string with user publick key
-            $encrypted = encryptUserObjectKey($random_str, $recovery_public_key);
-            // Decrypt $encrypted with private key
-            $decrypted = decryptUserObjectKey($encrypted, $recovery_private_key);
-            // Check if decryptUserObjectKey returns our random string
-            if ($decrypted !== $random_str) {
-                throw new Exception('Public/Private keypair invalid.');
-            }
-        } catch (Exception $e) {
-            // Show error message to user and log event
-            if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
-                error_log('ERROR: User '.$userId.' - '.$e->getMessage());
-            }
-            return prepareExchangedData([
-                    'error' => true,
-                    'message' => $lang->get('pw_encryption_error'),
-                ],
-                'encode'
-            );
+/**
+ * Validates recovery keys by testing encryption/decryption
+ */
+function validateRecoveryKeys(string $publicKey, string $privateKey, Language $lang): bool {
+    try {
+        $random_str = generateQuickPassword(12, false);
+        $encrypted = encryptUserObjectKey($random_str, $publicKey);
+        $decrypted = decryptUserObjectKey($encrypted, $privateKey);
+        return $decrypted === $random_str;
+    } catch (Exception $e) {
+        if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+            error_log('ERROR: User validation - '.$e->getMessage());
         }
+        return false;
     }
+}
 
-    // Generate new keys
-    if ($user_self_change === true && empty($recovery_public_key) === false && empty($recovery_private_key) === false){
-        $userKeys = [
-            'public_key' => $recovery_public_key,
-            'private_key_clear' => $recovery_private_key,
-            'private_key' => encryptPrivateKey($passwordClear, $recovery_private_key),
+/**
+ * Generates user keys based on parameters
+ */
+function generateUserKeysWrapper(
+    string $passwordClear,
+    bool $userSelfChange,
+    string $recoveryPublicKey,
+    string $recoveryPrivateKey
+): array {
+    if ($userSelfChange && !empty($recoveryPublicKey) && !empty($recoveryPrivateKey)) {
+        return [
+            'public_key' => $recoveryPublicKey,
+            'private_key_clear' => $recoveryPrivateKey,
+            'private_key' => encryptPrivateKey($passwordClear, $recoveryPrivateKey),
         ];
-    } else {
-        $userKeys = generateUserKeys($passwordClear);
     }
+    return generateUserKeys($passwordClear);
+}
 
-    // Save in DB
-    DB::update(
+/**
+ * Saves user keys to database and updates session if needed
+ */
+function saveUserKeysToDatabase(
+    int $userId,
+    string $passwordClear,
+    array $userKeys
+): bool {
+    $session = SessionManager::getSession();
+    $passwordManager = new PasswordManager();
+    $affectedRows  = DB::update(
         prefixTable('users'),
-        array(
-            'pw' => $hashedPassword,
+        [
+            'pw' => $passwordManager->hashPassword($passwordClear),
             'public_key' => $userKeys['public_key'],
             'private_key' => $userKeys['private_key'],
             'keys_recovery_time' => NULL,
-        ),
+        ],
         'id=%i',
         $userId
     );
+    // Convert the result to boolean (true if at least one row was updated)
+    $success = $affectedRows > 0;
 
-    // update session too
+    // Update session if needed
     if ($userId === $session->get('user-id')) {
-        $session->set('user-private_key', $userKeys['private_key_clear']);
+        $session->set('user-private_key', $userKeys['private_key_clear'] ?? '');
         $session->set('user-public_key', $userKeys['public_key']);
-        // Notify user that he must re download his keys:
         $session->set('user-keys_recovery_time', NULL);
     }
 
-    // Manage empty encryption key
-    // Let's take the user's password if asked and if no encryption key provided
-    $encryptionKey = $encryptWithUserPassword === true && empty($encryptionKey) === true ? $passwordClear : $encryptionKey;
+    return $success;
+}
 
-    // Create process
+/**
+ * Creates the background process for key generation
+ */
+function createBackgroundProcess(
+    int $userId,
+    string $passwordClear,
+    string $encryptionKey,
+    array $userTP,
+    bool $sendEmailToUser,
+    string $emailBody,
+    bool $userSelfChange,
+    int $nbItemsToTreat,
+    bool $encryptWithUserPassword,
+    Language $lang
+): int {
+    // Insert background task
     DB::insert(
         prefixTable('background_tasks'),
-        array(
+        [
             'created_at' => time(),
             'process_type' => 'create_user_keys',
             'arguments' => json_encode([
-                'new_user_id' => (int) $userId,
-                'new_user_pwd' => cryption($passwordClear, '','encrypt')['string'],
-                'new_user_code' => cryption(empty($encryptionKey) === true ? uniqidReal(20) : $encryptionKey, '','encrypt')['string'],
+                'new_user_id' => $userId,
+                'new_user_pwd' => cryption($passwordClear, '', 'encrypt')['string'],
+                'new_user_code' => cryption($encryptionKey, '', 'encrypt')['string'],
                 'owner_id' => (int) TP_USER_ID,
                 'creator_pwd' => $userTP['pw'],
-                'send_email' => $sendEmailToUser === true ? 1 : 0,
+                'send_email' => $sendEmailToUser ? 1 : 0,
                 'otp_provided_new_value' => 1,
-                'email_body' => empty($emailBody) === true ? '' : $lang->get($emailBody),
-                'user_self_change' => $user_self_change === true ? 1 : 0,
+                'email_body' => empty($emailBody) ? '' : $lang->get($emailBody),
+                'user_self_change' => $userSelfChange ? 1 : 0,
             ]),
-        )
+        ]
     );
-    $processId = DB::insertId();
 
-    // Delete existing keys
-    if ($deleteExistingKeys === true) {
-        deleteUserObjetsKeys(
-            (int) $userId,
-        );
-    }
+    return DB::insertId();
+}
 
-    // Create tasks
-    createUserTasks($processId, $nbItemsToTreat);
-
-    // update user's new status
+/**
+ * Updates the user's status in the database
+ */
+function updateUserStatus(int $userId, int $processId): void {
     DB::update(
         prefixTable('users'),
         [
@@ -3689,16 +3739,15 @@ function handleUserKeys(
         'id=%i',
         $userId
     );
-
-    return prepareExchangedData(
-        array(
-            'error' => false,
-            'message' => '',
-            'user_password' => $generate_user_new_password === true ? $passwordClear : '',
-        ),
-        'encode'
-    );
 }
+
+/**
+ * Deletes existing user keys
+ */
+function deleteExistingUserKeys(int $userId): void {
+    deleteUserObjetsKeys($userId);
+}
+
 
 /**
  * Permits to generate a new password for a user

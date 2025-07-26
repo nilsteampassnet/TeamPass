@@ -190,7 +190,7 @@ declare(strict_types=1);
         // Show tooltips
         $('.infotip').tooltip();
     });
-    
+    store.remove('teampassSettings')
     // Ensure session is ready in case of disconnection
     const teampassSettings = store.get('teampassSettings');
     if (teampassSettings === null || typeof teampassSettings === 'undefined' || Object.keys(teampassSettings).length === 0) {

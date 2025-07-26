@@ -3091,10 +3091,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     store.update(
                         'teampassApplication',
                         function(teampassApplication) {
-                            teampassApplication.attachmentToken = data[0].token;
+                            teampassApplication.attachmentToken = data.token;
                         }
                     );
-                    console.log('start upload')
                     uploader_attachments.start();
                 },
                 "json"

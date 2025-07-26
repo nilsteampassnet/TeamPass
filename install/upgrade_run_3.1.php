@@ -29,6 +29,7 @@
 use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\Language\Language;
 use TeampassClasses\ConfigManager\ConfigManager;
+use TeampassClasses\PasswordManager\PasswordManager;
 
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
@@ -688,8 +689,9 @@ if (intval($tmp) === 0) {
     }
     $encryptionKey = file_get_contents($secureFilePath);
 
-    // Generate a random password for the user
-    $userPassword = GenerateCryptKey(25, true, true, true, true);
+    // generate key for password
+    $passwordManager = new PasswordManager();
+    $userPassword = $passwordManager->generatePassword(25, true, true, true, true);
     $encryptedUserPassword = cryption(
         $userPassword,
         $encryptionKey,
