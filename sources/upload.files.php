@@ -35,6 +35,7 @@ use Symfony\Component\HttpFoundation\File\Exception\FileException;
 use TeampassClasses\Language\Language;
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\ConfigManager\ConfigManager;
+use TeampassClasses\PasswordManager\PasswordManager;
 
 // Load functions
 require_once 'main.functions.php';
@@ -441,7 +442,9 @@ if (!$chunks || $chunk == $chunks - 1) {
 }
 
 // generate file name
-$newFileName = bin2hex(GenerateCryptKey(16, false, true, true, false, true));
+$passwordManager = new PasswordManager();
+$newPassword = $passwordManager->generatePassword(16, false, true, true, false, true);
+$newFileName = bin2hex($newPassword);
 
 if (
     null !== ($post_type_upload)

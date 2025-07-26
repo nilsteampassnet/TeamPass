@@ -28,9 +28,11 @@ namespace TeampassClasses\PasswordManager;
  * @see       https://www.teampass.net
  */
 
- use Symfony\Component\PasswordHasher\Hasher\PasswordHasherFactory;
- use PasswordLib\PasswordLib;
- Use DB;
+use Symfony\Component\PasswordHasher\Hasher\PasswordHasherFactory;
+use PasswordLib\PasswordLib;
+use Hackzilla\PasswordGenerator\Generator\ComputerPasswordGenerator;
+use Hackzilla\PasswordGenerator\RandomGenerator\Php7RandomGenerator;
+use DB;
 
 class PasswordManager
 {
@@ -114,7 +116,7 @@ class PasswordManager
         // Check if the password has been hashed with passwordlib
         return strpos($hashedPassword, '$2y$10$');
     }
-    
+
     /**
      * Verify a password using PasswordLib.
      *
@@ -124,6 +126,7 @@ class PasswordManager
      */
     private function passwordLibVerify(string $hashedPassword, string $plainPassword): bool
     {
+        // Vérification avec passwordlib
         $pwdlib = new PasswordLib();
         return $pwdlib->verifyPasswordHash($plainPassword, $hashedPassword);
     }
@@ -169,5 +172,43 @@ class PasswordManager
             '',
             '',
         );
+    }
+
+    /**
+     * Génère une clé aléatoire selon les critères donnés.
+     *
+     * @param int  $length     Longueur souhaitée du mot de passe.
+     * @param bool $secure     Mode sécurisé (tout activé).
+     * @param bool $numerals   Inclure des chiffres.
+     * @param bool $uppercase  Inclure des majuscules.
+     * @param bool $symbols    Inclure des symboles.
+     * @param bool $lowercase  Inclure des minuscules.
+     * @return string          Mot de passe généré.
+     */
+    public function generatePassword(
+        int $length = 20,
+        bool $secure = false,
+        bool $numerals = false,
+        bool $uppercase = false,
+        bool $symbols = false,
+        bool $lowercase = false
+    ): string {
+        $generator = new ComputerPasswordGenerator();
+        $generator->setRandomGenerator(new Php7RandomGenerator());
+        $generator->setLength($length);
+
+        if ($secure) {
+            $generator->setSymbols(true);
+            $generator->setLowercase(true);
+            $generator->setUppercase(true);
+            $generator->setNumbers(true);
+        } else {
+            $generator->setLowercase($lowercase);
+            $generator->setUppercase($uppercase);
+            $generator->setNumbers($numerals);
+            $generator->setSymbols($symbols);
+        }
+
+        return $generator->generatePasswords()[0];
     }
 }

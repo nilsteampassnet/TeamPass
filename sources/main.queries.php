@@ -33,10 +33,7 @@ use TeampassClasses\PasswordManager\PasswordManager;
 use TeampassClasses\SessionManager\SessionManager;
 use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use TeampassClasses\Language\Language;
-use Hackzilla\PasswordGenerator\Generator\ComputerPasswordGenerator;
-use Hackzilla\PasswordGenerator\RandomGenerator\Php7RandomGenerator;
 use RobThree\Auth\TwoFactorAuth;
-use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\ConfigManager\ConfigManager;
 use TeampassClasses\EmailService\EmailService;
@@ -440,15 +437,15 @@ function userHandler(string $post_type, array|null|string $dataReceived, array $
         * This will generate the QR Google Authenticator
         */
         case 'ga_generate_qr'://action_user
-            return generateQRCode(
-                (int) $filtered_user_id,
-                (string) filter_var($dataReceived['demand_origin'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                (string) filter_var($dataReceived['send_email'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                (string) filter_var($dataReceived['login'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                (string) filter_var($dataReceived['pwd'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                (string) filter_var($dataReceived['token'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                $SETTINGS
-            );
+            require_once 'core/services/QRCodeService.php';
+            return (new QRCodeService($SETTINGS))->generateForUser([
+                'id' => (int) $filtered_user_id,
+                'origin' => (string) filter_var($dataReceived['demand_origin'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                'send_mail' => (bool) filter_var($dataReceived['send_email'], FILTER_VALIDATE_BOOLEAN),
+                'login' => (string) filter_var($dataReceived['login'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                'password' => (string) filter_var($dataReceived['pwd'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                'token' => (string) filter_var($dataReceived['token'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+            ]);
 
         /*
         * This will set the user ready
@@ -660,9 +657,8 @@ function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived,
          * Generate a temporary encryption key for user
          */
         case 'generate_temporary_encryption_key'://action_key
-            return generateOneTimeCode(
-                (int) filter_var($filtered_user_id, FILTER_SANITIZE_NUMBER_INT)
-            );
+            require_once 'core/services/OneTimeCodeService.php';
+            return (new OneTimeCodeService())->generateForUser((int) filter_var($filtered_user_id, FILTER_SANITIZE_NUMBER_INT));
 
         /*
          * user_sharekeys_reencryption_next
@@ -888,12 +884,12 @@ function handleGenerateBugReport($dataReceived, array $SETTINGS, $session): stri
     }
 
     $reportContent = generateBugReport($dataReceived, $SETTINGS);
-    if ($reportContent['error'] === true) {
+    if (empty($reportContent)) {
         return prepareErrorResponse('Failed to generate bug report');
     }
 
     return prepareSuccessResponse([
-        'report' => $reportContent['report']
+        'report' => $reportContent
     ]);
 }
 
@@ -954,7 +950,9 @@ function handleSaveToken($session): string
         }
     }
 
-    $token = GenerateCryptKey(
+    // Generate token
+    $passwordManager = new PasswordManager();
+    $token = $passwordManager->generatePassword(
         (int)$params['size'],
         (bool)$params['secure'],
         (bool)$params['numeric'],
@@ -1298,201 +1296,11 @@ function changePassword(
     );
 }
 
-function generateQRCode(
-    $post_id,
-    $post_demand_origin,
-    $post_send_mail,
-    $post_login,
-    $post_pwd,
-    $post_token,
-    array $SETTINGS
-): string
-{
-    // Load user's language
-    $session = SessionManager::getSession();
-    $lang = new Language($session->get('user-language') ?? 'english');
-
-    // is this allowed by setting
-    if (isKeyExistingAndEqual('ga_reset_by_user', 0, $SETTINGS) === true
-        && (null === $post_demand_origin || $post_demand_origin !== 'users_management_list')
-    ) {
-        // User cannot ask for a new code
-        return prepareExchangedData(
-            array(
-                'error' => true,
-                'message' => "113 ".$lang->get('error_not_allowed_to')." - ".isKeyExistingAndEqual('ga_reset_by_user', 1, $SETTINGS),
-            ),
-            'encode'
-        );
-    }
-    
-    // Check if user exists
-    if (isValueSetNullEmpty($post_id) === true) {
-        // Get data about user
-        $dataUser = DB::queryFirstRow(
-            'SELECT id, email, pw
-            FROM ' . prefixTable('users') . '
-            WHERE login = %s',
-            $post_login
-        );
-    } else {
-        $dataUser = DB::queryFirstRow(
-            'SELECT id, login, email, pw
-            FROM ' . prefixTable('users') . '
-            WHERE id = %i',
-            $post_id
-        );
-        $post_login = $dataUser['login'];
-    }
-    // Get number of returned users
-    $counter = DB::count();
-
-    // Do treatment
-    if ($counter === 0) {
-        // Not a registered user !
-        logEvents($SETTINGS, 'failed_auth', 'user_not_exists', '', stripslashes($post_login), stripslashes($post_login));
-        return prepareExchangedData(
-            array(
-                'error' => true,
-                'message' => $lang->get('no_user'),
-                'tst' => 1,
-            ),
-            'encode'
-        );
-    }
-
-    $passwordManager = new PasswordManager();
-    if (
-        isSetArrayOfValues([$post_pwd, $dataUser['pw']]) === true
-        && $passwordManager->verifyPassword($dataUser['pw'], $post_pwd) === false
-        && $post_demand_origin !== 'users_management_list'
-    ) {
-        // checked the given password
-        logEvents($SETTINGS, 'failed_auth', 'password_is_not_correct', '', stripslashes($post_login), stripslashes($post_login));
-        return prepareExchangedData(
-            array(
-                'error' => true,
-                'message' => $lang->get('no_user'),
-                'tst' => $post_demand_origin,
-            ),
-            'encode'
-        );
-    }
-    
-    if (empty($dataUser['email']) === true) {
-        return prepareExchangedData(
-            array(
-                'error' => true,
-                'message' => $lang->get('no_email_set'),
-            ),
-            'encode'
-        );
-    }
-
-    // Check if token already used
-    $dataToken = DB::queryFirstRow(
-        'SELECT end_timestamp, reason
-        FROM ' . prefixTable('tokens') . '
-        WHERE token = %s AND user_id = %i',
-        $post_token,
-        $dataUser['id']
-    );
-    $tokenId = '';
-    if (DB::count() > 0 && is_null($dataToken['end_timestamp']) === false && $dataToken['reason'] === 'auth_qr_code') {
-        // This token has already been used
-        return prepareExchangedData(
-            array(
-                'error' => true,
-                'message' => 'TOKEN already used',//$lang->get('no_email_set'),
-            ),
-            'encode'
-        );
-    } elseif(DB::count() === 0) {
-        // Store token for this action
-        DB::insert(
-            prefixTable('tokens'),
-            array(
-                'user_id' => (int) $dataUser['id'],
-                'token' => $post_token,
-                'reason' => 'auth_qr_code',
-                'creation_timestamp' => time(),
-            )
-        );
-        $tokenId = DB::insertId();
-    }
-    
-    // generate new GA user code
-    $tfa = new TwoFactorAuth($SETTINGS['ga_website_name']);
-    $gaSecretKey = $tfa->createSecret();
-    $gaTemporaryCode = GenerateCryptKey(12, false, true, true, false, true);
-
-    DB::update(
-        prefixTable('users'),
-        [
-            'ga' => $gaSecretKey,
-            'ga_temporary_code' => $gaTemporaryCode,
-        ],
-        'id = %i',
-        $dataUser['id']
-    );
-
-    // Log event
-    logEvents($SETTINGS, 'user_connection', 'at_2fa_google_code_send_by_email', (string) $dataUser['id'], stripslashes($post_login), stripslashes($post_login));
-
-    // Update token status
-    DB::update(
-        prefixTable('tokens'),
-        [
-            'end_timestamp' => time(),
-        ],
-        'id = %i',
-        $tokenId
-    );
-
-    // send mail?
-    if ((int) $post_send_mail === 1) {
-        prepareSendingEmail(
-            $lang->get('email_ga_subject'),
-            str_replace(
-                '#2FACode#',
-                $gaTemporaryCode,
-                $lang->get('email_ga_text')
-            ),
-            $dataUser['email']
-        );
-
-        // send back
-        return prepareExchangedData(
-            array(
-                'error' => false,
-                'message' => $post_send_mail,
-                'email' => $dataUser['email'],
-                'email_result' => str_replace(
-                    '#email#',
-                    '<b>' . obfuscateEmail($dataUser['email']) . '</b>',
-                    addslashes($lang->get('admin_email_result_ok'))
-                ),
-            ),
-            'encode'
-        );
-    }
-    
-    // send back
-    return prepareExchangedData(
-        array(
-            'error' => false,
-            'message' => '',
-            'email' => $dataUser['email'],
-            'email_result' => str_replace(
-                '#email#',
-                '<b>' . obfuscateEmail($dataUser['email']) . '</b>',
-                addslashes($lang->get('admin_email_result_ok'))
-            ),
-        ),
-        'encode'
-    );
-}
-
+/**
+ * Sends emails that were not sent yet
+ *
+ * @param array $SETTINGS Application settings
+ */
 function sendEmailsNotSent(
     array $SETTINGS
 )
@@ -1551,7 +1359,12 @@ function sendEmailsNotSent(
     }
 }
 
-
+/**
+ * Refreshes the list of items seen by the user
+ *
+ * @param array $SETTINGS Application settings
+ * @return string JSON-encoded response containing the list of items seen
+ */
 function refreshUserItemsSeenList(
     array $SETTINGS
 ): string
@@ -1609,6 +1422,11 @@ function refreshUserItemsSeenList(
     );
 }
 
+/**
+ * Sends statistics to the Teampass Statistics database
+ *
+ * @param array $SETTINGS Application settings
+ */
 function sendingStatistics(
     array $SETTINGS
 ): void
@@ -1677,10 +1495,17 @@ function sendingStatistics(
     }
 }
 
+/**
+ * Generates a bug report based on the provided data and settings
+ *
+ * @param array $data Data related to the bug report
+ * @param array $SETTINGS Application settings
+ * @return string The generated bug report content
+ */
 function generateBugReport(
     array $data,
     array $SETTINGS
-): array
+): string
 {
     $excludedVars = array(
         'bck_script_passkey',
@@ -1758,7 +1583,7 @@ function generateBugReport(
     if (!defined('DB_PASSWD_CLEAR')) {
         define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD));
     }
-    $dbLink = @mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, (int) DB_PORT);
+    $dbLink = @mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, (int) DB_PORT, null);
     $dbVersion = $dbLink ? mysqli_get_server_info($dbLink) : $lang->get('undefined');
 
     // Now prepare text
@@ -1814,13 +1639,7 @@ Insert the log here and especially the answer of the query that failed.
 ```
 REPORT;
 
-    // Now prepare text
-    $reportData = [
-        'report' => $reportContent,
-        'error' => false
-    ];
-
-    return $reportData;
+    return $reportContent;
 }
 
 /**
@@ -2117,70 +1936,14 @@ function initializeUserPassword(
     );
 }
 
-function generateOneTimeCode(
-    int $post_user_id
-): string
-{
-    // Load user's language
-    $session = SessionManager::getSession();
-    $lang = new Language($session->get('user-language') ?? 'english');
-    
-    if (isUserIdValid($post_user_id) === true) {
-        // Get user info
-        $userData = DB::queryFirstRow(
-            'SELECT email, auth_type, login
-            FROM ' . prefixTable('users') . '
-            WHERE id = %i',
-            $post_user_id
-        );
-        if (DB::count() > 0 && empty($userData['email']) === false) {
-            // Generate pwd
-            $password = generateQuickPassword();
-
-            // GEnerate new keys
-            $userKeys = generateUserKeys($password);
-
-            // Save in DB
-            DB::update(
-                prefixTable('users'),
-                array(
-                    'public_key' => $userKeys['public_key'],
-                    'private_key' => $userKeys['private_key'],
-                    'special' => 'generate-keys',
-                ),
-                'id=%i',
-                $post_user_id
-            );
-
-            return prepareExchangedData(
-                array(
-                    'error' => false,
-                    'message' => '',
-                    'code' => $password,
-                    'visible_otp' => ADMIN_VISIBLE_OTP_ON_LDAP_IMPORT,
-                ),
-                'encode'
-            );
-        }
-        
-        return prepareExchangedData(
-            array(
-                'error' => true,
-                'message' => $lang->get('no_email_set'),
-            ),
-            'encode'
-        );
-    }
-        
-    return prepareExchangedData(
-        array(
-            'error' => true,
-            'message' => $lang->get('error_no_user'),
-        ),
-        'encode'
-    );
-}
-
+/**
+ * Permits to start re-encrypting user's sharekeys
+ *
+ * @param integer $post_user_id
+ * @param boolean $post_self_change
+ * @param array $SETTINGS
+ * @return string
+ */
 function startReEncryptingUserSharekeys(
     int $post_user_id,
     bool $post_self_change,

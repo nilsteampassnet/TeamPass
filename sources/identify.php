@@ -213,7 +213,7 @@ class AuthenticationContext
 
         // Decrypt data
         $dataReceived = $this->decryptSentData();
-        if (!$dataReceived) {
+        if ($dataReceived === null) {
             return null;
         }
 
@@ -411,50 +411,58 @@ class AuthenticationContext
      * Setup user session after successful authentication
      */
     private function setupUserSession(array $credentials, array $userInfo, array $externalAuthResult): bool
+    {        
+        $attemptsInfos = $this->handleLoginAttempts($userInfo, $credentials);
+        if ($attemptsInfos['attemptsCount'] > 3) {
+            $this->resetPasswordAttempts();
+            $this->logFailedAuthentication($credentials['username']);
+            $this->sendErrorResponse($this->lang->get('bruteforce_wait'));
+            return false;
+        }
+        $this->configureSessionLifetime($credentials['dataReceived']);
+        $oldKey = $this->resetSessionKey();
+        $this->setUserSessionData($userInfo, $credentials, $this->session->get('user-session_duration'));
+        $this->setupUserEncryptionKeys($userInfo, $credentials['passwordClear']);
+        $this->setupUserRoles($userInfo, $externalAuthResult);
+        $this->updateUserDatabase($userInfo, $credentials);
+        $this->setupUserRights($userInfo, $externalAuthResult);
+        $this->sendLoginNotificationEmail();
+        $this->sendSuccessResponse($credentials, $userInfo, $oldKey);
+
+        return true;
+    }
+
+    private function handleLoginAttempts(array $userInfo, array $credentials): array
     {
-        $this->session->set('pwd_attempts', 0);
-        
-        // Handle login attempts
-        $attemptsInfos = handleLoginAttempts(
+        return handleLoginAttempts(
             $userInfo['id'],
             $userInfo['login'],
             $userInfo['last_connexion'],
             $credentials['username'],
             $this->settings
         );
+    }
 
-        // Setup session duration
-        $sessionDuration = $this->calculateSessionDuration($credentials['dataReceived']);
-        $lifetime = time() + ($sessionDuration * 60);
+    private function resetPasswordAttempts(): void
+    {
+        $this->session->set('pwd_attempts', 0);
+    }
 
-        // Reset session for security
+    private function configureSessionLifetime(array $dataReceived): void
+    {
+        $sessionDuration = $this->calculateSessionDuration($dataReceived);
+        $this->session->set('user-session_duration', time() + ($sessionDuration * 60));
+    }
+
+    private function resetSessionKey(): string
+    {
         $oldKey = $this->session->get('key');
         $this->session->migrate();
         $this->session->set('key', generateQuickPassword(30, false));
-
-        // Setup user session data
-        $this->setUserSessionData($userInfo, $credentials, $lifetime);
-        
-        // Setup user encryption keys
-        $this->setupUserEncryptionKeys($userInfo, $credentials['passwordClear']);
-        
-        // Setup user roles and permissions
-        $this->setupUserRoles($userInfo, $externalAuthResult);
-        
-        // Update database
-        $this->updateUserDatabase($userInfo, $credentials);
-        
-        // Setup user rights and cache
-        $this->setupUserRights($userInfo, $externalAuthResult);
-        
-        // Send notification email if enabled
-        $this->sendLoginNotificationEmail();
-        
-        // Prepare response
-        $this->sendSuccessResponse($credentials, $userInfo, $oldKey);
-        
-        return true;
+        return $oldKey;
     }
+
+
 
     /**
      * Helper methods for specific tasks
@@ -466,6 +474,11 @@ class AuthenticationContext
         }
         
         $dataReceived = prepareExchangedData($this->sentData, 'decode', $this->session->get('key'));
+
+        // Check that dataReceived is an array
+        if (!is_array($dataReceived)) {
+            return null;
+        }
         
         if (isset($dataReceived['pw'])) {
             $dataReceived['pw'] = base64_decode($dataReceived['pw']);
@@ -1025,9 +1038,9 @@ class AuthenticationContext
  */
 class AuthenticationException extends Exception
 {
-    private $extra;
+    private string $extra;
 
-    public function __construct(string $message, string $extra = '', int $code = 0, Throwable $previous = null)
+    public function __construct(string $message, string $extra = '', int $code = 0, ?Throwable $previous = null)
     {
         parent::__construct($message, $code, $previous);
         $this->extra = $extra;
@@ -1062,7 +1075,7 @@ function handleLoginAttempts(
         FROM ' . prefixTable('log_system') . "
         WHERE field_1 = %s
         AND type = 'failed_auth'
-        AND label = 'password_is_not_correct'
+        AND label = 'user_not_exists'
         AND date >= %s AND date < %s",
         $userInfoLogin,
         $userInfoLastConnection,
@@ -1083,7 +1096,7 @@ function handleLoginAttempts(
     if (isKeyExistingAndEqual('log_connections', 1, $SETTINGS) === true) {
         logEvents($SETTINGS, 'user_connection', 'connection', (string) $userInfoId, stripslashes($username));
     }
-
+    
     return [
         'attemptsList' => $arrAttempts,
         'attemptsCount' => count($rows),

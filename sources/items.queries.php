@@ -35,12 +35,12 @@ use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\SessionManager\SessionManager;
 use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use TeampassClasses\Language\Language;
-use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\ConfigManager\ConfigManager;
 use OTPHP\TOTP;
 use TeampassClasses\EmailService\EmailService;
 use TeampassClasses\EmailService\EmailSettings;
+use TeampassClasses\PasswordManager\PasswordManager;
 
 // Load functions
 require_once 'main.functions.php';
@@ -2114,7 +2114,9 @@ switch ($inputData['type']) {
             }
 
             // generate 2d key
-            $session->set('user-key_tmp', bin2hex(GenerateCryptKey(16, false, true, true, false, true)));
+            $passwordManager = new PasswordManager();
+            $newPassword = $passwordManager->generatePassword(16, false, true, true, false, true);
+            $session->set('user-key_tmp', $newPassword);
 
             // Send email
             if (is_array($post_diffusion_list) === true && count($post_diffusion_list) > 0) {
@@ -3282,7 +3284,9 @@ switch ($inputData['type']) {
         // Get all expected data about this ITEM
         } else {
             // generate 2d key
-            $session->set('user-key_tmp', bin2hex(GenerateCryptKey(16, false, true, true, false, true)));
+            $passwordManager = new PasswordManager();
+            $newPassword = $passwordManager->generatePassword(16, false, true, true, false, true);
+            $session->set('user-key_tmp', $newPassword);
 
             // Prepare files listing
             $attachments = [];
@@ -6080,8 +6084,9 @@ switch ($inputData['type']) {
         );
 
         // generate session
-        $otv_code = GenerateCryptKey(32, false, true, true, false, true);
-        $otv_key = GenerateCryptKey(32, false, true, true, false, true);
+        $passwordManager = new PasswordManager();
+        $otv_code = $passwordManager->generatePassword(32, false, true, true, false, true);
+        $otv_key = $passwordManager->generatePassword(32, false, true, true, false, true);
 
         // Generate Defuse key
         $otv_user_code_encrypted = defuse_generate_personal_key($otv_key);

@@ -39,6 +39,7 @@ use Duo\DuoUniversal\Client;
 use Duo\DuoUniversal\DuoException;
 use TeampassClasses\EmailService\EmailSettings;
 use TeampassClasses\EmailService\EmailService;
+use TeampassClasses\PasswordManager\PasswordManager;
 
 // Load functions
 require_once 'main.functions.php';
@@ -190,8 +191,9 @@ switch ($post_type) {
         }
 
         if (!empty($return)) {
-            // get a token
-            $token = GenerateCryptKey(20, false, true, true, false, true);
+            // get a token// Generate password
+            $passwordManager = new PasswordManager();
+            $token = $passwordManager->generatePassword(20, false, true, true, false, true);
 
             //save file
             $filename = time() . '-' . $token . '.sql';
@@ -221,7 +223,9 @@ switch ($post_type) {
             }
 
             //generate 2d key
-            $session->set('user-key_tmp', GenerateCryptKey(20, false, true, true, false, true));
+            $passwordManager = new PasswordManager();
+            $newPassword = $passwordManager->generatePassword(20, false, true, true, false, true);
+            $session->set('user-key_tmp', $newPassword);
 
             //update LOG
             logEvents($SETTINGS, 'admin_action', 'dataBase backup', (string) $session->get('user-id'), $session->get('user-login'));
@@ -1587,7 +1591,8 @@ switch ($post_type) {
         if (null !== $post_action && $post_action === 'add') {
             // Generate KEY
             require_once 'main.functions.php';
-            $key = GenerateCryptKey(39, false, true, true, false, true);
+            $passwordManager = new PasswordManager();
+            $key = $passwordManager->generatePassword(39, false, true, true, false, true);
 
             // Generate objectKey
             //$object = doDataEncryption($key, SECUREFILE.':'.$timestamp);

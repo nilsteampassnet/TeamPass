@@ -36,7 +36,7 @@ use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\ConfigManager\ConfigManager;
-
+use TeampassClasses\PasswordManager\PasswordManager;
 
 // Load functions
 require_once 'main.functions.php';
@@ -141,7 +141,8 @@ if (null !== $post_type) {
             require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
         
             // get a token
-            $token = GenerateCryptKey(20, false, true, true, false, true);
+            $passwordManager = new PasswordManager();
+            $token = $passwordManager->generatePassword(20, false, true, true, false, true);
         
             //save file
             $filename = time() . '-' . $token . '.sql';
@@ -255,8 +256,10 @@ if (null !== $post_type) {
             }
         
             // Generate 2d key
-            $session->set('user-key_tmp', GenerateCryptKey(16, false, true, true, false, true));
-        
+            $passwordManager = new PasswordManager();
+            $newPassword = $passwordManager->generatePassword(16, false, true, true, false, true);
+            $session->set('user-key_tmp', $newPassword);
+
             // Update LOG
             logEvents(
                 $SETTINGS,
@@ -557,4 +560,3 @@ if (null !== $post_type) {
             break;
     }
 }
-

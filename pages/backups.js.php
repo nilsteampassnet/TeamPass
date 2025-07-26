@@ -348,14 +348,13 @@ $maxFileSize = (strrpos($SETTINGS['upload_maxfilesize'], 'mb') === false)
                             key: '<?php echo $session->get('key'); ?>'
                         },
                         function(data) {
-                            console.log(data);
                             store.update(
                                 'teampassUser',
                                 function(teampassUser) {
-                                    teampassUser.uploadToken = data[0].token;
+                                    teampassUser.uploadToken = data.token;
                                 }
                             );
-                            up.start();
+                            //up.start();
                         },
                         "json"
                     );

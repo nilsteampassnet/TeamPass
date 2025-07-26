@@ -32,6 +32,7 @@ use TeampassClasses\Language\Language;
 use TeampassClasses\NestedTree\NestedTree;
 use Encryption\Crypt\aesctr;
 use TeampassClasses\ConfigManager\ConfigManager;
+use TeampassClasses\PasswordManager\PasswordManager;
 
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
@@ -1987,9 +1988,10 @@ if ($res === false) {
 
 // Add account TP USER if not exist
 $data = mysqli_fetch_row(mysqli_query($db_link, "SELECT COUNT(*) FROM ".$pre . "users WHERE id = '" . TP_USER_ID . "'"));
-if ((int) $data[0] === 0) {
+if ((int) $data[0] === 0) {    
     // generate key for password
-    $pwd = GenerateCryptKey(25, true, true, true, true);
+    $passwordManager = new PasswordManager();
+    $pwd = $passwordManager->generatePassword(25, true, true, true, true);
     $encrypted_pwd = cryption(
         $pwd,
         '',

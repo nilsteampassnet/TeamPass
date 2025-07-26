@@ -1324,46 +1324,6 @@ function prefixTable(string $table): string
 }
 
 /**
- * GenerateCryptKey
- *
- * @param int     $size      Length
- * @param bool $secure Secure
- * @param bool $numerals Numerics
- * @param bool $uppercase Uppercase letters
- * @param bool $symbols Symbols
- * @param bool $lowercase Lowercase
- * 
- * @return string
- */
-function GenerateCryptKey(
-    int $size = 20,
-    bool $secure = false,
-    bool $numerals = false,
-    bool $uppercase = false,
-    bool $symbols = false,
-    bool $lowercase = false
-): string {
-    $generator = new ComputerPasswordGenerator();
-    $generator->setRandomGenerator(new Php7RandomGenerator());
-    
-    // Manage size
-    $generator->setLength((int) $size);
-    if ($secure === true) {
-        $generator->setSymbols(true);
-        $generator->setLowercase(true);
-        $generator->setUppercase(true);
-        $generator->setNumbers(true);
-    } else {
-        $generator->setLowercase($lowercase);
-        $generator->setUppercase($uppercase);
-        $generator->setNumbers($numerals);
-        $generator->setSymbols($symbols);
-    }
-
-    return $generator->generatePasswords()[0];
-}
-
-/**
  * GenerateGenericPassword
  *
  * @param int     $size      Length
@@ -1395,28 +1355,20 @@ function generateGenericPassword(
             'encode'
         );
     }
-    // Load libraries
-    $generator = new ComputerPasswordGenerator();
-    $generator->setRandomGenerator(new Php7RandomGenerator());
-
-    // Manage size
-    $generator->setLength(($size <= 0) ? 10 : $size);
-
-    if ($secure === true) {
-        $generator->setSymbols(true);
-        $generator->setLowercase(true);
-        $generator->setUppercase(true);
-        $generator->setNumbers(true);
-    } else {
-        $generator->setLowercase($lowercase);
-        $generator->setUppercase($capitalize);
-        $generator->setNumbers($numerals);
-        $generator->setSymbols($symbols);
-    }
+    // Generate password
+    $passwordManager = new PasswordManager();
+    $newPassword = $passwordManager->generatePassword(
+        $size,
+        $secure,
+        $lowercase,
+        $capitalize,
+        $numerals,
+        $symbols
+    );
 
     return prepareExchangedData(
         array(
-            'key' => $generator->generatePasswords(),
+            'key' => $newPassword,
             'error' => '',
         ),
         'encode'
@@ -1861,7 +1813,7 @@ function prepareFileWithDefuse(
     string $type,
     string $source_file,
     string $target_file,
-    string $password = null
+    ?string $password = null
 ) {
     // Load AntiXSS
     $antiXss = new AntiXSS();
@@ -1913,7 +1865,7 @@ function prepareFileWithDefuse(
 function defuseFileEncrypt(
     string $source_file,
     string $target_file,
-    string $password = null
+    ?string $password = null
 ) {
     $err = '';
     try {
@@ -1949,7 +1901,7 @@ function defuseFileEncrypt(
 function defuseFileDecrypt(
     string $source_file,
     string $target_file,
-    string $password = null
+    ?string $password = null
 ) {
     $err = '';
     try {
@@ -2306,7 +2258,7 @@ function encryptPrivateKey(string $userPwd, string $userPrivateKey): string
  *
  * @return array
  */
-function doDataEncryption(string $data, string $key = NULL): array
+function doDataEncryption(string $data, ?string $key = NULL): array
 {
     // Sanitize
     $antiXss = new AntiXSS();
@@ -3648,7 +3600,9 @@ function validateUserExistence(int $userId): ?array {
  */
 function handlePasswordGeneration(string $passwordClear, bool $generateNewPassword): string {
     if ($generateNewPassword) {
-        return GenerateCryptKey(20, false, true, true, false, true);
+        $passwordManager = new PasswordManager();
+        $newPassword = $passwordManager->generatePassword(20, false, true, true, false, true);
+        return $newPassword;
     }
     return $passwordClear;
 }
