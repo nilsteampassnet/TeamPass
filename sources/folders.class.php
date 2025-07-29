@@ -416,6 +416,7 @@ class FolderManager
     private function refreshCacheForUsersWithSimilarRoles($user_roles)
     {
         $usersWithSimilarRoles = getUsersWithRoles(explode(";", $user_roles));
+        DB::startTransaction();
         foreach ($usersWithSimilarRoles as $user) {
 
             // Arguments field
@@ -450,6 +451,7 @@ class FolderManager
                 )
             );
         }
+        DB::commit();
     }
 
     /**
