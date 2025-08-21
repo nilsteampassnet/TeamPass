@@ -508,6 +508,24 @@ if (null === $request->query->get('type')) {
 
         $arr_data[$record['id']]['restricted'] = $restrictedTo;
 
+        
+
+        // Is user in restricted list of users
+        if (empty($record['restricted_to']) === false) {
+            if (
+                in_array($session->get('user-id'), explode(';', $record['restricted_to'])) === true
+                || (((int) $session->get('user-manager') === 1 || (int) $session->get('user-can_manage_all_users') === 1)
+                    && (int) $SETTINGS['manager_edit'] === 1)
+            ) {
+                $user_is_in_restricted_list = true;
+            } else {
+                $user_is_in_restricted_list = false;
+            }
+        } else {
+            $user_is_in_restricted_list = false;
+        }
+        $arr_data[$record['id']]['user_restriction_allowed_for_user'] = ((!empty($record['restricted_to']) && $user_is_in_restricted_list === true) || empty($record['restricted_to'])) ? true : false;
+
         $right = 0;
         // Possible values:
         // 0 -> no access to item
@@ -689,7 +707,7 @@ if (null === $request->query->get('type')) {
     }
 
     $returnValues = [
-        'html_json' => filter_var_array($arr_data, FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+        'html_json' => $arr_data,
         'message' => ' '.$lang->get('find_message'),
         'total' => (int) $iTotal,
         'start' => (int) (null !== $request->query->get('start') && (int) $request->query->get('length') !== -1) ? $request->query->filter('start', FILTER_SANITIZE_NUMBER_INT) + $request->query->filter('length', FILTER_SANITIZE_NUMBER_INT) : -1,
