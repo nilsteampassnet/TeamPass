@@ -1030,7 +1030,7 @@ switch ($inputData['type']) {
          *
          * @return array The new items to add to the database.
          */
-        function handleGroups($groups, string $previousFolder, array $newItemsToAdd, int $level) : array
+        function handleGroups(array $groups, string $previousFolder, array $newItemsToAdd, int $level) : array
         {
             // If a single group is found, wrap it into an array
             if (isset($groups['UUID'])) {
@@ -1049,8 +1049,8 @@ switch ($inputData['type']) {
                 // Recursively process entries and subgroups inside this group
                 $newItemsToAdd = recursive(
                     [
-                        'Entry' => $group['Entry'] ?? '',
-                        'Group' => $group['Group'] ?? '',
+                        'Entry' => $group['Entry'] ?? [],
+                        'Group' => $group['Group'] ?? [],
                     ],
                     $group['UUID'],
                     $newItemsToAdd,
@@ -1138,7 +1138,7 @@ switch ($inputData['type']) {
                 is_null($parentId) ? 0 : (int) $parentId,
                 $folder['level'],
                 $startPathLevel,
-                $destinationFolderInfos['levelPwComplexity']
+                (int) $destinationFolderInfos['levelPwComplexity']
             );
 
             // manage parent
