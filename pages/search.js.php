@@ -303,7 +303,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                         await navigator.clipboard.writeText(password);
 
                         // Notification for the user
-                        const clipboardDuration = parseInt(store.get('teampassSettings').clipboard_life_duration) || 0;
+                        const clipboardDuration = parseInt(storeSession.get('teampassSettings').clipboard_life_duration) || 0;
                         if (clipboardDuration === 0) {
                             toastr.info('<?php echo $lang->get("copy_to_clipboard"); ?>', '', {
                                 timeOut: 2000,
@@ -550,7 +550,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 if (selectedAction === 'move') {
                     // destination folder
                     var folders = '';
-                    $.each(store.get('teampassApplication').foldersList, function(index, item) {
+                    $.each(storeSession.get('teampassApplication').foldersList, function(index, item) {
                         if (item.disabled === 0) {
                             folders += '<option value="' + item.id + '">' + item.title +
                                 '   [' +
