@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "d1155633d409330b1905ac8b6fb21840",
+    "content-hash": "8b7fbd6bd118147c272af29383e5ddb0",
     "packages": [
         {
             "name": "bjeavons/zxcvbn-php",
@@ -1258,23 +1258,23 @@
         },
         {
             "name": "duosecurity/duo_universal_php",
-            "version": "1.0.2",
+            "version": "1.1.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/duosecurity/duo_universal_php.git",
-                "reference": "8734a47480d2d2f0539e8ee782675e052025d026"
+                "reference": "4ee7253863d84653a60a8cad4b03aa3b66fcfd35"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/duosecurity/duo_universal_php/zipball/8734a47480d2d2f0539e8ee782675e052025d026",
-                "reference": "8734a47480d2d2f0539e8ee782675e052025d026",
+                "url": "https://api.github.com/repos/duosecurity/duo_universal_php/zipball/4ee7253863d84653a60a8cad4b03aa3b66fcfd35",
+                "reference": "4ee7253863d84653a60a8cad4b03aa3b66fcfd35",
                 "shasum": ""
             },
             "require": {
                 "ext-curl": "*",
                 "ext-json": "*",
                 "firebase/php-jwt": "^6.0",
-                "php": ">=7.3"
+                "php": ">=7.4"
             },
             "require-dev": {
                 "phpunit/phpunit": "^9.0",
@@ -1287,14 +1287,17 @@
                 }
             },
             "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "BSD-3-Clause"
+            ],
             "description": "A PHP implementation of the Duo Universal SDK.",
             "homepage": "https://duo.com/",
             "support": {
                 "email": "support@duosecurity.com",
                 "issues": "https://github.com/duosecurity/duo_universal_php/issues",
-                "source": "https://github.com/duosecurity/duo_universal_php/tree/1.0.2"
+                "source": "https://github.com/duosecurity/duo_universal_php/tree/1.1.1"
             },
-            "time": "2023-01-13T18:47:58+00:00"
+            "time": "2025-08-13T14:05:56+00:00"
         },
         {
             "name": "egulias/email-validator",
@@ -1468,16 +1471,16 @@
         },
         {
             "name": "firebase/php-jwt",
-            "version": "v6.10.1",
+            "version": "v6.11.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/firebase/php-jwt.git",
-                "reference": "500501c2ce893c824c801da135d02661199f60c5"
+                "reference": "d1e91ecf8c598d073d0995afa8cd5c75c6e19e66"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/firebase/php-jwt/zipball/500501c2ce893c824c801da135d02661199f60c5",
-                "reference": "500501c2ce893c824c801da135d02661199f60c5",
+                "url": "https://api.github.com/repos/firebase/php-jwt/zipball/d1e91ecf8c598d073d0995afa8cd5c75c6e19e66",
+                "reference": "d1e91ecf8c598d073d0995afa8cd5c75c6e19e66",
                 "shasum": ""
             },
             "require": {
@@ -1525,9 +1528,9 @@
             ],
             "support": {
                 "issues": "https://github.com/firebase/php-jwt/issues",
-                "source": "https://github.com/firebase/php-jwt/tree/v6.10.1"
+                "source": "https://github.com/firebase/php-jwt/tree/v6.11.1"
             },
-            "time": "2024-05-18T18:05:11+00:00"
+            "time": "2025-04-09T20:32:01+00:00"
         },
         {
             "name": "goodby/csv",
@@ -7206,20 +7209,20 @@
     "aliases": [],
     "minimum-stability": "stable",
     "stability-flags": {
-        "teampassclasses/sessionmanager": 20,
-        "teampassclasses/superglobal": 20,
-        "teampassclasses/nestedtree": 20,
         "ezimuel/php-secure-session": 20,
-        "teampassclasses/performchecks": 20,
-        "teampassclasses/encryption": 20,
-        "teampassclasses/language": 20,
-        "teampassclasses/ldapextra": 20,
-        "teampassclasses/passwordmanager": 20,
-        "teampassclasses/oauth2controller": 20,
+        "passwordlib/passwordlib": 15,
         "teampassclasses/configmanager": 20,
         "teampassclasses/emailservice": 20,
+        "teampassclasses/encryption": 20,
         "teampassclasses/folderservices": 20,
-        "passwordlib/passwordlib": 15
+        "teampassclasses/language": 20,
+        "teampassclasses/ldapextra": 20,
+        "teampassclasses/nestedtree": 20,
+        "teampassclasses/oauth2controller": 20,
+        "teampassclasses/passwordmanager": 20,
+        "teampassclasses/performchecks": 20,
+        "teampassclasses/sessionmanager": 20,
+        "teampassclasses/superglobal": 20
     },
     "prefer-stable": true,
     "prefer-lowest": false,
@@ -7233,7 +7236,7 @@
         "ext-xml": "*",
         "ext-gd": "*"
     },
-    "platform-dev": [],
+    "platform-dev": {},
     "platform-overrides": {
         "php": "8.1"
     },

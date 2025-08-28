@@ -180,7 +180,7 @@
         "passwordlib/passwordlib": "^1.0.0-alpha2",
         "hackzilla/password-generator": "^1.6",
         "peppeocchi/php-cron-scheduler": "^4.0",
-        "duosecurity/duo_universal_php": "^1.0",
+        "duosecurity/duo_universal_php": "^1.1",
         "spomky-labs/otphp": "^11.2",
         "symfony/http-foundation": "^6.4",
         "symfony/password-hasher": "^6.4",
