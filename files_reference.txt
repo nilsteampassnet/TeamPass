@@ -109,7 +109,7 @@ includes/.externals/tp.config.php 361da70add00e1069f22191dbb07503c
 includes/avatars/.htaccess df51d5d900c2228ec1349362838401e7
 includes/avatars/empty_file.txt d41d8cd98f00b204e9800998ecf8427e
 includes/config/.htaccess 51622ead2639d535e7a955a8a7a10613
-includes/config/include.php 03bcf56dccf0c563f2f8710080751dbc
+includes/config/include.php ebedac349d5244fa79be9b8e5326e69a
 includes/config/index.html 5f1f28d1adcb7eac03989f0ca3e7068e
 includes/config/settings.sample.php c966188ae4f3174b907fc467c96ac036
 includes/core/load.js.php c1872ece000234c0e8385816c0e87cac
@@ -379,7 +379,7 @@ install/upgrade_run_3.0.0_passwords.php cae80139ccf20ed43a9061ac838ee370
 install/upgrade_run_3.0.0_suggestions.php 734436d1a92c0e28b1588c5d517df928
 install/upgrade_run_3.0.0_users.php 50471168dd517a3080ea79cfc897e13b
 install/upgrade_run_3.0.php 913364c82444e392f36cb6ed58c0b403
-install/upgrade_run_3.1.php 9b0c8026ba1781aba857b1ee714f186a
+install/upgrade_run_3.1.php 677176b8e667e837f138ead0a2c36af5
 install/upgrade_scripts_manager.php 27baee51131766878aed7dc1cf227350
 licences/FOSSA-Licences-Report.md ffd5eabc9ba0457169ef52f112a84d65
 licences/dependencies.licences.md 3ab305f84517052025f6df431a7b6ebe
@@ -408,7 +408,7 @@ pages/folders.php 522b29ad368b3889c73c0fbf6ea6135d
 pages/import.js.php ae1039a857d7f41ada3b7789bd6ba9ba
 pages/import.php dfbcc814fc8825904f43e7206bb16af4
 pages/index.html 5f1f28d1adcb7eac03989f0ca3e7068e
-pages/items.js.php b401d8fb22ead46f61d93d6495d0d247
+pages/items.js.php e44c359ef5a97b65b57948a82d91f4bf
 pages/items.php 347ea5d88457d4e264f6f7b080338ee9
 pages/ldap.js.php e3dea22c27e6fb4cba1de55ef4ed2c29
 pages/ldap.php 9659d31f97963aec777d2ac43df7846c
@@ -429,7 +429,7 @@ pages/tasks.php f97b5e410e2b60983929e2cc5b82d3a2
 pages/tools.js.php a2ed460da7a02e1b1846178dbd1e6209
 pages/tools.php fff92e3394724be12a837b332a41e380
 pages/uploads.js.php 5696d420ed78fab0988ca5e5501e2b2f
-pages/uploads.php 339db4d9a73bd1aca2f811a5e347c55f
+pages/uploads.php 09a5c8d9803360429e663960958c4a3a
 pages/users.js.php 54306dce66041f2d39cddfaf00ef35d9
 pages/users.php 1b5d6951455002cfff8db7f52e082a93
 pages/utilities.database.js.php 4fdf4130e50d7de4308048bda01d67f2
@@ -3669,7 +3669,7 @@ plugins/zxcvbn/zxcvbn.js 0bf1737137a04db7be2ea8849a168a19
 plugins/zxcvbn/zxcvbn.js.map 45297f7b71cea46ace2b7cc7328281da
 readme.md 9d61181bab3e6fc2f6cb8e18c6422ce1
 scripts/background_tasks___do_calculation.php 70d760f36eab4608547098d9f3709dd2
-scripts/background_tasks___functions.php 4e114837e36440a6807e89967f71dda9
+scripts/background_tasks___functions.php 4b1b827404e448e78d5157c74e395103
 scripts/background_tasks___handler.php ff979cc790e08c1151bf9eb671b960f5
 scripts/background_tasks___worker.php 536b2a6cc54384b29b04317e036c4f87
 scripts/index.html 5f1f28d1adcb7eac03989f0ca3e7068e
@@ -3691,17 +3691,17 @@ sources/expired.datatables.php de355807147dfc61395628cae4f3e093
 sources/export.queries.php 77ec57331b255ca0b359f4b46f430277
 sources/favourites.queries.php b2b20834ccf4288bea34d19fc16904a8
 sources/fields.queries.php b87431dfa9e381fc79013c985157ec9e
-sources/find.queries.php 93994ce835604d6e7844592cbbf54f70
-sources/folders.class.php 227661ddb3787a1f07ce1cd232788015
+sources/find.queries.php d353b89b9f51e37b3542d58c42f503a3
+sources/folders.class.php 36519946dae9a7e969294a13c82abd0e
 sources/folders.queries.php b08636d4ea52cd8d6f4b02344c8e545f
 sources/identify.php 23018c4a5e78db7a745e8d36ac8492b1
-sources/import.queries.php 587b8d03106e5d38f70420b08575473e
+sources/import.queries.php 1e0809063a138c046cf16313f12979ba
 sources/index.html 5f1f28d1adcb7eac03989f0ca3e7068e
 sources/items.logs.php 3b9eaeb8fa7a487161bfbfd771aa7c4b
 sources/items.queries.php c201661c9d69ae178f41ed9d66fe568c
 sources/ldap.queries.php 8347f492f841663828410a9a72e829ac
 sources/logs.datatables.php 762156d1ffdbe9970d232e8a2c9764ed
-sources/main.functions.php 221096dde4a198c0d6631d3ad03556e9
+sources/main.functions.php 3fc86cd2b3c72beb1040157a846af26c
 sources/main.queries.php d88a6d46fbc8a2617a9fc1956f96737e
 sources/oauth.php edd9fca8b228780548f927c291670f53
 sources/roles.queries.php 812d89d05969b25236a3a12124ff63c9
