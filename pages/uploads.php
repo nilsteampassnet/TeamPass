@@ -41,7 +41,7 @@ require_once __DIR__.'/../sources/main.functions.php';
 loadClasses('DB');
 $session = SessionManager::getSession();
 $request = RequestLocal::createFromGlobals();
-$lang = new Language(); 
+$lang = new Language($session->get('user-language') ?? 'english');
 
 // Load config if $SETTINGS not defined
 if (empty($SETTINGS)) {
@@ -214,7 +214,7 @@ $ldap_type = isset($SETTINGS['ldap_type']) ? $SETTINGS['ldap_type'] : '';
                                 </small>
                             </div>
                             <div class="col-4">
-                                <div class="toggle toggle-modern" id="upload_imageresize_options_input" data-toggle-on="<?php echo isset($SETTINGS['upload_imageresize_options_input']) === true && $SETTINGS['upload_imageresize_options_input'] === '1' ? 'true' : 'false'; ?>"></div><input type="hidden" id="upload_imageresize_options_input" value="<?php echo isset($SETTINGS['upload_imageresize_options_input']) && $SETTINGS['upload_imageresize_options_input'] === '1' ? '1' : '0'; ?>">
+                                <div class="toggle toggle-modern" id="upload_imageresize_options" data-toggle-on="<?php echo isset($SETTINGS['upload_imageresize_options']) === true && $SETTINGS['upload_imageresize_options'] === '1' ? 'true' : 'false'; ?>"></div><input type="hidden" id="upload_imageresize_options_input" value="<?php echo isset($SETTINGS['upload_imageresize_options']) && $SETTINGS['upload_imageresize_options'] === '1' ? '1' : '0'; ?>">
                             </div>
                         </div>
 

@@ -939,6 +939,19 @@ if (intval($tmp) === 0) {
 
 //---< END 3.1.X upgrade steps
 
+// Add index and change created/updated/finished_at type.
+try {
+    $alter_table_query = "
+        ALTER TABLE `" . $pre . "background_tasks_logs`
+        ADD INDEX idx_iip_pt_arg(is_in_progress, process_type, arguments(30));
+    ";
+    mysqli_begin_transaction($db_link);
+    mysqli_query($db_link, $alter_table_query);
+    mysqli_commit($db_link);
+} catch (Exception $e) {
+    // Rollback transaction if index already exists.
+    mysqli_rollback($db_link);
+}
 
 // Save timestamp
 $tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'upgrade_timestamp'"));
