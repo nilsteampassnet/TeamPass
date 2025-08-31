@@ -44,7 +44,7 @@ header('Cache-Control: no-cache, must-revalidate');
  * @param integer|null $id
  * @return integer
  */
-function doLog(string $status, string $job, int $enable_tasks_log = 0, int $id = null, int $treated_objects = null): int
+function doLog(string $status, string $job, int $enable_tasks_log = 0, ?int $id = null, ?int $treated_objects = null): int
 {
     clearTasksLog();
 
