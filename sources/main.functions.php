@@ -1861,7 +1861,7 @@ function prepareFileWithDefuse(
     string $type,
     string $source_file,
     string $target_file,
-    string $password = null
+    ?string $password = null
 ) {
     // Load AntiXSS
     $antiXss = new AntiXSS();
@@ -1913,7 +1913,7 @@ function prepareFileWithDefuse(
 function defuseFileEncrypt(
     string $source_file,
     string $target_file,
-    string $password = null
+    ?string $password = null
 ) {
     $err = '';
     try {
@@ -1949,7 +1949,7 @@ function defuseFileEncrypt(
 function defuseFileDecrypt(
     string $source_file,
     string $target_file,
-    string $password = null
+    ?string $password = null
 ) {
     $err = '';
     try {
@@ -2306,7 +2306,7 @@ function encryptPrivateKey(string $userPwd, string $userPrivateKey): string
  *
  * @return array
  */
-function doDataEncryption(string $data, string $key = NULL): array
+function doDataEncryption(string $data, ?string $key = null): array
 {
     // Sanitize
     $antiXss = new AntiXSS();
