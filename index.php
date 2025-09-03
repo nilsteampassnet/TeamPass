@@ -84,7 +84,7 @@ if ($session->get('key') === null)
     $session->set('key', generateQuickPassword(30, false));
 
 $request = SymfonyRequest::createFromGlobals();
-$configManager = new ConfigManager(__DIR__, $request->getRequestUri());
+$configManager = new ConfigManager();
 $SETTINGS = $configManager->getAllSettings();
 $antiXss = new AntiXSS();
 $session->set('encryptClientServer', (int) $SETTINGS['encryptClientServer'] ?? 1);
