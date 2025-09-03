@@ -647,7 +647,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                 $session->set('user-personal_visible_folders', []);
                 $session->set('user-personal_folders', []);
             }
-            $session->set('user-all_non_personal_folders', []);
             $session->set('user-roles_array', []);
             $session->set('user-read_only_folders', []);
             $session->set('user-list_folders_limited', []);
@@ -668,7 +667,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         $session->set('system-screen_height', $dataReceived['screenHeight']);
 
         // Get last seen items
-        $session->set('user-latest_items_tab', []);
         $session->set('user-nb_roles', 0);
         foreach ($session->get('user-latest_items') as $item) {
             if (! empty($item)) {
@@ -677,15 +675,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                     FROM ' . prefixTable('items') . '
                     WHERE id=%i',
                     $item
-                );
-                SessionManager::addRemoveFromSessionAssociativeArray(
-                    'user-latest_items_tab',
-                    [
-                        'id' => $item,
-                        'label' => $dataLastItems['label'],
-                        'url' => 'index.php?page=items&amp;group=' . $dataLastItems['id_tree'] . '&amp;id=' . $item,
-                    ],
-                    'add'
                 );
             }
         }
