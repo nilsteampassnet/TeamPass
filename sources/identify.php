@@ -317,17 +317,28 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     }
 
     // Check user and password
-    if ($userLdap['userPasswordVerified'] === false && $userOauth2['userPasswordVerified'] === false
-        && checkCredentials($passwordClear, $userInfo) !== true
-    ) {
+    $authResult = checkCredentials($passwordClear, $userInfo);
+    if ($userLdap['userPasswordVerified'] === false && $userOauth2['userPasswordVerified'] === false && $authResult['authenticated'] !== true) {
         // Add failed authentication log
         addFailedAuthentication($username, getClientIpServer());
-
         echo prepareExchangedData(
             [
                 'value' => '',
                 'error' => true,
                 'message' => $lang->get('error_bad_credentials'),
+            ],
+            'encode'
+        );
+        return false;
+    }
+
+    // If user was migrated, then return error to force user to wait
+    if ($authResult['migrated'] === true) {
+        echo prepareExchangedData(
+            [
+                'value' => '',
+                'error' => true,
+                'message' => $lang->get('user_encryption_ongoing'),
             ],
             'encode'
         );
@@ -1345,11 +1356,14 @@ function finalizeAuthentication(
     $passwordManager = new PasswordManager();
     
     // Migrate password if needed
-    $hashedPassword = $passwordManager->migratePassword(
+    $result  = $passwordManager->migratePassword(
         $userInfo['pw'],
         $passwordClear,
         (int) $userInfo['id']
     );
+
+    // Use the new hashed password if migration was successful
+    $hashedPassword = $result['hashedPassword'];
     
     if (empty($userInfo['pw']) === true || $userInfo['special'] === 'user_added_from_ad') {
         // 2 cases are managed here:
@@ -1838,24 +1852,30 @@ function duoMFAPerform(
  * @param string                $passwordClear Password in clear
  * @param array|string          $userInfo      Array of user data
  *
- * @return bool
+ * @return arrau
  */
-function checkCredentials($passwordClear, $userInfo): bool
+function checkCredentials($passwordClear, $userInfo): array
 {
     $passwordManager = new PasswordManager();
     // Migrate password if needed
-    $passwordManager->migratePassword(
+    $result = $passwordManager->migratePassword(
         $userInfo['pw'],
         $passwordClear,
         (int) $userInfo['id']
     );
 
-    if ($passwordManager->verifyPassword($userInfo['pw'], $passwordClear) === false) {
-        // password is not correct
-        return false;
+    if ($result['status'] === false || $passwordManager->verifyPassword($result['hashedPassword'], $passwordClear) === false) {
+        // Password is not correct
+        return [
+            'authenticated' => false,
+            'migrated' => false
+        ];
     }
 
-    return true;
+    return [
+        'authenticated' => true,
+        'migrated' => $result['migratedUser']
+    ];
 }
 
 /**

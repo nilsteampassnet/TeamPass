@@ -74,8 +74,14 @@ class PasswordManager
     }
 
     // --- Handle migration from PasswordLib to Symfony PasswordHasher
-    public function migratePassword(string $hashedPassword, string $plainPassword, int $userId): string
+    public function migratePassword(string $hashedPassword, string $plainPassword, int $userId): array
     {
+        $result = [
+            'status' => false,
+            'hashedPassword' => $hashedPassword,
+            'migratedUser' => false,
+        ];
+
         // If the password has been hashed with PasswordLib
         if ($this->isPasswordLibHash($hashedPassword)) {
             // Utilisez la vérification de passwordlib ici
@@ -85,26 +91,26 @@ class PasswordManager
             ) {
                 // Password is valid, hash it with new system
                 $newHashedPassword = $this->hashPassword($plainPassword);
-                $userInfo['pw'] = $newHashedPassword;
-
-                // Update user password in DB
                 $this->updateInDatabase($newHashedPassword, $userId);
-
-                // Launch tasks to encrypt user keys, etc.
                 $this->launchUserTasks($userId, $plainPassword);
 
-                if (WIP === true) error_log("migratePassword performed for user ".$userId." | Old hash: ".$hashedPassword." | New hash: ".$newHashedPassword);
-                // Return new hashed password
-                return $newHashedPassword;
+                if (WIP === true) {
+                    error_log("migratePassword performed for user " . $userId . " | Old hash: " . $hashedPassword . " | New hash: " . $newHashedPassword);
+                }
+
+                $result = [
+                    'status' => true,
+                    'hashedPassword' => $newHashedPassword,
+                    'migratedUser' => true,
+                ];
             } else {
-                //throw new \Exception("Password is not correct");
-                return false;
+                $result['status'] = false;
             }
         }
 
-        // Return the existing hashed password
-        return $hashedPassword;
+        return $result;
     }
+
 
     /**
      * Check if the password has been hashed with PasswordLib.
