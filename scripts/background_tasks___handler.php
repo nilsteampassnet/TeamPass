@@ -185,6 +185,9 @@ class BackgroundTasksHandler {
 
         // Launch process
         try{
+            if (defined('EXTEND_TIMEOUT_TASKS_HANDLER') && EXTEND_TIMEOUT_TASKS_HANDLER > 0) {
+                $process->setTimeout(EXTEND_TIMEOUT_TASKS_HANDLER);
+            }
             $process->mustRun();
 
         } catch (Exception $e) {

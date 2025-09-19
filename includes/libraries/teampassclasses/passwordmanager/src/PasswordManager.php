@@ -79,7 +79,10 @@ class PasswordManager
         // If the password has been hashed with PasswordLib
         if ($this->isPasswordLibHash($hashedPassword)) {
             // Utilisez la vérification de passwordlib ici
-            if ($this->passwordLibVerify($hashedPassword, html_entity_decode($plainPassword))) {
+            if (
+                $this->passwordLibVerify($hashedPassword, html_entity_decode($plainPassword))
+                || $this->verifyPasswordWithbCrypt(html_entity_decode($plainPassword), $hashedPassword)
+            ) {
                 // Password is valid, hash it with new system
                 $newHashedPassword = $this->hashPassword($plainPassword);
                 $userInfo['pw'] = $newHashedPassword;
@@ -112,9 +115,9 @@ class PasswordManager
     private function isPasswordLibHash(string $hashedPassword): bool
     {
         // Check if the password has been hashed with passwordlib
-        return strpos($hashedPassword, '$2y$10$');
+        return str_starts_with($hashedPassword, '$2y$10$');
     }
-
+    
     /**
      * Verify a password using PasswordLib.
      *
@@ -124,10 +127,27 @@ class PasswordManager
      */
     private function passwordLibVerify(string $hashedPassword, string $plainPassword): bool
     {
-        // Vérification avec passwordlib
         $pwdlib = new PasswordLib();
-        return $pwdlib->verifyPasswordHash($plainPassword, $hashedPassword);
+        try {
+            return $pwdlib->verifyPasswordHash($plainPassword, $hashedPassword);
+        } catch (\Exception $e) {
+            if (WIP === true) error_log("PasswordLib setCost exception: ".$e->getMessage());
+        }
+        return false;
     }
+
+    /**
+     * Verify a password using PHP's built-in password_verify function for bcrypt hashes.
+     *
+     * @param string $plainPassword The plain text password to verify.
+     * @param string $hash The hashed password to verify against.
+     * @return bool True if the password matches, false otherwise.
+     */
+    function verifyPasswordWithbCrypt(string $plainPassword, string $hash): bool
+    {
+        return password_verify($plainPassword, $hash);
+    }
+
 
     /**
      * Updates the user password in the database.

@@ -69,3 +69,43 @@ git pull
 * In file `/includes/config/settings.php` change the value in `define("DB_ENCODING", "")` to `"utf8"`
 * In file `/includes/config/settings.php` add `define('SECUREFILE', 'teampass-seckey.txt');`
 * Browse to `Teampass`
+
+### Known issues
+
+#### Undefined constant "SECUREFILE"
+
+If you experiment this error
+```
+Fatal error: Uncaught Error: Undefined constant "SECUREFILE" in /var/www/localhost/htdocs/tp/sources/main.functions.php
+```
+
+Proceed as this:
+* Open file `./includes/config/settings.php`
+* After line `define("SECUREPATH", "...");`
+* Add line `define("SECUREFILE", "{secure_filename}");` with `{secure_filename}` usually `teampass-seckey.txt`
+* Save
+
+#### Unknown column 'created_at' in 'SELECT'
+
+If you experiment this error
+```
+Fatal error: Uncaught MeekroDBException: Unknown column 'created_at' in 'SELECT' in /var/www/teampass/vendor/sergeytsalkov/meekrodb/db.class.php
+```
+
+Proceed as this:
+* Connect to MySQL database
+* Select Teampass database
+* Run next SQL queries
+```
+ALTER TABLE teampass_misc ADD COLUMN created_at VARCHAR(255) NULL DEFAULT NULL;
+ALTER TABLE teampass_misc ADD COLUMN updated_at VARCHAR(255) NULL DEFAULT NULL;
+```
+
+#### Experimenting timeout in background tasks
+
+By default, a background process has a timeout defined at 300 seconds.
+This value can be adapted depending on your needs and policies.
+
+* Open file `./includes/config/include.php`
+* Change the value for constant `EXTEND_TIMEOUT_TASKS_HANDLER`
+* Save
