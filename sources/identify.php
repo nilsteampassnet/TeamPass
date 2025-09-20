@@ -2408,14 +2408,24 @@ function checkOauth2User(
     } elseif (isset($userInfo['id']) === true && empty($userInfo['id']) === false) {
         // User is in construction, please wait for email
         if (isset($userInfo['is_ready_for_usage']) && (int) $userInfo['is_ready_for_usage'] !== 1 && (int) $userInfo['ongoing_process_id'] >= 0) {
-            return [
-                'error' => true,
-                'message' => 'account_in_construction_please_wait_email',
-                'no_log_event' => true
-            ];
+            // Check if the creation of user keys has failed
+            $errorMessage = checkIfUserKeyCreationFailed((int) $userInfo['id']);
+            if (!is_null($errorMessage)) {
+                return [
+                    'error' => true,
+                    'message' => $errorMessage,
+                    'no_log_event' => true
+                ];
+            } else {
+                return [
+                    'error' => true,
+                    'message' => 'account_in_construction_please_wait_email',
+                    'no_log_event' => true
+                ];
+            }
         }
 
-        // CHeck if user should use oauth2
+        // CCheck if user should use oauth2
         $ret = shouldUserAuthWithOauth2(
             $SETTINGS,
             $userInfo,
@@ -2471,6 +2481,33 @@ function checkOauth2User(
         'ldapConnection' => false,
         'userPasswordVerified' => false,
     ];
+}
+
+/**
+ * Check if a "create_user_keys" task failed for the given user_id.
+ *
+ * @param int $userId The user ID to check.
+ * @return string|null Returns an error message in English if a failed task is found, otherwise null.
+ */
+function checkIfUserKeyCreationFailed(int $userId): ?string
+{
+    // Find the latest "create_user_keys" task for the given user_id
+    $latestTask = DB::queryFirstRow(
+        'SELECT arguments, status FROM ' . prefixTable('background_tasks') . '
+        WHERE process_type = %s
+        AND arguments LIKE %s
+        ORDER BY increment_id DESC
+        LIMIT 1',
+        'create_user_keys', '%"new_user_id":' . $userId . '%'
+    );
+
+    // If a failed task is found, return an error message
+    if ($latestTask && $latestTask['status'] === 'failed') {
+        return "The creation of user keys for user ID {$userId} failed. Please contact your administrator to check the background tasks log for more details.";
+    }
+
+    // No failed task found for this user_id
+    return null;
 }
 
 
