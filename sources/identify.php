@@ -327,7 +327,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             [
                 'value' => '',
                 'error' => true,
-                'message' => $lang->get('error_bad_credentials'),
+                'message' => $lang->get('error_bad_credentials')."1",
             ],
             'encode'
         );
@@ -1863,7 +1863,8 @@ function checkCredentials($passwordClear, $userInfo): array
     $result = $passwordManager->migratePassword(
         $userInfo['pw'],
         $passwordClear,
-        (int) $userInfo['id']
+        (int) $userInfo['id'],
+        (bool) $userInfo['admin']
     );
 
     if ($result['status'] === false || $passwordManager->verifyPassword($result['hashedPassword'], $passwordClear) === false) {
@@ -2407,7 +2408,10 @@ function checkOauth2User(
     
     } elseif (isset($userInfo['id']) === true && empty($userInfo['id']) === false) {
         // User is in construction, please wait for email
-        if (isset($userInfo['is_ready_for_usage']) && (int) $userInfo['is_ready_for_usage'] !== 1 && (int) $userInfo['ongoing_process_id'] >= 0) {
+        if (
+            isset($userInfo['is_ready_for_usage']) && (int) $userInfo['is_ready_for_usage'] !== 1 && 
+            $userInfo['ongoing_process_id'] !== null && (int) $userInfo['ongoing_process_id'] >= 0
+        ) {
             // Check if the creation of user keys has failed
             $errorMessage = checkIfUserKeyCreationFailed((int) $userInfo['id']);
             if (!is_null($errorMessage)) {
@@ -2415,12 +2419,29 @@ function checkOauth2User(
                 DB::update(
                     prefixTable('users'),
                     array(
-                        'is_ready_for_usage' => 0,
+                        'is_ready_for_usage' => 1,
                         'otp_provided' => 1,
                         'ongoing_process_id' => NULL,
+                        'special' => 'none',
                     ),
                     'id = %i',
                     $userInfo['id']
+                );
+
+                // Prepare task to create user keys again
+                handleUserKeys(
+                    (int) $userInfo['id'],
+                    (string) $passwordClear,
+                    (int) NUMBER_ITEMS_IN_BATCH,
+                    '',
+                    true,
+                    true,
+                    true,
+                    false,
+                    'email_body_user_config_4',
+                    true,
+                    '',
+                    '',
                 );
 
                 // Return error message

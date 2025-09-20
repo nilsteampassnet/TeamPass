@@ -932,6 +932,15 @@ if (intval($tmp) === 0) {
     );
 }
 
+// Add new setting 'task_duration_estimation'
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "misc` WHERE type = 'admin' AND intitule = 'task_duration_estimation'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'task_duration_estimation', '0')"
+    );
+}
+
 //---<END 3.1.4
 
 

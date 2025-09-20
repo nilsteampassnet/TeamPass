@@ -74,7 +74,7 @@ class PasswordManager
     }
 
     // --- Handle migration from PasswordLib to Symfony PasswordHasher
-    public function migratePassword(string $hashedPassword, string $plainPassword, int $userId): array
+    public function migratePassword(string $hashedPassword, string $plainPassword, int $userId, bool $isAdmin = false): array
     {
         $result = [
             'status' => false,
@@ -92,7 +92,12 @@ class PasswordManager
                 // Password is valid, hash it with new system
                 $newHashedPassword = $this->hashPassword($plainPassword);
                 $this->updateInDatabase($newHashedPassword, $userId);
-                $this->launchUserTasks($userId, $plainPassword);
+
+                // Do not launch tasks for admin users
+                // as they do not have personal items/fields/files
+                if ($isAdmin === false) {
+                    $this->launchUserTasks($userId, $plainPassword);
+                }
 
                 if (WIP === true) {
                     error_log("migratePassword performed for user " . $userId . " | Old hash: " . $hashedPassword . " | New hash: " . $newHashedPassword);
@@ -106,6 +111,9 @@ class PasswordManager
             } else {
                 $result['status'] = false;
             }
+        } else {
+            // Password is valid, no migration needed
+            $result['status'] = true;
         }
 
         return $result;

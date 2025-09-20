@@ -130,7 +130,7 @@ try {
         WHERE type = %s AND intitule = %s and valeur >= %d',
         'admin',
         'last_cron_exec',
-        time() - 600 // max 10 minutes
+        time() - (int) $SETTINGS['task_maximum_run_time'] // max 10 minutes
     );
 
     if (empty($queryResults)) {

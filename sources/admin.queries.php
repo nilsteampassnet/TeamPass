@@ -2634,6 +2634,53 @@ switch ($post_type) {
         );
 
         break;
+        
+
+    case "performSimulateUserKeyChangeDuration":
+        // Check KEY and rights
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        
+        // Get some TP USER info
+        $userInfo = DB::queryFirstRow(
+            'SELECT id, public_key, private_key, pw
+            FROM ' . prefixTable('users') . ' 
+            WHERE id = %i',
+            TP_USER_ID,
+        );
+
+        // decrypt owner password
+        $decryptedData = cryption($userInfo['pw'], '', 'decrypt', $SETTINGS);
+        $pwd = $decryptedData['string'] ?? '';
+        $userInfo['private_key'] = decryptPrivateKey($pwd, $userInfo['private_key']);
+
+        $duration = (simulateUserKeyChangeDuration($userInfo));
+        $durationWithMargin = $duration * 1.10; // add 10% margin
+
+        // Evaluate if current setting is sufficient or not
+        $isCurrentSettingSufficient = ($durationWithMargin <= (int) $SETTINGS['task_maximum_run_time']);
+        $proposedDuration = $isCurrentSettingSufficient ? 0 : ceil($durationWithMargin / 10) * 10;
+
+        echo prepareExchangedData(
+            array(
+                'estimatedTime' => round($duration, 0),
+                'proposedDuration' => $proposedDuration, // New proposed value if current setting is not sufficient
+                'currentDuration' => (int) $SETTINGS['task_maximum_run_time'], // Current setting
+                'setupProposal' => $isCurrentSettingSufficient, // true if current setting is sufficient, false otherwise
+                'error' => false,
+            ),
+            'encode'
+        );
+
+        break;
     
 }
 
@@ -3013,4 +3060,78 @@ function getAllFilesWithHashes(string $dir): array
         }
     }
     return $files;
+}
+
+/**
+ * Simulate user key change duration
+ * 
+ * This function simulates the process of changing a user's encryption key by re-encrypting
+ * a single item's share key. It estimates the total time required to re-encrypt all items
+ * for the user based on the time taken for this single operation.
+ * 
+ * @param array $userInfo Associative array containing user information:
+ *                        - 'id': User ID
+ *                        - 'public_key': User's public key
+ *                        - 'private_key': User's private key
+ * @return float|null Estimated time in seconds to re-encrypt all items, or null if no items found
+ */
+function simulateUserKeyChangeDuration($userInfo): ?float
+{
+    $startTime = microtime(true);
+    $timeExecutionEstimation = null;
+    
+    // Loop on items
+    $item = DB::queryFirstRow(
+        'SELECT i.id, i.pw, s.share_key, s.increment_id
+        FROM ' . prefixTable('items') . ' i
+        INNER JOIN ' . prefixTable('sharekeys_items') . ' s ON i.id = s.object_id
+        WHERE i.perso = %i
+            AND s.user_id = %i
+        ORDER BY RAND()
+        LIMIT 1',
+        0,
+        TP_USER_ID
+    );
+
+    if ($item !== null) {
+        // Decrypt itemkey with admin key
+        $itemKey = decryptUserObjectKey(
+            $item['share_key'],
+            $userInfo['private_key']
+        );
+        
+        // Prevent to change key if its key is empty
+        if (empty($itemKey) === true) {
+            $share_key_for_item = '';
+        } else {
+            // Encrypt Item key
+            $share_key_for_item = encryptUserObjectKey($itemKey, $userInfo['public_key']);
+        }
+
+        $duration = microtime(true) - $startTime;
+
+        // Get all items in database
+        $rows = DB::queryFirstRow(
+            'SELECT count(*) as counter
+            FROM ' . prefixTable('sharekeys_items') . ' s
+            WHERE s.user_id = %i',
+            TP_USER_ID
+        );
+        
+        $timeExecutionEstimation = round($duration * $rows['counter'], 0);
+        
+        // Update variable
+        DB::update(
+            prefixTable('misc'),
+            array(
+                'valeur' => $timeExecutionEstimation,
+                'updated_at' => time(),
+            ),
+            'type = %s AND intitule = %s',
+            'admin',
+            'task_duration_estimation'
+        );
+    }
+
+    return $timeExecutionEstimation;
 }

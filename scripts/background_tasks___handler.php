@@ -124,28 +124,6 @@ class BackgroundTasksHandler {
     }
 
     /**
-     * Save the execution time of a task in the 'misc' table.
-     * @param int $taskId The ID of the task.
-     * @param int $executionTime The execution time in seconds.
-     */
-    private function saveTaskExecutionTime(int $taskId, int $executionTime): void
-    {
-        DB::insertUpdate(
-            prefixTable('misc'),
-            [
-                'type' => 'admin',
-                'intitule' => 'task_last_time_execution',
-                'value' => $executionTime,
-                'created_at' => time(),
-            ],
-            [
-                'value' => $executionTime,
-                'updated_at' => time(),
-            ]
-        );
-    }
-
-    /**
      * Process batches of tasks.
      * This method fetches tasks from the database and processes them in parallel.
      */
@@ -199,7 +177,6 @@ class BackgroundTasksHandler {
         );
 
         // Prepare process
-        $startTime = time();
         $process = new Process([
             PHP_BINARY,
             __DIR__ . '/background_tasks___worker.php',
@@ -212,9 +189,6 @@ class BackgroundTasksHandler {
         try{
             $process->setTimeout($this->maxExecutionTime);
             $process->mustRun();
-
-            // Save execution time
-            $this->saveTaskExecutionTime($task['increment_id'], (time() - $startTime));
 
         } catch (Exception $e) {
             if (LOG_TASKS=== true) $this->logger->log('Error launching task: ' . $e->getMessage(), 'ERROR');
