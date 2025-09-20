@@ -103,9 +103,13 @@ ALTER TABLE teampass_misc ADD COLUMN updated_at VARCHAR(255) NULL DEFAULT NULL;
 
 #### Experimenting timeout in background tasks
 
-By default, a background process has a timeout defined at 300 seconds.
-This value can be adapted depending on your needs and policies.
+By default, a background process has a timeout defined at 600 seconds.
+This value can be adapted depending on your needs and policies,and server performance.
 
-* Open file `./includes/config/include.php`
-* Change the value for constant `EXTEND_TIMEOUT_TASKS_HANDLER`
-* Save
+Proceed as this:
+* Connect to MySQL database
+* Select Teampass database
+* Run next SQL queries
+```
+UPDATE `teampass_misc` SET `valeur` = '<YOUR_VALUE>' WHERE `intitule` = 'task_maximum_run_time';
+```

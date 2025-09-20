@@ -633,7 +633,7 @@ trait UserHandlerTrait {
         // Config 2: new user is an LDAP user
         // Config 3: send new password
         // COnfig 4: send new encryption code
-        if (isset($arguments['send_email']) === true && (int) $arguments['send_email'] === 1) {
+        if (isset($arguments['send_email']) === true && (int) $arguments['send_email'] === 1 && !empty($userInfo['email'])) {
             sendMailToUser(
                 filter_var($userInfo['email'], FILTER_SANITIZE_EMAIL),
                 // @scrutinizer ignore-type

@@ -2185,12 +2185,49 @@ function identifyDoInitialChecks(
         ];
     }
 
+    // Check if  migration of password hash has previously failed
+    //cleanFailedAuthRecords($userInfo);
+
     // Return some usefull information about user
     return [
         'error' => false,
         'user_mfa_mode' => $user2faSelection,
         'userInfo' => $userInfo,
     ];
+}
+
+function cleanFailedAuthRecords(array $userInfo) : void
+{
+    // Clean previous failed attempts
+    $failedTasks = DB::query(
+        'SELECT increment_id
+        FROM ' . prefixTable('background_tasks') . '
+        WHERE process_type = %s
+        AND JSON_EXTRACT(arguments, "$.new_user_id") = %i
+        AND status = %s',
+        'create_user_keys',
+        $userInfo['id'],
+        'failed'
+    );
+
+    // Supprimer chaque tâche échouée et ses sous-tâches
+    foreach ($failedTasks as $task) {
+        $incrementId = $task['increment_id'];
+
+        // Supprimer les sous-tâches associées
+        DB::delete(
+            prefixTable('background_subtasks'),
+            'sub_task_in_progress = %i',
+            $incrementId
+        );
+
+        // Supprimer la tâche principale
+        DB::delete(
+            prefixTable('background_tasks'),
+            'increment_id = %i',
+            $incrementId
+        );
+    }
 }
 
 function identifyDoLDAPChecks(

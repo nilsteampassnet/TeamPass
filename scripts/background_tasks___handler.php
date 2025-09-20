@@ -44,7 +44,7 @@ class BackgroundTasksHandler {
         $this->settings = $settings;
         $this->logger = new TaskLogger($settings, LOG_TASKS_FILE);
         $this->maxParallelTasks = $settings['max_parallel_tasks'] ?? 2;
-        $this->maxExecutionTime = $settings['task_maximum_run_time'] ?? 300;
+        $this->maxExecutionTime = $settings['task_maximum_run_time'] ?? 600;
         $this->batchSize = $settings['task_batch_size'] ?? 50;
         $this->maxTimeBeforeRemoval = isset($settings['history_duration']) ? ($settings['history_duration'] * 24 * 3600) : (15 * 24 * 3600);
     }
@@ -185,9 +185,7 @@ class BackgroundTasksHandler {
 
         // Launch process
         try{
-            if (defined('EXTEND_TIMEOUT_TASKS_HANDLER') && EXTEND_TIMEOUT_TASKS_HANDLER > 0) {
-                $process->setTimeout(EXTEND_TIMEOUT_TASKS_HANDLER);
-            }
+            $process->setTimeout($this->maxExecutionTime);
             $process->mustRun();
 
         } catch (Exception $e) {
