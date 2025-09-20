@@ -302,7 +302,9 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         $session->set('userOauth2Info', '');
 
         // Add failed authentication log
-        addFailedAuthentication($username, getClientIpServer());
+        if ($userOauth2['no_log_event'] !== true) {
+            addFailedAuthentication($username, getClientIpServer());
+        }
 
         // deepcode ignore ServerLeak: File and path are secured directly inside the function decryptFile()        
         echo prepareExchangedData(
@@ -2409,6 +2411,7 @@ function checkOauth2User(
             return [
                 'error' => true,
                 'message' => 'account_in_construction_please_wait_email',
+                'no_log_event' => true
             ];
         }
 

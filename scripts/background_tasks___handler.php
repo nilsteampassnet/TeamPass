@@ -106,7 +106,7 @@ class BackgroundTasksHandler {
                 finished_at = %i, 
                 status = "failed"
             WHERE is_in_progress = 1 
-            AND started_at < %i',
+            AND updated_at < %i',
             time(),
             time() - $this->maxExecutionTime
         );
@@ -119,6 +119,28 @@ class BackgroundTasksHandler {
             AND t.status = %s',
             time() - $this->maxTimeBeforeRemoval,
             "failed"
+        );
+    }
+
+    /**
+     * Save the execution time of a task in the 'misc' table.
+     * @param int $taskId The ID of the task.
+     * @param int $executionTime The execution time in seconds.
+     */
+    private function saveTaskExecutionTime(int $taskId, int $executionTime): void
+    {
+        DB::insertUpdate(
+            prefixTable('misc'),
+            [
+                'type' => 'admin',
+                'intitule' => 'task_last_time_execution',
+                'value' => $executionTime,
+                'created_at' => time(),
+            ],
+            [
+                'value' => $executionTime,
+                'updated_at' => time(),
+            ]
         );
     }
 
@@ -168,6 +190,7 @@ class BackgroundTasksHandler {
             [
                 'is_in_progress' => 1,
                 'started_at' => time(),
+                'updated_at' => time(),
                 'status' => 'in_progress'
             ],
             'increment_id = %i',
@@ -175,6 +198,7 @@ class BackgroundTasksHandler {
         );
 
         // Prepare process
+        $startTime = time();
         $process = new Process([
             PHP_BINARY,
             __DIR__ . '/background_tasks___worker.php',
@@ -187,6 +211,9 @@ class BackgroundTasksHandler {
         try{
             $process->setTimeout($this->maxExecutionTime);
             $process->mustRun();
+
+            // Save execution time
+            $this->saveTaskExecutionTime($task['increment_id'], (time() - $startTime));
 
         } catch (Exception $e) {
             if (LOG_TASKS=== true) $this->logger->log('Error launching task: ' . $e->getMessage(), 'ERROR');
