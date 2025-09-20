@@ -49,7 +49,6 @@ define('LOG_TO_SERVER', false);         // Defines if logs are sent to the serve
 define('OAUTH2_REDIRECTURI', 'index.php?post_type=oauth2');
 
 // Tasks Handler
-define('EXTEND_TIMEOUT_TASKS_HANDLER', 60); // In seconds, time to extend the max_execution_time for background tasks handler
 define('LOG_TASKS', false); // Can be used in order to log background tasks
 define('LOG_TASKS_FILE', '../files/teampass_tasks.log'); // By default, its is stored folder 'files', otherwize it is inside server error log. 🫸 Ensure you have the right to write in the log file
 define('TASKS_LOCK_FILE', ''); // By default, it is stored in folder 'files'. 🫸 If you change this, ensure you have the right to write in the lock file

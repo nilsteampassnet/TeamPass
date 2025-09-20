@@ -104,7 +104,8 @@ class BackgroundTasksHandler {
             'UPDATE ' . prefixTable('background_tasks') . ' 
             SET is_in_progress = -1, 
                 finished_at = %i, 
-                status = "failed"
+                status = "failed",
+                error_message = "Task exceeded maximum execution time of '.$this->maxExecutionTime.' seconds"
             WHERE is_in_progress = 1 
             AND updated_at < %i',
             time(),
@@ -115,7 +116,7 @@ class BackgroundTasksHandler {
         DB::query(
             'DELETE t, st FROM ' . prefixTable('background_tasks') . ' t
             INNER JOIN ' . prefixTable('background_subtasks') . ' st ON (t.increment_id = st.task_id)
-            WHERE t.finished_at > %i 
+            WHERE t.finished_at < %i 
             AND t.status = %s',
             time() - $this->maxTimeBeforeRemoval,
             "failed"
@@ -222,7 +223,8 @@ class BackgroundTasksHandler {
                 [
                     'is_in_progress' => -1,
                     'finished_at' => time(),
-                    'status' => 'failed'
+                    'status' => 'failed',
+                    'error_message' => is_null($e->getMessage()) ? 'Unknown error' : $e->getMessage()
                 ],
                 'increment_id = %i',
                 $task['increment_id']
