@@ -2411,6 +2411,19 @@ function checkOauth2User(
             // Check if the creation of user keys has failed
             $errorMessage = checkIfUserKeyCreationFailed((int) $userInfo['id']);
             if (!is_null($errorMessage)) {
+                // Refresh user info to permit retry
+                DB::update(
+                    prefixTable('users'),
+                    array(
+                        'is_ready_for_usage' => 0,
+                        'otp_provided' => 1,
+                        'ongoing_process_id' => NULL,
+                    ),
+                    'id = %i',
+                    $userInfo['id']
+                );
+
+                // Return error message
                 return [
                     'error' => true,
                     'message' => $errorMessage,
