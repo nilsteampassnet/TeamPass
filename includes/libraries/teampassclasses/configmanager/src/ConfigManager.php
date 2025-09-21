@@ -35,31 +35,14 @@ class ConfigManager
 {
     private $settings;
  
-    public function __construct( $rootPath = null, $rootUrl = null)
+    public function __construct()
     {
-        $this->loadConfiguration($rootPath, $rootUrl);
+        $this->loadConfiguration();
     }
  
-    private function loadConfiguration($rootPath = null, $rootUrl = null)
+    private function loadConfiguration()
     {
-        $session = SessionManager::getSession();
-
-        // Get the last modification time of a change in the settings
-        $lastModified = $this->getLastModificationTimestamp();
-
-        // Check if the settings have been loaded before and if a setting hasn't been modified since the last load
-        if ($session->has('teampass-settings') && isset($session->get('teampass-settings')['timestamp']) === true && $session->get('teampass-settings')['timestamp'] > $lastModified && is_null($lastModified) === false) {
-            $this->settings = $session->get('teampass-settings');
-        } else {
-            // Load settings from DB
-            $this->settings = $this->loadSettingsFromDB('DB');
-
-            // Add the timestamp to the settings
-            $this->settings['timestamp'] = time();
-
-            // Save the settings in the session
-            $session->set('teampass-settings', $this->settings);
-        }
+        $this->settings = $this->loadSettingsFromDB('DB');
      }
  
      public function getSetting($key)

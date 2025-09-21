@@ -2183,12 +2183,6 @@ switch ($post_type) {
             );
         }
 
-        // Update last settings change timestamp
-        // This to ensure that the settings are refreshed in the session
-        $settings = $session->get('teampass-settings');
-        $settings['timestamp'] = time();
-        $session->set('teampass-settings', $settings);
-
         // Encrypt data to return
         echo prepareExchangedData(
             array(

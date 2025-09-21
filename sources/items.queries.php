@@ -6442,9 +6442,6 @@ switch ($inputData['type']) {
             // store array to return
             $arr_data['folders'] = $arrayFolders;
 
-            // update session
-            $session->set('user-folders_list', $arr_data['folders']);
-            
             // update cache
             cacheTreeUserHandler(
                 (int) $session->get('user-id'),

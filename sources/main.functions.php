@@ -57,7 +57,7 @@ loadClasses('DB');
 $session = SessionManager::getSession();
 
 // Load config if $SETTINGS not defined
-$configManager = new ConfigManager($session);
+$configManager = new ConfigManager();
 $SETTINGS = $configManager->getAllSettings();
 
 /**
@@ -358,7 +358,6 @@ function identAdmin($idFonctions, $SETTINGS, $tree)
         array_push($groupesVisibles, $record['id']);
     }
     $session->set('user-accessible_folders', $groupesVisibles);
-    $session->set('user-all_non_personal_folders', $groupesVisibles);
 
     // get complete list of ROLES
     $tmp = explode(';', $idFonctions);
@@ -512,7 +511,6 @@ function identUser(
     $noAccessPersonalFolders = $arrays['noAccessPersonalFolders'];
 
     // Return data
-    $session->set('user-all_non_personal_folders', $allowedFolders);
     $session->set('user-accessible_folders', array_unique(array_merge($allowedFolders, $personalFolders), SORT_NUMERIC));
     $session->set('user-read_only_folders', $readOnlyFolders);
     $session->set('user-no_access_folders', $noAccessFolders);
@@ -521,15 +519,6 @@ function identUser(
     $session->set('system-list_folders_editable_by_role', $allowedFoldersByRoles, 'SESSION');
     $session->set('system-list_restricted_folders_for_items', $restrictedFoldersForItems);
     $session->set('user-forbiden_personal_folders', $noAccessPersonalFolders);
-    $session->set(
-        'all_folders_including_no_access',
-        array_unique(array_merge(
-            $allowedFolders,
-            $personalFolders,
-            $noAccessFolders,
-            $readOnlyFolders
-        ), SORT_NUMERIC)
-    );
     // Folders and Roles numbers
     DB::queryFirstRow('SELECT id FROM ' . prefixTable('nested_tree') . '');
     DB::queryFirstRow('SELECT id FROM ' . prefixTable('nested_tree') . '');
@@ -1240,7 +1229,7 @@ function prepareExchangedData($data, string $type, ?string $key = null)
         );
         
         // Now encrypt
-        if ((int) $session->get('teampass-settings')['encryptClientServer'] === 1) {
+        if ((int) $session->get('encryptClientServer') === 1) {
             $data = Encryption::encrypt(
                 $data,
                 $key
@@ -1252,7 +1241,7 @@ function prepareExchangedData($data, string $type, ?string $key = null)
 
     if ($type === 'decode' && is_array($data) === false) {
         // Decrypt if needed
-        if ((int) $session->get('teampass-settings')['encryptClientServer'] === 1) {
+        if ((int) $session->get('encryptClientServer') === 1) {
             $data = (string) Encryption::decrypt(
                 (string) $data,
                 $key
@@ -3288,16 +3277,6 @@ function loadFoldersListByCache(
             'data' => [],
         ];
     }
-
-    // Does this user has the tree structure in session?
-    // If yes then use it
-    if (count(null !== $session->get('user-folders_list') ? $session->get('user-folders_list') : []) > 0) {
-        return [
-            'state' => true,
-            'data' => json_encode($session->get('user-folders_list')[0]),
-            'extra' => 'to_be_parsed',
-        ];
-    }
     
     // Does this user has a tree cache
     $userCacheTree = DB::queryFirstRow(
@@ -3307,11 +3286,6 @@ function loadFoldersListByCache(
         $session->get('user-id')
     );
     if (empty($userCacheTree[$fieldName]) === false && $userCacheTree[$fieldName] !== '[]') {
-        SessionManager::addRemoveFromSessionAssociativeArray(
-            'user-folders_list',
-            [$userCacheTree[$fieldName]],
-            'add'
-        );
         return [
             'state' => true,
             'data' => $userCacheTree[$fieldName],

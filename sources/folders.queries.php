@@ -1029,8 +1029,6 @@ if (null !== $post_type) {
                 if ((int) $nodeInfo->personal_folder === 1) {
                     SessionManager::addRemoveFromSessionArray('user-personal_folders', [$newFolderId], 'add');
                     SessionManager::addRemoveFromSessionArray('user-personal_visible_folders', [$newFolderId], 'add');
-                } else {
-                    SessionManager::addRemoveFromSessionArray('user-all_non_personal_folders', [$newFolderId], 'add');
                 }
 
                 // If new folder should not heritate of parent rights
