@@ -79,7 +79,7 @@ class FolderManager
             return $this->errorResponse($this->lang->get('error_only_numbers_in_folder_name'));
         }
 
-        if (!$this->isParentFolderAllowed($parent_id, $user_accessible_folders, $user_is_admin, $user_can_create_root_folder)) {
+        if (!$this->isParentFolderAllowed($parent_id, $user_accessible_folders, $user_is_admin, $user_can_create_root_folder, $user_can_create_root_folder)) {
             return $this->errorResponse($this->lang->get('error_folder_not_allowed_for_this_user'));
         }
 
