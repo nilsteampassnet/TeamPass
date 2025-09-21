@@ -877,7 +877,7 @@ $zones = timezone_list();
                             </div>
                         </div>
 
-                        <div class='row mb-2 option <?php echo isset($SETTINGS['anyone_can_modify']) === true && (int) $SETTINGS['anyone_can_modify'] === '1' ? '' : 'hidden'; ?>' id="form-item-row-modify" data-keywords="role restriction modify right">
+                        <div class='row mb-2 option <?php echo isset($SETTINGS['anyone_can_modify']) === true && (int) $SETTINGS['anyone_can_modify'] === 1 ? '' : 'hidden'; ?>' id="form-item-row-modify" data-keywords="role restriction modify right">
                             <div class='col-10'>
                                 <?php echo $lang->get('settings_anyone_can_modify_bydefault'); ?>
                             </div>
@@ -895,7 +895,7 @@ $zones = timezone_list();
                             </div>
                         </div>
 
-                        <div class='row mb-2 option <?php echo isset($SETTINGS['restricted_to']) === true && (int) $SETTINGS['restricted_to'] === '1' ? '' : 'hidden'; ?>' id="form-item-row-restricted" data-keywords="role restriction">
+                        <div class='row mb-2 option <?php echo isset($SETTINGS['restricted_to']) === true && (int) $SETTINGS['restricted_to'] === 1 ? '' : 'hidden'; ?>' id="form-item-row-restricted" data-keywords="role restriction">
                             <div class='col-10'>
                                 <?php echo $lang->get('restricted_to_roles'); ?>
                             </div>
@@ -950,7 +950,7 @@ $zones = timezone_list();
                             </div>
                         </div>
 <?php
-if (isset($SETTINGS['show_description']) === true && (int) $SETTINGS['show_description'] === '1') {
+if (isset($SETTINGS['show_description']) === true && (int) $SETTINGS['show_description'] === 1) {
     ?>
                         <div class='row mb-2 option' data-keywords="display tree counter">
                             <div class='col-10'>
