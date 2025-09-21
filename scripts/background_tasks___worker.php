@@ -206,6 +206,14 @@ class TaskWorker {
 
                 if (LOG_TASKS=== true) $this->logger->log('Processing subtask: ' . $subtaskData['step'], 'DEBUG');
 
+                // Mark subtask as in progress
+                DB::update(
+                    prefixTable('background_tasks'),
+                    ['updated_at' => time()],
+                    'increment_id = %i',
+                    $this->taskId
+                );
+
                 // Process the subtask based on its type
                 switch ($subtaskData['step'] ?? '') {
                     case 'create_users_pwd_key':

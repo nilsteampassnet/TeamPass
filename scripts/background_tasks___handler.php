@@ -44,7 +44,7 @@ class BackgroundTasksHandler {
         $this->settings = $settings;
         $this->logger = new TaskLogger($settings, LOG_TASKS_FILE);
         $this->maxParallelTasks = $settings['max_parallel_tasks'] ?? 2;
-        $this->maxExecutionTime = $settings['task_maximum_run_time'] ?? 300;
+        $this->maxExecutionTime = $settings['task_maximum_run_time'] ?? 600;
         $this->batchSize = $settings['task_batch_size'] ?? 50;
         $this->maxTimeBeforeRemoval = isset($settings['history_duration']) ? ($settings['history_duration'] * 24 * 3600) : (15 * 24 * 3600);
     }
@@ -104,9 +104,10 @@ class BackgroundTasksHandler {
             'UPDATE ' . prefixTable('background_tasks') . ' 
             SET is_in_progress = -1, 
                 finished_at = %i, 
-                status = "failed"
+                status = "failed",
+                error_message = "Task exceeded maximum execution time of '.$this->maxExecutionTime.' seconds"
             WHERE is_in_progress = 1 
-            AND started_at < %i',
+            AND updated_at < %i',
             time(),
             time() - $this->maxExecutionTime
         );
@@ -115,7 +116,7 @@ class BackgroundTasksHandler {
         DB::query(
             'DELETE t, st FROM ' . prefixTable('background_tasks') . ' t
             INNER JOIN ' . prefixTable('background_subtasks') . ' st ON (t.increment_id = st.task_id)
-            WHERE t.finished_at > %i 
+            WHERE t.finished_at < %i 
             AND t.status = %s',
             time() - $this->maxTimeBeforeRemoval,
             "failed"
@@ -168,6 +169,7 @@ class BackgroundTasksHandler {
             [
                 'is_in_progress' => 1,
                 'started_at' => time(),
+                'updated_at' => time(),
                 'status' => 'in_progress'
             ],
             'increment_id = %i',
@@ -185,6 +187,7 @@ class BackgroundTasksHandler {
 
         // Launch process
         try{
+            $process->setTimeout($this->maxExecutionTime);
             $process->mustRun();
 
         } catch (Exception $e) {
@@ -194,7 +197,8 @@ class BackgroundTasksHandler {
                 [
                     'is_in_progress' => -1,
                     'finished_at' => time(),
-                    'status' => 'failed'
+                    'status' => 'failed',
+                    'error_message' => is_null($e->getMessage()) ? 'Unknown error' : $e->getMessage()
                 ],
                 'increment_id = %i',
                 $task['increment_id']

@@ -1267,5 +1267,6 @@ e new password must:<br/> - Be different from the previous one<br/> - Contain at
     'perform_file_integrity_check' => 'Perform files integrity check',
     'files_integrity_check' => 'Files integrity check',
     'import_error_folder_creation' => 'Error while creating folder',
+    'suggested_value' => 'Suggested value',
 
 );

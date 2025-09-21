@@ -283,7 +283,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
         // Perform DB integrity check
         setTimeout(
             performDBIntegrityCheck,
-            2000
+            500
         );
     });
 
@@ -517,6 +517,53 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                 // Show tooltips
                 $('.infotip').tooltip();
 
+                requestRunning = false;
+
+                performSimulateUserKeyChangeDuration();
+            }
+        );
+    }
+
+    /**
+     * Perform simulate user key change
+     */
+    function performSimulateUserKeyChangeDuration() {
+        $.post(
+            "sources/admin.queries.php", {
+                type: "performSimulateUserKeyChangeDuration",
+                key: "<?php echo $session->get('key'); ?>"
+            },
+            function(data) {
+                // Handle server answer
+                try {
+                    data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
+                } catch (e) {
+                    // error
+                    toastr.remove();
+                    toastr.error(
+                        '<?php echo $lang->get('server_answer_error') . '<br />' . $lang->get('server_returned_data') . ':<br />'; ?>' + data.error,
+                        '', {
+                            closeButton: true,
+                            positionClass: 'toast-bottom-right'
+                        }
+                    );
+                    return false;
+                }
+                
+                let html = '';
+                if (data.error === false) {
+                    if (data.setupProposal === false) {
+                        html = '<i class="fa-solid fa-circle-exclamation text-warning mr-2"></i>'
+                            + 'Estimated time to process all keys is about <b>' + data.estimatedTime + '</b> seconds.<br/>'
+                            + 'It is suggested to allow <b>' + data.proposedDuration + '</b> seconds for a background task to run.<br/>'
+                            + 'You should adapt from <a href="index.php?page=tasks">Tasks Parameters page</a>.';
+                        
+                        $('#task_duration_status')
+                            .html(html)
+                            .removeClass('hidden');
+                    }
+                }
+    
                 requestRunning = false;
             }
         );

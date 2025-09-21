@@ -236,6 +236,10 @@ catch (Exception $e) {
 <?php                        
                         }
 
+                        // Do we have a time execution defined for tasks?
+                        echo '<div class="mt-3 hidden" id="task_duration_status">
+                        </div>';
+
                         // Check DB integrity
                         echo '<div class="mt-3 hidden" id="db-integrity-check-status"><i class="fa-solid fa-circle-notch fa-spin"></i></div>';
 

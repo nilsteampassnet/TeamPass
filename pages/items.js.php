@@ -4480,7 +4480,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 if (description !== '') {
                     description = '<span class="text-secondary small d-inline-block text-truncate">' + description + '</span>';
                 }
-console.log(value);
+
                 $('#teampass_items_list').append(
                     '<tr class="list-item-row' + (value.canMove === 1 ? ' is-draggable' : '') + ((store.get('teampassApplication').highlightFavorites === 1 && value.is_favourited === 1) ? ' bg-yellow' : '') + '" id="list-item-row_' + value.item_id + '" data-item-key="' + value.item_key + '" data-item-edition="' + value.open_edit + '" data-item-id="' + value.item_id + '" data-item-sk="' + value.sk + '" data-item-expired="' + value.expired + '" data-item-rights="' + value.rights + '" data-item-display="' + value.display + '" data-item-open-edit="' + value.open_edit + '" data-item-tree-id="' + value.tree_id + '" data-is-search-result="' + value.is_result_of_search + '" data-label="' + escape(value.label) + '">' +
                     '<td class="list-item-description px-3 py-0 align-middle d-flex">' +

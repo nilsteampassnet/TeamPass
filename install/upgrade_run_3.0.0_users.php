@@ -404,6 +404,12 @@ if (null !== $post_step) {
                     $item_id = $item['id'];
                     $itemKey = $_SESSION['items_object_keys'][$item_id];
 
+                    // Ensure we have the item key
+                    if (empty($itemKey) === true && $item['share_key'] !== null) {
+                        // Decrypt itemkey with admin key
+                        $itemKey = decryptUserObjectKey($item['share_key'], $adminPrivateKey);
+                    }
+
                     // Create sharekey for user
                     $share_key_for_item = $userInfo['public_key'] !== null && $itemKey !== null ? encryptUserObjectKey($itemKey, $userInfo['public_key']) : '';
 
@@ -426,6 +432,8 @@ if (null !== $post_step) {
             } else {
                 echo '[{"finish":"0" , "next":"step3", "error":"" , "data" : "" , "number":"' . $post_number . '" , "loop_finished" : "true"}]';
             }
+
+
             
             mysqli_close($db_link);
             exit();

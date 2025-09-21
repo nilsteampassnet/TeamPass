@@ -615,6 +615,10 @@ function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived,
         'user_recovery_keys_download',
     ];
 
+    $individual_user_can_perform = [
+        'user_psk_reencryption',
+    ];
+
     // Default values
     $filtered_user_id = $session->get('user-id');
 
@@ -627,24 +631,30 @@ function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived,
         );
     
         if (
-            // Administrator user
-            (int) $session->get('user-admin') === 1
-            // Manager of basic/ro users in this role
-            || ((int) $session->get('user-manager') === 1
-                && in_array($targetUserInfos['isAdministratedByRole'], $session->get('user-roles_array'))
-                && (int) $targetUserInfos['admin'] !== 1
-                && (int) $targetUserInfos['can_manage_all_users'] !== 1
-                && (int) $targetUserInfos['gestionnaire'] !== 1)
-            // Manager of all basic/ro users
-            || ((int) $session->get('user-can_manage_all_users') === 1
-                && (int) $targetUserInfos['admin'] !== 1
-                && (int) $targetUserInfos['can_manage_all_users'] !== 1
-                && (int) $targetUserInfos['gestionnaire'] !== 1)
+            (
+                (
+                    // Administrator user
+                    (int) $session->get('user-admin') === 1
+                    // Manager of basic/ro users in this role
+                    || ((int) $session->get('user-manager') === 1
+                        && in_array($targetUserInfos['isAdministratedByRole'], $session->get('user-roles_array'))
+                        && (int) $targetUserInfos['admin'] !== 1
+                        && (int) $targetUserInfos['can_manage_all_users'] !== 1
+                        && (int) $targetUserInfos['gestionnaire'] !== 1)
+                    // Manager of all basic/ro users
+                    || ((int) $session->get('user-can_manage_all_users') === 1
+                        && (int) $targetUserInfos['admin'] !== 1
+                        && (int) $targetUserInfos['can_manage_all_users'] !== 1
+                        && (int) $targetUserInfos['gestionnaire'] !== 1)
+                ) && in_array($post_type, $all_users_can_access)
+            )
+            || (in_array($post_type, $individual_user_can_perform) && $dataReceived['user_id'] === $session->get('user-id'))
         ) {
             // This user is allowed to modify other users.
+            // Or this user is allowed to perform an action on his account.
             $filtered_user_id = $dataReceived['user_id'];
-    
-        } else if (!in_array($post_type, $all_users_can_access)) {
+
+        } else {
             // User can't manage users and requested type is administrative.
             return prepareExchangedData(
                 array(

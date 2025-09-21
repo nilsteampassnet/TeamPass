@@ -302,7 +302,9 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         $session->set('userOauth2Info', '');
 
         // Add failed authentication log
-        addFailedAuthentication($username, getClientIpServer());
+        if ($userOauth2['no_log_event'] !== true) {
+            addFailedAuthentication($username, getClientIpServer());
+        }
 
         // deepcode ignore ServerLeak: File and path are secured directly inside the function decryptFile()        
         echo prepareExchangedData(
@@ -317,17 +319,28 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     }
 
     // Check user and password
-    if ($userLdap['userPasswordVerified'] === false && $userOauth2['userPasswordVerified'] === false
-        && checkCredentials($passwordClear, $userInfo) !== true
-    ) {
+    $authResult = checkCredentials($passwordClear, $userInfo);
+    if ($userLdap['userPasswordVerified'] === false && $userOauth2['userPasswordVerified'] === false && $authResult['authenticated'] !== true) {
         // Add failed authentication log
         addFailedAuthentication($username, getClientIpServer());
-
         echo prepareExchangedData(
             [
                 'value' => '',
                 'error' => true,
-                'message' => $lang->get('error_bad_credentials'),
+                'message' => $lang->get('error_bad_credentials')."1",
+            ],
+            'encode'
+        );
+        return false;
+    }
+
+    // If user was migrated, then return error to force user to wait
+    if ($authResult['migrated'] === true && (int) $userInfo['admin'] !== 1) {
+        echo prepareExchangedData(
+            [
+                'value' => '',
+                'error' => true,
+                'message' => $lang->get('user_encryption_ongoing'),
             ],
             'encode'
         );
@@ -1345,11 +1358,14 @@ function finalizeAuthentication(
     $passwordManager = new PasswordManager();
     
     // Migrate password if needed
-    $hashedPassword = $passwordManager->migratePassword(
+    $result  = $passwordManager->migratePassword(
         $userInfo['pw'],
         $passwordClear,
         (int) $userInfo['id']
     );
+
+    // Use the new hashed password if migration was successful
+    $hashedPassword = $result['hashedPassword'];
     
     if (empty($userInfo['pw']) === true || $userInfo['special'] === 'user_added_from_ad') {
         // 2 cases are managed here:
@@ -1838,24 +1854,31 @@ function duoMFAPerform(
  * @param string                $passwordClear Password in clear
  * @param array|string          $userInfo      Array of user data
  *
- * @return bool
+ * @return arrau
  */
-function checkCredentials($passwordClear, $userInfo): bool
+function checkCredentials($passwordClear, $userInfo): array
 {
     $passwordManager = new PasswordManager();
     // Migrate password if needed
-    $passwordManager->migratePassword(
+    $result = $passwordManager->migratePassword(
         $userInfo['pw'],
         $passwordClear,
-        (int) $userInfo['id']
+        (int) $userInfo['id'],
+        (bool) $userInfo['admin']
     );
 
-    if ($passwordManager->verifyPassword($userInfo['pw'], $passwordClear) === false) {
-        // password is not correct
-        return false;
+    if ($result['status'] === false || $passwordManager->verifyPassword($result['hashedPassword'], $passwordClear) === false) {
+        // Password is not correct
+        return [
+            'authenticated' => false,
+            'migrated' => false
+        ];
     }
 
-    return true;
+    return [
+        'authenticated' => true,
+        'migrated' => $result['migratedUser']
+    ];
 }
 
 /**
@@ -2165,12 +2188,49 @@ function identifyDoInitialChecks(
         ];
     }
 
+    // Check if  migration of password hash has previously failed
+    //cleanFailedAuthRecords($userInfo);
+
     // Return some usefull information about user
     return [
         'error' => false,
         'user_mfa_mode' => $user2faSelection,
         'userInfo' => $userInfo,
     ];
+}
+
+function cleanFailedAuthRecords(array $userInfo) : void
+{
+    // Clean previous failed attempts
+    $failedTasks = DB::query(
+        'SELECT increment_id
+        FROM ' . prefixTable('background_tasks') . '
+        WHERE process_type = %s
+        AND JSON_EXTRACT(arguments, "$.new_user_id") = %i
+        AND status = %s',
+        'create_user_keys',
+        $userInfo['id'],
+        'failed'
+    );
+
+    // Supprimer chaque tâche échouée et ses sous-tâches
+    foreach ($failedTasks as $task) {
+        $incrementId = $task['increment_id'];
+
+        // Supprimer les sous-tâches associées
+        DB::delete(
+            prefixTable('background_subtasks'),
+            'sub_task_in_progress = %i',
+            $incrementId
+        );
+
+        // Supprimer la tâche principale
+        DB::delete(
+            prefixTable('background_tasks'),
+            'increment_id = %i',
+            $incrementId
+        );
+    }
 }
 
 function identifyDoLDAPChecks(
@@ -2348,14 +2408,58 @@ function checkOauth2User(
     
     } elseif (isset($userInfo['id']) === true && empty($userInfo['id']) === false) {
         // User is in construction, please wait for email
-        if (isset($userInfo['is_ready_for_usage']) && (int) $userInfo['is_ready_for_usage'] !== 1 && (int) $userInfo['ongoing_process_id'] >= 0) {
-            return [
-                'error' => true,
-                'message' => 'account_in_construction_please_wait_email',
-            ];
+        if (
+            isset($userInfo['is_ready_for_usage']) && (int) $userInfo['is_ready_for_usage'] !== 1 && 
+            $userInfo['ongoing_process_id'] !== null && (int) $userInfo['ongoing_process_id'] >= 0
+        ) {
+            // Check if the creation of user keys has failed
+            $errorMessage = checkIfUserKeyCreationFailed((int) $userInfo['id']);
+            if (!is_null($errorMessage)) {
+                // Refresh user info to permit retry
+                DB::update(
+                    prefixTable('users'),
+                    array(
+                        'is_ready_for_usage' => 1,
+                        'otp_provided' => 1,
+                        'ongoing_process_id' => NULL,
+                        'special' => 'none',
+                    ),
+                    'id = %i',
+                    $userInfo['id']
+                );
+
+                // Prepare task to create user keys again
+                handleUserKeys(
+                    (int) $userInfo['id'],
+                    (string) $passwordClear,
+                    (int) NUMBER_ITEMS_IN_BATCH,
+                    '',
+                    true,
+                    true,
+                    true,
+                    false,
+                    'email_body_user_config_4',
+                    true,
+                    '',
+                    '',
+                );
+
+                // Return error message
+                return [
+                    'error' => true,
+                    'message' => $errorMessage,
+                    'no_log_event' => true
+                ];
+            } else {
+                return [
+                    'error' => true,
+                    'message' => 'account_in_construction_please_wait_email',
+                    'no_log_event' => true
+                ];
+            }
         }
 
-        // CHeck if user should use oauth2
+        // CCheck if user should use oauth2
         $ret = shouldUserAuthWithOauth2(
             $SETTINGS,
             $userInfo,
@@ -2411,6 +2515,33 @@ function checkOauth2User(
         'ldapConnection' => false,
         'userPasswordVerified' => false,
     ];
+}
+
+/**
+ * Check if a "create_user_keys" task failed for the given user_id.
+ *
+ * @param int $userId The user ID to check.
+ * @return string|null Returns an error message in English if a failed task is found, otherwise null.
+ */
+function checkIfUserKeyCreationFailed(int $userId): ?string
+{
+    // Find the latest "create_user_keys" task for the given user_id
+    $latestTask = DB::queryFirstRow(
+        'SELECT arguments, status FROM ' . prefixTable('background_tasks') . '
+        WHERE process_type = %s
+        AND arguments LIKE %s
+        ORDER BY increment_id DESC
+        LIMIT 1',
+        'create_user_keys', '%"new_user_id":' . $userId . '%'
+    );
+
+    // If a failed task is found, return an error message
+    if ($latestTask && $latestTask['status'] === 'failed') {
+        return "The creation of user keys for user ID {$userId} failed. Please contact your administrator to check the background tasks log for more details.";
+    }
+
+    // No failed task found for this user_id
+    return null;
 }
 
 
