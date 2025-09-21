@@ -2668,6 +2668,7 @@ switch ($post_type) {
         // Evaluate if current setting is sufficient or not
         $isCurrentSettingSufficient = ($durationWithMargin <= (int) $SETTINGS['task_maximum_run_time']);
         $proposedDuration = $isCurrentSettingSufficient ? 0 : ceil($durationWithMargin / 10) * 10;
+        $session->set('background_task_duration_proposed', $proposedDuration);
 
         echo prepareExchangedData(
             array(

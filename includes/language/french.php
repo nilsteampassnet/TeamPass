@@ -1267,5 +1267,6 @@ return array(
     'perform_file_integrity_check' => 'Vérifier l&apos;intégrité des fichiers',
     'files_integrity_check' => 'Vérification de l&apos;intégrité des fichiers',
     'import_error_folder_creation' => 'Erreur durant la création du répertoire',
+    'suggested_value' => 'Valeur suggérée',
 
 );

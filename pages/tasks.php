@@ -164,7 +164,26 @@ catch (Exception $e) {
 }?>
                                     </div>
 
-                                    <h5><i class="fa-solid fa-hourglass-half mr-2"></i><?php echo $lang->get('frequency'); ?><i class="fa-solid fa-rotate fa-spin ml-2 hidden text-info" id="go_refresh"></i></h5>
+                                    <div class='row mb-3 option'>
+                                        <div class='col-10'>
+                                        <h5>
+                                            <i class="fa-solid fa-hourglass-start mr-2"></i><?php echo $lang->get('maximum_time_script_allowed_to_run'); ?>
+                                            <?php
+                                            if ($session->get('background_task_duration_proposed') !== null && (int) $session->get('background_task_duration_proposed') > (int) $SETTINGS['task_maximum_run_time']) {
+                                                echo "<span class='badge bg-warning text-dark'><i class='fa-solid fa-info mr-2'></i>".$lang->get('suggested_value').": <b>".(int) $session->get('background_task_duration_proposed')."</b> ".$lang->get('seconds')."</span>";
+                                            }
+                                            ?>
+                                        </h5>
+                                            <small id='passwordHelpBlock' class='form-text text-muted'>
+                                                <?php echo $lang->get('maximum_time_script_allowed_to_run_tip'); ?>
+                                            </small>
+                                        </div>
+                                        <div class='col-2'>
+                                            <input type='number' class='form-control form-control-sm' id='task_maximum_run_time' value='<?php echo isset($SETTINGS['task_maximum_run_time']) === true ? $SETTINGS['task_maximum_run_time'] : 600; ?>'>
+                                        </div>
+                                    </div>
+
+                                    <h5><i class="fa-solid fa-calendar-check mr-2"></i><?php echo $lang->get('frequency'); ?><i class="fa-solid fa-rotate fa-spin ml-2 hidden text-info" id="go_refresh"></i></h5>
 
                                     <div class='row ml-1 mb-2'>
                                         <div class='col-9'>
@@ -292,18 +311,6 @@ catch (Exception $e) {
                                         </div>
                                         <div class='col-2'>
                                             <input type='number' class='form-control form-control-sm' id='tasks_history_delay' value='<?php echo isset($SETTINGS['tasks_history_delay']) === true ? ((int) $SETTINGS['tasks_history_delay'] / 24 / 3600) : 604800; ?>'>
-                                        </div>
-                                    </div>
-
-                                    <div class='row mb-3 option'>
-                                        <div class='col-10'>
-                                        <h5><i class="fa-solid fa-hourglass-start mr-2"></i><?php echo $lang->get('maximum_time_script_allowed_to_run'); ?></h5>
-                                            <small id='passwordHelpBlock' class='form-text text-muted'>
-                                                <?php echo $lang->get('maximum_time_script_allowed_to_run_tip'); ?>
-                                            </small>
-                                        </div>
-                                        <div class='col-2'>
-                                            <input type='number' class='form-control form-control-sm' id='task_maximum_run_time' value='<?php echo isset($SETTINGS['task_maximum_run_time']) === true ? $SETTINGS['task_maximum_run_time'] : 600; ?>'>
                                         </div>
                                     </div>
 

@@ -1265,6 +1265,7 @@ return array(
     'files_are_not_expected_ones' => 'Los archivos no coinciden con los esperados',
     'perform_file_integrity_check' => 'Realizar comprobación de integridad de archivos',
     'files_integrity_check' => 'Comprobación de integridad de archivos',
-    'import_error_folder_creation' => 'Error while creating folder',
+    'import_error_folder_creation' => 'Error al crear la carpeta',
+    'suggested_value' => 'Suggested value',
 
 );
