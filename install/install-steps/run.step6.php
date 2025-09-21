@@ -511,7 +511,7 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
             if ($phpLocation['error'] === true) {
                 return [
                     'success' => false,
-                    'message' => "Unable to locate PHP binary. Error: " . $phpLocation['message'],
+                    'message' => "Unable to locate PHP binary. Error: " . ($phpLocation['message'] ?? 'Unknown error'),
                 ];
             }
 
