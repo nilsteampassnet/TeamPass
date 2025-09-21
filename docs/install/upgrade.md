@@ -31,12 +31,13 @@ git pull
 * Run all steps
 
 
-## Upgrading from 2.x branch
+## Upgrading from 2.x or 3.0.x branch
 
 > You want to upgrade to Teampass v3 branch
 
 ### Prerequisites
 
+* Set your Teampass instance in `Maintenance`
 * Your current Teampass instance is 2.1.27.36.
 * Perform a database backup
 * Save the main folder
@@ -69,6 +70,18 @@ git pull
 * In file `/includes/config/settings.php` change the value in `define("DB_ENCODING", "")` to `"utf8"`
 * In file `/includes/config/settings.php` add `define('SECUREFILE', 'teampass-seckey.txt');`
 * Browse to `Teampass`
+
+#### How it works?
+
+Password encryption library has changed since older releases.
+So when login for the 1st time, it is requested to migrate all items keys to the new encryption library. This is done on 1st login attempt.
+Also the background task system has changed and its maximum time execution needs to be adapted to the volume of items your instance has and also the performance of the server.
+
+It is *requested* to migrate first the `Admin` in order to adapt the maximum time execution value for background tasks and also some other parameters you may want to adapt.
+
+Once authenticated with `Admin` account, check the Tasks parameters page. If the maximum time execution value for background tasks is expected too low, you should see a warning with a suggested value. Notice, this suggested value is calculated on the fly and might vary each time you load the page. Any how, you should define a value slightly higher.
+
+The impact is that if the background task does not have enougth time to finish its purpose, your users could not authenticate.
 
 ### Known issues
 
