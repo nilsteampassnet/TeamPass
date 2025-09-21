@@ -493,7 +493,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 'complexity': $('#form-complexity-list').val() === null ? 0 : $('#form-complexity-list').val(),
                 'folderId': $('#roles-list').find(':selected').val(),
                 'allowEdit': $('#form-role-privilege').is(":checked") === true ? 1 : 0,
-                'action': store.get('teampassApplication').formUserAction
+                'action': storeSession.get('teampassApplication').formUserAction
             }
             var oldLabel = selectedFolderText;
             console.log(data);
@@ -521,7 +521,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             }
                         );
                     } else {
-                        if (store.get('teampassApplication').formUserAction === 'edit_role') {
+                        if (storeSession.get('teampassApplication').formUserAction === 'edit_role') {
                             // Adapt card header
                             $('#role-detail-header').html(
                                 $('#form-role-label').val() +
@@ -585,7 +585,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 }
 
                 // What type of form? Edit or new user
-                store.update(
+                storeSession.update(
                     'teampassApplication',
                     function(teampassApplication) {
                         teampassApplication.formUserAction = 'edit_role';
@@ -631,7 +631,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             $("#form-complexity-list").val('').trigger('change');
 
             // What type of form? Edit or new user
-            store.update(
+            storeSession.update(
                 'teampassApplication',
                 function(teampassApplication) {
                     teampassApplication.formUserAction = 'add_role';
@@ -912,7 +912,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     $.each(data.teampass_groups, function(i, role) {
                         rolesSelectOptions += '<option value="' + role.id + '">' + role.title + '</option>';
                     });
-                    store.update(
+                    storeSession.update(
                         'teampassApplication',
                         function(teampassApplication) {
                             teampassApplication.rolesSelectOptions = rolesSelectOptions;
@@ -952,7 +952,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             '<div class="form-group ml-2 mt-2"><?php echo $lang->get('select_adgroup_mapping'); ?></div>' +
             '<div class="form-group ml-2">' +
             '<select class="select-role form-control form-item-control">' +
-                store.get('teampassApplication').rolesSelectOptions + '</select>' +
+                storeSession.get('teampassApplication').rolesSelectOptions + '</select>' +
             '</div>' +
             '<div class="card-footer">' +
             '<button type="button" class="btn btn-warning tp-action" data-action="do-adgroup-role-mapping" data-id="' + groupId + '"><?php echo $lang->get('submit'); ?></button>' +

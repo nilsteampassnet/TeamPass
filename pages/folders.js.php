@@ -471,7 +471,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
                     // store list of folders
 
-                    store.update(
+                    storeSession.update(
                         'teampassApplication',
                         function(teampassApplication) {
                             teampassApplication.foldersSelect = foldersSelect;
@@ -484,7 +484,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         complexity += '<option value="' + option.value + '">' + option.text + '</option>';
                     });
 
-                    store.update(
+                    storeSession.update(
                         'teampassApplication',
                         function(teampassApplication) {
                             teampassApplication.complexityOptions = complexity;
@@ -688,11 +688,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             '</div>' +
             '<div class="form-group ml-2">' +
             '<label for="folder-edit-parent"><?php echo $lang->get('parent'); ?></label><br>' +
-            '<select id="folder-edit-parent" class="form-control form-item-control select2 clear-me">' + store.get('teampassApplication').foldersSelect + '</select>' +
+            '<select id="folder-edit-parent" class="form-control form-item-control select2 clear-me">' + storeSession.get('teampassApplication').foldersSelect + '</select>' +
             '</div>' +
             '<div class="form-group ml-2">' +
             '<label for="folder-edit-complexity"><?php echo $lang->get('password_minimal_complexity_target'); ?></label><br>' +
-            '<select id="folder-edit-complexity" class="form-control form-item-control select2 clear-me">' + store.get('teampassApplication').complexityOptions + '</select>' +
+            '<select id="folder-edit-complexity" class="form-control form-item-control select2 clear-me">' + storeSession.get('teampassApplication').complexityOptions + '</select>' +
             '</div>' +
             '<div class="form-group ml-2">' +
             '<label for="folder-edit-renewal"><?php echo $lang->get('renewal_delay'); ?></label>' +

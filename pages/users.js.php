@@ -311,9 +311,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         if ($('#warningModal-button-user-pwd').length === 0) {
             return false;
         } 
-        //console.log('send email for '+store.get('teampassUser').admin_new_user_temporary_encryption_code)
-        //console.log(store.get('teampassUser'))
-        //console.log(store.get('teampassApplication'))
 
         showModalDialogBox(
             '#warningModal',
@@ -327,7 +324,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         );
 
         // Prepare data
-        if (store.get('teampassApplication').formUserAction === "add_new_user") {
+        if (storeSession.get('teampassApplication').formUserAction === "add_new_user") {
             var data = {
                 'receipt': $('#form-email').val(),
                 'subject': 'TEAMPASS - <?php echo $lang->get('temporary_encryption_code');?>',
@@ -418,7 +415,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
                             // Remove action from store
                             if (debugJavascript === true) console.log('Clear Store variables')
-                            store.update(
+                            storeSession.update(
                                 'teampassApplication',
                                 function(teampassApplication) {
                                     teampassApplication.formUserAction = '',
@@ -622,7 +619,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 '<i class="fa-solid fa-envelope-open-text fa-lg warning mr-2"></i><?php echo $lang->get('information'); ?>',
                 '<i class="fa-solid fa-info-circle mr-2"></i><?php echo $lang->get('send_user_password_by_email'); ?>'+
                 '<div class="row">'+
-                    (store.get('teampassApplication').formUserAction === "add_new_user" ?
+                    (storeSession.get('teampassApplication').formUserAction === "add_new_user" ?
                     '<div class="col-lg-2"><button type="button" class="btn btn-block btn-secondary mr-2"  id="warningModal-button-user-pwd"><?php echo $lang->get('show_user_password'); ?></button></div>'+
                     '<div class="col-lg-4 hidden" id="warningModal-user-pwd"><div><?php echo $lang->get('user_password'); ?><input class="form-control form-item-control" value="'+store.get('teampassUser').admin_new_user_password+'"></div>'+
                     '<div><?php echo $lang->get('user_temporary_encryption_code'); ?><input class="form-control form-item-control" value="'+store.get('teampassUser').admin_new_user_temporary_encryption_code+'"></div></div>'
@@ -693,7 +690,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             $('#form-create-special-folder').iCheck('disable');
 
             // Personal folder
-            if (store.get('teampassSettings').enable_pf_feature === '1') {
+            if (storeSession.get('teampassSettings').enable_pf_feature === '1') {
                 $('#form-create-personal-folder')
                     .iCheck('enable')
                     .iCheck('check');
@@ -702,7 +699,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             }
             
             // MFA enabled
-            if (store.get('teampassSettings').duo === '1' || store.get('teampassSettings').google_authentication === '1') {
+            if (storeSession.get('teampassSettings').duo === '1' || storeSession.get('teampassSettings').google_authentication === '1') {
                 $('#form-create-mfa-enabled')
                     .iCheck('enable')
                     .iCheck('check');
@@ -713,7 +710,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             }
 
             // What type of form? Edit or new user
-            store.update(
+            storeSession.update(
                 'teampassApplication',
                 function(teampassApplication) {
                     teampassApplication.formUserAction = 'add_new_user';
@@ -731,7 +728,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             $('.form-check-input').iCheck('enable');
 
             // Personal folder
-            if (parseInt(store.get('teampassSettings').enable_pf_feature) === 0) {
+            if (parseInt(storeSession.get('teampassSettings').enable_pf_feature) === 0) {
                 $('#form-create-personal-folder').iCheck('disable');
             }
 
@@ -744,7 +741,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
             // What type of form? Edit or new user
             var userID = $(this).data('id');
-            store.update(
+            storeSession.update(
                 'teampassApplication',
                 function(teampassApplication) {
                     teampassApplication.formUserAction = 'store_user_changes',
@@ -968,7 +965,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
                 //prepare data
                 var data = {
-                    'user_id': store.get('teampassApplication').formUserId,
+                    'user_id': storeSession.get('teampassApplication').formUserId,
                     'login': purifyRes.arrFields['login'],
                     'name': purifyRes.arrFields['name'],
                     'lastname': purifyRes.arrFields['lastname'],
@@ -991,13 +988,13 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 };
                 if (debugJavascript === true) {
                     console.log(data);
-                    console.log(store.get('teampassApplication').formUserAction);
+                    console.log(storeSession.get('teampassApplication').formUserAction);
                 }                
-                var formUserId = store.get('teampassApplication').formUserId;
+                var formUserId = storeSession.get('teampassApplication').formUserId;
                 
                 $.post(
                     'sources/users.queries.php', {
-                        type: store.get('teampassApplication').formUserAction,
+                        type: storeSession.get('teampassApplication').formUserAction,
                         data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
                         key: "<?php echo $session->get('key'); ?>"
                     },
@@ -1015,7 +1012,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                     progressBar: true
                                 }
                             );
-                        } else if (store.get('teampassApplication').formUserAction === 'add_new_user') {
+                        } else if (storeSession.get('teampassApplication').formUserAction === 'add_new_user') {
                             // Inform user
                             toastr.remove();
                             toastr.success(
@@ -1053,7 +1050,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         $('.form-check-input').iCheck('uncheck');
 
                         // Remove action from store
-                        store.update(
+                        storeSession.update(
                             'teampassApplication',
                             function(teampassApplication) {
                                 teampassApplication.formUserAction = '',
@@ -1082,7 +1079,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             $('.form-check-input').iCheck('uncheck');
 
             // Remove action from store
-            store.update(
+            storeSession.update(
                 'teampassApplication',
                 function(teampassApplication) {
                     teampassApplication.formUserAction = '',
@@ -1622,7 +1619,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             .iCheck('uncheck');
 
                         // Remove action from store
-                        store.update(
+                        storeSession.update(
                             'teampassApplication',
                             function(teampassApplication) {
                                 teampassApplication.formUserAction = '',
@@ -2172,7 +2169,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         group;
                     var entry;
                     $.each(data.entries, function(i, entry) {
-                        userLogin = entry[store.get('teampassSettings').ldap_user_attribute] !== undefined ? entry[store.get('teampassSettings').ldap_user_attribute][0] : '';
+                        userLogin = entry[storeSession.get('teampassSettings').ldap_user_attribute] !== undefined ? entry[storeSession.get('teampassSettings').ldap_user_attribute][0] : '';
                         // CHeck if not empty
                         if (userLogin !== '') {
                             html += '<tr>' +

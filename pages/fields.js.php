@@ -794,15 +794,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             }
                         });
 
-                        /*// Store some values
-                        store.update(
-                            'teampassApplication',
-                            function(teampassApplication)
-                            {
-                                teampassApplication.numberOfCategories = positionCategory + 1;
-                            }
-                        );*/
-
                         $('.overlay').addClass('hidden');
 
                         // Display

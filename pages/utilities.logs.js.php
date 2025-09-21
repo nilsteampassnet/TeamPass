@@ -97,7 +97,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             logData: 'connections',
         }
     );
-    store.update(
+    storeSession.update(
         'teampassApplication',
         function(teampassApplication) {
             teampassApplication.logData = 'connections';
@@ -110,7 +110,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     $('a[data-toggle="tab"]').on('shown.bs.tab', function(e) {
         $('#selector-purge-action option[value="all"]').prop('selected', true);
         if (e.target.hash === '#connections') {
-            store.update(
+            storeSession.update(
                 'teampassApplication',
                 function(teampassApplication) {
                     teampassApplication.logData = 'connections';
@@ -118,7 +118,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             );
             $('#selector-purge-action').addClass('hidden');
         } else if (e.target.hash === '#failed') {
-            store.update(
+            storeSession.update(
                 'teampassApplication',
                 function(teampassApplication) {
                     teampassApplication.logData = 'failed';
@@ -127,7 +127,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             $('#selector-purge-action').addClass('hidden');
             showFailed();
         } else if (e.target.hash === '#errors') {
-            store.update(
+            storeSession.update(
                 'teampassApplication',
                 function(teampassApplication) {
                     teampassApplication.logData = 'errors';
@@ -136,7 +136,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             $('#selector-purge-action').addClass('hidden');
             showErrors();
         } else if (e.target.hash === '#copy') {
-            store.update(
+            storeSession.update(
                 'teampassApplication',
                 function(teampassApplication) {
                     teampassApplication.logData = 'copy';
@@ -145,7 +145,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             $('#selector-purge-action').addClass('hidden');
             showCopy();
         } else if (e.target.hash === '#admin') {
-            store.update(
+            storeSession.update(
                 'teampassApplication',
                 function(teampassApplication) {
                     teampassApplication.logData = 'admin';
@@ -154,7 +154,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             $('#selector-purge-action').addClass('hidden');
             showAdmin();
         } else if (e.target.hash === '#items') {
-            store.update(
+            storeSession.update(
                 'teampassApplication',
                 function(teampassApplication) {
                     teampassApplication.logData = 'items';
@@ -560,7 +560,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
             // Prepare data
             var data = {
-                'dataType': store.get('teampassApplication').logData,
+                'dataType': storeSession.get('teampassApplication').logData,
                 'dateStart': dateRangeStart,
                 'dateEnd': dateRangeEnd,
                 'filter_user': $('#purge-filter-user').val(),
@@ -588,20 +588,20 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             }
                         );
                     } else {
-                        //console.log(store.get('teampassApplication').logData);
+                        //console.log(storeSession.get('teampassApplication').logData);
                         $('#checkbox-purge-confirm').iCheck('uncheck');
                         // Reload table
-                        if (store.get('teampassApplication').logData === 'errors') {
+                        if (storeSession.get('teampassApplication').logData === 'errors') {
                             oTableErrors.api().ajax.reload();
-                        } else if (store.get('teampassApplication').logData === 'admin') {
+                        } else if (storeSession.get('teampassApplication').logData === 'admin') {
                             oTableAdmin.api().ajax.reload();
-                        } else if (store.get('teampassApplication').logData === 'connections') {
+                        } else if (storeSession.get('teampassApplication').logData === 'connections') {
                             oTableConnections.api().ajax.reload();
-                        } else if (store.get('teampassApplication').logData === 'failed') {
+                        } else if (storeSession.get('teampassApplication').logData === 'failed') {
                             oTableFailed.api().ajax.reload();
-                        } else if (store.get('teampassApplication').logData === 'items') {
+                        } else if (storeSession.get('teampassApplication').logData === 'items') {
                             oTableItems.ajax.reload();
-                        } else if (store.get('teampassApplication').logData === 'copy') {
+                        } else if (storeSession.get('teampassApplication').logData === 'copy') {
                             oTableCopy.api().ajax.reload();
                         }
                     }

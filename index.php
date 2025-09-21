@@ -1210,6 +1210,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
     <!-- Toastr -->
     <script type="text/javascript" src="plugins/toastr/toastr.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
     <!-- STORE.JS -->
+    <script type="text/javascript" src="plugins/store.js/dist/store.everything.session.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
     <script type="text/javascript" src="plugins/store.js/dist/store.everything.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
     <!-- cryptojs-aesphp -->
     <script type="text/javascript" src="includes/libraries/cryptojs/crypto-js.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
