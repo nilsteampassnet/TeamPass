@@ -4478,3 +4478,48 @@ function safeString($value, string $default = ''): string
     // Cas par défaut
     return $default;
 }
+
+/**
+ * Check if a user has access to a file
+ *
+ * @param integer $userId
+ * @param integer $fileId
+ * @return boolean
+ */
+function userHasAccessToFile(int $userId, int $fileId): bool
+{
+    // Check if user is admin
+    // Refuse access if user does not exist and/or is admin
+    $user = DB::queryFirstRow(
+        'SELECT admin
+        FROM ' . prefixTable('users') . '
+        WHERE id = %i',
+        $userId
+    );
+    if (DB::count() === 0 || (int) $user['admin'] === 1) {
+        return false;
+    }
+
+    // Get file info
+    $file = DB::queryFirstRow(
+        'SELECT f.id_item, i.id_tree
+        FROM ' . prefixTable('files') . ' as f
+        INNER JOIN ' . prefixTable('items') . ' AS i ON i.id = f.id_item
+        WHERE f.id = %i',
+        $fileId
+    );
+    if (DB::count() === 0) {
+        return false;
+    }
+
+    // Check if user has access to the item
+    include_once __DIR__. '/items.queries.php';
+    $itemAccess = getCurrentAccessRights(
+        (int) filter_var($userId, FILTER_SANITIZE_NUMBER_INT),
+        (int) filter_var($file['id_item'], FILTER_SANITIZE_NUMBER_INT),
+        (int) filter_var($file['id_tree'], FILTER_SANITIZE_NUMBER_INT),
+        (string) filter_var('show', FILTER_SANITIZE_SPECIAL_CHARS),
+    );
+
+    return $itemAccess['access'] === true;
+}

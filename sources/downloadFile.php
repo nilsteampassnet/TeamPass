@@ -123,7 +123,16 @@ header('Content-Type: application/octet-stream');
 header('Cache-Control: must-revalidate, no-cache, no-store');
 header('Expires: 0');
 if (null !== $request->query->get('pathIsFiles') && (int) $get_pathIsFiles === 1) {
-    readfile($SETTINGS['path_to_files_folder'] . '/' . basename($get_filename));
+    $filepath = $SETTINGS['path_to_files_folder'] . '/' . basename($get_filename);
+    
+    // Check if the file exists and is within the allowed directory
+    if (!userHasAccessToFile($session->get('user-id'), $get_fileid)) {
+        echo 'ERROR_Not_allowed';
+        exit;
+    }
+    
+    // Propose the file for download
+    readfile($filepath);
 } else {
     // get file key
     $file_info = DB::queryFirstRow(
@@ -188,7 +197,7 @@ if (null !== $request->query->get('pathIsFiles') && (int) $get_pathIsFiles === 1
         } else {
             // $fileContent is not a string
             echo 'ERROR_No_file_found';
-        exit;
+            exit;
         }
         exit;
     } else {
