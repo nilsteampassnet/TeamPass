@@ -335,7 +335,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     }
 
     // If user was migrated, then return error to force user to wait
-    if ($authResult['migrated'] === true) {
+    if ($authResult['migrated'] === true && (int) $userInfo['admin'] !== 1) {
         echo prepareExchangedData(
             [
                 'value' => '',
