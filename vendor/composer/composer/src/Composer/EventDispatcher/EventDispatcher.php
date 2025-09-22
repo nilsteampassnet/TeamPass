@@ -309,7 +309,12 @@ class EventDispatcher
                     }
                     $app->setAutoExit(false);
                     $cmd = new $className($event->getName());
-                    $app->add($cmd);
+                    if (method_exists($app, 'addCommand')) {
+                        $app->addCommand($cmd);
+                    } else {
+                        // Compatibility layer for symfony/console <7.4
+                        $app->add($cmd);
+                    }
                     $app->setDefaultCommand((string) $cmd->getName(), true);
                     try {
                         $args = implode(' ', array_map(static function ($arg) { return ProcessExecutor::escape($arg); }, $additionalArgs));
@@ -479,7 +484,7 @@ class EventDispatcher
             throw new \RuntimeException('Failed to locate PHP binary to execute '.$phpPath);
         }
         $phpArgs = $finder->findArguments();
-        $phpArgs = $phpArgs ? ' ' . implode(' ', $phpArgs) : '';
+        $phpArgs = \count($phpArgs) > 0 ? ' ' . implode(' ', $phpArgs) : '';
         $allowUrlFOpenFlag = ' -d allow_url_fopen=' . ProcessExecutor::escape(ini_get('allow_url_fopen'));
         $disableFunctionsFlag = ' -d disable_functions=' . ProcessExecutor::escape(ini_get('disable_functions'));
         $memoryLimitFlag = ' -d memory_limit=' . ProcessExecutor::escape(ini_get('memory_limit'));

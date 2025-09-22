@@ -183,6 +183,8 @@ class Ldap implements LdapInterface
         }
 
         $this->bound = false;
+        $this->secure = false;
+
         $this->host = null;
         $this->protocol = null;
         $this->connection = null;

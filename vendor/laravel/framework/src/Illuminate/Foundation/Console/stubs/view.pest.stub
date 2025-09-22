@@ -1,9 +1,0 @@
-<?php
-
-it('can render', function () {
-    $contents = $this->view('{{ name }}', [
-        //
-    ]);
-
-    $contents->assertSee('');
-});
