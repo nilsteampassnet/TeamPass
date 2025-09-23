@@ -231,8 +231,6 @@ class DOMTreeBuilder implements EventHandler
      *
      * This is used for handling Processor Instructions as they are
      * inserted. If omitted, PI's are inserted directly into the DOM tree.
-     *
-     * @param InstructionProcessor $proc
      */
     public function setInstructionProcessor(InstructionProcessor $proc)
     {

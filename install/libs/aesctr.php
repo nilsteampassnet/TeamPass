@@ -252,6 +252,7 @@ class aesctr extends Aes
         for ($i = 0; $i < $nBytes; $i++) {
             $pwBytes[$i] = ord(substr($password, $i, 1)) & 0xff;
         }
+        /** @var int[] $key */
         $key = Aes::cipher($pwBytes, Aes::keyExpansion($pwBytes));
         $key = array_merge($key, array_slice($key, 0, $nBytes - 16)); // expand key to 16/24/32 bytes long
 
@@ -332,6 +333,7 @@ class aesctr extends Aes
         for ($i = 0; $i < $nBytes; $i++) {
             $pwBytes[$i] = ord(substr($password, $i, 1)) & 0xff;
         }
+        /** @var int[] $key */
         $key = Aes::cipher($pwBytes, Aes::keyExpansion($pwBytes));
         $key = array_merge($key, array_slice($key, 0, $nBytes - 16)); // expand key to 16/24/32 bytes long
 

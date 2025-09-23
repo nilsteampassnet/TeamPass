@@ -382,7 +382,7 @@ EOF;
             }
         }
         if (\count($ambiguousClasses) > 0) {
-            $this->io->writeError('<info>To resolve ambiguity in classes not under your control you can ignore them by path using <href='.OutputFormatter::escape('https://getcomposer.org/doc/04-schema.md#exclude-files-from-classmaps').'>exclude-files-from-classmap</>');
+            $this->io->writeError('<info>To resolve ambiguity in classes not under your control you can ignore them by path using <href='.OutputFormatter::escape('https://getcomposer.org/doc/04-schema.md#exclude-files-from-classmaps').'>exclude-from-classmap</>');
         }
 
         // output PSR violations which are not coming from the vendor dir
@@ -494,11 +494,24 @@ EOF;
         if (file_exists($dir)) {
             // transform $dir in the same way that exclude-from-classmap patterns are transformed so we can match them against each other
             $dirMatch = preg_quote(strtr(realpath($dir), '\\', '/'));
+            // also match against the non-realpath version for symlinks
+            $fs = new Filesystem();
+            $absDir = $fs->isAbsolutePath($dir) ? $dir : realpath(Platform::getCwd()).'/'.$dir;
+            $dirMatchNormalized = preg_quote(strtr($fs->normalizePath($absDir), '\\', '/'));
+            $isSymlink = $dirMatch !== $dirMatchNormalized;
+
             foreach ($excluded as $index => $pattern) {
                 // extract the constant string prefix of the pattern here, until we reach a non-escaped regex special character
                 $pattern = Preg::replace('{^(([^.+*?\[^\]$(){}=!<>|:\\\\#-]+|\\\\[.+*?\[^\]$(){}=!<>|:#-])*).*}', '$1', $pattern);
                 // if the pattern is not a subset or superset of $dir, it is unrelated and we skip it
-                if (0 !== strpos($pattern, $dirMatch) && 0 !== strpos($dirMatch, $pattern)) {
+                if (
+                    (!str_starts_with($pattern, $dirMatch) && !str_starts_with($dirMatch, $pattern))
+                    && (
+                        // only check dirMatchNormalized if it is actually different from dirMatch otherwise there is no point
+                        !$isSymlink
+                        || (!str_starts_with($pattern, $dirMatchNormalized) && !str_starts_with($dirMatchNormalized, $pattern))
+                    )
+                ) {
                     unset($excluded[$index]);
                 }
             }
@@ -937,9 +950,8 @@ if (\$issues) {
             echo 'Composer detected issues in your platform:' . PHP_EOL.PHP_EOL . str_replace('You are running '.PHP_VERSION.'.', '', implode(PHP_EOL, \$issues)) . PHP_EOL.PHP_EOL;
         }
     }
-    trigger_error(
-        'Composer detected issues in your platform: ' . implode(' ', \$issues),
-        E_USER_ERROR
+    throw new \RuntimeException(
+        'Composer detected issues in your platform: ' . implode(' ', \$issues)
     );
 }
 

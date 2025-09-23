@@ -542,7 +542,7 @@ if (null !== $post_type) {
                 $prev_path = '';
 
                 //Prepare the PDF file
-                include $SETTINGS['cpassman_dir'] . '/vendor/tecnickcom/tcpdf/tcpdf.php';
+                require_once $SETTINGS['cpassman_dir'] . '/vendor/tecnickcom/tcpdf/tcpdf.php';
 
                 $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
                 $pdf->SetProtection(array('print'), $dataReceived['pdf_password'], null);
@@ -881,21 +881,12 @@ if (null !== $post_type) {
                 foreach ($rows as $record) {
                     // decrypt PW
                     if (isHex($record['pw']) === true) {
-                        if (empty($post_salt_key) === false && null !== $post_salt_key) {
-                            $pw = cryption(
-                                $record['pw'],
-                                mysqli_escape_string($link, stripslashes($post_salt_key)),
-                                'decrypt',
-                                $SETTINGS
-                            );
-                        } else {
-                            $pw = cryption(
-                                $record['pw'],
-                                '',
-                                'decrypt',
-                                $SETTINGS
-                            );
-                        }
+                        $pw = cryption(
+                            $record['pw'],
+                            '',
+                            'decrypt',
+                            $SETTINGS
+                        );
                     } else {
                         $pw = $record['pw'];
                     }
@@ -1162,22 +1153,6 @@ if (null !== $post_type) {
 }
 
 //SPECIFIC FUNCTIONS FOR FPDF
-
-/**
- * Should we incloude  apage break in pdf.
- *
- * @param int $height Height of cell to add
- */
-function checkPageBreak($height)
-{
-    /** @var FPDF $pdf */
-    global $pdf;
-    //Continue on a new page if needed
-    if ($pdf->GetY() + $height > $pdf->PageBreakTrigger) {
-        $pdf->addPage($pdf->CurOrientation);
-    }
-}
-
 
 /**
  * Converts an array to CSV format.

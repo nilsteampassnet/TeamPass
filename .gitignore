@@ -42,3 +42,4 @@ tp_minor_release.txt
 phpstan.neon
 /_things/*
 /files/teampass_tasks.log
+/_stubs/*

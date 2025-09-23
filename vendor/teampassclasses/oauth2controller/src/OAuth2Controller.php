@@ -215,7 +215,7 @@ class OAuth2Controller
             ]);
 
             if ($this->provider instanceof Azure) {
-                // Appel API Graph pour récupérer les utilisateurs
+                // Call Graph API to retrieve users
                 $graphUrl = 'https://graph.microsoft.com/v1.0/users?$select=id,displayName,userPrincipalName,givenName,surname,mail,accountEnabled,lastPasswordChangeDateTime';
                 $response = $this->provider->getAuthenticatedRequest('GET', $graphUrl, $token->getToken());
                 $usersResponse = $this->provider->getParsedResponse($response);
@@ -224,7 +224,7 @@ class OAuth2Controller
 
                 if (isset($usersResponse['value']) && is_array($usersResponse['value'])) {
                     foreach ($usersResponse['value'] as $user) {
-                        // Requête pour récupérer les groupes du user
+                        // Request to retrieve the user's groups
                         $userGroups = [];
                         $groupsUrl = "https://graph.microsoft.com/v1.0/users/{$user['id']}/memberOf";
                         $groupsRequest = $this->provider->getAuthenticatedRequest('GET', $groupsUrl, $token->getToken());
@@ -241,7 +241,7 @@ class OAuth2Controller
                             }
                         }
 
-                        // Ajout de l'utilisateur avec ses groupes à la liste
+                        // Add user with their groups to the list
                         $usersList[] = [
                             'id' => $user['id'] ?? null,
                             'displayName' => $user['displayName'] ?? null,
@@ -266,5 +266,4 @@ class OAuth2Controller
             ];
         }
     }
-
 }

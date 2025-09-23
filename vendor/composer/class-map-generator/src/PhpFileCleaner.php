@@ -53,11 +53,11 @@ class PhpFileCleaner
     public static function setTypeConfig(array $types): void
     {
         foreach ($types as $type) {
-            self::$typeConfig[$type[0]] = array(
+            self::$typeConfig[$type[0]] = [
                 'name' => $type,
                 'length' => \strlen($type),
                 'pattern' => '{.\b(?<![\$:>])'.$type.'\s++[a-zA-Z_\x7f-\xff:][a-zA-Z0-9_\x7f-\xff:\-]*+}Ais',
-            );
+            ];
         }
 
         self::$restPattern = '{[^?"\'</'.implode('', array_keys(self::$typeConfig)).']+}A';
@@ -110,6 +110,7 @@ class PhpFileCleaner
                         $this->skipToNewline();
                         continue;
                     }
+
                     if ($this->peek('*')) {
                         $this->skipComment();
                         continue;
@@ -122,9 +123,7 @@ class PhpFileCleaner
                         \substr($this->contents, $this->index, $type['length']) === $type['name']
                         && Preg::isMatch($type['pattern'], $this->contents, $match, 0, $this->index - 1)
                     ) {
-                        $clean .= $match[0];
-
-                        return $clean;
+                        return $clean . $match[0];
                     }
                 }
 
@@ -161,10 +160,12 @@ class PhpFileCleaner
                 $this->index += 2;
                 continue;
             }
+
             if ($this->contents[$this->index] === $delimiter) {
                 $this->index += 1;
                 break;
             }
+
             $this->index += 1;
         }
     }
@@ -188,6 +189,7 @@ class PhpFileCleaner
             if ($this->contents[$this->index] === "\r" || $this->contents[$this->index] === "\n") {
                 return;
             }
+
             $this->index += 1;
         }
     }
@@ -214,6 +216,7 @@ class PhpFileCleaner
 
                         return;
                     }
+
                     break;
             }
 

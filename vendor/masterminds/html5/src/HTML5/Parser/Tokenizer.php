@@ -507,7 +507,7 @@ class Tokenizer
         $this->scanner->whitespace();
 
         $val = $this->attributeValue();
-        if ($isValidAttribute) {
+        if ($isValidAttribute && !array_key_exists($name, $attributes)) {
             $attributes[$name] = $val;
         }
 
@@ -729,6 +729,7 @@ class Tokenizer
         // Test for '!>'
         if ('!' == $this->scanner->current() && '>' == $this->scanner->peek()) {
             $this->scanner->consume(); // Consume the last '>'
+
             return true;
         }
         // Unread '-' and one of '!' or '>';
@@ -1127,7 +1128,7 @@ class Tokenizer
                 return '&';
             }
 
-            // Hexidecimal encoding.
+            // Hexadecimal encoding.
             // X[0-9a-fA-F]+;
             // x[0-9a-fA-F]+;
             if ('x' === $tok || 'X' === $tok) {

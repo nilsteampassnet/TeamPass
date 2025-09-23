@@ -99,6 +99,16 @@ abstract class Enum implements \Stringable
     /**
      * @throws LogicException Serialization is not supported by default in this pseudo-enum implementation
      *
+     * @return array<string, mixed>
+     */
+    public function __serialize(): array
+    {
+        throw new LogicException('Serialization is not supported by default in this pseudo-enum implementation');
+    }
+
+    /**
+     * @throws LogicException Serialization is not supported by default in this pseudo-enum implementation
+     *
      * @psalm-return never-return
      */
     final public function __wakeup()
@@ -106,6 +116,16 @@ abstract class Enum implements \Stringable
         throw new LogicException('Serialization is not supported by default in this pseudo-enum implementation');
     }
 
+    /**
+     * @throws LogicException Serialization is not supported by default in this pseudo-enum implementation
+     *
+     * @param array<string, mixed> $data
+     */
+    public function __unserialize(array $data): void
+    {
+        throw new LogicException('Serialization is not supported by default in this pseudo-enum implementation');
+    }
+    
     /**
      * Get the value of the enumerator
      *

@@ -50,8 +50,6 @@ $session = SessionManager::getSession();
 $request = SymfonyRequest::createFromGlobals();
 $lang = new Language($session->get('user-language') ?? 'english');
 
-// TODO : ajouter un check sue l'envoi de la key
-
 // Load config
 $configManager = new ConfigManager();
 $SETTINGS = $configManager->getAllSettings();

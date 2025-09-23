@@ -632,7 +632,6 @@ declare(strict_types=1);
         }
 
         // Get 2fa
-        //TODO : je pense que cela pourrait etre modifié pour ne pas faire de requete ajax ; on dispose des infos via `get_teampass_settings`
         $.post(
             'sources/identify.php', {
                 type: 'get2FAMethods'
