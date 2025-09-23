@@ -39,6 +39,11 @@
         "docs": "https://teampass.readthedocs.io/en/latest/",
         "forum": "https://www.reddit.com/r/TeamPass/"
     },
+    "autoload": {
+        "psr-4": {
+            "Encryption\\Crypt\\": "install/libs/"
+        }
+    },
     "repositories": [
         {
             "type" : "composer",

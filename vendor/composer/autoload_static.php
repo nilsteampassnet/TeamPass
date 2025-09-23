@@ -156,6 +156,7 @@ class ComposerStaticInite3f3ee27f81ca21f7bd7499d7b935c11
         ),
         'E' => 
         array (
+            'Encryption\\Crypt\\' => 17,
             'Elegant\\Sanitizer\\' => 18,
             'Egulias\\EmailValidator\\' => 23,
             'EZimuel\\PHPSecureSession\\' => 25,
@@ -453,9 +454,9 @@ class ComposerStaticInite3f3ee27f81ca21f7bd7499d7b935c11
         ),
         'Illuminate\\Support\\' => 
         array (
-            0 => __DIR__ . '/..' . '/illuminate/macroable',
+            0 => __DIR__ . '/..' . '/illuminate/collections',
             1 => __DIR__ . '/..' . '/illuminate/conditionable',
-            2 => __DIR__ . '/..' . '/illuminate/collections',
+            2 => __DIR__ . '/..' . '/illuminate/macroable',
             3 => __DIR__ . '/..' . '/illuminate/support',
         ),
         'Illuminate\\Filesystem\\' => 
@@ -493,6 +494,10 @@ class ComposerStaticInite3f3ee27f81ca21f7bd7499d7b935c11
         'Firebase\\JWT\\' => 
         array (
             0 => __DIR__ . '/..' . '/firebase/php-jwt/src',
+        ),
+        'Encryption\\Crypt\\' => 
+        array (
+            0 => __DIR__ . '/../..' . '/install/libs',
         ),
         'Elegant\\Sanitizer\\' => 
         array (
@@ -1287,6 +1292,7 @@ class ComposerStaticInite3f3ee27f81ca21f7bd7499d7b935c11
         'Elegant\\Sanitizer\\Laravel\\SanitizerServiceProvider' => __DIR__ . '/..' . '/elegantweb/sanitizer/src/Laravel/SanitizerServiceProvider.php',
         'Elegant\\Sanitizer\\Laravel\\SanitizesInput' => __DIR__ . '/..' . '/elegantweb/sanitizer/src/Laravel/SanitizesInput.php',
         'Elegant\\Sanitizer\\Sanitizer' => __DIR__ . '/..' . '/elegantweb/sanitizer/src/Sanitizer.php',
+        'Encryption\\Crypt\\aesctr' => __DIR__ . '/../..' . '/install/libs/aesctr.php',
         'File_ANSI' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ANSI.php',
         'File_ASN1' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/ASN1.php',
         'File_X509' => __DIR__ . '/..' . '/phpseclib/phpseclib/phpseclib/File/X509.php',
@@ -2055,6 +2061,7 @@ class ComposerStaticInite3f3ee27f81ca21f7bd7499d7b935c11
         'PHPMailer\\PHPMailer\\PHPMailer' => __DIR__ . '/..' . '/phpmailer/phpmailer/src/PHPMailer.php',
         'PHPMailer\\PHPMailer\\POP3' => __DIR__ . '/..' . '/phpmailer/phpmailer/src/POP3.php',
         'PHPMailer\\PHPMailer\\SMTP' => __DIR__ . '/..' . '/phpmailer/phpmailer/src/SMTP.php',
+        'PHPSecureSession\\SecureHandler' => __DIR__ . '/../..' . '/install/libs/SecureHandler.php',
         'ParagonIE\\ConstantTime\\Base32' => __DIR__ . '/..' . '/paragonie/constant_time_encoding/src/Base32.php',
         'ParagonIE\\ConstantTime\\Base32Hex' => __DIR__ . '/..' . '/paragonie/constant_time_encoding/src/Base32Hex.php',
         'ParagonIE\\ConstantTime\\Base64' => __DIR__ . '/..' . '/paragonie/constant_time_encoding/src/Base64.php',

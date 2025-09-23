@@ -274,7 +274,7 @@ if (isset($post_type)) {
             setcookie('pma_end_session');
             session_destroy();
 
-            require_once 'libs/aesctr.php';
+            require_once './libs/aesctr.php';
             
             // check if path in settings.php are consistent
             if (defined(SECUREPATH) === true) {
@@ -611,7 +611,7 @@ if (isset($post_type)) {
             }
             //decrypt the password
             // AES Counter Mode implementation
-            require_once 'libs/aesctr.php';
+            require_once './libs/aesctr.php';
 
             //Get some infos from DB
             $cpmIsUTF8[0] = 0;
