@@ -434,7 +434,7 @@ function simplePurifier(
  * Can exclude some fields from HTML purification
  * Can exclude some fields from purification
  */
-const htmlFields = ['description', 'desc'];
+const htmlFields = ['description', 'desc', 'html'];
 const ignoredFields = ['pw'];
 function purifyData(obj, bHtml = false, bSvg = false, bSvgFilters = false) {
     if (Array.isArray(obj)) {

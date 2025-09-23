@@ -1331,7 +1331,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         );
                     } else {
                         // Show table
-                        $('#row-folders-results').html(data.html);
+                        $('#row-folders-results').html(htmlDecode(data.html));
 
                         // Prepare tooltips
                         $('.infotip').tooltip();
