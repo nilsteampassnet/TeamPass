@@ -2719,7 +2719,6 @@ switch ($inputData['type']) {
             array_push($tags, $record['tag']);
         }
 
-        // TODO -> improve this check
         // check that actual user can access this item
         $restrictionActive = true;
         $restrictedTo = is_null($dataItem['restricted_to']) === false ? array_filter(explode(';', $dataItem['restricted_to'])) : [];

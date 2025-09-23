@@ -822,17 +822,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         );
                     } else {
                         buildTable();
-                        /* TODO
-                        if (data.info_parent_changed === 0) {
-                            // Update
-                            var row = $('tr[data-id="' + currentFolderId + '"]');
-                            console.log(row)
-
-                            $(row).find()
-
-                        } else {
-                            buildTable();
-                        }*/
                     }
                 }
             );

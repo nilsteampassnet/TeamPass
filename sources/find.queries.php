@@ -475,8 +475,6 @@ if (null === $request->query->get('type')) {
 
         // list of restricted users
         $displayItem = $need_sk = $canMove = $item_is_restricted_to_role = 0;
-        // TODO: Element is restricted to a group. Check if element can be seen by user
-        // => récupérer un tableau contenant les roles associés à cet ID (a partir table restriction_to_roles)
         $user_is_included_in_role = 0;
         $roles = DB::query(
             'SELECT role_id FROM ' . prefixTable('restriction_to_roles') . ' WHERE item_id=%i',
