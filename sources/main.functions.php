@@ -61,36 +61,6 @@ $configManager = new ConfigManager();
 $SETTINGS = $configManager->getAllSettings();
 
 /**
- * genHash().
- *
- * Generate a hash for user login
- *
- * @param string $password What password
- * @param string $cost     What cost
- *
- * @return string|void
- */
-/* TODO - Remove this function
-function bCrypt(
-    string $password,
-    string $cost
-): ?string
-{
-    $salt = sprintf('$2y$%02d$', $cost);
-    if (function_exists('openssl_random_pseudo_bytes')) {
-        $salt .= bin2hex(openssl_random_pseudo_bytes(11));
-    } else {
-        $chars = './ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-        for ($i = 0; $i < 22; ++$i) {
-            $salt .= $chars[mt_rand(0, 63)];
-        }
-    }
-
-    return crypt($password, $salt);
-}
-*/
-
-/**
  * Checks if a string is hex encoded
  *
  * @param string $str

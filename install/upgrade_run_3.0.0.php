@@ -53,7 +53,7 @@ require_once '../includes/language/english.php';
 require_once '../includes/config/include.php';
 require_once '../includes/config/settings.php';
 require_once 'tp.functions.php';
-require_once 'libs/aesctr.php';
+require_once './libs/aesctr.php';
 
 // 3.0.0.23
 $ret = handleSecurefileConstant();
@@ -568,10 +568,7 @@ if ((int) $db_count[0] === 0) {
 }
 
 // Generate keys pair for the admin
-if (
-    isset($userPassword) === false || empty($userPassword) === true
-    || isset($userLogin) === false || empty($userLogin) === true
-) {
+if (empty($userPassword) === true || empty($userLogin) === true) {
     echo '[{"finish":"1", "msg":"", "error":"Error - The user is not identified! Please restart upgrade."}]';
     exit();
 } else {

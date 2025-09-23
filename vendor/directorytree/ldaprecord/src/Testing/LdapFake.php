@@ -353,6 +353,8 @@ class LdapFake implements LdapInterface
     public function close(): bool
     {
         $this->bound = false;
+        $this->secure = false;
+
         $this->host = null;
         $this->protocol = null;
         $this->connection = null;

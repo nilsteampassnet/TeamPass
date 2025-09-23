@@ -51,7 +51,7 @@ require_once '../includes/language/english.php';
 require_once '../includes/config/include.php';
 require_once '../includes/config/settings.php';
 require_once 'tp.functions.php';
-require_once 'libs/aesctr.php';
+require_once './libs/aesctr.php';
 
 // Prepare POST variables
 $post_nb = filter_input(INPUT_POST, 'nb', FILTER_SANITIZE_NUMBER_INT);
@@ -96,10 +96,7 @@ $post_user_info = json_decode(base64_decode(filter_input(INPUT_POST, 'info', FIL
 $userLogin = $post_user_info[0];
 $userPassword = Encryption\Crypt\aesctr::decrypt(base64_decode($post_user_info[1]), "cpm", 128);
 $userId = $post_user_info[2];
-if (isset($userPassword) === false || empty($userPassword) === true
-    || isset($userLogin) === false || empty($userLogin) === true
-    || isset($userId) === false || empty($userId) === true
-) {
+if (empty($userPassword) === true || empty($userLogin) === true || empty($userId) === true) {
     echo '[{"finish":"1", "msg":"", "error":"Error - The user is not identified! Please restart upgrade."}]'; 
     exit();
 } else {

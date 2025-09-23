@@ -86,6 +86,10 @@ abstract class Helper implements HelperInterface
     {
         $string ??= '';
 
+        if (preg_match('//u', $string)) {
+            return (new UnicodeString($string))->slice($from, $length);
+        }
+
         if (false === $encoding = mb_detect_encoding($string, null, true)) {
             return substr($string, $from, $length);
         }
@@ -142,18 +146,18 @@ abstract class Helper implements HelperInterface
     public static function formatMemory(int $memory)
     {
         if ($memory >= 1024 * 1024 * 1024) {
-            return sprintf('%.1f GiB', $memory / 1024 / 1024 / 1024);
+            return \sprintf('%.1f GiB', $memory / 1024 / 1024 / 1024);
         }
 
         if ($memory >= 1024 * 1024) {
-            return sprintf('%.1f MiB', $memory / 1024 / 1024);
+            return \sprintf('%.1f MiB', $memory / 1024 / 1024);
         }
 
         if ($memory >= 1024) {
-            return sprintf('%d KiB', $memory / 1024);
+            return \sprintf('%d KiB', $memory / 1024);
         }
 
-        return sprintf('%d B', $memory);
+        return \sprintf('%d B', $memory);
     }
 
     /**

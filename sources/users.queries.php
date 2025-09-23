@@ -1070,8 +1070,6 @@ if (null !== $post_type) {
 
                 // We need to adapt the private key with new password
                 $session->set('user-private_key', encryptPrivateKey($post_password, $session->get('user-private_key')));
-
-                // TODO
             }
 
             // Empty user

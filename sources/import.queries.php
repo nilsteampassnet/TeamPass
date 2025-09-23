@@ -191,7 +191,7 @@ switch ($inputData['type']) {
         fclose($fp);
 
         // Vérifier si l'en-tête est valide
-        if ($header === false || empty($header)) {
+        if ($header === false) {
             echo prepareExchangedData(
                 array('error' => true, 'message' => $lang->get('import_error_no_read_possible')),
                 'encode'

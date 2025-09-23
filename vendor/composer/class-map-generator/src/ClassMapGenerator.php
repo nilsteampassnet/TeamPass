@@ -280,7 +280,7 @@ class ClassMapGenerator
      * @param  string $path
      * @return bool
      */
-    private static function isAbsolutePath(string $path)
+    private static function isAbsolutePath(string $path): bool
     {
         return strpos($path, '/') === 0 || substr($path, 1, 1) === ':' || strpos($path, '\\\\') === 0;
     }
@@ -294,7 +294,7 @@ class ClassMapGenerator
      * @param  string $path Path to the file or directory
      * @return string
      */
-    private static function normalizePath(string $path)
+    private static function normalizePath(string $path): string
     {
         $parts = [];
         $path = strtr($path, '\\', '/');

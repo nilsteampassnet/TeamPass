@@ -228,7 +228,7 @@ class Git
                     $message = 'Enter your Bitbucket credentials to access private repos';
 
                     if (!$bitbucketUtil->authorizeOAuth($domain) && $this->io->isInteractive()) {
-                        $bitbucketUtil->authorizeOAuthInteractively($match[1], $message);
+                        $bitbucketUtil->authorizeOAuthInteractively($domain, $message);
                         $accessToken = $bitbucketUtil->getToken();
                         $this->io->setAuthentication($domain, 'x-token-auth', $accessToken);
                     }
@@ -239,6 +239,13 @@ class Git
                 // password in there.
                 if ($this->io->hasAuthentication($domain)) {
                     $auth = $this->io->getAuthentication($domain);
+
+                    // Bitbucket API tokens use the email address as the username for HTTP API calls and
+                    // either the Bitbucket username or 'x-bitbucket-api-token-auth' as the username for git operations.
+                    if (strpos((string) $auth['password'], 'ATAT') === 0) {
+                        $auth['username'] = 'x-bitbucket-api-token-auth';
+                    }
+
                     $authUrl = 'https://' . rawurlencode($auth['username']) . ':' . rawurlencode($auth['password']) . '@' . $domain . '/' . $repo_with_git_part;
 
                     if (0 === $runCommands($authUrl)) {
@@ -438,7 +445,7 @@ class Git
     public static function getNoShowSignatureFlag(ProcessExecutor $process): string
     {
         $gitVersion = self::getVersion($process);
-        if ($gitVersion && version_compare($gitVersion, '2.10.0-rc0', '>=')) {
+        if ($gitVersion !== null && version_compare($gitVersion, '2.10.0-rc0', '>=')) {
             return ' --no-show-signature';
         }
 
@@ -532,9 +539,17 @@ class Git
 
     public static function cleanEnv(): void
     {
-        // added in git 1.7.1, prevents prompting the user for username/password
-        if (Platform::getEnv('GIT_ASKPASS') !== 'echo') {
-            Platform::putEnv('GIT_ASKPASS', 'echo');
+        $gitVersion = self::getVersion(new ProcessExecutor());
+        if ($gitVersion !== null && version_compare($gitVersion, '2.3.0', '>=')) {
+            // added in git 2.3.0, prevents prompting the user for username/password
+            if (Platform::getEnv('GIT_TERMINAL_PROMPT') !== '0') {
+                Platform::putEnv('GIT_TERMINAL_PROMPT', '0');
+            }
+        } else {
+            // added in git 1.7.1, prevents prompting the user for username/password
+            if (Platform::getEnv('GIT_ASKPASS') !== 'echo') {
+                Platform::putEnv('GIT_ASKPASS', 'echo');
+            }
         }
 
         // clean up rogue git env vars in case this is running in a git hook

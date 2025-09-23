@@ -2719,7 +2719,6 @@ switch ($inputData['type']) {
             array_push($tags, $record['tag']);
         }
 
-        // TODO -> improve this check
         // check that actual user can access this item
         $restrictionActive = true;
         $restrictedTo = is_null($dataItem['restricted_to']) === false ? array_filter(explode(';', $dataItem['restricted_to'])) : [];
@@ -2748,14 +2747,15 @@ switch ($inputData['type']) {
 
         // Uncrypt PW
         // Get the object key for the user
-        $userKey = DB::queryFirstRow(
+        $userKeys = DB::query(
             'SELECT share_key
             FROM ' . prefixTable('sharekeys_items') . '
             WHERE user_id = %i AND object_id = %i',
             $session->get('user-id'),
             $inputData['id']
         );
-        if (DB::count() === 0 || empty($dataItem['pw']) === true) {
+        
+        if (empty($userKeys) || empty($dataItem['pw'])) {
             // No share key found
             $pwIsEmptyNormally = false;
             // Is this a personal and defuse password?
@@ -2776,10 +2776,21 @@ switch ($inputData['type']) {
             }
         } else {
             $pwIsEmptyNormal = true;
-            $decryptedObject = decryptUserObjectKey($userKey['share_key'], $session->get('user-private_key'));
-            // if null then we have an error.
-            // suspecting bad password
-            if (empty($decryptedObject) === false) {
+            $decryptedObject = null;
+            $validKeyFound = false;
+            
+            // Loop on available keys
+            // We should only have one but in case of, do this loop
+            foreach ($userKeys as $userKey) {
+                $decryptedObject = decryptUserObjectKey($userKey['share_key'], $session->get('user-private_key'));
+                
+                if (!empty($decryptedObject)) {
+                    $validKeyFound = true;
+                    break;
+                }
+            }
+
+            if ($validKeyFound) {
                 $pw = doDataDecryption(
                     $dataItem['pw'],
                     $decryptedObject

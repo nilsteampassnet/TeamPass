@@ -152,7 +152,7 @@ EOF
         $io->table(['Key', 'Value'], $rows);
 
         if (!$emptySalt) {
-            $errorIo->note(sprintf('Make sure that your salt storage field fits the salt length: %s chars', \strlen($salt)));
+            $errorIo->note(\sprintf('Make sure that your salt storage field fits the salt length: %s chars', \strlen($salt)));
         } elseif ($saltlessWithoutEmptySalt) {
             $errorIo->note('Self-salting hasher used: the hasher generated its own built-in salt.');
         }

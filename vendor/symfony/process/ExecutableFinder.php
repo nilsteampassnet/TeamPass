@@ -74,7 +74,7 @@ class ExecutableFinder
             $suffixes = $this->suffixes;
             $suffixes = array_merge($suffixes, $pathExt ? explode(\PATH_SEPARATOR, $pathExt) : ['.exe', '.bat', '.cmd', '.com']);
         }
-        $suffixes = '' !== pathinfo($name, PATHINFO_EXTENSION) ? array_merge([''], $suffixes) : array_merge($suffixes, ['']);
+        $suffixes = '' !== pathinfo($name, \PATHINFO_EXTENSION) ? array_merge([''], $suffixes) : array_merge($suffixes, ['']);
         foreach ($suffixes as $suffix) {
             foreach ($dirs as $dir) {
                 if ('' === $dir) {

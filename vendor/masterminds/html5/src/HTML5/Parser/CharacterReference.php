@@ -48,7 +48,7 @@ class CharacterReference
     }
 
     /**
-     * Given a hexidecimal number, return the UTF-8 character.
+     * Given a hexadecimal number, return the UTF-8 character.
      *
      * @param $hexdec
      *
