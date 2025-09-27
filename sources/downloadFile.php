@@ -96,45 +96,137 @@ $getData = dataSanitizer(
     [
         'filename' => $request->query->get('name'),
         'fileid' => $request->query->get('fileid'),
+        'action' => $request->query->get('action'),
+        'file' => $request->query->get('file'),
+        'key' => $request->query->get('key'),
+        'key_tmp' => $request->query->get('key_tmp'),
         'pathIsFiles' => $request->query->get('pathIsFiles'),
     ],
     [
         'filename' => 'trim|escape',
         'fileid' => 'cast:integer',
+        'action' => 'trim|escape',
+        'file' => 'trim|escape',
+        'key' => 'trim|escape',
+        'key_tmp' => 'trim|escape',
         'pathIsFiles' => 'trim|escape',
     ]
 );
+
+/**
+ * Send error response and exit
+ */
+function sendError($message) {
+    // Clear any headers that might have been set
+    if (!headers_sent()) {
+        header_remove();
+    }
+    echo $message;
+    exit;
+}
+
+/**
+ * Set download headers safely
+ */
+function setDownloadHeaders($filename, $filesize = null) {
+    // Clean filename for header - avoid rawurldecode
+    $safeFilename = str_replace('"', '\\"', basename($filename));
+    
+    header('Content-Description: File Transfer');
+    header('Content-Type: application/octet-stream');
+    header('Content-Disposition: attachment; filename="' . $safeFilename . '"');
+    header('Cache-Control: must-revalidate, no-cache, no-store');
+    header('Pragma: public');
+    header('Expires: 0');
+    
+    if ($filesize !== null) {
+        header('Content-Length: ' . $filesize);
+    }
+}
+
+/**
+ * Validate and secure file path
+ */
+function validateSecurePath($basePath, $filename) {
+    if (empty($filename)) {
+        return false;
+    }
+    
+    $filepath = $basePath . '/' . basename($filename);
+    
+    // Security: Verify the resolved path is within the allowed directory
+    $realBasePath = realpath($basePath);
+    $realFilePath = realpath($filepath);
+    
+    if ($realFilePath === false || $realBasePath === false || 
+        strpos($realFilePath, $realBasePath) !== 0) {
+        return false;
+    }
+    
+    return file_exists($filepath) && is_file($filepath) && is_readable($filepath) ? $filepath : false;
+}
+
 $get_filename = (string) $antiXss->xss_clean($getData['filename']);
 $get_fileid = (int) $antiXss->xss_clean($getData['fileid']);
 $get_pathIsFiles = (string) $antiXss->xss_clean($getData['pathIsFiles']);
+$get_action = (string) $antiXss->xss_clean($getData['action']);
+$get_file = (string) $antiXss->xss_clean($getData['file']);
+$get_key = (string) $antiXss->xss_clean($getData['key']);
+$get_key_tmp = (string) $antiXss->xss_clean($getData['key_tmp']);
 
-// Remove newline characters from the filename
-$get_filename = str_replace(array("\r", "\n"), '', $get_filename);
+// Branch 1: Files from files folder (pathIsFiles = 1)
+if (null !== $get_pathIsFiles && (int) $get_pathIsFiles === 1) {
 
-// Validate the filename to ensure it does not contain unwanted characters
-$get_filename = preg_replace('/[^a-zA-Z0-9_\.-]/', '', basename($get_filename));
-
-// Escape quotes to prevent header injection
-$get_filename = str_replace('"', '\"', $get_filename);
-
-// Use Content-Disposition header with double quotes around filename
-header('Content-Disposition: attachment; filename="' . rawurldecode($get_filename) . '"');
-header('Content-Type: application/octet-stream');
-header('Cache-Control: must-revalidate, no-cache, no-store');
-header('Expires: 0');
-if (null !== $request->query->get('pathIsFiles') && (int) $get_pathIsFiles === 1) {
-    $filepath = $SETTINGS['path_to_files_folder'] . '/' . basename($get_filename);
+    // Clean filename
+    $get_filename = str_replace(array("\r", "\n"), '', $get_filename);
+    $get_filename = preg_replace('/[^a-zA-Z0-9_\.-]/', '', basename($get_filename));
     
-    // Check if the file exists and is within the allowed directory
-    if (!userHasAccessToFile($session->get('user-id'), $get_fileid)) {
-        echo 'ERROR_Not_allowed';
-        exit;
+    if (empty($get_filename)) {
+        sendError('ERROR_Invalid_filename');
     }
     
-    // Propose the file for download
+    // Validate file path
+    $filepath = validateSecurePath($SETTINGS['path_to_files_folder'], $get_filename);
+    if (!$filepath) {
+        sendError('ERROR_File_not_found');
+    }
+    
+    // Check permissions based on action
+    $hasAccess = false;
+    if ($get_action === 'backup') {
+        $hasAccess = userHasAccessToBackupFile(
+            $session->get('user-id'), 
+            $get_file, 
+            $get_key, 
+            $get_key_tmp
+        );
+    } else {
+        $hasAccess = userHasAccessToFile($session->get('user-id'), $get_fileid);
+    }
+    
+    if (!$hasAccess) {
+        sendError('ERROR_Not_allowed');
+    }
+    
+    // All checks passed - serve file
+    setDownloadHeaders($get_filename, filesize($filepath));
+    
+    if (ob_get_level()) {
+        ob_end_clean();
+    }
+    
     readfile($filepath);
-} else {
-    // get file key
+    exit;
+}
+
+// Branch 2: Files from upload folder (encrypted/standard)
+else {
+    
+    if (empty($get_fileid)) {
+        sendError('ERROR_Invalid_fileid');
+    }
+    
+    // Try to get encrypted file info first
     $file_info = DB::queryFirstRow(
         'SELECT f.id AS id, f.file AS file, f.name AS name, f.status AS status, f.extension AS extension,
         s.share_key AS share_key
@@ -145,63 +237,73 @@ if (null !== $request->query->get('pathIsFiles') && (int) $get_pathIsFiles === 1
         $get_fileid
     );
     
-    // if encrypted
-    if (DB::count() > 0) {
+    $isEncrypted = (DB::count() > 0);
+    $fileContent = '';
+    
+    if ($isEncrypted) {
         // Decrypt the file
-        // deepcode ignore PT: File and path are secured directly inside the function decryptFile()
         $fileContent = decryptFile(
             $file_info['file'],
             $SETTINGS['path_to_upload_folder'],
             decryptUserObjectKey($file_info['share_key'], $session->get('user-private_key'))
         );
     } else {
-        // if not encrypted
+        // Get unencrypted file info
         $file_info = DB::queryFirstRow(
             'SELECT f.id AS id, f.file AS file, f.name AS name, f.status AS status, f.extension AS extension
             FROM ' . prefixTable('files') . ' AS f
             WHERE f.id = %i',
             $get_fileid
         );
-        $fileContent = '';
+        
+        if (DB::count() === 0) {
+            sendError('ERROR_No_file_found');
+        }
     }
-
-    // Set the filename of the download
-    $filename = str_replace('b64:','', $file_info['name']);
-    $filename = basename($filename, '.'.$file_info['extension']);
+    
+    // Prepare filename for download
+    $filename = str_replace('b64:', '', $file_info['name']);
+    $filename = basename($filename, '.' . $file_info['extension']);
     $filename = isBase64($filename) === true ? base64_decode($filename) : $filename;
     $filename = $filename . '.' . $file_info['extension'];
-    // Get the full path to the file to be downloaded
-    if (file_exists($SETTINGS['path_to_upload_folder'] . '/' .TP_FILE_PREFIX . $file_info['file'])) {
-        $filePath = $SETTINGS['path_to_upload_folder'] . '/' . TP_FILE_PREFIX . $file_info['file'];
-    } else {
-        $filePath = $SETTINGS['path_to_upload_folder'] . '/' . TP_FILE_PREFIX . base64_decode($file_info['file']);
+    
+    // Determine file path
+    $candidatePath1 = $SETTINGS['path_to_upload_folder'] . '/' . TP_FILE_PREFIX . $file_info['file'];
+    $candidatePath2 = $SETTINGS['path_to_upload_folder'] . '/' . TP_FILE_PREFIX . base64_decode($file_info['file']);
+    
+    $filePath = false;
+    if (file_exists($candidatePath1)) {
+        $filePath = realpath($candidatePath1);
+    } elseif (file_exists($candidatePath2)) {
+        $filePath = realpath($candidatePath2);
     }
-    $filePath = realpath($filePath);
-
-    if (WIP === true) error_log('downloadFile.php: filePath: ' . $filePath." - ");
-
-    if ($filePath && is_readable($filePath) && strpos($filePath, realpath($SETTINGS['path_to_upload_folder'])) === 0) {
-        header('Content-Description: File Transfer');
-        header('Content-Type: application/octet-stream');
-        header('Content-Disposition: attachment; filename="' . basename($filename) . '"');
-        header('Expires: 0');
-        header('Cache-Control: must-revalidate');
-        header('Pragma: public');
-        header('Content-Length: ' . filesize($filePath));
-        flush(); // Clear system output buffer
-        if (empty($fileContent) === true) {
-            // deepcode ignore PT: File and path are secured directly inside the function decryptFile()
-            readfile($filePath); // Read the file from disk
-        } else if (is_string($fileContent)) {
-            exit(base64_decode($fileContent));
-        } else {
-            // $fileContent is not a string
-            echo 'ERROR_No_file_found';
-            exit;
-        }
-        exit;
-    } else {
-        echo 'ERROR_No_file_found';
-        exit;
+    
+    if (WIP === true) {
+        error_log('downloadFile.php: filePath: ' . $filePath . " - ");
     }
+    
+    // Validate file path and security
+    $uploadFolderPath = realpath($SETTINGS['path_to_upload_folder']);
+    if (!$filePath || !is_readable($filePath) || strpos($filePath, $uploadFolderPath) !== 0) {
+        sendError('ERROR_No_file_found');
+    }
+    
+    // Set headers and serve file
+    setDownloadHeaders($filename, filesize($filePath));
+    
+    if (ob_get_level()) {
+        ob_end_clean();
+    }
+    
+    if (empty($fileContent)) {
+        // Serve file directly from disk
+        readfile($filePath);
+    } elseif (is_string($fileContent)) {
+        // Serve decrypted content
+        echo base64_decode($fileContent);
+    } else {
+        sendError('ERROR_No_file_found');
+    }
+    
+    exit;
 }
