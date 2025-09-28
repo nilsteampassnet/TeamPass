@@ -4467,3 +4467,50 @@ function userHasAccessToFile(int $userId, int $fileId): bool
 
     return $itemAccess['access'] === true;
 }
+
+/**
+ * Check if a user has access to a backup file
+ * 
+ * @param integer $userId
+ * @param string $file
+ * @param string $key
+ * @param string $keyTmp
+ * @return boolean
+ */
+function userHasAccessToBackupFile(int $userId, string $file, string $key, string $keyTmp): bool
+{
+    $session = SessionManager::getSession();
+
+    // Ensure session keys are ok
+    if ($session->get('key') !== $key || $session->get('user-key_tmp') !== $keyTmp) {
+        return false;
+    }
+    
+    // Check if user is admin
+    // Refuse access if user does not exist and/or is not admin
+    $user = DB::queryFirstRow(
+        'SELECT admin
+        FROM ' . prefixTable('users') . '
+        WHERE id = %i',
+        $userId
+    );
+    if (DB::count() === 0 || (int) $user['admin'] === 0) {
+        return false;
+    }
+    
+    // Ensure that user has performed the backup
+    DB::queryFirstRow(
+        'SELECT f.id
+        FROM ' . prefixTable('log_system') . ' as f
+        WHERE f.type = %s AND f.label = %s AND f.qui = %i AND f.field_1 = %s',
+        'admin_action',
+        'dataBase backup',
+        $userId,
+        $file
+    );
+    if (DB::count() === 0) {
+        return false;
+    }
+
+    return true;
+}

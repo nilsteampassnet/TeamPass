@@ -109,7 +109,7 @@ includes/.externals/tp.config.php 361da70add00e1069f22191dbb07503c
 includes/avatars/.htaccess df51d5d900c2228ec1349362838401e7
 includes/avatars/empty_file.txt d41d8cd98f00b204e9800998ecf8427e
 includes/config/.htaccess 51622ead2639d535e7a955a8a7a10613
-includes/config/include.php 8f3d6c3bf589e0b00bf9ec93bd5f2c99
+includes/config/include.php 915c1413d5302ab886347809993b0841
 includes/config/index.html 5f1f28d1adcb7eac03989f0ca3e7068e
 includes/config/settings.sample.php c966188ae4f3174b907fc467c96ac036
 includes/core/load.js.php c1872ece000234c0e8385816c0e87cac
@@ -302,9 +302,9 @@ includes/libraries/teampassclasses/folderservices/src/FolderServices.php 6a57798
 includes/libraries/teampassclasses/language/composer.json a73c22a223a67e22e3eb005642e69c7a
 includes/libraries/teampassclasses/language/src/Language.php 1f4df2eedd914e2e6d33332870252f82
 includes/libraries/teampassclasses/ldapextra/composer.json 395e56feaea100904193fa68fa04e4e1
-includes/libraries/teampassclasses/ldapextra/src/ActiveDirectoryExtra.php 3f909f2052844e9f5e06e23e26bbc5a1
+includes/libraries/teampassclasses/ldapextra/src/ActiveDirectoryExtra.php 71035d035ab9760431fbf1bf1fe6e08a
 includes/libraries/teampassclasses/ldapextra/src/LdapExtra.php c323480e36a1183f98c9b0bb594bed49
-includes/libraries/teampassclasses/ldapextra/src/OpenLdapExtra.php 89ad0c45518922b73defdc81320fa466
+includes/libraries/teampassclasses/ldapextra/src/OpenLdapExtra.php 08e07a7254e5498775a352dd94d8b512
 includes/libraries/teampassclasses/nestedtree/composer.json f8d59b745a9bdf6f4730c2edd9d2c6f4
 includes/libraries/teampassclasses/nestedtree/src/NestedTree.php f4168eb1be6f0f84a869a74956b42977
 includes/libraries/teampassclasses/oauth2controller/composer.json 9deaab930402c680b011e5840d9b7406
@@ -418,7 +418,7 @@ pages/options.js.php 521e06fe2c30c92f8ee64278a46786bc
 pages/options.php 0cf4fecd3eaa7005ef2d377b20114069
 pages/profile.js.php b1bd1ce8a6a855a22755b348c5c610d6
 pages/profile.php 621ecc4b2cf53c1f34308b920fe18a49
-pages/roles.js.php fe62d10923259d0160e39646eb0c6c70
+pages/roles.js.php 6318dba6a31df24cad54615dd1fa64c0
 pages/roles.php ffb40bed9bb7238a2f2c27900e345966
 pages/search.js.php 665d23858f3dd79f6758f1dfb92ba84d
 pages/search.php 51a5c2cbc297ba08369103352dc2fddf
@@ -430,7 +430,7 @@ pages/tools.js.php a2ed460da7a02e1b1846178dbd1e6209
 pages/tools.php fff92e3394724be12a837b332a41e380
 pages/uploads.js.php 5696d420ed78fab0988ca5e5501e2b2f
 pages/uploads.php 09a5c8d9803360429e663960958c4a3a
-pages/users.js.php 4a0a7b2b87e077891086116957d91727
+pages/users.js.php 2165ef3fdb8d76b91b4531a0fa12b8f9
 pages/users.php 1b5d6951455002cfff8db7f52e082a93
 pages/utilities.database.js.php 4fdf4130e50d7de4308048bda01d67f2
 pages/utilities.database.php 01733ba2f651fc54d4f68669d50a465c
@@ -3684,9 +3684,9 @@ scripts/traits/UserHandlerTrait.php a29b66822e72add597456095bbf0554f
 self-unlock.php da18e89115b095a52469144f3ca55cc8
 sources/.rnd 6627d0aac5e5c898db3a5ec8dc7e97c2
 sources/admin.queries.php 405e7ba88a35b46a8e1f0101399f8804
-sources/backups.queries.php f36506ee762c39f26aa3204c3e91dd6d
+sources/backups.queries.php 922830067d4524f35534f16487cf8714
 sources/core.php bdb84ebcff889b6d19cc7bbd821fce25
-sources/downloadFile.php ed9b70dee84d4c66fd5d5a771007becf
+sources/downloadFile.php d0f176dbcc38eaca4e229314801b8e41
 sources/expired.datatables.php de355807147dfc61395628cae4f3e093
 sources/export.queries.php e3093f60225927d8865f47d703e49a16
 sources/favourites.queries.php b2b20834ccf4288bea34d19fc16904a8
@@ -3701,8 +3701,8 @@ sources/items.logs.php 3b9eaeb8fa7a487161bfbfd771aa7c4b
 sources/items.queries.php df231dbd148f95b20d40f3283dd4f8d3
 sources/ldap.queries.php 8347f492f841663828410a9a72e829ac
 sources/logs.datatables.php 762156d1ffdbe9970d232e8a2c9764ed
-sources/main.functions.php 2207641958a9cb770a07d63e264e1da5
-sources/main.queries.php 0da10ea64fc808d51e52494677d75a59
+sources/main.functions.php 820afa73dac2dce283100bf7c841f179
+sources/main.queries.php 37c723f30cb9db0bf78be1fdc6e0088b
 sources/oauth.php edd9fca8b228780548f927c291670f53
 sources/roles.queries.php 812d89d05969b25236a3a12124ff63c9
 sources/scheduler.php f2b3bd68de593c6e8575e4ebd9a53652
@@ -7831,9 +7831,9 @@ vendor/teampassclasses/folderservices/src/FolderServices.php 6a577986e41e469e2de
 vendor/teampassclasses/language/composer.json a73c22a223a67e22e3eb005642e69c7a
 vendor/teampassclasses/language/src/Language.php 1f4df2eedd914e2e6d33332870252f82
 vendor/teampassclasses/ldapextra/composer.json 395e56feaea100904193fa68fa04e4e1
-vendor/teampassclasses/ldapextra/src/ActiveDirectoryExtra.php 3f909f2052844e9f5e06e23e26bbc5a1
+vendor/teampassclasses/ldapextra/src/ActiveDirectoryExtra.php 71035d035ab9760431fbf1bf1fe6e08a
 vendor/teampassclasses/ldapextra/src/LdapExtra.php c323480e36a1183f98c9b0bb594bed49
-vendor/teampassclasses/ldapextra/src/OpenLdapExtra.php 89ad0c45518922b73defdc81320fa466
+vendor/teampassclasses/ldapextra/src/OpenLdapExtra.php 08e07a7254e5498775a352dd94d8b512
 vendor/teampassclasses/nestedtree/composer.json f8d59b745a9bdf6f4730c2edd9d2c6f4
 vendor/teampassclasses/nestedtree/src/NestedTree.php f4168eb1be6f0f84a869a74956b42977
 vendor/teampassclasses/oauth2controller/composer.json 9deaab930402c680b011e5840d9b7406

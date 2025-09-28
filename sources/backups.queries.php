@@ -263,7 +263,8 @@ if (null !== $post_type) {
                 'admin_action',
                 'dataBase backup',
                 (string) $session->get('user-id'),
-                $session->get('user-login')
+                $session->get('user-login'),
+                $filename
             );
         
             echo prepareExchangedData(
@@ -271,7 +272,7 @@ if (null !== $post_type) {
                     'error' => false,
                     'message' => '',
                     'download' => 'sources/downloadFile.php?name=' . urlencode($filename) .
-                        '&sub=files&file=' . $filename . '&type=sql&key=' . $session->get('key') . '&key_tmp=' .
+                        '&action=backup&file=' . $filename . '&type=sql&key=' . $session->get('key') . '&key_tmp=' .
                         $session->get('user-key_tmp') . '&pathIsFiles=1',
                 ),
                 'encode'

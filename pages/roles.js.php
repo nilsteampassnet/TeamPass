@@ -893,14 +893,16 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         group_id;
                     var entry;
                     $.each(data.ldap_groups, function(i, ad_group) {
-                        // Get group name
-                        html += '<tr>' +
-                            '<td>' + ad_group.ad_group_title + '</td>' +
-                            '<td><i class="fa-solid fa-arrow-right-long"></i></td>' +
-                            '<td class="pointer change_adgroup_mapping" data-id="'+ad_group.ad_group_id+'">' + 
-                                (ad_group.role_title === "" ? '<i class="fa-solid fa-xmark text-danger infotip" title="<?php echo $lang->get('none'); ?>"></i>' : ad_group.role_title) + 
-                            '</td>' +
-                            '</tr>';
+                        if (ad_group.ad_group_id !== -1) {
+                            // Get group name
+                            html += '<tr>' +
+                                '<td>' + ad_group.ad_group_title + '</td>' +
+                                '<td><i class="fa-solid fa-arrow-right-long"></i></td>' +
+                                '<td class="pointer change_adgroup_mapping" data-id="'+ad_group.ad_group_id+'">' + 
+                                    (ad_group.role_title === "" ? '<i class="fa-solid fa-xmark text-danger infotip" title="<?php echo $lang->get('none'); ?>"></i>' : ad_group.role_title) + 
+                                '</td>' +
+                                '</tr>';
+                        }
                     });
 
                     $('#row-ldap-body').html(html);

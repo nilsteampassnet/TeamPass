@@ -32,16 +32,16 @@ namespace TeampassClasses\LdapExtra;
 use LdapRecord\Models\ActiveDirectory\Group as BaseGroup ;
 use LdapRecord\Connection;
 use LdapRecord\Container;
-use LdapRecord\Models\OpenLDAP\User;
+use LdapRecord\Models\ActiveDirectory\User;
 
 class ActiveDirectoryExtra extends BaseGroup 
 {
     public function getADGroups(Connection $connection, array $settings): array
     {
-        // Configure objectClasses based on settings
-        if (isset($settings['ldap_group_objectclasses_attibute']) === true) {
-            static::$objectClasses = explode(",",$settings['ldap_group_objectclasses_attibute']);
+        if (isset($settings['ldap_group_objectclasses_attibute'])) {
+            static::$objectClasses = explode(",", $settings['ldap_group_objectclasses_attibute']);
         }
+
         if (!$connection || !$connection->isConnected()) {
             return [
                 'error' => true,
@@ -49,28 +49,59 @@ class ActiveDirectoryExtra extends BaseGroup
                 'userGroups' => [],
             ];
         }
-        // prepare query
+
         $query = $connection->query();
 
-        // get all parameters to search
+        // Determine which GUID attribute is used
+        $guidAttr = strtolower(
+            (isset($settings['ldap_guid_attibute']) && !empty($settings['ldap_guid_attibute']))
+                ? $settings['ldap_guid_attibute']
+                : 'gidnumber'
+        );
+
+        // Always select CN and the chosen GUID attribute for the LDAP query
+        $selectAttrs = ['cn', $guidAttr];
+        $query->select($selectAttrs);
+
         foreach (static::$objectClasses as $objectClass) {
             $query->where('objectclass', '=', $objectClass);
         }
+
         try {
-            // perform query and get data
             $groups = $query->paginate();
 
             $groupsArr = [];
-            foreach($groups as $key => $group) {
-                $adGroupId = (int) $group[(isset($settings['ldap_guid_attibute']) === true && empty($settings['ldap_guid_attibute']) === false ? $settings['ldap_guid_attibute'] : 'gidnumber')][0];
+            foreach ($groups as $group) {
+                if (isset($group[$guidAttr][0])) {
+                    // Convert binary AD objectGUID to standard GUID string format
+                    if ($guidAttr === 'objectguid') {
+                        try {
+                            $bin = $group[$guidAttr][0];
+                            $adGroupId = strtolower(vsprintf(
+                                '%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x',
+                                array_values(unpack('C16', $bin))
+                            ));
+                        } catch (\Throwable $e) {
+                            // If conversion fails, assign a unique fallback
+                            $adGroupId = 'invalid_guid_' . uniqid();
+                        }
+                    } else {
+                        // Otherwise treat attribute as plain string (e.g. gidNumber)
+                        $adGroupId = strtolower((string) $group[$guidAttr][0]);
+                    }
+                } else {
+                    // Handle groups missing the expected GUID attribute
+                    $adGroupId = 'missing_' . uniqid();
+                }
+
                 $groupsArr[$adGroupId] = [
                     'ad_group_id' => $adGroupId,
-                    'ad_group_title' => $group['cn'][0],
+                    'ad_group_title' => $group['cn'][0] ?? 'Unknown',
                     'role_id' => -1,
                     'id' => -1,
                     'role_title' => '',
                 ];
-            }            
+            }
 
             return [
                 'error' => false,
