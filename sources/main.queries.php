@@ -611,6 +611,7 @@ function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived,
         'change_private_key_encryption_password',
         'user_new_keys_generation',
         'user_recovery_keys_download',
+        'generate_temporary_encryption_key'
     ];
 
     $individual_user_can_perform = [
@@ -627,7 +628,7 @@ function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived,
             WHERE id = %i',
             $dataReceived['user_id']
         );
-    
+        
         if (
             (
                 (
@@ -651,7 +652,6 @@ function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived,
             // This user is allowed to modify other users.
             // Or this user is allowed to perform an action on his account.
             $filtered_user_id = $dataReceived['user_id'];
-
         } else {
             // User can't manage users and requested type is administrative.
             return prepareExchangedData(
@@ -2071,20 +2071,20 @@ function initializeUserPassword(
 }
 
 function generateOneTimeCode(
-    int $post_user_id
+    int $userId
 ): string
 {
     // Load user's language
     $session = SessionManager::getSession();
     $lang = new Language($session->get('user-language') ?? 'english');
-    
-    if (isUserIdValid($post_user_id) === true) {
+
+    if (isUserIdValid($userId) === true) {
         // Get user info
         $userData = DB::queryFirstRow(
             'SELECT email, auth_type, login
             FROM ' . prefixTable('users') . '
             WHERE id = %i',
-            $post_user_id
+            $userId
         );
         if (DB::count() > 0 && empty($userData['email']) === false) {
             // Generate pwd
@@ -2102,7 +2102,7 @@ function generateOneTimeCode(
                     'special' => 'generate-keys',
                 ),
                 'id=%i',
-                $post_user_id
+                $userId
             );
 
             return prepareExchangedData(
