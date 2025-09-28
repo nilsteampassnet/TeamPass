@@ -63,13 +63,22 @@ class OpenLdapExtra extends BaseGroup
 
             $groupsArr = [];
             foreach($groups as $key => $group) {
-                $adGroupId = (int) $group[(isset($settings['ldap_guid_attibute']) === true && empty($settings['ldap_guid_attibute']) === false ? $settings['ldap_guid_attibute'] : 'gidnumber')][0];
+                // Get the GUID attribute
+                $guidAttr = (!empty($settings['ldap_guid_attibute']) ? $settings['ldap_guid_attibute'] : 'gidnumber');
+
+                // Check if the attribute exists and contains at least one value
+                $adGroupId = isset($group[$guidAttr][0]) ? (int) $group[$guidAttr][0] : -1;
+
+                // Check the "cn" attribute
+                $adGroupTitle = isset($group['cn'][0]) ? $group['cn'][0] : '';
+
+                // Build the entry only if we have a minimum of info
                 $groupsArr[$adGroupId] = [
-                    'ad_group_id' => $adGroupId,
-                    'ad_group_title' => $group['cn'][0],
-                    'role_id' => -1,
-                    'id' => -1,
-                    'role_title' => '',
+                    'ad_group_id'    => $adGroupId,
+                    'ad_group_title' => $adGroupTitle,
+                    'role_id'        => -1,
+                    'id'             => -1,
+                    'role_title'     => '',
                 ];
             }            
 

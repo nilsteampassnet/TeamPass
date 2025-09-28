@@ -2833,7 +2833,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 '<?php echo $lang->get('perform'); ?>',
                 '<?php echo $lang->get('cancel'); ?>'
             );
-            $(document).one('click', '#warningModalButtonAction', function(event) {
+            $(document).off('click', '#warningModalButtonAction');
+            $(document).on('click', '#warningModalButtonAction', function(event) {
                 event.preventDefault();
                 event.stopPropagation();
                 if ($('#auth-user-name').val() !== "" && $('#auth-user-roles :selected').length > 0) {
@@ -2841,6 +2842,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     $(thisElement).removeClass('selected-user');
                 }
             });
+            $(document).off('click', '#warningModalButtonClose');
             $(document).on('click', '#warningModalButtonClose', function() {
                 $(thisElement).removeClass('selected-user');
             });
