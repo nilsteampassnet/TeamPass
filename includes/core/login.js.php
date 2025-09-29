@@ -192,9 +192,9 @@ declare(strict_types=1);
     });
     
     // Ensure session is ready in case of disconnection
-    const teampassSettings = store.get('teampassSettings');
+    const teampassSettings = storeSession.get('teampassSettings');
     if (teampassSettings === null || typeof teampassSettings === 'undefined' || Object.keys(teampassSettings).length === 0) {
-        store.set(
+        storeSession.set(
             'teampassSettings', {},
             function(teampassSettings) {}
         );
@@ -613,10 +613,10 @@ declare(strict_types=1);
         }
 
         // Clear localstorage
-        store.remove('teampassApplication');
-        store.remove('teampassSettings');
+        storeSession.remove('teampassApplication');
+        storeSession.remove('teampassSettings');
         store.remove('teampassUser');
-        store.remove('teampassItem');
+        storeSession.remove('teampassItem');
 
         //create random string
         var randomstring = CreateRandomString(10);
@@ -1081,10 +1081,10 @@ declare(strict_types=1);
      * @return void
      */
     function showMFAMethod() {
-        var twoFaMethods = (parseInt(store.get('teampassSettings').google_authentication) === 1 ? 1 : 0) +
-            (parseInt(store.get('teampassSettings').agses_authentication_enabled) === 1 ? 1 : 0) +
-            (parseInt(store.get('teampassSettings').duo) === 1 ? 1 : 0) +
-            (parseInt(store.get('teampassSettings').yubico_authentication) === 1 ? 1 : 0);
+        var twoFaMethods = (parseInt(storeSession.get('teampassSettings').google_authentication) === 1 ? 1 : 0) +
+            (parseInt(storeSession.get('teampassSettings').agses_authentication_enabled) === 1 ? 1 : 0) +
+            (parseInt(storeSession.get('teampassSettings').duo) === 1 ? 1 : 0) +
+            (parseInt(storeSession.get('teampassSettings').yubico_authentication) === 1 ? 1 : 0);
 
         if (twoFaMethods > 1) {
             // Show only expected MFA
@@ -1144,9 +1144,9 @@ declare(strict_types=1);
             // Show only expected MFA
             $('#2fa_methods_selector').addClass('hidden');
             // One 2FA method is expected
-            if (parseInt(store.get('teampassSettings').google_authentication) === 1) {
+            if (parseInt(storeSession.get('teampassSettings').google_authentication) === 1) {
                 $('#div-2fa-google').removeClass('hidden');
-            } else if (parseInt(store.get('teampassSettings').yubico_authentication) === 1) {
+            } else if (parseInt(storeSession.get('teampassSettings').yubico_authentication) === 1) {
                 $('#div-2fa-yubico').removeClass('hidden');
             }
             $('#login').focus();

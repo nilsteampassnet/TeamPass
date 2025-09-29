@@ -325,7 +325,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         );
 
                         // Force tree refresh
-                        store.update(
+                        storeSession.update(
                             'teampassApplication',
                             function(teampassApplication) {
                                 teampassApplication.jstreeForceRefresh = 1

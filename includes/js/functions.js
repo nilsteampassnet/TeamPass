@@ -257,19 +257,20 @@ function decodeQueryReturn(data, key, fileName = '', functionName = '')
  */
 function browserSession(action, name, data)
 {
+    const storeType = name.includes('teampass') ? storeSession : store;
     // Initialize the session
     if (action === 'init') {
-        if (store.get(name) === 'undefined'
-            || store.get(name) === undefined
+        if (storeType.get(name) === 'undefined'
+            || storeType.get(name) === undefined
         ) {
-            store.set(
+            storeType.set(
                 name,
                 data
             );
         } else {
             // Ensure all entries exist
             $(data).each(function(value, key) {
-                store.update(
+                storeType.update(
                     name,
                     function(bSession)
                     {

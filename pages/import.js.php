@@ -132,7 +132,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         key: '<?php echo $session->get('key'); ?>'
                     },
                     function(data) {
-                        store.update(
+                        storeSession.update(
                             'teampassApplication',
                             function(teampassApplication) {
                                 teampassApplication.uploadedFileId = data[0].token;
@@ -185,7 +185,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     $('#import-csv-attach-pickfile-csv-text')
                         .text(file.name + ' (' + plupload.formatSize(file.size) + ')');
 
-                    store.update(
+                    storeSession.update(
                         'teampassApplication',
                         function(teampassApplication) {
                             teampassApplication.uploadedFileId = data.operation_id;
@@ -232,7 +232,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             $('#import-csv-attach-pickfile-csv-text').val('');
             $('.import-csv-cb').iCheck('uncheck');
 
-            store.update(
+            storeSession.update(
                 'teampassApplication',
                 function(teampassApplication) {
                     teampassApplication.uploadType = '';
@@ -246,7 +246,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             $('#import-keepass-attach-pickfile-keepass-text').text('');
             $('.import-keepass-cb').iCheck('uncheck');
 
-            store.update(
+            storeSession.update(
                 'teampassApplication',
                 function(teampassApplication) {
                     teampassApplication.uploadType = '';
@@ -266,7 +266,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         // What importation is on-going
         var importTask = $('#import-type').find('.active').text().toLowerCase();
 
-        store.update(
+        storeSession.update(
             'teampassApplication',
             function(teampassApplication) {
                 teampassApplication.uploadType = importTask;
@@ -305,14 +305,14 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         toastr.info('<?php echo $lang->get('reading_file'); ?><i class="fa-solid fa-ellipsis fa-2x fa-fade ml-2"></i>');
 
         if (debugJavascript === true) {
-            console.log("file: "+store.get('teampassApplication').uploadedFileId+" -- Folder id: "+$('#import-csv-target-folder').val());
+            console.log("file: "+storeSession.get('teampassApplication').uploadedFileId+" -- Folder id: "+$('#import-csv-target-folder').val());
         }
 
         // Perform query
         $.post(
             "sources/import.queries.php", {
                 type: "import_file_format_csv",
-                file: store.get('teampassApplication').uploadedFileId,
+                file: storeSession.get('teampassApplication').uploadedFileId,
                 folder_id: $('#import-csv-target-folder').val(),
                 key: '<?php echo $session->get('key'); ?>'
             },
@@ -323,7 +323,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 }
 
                 // CLear
-                store.update(
+                storeSession.update(
                     'teampassApplication',
                     function(teampassApplication) {
                         teampassApplication.uploadedFileId = '';
@@ -798,7 +798,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         key: '<?php echo $session->get('key'); ?>'
                     },
                     function(data) {
-                        store.update(
+                        storeSession.update(
                             'teampassApplication',
                             function(teampassApplication) {
                                 teampassApplication.uploadedFileId = data[0].token;
@@ -817,7 +817,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
                 up.settings.multipart_params.PHPSESSID = "<?php echo session_id(); ?>";
                 up.settings.multipart_params.type_upload = "import_items_from_keepass";
-                up.settings.multipart_params.user_token = store.get('teampassApplication').uploadedFileId;			
+                up.settings.multipart_params.user_token = storeSession.get('teampassApplication').uploadedFileId;			
             },
             FileUploaded: function(upldr, file, object) {
                 var data = prepareExchangedData(object.response, "decode", "<?php echo $session->get('key'); ?>");
@@ -848,7 +848,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     $('#import-keepass-attach-pickfile-keepass-text')
                         .text(file.name + ' (' + plupload.formatSize(file.size) + ')');
 
-                    store.update(
+                    storeSession.update(
                         'teampassApplication',
                         function(teampassApplication) {
                             teampassApplication.uploadedFileId = data.operation_id;
@@ -898,7 +898,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         ProcessInProgress = true;
 
         data = {
-            'file': store.get('teampassApplication').uploadedFileId,
+            'file': storeSession.get('teampassApplication').uploadedFileId,
             'folder-id': parseInt($('#import-keepass-target-folder').val()),
         }
         if (debugJavascript === true) {
@@ -1086,7 +1086,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                         $('#import-keepass-attach-pickfile-keepass-text').text('');
                                         $('.import-keepass-cb').iCheck('uncheck');
 
-                                        store.update(
+                                        storeSession.update(
                                             'teampassApplication',
                                             function(teampassApplication) {
                                                 teampassApplication.uploadType = '';
