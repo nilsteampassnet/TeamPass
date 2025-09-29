@@ -206,40 +206,80 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
     });
 
     /**
-     */
-    $(document).on('change', '.form-control-sm, .setting-ldap', function() {
-        var field = $(this).attr('id'),
-            value = $.isArray($(this).val()) === false ? $(this).val() : JSON.stringify($(this).val().map(Number));
-
-        if (field === '' || field === undefined || $(this).hasClass('no-save') === true) return false;
+     * For MULTIPLE select2, we save the value when the dropdown is closed (to avoid multiple saves while user selects options)
+     * or when the field loses focus (click elsewhere, tab, etc.)
+    */
+    $('.select2[multiple]').on('select2:close', function() {
+        var $field = $(this);
+        var field = $field.attr('id');
         
-        // prevent launch of similar query in case of doubleclick
+        if (field === '' || field === undefined || $field.hasClass('no-save') === true) {
+            return false;
+        }
+        
+        saveFieldValue($field, field, true);
+    });
+
+    // Also save when the field loses focus (click elsewhere, tab, etc.)
+    $('.select2[multiple]').on('blur', function() {
+        var $field = $(this);
+        var field = $field.attr('id');
+        
+        if (field === '' || field === undefined || $field.hasClass('no-save') === true) {
+            return false;
+        }
+
+        // Small delay to ensure Select2 has finished processing
+        setTimeout(function() {
+            saveFieldValue($field, field, true);
+        }, 100);
+    });
+
+    // For SIMPLE select2 and other fields - save on change
+    $(document).on('change', '.form-control-sm:not(.select2[multiple]), .setting-ldap:not(.select2[multiple])', function() {
+        var $field = $(this);
+        var field = $field.attr('id');
+        
+        if (field === '' || field === undefined || $field.hasClass('no-save') === true) {
+            return false;
+        }
+        
+        var isSelect2 = $field.hasClass('select2');
+        
+        saveFieldValue($field, field, isSelect2);
+    });
+
+    function saveFieldValue($field, field, isSelect2) {
+        // Prevent launch of similar query in case of doubleclick
         if (requestRunning === true) {
             return false;
         }
-
+        
+        var value = $.isArray($field.val()) === false ? $field.val() : JSON.stringify($field.val().map(Number));
+        
         // Sanitize value
-        if ($(this).hasClass('select2') === false) {
+        if (isSelect2 === false) {
             value = fieldDomPurifierWithWarning('#' + field, false, false, false, true);
         }
+        
         if (value === false) {
             return false;
         }
+        
         $('#' + field).val(value);
-
+        
         requestRunning = true;
-
+        
         // Manage special cases
-        // WHere data needs to be adapted
         if (field === 'tasks_history_delay') {
             value = parseInt(value) * 3600 * 24;
         }
-
+        
         var data = {
             "field": field,
             "value": value,
         }
-
+        
         // Store in DB   
         $.post(
             "sources/admin.queries.php", {
@@ -261,6 +301,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                             positionClass: 'toast-bottom-right'
                         }
                     );
+                    requestRunning = false;
                     return false;
                 }
                 
@@ -276,8 +317,14 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                 }
                 requestRunning = false;
             }
-        );
-    });
+        ).fail(function() {
+            requestRunning = false;
+            toastr.error('<?php echo $lang->get('error'); ?>', '', {
+                closeButton: true,
+                positionClass: 'toast-bottom-right'
+            });
+        });
+    }
 
     $(document).ready(function() {
         // Perform DB integrity check
