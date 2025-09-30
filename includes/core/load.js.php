@@ -2136,10 +2136,21 @@ if (
             }
 
             // No access
-            if (data.password_error) {
+            if (data.error === true) {
                 toastr.remove();
                 toastr.error(data.password_error, '<?php echo $lang->get('caution'); ?>', {
                     timeOut: 5000,
+                    progressBar: true
+                });
+                return '';
+            }
+
+            // Password is empty or no key
+            if (typeof data.password_status !== 'undefined' && data.password_status === 'no_key') {
+                toastr.remove();
+                toastr.info('<?php echo $lang->get('password_is_empty'); ?>', '', {
+                    timeOut: 2000,
+                    positionClass: 'toast-bottom-right',
                     progressBar: true
                 });
                 return '';

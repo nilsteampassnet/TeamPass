@@ -599,7 +599,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                 
                 let html = '';
                 if (data.error === false) {
-                    if (data.setupProposal === false) {
+                    if (data.setupProposal === false && data.estimatedTime !== null) {
                         html = '<i class="fa-solid fa-circle-exclamation text-warning mr-2"></i>'
                             + 'Estimated time to process all keys is about <b>' + data.estimatedTime + '</b> seconds.<br/>'
                             + 'It is suggested to allow <b>' + data.proposedDuration + '</b> seconds for a background task to run.<br/>'

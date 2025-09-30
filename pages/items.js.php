@@ -3632,7 +3632,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 'item_id',
                 store.get('teampassItem').id
             ).then(item_pwd => {
-                if (item_pwd) {
+                if (item_pwd || item_pwd === '') {
                     $('#form-item-password').val(item_pwd);
 
                     $('#card-item-visibility').html(store.get('teampassItem').itemVisibility);
@@ -4369,7 +4369,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 teampassApplication.itemsList = JSON.stringify(stored_datas);
             }
         );
-        console.log(listOfItems);
+        
         $.each(listOfItems, function(i, value) {
             var new_line = '',
                 pwd_error = '',

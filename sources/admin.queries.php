@@ -2666,7 +2666,7 @@ switch ($post_type) {
 
         echo prepareExchangedData(
             array(
-                'estimatedTime' => round($duration, 0),
+                'estimatedTime' => round($duration, 0) ?? null, // Estimated time in seconds
                 'proposedDuration' => $proposedDuration, // New proposed value if current setting is not sufficient
                 'currentDuration' => (int) $SETTINGS['task_maximum_run_time'], // Current setting
                 'setupProposal' => $isCurrentSettingSufficient, // true if current setting is sufficient, false otherwise
