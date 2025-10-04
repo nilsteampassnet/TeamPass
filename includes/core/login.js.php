@@ -617,6 +617,7 @@ declare(strict_types=1);
         store.remove('teampassSettings');
         store.remove('teampassUser');
         store.remove('teampassItem');
+        store.remove('userOauth2Info');
 
         //create random string
         var randomstring = CreateRandomString(10);

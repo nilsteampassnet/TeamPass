@@ -64,6 +64,54 @@ if (
         debugJavascript = false;
     let hourInMinutes = 60;
 
+    // Initialize browser session variables
+    browserSession(
+        'init',
+        'teampassApplication', {
+            foldersSelect: '',
+            complexityOptions: '',
+        }
+    );
+    browserSession(
+        'init',
+        'teampassApplication', {
+            lastItemSeen: '',
+            itemsListFolderId: '',
+            itemsListRestricted: '',
+            itemsShownByQuery: '',
+            rolesSelectOptions: '',
+            itemsListStop: '',
+            itemsListStart: '',
+            selectedFolder: '',
+            foldersList: [],
+            personalSaltkeyRequired: 0,
+            uploadedFileId: '',
+            tempScrollTop: 0,
+            highlightSelected: 0,
+            highlightFavorites: 0,
+            logData: '',
+            foldersSelect: '',
+            complexityOptions: ''
+        }
+    );
+
+    browserSession(
+        'init',
+        'teampassItem', {
+            IsPersonalFolder: '',
+            hasAccessLevel: '',
+            hasCustomCategories: '',
+            id: '',
+            timestamp: '',
+            folderId: ''
+        }
+    );
+
+    browserSession(
+        'init',
+        'userOauth2Info', ''
+    );
+
 
     $(document).ready(function() {
         // Don't redirect in some conditions

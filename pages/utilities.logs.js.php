@@ -91,12 +91,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     var oTableErrors;
 
     // What type of form? Edit or new user
-    browserSession(
-        'init',
-        'teampassApplication', {
-            logData: 'connections',
-        }
-    );
     store.update(
         'teampassApplication',
         function(teampassApplication) {
