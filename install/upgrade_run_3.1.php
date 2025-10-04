@@ -941,6 +941,72 @@ if (intval($tmp) === 0) {
     );
 }
 
+// Add new table user_private_keys
+mysqli_query(
+    $db_link,
+    'CREATE TABLE IF NOT EXISTS `' . $pre . 'user_private_keys` (
+    id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL REFERENCES ' . $pre . 'users(id),
+    private_key TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_current BOOLEAN DEFAULT FALSE
+    ) CHARSET=utf8;'
+);
+
+// Insert private keys from table Users
+try {
+    // Check if the table is empty
+    $checkQuery = "SELECT COUNT(*) as count FROM `" . $pre . "user_private_keys`";
+    $result = mysqli_query($db_link, $checkQuery);
+    
+    $row = mysqli_fetch_assoc($result);
+    $count = $row['count'];
+    mysqli_free_result($result);
+    
+    if ((int)$count === 0) {
+        mysqli_begin_transaction($db_link);
+        
+        // Get all users with a private key
+        $selectQuery = "
+            SELECT 
+                id, 
+                private_key 
+            FROM `" . $pre . "users`
+            WHERE private_key IS NOT NULL 
+            AND private_key != ''
+            ORDER BY id
+        ";
+        $result = mysqli_query($db_link, $selectQuery);        
+        $totalUsers = mysqli_num_rows($result);
+
+        // Prepare the insert query
+        $insertQuery = "INSERT INTO `" . $pre . "user_private_keys` (`user_id`, `private_key`, `is_current`) VALUES (?, ?, 1)";
+        $stmt = mysqli_prepare($db_link, $insertQuery); 
+
+        while ($user = mysqli_fetch_assoc($result)) {
+            $userId = $user['id'];
+            $privateKey = $user['private_key'];
+            
+            // Bind parameters
+            mysqli_stmt_bind_param($stmt, "is", $userId, $privateKey);
+
+            // Execute the statement
+            mysqli_stmt_execute($stmt);
+        }
+
+        // Free resources
+        mysqli_free_result($result);
+        mysqli_stmt_close($stmt);
+
+        // Commit the transaction
+        mysqli_commit($db_link);          
+    }
+    
+} catch (Exception $e) {
+    // In case of error, rollback the transaction
+    mysqli_rollback($db_link);
+}
+
 //---<END 3.1.4
 
 

@@ -1085,16 +1085,16 @@ switch ($inputData['type']) {
             break;
         }
 
-        // Does the user has the sharekey
-        //db::debugmode(true);
+        // Does the user has the sharekey for this item?
         DB::query(
             'SELECT *
             FROM ' . prefixTable('sharekeys_items') . '
             WHERE object_id = %i AND user_id = %s',
             $inputData['itemId'],
             $session->get('user-id')
-        );
-        if (DB::count() === 0) {
+            );
+        // If no sharekey found, and item is not personal, then stop the process    
+        if (DB::count() === 0 && (int) $dataItem['perso'] !== 1) {
             if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
                 error_log('TEAMPASS | user '.$session->get('user-id').' has no sharekey for item '.$inputData['itemId']);
             }
@@ -1312,6 +1312,11 @@ switch ($inputData['type']) {
                 'id=%i',
                 $inputData['itemId']
             );
+
+            // Delete all existing sharekey_items for users if the item is personal
+            if ((int) $dataItem['perso'] === 1) {
+                EnsurePersonalItemHasOnlyKeysForOwner((int) $inputData['itemId'], (int) $dataItem['id_user']);
+            }
 
             // update fields
             if (
@@ -1547,7 +1552,7 @@ switch ($inputData['type']) {
             }
 
             // create a task for all fields updated
-            if ($encryptionTaskIsRequested === true) {
+            if ($encryptionTaskIsRequested === true && (int) $dataItem['perso'] !== 1) {
                 if (WIP === true) error_log('createTaskForItem - '.print_r($tasksToBePerformed, true));
                 createTaskForItem(
                     'item_update_create_keys',
@@ -4556,7 +4561,7 @@ switch ($inputData['type']) {
             'at_password_shown',
             'at_password_shown_edit_form',
         ];
-error_log(print_r($userAccess,true));
+        
         // User not allowed to see this password or invalid action provided
         if ($userAccess !== true
             || empty($inputData['action'])
