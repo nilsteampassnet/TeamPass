@@ -86,26 +86,6 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 <script type="text/javascript">
     var requestRunning = false,
         debugJavascript = false;
-    
-    // Manage memory
-    browserSession(
-        'init',
-        'teampassApplication', {
-            lastItemSeen: '',
-            selectedFolder: '',
-            itemsListStop: '',
-            itemsListStart: '',
-            selectedFolder: '',
-            itemsListFolderId: '',
-            itemsListRestricted: '',
-            itemsShownByQuery: '',
-            foldersList: [],
-            personalSaltkeyRequired: 0,
-            uploadedFileId: '',
-            rolesSelectOptions: '',
-        }
-    );
-
 
     /**
      * ADMIN
