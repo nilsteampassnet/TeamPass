@@ -242,7 +242,7 @@ if (
                                 teampassUser.keys_recovery_time = data.queryResults.keys_recovery_time;
                             }
                         );
-
+                        
                         if (data.error === false && data.queryResults.special === 'generate-keys') {
                             // Get generation keys progress status
                             getGenerateKeysProgress(store.get('teampassUser').user_id);
@@ -332,6 +332,14 @@ if (
                                 event.preventDefault();
                                 document.location.href = "index.php?page=profile&tab=keys";
                             });
+                        }
+
+                        // Does user has personal items to encrypt?
+                        if (typeof data.queryResults !== 'undefined' && data.error === false && data.queryResults.special === 'encrypt_personal_items') {
+                            // User has personal items to encrypt
+                            if (debugJavascript === true) console.log('User has personal items to encrypt');
+                            $('#dialog-ldap-user-change-password').removeClass('hidden');
+                            $('.content, .content-header').addClass('hidden');
                         }
                     }
                 );

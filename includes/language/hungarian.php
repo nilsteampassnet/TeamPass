@@ -1268,5 +1268,7 @@ e new password must:<br/> - Be different from the previous one<br/> - Contain at
     'files_integrity_check' => 'Files integrity check',
     'import_error_folder_creation' => 'Error while creating folder',
     'suggested_value' => 'Suggested value',
+    'user_password_changed' => 'Your password has changed. Please provide your previous password to re-encrypt your personal items. Once done, please wait a few minutes before accessing your personal items.',
+    'no_previous_valide_private_key' => 'No previous private key fits provided password',
 
 );

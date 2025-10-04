@@ -327,7 +327,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             [
                 'value' => '',
                 'error' => true,
-                'message' => $lang->get('error_bad_credentials')."1",
+                'message' => $lang->get('error_bad_credentials'),
             ],
             'encode'
         );

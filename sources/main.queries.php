@@ -3237,6 +3237,7 @@ function changeUserAuthenticationPassword(
  * @param integer $post_user_id
  * @param string $post_previous_pwd
  * @param string $post_current_pwd
+ * @param string $post_action_type
  * @return string
  */            
 function changeUserLDAPAuthenticationPassword(
@@ -3252,81 +3253,27 @@ function changeUserLDAPAuthenticationPassword(
     if (isUserIdValid($post_user_id) === true) {
         // Get user info
         $userData = DB::queryFirstRow(
-            'SELECT auth_type, login, private_key, special
-            FROM ' . prefixTable('users') . '
-            WHERE id = %i',
+            'SELECT u.auth_type, u.login, u.private_key, u.special
+            FROM ' . prefixTable('users') . ' AS u
+            WHERE u.id = %i',
             $post_user_id
         );
 
-        if (DB::count() > 0 && empty($userData['private_key']) === false) {
-            // Now check if current password is correct (only if not ldap)
-            if ($userData['auth_type'] === 'ldap' && $userData['special'] === 'auth-pwd-change') {
-                // As it is a change for an LDAP user
-                
-                // Now check if current password is correct
-                // For this, just check if it is possible to decrypt the privatekey
-                // And compare it to the one in session
-                $privateKey = decryptPrivateKey($post_previous_pwd, $userData['private_key']);
-
-                // Encrypt it with new password
-                $hashedPrivateKey = encryptPrivateKey($post_current_pwd, $privateKey);
-
-                // Update user account
-                DB::update(
-                    prefixTable('users'),
-                    array(
-                        'private_key' => $hashedPrivateKey,
-                        'special' => 'none',
-                    ),
-                    'id = %i',
-                    $post_user_id
-                );
-
-                $session->set('user-private_key', $privateKey);
-
-                return prepareExchangedData(
-                    array(
-                        'error' => false,
-                        'message' => $lang->get('done'),'',
-                    ),
-                    'encode'
-                );
-            }
-
-            // For this, just check if it is possible to decrypt the privatekey
-            // And try to decrypt one existing key
-            $privateKey = decryptPrivateKey($post_previous_pwd, $userData['private_key']);
-
-            if (empty($privateKey) === true) {
-                return prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => $lang->get('password_is_not_correct'),
-                    ),
-                    'encode'
-                );
-            }
-            // Get one itemKey from current user
-            $currentUserKey = DB::queryFirstRow(
-                'SELECT ski.share_key, ski.increment_id, l.id_user
-                FROM ' . prefixTable('sharekeys_items') . ' AS ski
-                INNER JOIN ' . prefixTable('log_items') . ' AS l ON ski.object_id = l.id_item
-                WHERE ski.user_id = %i
-                ORDER BY RAND()
-                LIMIT 1',
-                $post_user_id
-            );
-
-            if (is_countable($currentUserKey) && count($currentUserKey) > 0) {
-                // Decrypt itemkey with user key
-                // use old password to decrypt private_key
-                $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $privateKey);
-                
-                if (empty(base64_decode($itemKey)) === false) {
-                    // GOOD password
-                    // Encrypt it with current password
-                    $hashedPrivateKey = encryptPrivateKey($post_current_pwd, $privateKey);
+        if (DB::count() > 0) {
+            // 
+            if ($userData['auth_type'] === 'ldap' && empty($userData['private_key']) === false && $userData['special'] === 'encrypt_personal_items') {
+                // Now check if current password is correct (only if not ldap)
+                if ($userData['special'] === 'auth-pwd-change') {
+                    // As it is a change for an LDAP user
                     
+                    // Now check if current password is correct
+                    // For this, just check if it is possible to decrypt the privatekey
+                    // And compare it to the one in session
+                    $privateKey = decryptPrivateKey($post_previous_pwd, $userData['private_key']);
+
+                    // Encrypt it with new password
+                    $hashedPrivateKey = encryptPrivateKey($post_current_pwd, $privateKey);
+
                     // Update user account
                     DB::update(
                         prefixTable('users'),
@@ -3337,9 +3284,129 @@ function changeUserLDAPAuthenticationPassword(
                         'id = %i',
                         $post_user_id
                     );
-                    
-                    $lang = new Language($session->get('user-language') ?? 'english');
+
                     $session->set('user-private_key', $privateKey);
+
+                    return prepareExchangedData(
+                        array(
+                            'error' => false,
+                            'message' => $lang->get('done'),'',
+                        ),
+                        'encode'
+                    );
+                }
+
+                // For this, just check if it is possible to decrypt the privatekey
+                // And try to decrypt one existing key
+                $privateKey = decryptPrivateKey($post_previous_pwd, $userData['private_key']);
+
+                if (empty($privateKey) === true) {
+                    return prepareExchangedData(
+                        array(
+                            'error' => true,
+                            'message' => $lang->get('password_is_not_correct'),
+                        ),
+                        'encode'
+                    );
+                }
+                // Get one itemKey from current user
+                $currentUserKey = DB::queryFirstRow(
+                    'SELECT ski.share_key, ski.increment_id, l.id_user
+                    FROM ' . prefixTable('sharekeys_items') . ' AS ski
+                    INNER JOIN ' . prefixTable('log_items') . ' AS l ON ski.object_id = l.id_item
+                    WHERE ski.user_id = %i
+                    ORDER BY RAND()
+                    LIMIT 1',
+                    $post_user_id
+                );
+
+                if (is_countable($currentUserKey) && count($currentUserKey) > 0) {
+                    // Decrypt itemkey with user key
+                    // use old password to decrypt private_key
+                    $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $privateKey);
+                    
+                    if (empty(base64_decode($itemKey)) === false) {
+                        // GOOD password
+                        // Encrypt it with current password
+                        $hashedPrivateKey = encryptPrivateKey($post_current_pwd, $privateKey);
+                        
+                        // Update user account
+                        DB::update(
+                            prefixTable('users'),
+                            array(
+                                'private_key' => $hashedPrivateKey,
+                                'special' => 'none',
+                            ),
+                            'id = %i',
+                            $post_user_id
+                        );
+                        
+                        $lang = new Language($session->get('user-language') ?? 'english');
+                        $session->set('user-private_key', $privateKey);
+
+                        return prepareExchangedData(
+                            array(
+                                'error' => false,
+                                'message' => $lang->get('done'),
+                            ),
+                            'encode'
+                        );
+                    }
+                }
+                
+                // ERROR
+                return prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('bad_password'),
+                    ),
+                    'encode'
+                );
+            } elseif ($userData['special'] === 'encrypt_personal_items') {
+                // We need to find a valid previous private key
+                $validPreviousKey = findValidPreviousPrivateKey(
+                    $post_previous_pwd,
+                    $post_user_id,
+                    $userData
+                );
+
+                if ($validPreviousKey['private_key'] !== null) {
+                    // Decrypt all personal items with this key
+                    // Launch the re-encryption process for personal items
+                    // Create process
+                    DB::insert(
+                        prefixTable('background_tasks'),
+                        array(
+                            'created_at' => time(),
+                            'process_type' => 'create_user_keys',
+                            'arguments' => json_encode([
+                                'new_user_id' => (int) $post_user_id,
+                                'new_user_pwd' => cryption($post_previous_pwd, '','encrypt')['string'],
+                                'new_user_private_key' => cryption($validPreviousKey['private_key'], '','encrypt')['string'],
+                                'send_email' => 0,
+                                'otp_provided_new_value' => 0,
+                                'user_self_change' => 1,
+                                'only_personal_items' => 1,
+                            ]),
+                        )
+                    );
+                    $processId = DB::insertId();
+
+                    // Create tasks
+                    createUserTasks($processId, NUMBER_ITEMS_IN_BATCH);
+
+                    // update user's new status
+                    DB::update(
+                        prefixTable('users'),
+                        [
+                            'is_ready_for_usage' => 1,
+                            'otp_provided' => 1,
+                            'ongoing_process_id' => $processId,
+                            'special' => 'none',
+                        ],
+                        'id=%i',
+                        $post_user_id
+                    );
 
                     return prepareExchangedData(
                         array(
@@ -3349,16 +3416,14 @@ function changeUserLDAPAuthenticationPassword(
                         'encode'
                     );
                 }
+                return prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('no_previous_valide_private_key'),
+                    ),
+                    'encode'
+                );
             }
-            
-            // ERROR
-            return prepareExchangedData(
-                array(
-                    'error' => true,
-                    'message' => $lang->get('bad_password'),
-                ),
-                'encode'
-            );
         }
     }
 
@@ -3370,6 +3435,84 @@ function changeUserLDAPAuthenticationPassword(
         ),
         'encode'
     );
+}
+
+/**
+ * Try to find a valid previous private key by testing all previous keys
+ * until one is able to decrypt the share_key of one item
+ * @param string $previousPassword
+ * @param int $userId
+ * @param array $userData
+ * @return array|null
+ */
+function findValidPreviousPrivateKey($previousPassword, $userId, $userData) {
+    // Retrieve all user's private keys in descending order (most recent first)
+    $privateKeys = DB::query(
+        "SELECT 
+            id,
+            private_key,
+            created_at
+        FROM " . prefixTable('user_private_keys') . "
+        WHERE user_id = %i
+        ORDER BY created_at DESC, id DESC",
+        $userId
+    );
+    
+    if (empty($privateKeys)) {
+        //error_log("No private keys found for user $userId");
+        return null;
+    }
+    
+    // Loop through all private keys
+    foreach ($privateKeys as $row) {
+        $keyId = $row['id'];
+        $encryptedPrivateKey = $row['private_key'];
+        
+        //error_log("Testing private key ID: $keyId");
+        
+        // Attempt to decrypt the private key with the previous password
+        $privateKey = decryptPrivateKey($previousPassword, $encryptedPrivateKey);
+        
+        // If decryption succeeded (key not null)
+        if ($privateKey !== null) {
+            //error_log("✓ Private key ID $keyId decrypted successfully");
+
+            // Select one personal item share_key to test decryption
+            $currentUserItemKey = DB::queryFirstRow(
+                'SELECT si.share_key, si.increment_id, l.id_user, i.perso
+                FROM ' . prefixTable('sharekeys_items') . ' AS si
+                INNER JOIN ' . prefixTable('log_items') . ' AS l ON si.object_id = l.id_item
+                INNER JOIN ' . prefixTable('items') . ' AS i ON i.id = l.id_item
+                WHERE si.user_id = %i AND i.perso = 1 AND si.share_key != ""
+                ORDER BY RAND()
+                LIMIT 1',
+                $userId
+            );
+
+            if (is_countable($currentUserItemKey) && count($currentUserItemKey) > 0) {
+                //error_log("Found itemKey to test decryption for private key ID $keyId - ".$currentUserItemKey['increment_id']);
+                // Decrypt itemkey with user key
+                // use old password to decrypt private_key
+                $itemKey = decryptUserObjectKey($currentUserItemKey['share_key'], $privateKey);
+                if (empty(base64_decode($itemKey)) === false) {
+                    //error_log("✓ Valid itemKey found with private key ID $keyId");
+                
+                    return [
+                        'private_key' => $privateKey
+                    ];
+                }
+            } else {
+                //error_log("✗ Invalid itemKey for private key ID $keyId");
+            }
+        } else {
+            //error_log("✗ Unable to decrypt private key ID $keyId");
+        }
+    }
+    
+    // No valid key found
+    //error_log("✗ No valid private key found for user $userId");
+    
+    return null;
 }
 
 /**
