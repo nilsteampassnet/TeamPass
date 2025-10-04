@@ -3459,24 +3459,18 @@ function findValidPreviousPrivateKey($previousPassword, $userId, $userData) {
     );
     
     if (empty($privateKeys)) {
-        //error_log("No private keys found for user $userId");
         return null;
     }
     
     // Loop through all private keys
     foreach ($privateKeys as $row) {
-        $keyId = $row['id'];
         $encryptedPrivateKey = $row['private_key'];
-        
-        //error_log("Testing private key ID: $keyId");
         
         // Attempt to decrypt the private key with the previous password
         $privateKey = decryptPrivateKey($previousPassword, $encryptedPrivateKey);
         
         // If decryption succeeded (key not null)
         if ($privateKey !== null) {
-            //error_log("✓ Private key ID $keyId decrypted successfully");
-
             // Select one personal item share_key to test decryption
             $currentUserItemKey = DB::queryFirstRow(
                 'SELECT si.share_key, si.increment_id, l.id_user, i.perso
@@ -3490,27 +3484,17 @@ function findValidPreviousPrivateKey($previousPassword, $userId, $userData) {
             );
 
             if (is_countable($currentUserItemKey) && count($currentUserItemKey) > 0) {
-                //error_log("Found itemKey to test decryption for private key ID $keyId - ".$currentUserItemKey['increment_id']);
                 // Decrypt itemkey with user key
                 // use old password to decrypt private_key
                 $itemKey = decryptUserObjectKey($currentUserItemKey['share_key'], $privateKey);
-                if (empty(base64_decode($itemKey)) === false) {
-                    //error_log("✓ Valid itemKey found with private key ID $keyId");
-                
+                if (empty(base64_decode($itemKey)) === false) {                
                     return [
                         'private_key' => $privateKey
                     ];
                 }
-            } else {
-                //error_log("✗ Invalid itemKey for private key ID $keyId");
             }
-        } else {
-            //error_log("✗ Unable to decrypt private key ID $keyId");
         }
     }
-    
-    // No valid key found
-    //error_log("✗ No valid private key found for user $userId");
     
     return null;
 }
