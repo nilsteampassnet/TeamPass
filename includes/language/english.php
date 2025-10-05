@@ -32,6 +32,8 @@
  // - selected_items_to_be_imported
 
 return array(
+    'copy_sub_directories' => 'Copy sub-directories',
+    'copy_items' => 'Copy items',
     'suggested_value' => 'Suggested value',
     'import_error_folder_creation' => 'Error while creating folder',
     'files_are_not_expected_ones' => 'files are not expected ones',

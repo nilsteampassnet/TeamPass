@@ -1268,5 +1268,9 @@ return array(
     'files_integrity_check' => 'Vérification de l&apos;intégrité des fichiers',
     'import_error_folder_creation' => 'Erreur durant la création du répertoire',
     'suggested_value' => 'Valeur suggérée',
+    'user_password_changed' => 'Votre mot de passe a changé. Merci de renseigner le précédent de façon à réencrypter vos éléments personnels. Une fois terminé, merci de patienter quelques minutes avant d&apos;accéder à vos objets personnels.',
+    'no_previous_valide_private_key' => 'Aucune clé privée antérieure ne correspond à ce mot de passe',
+    'copy_sub_directories' => 'Copier les sous-répertoires',
+    'copy_items' => 'Copier les objets',
 
 );

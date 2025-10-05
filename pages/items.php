@@ -862,6 +862,17 @@ foreach ($rows as $reccord) {
                         <select class="form-control form-folder-control select2" style="width:100%;" id="form-folder-copy-destination" required>
                         </select>
                     </div>
+                    <div class="form-group">
+                        <label><?php echo $lang->get('options'); ?></label>
+                        <div class="input-group input-group-sm">
+                            <input type="checkbox" class="flat-blue ml-2" id="form-folder-copy-sub-directories">
+                            <label for="form-folder-copy-sub-directories" class="ml-2"><?php echo $lang->get('copy_sub_directories'); ?></label>
+                        </div>    
+                        <div class="input-group input-group-sm">
+                            <input type="checkbox" class="flat-blue ml-2" id="form-folder-copy-items">
+                            <label for="form-folder-copy-items" class="ml-2"><?php echo $lang->get('copy_items'); ?></label>
+                        </div> 
+                    </div>
                 </div>
                 <div class="card-footer">
                     <button type="submit" class="btn btn-primary" id="form-folder-copy-perform"><?php echo $lang->get('perform'); ?></button>

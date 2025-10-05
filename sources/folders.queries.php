@@ -911,6 +911,8 @@ if (null !== $post_type) {
             $post_source_folder_id = filter_var($dataReceived['source_folder_id'], FILTER_SANITIZE_NUMBER_INT);
             $post_target_folder_id = filter_var($dataReceived['target_folder_id'], FILTER_SANITIZE_NUMBER_INT);
             $post_folder_label = filter_var($dataReceived['folder_label'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_copy_subdirectories = filter_var($dataReceived['copy_subdirectories'], FILTER_SANITIZE_NUMBER_INT);
+            $post_copy_items = filter_var($dataReceived['copy_items'], FILTER_SANITIZE_NUMBER_INT);
 
             // Test if target folder is Read-only
             // If it is then stop
@@ -988,13 +990,15 @@ if (null !== $post_type) {
                     'complex'
                 );
 
-                // prepare parent Id
-                if (empty($parentId) === true) {
-                    $parentId = $post_target_folder_id;
-                } else {
+                // prepare parent Id - Always recalculate depending on the new parent ID of the node
+                if (isset($tabNodes[$nodeInfo->parent_id])) {
+                    // The parent has already been copied, use its new ID
                     $parentId = $tabNodes[$nodeInfo->parent_id];
+                } else {
+                    // The parent has not been copied (it's the first level), use the target
+                    $parentId = $post_target_folder_id;
                 }
-
+                
                 //create folder
                 DB::insert(
                     prefixTable('nested_tree'),
@@ -1092,126 +1096,135 @@ if (null !== $post_type) {
                 }
 
                 // step2 - copy items
-
-                $rows = DB::query(
-                    'SELECT *
-                    FROM ' . prefixTable('items') . '
-                    WHERE id_tree = %i',
-                    $nodeInfo->id
-                );
-                foreach ($rows as $record) {
-                    // check if item is deleted
-                    // if it is then don't copy it
-                    $item_deleted = DB::queryFirstRow(
+                if ((int) $post_copy_items === 1) {
+                    // get all items in this folder
+                    // even the inactive ones
+                    // because if user has access to the folder
+                    // he should have access to all items in it
+                    $rows = DB::query(
                         'SELECT *
-                        FROM ' . prefixTable('log_items') . '
-                        WHERE id_item = %i AND action = %s
-                        ORDER BY date DESC
-                        LIMIT 0, 1',
-                        $record['id'],
-                        'at_delete'
+                        FROM ' . prefixTable('items') . '
+                        WHERE id_tree = %i',
+                        $nodeInfo->id
                     );
-                    $dataDeleted = DB::count();
-
-                    $item_restored = DB::queryFirstRow(
-                        'SELECT *
-                        FROM ' . prefixTable('log_items') . '
-                        WHERE id_item = %i AND action = %s
-                        ORDER BY date DESC
-                        LIMIT 0, 1',
-                        $record['id'],
-                        'at_restored'
-                    );
-
-                    if (
-                        (int) $dataDeleted !== 1
-                        || (isset($item_restored['date']) === true && (int) $item_deleted['date'] < (int) $item_restored['date'])
-                    ) {
-                        // Get the ITEM object key for the user
-                        $userKey = DB::queryFirstRow(
-                            'SELECT share_key
-                            FROM ' . prefixTable('sharekeys_items') . '
-                            WHERE user_id = %i AND object_id = %i',
-                            $session->get('user-id'),
-                            $record['id']
+                    foreach ($rows as $record) {
+                        // check if item is deleted
+                        // if it is then don't copy it
+                        $item_deleted = DB::queryFirstRow(
+                            'SELECT *
+                            FROM ' . prefixTable('log_items') . '
+                            WHERE id_item = %i AND action = %s
+                            ORDER BY date DESC
+                            LIMIT 0, 1',
+                            $record['id'],
+                            'at_delete'
                         );
-                        if (DB::count() === 0) {
-                            // ERROR - No sharekey found for this item and user
-                            echo prepareExchangedData(
-                                array(
-                                    'error' => true,
-                                    'message' => $lang->get('error_not_allowed_to'),
-                                ),
-                                'encode'
-                            );
-                            break;
-                        }
-                        
+                        $dataDeleted = DB::count();
 
-                        // Decrypt / Encrypt the password
-                        $cryptedStuff = doDataEncryption(
-                            base64_decode(
-                                doDataDecryption(
-                                    $record['pw'],
-                                    decryptUserObjectKey(
-                                        $userKey['share_key'],
-                                        $session->get('user-private_key')
+                        $item_restored = DB::queryFirstRow(
+                            'SELECT *
+                            FROM ' . prefixTable('log_items') . '
+                            WHERE id_item = %i AND action = %s
+                            ORDER BY date DESC
+                            LIMIT 0, 1',
+                            $record['id'],
+                            'at_restored'
+                        );
+
+                        if (
+                            (int) $dataDeleted !== 1
+                            || (isset($item_restored['date']) === true && (int) $item_deleted['date'] < (int) $item_restored['date'])
+                        ) {
+                            // Get the ITEM object key for the user
+                            $userKey = DB::queryFirstRow(
+                                'SELECT share_key
+                                FROM ' . prefixTable('sharekeys_items') . '
+                                WHERE user_id = %i AND object_id = %i',
+                                $session->get('user-id'),
+                                $record['id']
+                            );
+                            if (DB::count() === 0) {
+                                // ERROR - No sharekey found for this item and user
+                                echo prepareExchangedData(
+                                    array(
+                                        'error' => true,
+                                        'message' => $lang->get('error_not_allowed_to'),
+                                    ),
+                                    'encode'
+                                );
+                                break;
+                            }                            
+
+                            // Decrypt / Encrypt the password
+                            $cryptedStuff = doDataEncryption(
+                                base64_decode(
+                                    doDataDecryption(
+                                        $record['pw'],
+                                        decryptUserObjectKey(
+                                            $userKey['share_key'],
+                                            $session->get('user-private_key')
+                                        )
                                     )
                                 )
-                            )
-                        );
+                            );
 
-                        // Insert the new record and get the new auto_increment id
-                        DB::insert(
-                            prefixTable('items'),
-                            array(
-                                'label' => substr($record['label'], 0, 500),
-                                'description' => empty($record['description']) === true ? '' : $record['description'],
-                                'id_tree' => $newFolderId,
-                                'pw' => $cryptedStuff['encrypted'],
-                                'pw_iv' => '',
-                                'url' => empty($record['url']) === true ? '' : substr($record['url'], 0, 500),
-                                'login' => empty($record['login']) === true ? '' : substr($record['login'], 0, 200),
-                                'viewed_no' => 0,
-                                'encryption_type' => 'teampass_aes',
-                                'item_key' => uniqidReal(50),
-                                'created_at' => time(),
-                            )
-                        );
-                        $newItemId = DB::insertId();
+                            // Insert the new record and get the new auto_increment id
+                            DB::insert(
+                                prefixTable('items'),
+                                array(
+                                    'label' => substr($record['label'], 0, 500),
+                                    'description' => empty($record['description']) === true ? '' : $record['description'],
+                                    'id_tree' => $newFolderId,
+                                    'pw' => $cryptedStuff['encrypted'],
+                                    'pw_iv' => '',
+                                    'url' => empty($record['url']) === true ? '' : substr($record['url'], 0, 500),
+                                    'login' => empty($record['login']) === true ? '' : substr($record['login'], 0, 200),
+                                    'viewed_no' => 0,
+                                    'encryption_type' => 'teampass_aes',
+                                    'item_key' => uniqidReal(50),
+                                    'created_at' => time(),
+                                )
+                            );
+                            $newItemId = DB::insertId();
 
-                        // Create task for the new item
-                        storeTask(
-                            'item_copy',
-                            $session->get('user-id'),
-                            (int) $nodeInfo->personal_folder,
-                            (int) $newFolderId,
-                            (int) $newItemId,
-                            $cryptedStuff['objectKey'],
-                        );
+                            // Create task for the new item
+                            storeTask(
+                                'item_copy',
+                                $session->get('user-id'),
+                                (int) $nodeInfo->personal_folder,
+                                (int) $newFolderId,
+                                (int) $newItemId,
+                                $cryptedStuff['objectKey'],
+                            );
 
-                        // Add this duplicate in logs
-                        logItems(
-                            $SETTINGS,
-                            (int) $newItemId,
-                            $record['label'],
-                            $session->get('user-id'),
-                            'at_creation',
-                            $session->get('user-login')
-                        );
-                        // Add the fact that item has been copied in logs
-                        logItems(
-                            $SETTINGS,
-                            (int) $newItemId,
-                            $record['label'],
-                            $session->get('user-id'),
-                            'at_copy',
-                            $session->get('user-login')
-                        );
+                            // Add this duplicate in logs
+                            logItems(
+                                $SETTINGS,
+                                (int) $newItemId,
+                                $record['label'],
+                                $session->get('user-id'),
+                                'at_creation',
+                                $session->get('user-login')
+                            );
+                            // Add the fact that item has been copied in logs
+                            logItems(
+                                $SETTINGS,
+                                (int) $newItemId,
+                                $record['label'],
+                                $session->get('user-id'),
+                                'at_copy',
+                                $session->get('user-login')
+                            );
 
-                        // Add item to cache table
-                        updateCacheTable('add_value', (int) $newItemId);
+                            // Add item to cache table
+                            updateCacheTable('add_value', (int) $newItemId);
+                        }
                     }
+                }
+
+                // Exit loop if user does not want to copy subdirectories
+                if ((int) $post_copy_subdirectories !== 1) {
+                    break;
                 }
             }
 
