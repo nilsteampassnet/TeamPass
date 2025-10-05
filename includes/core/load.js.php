@@ -64,6 +64,54 @@ if (
         debugJavascript = false;
     let hourInMinutes = 60;
 
+    // Initialize browser session variables
+    browserSession(
+        'init',
+        'teampassApplication', {
+            foldersSelect: '',
+            complexityOptions: '',
+        }
+    );
+    browserSession(
+        'init',
+        'teampassApplication', {
+            lastItemSeen: '',
+            itemsListFolderId: '',
+            itemsListRestricted: '',
+            itemsShownByQuery: '',
+            rolesSelectOptions: '',
+            itemsListStop: '',
+            itemsListStart: '',
+            selectedFolder: '',
+            foldersList: [],
+            personalSaltkeyRequired: 0,
+            uploadedFileId: '',
+            tempScrollTop: 0,
+            highlightSelected: 0,
+            highlightFavorites: 0,
+            logData: '',
+            foldersSelect: '',
+            complexityOptions: ''
+        }
+    );
+
+    browserSession(
+        'init',
+        'teampassItem', {
+            IsPersonalFolder: '',
+            hasAccessLevel: '',
+            hasCustomCategories: '',
+            id: '',
+            timestamp: '',
+            folderId: ''
+        }
+    );
+
+    browserSession(
+        'init',
+        'userOauth2Info', ''
+    );
+
 
     $(document).ready(function() {
         // Don't redirect in some conditions
@@ -194,7 +242,7 @@ if (
                                 teampassUser.keys_recovery_time = data.queryResults.keys_recovery_time;
                             }
                         );
-
+                        
                         if (data.error === false && data.queryResults.special === 'generate-keys') {
                             // Get generation keys progress status
                             getGenerateKeysProgress(store.get('teampassUser').user_id);
@@ -284,6 +332,14 @@ if (
                                 event.preventDefault();
                                 document.location.href = "index.php?page=profile&tab=keys";
                             });
+                        }
+
+                        // Does user has personal items to encrypt?
+                        if (typeof data.queryResults !== 'undefined' && data.error === false && data.queryResults.special === 'encrypt_personal_items') {
+                            // User has personal items to encrypt
+                            if (debugJavascript === true) console.log('User has personal items to encrypt');
+                            $('#dialog-ldap-user-change-password').removeClass('hidden');
+                            $('.content, .content-header').addClass('hidden');
                         }
                     }
                 );
@@ -2136,10 +2192,21 @@ if (
             }
 
             // No access
-            if (data.password_error) {
+            if (data.error === true) {
                 toastr.remove();
                 toastr.error(data.password_error, '<?php echo $lang->get('caution'); ?>', {
                     timeOut: 5000,
+                    progressBar: true
+                });
+                return '';
+            }
+
+            // Password is empty or no key
+            if (typeof data.password_status !== 'undefined' && data.password_status === 'no_key') {
+                toastr.remove();
+                toastr.info('<?php echo $lang->get('password_is_empty'); ?>', '', {
+                    timeOut: 2000,
+                    positionClass: 'toast-bottom-right',
                     progressBar: true
                 });
                 return '';

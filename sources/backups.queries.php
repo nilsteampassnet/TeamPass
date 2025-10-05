@@ -448,6 +448,8 @@ if (null !== $post_type) {
             try {
                 // Start transaction to ensure database consistency
                 DB::startTransaction();
+                DB::query("SET FOREIGN_KEY_CHECKS = 0");
+                DB::query("SET UNIQUE_CHECKS = 0");
                 
                 while (!feof($handle) && $executedQueries < $batchSize) {
                     $line = fgets($handle);
@@ -491,6 +493,10 @@ if (null !== $post_type) {
                         }
                     }
                 }
+
+                // Set default settings back
+                DB::query("SET FOREIGN_KEY_CHECKS = 1");
+                DB::query("SET UNIQUE_CHECKS = 1");
                 
                 // Commit the transaction if no errors
                 if (empty($errors)) {
@@ -499,6 +505,12 @@ if (null !== $post_type) {
                     DB::rollback();
                 }
             } catch (Exception $e) {
+                try {
+                    DB::query("SET FOREIGN_KEY_CHECKS = 1");
+                    DB::query("SET UNIQUE_CHECKS = 1");
+                } catch (Exception $ignored) {
+                    // Ignore further exceptions
+                }
                 // Rollback transaction on any exception
                 DB::rollback();
                 $errors[] = "Transaction failed: " . $e->getMessage();

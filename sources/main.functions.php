@@ -3564,8 +3564,15 @@ function handleUserKeys(
     } else {
         $userKeys = generateUserKeys($passwordClear);
     }
+    
+    // Handle private key
+    insertPrivateKeyWithCurrentFlag(
+        $userId,
+        $userKeys['private_key'],        
+    );
 
     // Save in DB
+    // TODO: remove private key field from Users table
     DB::update(
         prefixTable('users'),
         array(
@@ -3577,6 +3584,7 @@ function handleUserKeys(
         'id=%i',
         $userId
     );
+
 
     // update session too
     if ($userId === $session->get('user-id')) {
@@ -4513,4 +4521,116 @@ function userHasAccessToBackupFile(int $userId, string $file, string $key, strin
     }
 
     return true;
+}
+
+/**
+ * Ensure that personal items have only keys for their owner
+ *
+ * @param integer $userId
+ * @param integer $itemId
+ * @return boolean
+ */
+function EnsurePersonalItemHasOnlyKeysForOwner(int $userId, int $itemId): bool
+{
+    // Check if user is admin
+    // Refuse access if user does not exist and/or is admin
+    $user = DB::queryFirstRow(
+        'SELECT admin
+        FROM ' . prefixTable('users') . '
+        WHERE id = %i',
+        $userId
+    );
+    if (DB::count() === 0 || (int) $user['admin'] === 1) {
+        return false;
+    }
+
+    // Get item info
+    $item = DB::queryFirstRow(
+        'SELECT i.perso, i.id_tree
+        FROM ' . prefixTable('items') . ' as i
+        WHERE i.id = %i',
+        $itemId
+    );
+    if (DB::count() === 0 || (int) $item['perso'] === 0) {
+        return false;
+    }
+
+    // Get item owner
+    $itemOwner = DB::queryFirstRow(
+        'SELECT li.id_user
+        FROM ' . prefixTable('log_items') . ' as li
+        WHERE li.id_item = %i AND li.action = %s',
+        $itemId,
+        'at_creation'
+    );
+    if (DB::count() === 0 || (int) $itemOwner['id_user'] !== $userId) {
+        return false;
+    }
+
+    // Delete all keys for this item except for the owner and TeamPass system user
+    DB::delete(
+        prefixTable('sharekeys_items'),
+        'object_id = %i AND user_id != %i',
+        $itemId,
+        $userId
+    );
+    DB::delete(
+        prefixTable('sharekeys_files'),
+        'object_id IN (SELECT id FROM '.prefixTable('files').' WHERE id_item = %i) AND user_id != %i',
+        $itemId,
+        $userId
+    );
+    DB::delete(
+        prefixTable('sharekeys_fields'),
+        'object_id IN (SELECT id FROM '.prefixTable('fields').' WHERE id_item = %i) AND user_id != %i',
+        $itemId,
+        $userId
+    );
+    DB::delete(
+        prefixTable('sharekeys_logs'),
+        'object_id IN (SELECT id FROM '.prefixTable('log_items').' WHERE id_item = %i) AND user_id != %i',
+        $itemId,
+        $userId
+    );
+
+    return true;
+}
+
+/**
+ * Insert a new record in a table with an "is_current" flag.
+ * This function ensures that only one record per user has the "is_current" flag set to true.
+ * 
+ * @param int $userId The ID of the user.
+ * @param string $privateKey The private key to be inserted.
+ * @return void
+ */
+function insertPrivateKeyWithCurrentFlag(int $userId, string $privateKey) {    
+    try {
+        DB::startTransaction();
+        
+        // Disable is_current for existing records of the user
+        DB::update(
+            prefixTable('user_private_keys'),
+            array('is_current' => false),
+            "user_id = %i AND is_current = %i",
+            $userId,
+            true
+        );
+        
+        // Insert the new record
+        DB::insert(
+            prefixTable('user_private_keys'),
+            array(
+                'user_id' => $userId,
+                'private_key' => $privateKey,
+                'is_current' => true,
+            )
+        );
+        
+        DB::commit();
+        
+    } catch (Exception $e) {
+        DB::rollback();
+        throw $e;
+    }
 }

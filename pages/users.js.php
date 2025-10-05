@@ -88,14 +88,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         ProcessInProgress = false,
         debugJavascript = false;
 
-    browserSession(
-        'init',
-        'teampassApplication', {
-            foldersSelect: '',
-            complexityOptions: '',
-        }
-    );
-
     // Prepare tooltips
     $('.infotip').tooltip();
 

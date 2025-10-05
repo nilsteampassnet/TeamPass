@@ -94,8 +94,12 @@ $session->invalidate();
     jstree_save = store.get("jstree") !== undefined ? store.get("jstree") : null;
 
     // Clear all localstorage
-    sessionStorage.clear();
-    localStorage.clear();
+    //sessionStorage.clear();
+    store.remove('teampassApplication');
+    store.remove('teampassSettings');
+    store.remove('teampassUser');
+    store.remove('teampassItem');
+    store.remove('userOauth2Info');
 
     // Restore jstree state
     if (jstree_save !== null) {

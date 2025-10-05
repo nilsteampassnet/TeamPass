@@ -177,9 +177,16 @@ trait UserHandlerTrait {
      */
     private function generateNewUserStep20($taskData, $arguments) {
         // get user private key
-        $ownerInfo = $this->getOwnerInfos($arguments['owner_id'], $arguments['creator_pwd']);
-        $userInfo = $this->getOwnerInfos($arguments['new_user_id'], $arguments['new_user_pwd']);
-        
+        $ownerInfo = isset($arguments['owner_id']) && isset($arguments['creator_pwd']) 
+            ? $this->getOwnerInfos($arguments['owner_id'], $arguments['creator_pwd']) 
+            : null;
+        $userInfo = $this->getOwnerInfos(
+            $arguments['new_user_id'],
+            $arguments['new_user_pwd'],
+            ($arguments['only_personal_items'] ?? 0) === 1 ? 1 : 0,
+            $arguments['new_user_private_key'] ?? ''
+        );
+
         // Start transaction for better performance
         DB::startTransaction();
 
@@ -194,7 +201,7 @@ trait UserHandlerTrait {
             $taskData['index'],
             $taskData['nb']
         );
-
+        
         foreach ($rows as $record) {
             // Get itemKey from current user
             $currentUserKey = DB::queryFirstRow(
@@ -210,7 +217,7 @@ trait UserHandlerTrait {
                 continue;
             }
 
-            // Decrypt itemkey with admin key
+            // Decrypt itemkey with expected private key
             $itemKey = decryptUserObjectKey(
                 $currentUserKey['share_key'],
                 (int) $record['perso'] === 0 ? $ownerInfo['private_key'] : $userInfo['private_key']
@@ -223,26 +230,21 @@ trait UserHandlerTrait {
                 // Encrypt Item key
                 $share_key_for_item = encryptUserObjectKey($itemKey, $userInfo['public_key']);
             }
-            
-            $currentUserKey = DB::queryFirstRow(
-                'SELECT increment_id
-                FROM ' . prefixTable('sharekeys_items') . '
-                WHERE object_id = %i AND user_id = %i',
-                $record['id'],
-                $arguments['new_user_id']
+
+            // Save the new sharekey correctly encrypted in DB
+            $affected = DB::update(
+                prefixTable('sharekeys_items'),
+                array(
+                    'object_id' => (int) $record['id'],
+                    'user_id' => (int) $arguments['new_user_id'],
+                    'share_key' => $share_key_for_item,
+                ),
+                'increment_id = %i',
+                $currentUserKey['increment_id']
             );
 
-            if ($currentUserKey) {
-                // NOw update
-                DB::update(
-                    prefixTable('sharekeys_items'),
-                    array(
-                        'share_key' => $share_key_for_item,
-                    ),
-                    'increment_id = %i',
-                    $currentUserKey['increment_id']
-                );
-            } else {
+            // If now row was updated, it means the user has no key for this item, so we need to insert it
+            if ($affected === 0) {
                 DB::insert(
                     prefixTable('sharekeys_items'),
                     array(
@@ -267,8 +269,15 @@ trait UserHandlerTrait {
      */
     private function generateNewUserStep30($taskData, $arguments) {
         // get user private key
-        $ownerInfo = $this->getOwnerInfos($arguments['owner_id'], $arguments['creator_pwd']);
-        $userInfo = $this->getOwnerInfos($arguments['new_user_id'], $arguments['new_user_pwd']);
+        $ownerInfo = isset($arguments['owner_id']) && isset($arguments['creator_pwd']) 
+            ? $this->getOwnerInfos($arguments['owner_id'], $arguments['creator_pwd']) 
+            : null;
+        $userInfo = $this->getOwnerInfos(
+            $arguments['new_user_id'],
+            $arguments['new_user_pwd'],
+            ($arguments['only_personal_items'] ?? 0) === 1 ? 1 : 0,
+            $arguments['new_user_private_key'] ?? ''
+        );
 
         // Start transaction for better performance
         DB::startTransaction();
@@ -349,8 +358,15 @@ trait UserHandlerTrait {
      */
     private function generateNewUserStep40($taskData, $arguments) {
         // get user private key
-        $ownerInfo = $this->getOwnerInfos($arguments['owner_id'], $arguments['creator_pwd']);
-        $userInfo = $this->getOwnerInfos($arguments['new_user_id'], $arguments['new_user_pwd']);
+        $ownerInfo = isset($arguments['owner_id']) && isset($arguments['creator_pwd']) 
+            ? $this->getOwnerInfos($arguments['owner_id'], $arguments['creator_pwd']) 
+            : null;
+        $userInfo = $this->getOwnerInfos(
+            $arguments['new_user_id'],
+            $arguments['new_user_pwd'],
+            ($arguments['only_personal_items'] ?? 0) === 1 ? 1 : 0,
+            $arguments['new_user_private_key'] ?? ''
+        );
 
         // Start transaction for better performance
         DB::startTransaction();
@@ -430,8 +446,15 @@ trait UserHandlerTrait {
      */
     private function generateNewUserStep50($taskData, $arguments) {
         // get user private key
-        $ownerInfo = $this->getOwnerInfos($arguments['owner_id'], $arguments['creator_pwd']);
-        $userInfo = $this->getOwnerInfos($arguments['new_user_id'], $arguments['new_user_pwd']);
+        $ownerInfo = isset($arguments['owner_id']) && isset($arguments['creator_pwd']) 
+            ? $this->getOwnerInfos($arguments['owner_id'], $arguments['creator_pwd']) 
+            : null;
+        $userInfo = $this->getOwnerInfos(
+            $arguments['new_user_id'],
+            $arguments['new_user_pwd'],
+            ($arguments['only_personal_items'] ?? 0) === 1 ? 1 : 0,
+            $arguments['new_user_private_key'] ?? ''
+        );
 
         // Start transaction for better performance
         DB::startTransaction();
@@ -513,8 +536,15 @@ trait UserHandlerTrait {
      */
     private function generateNewUserStep60($taskData, $arguments) {
         // get user private key
-        $ownerInfo = $this->getOwnerInfos($arguments['owner_id'], $arguments['creator_pwd']);
-        $userInfo = $this->getOwnerInfos($arguments['new_user_id'], $arguments['new_user_pwd']);
+        $ownerInfo = isset($arguments['owner_id']) && isset($arguments['creator_pwd']) 
+            ? $this->getOwnerInfos($arguments['owner_id'], $arguments['creator_pwd']) 
+            : null;
+        $userInfo = $this->getOwnerInfos(
+            $arguments['new_user_id'],
+            $arguments['new_user_pwd'],
+            ($arguments['only_personal_items'] ?? 0) === 1 ? 1 : 0,
+            $arguments['new_user_private_key'] ?? ''
+        );
 
         // Start transaction for better performance
         DB::startTransaction();
@@ -602,7 +632,7 @@ trait UserHandlerTrait {
         $lang = new Language('english');
 
         // IF USER IS NOT THE SAME
-        if ((int) $arguments['new_user_id'] === (int) $arguments['owner_id']) {
+        if (isset($arguments['owner_id']) && (int) $arguments['new_user_id'] === (int) $arguments['owner_id']) {
             return [
                 'new_index' => 0,
                 'new_action' => 'finished',
@@ -619,12 +649,30 @@ trait UserHandlerTrait {
             (string) $arguments['new_user_id']
         );
 
+        // Personal items encryption only?
+        if (($arguments['only_personal_items'] ?? 0) === 1) {
+            // Set user as ready for usage
+            DB::update(
+                prefixTable('users'),
+                array(
+                    'ongoing_process_id' => NULL,
+                    'special' => 'none',
+                    'updated_at' => time(),
+                ),
+                'id = %i',
+                $arguments['new_user_id']
+            );
+            return;
+        }
+
+        echo("User keys generation process is finished for user {$arguments['new_user_id']} - Personal items status: ".$arguments['only_personal_items']);
+
         // if done then send email to new user
         // get user info
         $userInfo = DB::queryFirstRow(
-            'SELECT email, login, auth_type, special, lastname, name
-            FROM ' . prefixTable('users') . '
-            WHERE id = %i',
+            'SELECT u.email, u.login, u.auth_type, u.special, u.lastname, u.name
+            FROM ' . prefixTable('users') . ' AS u
+            WHERE u.id = %i',
             $arguments['new_user_id']
         );
 
@@ -651,7 +699,15 @@ trait UserHandlerTrait {
                 $arguments['new_user_pwd']
             );
         }
-            
+
+        // Does user has personal items?
+        $personalItemsCount = DB::queryFirstField(
+            'SELECT COUNT(*)
+            FROM ' . prefixTable('items') . '
+            WHERE perso = 1 AND id IN (SELECT object_id FROM ' . prefixTable('sharekeys_items') . ' WHERE user_id = %i)',
+            $arguments['new_user_id']
+        );
+
         // Set user as ready for usage
         DB::update(
             prefixTable('users'),
@@ -659,7 +715,7 @@ trait UserHandlerTrait {
                 'is_ready_for_usage' => 1,
                 'otp_provided' => isset($arguments['otp_provided_new_value']) === true && (int) $arguments['otp_provided_new_value'] === 1 ? $arguments['otp_provided_new_value'] : 0,
                 'ongoing_process_id' => NULL,
-                'special' => 'none',
+                'special' => $personalItemsCount > 0 ? 'encrypt_personal_items' : 'none',
                 'updated_at' => time(),
             ),
             'id = %i',
@@ -672,9 +728,11 @@ trait UserHandlerTrait {
      * Get owner info
      * @param int $owner_id Owner ID
      * @param string $owner_pwd Owner password
+     * @param int $only_personal_items 1 if only personal items, 0 else
+     * @param string $owner_pwd Owner password
      * @return array Owner information
      */
-    private function getOwnerInfos(int $owner_id, string $owner_pwd) {
+    private function getOwnerInfos(int $owner_id, string $owner_pwd, int $only_personal_items = 0, string $owner_private_key = ''): array {
         $userInfo = DB::queryFirstRow(
             'SELECT pw, public_key, private_key, login, name
             FROM ' . prefixTable('users') . '
@@ -682,14 +740,26 @@ trait UserHandlerTrait {
             $owner_id
         );
 
-        // decrypt owner password
+        // decrypt owner password 
         $pwd = cryption($owner_pwd, '','decrypt', $this->settings)['string'];
+
         // decrypt private key and send back
-        return [
-            'private_key' => decryptPrivateKey($pwd, $userInfo['private_key']),
-            'public_key' => $userInfo['public_key'],
-            'login' => $userInfo['login'],
-            'name' => $userInfo['name'],
-        ];
+        if ((int) $only_personal_items === 1 && empty($owner_private_key) === false) {
+            // Explicitely case where we only want personal items and where user has provided his private key
+            return [
+                'private_key' => cryption($owner_private_key, '','decrypt')['string'],
+                'public_key' => $userInfo['public_key'],
+                'login' => $userInfo['login'],
+                'name' => $userInfo['name'],
+            ];
+        }else {
+            // Normal case
+            return [
+                'private_key' => decryptPrivateKey($pwd, $userInfo['private_key']),
+                'public_key' => $userInfo['public_key'],
+                'login' => $userInfo['login'],
+                'name' => $userInfo['name'],
+            ];
+        }
     }
 }

@@ -327,7 +327,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             [
                 'value' => '',
                 'error' => true,
-                'message' => $lang->get('error_bad_credentials')."1",
+                'message' => $lang->get('error_bad_credentials'),
             ],
             'encode'
         );
@@ -437,7 +437,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         $session->set('pwd_attempts', 0);
 
         // Check if any unsuccessfull login tries exist
-        $attemptsInfos = handleLoginAttempts(
+        handleLoginAttempts(
             $userInfo['id'],
             $userInfo['login'],
             $userInfo['last_connexion'],
@@ -447,7 +447,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
 
         // Avoid unlimited session.
         $max_time = isset($SETTINGS['maximum_session_expiration_time']) ? (int) $SETTINGS['maximum_session_expiration_time'] : 60;
-        $session_time = max(60, min($dataReceived['duree_session'], $max_time));
+        $session_time = min($dataReceived['duree_session'], $max_time);
         $lifetime = time() + ($session_time * 60);
 
         // Save old key

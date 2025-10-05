@@ -85,14 +85,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
     buildTable();
 
-    browserSession(
-        'init',
-        'teampassApplication', {
-            foldersSelect: '',
-            complexityOptions: '',
-        }
-    );
-
     // Prepare iCheck format for checkboxes
     $('input[type="checkbox"].form-check-input').iCheck({
         checkboxClass: 'icheckbox_flat-blue',

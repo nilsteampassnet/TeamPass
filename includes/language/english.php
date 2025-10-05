@@ -32,6 +32,8 @@
  // - selected_items_to_be_imported
 
 return array(
+    'no_previous_valide_private_key' => 'No previous private key fits provided password',
+    'user_password_changed' => 'Your password has changed. Please provide your previous password to re-encrypt your personal items. Once done, please wait a few minutes before accessing your personal items.',
     'suggested_value' => 'Suggested value',
     'import_error_folder_creation' => 'Error while creating folder',
     'files_are_not_expected_ones' => 'files are not expected ones',

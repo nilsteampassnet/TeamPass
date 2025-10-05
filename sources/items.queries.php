@@ -1085,16 +1085,16 @@ switch ($inputData['type']) {
             break;
         }
 
-        // Does the user has the sharekey
-        //db::debugmode(true);
+        // Does the user has the sharekey for this item?
         DB::query(
             'SELECT *
             FROM ' . prefixTable('sharekeys_items') . '
             WHERE object_id = %i AND user_id = %s',
             $inputData['itemId'],
             $session->get('user-id')
-        );
-        if (DB::count() === 0) {
+            );
+        // If no sharekey found, and item is not personal, then stop the process    
+        if (DB::count() === 0 && (int) $dataItem['perso'] !== 1) {
             if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
                 error_log('TEAMPASS | user '.$session->get('user-id').' has no sharekey for item '.$inputData['itemId']);
             }
@@ -1312,6 +1312,11 @@ switch ($inputData['type']) {
                 'id=%i',
                 $inputData['itemId']
             );
+
+            // Delete all existing sharekey_items for users if the item is personal
+            if ((int) $dataItem['perso'] === 1) {
+                EnsurePersonalItemHasOnlyKeysForOwner((int) $inputData['itemId'], (int) $dataItem['id_user']);
+            }
 
             // update fields
             if (
@@ -1547,7 +1552,7 @@ switch ($inputData['type']) {
             }
 
             // create a task for all fields updated
-            if ($encryptionTaskIsRequested === true) {
+            if ($encryptionTaskIsRequested === true && (int) $dataItem['perso'] !== 1) {
                 if (WIP === true) error_log('createTaskForItem - '.print_r($tasksToBePerformed, true));
                 createTaskForItem(
                     'item_update_create_keys',
@@ -4533,9 +4538,10 @@ switch ($inputData['type']) {
         if (DB::count() === 0) {
             echo (string) prepareExchangedData(
                 [
-                    'error' => true,
+                    'error' => false,
                     'password' => '',
                     'password_error' => $lang->get('password_is_empty'),
+                    'password_status' => 'no_key',
                 ],
                 'encode'
             );
@@ -4555,7 +4561,7 @@ switch ($inputData['type']) {
             'at_password_shown',
             'at_password_shown_edit_form',
         ];
-
+        
         // User not allowed to see this password or invalid action provided
         if ($userAccess !== true
             || empty($inputData['action'])
@@ -7299,15 +7305,15 @@ function getCurrentAccessRights(int $userId, int $itemId, int $treeId, string $a
     if (getItemRestrictedUsersList($itemId, $userId) === false) {
         return getAccessResponse(false, false, false, false);
     }
-
+    
     // Check if the item is being processed by another user
     if (isProcessOnGoing($itemId)) {
         return getAccessResponse(false, true, false, false);
     }
-
+    
     // Retrieve user's visible folders from the cache_tree table
     $visibleFolders = getUserVisibleFolders($userId);
-
+    
     // Check if the folder is in the user's read-only list
     if (in_array($treeId, $session->get('user-read_only_folders'))) {
         return getAccessResponse(false, true, false, false);
@@ -7317,23 +7323,23 @@ function getCurrentAccessRights(int $userId, int $itemId, int $treeId, string $a
     if (in_array($treeId, $session->get('user-allowed_folders_by_definition'))) {
         return getAccessResponse(false, true, true, true);
     }
-
+    
     // Check if the folder is personal to the user
     foreach ($visibleFolders as $folder) {
         if ($folder['id'] == $treeId && (int) $folder['perso'] === 1) {
             return getAccessResponse(false, true, true, true);
         }
     }
-
+    
     // Determine the user's access rights based on their roles for this folder
     [$edit, $delete] = getRoleBasedAccess($session, $treeId);
-
+    
     // Is this folder in the list of visible folders?
     if (!in_array($treeId, array_column($visibleFolders, 'id'))) {
         // If the folder is not visible to the user, they cannot edit or delete items in it
         return getAccessResponse(false, false, false, false);
     }
-
+    
     // Log access rights information if logging is enabled
     if (LOG_TO_SERVER === true) {
         error_log("TEAMPASS - Folder: $treeId - User: $userId - edit: $edit - delete: $delete");
