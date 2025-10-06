@@ -483,7 +483,11 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         );
         $session->set(
             'user-split_view_mode',
-            (isset($userInfo['split_view_mode']) === false || empty($userInfo['split_view_mode']) === true) ? 0 : $userInfo['split_view_mode']
+            (isset($userInfo['split_view_mode']) === false || empty($userInfo['split_view_mode']) === true) ? 0 : (int) $userInfo['split_view_mode']
+        );
+        $session->set(
+            'user-show_subfolders',
+            (isset($userInfo['show_subfolders']) === false || empty($userInfo['show_subfolders']) === true) ? 0 : (int) $userInfo['show_subfolders']
         );
         $session->set('user-language', $userInfo['user_language']);
         $session->set('user-timezone', $userInfo['usertimezone']);
@@ -773,6 +777,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                 'upgrade_needed' => isset($userInfo['upgrade_needed']) === true ? (int) $userInfo['upgrade_needed'] : 0,
                 'special' => isset($userInfo['special']) === true ? (int) $userInfo['special'] : 0,
                 'split_view_mode' => isset($userInfo['split_view_mode']) === true ? (int) $userInfo['split_view_mode'] : 0,
+                'show_subfolders' => isset($userInfo['show_subfolders']) === true ? (int) $userInfo['show_subfolders'] : 0,
                 'validite_pw' => $session->get('user-validite_pw') !== null ? $session->get('user-validite_pw') : '',
                 'num_days_before_exp' => $session->get('user-num_days_before_exp') !== null ? (int) $session->get('user-num_days_before_exp') : '',
             ],

@@ -32,6 +32,10 @@
  // - selected_items_to_be_imported
 
 return array(
+    'no_folder_selected' => 'No folder is selected',
+    'show_subfolders_in_main_view' => 'Show sub-folders in main items list',
+    'no_subfolders' => 'No sub-folders',
+    'show_hide_folders' => 'Show/Hide folders',
     'no_previous_valide_private_key' => 'No previous private key fits provided password',
     'user_password_changed' => 'Your password has changed. Please provide your previous password to re-encrypt your personal items. Once done, please wait a few minutes before accessing your personal items.',
     'suggested_value' => 'Suggested value',

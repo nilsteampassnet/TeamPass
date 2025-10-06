@@ -1703,6 +1703,7 @@ if (null !== $post_type) {
                     'name' => isset($dataReceived['name']) === true ? $dataReceived['name'] : '',
                     'lastname' => isset($dataReceived['lastname']) === true ? $dataReceived['lastname'] : '',
                     'split_view_mode' => isset($dataReceived['split_view_mode']) === true ? $dataReceived['split_view_mode'] : '',
+                    'show_subfolders' => isset($dataReceived['show_subfolders']) === true ? $dataReceived['show_subfolders'] : '',
                 ];
                 
                 $filters = [
@@ -1714,6 +1715,7 @@ if (null !== $post_type) {
                     'name' => 'trim|escape',
                     'lastname' => 'trim|escape',
                     'split_view_mode' => 'cast:integer',
+                    'show_subfolders' => 'cast:integer',
                 ];
                 
                 $inputData = dataSanitizer(
@@ -1732,10 +1734,12 @@ if (null !== $post_type) {
                 // Data to update
                 $update_fields = [
                     'split_view_mode' => $inputData['split_view_mode'],
+                    'show_subfolders' => $inputData['show_subfolders'],
                 ];
 
                 // Update SETTINGS
                 $session->set('user-split_view_mode', (int) $inputData['split_view_mode']);
+                $session->set('user-show_subfolders', (int) $inputData['show_subfolders']);
 
                 // User profile edit enabled
                 if (($SETTINGS['disable_user_edit_profile'] ?? '0') === '0') {
@@ -1801,6 +1805,7 @@ if (null !== $post_type) {
                     'lastname' => $session->get('user-lastname'),
                     'email' => $session->get('user-email'),
                     'split_view_mode' => $session->get('user-split_view_mode'),
+                    'show_subfolders' => $session->get('user-show_subfolders'),
                 ),
                 'encode'
             );
@@ -2854,7 +2859,7 @@ if (null !== $post_type) {
         // Check that operation is allowed
         if (in_array(
             $value[0],
-            array('login', 'pw', 'email', 'treeloadstrategy', 'usertimezone', 'yubico_user_key', 'yubico_user_id', 'agses-usercardid', 'user_language', 'psk', 'split_view_mode')
+            array('login', 'pw', 'email', 'treeloadstrategy', 'usertimezone', 'yubico_user_key', 'yubico_user_id', 'agses-usercardid', 'user_language', 'psk', 'split_view_mode', 'show_subfolders')
         )) {
             DB::update(
                 prefixTable('users'),
@@ -2883,6 +2888,7 @@ if (null !== $post_type) {
                 'agses-usercardid' => null, 
                 'email' => 'user-email',
                 'split_view_mode' => 'user-split_view_mode',
+                'show_subfolders' => 'user-show_subfolders',
             ];
             // Update session
             if (array_key_exists($value[0], $sessionMapping)) {

@@ -1270,5 +1270,10 @@ return array(
     'suggested_value' => 'Valeur suggérée',
     'user_password_changed' => 'Votre mot de passe a changé. Merci de renseigner le précédent de façon à réencrypter vos éléments personnels. Une fois terminé, merci de patienter quelques minutes avant d&apos;accéder à vos objets personnels.',
     'no_previous_valide_private_key' => 'Aucune clé privée antérieure ne correspond à ce mot de passe',
+    'copy_sub_directories' => 'Copier les sous-répertoires',
+    'copy_items' => 'Copier les objets',
+    'no_subfolders' => 'Aucun sous-répertoire',
+    'show_subfolders_in_main_view' => 'Afficher les sous-répertoires dans la liste des objets',
+    'no_folder_selected' => 'Aucun répertoire n&apos;est sélectionné',
 
 );

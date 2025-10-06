@@ -1269,5 +1269,10 @@ return array(
     'suggested_value' => 'Suggested value',
     'user_password_changed' => 'Your password has changed. Please provide your previous password to re-encrypt your personal items. Once done, please wait a few minutes before accessing your personal items.',
     'no_previous_valide_private_key' => 'No previous private key fits provided password',
+    'copy_sub_directories' => 'Copy sub-directories',
+    'copy_items' => 'Copy items',
+    'no_subfolders' => 'No sub-folders',
+    'show_subfolders_in_main_view' => 'Show sub-folders in main items list',
+    'no_folder_selected' => 'No folder is selected',
 
 );

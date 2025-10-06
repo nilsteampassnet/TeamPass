@@ -233,6 +233,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             'language': ($('#profile-user-language').val() ?? '').toLowerCase(),
             'treeloadstrategy': ($('#profile-user-treeloadstrategy').val() ?? '').toLowerCase(),
             'split_view_mode': $('#profile-user-split_view_mode').val(),
+            'show_subfolders': $('#profile-user-show_subfolders').val(),
         }
         if (debugJavascript === true) console.log(data);
         // Inform user
@@ -289,9 +290,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             teampassUser.user_treeloadstrategy = data.treeloadstrategy;
                             teampassUser.user_agsescardid = data.agsescardid;
                             teampassUser.split_view_mode = data.split_view_mode;
+                            teampassUser.show_subfolders = data.show_subfolders;
                         }
                     );
-                    console.log(store.get('teampassUser'));
 
                     // reload page in case of language change
                     if ($('#profile-user-language').val()

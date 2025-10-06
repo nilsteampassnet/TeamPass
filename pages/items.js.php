@@ -300,14 +300,24 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         $(this).dequeue();
     });
 
-    // Preload list of items
+    // What do we do if a folder is selected?
     if (store.get('teampassApplication') !== undefined &&
         store.get('teampassApplication').selectedFolder !== undefined &&
         store.get('teampassApplication').selectedFolder !== '' && 
         showItemOnPageLoad === true
     ) {
         startedItemsListQuery = true;
+
+        // Hide/show list of subfolders
+        $('#table_teampass_subfolders_list').toggleClass('hidden', store.get('teampassUser').show_subfolders !== 1);
+
+        // Preload list of items
         ListerItems(store.get('teampassApplication').itemsListFolderId, '', 0);
+    } else {
+        // What if no folder is selected?
+        
+        // Hide list of subfolders
+        $('#table_teampass_subfolders_list').addClass('hidden');
     }
 
     // Show details of item
@@ -1220,6 +1230,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             //
             // > END <
             //
+        } else if ($(this).data('folder-action') === 'subfolders-show-hide') {            
+            $('#table_teampass_subfolders_list').toggle();
+            toastr.remove();
         }
 
         return false;
@@ -3829,7 +3842,6 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                         //data.html_json.folders = JSON.parse(data.html_json.folders);
                     }
                     let foldersArray = Array.isArray(data.html_json.folders) ? data.html_json.folders : [data.html_json.folders];
-                    //console.log(foldersArray);
 
                     $.each(foldersArray, function(i, value) {
                         // Prepare options lists
@@ -3862,7 +3874,6 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                         }
                     );
 
-
                     // remove ROOT option if exists
                     $('#form-item-copy-destination option[value="0"]').remove();
                 } else {
@@ -3880,6 +3891,37 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         );
     }
 
+    /**
+     * Display subfolders of a given parent
+     * 
+     * @param {Array} folders
+     * @param {number} parentId
+     */
+    function displaySubfolders(folders, parentId) {
+        // Manage case where no folders
+        if (folders === '') {
+            $('#teampass_subfolders_list').html('<tr><td colspan="2" class="text-center text-muted"><?php echo $lang->get('no_folder_selected');?></td></tr>');
+            return false;
+        }
+        
+        // Use requestAnimationFrame to avoid blocking UI
+        requestAnimationFrame(() => {
+            const directChildren = folders.filter(folder => folder.parent_id === parentId);
+            
+            // Build all HTML at once (better performance)
+            const html = directChildren.map(folder => `
+                <tr data-tree-id="${folder.id}" class="pointer open-folder">
+                    <td style="width: 100%;">
+                        <i class="fas fa-folder${folder.disabled ? '-closed text-muted' : ' text-warning'}"></i>
+                        <strong class="ml-2">${folder.title}</strong>
+                    </td>
+                </tr>
+            `).join('');
+            
+            // Inject all at once (single reflow)
+            $('#teampass_subfolders_list').html(html);
+        });
+    }
 
     /**
      * Get more info about folders (Categories)
@@ -4074,6 +4116,12 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 }
             );
         }
+        
+        // Show list of sub directories - Load only once
+        if (store.get('teampassUser').show_subfolders === 1 && start === 0) {
+            console.log('Afficher les sous-répertoires - '+start)
+            displaySubfolders(store.get('teampassApplication').foldersList, groupe_id);
+        }
 
         // Hide any info
         $('#info_teampass_items_list').addClass('hidden');
@@ -4130,6 +4178,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 console.log('Do list of items in folder with next parameters:');
                 console.log(JSON.stringify(dataArray));
             }
+
+            // Hide/show list of subfolders
+            $('#table_teampass_subfolders_list').toggleClass('hidden', store.get('teampassUser').show_subfolders !== 1);
             
             //ajax query
             var request = $.post('sources/items.queries.php', {
@@ -4196,6 +4247,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
                     } else if (data.error === 'not_authorized') {
                         $('#items_folder_path').html('<i class="fa-solid fa-folder-open-o"></i>&nbsp;' + rebuildPath(data.arborescence));
+                        
                     } else {
                         // Store query results
                         store.update(
@@ -4240,7 +4292,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                                 '<i class="fa-solid fa-warning mr-2"></i><?php echo $lang->get('not_allowed_to_see_pw'); ?></b>' +
                                 '</div>')
                             .removeClass('hidden');
-
+                            
                     } else if ((store.get('teampassApplication').userIsReadOnly === 1) //&& data.folder_requests_psk == 0
                         ||
                         data.access_level === 10
@@ -6523,16 +6575,6 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
         return new Promise(function(resolve, reject) {
             if (val === "" || typeof val === "undefined" || val === false) {
-                /*toastr.remove();
-                toastr.error(
-                    '',
-                    '<?php echo $lang->get('please_select_a_folder'); ?>',
-                    {
-                        timeOut: 5000,
-                        positionClass: 'toast-bottom-right',
-                        progressBar: true
-                    }
-                );*/
                 resolve({
                     "error": true,
                     "message": '<?php echo $lang->get('please_select_a_folder'); ?>',
@@ -6911,6 +6953,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
     $(document).ready(function() {
         let saveInProgress = false;
 
+        // Hide/show list of subfolders
+        //$('#table_teampass_subfolders_list').toggleClass('hidden', store.get('teampassUser').show_subfolders !== 1);
+
         // Prevent Enter key from propagating in label and password fields and do single save
         // Enter triggers save in these:
         $('#form-item-label, #form-item-password').on('keydown keyup keypress', function(e) {
@@ -6949,17 +6994,5 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 $('#jstree').jstree('select_node', '#li_' + folder_id);
             }
         });
-/*
-        //import SecureClipboardHandler from '../includes/js/secure-clipboard-handler.js';
-        var languageVariables = {
-            copy_to_clipboard: "<?php echo $lang->get('copy_to_clipboard'); ?>",
-            clipboard_will_be_cleared: "<?php echo $lang->get('clipboard_will_be_cleared'); ?>",
-            clipboard_cleared: "<?php echo $lang->get('clipboard_cleared'); ?>",
-            password_copy_error: "<?php echo $lang->get('password_copy_error'); ?>",
-            password_fetch_error: "<?php echo $lang->get('password_fetch_error'); ?>"
-        };
-        document.addEventListener('DOMContentLoaded', () => {
-            const clipboardHandler = new SecureClipboardHandler(languageVariables);
-        });*/
     });
 </script>
