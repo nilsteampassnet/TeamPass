@@ -1461,4 +1461,17 @@ class DatabaseInstaller
             ) CHARSET=utf8;"
         );
     }
+    // Create table user_private_keys
+    private function user_private_keys()
+    {
+        DB::query(
+            "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "user_private_keys` (
+            `id` SERIAL PRIMARY KEY,
+            `user_id` INT NOT NULL REFERENCES"  . $this->inputData['tablePrefix'] . "users(id),
+            `private_key` TEXT NOT NULL,
+            `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            `is_current` BOOLEAN DEFAULT FALSE
+            ) CHARSET=utf8;"
+        );
+    }
 }
