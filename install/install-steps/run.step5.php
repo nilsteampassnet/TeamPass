@@ -593,6 +593,7 @@ class DatabaseInstaller
             array('admin', 'oauth_new_user_is_administrated_by', '0'),
             array('admin', 'oauth_selfregistered_user_belongs_to_role', '0'),
             array('admin', 'oauth_self_register_groups', ''),
+            array('admin', 'task_duration_estimation', '0'),
         );
         foreach ($aMiscVal as $elem) {
             //Check if exists before inserting
@@ -1458,6 +1459,20 @@ class DatabaseInstaller
             `folder_id` INT(12) NULL DEFAULT NULL,
             `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             `imported_at` INT(12) NULL DEFAULT NULL
+            ) CHARSET=utf8;"
+        );
+    }
+
+    // Create table importations
+    private function user_private_keys()
+    {
+        DB::query(
+            "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "user_private_keys` (
+            `id` SERIAL PRIMARY KEY,
+            `user_id` INT NOT NULL REFERENCES `" . $this->inputData['tablePrefix'] . "users(id)`,
+            `private_key` TEXT NOT NULL,
+            `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            `is_current` BOOLEAN DEFAULT FALSE
             ) CHARSET=utf8;"
         );
     }
