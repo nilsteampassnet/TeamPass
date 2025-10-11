@@ -114,9 +114,13 @@ $zones = timezone_list();
     <div class='container-fluid'>
         <div class='row'>
             <div class='col-md-6'>
-                <div class='card card-primary'>
+                <div class='card card-info'>
                     <div class='card-header'>
-                        <h3 class='card-title'><?php echo $lang->get('admin_settings_title'); ?></h3>
+                        <h3 class='card-title'><i class="fa-solid fa-folder-open mr-2"></i><?php echo $lang->get('settings_category_general_info_title'); ?>
+                            <span class="badge text-bg-secondary">
+                                <?php echo $lang->get('settings_category_general_info_goal'); ?>
+                            </span>
+                        </h3>
                     </div>
                     <!-- /.card-header -->
                     <!-- form start -->
@@ -196,9 +200,13 @@ $zones = timezone_list();
                 </div>
                 <!-- /.card -->
 
-                <div class='card card-primary'>
+                <div class='card card-info'>
                     <div class='card-header'>
-                        <h3 class='card-title'><?php echo $lang->get('admin_settings_title'); ?></h3>
+                        <h3 class='card-title'><i class="fa-solid fa-gears mr-2"></i><?php echo $lang->get('settings_category_system_title'); ?>
+                            <span class="badge text-bg-secondary">
+                                <?php echo $lang->get('settings_category_system_goal'); ?>
+                            </span>
+                        </h3>
                     </div>
                     <!-- /.card-header -->
                     <!-- form start -->
@@ -230,84 +238,6 @@ $zones = timezone_list();
                             </div>
                             <div class='col-2 mb-2'>
                                 <input type='number' class='form-control form-control-sm' id='maximum_session_expiration_time' value='<?php echo htmlspecialchars($SETTINGS['maximum_session_expiration_time']) ?? '60'; ?>'>
-                            </div>
-                        </div>
-
-                        <div class='row mb-2 option' data-keywords="server setting encryption client">
-                            <div class='col-10'>
-                                <?php echo $lang->get('encryptClientServer'); ?>
-                                <small id='passwordHelpBlock' class='form-text text-muted'>
-                                    <?php echo $lang->get('encryptClientServer_tip'); ?>
-                                </small>
-                            </div>
-                            <div class='col-2'>
-                                <div class='toggle toggle-modern' id='encryptClientServer' data-toggle-on='<?php echo isset($SETTINGS['encryptClientServer']) && (int) $SETTINGS['encryptClientServer'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='encryptClientServer_input' value='<?php echo isset($SETTINGS['encryptClientServer']) && (int) $SETTINGS['encryptClientServer'] === 1 ? '1' : '0'; ?>' />
-                            </div>
-                        </div>
-
-                        <div class='row mb-2 option' data-keywords="server setting ">
-                            <div class='col-10'>
-                                <?php echo $lang->get('enable_http_request_login'); ?>
-                            </div>
-                            <div class='col-2'>
-                                <div class='toggle toggle-modern' id='enable_http_request_login' data-toggle-on='<?php echo isset($SETTINGS['enable_http_request_login']) && (int) $SETTINGS['enable_http_request_login'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_http_request_login_input' value='<?php echo isset($SETTINGS['enable_http_request_login']) && (int) $SETTINGS['enable_http_request_login'] === 1 ? '1' : '0'; ?>' />
-                            </div>
-                        </div>
-
-                        <div class='row mb-2 option' data-keywords="server setting strict hsts sts">
-                            <div class='col-10'>
-                                <?php echo $lang->get('settings_enable_sts'); ?>
-                                <small id='passwordHelpBlock' class='form-text text-muted'>
-                                    <?php echo $lang->get('settings_enable_sts_tip'); ?>
-                                </small>
-                            </div>
-                            <div class='col-2'>
-                                <div class='toggle toggle-modern' id='enable_sts' data-toggle-on='<?php echo isset($SETTINGS['enable_sts']) && (int) $SETTINGS['enable_sts'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_sts_input' value='<?php echo isset($SETTINGS['enable_sts']) && (int) $SETTINGS['enable_sts'] === 1 ? '1' : '0'; ?>' />
-                            </div>
-                        </div>
-<!--
-                        <div class='row mb-2 option' data-keywords="server setting proxy ip">
-                            <div class='col-10'>
-                                <?php echo $lang->get('admin_proxy_ip'); ?>
-                                <small id='passwordHelpBlock' class='form-text text-muted'>
-                                    <?php echo $lang->get('admin_proxy_ip_tip'); ?>
-                                </small>
-                            </div>
-                            <div class='col-2'>
-                                <input type='text' class='form-control form-control-sm' id='proxy_ip' value='<?php echo htmlspecialchars($SETTINGS['proxy_ip']) ?? '60'; ?>'>
-                            </div>
-                        </div>
-
-                        <div class='row mb-2 option' data-keywords="server setting proxy port">
-                            <div class='col-10'>
-                                <?php echo $lang->get('admin_proxy_port'); ?>
-                                <small id='passwordHelpBlock' class='form-text text-muted'>
-                                    <?php echo $lang->get('admin_proxy_port_tip'); ?>
-                                </small>
-                            </div>
-                            <div class='col-2'>
-                                <input type='number' class='form-control form-control-sm' id='proxy_port' value='<?php echo htmlspecialchars($SETTINGS['proxy_port']) ?? '60'; ?>'>
-                            </div>
-                        </div>
--->
-                        <div class='row mb-2 option' data-keywords="user ui setting login length password">
-                            <div class='col-10'>
-                                <?php echo $lang->get('admin_pwd_maximum_length'); ?>
-                                <small id='passwordHelpBlock' class='form-text text-muted'>
-                                    <?php echo $lang->get('admin_pwd_maximum_length_tip'); ?>
-                                </small>
-                            </div>
-                            <div class='col-2'>
-                                <input type='number' class='form-control form-control-sm' id='pwd_maximum_length' value='<?php echo htmlspecialchars($SETTINGS['pwd_maximum_length']) ?? '60'; ?>'>
-                            </div>
-                        </div>
-
-                        <div class='row mb-2 option' data-keywords="user ui setting login length password">
-                            <div class='col-10'>
-                                <?php echo $lang->get('password_length_by_default'); ?>
-                            </div>
-                            <div class='col-2'>
-                                <input type='number' class='form-control form-control-sm' id='pwd_default_length' value='<?php echo htmlspecialchars($SETTINGS['pwd_default_length']) ?? '14'; ?>'>
                             </div>
                         </div>
 
@@ -381,16 +311,89 @@ $zones = timezone_list();
                             </div>
                         </div>
 
-                        <!--
-                    <div class='row mb-2 option'>
-                        <div class='col-10'>
-                            <?php echo $lang->get('number_of_used_pw'); ?>
+                        <div class='row mb-2 option' data-keywords="display">
+                            <div class='col-10'>
+                                <?php echo $lang->get('settings_get_tp_info'); ?>
+                                <small id='passwordHelpBlock' class='form-text text-muted'>
+                                    <?php echo $lang->get('settings_get_tp_info_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='get_tp_info' data-toggle-on='<?php echo isset($SETTINGS['get_tp_info']) === true && (int) $SETTINGS['get_tp_info'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='get_tp_info_input' value='<?php echo isset($SETTINGS['get_tp_info']) && (int) $SETTINGS['get_tp_info'] === 1 ? 1 : 0; ?>' />
+                            </div>
                         </div>
-                        <div class='col-2'>
-                            <input type='text' class='form-control form-control-sm' id='number_of_used_pw' value='<?php echo htmlspecialchars($SETTINGS['number_of_used_pw']) ?? '5'; ?>'>
+                        
+                        <div class='row mb-2 option' data-keywords="user ui setting login length password">
+                            <div class='col-10'>
+                                <?php echo $lang->get('admin_pwd_maximum_length'); ?>
+                                <small id='passwordHelpBlock' class='form-text text-muted'>
+                                    <?php echo $lang->get('admin_pwd_maximum_length_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <input type='number' class='form-control form-control-sm' id='pwd_maximum_length' value='<?php echo htmlspecialchars($SETTINGS['pwd_maximum_length']) ?? '60'; ?>'>
+                            </div>
                         </div>
+
+                        <div class='row mb-2 option' data-keywords="user ui setting login length password">
+                            <div class='col-10'>
+                                <?php echo $lang->get('password_length_by_default'); ?>
+                            </div>
+                            <div class='col-2'>
+                                <input type='number' class='form-control form-control-sm' id='pwd_default_length' value='<?php echo htmlspecialchars($SETTINGS['pwd_default_length']) ?? '14'; ?>'>
+                            </div>
+                        </div>
+
                     </div>
-                    -->
+                    <!-- /.card-body -->
+                </div>
+                <!-- /.card -->
+            
+
+                <div class='card card-info'>
+                    <div class='card-header'>
+                        <h3 class='card-title'><i class="fa-solid fa-shield-halved mr-2"></i><?php echo $lang->get('settings_category_security_title'); ?>
+                            <span class="badge text-bg-secondary">
+                                <?php echo $lang->get('settings_category_security_goal'); ?>
+                            </span>
+                        </h3>
+                    </div>
+                    <!-- /.card-header -->
+                    <!-- form start -->
+                    <div class='card-body'>
+
+                        <div class='row mb-2 option' data-keywords="server setting encryption client">
+                            <div class='col-10'>
+                                <?php echo $lang->get('encryptClientServer'); ?>
+                                <small id='passwordHelpBlock' class='form-text text-muted'>
+                                    <?php echo $lang->get('encryptClientServer_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='encryptClientServer' data-toggle-on='<?php echo isset($SETTINGS['encryptClientServer']) && (int) $SETTINGS['encryptClientServer'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='encryptClientServer_input' value='<?php echo isset($SETTINGS['encryptClientServer']) && (int) $SETTINGS['encryptClientServer'] === 1 ? '1' : '0'; ?>' />
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option' data-keywords="server setting ">
+                            <div class='col-10'>
+                                <?php echo $lang->get('enable_http_request_login'); ?>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='enable_http_request_login' data-toggle-on='<?php echo isset($SETTINGS['enable_http_request_login']) && (int) $SETTINGS['enable_http_request_login'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_http_request_login_input' value='<?php echo isset($SETTINGS['enable_http_request_login']) && (int) $SETTINGS['enable_http_request_login'] === 1 ? '1' : '0'; ?>' />
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option' data-keywords="server setting strict hsts sts">
+                            <div class='col-10'>
+                                <?php echo $lang->get('settings_enable_sts'); ?>
+                                <small id='passwordHelpBlock' class='form-text text-muted'>
+                                    <?php echo $lang->get('settings_enable_sts_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='enable_sts' data-toggle-on='<?php echo isset($SETTINGS['enable_sts']) && (int) $SETTINGS['enable_sts'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_sts_input' value='<?php echo isset($SETTINGS['enable_sts']) && (int) $SETTINGS['enable_sts'] === 1 ? '1' : '0'; ?>' />
+                            </div>
+                        </div>
 
                         <div class='row mb-2 option' data-keywords="user login password duration">
                             <div class='col-10'>
@@ -410,87 +413,6 @@ $zones = timezone_list();
                             </div>
                         </div>
 
-                        <!--
-                        <div class='row mb-2 option' data-keywords="log user login">
-                            <div class='col-10'>
-                                <?php echo $lang->get('settings_log_connections'); ?>
-                            </div>
-                            <div class='col-2'>
-                                <div class='toggle toggle-modern' id='log_connections' data-toggle-on='<?php echo isset($SETTINGS['log_connections']) === true && (int) $SETTINGS['log_connections'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='log_connections_input' value='<?php echo isset($SETTINGS['log_connections']) && (int) $SETTINGS['log_connections'] === 1 ? 1 : 0; ?>' />
-                            </div>
-                        </div>
-                        -->
-
-                        <div class='row mb-2 option' data-keywords="log item password log security">
-                            <div class='col-10'>
-                                <?php echo $lang->get('settings_log_accessed'); ?>
-                            </div>
-                            <div class='col-2'>
-                                <div class='toggle toggle-modern' id='log_accessed' data-toggle-on='<?php echo isset($SETTINGS['log_accessed']) === true && (int) $SETTINGS['log_accessed'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='log_accessed_input' value='<?php echo isset($SETTINGS['log_accessed']) && (int) $SETTINGS['log_accessed'] === 1 ? 1 : 0; ?>' />
-                            </div>
-                        </div>
-
-                        <div class='row mb-2 option' data-keywords="folder personal user">
-                            <div class='col-10'>
-                                <?php echo $lang->get('enable_personal_folder_feature'); ?>
-                                <small id='passwordHelpBlock' class='form-text text-muted'>
-                                    <?php echo $lang->get('enable_personal_folder_feature_tip'); ?>
-                                </small>
-                            </div>
-                            <div class='col-2'>
-                                <div class='toggle toggle-modern' id='enable_pf_feature' data-toggle-on='<?php echo isset($SETTINGS['enable_pf_feature']) === true && (int) $SETTINGS['enable_pf_feature'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_pf_feature_input' value='<?php echo isset($SETTINGS['enable_pf_feature']) && (int) $SETTINGS['enable_pf_feature'] === 1 ? 1 : 0; ?>' />
-                            </div>
-                        </div>
-
-                        <!--
-                  <div class='row mb-2 option'>
-                      <div class='col-10'>
-                          <?php echo $lang->get('enable_personal_saltkey_cookie'); ?>
-                      </div>
-                      <div class='col-2'>
-                          <div class='toggle toggle-modern' id='enable_personal_saltkey_cookie' data-toggle-on='<?php echo isset($SETTINGS['enable_personal_saltkey_cookie']) === true && (int) $SETTINGS['enable_personal_saltkey_cookie'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_personal_saltkey_cookie_input' value='<?php echo isset($SETTINGS['enable_personal_saltkey_cookie']) && (int) $SETTINGS['enable_personal_saltkey_cookie'] === 1 ? 1 : 0; ?>' />
-                      </div>
-                  </div>
-
-                  <div class='row mb-2 option'>
-                      <div class='col-10'>
-                          <?php echo $lang->get('personal_saltkey_cookie_duration'); ?>
-                      </div>
-                      <div class='col-2'>
-                      <input type='text' class='form-control form-control-sm' id='personal_saltkey_cookie_duration' value='<?php echo htmlspecialchars($SETTINGS['personal_saltkey_cookie_duration']) ?? '31'; ?>'>
-                      </div>
-                  </div>
-
-                    <div class='row mb-2 option'>
-                        <div class='col-8'>
-                            <?php echo $lang->get('personal_saltkey_security_level'); ?>
-                        </div>
-                        <div class='col-4'>
-                            <select class='form-control form-control-sm' id='personal_saltkey_security_level'>
-                                <option value=''>-- <?php echo $lang->get('select'); ?> --</option>
-                                <?php
-                                foreach (TP_PW_COMPLEXITY as $complex) {
-                                    echo '
-                                <option value="' . $complex[0] . '"', isset($SETTINGS['personal_saltkey_security_level']) === true && (int) $SETTINGS['personal_saltkey_security_level'] === $complex[0] ? ' selected' : '', '>' . $complex[1] . '</option>';
-                                }
-                                ?>
-                            </select>
-                        </div>
-                    </div>
-
-                  <div class='row mb-2 option'>
-                      <div class='col-10'>
-                          <?php echo $lang->get('settings_attachments_encryption'); ?>
-                          <small id='passwordHelpBlock' class='form-text text-muted'>
-                              <?php echo $lang->get('settings_attachments_encryption_tip'); ?>
-                          </small>
-                      </div>
-                      <div class='col-2'>
-                          <div class='toggle toggle-modern' id='enable_attachment_encryption' data-toggle-on='<?php echo isset($SETTINGS['enable_attachment_encryption']) === true && (int) $SETTINGS['enable_attachment_encryption'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_attachment_encryption_input' value='<?php echo isset($SETTINGS['enable_attachment_encryption']) && (int) $SETTINGS['enable_attachment_encryption'] === 1 ? 1 : 0; ?>' />
-                      </div>
-                  </div>
-                  -->
-
                         <div class='row mb-2 option' data-keywords="image">
                             <div class='col-10'>
                                 <?php echo $lang->get('settings_secure_display_image'); ?>
@@ -503,111 +425,88 @@ $zones = timezone_list();
                             </div>
                         </div>
 
-                        <div class='row mb-2 option' data-keywords="option">
+                        <div class='row mb-2 option' data-keywords="password display">
                             <div class='col-10'>
-                                <?php echo $lang->get('settings_kb'); ?>
-                                <small id='passwordHelpBlock' class='form-text text-muted'>
-                                    <?php echo $lang->get('settings_kb_tip'); ?>
+                                <?php echo $lang->get('password_overview_delay'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('password_overview_delay_tip'); ?>
                                 </small>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='enable_kb' data-toggle-on='<?php echo isset($SETTINGS['enable_kb']) === true && (int) $SETTINGS['enable_kb'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_kb_input' value='<?php echo isset($SETTINGS['enable_kb']) && (int) $SETTINGS['enable_kb'] === 1 ? 1 : 0; ?>' />
+                                <input type='number' class='form-control form-control-sm' id='password_overview_delay' value='<?php echo isset($SETTINGS['password_overview_delay']) === true ? htmlspecialchars($SETTINGS['password_overview_delay']) : '4'; ?>'>
                             </div>
                         </div>
 
-                        <div class='row mb-2 option' data-keywords="option">
+                        <div class='row mb-2 option' data-keywords="password delete view expiration">
                             <div class='col-10'>
-                                <?php echo $lang->get('settings_suggestion'); ?>
-                                <small id='passwordHelpBlock' class='form-text text-muted'>
-                                    <?php echo $lang->get('settings_suggestion_tip'); ?>
+                                <?php echo $lang->get('admin_setting_activate_expiration'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('admin_setting_activate_expiration_tip'); ?>
                                 </small>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='enable_suggestion' data-toggle-on='<?php echo isset($SETTINGS['enable_suggestion']) === true && (int) $SETTINGS['enable_suggestion'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_suggestion_input' value='<?php echo isset($SETTINGS['enable_suggestion']) && (int) $SETTINGS['enable_suggestion'] === 1 ? 1 : 0; ?>' />
+                                <div class='toggle toggle-modern' id='activate_expiration' data-toggle-on='<?php echo isset($SETTINGS['activate_expiration']) === true && (int) $SETTINGS['activate_expiration'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='activate_expiration_input' value='<?php echo isset($SETTINGS['activate_expiration']) && (int) $SETTINGS['activate_expiration'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
 
-                        <div class='row mb-2 option' data-keywords="display">
+                        <div class='row mb-2 option' data-keywords="password delete view expiration">
                             <div class='col-10'>
-                                <?php echo $lang->get('settings_get_tp_info'); ?>
-                                <small id='passwordHelpBlock' class='form-text text-muted'>
-                                    <?php echo $lang->get('settings_get_tp_info_tip'); ?>
+                                <?php echo $lang->get('admin_setting_enable_delete_after_consultation'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('admin_setting_enable_delete_after_consultation_tip'); ?>
                                 </small>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='get_tp_info' data-toggle-on='<?php echo isset($SETTINGS['get_tp_info']) === true && (int) $SETTINGS['get_tp_info'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='get_tp_info_input' value='<?php echo isset($SETTINGS['get_tp_info']) && (int) $SETTINGS['get_tp_info'] === 1 ? 1 : 0; ?>' />
+                                <div class='toggle toggle-modern' id='enable_delete_after_consultation' data-toggle-on='<?php echo isset($SETTINGS['enable_delete_after_consultation']) === true && (int) $SETTINGS['enable_delete_after_consultation'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_delete_after_consultation_input' value='<?php echo isset($SETTINGS['enable_delete_after_consultation']) && (int) $SETTINGS['enable_delete_after_consultation'] === 1 ? 1 : 0; ?>' />
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option' data-keywords="display optimization icon clipboard">
+                            <div class='col-10'>
+                                <?php echo $lang->get('clipboard_password_life_duration'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('clipboard_password_life_duration_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <input type='number' class='form-control form-control-sm' id='clipboard_life_duration' value='<?php echo isset($SETTINGS['clipboard_life_duration']) === true ? htmlspecialchars($SETTINGS['clipboard_life_duration']) : '30'; ?>'>
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option' data-keywords="role restriction">
+                            <div class='col-10'>
+                                <?php echo $lang->get('settings_restricted_to'); ?>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='restricted_to' data-toggle-on='<?php echo isset($SETTINGS['restricted_to']) === true && (int) $SETTINGS['restricted_to'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='restricted_to_input' value='<?php echo isset($SETTINGS['restricted_to']) && (int) $SETTINGS['restricted_to'] === 1 ? 1 : 0; ?>' />
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option <?php echo isset($SETTINGS['restricted_to']) === true && (int) $SETTINGS['restricted_to'] === 1 ? '' : 'hidden'; ?>' id="form-item-row-restricted" data-keywords="role restriction">
+                            <div class='col-10'>
+                                <?php echo $lang->get('restricted_to_roles'); ?>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='restricted_to_roles' data-toggle-on='<?php echo isset($SETTINGS['restricted_to_roles']) === true && (int) $SETTINGS['restricted_to_roles'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='restricted_to_roles_input' value='<?php echo isset($SETTINGS['restricted_to_roles']) && (int) $SETTINGS['restricted_to_roles'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
 
                     </div>
-                    <!-- /.card-body -->
                 </div>
                 <!-- /.card -->
             
 
-                <div class='card card-primary'>
-                        <div class='card-header'>
-                            <h3 class='card-title'><?php echo $lang->get('otv_link'); ?></h3>
-                        </div>
-                        <!-- /.card-header -->
-                        <!-- form start -->
-                        <div class='card-body'>
-                            <div class='row mb-2 option' data-keywords="one time link">
-                                <div class='col-10'>
-                                    <?php echo $lang->get('otv_is_enabled'); ?>
-                                </div>
-                                <div class='col-2'>
-                                    <div class='toggle toggle-modern' id='otv_is_enabled' data-toggle-on='<?php echo isset($SETTINGS['otv_is_enabled']) === true && (int) $SETTINGS['otv_is_enabled'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='otv_is_enabled_input' value='<?php echo isset($SETTINGS['otv_is_enabled']) && (int) $SETTINGS['otv_is_enabled'] === 1 ? 1 : 0; ?>' />
-                                </div>
-                            </div>
-
-                            <div class='row mb-2 option' data-keywords="one time period expiration link">
-                                <div class='col-10'>
-                                    <?php echo $lang->get('settings_otv_expiration_period'); ?>
-                                </div>
-                                <div class='col-2'>
-                                    <input type='number' class='form-control form-control-sm' id='otv_expiration_period' value='<?php echo htmlspecialchars($SETTINGS['otv_expiration_period']) ?? '7'; ?>'>
-                                </div>
-                            </div>
-
-                            <div class='row mb-2 option' data-keywords="one time subdomain link">
-                                <div class='col-12'>
-                                    <?php echo $lang->get('settings_otv_subdomain'); ?>
-                                    <small class='form-text text-muted'>
-                                        <?php echo $lang->get('settings_otv_subdomain_tip'); ?>
-                                    </small>
-                                </div>
-                                <div class='col-sm-12'>
-                                    <input type='text' class='form-control form-control-sm' id='otv_subdomain' value='<?php echo isset($SETTINGS['otv_subdomain']) === true ? htmlspecialchars($SETTINGS['otv_subdomain']) : ''; ?>'>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-            </div>
-            <!-- /.col-md-6 -->
-            <!--/.col (left) -->
-            <!-- right column -->
-            <div class='col-md-6'>
-                <!-- Horizontal Form -->
                 <div class='card card-info'>
                     <div class='card-header'>
-                        <h3 class='card-title'><?php echo $lang->get('admin_settings_title'); ?></h3>
+                        <h3 class='card-title'><i class="fa-solid fa-users-cog mr-2"></i><?php echo $lang->get('settings_category_users_title'); ?>
+                            <span class="badge text-bg-secondary">
+                                <?php echo $lang->get('settings_category_users_goal'); ?>
+                            </span>
+                        </h3>
                     </div>
                     <!-- /.card-header -->
-                    <!-- card-body -->
+                    <!-- form start -->
                     <div class='card-body'>
-                        <div class='row mb-2 option' data-keywords="item edit">
-                            <div class='col-10'>
-                                <?php echo $lang->get('settings_delay_for_item_edition'); ?>
-                                <small id='passwordHelpBlock' class='form-text text-muted'>
-                                    <?php echo $lang->get('settings_delay_for_item_edition_tip'); ?>
-                                </small>
-                            </div>
-                            <div class='col-2'>
-                                <input type='number' class='form-control form-control-sm' id='delay_item_edition' value='<?php echo $SETTINGS['delay_item_edition'] ?? '9'; ?>'>
-                            </div>
-                        </div>
 
                         <div class='row mb-2 option' data-keywords="right manager item">
                             <div class='col-10'>
@@ -627,14 +526,142 @@ $zones = timezone_list();
                             </div>
                         </div>
 
-                        <div class='row mb-2 option' data-keywords="password last">
+                        <div class='row mb-2 option' data-keywords="folder creation">
                             <div class='col-10'>
-                                <?php echo $lang->get('max_last_items'); ?>
+                                <?php echo $lang->get('subfolder_rights_as_parent'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('subfolder_rights_as_parent_tip'); ?>
+                                </small>
                             </div>
                             <div class='col-2'>
-                                <input type='number' class='form-control form-control-sm' id='max_last_items' value='<?php echo isset($SETTINGS['max_last_items']) === true ? $SETTINGS['max_last_items'] : '7'; ?>'>
+                                <div class='toggle toggle-modern' id='subfolder_rights_as_parent' data-toggle-on='<?php echo isset($SETTINGS['subfolder_rights_as_parent']) === true && (int) $SETTINGS['subfolder_rights_as_parent'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='subfolder_rights_as_parent_input' value='<?php echo isset($SETTINGS['subfolder_rights_as_parent']) && (int) $SETTINGS['subfolder_rights_as_parent'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
+
+                        <div class='row mb-2 option' data-keywords="role restriction modify right">
+                            <div class='col-10'>
+                                <?php echo $lang->get('settings_anyone_can_modify'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('settings_anyone_can_modify_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='anyone_can_modify' data-toggle-on='<?php echo isset($SETTINGS['anyone_can_modify']) === true && (int) $SETTINGS['anyone_can_modify'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='anyone_can_modify_input' value='<?php echo isset($SETTINGS['anyone_can_modify']) && (int) $SETTINGS['anyone_can_modify'] === 1 ? 1 : 0; ?>' />
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option <?php echo isset($SETTINGS['anyone_can_modify']) === true && (int) $SETTINGS['anyone_can_modify'] === 1 ? '' : 'hidden'; ?>' id="form-item-row-modify" data-keywords="role restriction modify right">
+                            <div class='col-10'>
+                                <?php echo $lang->get('settings_anyone_can_modify_bydefault'); ?>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='anyone_can_modify_bydefault' data-toggle-on='<?php echo isset($SETTINGS['anyone_can_modify_bydefault']) === true && (int) $SETTINGS['anyone_can_modify_bydefault'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='anyone_can_modify_bydefault_input' value='<?php echo isset($SETTINGS['anyone_can_modify_bydefault']) && (int) $SETTINGS['anyone_can_modify_bydefault'] === 1 ? 1 : 0; ?>' />
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option' data-keywords="folder creation">
+                            <div class='col-10'>
+                                <?php echo $lang->get('can_create_root_folder'); ?>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='can_create_root_folder' data-toggle-on='<?php echo isset($SETTINGS['can_create_root_folder']) === true && (int) $SETTINGS['can_create_root_folder'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='can_create_root_folder_input' value='<?php echo isset($SETTINGS['can_create_root_folder']) && (int) $SETTINGS['can_create_root_folder'] === 1 ? 1 : 0; ?>' />
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option' data-keywords="password delete massive">
+                            <div class='col-10'>
+                                <?php echo $lang->get('enable_massive_move_delete'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('enable_massive_move_delete_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='enable_massive_move_delete' data-toggle-on='<?php echo isset($SETTINGS['enable_massive_move_delete']) === true && (int) $SETTINGS['enable_massive_move_delete'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_massive_move_delete_input' value='<?php echo isset($SETTINGS['enable_massive_move_delete']) && (int) $SETTINGS['enable_massive_move_delete'] === 1 ? 1 : 0; ?>' />
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option' data-keywords="profile">
+                            <div class='col-10'>
+                                <?php echo $lang->get('disable_user_edit_profile'); ?>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='disable_user_edit_profile' data-toggle-on='<?php echo isset($SETTINGS['disable_user_edit_profile']) === true && (int) $SETTINGS['disable_user_edit_profile'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='disable_user_edit_profile_input' value='<?php echo isset($SETTINGS['disable_user_edit_profile']) && (int) $SETTINGS['disable_user_edit_profile'] === 1 ? 1 : 0; ?>' />
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option' data-keywords="language lang">
+                            <div class='col-10'>
+                                <?php echo $lang->get('disable_user_edit_language'); ?>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='disable_user_edit_language' data-toggle-on='<?php echo isset($SETTINGS['disable_user_edit_language']) === true && (int) $SETTINGS['disable_user_edit_language'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='disable_user_edit_language_input' value='<?php echo isset($SETTINGS['disable_user_edit_language']) && (int) $SETTINGS['disable_user_edit_language'] === 1 ? 1 : 0; ?>' />
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option' data-keywords="timezone">
+                            <div class='col-10'>
+                                <?php echo $lang->get('disable_user_edit_timezone'); ?>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='disable_user_edit_timezone' data-toggle-on='<?php echo isset($SETTINGS['disable_user_edit_timezone']) === true && (int) $SETTINGS['disable_user_edit_timezone'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='disable_user_edit_timezone_input' value='<?php echo isset($SETTINGS['disable_user_edit_timezone']) && (int) $SETTINGS['disable_user_edit_timezone'] === 1 ? 1 : 0; ?>' />
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option' data-keywords="tree load strategy">
+                            <div class='col-10'>
+                                <?php echo $lang->get('disable_user_edit_tree_load_strategy'); ?>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='disable_user_edit_tree_load_strategy' data-toggle-on='<?php echo isset($SETTINGS['disable_user_edit_tree_load_strategy']) === true && (int) $SETTINGS['disable_user_edit_tree_load_strategy'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='disable_user_edit_tree_load_strategy_input' value='<?php echo isset($SETTINGS['disable_user_edit_tree_load_strategy']) && (int) $SETTINGS['disable_user_edit_tree_load_strategy'] === 1 ? 1 : 0; ?>' />
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option' data-keywords="tree load strategy">
+                            <div class='col-10'>
+                                <?php echo $lang->get('disable_drag_drop'); ?>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='disable_drag_drop' data-toggle-on='<?php echo isset($SETTINGS['disable_drag_drop']) === true && (int) $SETTINGS['disable_drag_drop'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='disable_drag_drop_input' value='<?php echo isset($SETTINGS['disable_drag_drop']) && (int) $SETTINGS['disable_drag_drop'] === 1 ? 1 : 0; ?>' />
+                            </div>
+                        </div>
+
+
+
+
+
+
+                        <div class='row mb-2 option' data-keywords="folder personal user">
+                            <div class='col-10'>
+                                <?php echo $lang->get('enable_personal_folder_feature'); ?>
+                                <small id='passwordHelpBlock' class='form-text text-muted'>
+                                    <?php echo $lang->get('enable_personal_folder_feature_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='enable_pf_feature' data-toggle-on='<?php echo isset($SETTINGS['enable_pf_feature']) === true && (int) $SETTINGS['enable_pf_feature'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_pf_feature_input' value='<?php echo isset($SETTINGS['enable_pf_feature']) && (int) $SETTINGS['enable_pf_feature'] === 1 ? 1 : 0; ?>' />
+                            </div>
+                        </div>
+                        
+                    </div>
+                </div>
+
+            </div>
+            <!-- /.col-md-6 -->
+            <!--/.col (left) -->
+            <!-- right column -->
+            <div class='col-md-6'>
+                <!-- Horizontal Form -->
+                <div class='card card-info'>
+                    <div class='card-header'>
+                        <h3 class='card-title'><i class="fa-solid fa-folder-tree mr-2"></i><?php echo $lang->get('settings_category_items_title'); ?>
+                            <span class="badge text-bg-secondary">
+                                <?php echo $lang->get('settings_category_items_goal'); ?>
+                            </span>
+                        </h3>
+                    </div>
+                    <!-- /.card-header -->
+                    <!-- card-body -->
+                    <div class='card-body'>
 
                         <div class='row mb-2 option' data-keywords="create duplicate folder">
                             <div class='col-10'>
@@ -675,18 +702,6 @@ $zones = timezone_list();
                             </div>
                         </div>
 
-                        <div class='row mb-2 option' data-keywords="folder creation">
-                            <div class='col-10'>
-                                <?php echo $lang->get('subfolder_rights_as_parent'); ?>
-                                <small class='form-text text-muted'>
-                                    <?php echo $lang->get('subfolder_rights_as_parent_tip'); ?>
-                                </small>
-                            </div>
-                            <div class='col-2'>
-                                <div class='toggle toggle-modern' id='subfolder_rights_as_parent' data-toggle-on='<?php echo isset($SETTINGS['subfolder_rights_as_parent']) === true && (int) $SETTINGS['subfolder_rights_as_parent'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='subfolder_rights_as_parent_input' value='<?php echo isset($SETTINGS['subfolder_rights_as_parent']) && (int) $SETTINGS['subfolder_rights_as_parent'] === 1 ? 1 : 0; ?>' />
-                            </div>
-                        </div>
-
                         <div class='row mb-2 option' data-keywords="password creation">
                             <div class='col-10'>
                                 <?php echo $lang->get('create_item_without_password'); ?>
@@ -696,57 +711,24 @@ $zones = timezone_list();
                             </div>
                         </div>
 
-                        <div class='row mb-2 option' data-keywords="profile">
+                        <div class='row mb-2 option' data-keywords="password last">
                             <div class='col-10'>
-                                <?php echo $lang->get('disable_user_edit_profile'); ?>
+                                <?php echo $lang->get('max_last_items'); ?>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='disable_user_edit_profile' data-toggle-on='<?php echo isset($SETTINGS['disable_user_edit_profile']) === true && (int) $SETTINGS['disable_user_edit_profile'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='disable_user_edit_profile_input' value='<?php echo isset($SETTINGS['disable_user_edit_profile']) && (int) $SETTINGS['disable_user_edit_profile'] === 1 ? 1 : 0; ?>' />
+                                <input type='number' class='form-control form-control-sm' id='max_last_items' value='<?php echo isset($SETTINGS['max_last_items']) === true ? $SETTINGS['max_last_items'] : '7'; ?>'>
                             </div>
                         </div>
 
-                        <div class='row mb-2 option' data-keywords="language lang">
+                        <div class='row mb-2 option' data-keywords="item edit">
                             <div class='col-10'>
-                                <?php echo $lang->get('disable_user_edit_language'); ?>
+                                <?php echo $lang->get('settings_delay_for_item_edition'); ?>
+                                <small id='passwordHelpBlock' class='form-text text-muted'>
+                                    <?php echo $lang->get('settings_delay_for_item_edition_tip'); ?>
+                                </small>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='disable_user_edit_language' data-toggle-on='<?php echo isset($SETTINGS['disable_user_edit_language']) === true && (int) $SETTINGS['disable_user_edit_language'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='disable_user_edit_language_input' value='<?php echo isset($SETTINGS['disable_user_edit_language']) && (int) $SETTINGS['disable_user_edit_language'] === 1 ? 1 : 0; ?>' />
-                            </div>
-                        </div>
-
-                        <div class='row mb-2 option' data-keywords="timezone">
-                            <div class='col-10'>
-                                <?php echo $lang->get('disable_user_edit_timezone'); ?>
-                            </div>
-                            <div class='col-2'>
-                                <div class='toggle toggle-modern' id='disable_user_edit_timezone' data-toggle-on='<?php echo isset($SETTINGS['disable_user_edit_timezone']) === true && (int) $SETTINGS['disable_user_edit_timezone'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='disable_user_edit_timezone_input' value='<?php echo isset($SETTINGS['disable_user_edit_timezone']) && (int) $SETTINGS['disable_user_edit_timezone'] === 1 ? 1 : 0; ?>' />
-                            </div>
-                        </div>
-
-                        <div class='row mb-2 option' data-keywords="tree load strategy">
-                            <div class='col-10'>
-                                <?php echo $lang->get('disable_drag_drop'); ?>
-                            </div>
-                            <div class='col-2'>
-                                <div class='toggle toggle-modern' id='disable_drag_drop' data-toggle-on='<?php echo isset($SETTINGS['disable_drag_drop']) === true && (int) $SETTINGS['disable_drag_drop'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='disable_drag_drop_input' value='<?php echo isset($SETTINGS['disable_drag_drop']) && (int) $SETTINGS['disable_drag_drop'] === 1 ? 1 : 0; ?>' />
-                            </div>
-                        </div>
-
-                        <div class='row mb-2 option' data-keywords="tree load strategy">
-                            <div class='col-10'>
-                                <?php echo $lang->get('disable_user_edit_tree_load_strategy'); ?>
-                            </div>
-                            <div class='col-2'>
-                                <div class='toggle toggle-modern' id='disable_user_edit_tree_load_strategy' data-toggle-on='<?php echo isset($SETTINGS['disable_user_edit_tree_load_strategy']) === true && (int) $SETTINGS['disable_user_edit_tree_load_strategy'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='disable_user_edit_tree_load_strategy_input' value='<?php echo isset($SETTINGS['disable_user_edit_tree_load_strategy']) && (int) $SETTINGS['disable_user_edit_tree_load_strategy'] === 1 ? 1 : 0; ?>' />
-                            </div>
-                        </div>
-
-                        <div class='row mb-2 option' data-keywords="favorite">
-                            <div class='col-10'>
-                                <?php echo $lang->get('enable_favourites'); ?>
-                            </div>
-                            <div class='col-2'>
-                                <div class='toggle toggle-modern' id='enable_favourites' data-toggle-on='<?php echo isset($SETTINGS['enable_favourites']) === true && (int) $SETTINGS['enable_favourites'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_favourites_input' value='<?php echo isset($SETTINGS['enable_favourites']) && (int) $SETTINGS['enable_favourites'] === 1 ? 1 : 0; ?>' />
+                                <input type='number' class='form-control form-control-sm' id='delay_item_edition' value='<?php echo $SETTINGS['delay_item_edition'] ?? '9'; ?>'>
                             </div>
                         </div>
 
@@ -759,148 +741,12 @@ $zones = timezone_list();
                             </div>
                         </div>
 
-                        <div class='row mb-2 option' data-keywords="folder creation">
+                        <div class='row mb-2 option' data-keywords="favorite">
                             <div class='col-10'>
-                                <?php echo $lang->get('can_create_root_folder'); ?>
+                                <?php echo $lang->get('enable_favourites'); ?>
                             </div>
                             <div class='col-2'>
-                                <div class='toggle toggle-modern' id='can_create_root_folder' data-toggle-on='<?php echo isset($SETTINGS['can_create_root_folder']) === true && (int) $SETTINGS['can_create_root_folder'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='can_create_root_folder_input' value='<?php echo isset($SETTINGS['can_create_root_folder']) && (int) $SETTINGS['can_create_root_folder'] === 1 ? 1 : 0; ?>' />
-                            </div>
-                        </div>
-
-                        <div class='row mb-2 option' data-keywords="password delete massive">
-                            <div class='col-10'>
-                                <?php echo $lang->get('enable_massive_move_delete'); ?>
-                                <small class='form-text text-muted'>
-                                    <?php echo $lang->get('enable_massive_move_delete_tip'); ?>
-                                </small>
-                            </div>
-                            <div class='col-2'>
-                                <div class='toggle toggle-modern' id='enable_massive_move_delete' data-toggle-on='<?php echo isset($SETTINGS['enable_massive_move_delete']) === true && (int) $SETTINGS['enable_massive_move_delete'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_massive_move_delete_input' value='<?php echo isset($SETTINGS['enable_massive_move_delete']) && (int) $SETTINGS['enable_massive_move_delete'] === 1 ? 1 : 0; ?>' />
-                            </div>
-                        </div>
-
-                        <div class='row mb-2 option' data-keywords="password display">
-                            <div class='col-10'>
-                                <?php echo $lang->get('password_overview_delay'); ?>
-                                <small class='form-text text-muted'>
-                                    <?php echo $lang->get('password_overview_delay_tip'); ?>
-                                </small>
-                            </div>
-                            <div class='col-2'>
-                                <input type='number' class='form-control form-control-sm' id='password_overview_delay' value='<?php echo isset($SETTINGS['password_overview_delay']) === true ? htmlspecialchars($SETTINGS['password_overview_delay']) : '4'; ?>'>
-                            </div>
-                        </div>
-
-                        <div class='row mb-2 option' data-keywords="password delete view expiration">
-                            <div class='col-10'>
-                                <?php echo $lang->get('admin_setting_activate_expiration'); ?>
-                                <small class='form-text text-muted'>
-                                    <?php echo $lang->get('admin_setting_activate_expiration_tip'); ?>
-                                </small>
-                            </div>
-                            <div class='col-2'>
-                                <div class='toggle toggle-modern' id='activate_expiration' data-toggle-on='<?php echo isset($SETTINGS['activate_expiration']) === true && (int) $SETTINGS['activate_expiration'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='activate_expiration_input' value='<?php echo isset($SETTINGS['activate_expiration']) && (int) $SETTINGS['activate_expiration'] === 1 ? 1 : 0; ?>' />
-                            </div>
-                        </div>
-
-                        <div class='row mb-2 option' data-keywords="password delete view expiration">
-                            <div class='col-10'>
-                                <?php echo $lang->get('admin_setting_enable_delete_after_consultation'); ?>
-                                <small class='form-text text-muted'>
-                                    <?php echo $lang->get('admin_setting_enable_delete_after_consultation_tip'); ?>
-                                </small>
-                            </div>
-                            <div class='col-2'>
-                                <div class='toggle toggle-modern' id='enable_delete_after_consultation' data-toggle-on='<?php echo isset($SETTINGS['enable_delete_after_consultation']) === true && (int) $SETTINGS['enable_delete_after_consultation'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_delete_after_consultation_input' value='<?php echo isset($SETTINGS['enable_delete_after_consultation']) && (int) $SETTINGS['enable_delete_after_consultation'] === 1 ? 1 : 0; ?>' />
-                            </div>
-                        </div>
-
-                        <div class='row mb-2 option' data-keywords="export print">
-                            <div class='col-10'>
-                                <?php echo $lang->get('settings_printing'); ?>
-                                <small class='form-text text-muted'>
-                                    <?php echo $lang->get('settings_printing_tip'); ?>
-                                </small>
-                            </div>
-                            <div class='col-2'>
-                                <div class='toggle toggle-modern' id='allow_print' data-toggle-on='<?php echo isset($SETTINGS['allow_print']) === true && (int) $SETTINGS['allow_print'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='allow_print_input' value='<?php echo isset($SETTINGS['allow_print']) && (int) $SETTINGS['allow_print'] === 1 ? 1 : 0; ?>' />
-                            </div>
-                        </div>
-
-                        <div class='row mb-2 option' data-keywords="export print">
-                            <div class='col-6'>
-                                <?php echo $lang->get('settings_roles_allowed_to_print'); ?>
-                                <small class='form-text text-muted'>
-                                    <?php echo $lang->get('settings_roles_allowed_to_print_tip'); ?>
-                                </small>
-                            </div>
-                            <div class='col-6'>
-                                <select class='form-control form-control-sm select2 disabled' id='roles_allowed_to_print_select' onchange='' multiple="multiple" style="width:100%;">
-                                    <?php
-                                    // Get selected groups
-                                    if (isset($SETTINGS['allow_print']) === true) {
-                                        $arrRolesToPrint = json_decode($SETTINGS['roles_allowed_to_print_select'], true);
-                                        if ($arrRolesToPrint === 0 || empty($arrRolesToPrint) === true) {
-                                            $arrRolesToPrint = [];
-                                        }
-                                        // Get full list
-                                        $roles = getRolesTitles();
-                                        foreach ($roles as $role) {
-                                            echo '
-                                    <option value="' . htmlspecialchars($role['id']) . '"', in_array($role['id'], $arrRolesToPrint) === true ? ' selected' : '', '>' . htmlspecialchars(addslashes($role['title'])) . '</option>';
-                                        }
-                                    }
-                                    ?>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class='row mb-2 option' data-keywords="import">
-                            <div class='col-10'>
-                                <?php echo $lang->get('settings_importing'); ?>
-                            </div>
-                            <div class='col-2'>
-                                <div class='toggle toggle-modern' id='allow_import' data-toggle-on='<?php echo isset($SETTINGS['allow_import']) === true && (int) $SETTINGS['allow_import'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='allow_import_input' value='<?php echo isset($SETTINGS['allow_import']) && (int) $SETTINGS['allow_import'] === 1 ? 1 : 0; ?>' />
-                            </div>
-                        </div>
-
-                        <div class='row mb-2 option' data-keywords="role restriction modify right">
-                            <div class='col-10'>
-                                <?php echo $lang->get('settings_anyone_can_modify'); ?>
-                                <small class='form-text text-muted'>
-                                    <?php echo $lang->get('settings_anyone_can_modify_tip'); ?>
-                                </small>
-                            </div>
-                            <div class='col-2'>
-                                <div class='toggle toggle-modern' id='anyone_can_modify' data-toggle-on='<?php echo isset($SETTINGS['anyone_can_modify']) === true && (int) $SETTINGS['anyone_can_modify'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='anyone_can_modify_input' value='<?php echo isset($SETTINGS['anyone_can_modify']) && (int) $SETTINGS['anyone_can_modify'] === 1 ? 1 : 0; ?>' />
-                            </div>
-                        </div>
-
-                        <div class='row mb-2 option <?php echo isset($SETTINGS['anyone_can_modify']) === true && (int) $SETTINGS['anyone_can_modify'] === 1 ? '' : 'hidden'; ?>' id="form-item-row-modify" data-keywords="role restriction modify right">
-                            <div class='col-10'>
-                                <?php echo $lang->get('settings_anyone_can_modify_bydefault'); ?>
-                            </div>
-                            <div class='col-2'>
-                                <div class='toggle toggle-modern' id='anyone_can_modify_bydefault' data-toggle-on='<?php echo isset($SETTINGS['anyone_can_modify_bydefault']) === true && (int) $SETTINGS['anyone_can_modify_bydefault'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='anyone_can_modify_bydefault_input' value='<?php echo isset($SETTINGS['anyone_can_modify_bydefault']) && (int) $SETTINGS['anyone_can_modify_bydefault'] === 1 ? 1 : 0; ?>' />
-                            </div>
-                        </div>
-
-                        <div class='row mb-2 option' data-keywords="role restriction">
-                            <div class='col-10'>
-                                <?php echo $lang->get('settings_restricted_to'); ?>
-                            </div>
-                            <div class='col-2'>
-                                <div class='toggle toggle-modern' id='restricted_to' data-toggle-on='<?php echo isset($SETTINGS['restricted_to']) === true && (int) $SETTINGS['restricted_to'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='restricted_to_input' value='<?php echo isset($SETTINGS['restricted_to']) && (int) $SETTINGS['restricted_to'] === 1 ? 1 : 0; ?>' />
-                            </div>
-                        </div>
-
-                        <div class='row mb-2 option <?php echo isset($SETTINGS['restricted_to']) === true && (int) $SETTINGS['restricted_to'] === 1 ? '' : 'hidden'; ?>' id="form-item-row-restricted" data-keywords="role restriction">
-                            <div class='col-10'>
-                                <?php echo $lang->get('restricted_to_roles'); ?>
-                            </div>
-                            <div class='col-2'>
-                                <div class='toggle toggle-modern' id='restricted_to_roles' data-toggle-on='<?php echo isset($SETTINGS['restricted_to_roles']) === true && (int) $SETTINGS['restricted_to_roles'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='restricted_to_roles_input' value='<?php echo isset($SETTINGS['restricted_to_roles']) && (int) $SETTINGS['restricted_to_roles'] === 1 ? 1 : 0; ?>' />
+                                <div class='toggle toggle-modern' id='enable_favourites' data-toggle-on='<?php echo isset($SETTINGS['enable_favourites']) === true && (int) $SETTINGS['enable_favourites'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_favourites_input' value='<?php echo isset($SETTINGS['enable_favourites']) && (int) $SETTINGS['enable_favourites'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
 
@@ -913,18 +759,6 @@ $zones = timezone_list();
                             </div>
                             <div class='col-2'>
                                 <div class='toggle toggle-modern' id='copy_to_clipboard_small_icons' data-toggle-on='<?php echo isset($SETTINGS['copy_to_clipboard_small_icons']) === true && (int) $SETTINGS['copy_to_clipboard_small_icons'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='copy_to_clipboard_small_icons_input' value='<?php echo isset($SETTINGS['copy_to_clipboard_small_icons']) && (int) $SETTINGS['copy_to_clipboard_small_icons'] === 1 ? 1 : 0; ?>' />
-                            </div>
-                        </div>
-
-                        <div class='row mb-2 option' data-keywords="display optimization icon clipboard">
-                            <div class='col-10'>
-                                <?php echo $lang->get('clipboard_password_life_duration'); ?>
-                                <small class='form-text text-muted'>
-                                    <?php echo $lang->get('clipboard_password_life_duration_tip'); ?>
-                                </small>
-                            </div>
-                            <div class='col-2'>
-                                <input type='number' class='form-control form-control-sm' id='clipboard_life_duration' value='<?php echo isset($SETTINGS['clipboard_life_duration']) === true ? htmlspecialchars($SETTINGS['clipboard_life_duration']) : '30'; ?>'>
                             </div>
                         </div>
 
@@ -1015,6 +849,181 @@ if (isset($SETTINGS['show_description']) === true && (int) $SETTINGS['show_descr
                             </div>
                         </div>
 
+                    </div>
+                    <!-- /.card-body -->
+                </div>
+                <!-- /.card -->
+            
+
+                <div class='card card-info'>
+                    <div class='card-header'>
+                        <h3 class='card-title'><i class="fa-solid fa-people-arrows mr-2"></i><?php echo $lang->get('settings_category_collaboration_title'); ?>
+                            <span class="badge text-bg-secondary">
+                                <?php echo $lang->get('settings_category_collaboration_goal'); ?>
+                            </span>
+                        </h3>
+                    </div>
+                    <!-- /.card-header -->
+                    <!-- form start -->
+                    <div class='card-body'>
+
+                        <div class='row mb-2 option' data-keywords="one time link">
+                            <div class='col-10'>
+                                <?php echo $lang->get('otv_is_enabled'); ?>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='otv_is_enabled' data-toggle-on='<?php echo isset($SETTINGS['otv_is_enabled']) === true && (int) $SETTINGS['otv_is_enabled'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='otv_is_enabled_input' value='<?php echo isset($SETTINGS['otv_is_enabled']) && (int) $SETTINGS['otv_is_enabled'] === 1 ? 1 : 0; ?>' />
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option' data-keywords="one time period expiration link">
+                            <div class='col-10'>
+                                <?php echo $lang->get('settings_otv_expiration_period'); ?>
+                            </div>
+                            <div class='col-2'>
+                                <input type='number' class='form-control form-control-sm' id='otv_expiration_period' value='<?php echo htmlspecialchars($SETTINGS['otv_expiration_period']) ?? '7'; ?>'>
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option' data-keywords="one time subdomain link">
+                            <div class='col-12'>
+                                <?php echo $lang->get('settings_otv_subdomain'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('settings_otv_subdomain_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-sm-12'>
+                                <input type='text' class='form-control form-control-sm' id='otv_subdomain' value='<?php echo isset($SETTINGS['otv_subdomain']) === true ? htmlspecialchars($SETTINGS['otv_subdomain']) : ''; ?>'>
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option' data-keywords="export print">
+                            <div class='col-10'>
+                                <?php echo $lang->get('settings_printing'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('settings_printing_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='allow_print' data-toggle-on='<?php echo isset($SETTINGS['allow_print']) === true && (int) $SETTINGS['allow_print'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='allow_print_input' value='<?php echo isset($SETTINGS['allow_print']) && (int) $SETTINGS['allow_print'] === 1 ? 1 : 0; ?>' />
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option' data-keywords="export print">
+                            <div class='col-6'>
+                                <?php echo $lang->get('settings_roles_allowed_to_print'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('settings_roles_allowed_to_print_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-6'>
+                                <select class='form-control form-control-sm select2 disabled' id='roles_allowed_to_print_select' onchange='' multiple="multiple" style="width:100%;">
+                                    <?php
+                                    // Get selected groups
+                                    if (isset($SETTINGS['allow_print']) === true) {
+                                        $arrRolesToPrint = json_decode($SETTINGS['roles_allowed_to_print_select'], true);
+                                        if ($arrRolesToPrint === 0 || empty($arrRolesToPrint) === true) {
+                                            $arrRolesToPrint = [];
+                                        }
+                                        // Get full list
+                                        $roles = getRolesTitles();
+                                        foreach ($roles as $role) {
+                                            echo '
+                                    <option value="' . htmlspecialchars($role['id']) . '"', in_array($role['id'], $arrRolesToPrint) === true ? ' selected' : '', '>' . htmlspecialchars(addslashes($role['title'])) . '</option>';
+                                        }
+                                    }
+                                    ?>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option' data-keywords="import">
+                            <div class='col-10'>
+                                <?php echo $lang->get('settings_importing'); ?>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='allow_import' data-toggle-on='<?php echo isset($SETTINGS['allow_import']) === true && (int) $SETTINGS['allow_import'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='allow_import_input' value='<?php echo isset($SETTINGS['allow_import']) && (int) $SETTINGS['allow_import'] === 1 ? 1 : 0; ?>' />
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option' data-keywords="offline export">
+                            <div class='col-10'>
+                                <?php echo $lang->get('settings_offline_mode'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('settings_offline_mode_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='settings_offline_mode' data-toggle-on='<?php echo isset($SETTINGS['settings_offline_mode']) === true && (int) $SETTINGS['settings_offline_mode'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='settings_offline_mode_input' value='<?php echo isset($SETTINGS['settings_offline_mode']) && (int) $SETTINGS['settings_offline_mode'] === 1 ? 1 : 0; ?>' />
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option' data-keywords="offline">
+                            <div class='col-7'>
+                                <?php echo $lang->get('offline_mode_key_level'); ?>
+                            </div>
+                            <div class='col-5'>
+                                <select class='form-control form-control-sm' id='offline_key_level'>
+                                    <?php
+                                    foreach (TP_PW_COMPLEXITY as $complex) {
+                                        echo '
+                                <option value="' . $complex[0] . '"', isset($SETTINGS['offline_key_level']) === true && (int) $SETTINGS['offline_key_level'] === $complex[0] ? ' selected' : '', '>' . $complex[1] . '</option>';
+                                    }
+                                    ?>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option' data-keywords="option">
+                            <div class='col-10'>
+                                <?php echo $lang->get('settings_kb'); ?>
+                                <small id='passwordHelpBlock' class='form-text text-muted'>
+                                    <?php echo $lang->get('settings_kb_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='enable_kb' data-toggle-on='<?php echo isset($SETTINGS['enable_kb']) === true && (int) $SETTINGS['enable_kb'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_kb_input' value='<?php echo isset($SETTINGS['enable_kb']) && (int) $SETTINGS['enable_kb'] === 1 ? 1 : 0; ?>' />
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option' data-keywords="option">
+                            <div class='col-10'>
+                                <?php echo $lang->get('settings_suggestion'); ?>
+                                <small id='passwordHelpBlock' class='form-text text-muted'>
+                                    <?php echo $lang->get('settings_suggestion_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='enable_suggestion' data-toggle-on='<?php echo isset($SETTINGS['enable_suggestion']) === true && (int) $SETTINGS['enable_suggestion'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_suggestion_input' value='<?php echo isset($SETTINGS['enable_suggestion']) && (int) $SETTINGS['enable_suggestion'] === 1 ? 1 : 0; ?>' />
+                            </div>
+                        </div>
+                        
+                    </div>
+                </div>
+                <!-- /.card -->
+            
+
+                <div class='card card-info'>
+                    <div class='card-header'>
+                        <h3 class='card-title'><i class="fa-solid fa-clipboard-list mr-2"></i><?php echo $lang->get('settings_category_logging_title'); ?>
+                            <span class="badge text-bg-secondary">
+                                <?php echo $lang->get('settings_category_logging_goal'); ?>
+                            </span>
+                        </h3>
+                    </div>
+                    <!-- /.card-header -->
+                    <!-- form start -->
+                    <div class='card-body'>
+
+                        <div class='row mb-2 option' data-keywords="log item password log security">
+                            <div class='col-10'>
+                                <?php echo $lang->get('settings_log_accessed'); ?>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='log_accessed' data-toggle-on='<?php echo isset($SETTINGS['log_accessed']) === true && (int) $SETTINGS['log_accessed'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='log_accessed_input' value='<?php echo isset($SETTINGS['log_accessed']) && (int) $SETTINGS['log_accessed'] === 1 ? 1 : 0; ?>' />
+                            </div>
+                        </div>
+
                         <div class='row mb-2 option' data-keywords="email notification login">
                             <div class='col-10'>
                                 <?php echo $lang->get('enable_send_email_on_user_login'); ?>
@@ -1053,34 +1062,22 @@ if (isset($SETTINGS['show_description']) === true && (int) $SETTINGS['show_descr
                                 <div class='toggle toggle-modern' id='insert_manual_entry_item_history' data-toggle-on='<?php echo isset($SETTINGS['insert_manual_entry_item_history']) === true && (int) $SETTINGS['insert_manual_entry_item_history'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='insert_manual_entry_item_history_input' value='<?php echo isset($SETTINGS['insert_manual_entry_item_history']) && (int) $SETTINGS['insert_manual_entry_item_history'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
+                        
+                    </div>
+                </div>
+            
 
-                        <div class='row mb-2 option' data-keywords="offline export">
-                            <div class='col-10'>
-                                <?php echo $lang->get('settings_offline_mode'); ?>
-                                <small class='form-text text-muted'>
-                                    <?php echo $lang->get('settings_offline_mode_tip'); ?>
-                                </small>
-                            </div>
-                            <div class='col-2'>
-                                <div class='toggle toggle-modern' id='settings_offline_mode' data-toggle-on='<?php echo isset($SETTINGS['settings_offline_mode']) === true && (int) $SETTINGS['settings_offline_mode'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='settings_offline_mode_input' value='<?php echo isset($SETTINGS['settings_offline_mode']) && (int) $SETTINGS['settings_offline_mode'] === 1 ? 1 : 0; ?>' />
-                            </div>
-                        </div>
-
-                        <div class='row mb-2 option' data-keywords="offline">
-                            <div class='col-7'>
-                                <?php echo $lang->get('offline_mode_key_level'); ?>
-                            </div>
-                            <div class='col-5'>
-                                <select class='form-control form-control-sm' id='offline_key_level'>
-                                    <?php
-                                    foreach (TP_PW_COMPLEXITY as $complex) {
-                                        echo '
-                                <option value="' . $complex[0] . '"', isset($SETTINGS['offline_key_level']) === true && (int) $SETTINGS['offline_key_level'] === $complex[0] ? ' selected' : '', '>' . $complex[1] . '</option>';
-                                    }
-                                    ?>
-                                </select>
-                            </div>
-                        </div>
+                <div class='card card-info'>
+                    <div class='card-header'>
+                        <h3 class='card-title'><i class="fa-solid fa-plug mr-2"></i><?php echo $lang->get('settings_category_integration_title'); ?>
+                            <span class="badge text-bg-secondary">
+                                <?php echo $lang->get('settings_category_integration_goal'); ?>
+                            </span>
+                        </h3>
+                    </div>
+                    <!-- /.card-header -->
+                    <!-- form start -->
+                    <div class='card-body'>
 
                         <div class='row mb-2 option' data-keywords="syslog">
                             <div class='col-10'>
@@ -1120,9 +1117,8 @@ if (isset($SETTINGS['show_description']) === true && (int) $SETTINGS['show_descr
                                 <div class='toggle toggle-modern disabled' id='enable_server_password_change' data-toggle-on='<?php echo isset($SETTINGS['enable_server_password_change']) === true && (int) $SETTINGS['enable_server_password_change'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_server_password_change_input' value='<?php echo isset($SETTINGS['enable_server_password_change']) && (int) $SETTINGS['enable_server_password_change'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
-
+                        
                     </div>
-                    <!-- /.card-body -->
                 </div>
                 <!-- /.card -->
             </div>
