@@ -1468,11 +1468,15 @@ class DatabaseInstaller
     {
         DB::query(
             "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "user_private_keys` (
-            `id` SERIAL PRIMARY KEY,
-            `user_id` INT NOT NULL REFERENCES `" . $this->inputData['tablePrefix'] . "users(id)`,
-            `private_key` TEXT NOT NULL,
-            `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            `is_current` BOOLEAN DEFAULT FALSE
+                `id` BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                `user_id` INT(12) NOT NULL,
+                `private_key` TEXT NOT NULL,
+                `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                `is_current` BOOLEAN DEFAULT FALSE,
+                CONSTRAINT `fk_user_private_keys_user`
+                    FOREIGN KEY (`user_id`)
+                    REFERENCES `" . $this->inputData['tablePrefix'] . "users`(`id`)
+                    ON DELETE CASCADE
             ) CHARSET=utf8;"
         );
     }
