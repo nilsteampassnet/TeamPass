@@ -32,6 +32,23 @@
  // - selected_items_to_be_imported
 
 return array(
+    'highlight_selected' => 'Highlight selected',
+    'settings_category_general_info_title' => 'General information & installation paths',
+    'settings_category_general_info_goal' => 'Define where TeamPass files and resources are stored.',
+    'settings_category_system_title' => 'System settings & maintenance',
+    'settings_category_system_goal' => 'Control the overall system behavior and its availability.',
+    'settings_category_security_title' => 'Security & authentication',
+    'settings_category_security_goal' => 'Manage security, access control, and encryption policies.',
+    'settings_category_users_title' => 'User and role management',
+    'settings_category_users_goal' => 'Define user capabilities and restrictions within the system.',
+    'settings_category_items_title' => 'Items and folders management',
+    'settings_category_items_goal' => 'Control how password items and folders are organized and handled.',
+    'settings_category_collaboration_title' => 'Collaborative & advanced features',
+    'settings_category_collaboration_goal' => 'Provide additional tools and features for teamwork and extended functionality.',
+    'settings_category_integration_title' => 'Integrations & automation',
+    'settings_category_integration_goal' => 'Interact with external systems or enable automated processes.',
+    'settings_category_logging_title' => 'Logging & history',
+    'settings_category_logging_goal' => 'Manage logs and track user actions for audit and traceability.',
     'no_previous_valide_private_key' => 'No previous private key fits provided password',
     'user_password_changed' => 'Your password has changed. Please provide your previous password to re-encrypt your personal items. Once done, please wait a few minutes before accessing your personal items.',
     'suggested_value' => 'Suggested value',
