@@ -116,7 +116,7 @@ $zones = timezone_list();
             <div class='col-md-6'>
                 <div class='card card-info'>
                     <div class='card-header'>
-                        <h3 class='card-title'>🧩<?php echo $lang->get('settings_category_general_info_title'); ?>
+                        <h3 class='card-title'><i class="fa-solid fa-folder-open mr-2"></i><?php echo $lang->get('settings_category_general_info_title'); ?>
                             <span class="badge text-bg-secondary">
                                 <?php echo $lang->get('settings_category_general_info_goal'); ?>
                             </span>
@@ -202,7 +202,7 @@ $zones = timezone_list();
 
                 <div class='card card-info'>
                     <div class='card-header'>
-                        <h3 class='card-title'>⚙️<?php echo $lang->get('settings_category_system_title'); ?>
+                        <h3 class='card-title'><i class="fa-solid fa-gears mr-2"></i><?php echo $lang->get('settings_category_system_title'); ?>
                             <span class="badge text-bg-secondary">
                                 <?php echo $lang->get('settings_category_system_goal'); ?>
                             </span>
@@ -352,7 +352,7 @@ $zones = timezone_list();
 
                 <div class='card card-info'>
                     <div class='card-header'>
-                        <h3 class='card-title'>🔐<?php echo $lang->get('settings_category_security_title'); ?>
+                        <h3 class='card-title'><i class="fa-solid fa-shield-halved mr-2"></i><?php echo $lang->get('settings_category_security_title'); ?>
                             <span class="badge text-bg-secondary">
                                 <?php echo $lang->get('settings_category_security_goal'); ?>
                             </span>
@@ -498,7 +498,7 @@ $zones = timezone_list();
 
                 <div class='card card-info'>
                     <div class='card-header'>
-                        <h3 class='card-title'>👥<?php echo $lang->get('settings_category_users_title'); ?>
+                        <h3 class='card-title'><i class="fa-solid fa-users-cog mr-2"></i><?php echo $lang->get('settings_category_users_title'); ?>
                             <span class="badge text-bg-secondary">
                                 <?php echo $lang->get('settings_category_users_goal'); ?>
                             </span>
@@ -653,7 +653,7 @@ $zones = timezone_list();
                 <!-- Horizontal Form -->
                 <div class='card card-info'>
                     <div class='card-header'>
-                        <h3 class='card-title'>📁<?php echo $lang->get('settings_category_items_title'); ?>
+                        <h3 class='card-title'><i class="fa-solid fa-folder-tree mr-2"></i><?php echo $lang->get('settings_category_items_title'); ?>
                             <span class="badge text-bg-secondary">
                                 <?php echo $lang->get('settings_category_items_goal'); ?>
                             </span>
@@ -857,7 +857,7 @@ if (isset($SETTINGS['show_description']) === true && (int) $SETTINGS['show_descr
 
                 <div class='card card-info'>
                     <div class='card-header'>
-                        <h3 class='card-title'>🔄<?php echo $lang->get('settings_category_collaboration_title'); ?>
+                        <h3 class='card-title'><i class="fa-solid fa-people-arrows mr-2"></i><?php echo $lang->get('settings_category_collaboration_title'); ?>
                             <span class="badge text-bg-secondary">
                                 <?php echo $lang->get('settings_category_collaboration_goal'); ?>
                             </span>
@@ -867,29 +867,6 @@ if (isset($SETTINGS['show_description']) === true && (int) $SETTINGS['show_descr
                     <!-- form start -->
                     <div class='card-body'>
 
-                        <div class='row mb-2 option' data-keywords="option">
-                            <div class='col-10'>
-                                <?php echo $lang->get('settings_kb'); ?>
-                                <small id='passwordHelpBlock' class='form-text text-muted'>
-                                    <?php echo $lang->get('settings_kb_tip'); ?>
-                                </small>
-                            </div>
-                            <div class='col-2'>
-                                <div class='toggle toggle-modern' id='enable_kb' data-toggle-on='<?php echo isset($SETTINGS['enable_kb']) === true && (int) $SETTINGS['enable_kb'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_kb_input' value='<?php echo isset($SETTINGS['enable_kb']) && (int) $SETTINGS['enable_kb'] === 1 ? 1 : 0; ?>' />
-                            </div>
-                        </div>
-
-                        <div class='row mb-2 option' data-keywords="option">
-                            <div class='col-10'>
-                                <?php echo $lang->get('settings_suggestion'); ?>
-                                <small id='passwordHelpBlock' class='form-text text-muted'>
-                                    <?php echo $lang->get('settings_suggestion_tip'); ?>
-                                </small>
-                            </div>
-                            <div class='col-2'>
-                                <div class='toggle toggle-modern' id='enable_suggestion' data-toggle-on='<?php echo isset($SETTINGS['enable_suggestion']) === true && (int) $SETTINGS['enable_suggestion'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_suggestion_input' value='<?php echo isset($SETTINGS['enable_suggestion']) && (int) $SETTINGS['enable_suggestion'] === 1 ? 1 : 0; ?>' />
-                            </div>
-                        </div>
                         <div class='row mb-2 option' data-keywords="one time link">
                             <div class='col-10'>
                                 <?php echo $lang->get('otv_is_enabled'); ?>
@@ -996,6 +973,30 @@ if (isset($SETTINGS['show_description']) === true && (int) $SETTINGS['show_descr
                                 </select>
                             </div>
                         </div>
+
+                        <div class='row mb-2 option' data-keywords="option">
+                            <div class='col-10'>
+                                <?php echo $lang->get('settings_kb'); ?>
+                                <small id='passwordHelpBlock' class='form-text text-muted'>
+                                    <?php echo $lang->get('settings_kb_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='enable_kb' data-toggle-on='<?php echo isset($SETTINGS['enable_kb']) === true && (int) $SETTINGS['enable_kb'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_kb_input' value='<?php echo isset($SETTINGS['enable_kb']) && (int) $SETTINGS['enable_kb'] === 1 ? 1 : 0; ?>' />
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option' data-keywords="option">
+                            <div class='col-10'>
+                                <?php echo $lang->get('settings_suggestion'); ?>
+                                <small id='passwordHelpBlock' class='form-text text-muted'>
+                                    <?php echo $lang->get('settings_suggestion_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='enable_suggestion' data-toggle-on='<?php echo isset($SETTINGS['enable_suggestion']) === true && (int) $SETTINGS['enable_suggestion'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_suggestion_input' value='<?php echo isset($SETTINGS['enable_suggestion']) && (int) $SETTINGS['enable_suggestion'] === 1 ? 1 : 0; ?>' />
+                            </div>
+                        </div>
                         
                     </div>
                 </div>
@@ -1004,7 +1005,7 @@ if (isset($SETTINGS['show_description']) === true && (int) $SETTINGS['show_descr
 
                 <div class='card card-info'>
                     <div class='card-header'>
-                        <h3 class='card-title'>🧾<?php echo $lang->get('settings_category_logging_title'); ?>
+                        <h3 class='card-title'><i class="fa-solid fa-clipboard-list mr-2"></i><?php echo $lang->get('settings_category_logging_title'); ?>
                             <span class="badge text-bg-secondary">
                                 <?php echo $lang->get('settings_category_logging_goal'); ?>
                             </span>
@@ -1068,7 +1069,7 @@ if (isset($SETTINGS['show_description']) === true && (int) $SETTINGS['show_descr
 
                 <div class='card card-info'>
                     <div class='card-header'>
-                        <h3 class='card-title'>🧰<?php echo $lang->get('settings_category_integration_title'); ?>
+                        <h3 class='card-title'><i class="fa-solid fa-plug mr-2"></i><?php echo $lang->get('settings_category_integration_title'); ?>
                             <span class="badge text-bg-secondary">
                                 <?php echo $lang->get('settings_category_integration_goal'); ?>
                             </span>
