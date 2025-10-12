@@ -543,5 +543,66 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
     });
 
+    
+
+    $(document).on('click', '#button-refresh-users-api', function() {
+        toastr.remove();
+        toastr.info(
+            '<i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>',
+            '<?php echo $lang->get('please_wait'); ?>'
+        );
+
+        // Launch action
+        $.post(
+            'sources/admin.queries.php', {
+                type: 'admin_action_refresh-users-api',
+                key: '<?php echo $session->get('key'); ?>'
+            },
+            function(data) {
+                //decrypt data
+                data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>');
+
+                if (data.error === true) {
+                    // ERROR
+                    toastr.remove();
+                    toastr.warning(
+                        '<?php echo $lang->get('none_selected_text'); ?>',
+                        '', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
+                } else {
+                    if (data.countUpdatedUsers > 0) {
+                        // Inform user
+                        toastr.remove();
+                        toastr.success(
+                            data.message,
+                            '<?php echo $lang->get('alert_page_will_reload'); ?>', {
+                                timeOut: 3000,
+                                progressBar: true
+                            }
+                        );
+
+                        // Delay page submit
+                        $(this).delay(2000).queue(function() {
+                            document.location.reload(true);
+                            $(this).dequeue();
+                        });
+                    } else {
+                        toastr.remove();
+                        toastr.info(
+                            '<?php echo $lang->get('done'); ?>',
+                            '', {
+                                timeOut: 1000
+                            }
+                        );
+                    }
+                }
+            }
+        );
+
+    });
+
     //]]>
 </script>
