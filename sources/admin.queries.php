@@ -1588,9 +1588,6 @@ switch ($post_type) {
             // Generate KEY
             require_once 'main.functions.php';
             $key = GenerateCryptKey(39, false, true, true, false, true);
-
-            // Generate objectKey
-            //$object = doDataEncryption($key, SECUREFILE.':'.$timestamp);
             
             // Save in DB
             DB::insert(
@@ -1599,9 +1596,8 @@ switch ($post_type) {
                     'increment_id' => null,
                     'type' => 'key',
                     'label' => $post_label,
-                    'value' => $key, //$object['encrypted'],
+                    'value' => $key,
                     'timestamp' => $timestamp,
-                    //'user_id' => -1,
                 )
             );
 
@@ -2670,6 +2666,61 @@ switch ($post_type) {
                 'proposedDuration' => $proposedDuration, // New proposed value if current setting is not sufficient
                 'currentDuration' => (int) $SETTINGS['task_maximum_run_time'], // Current setting
                 'setupProposal' => $isCurrentSettingSufficient, // true if current setting is sufficient, false otherwise
+                'error' => false,
+            ),
+            'encode'
+        );
+
+        break;
+
+    case 'admin_action_refresh-users-api':
+        // Check KEY and rights
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        $users = DB::query(
+            'SELECT u.id, u.public_key, a.increment_id
+            FROM ' . prefixTable('users') . ' AS u
+            LEFT JOIN ' . prefixTable('api') . ' AS a 
+                ON a.user_id = u.id AND a.type = %s
+            WHERE u.disabled = %i AND u.deleted_at IS NULL AND u.public_key IS NOT NULL AND u.admin = %i
+            ORDER BY u.login ASC',
+            'user',
+            0,
+            0
+        );
+        $countUpdatedUsers = 0;
+        foreach ($users as $user) {
+            // Check if user has an api key
+            // If not then create one
+            if (is_null($user['increment_id'])) {
+                // Create the API key
+                DB::insert(
+                    prefixTable('api'),
+                    array(
+                        'type' => 'user',
+                        'user_id' => $user['id'],
+                        'value' => encryptUserObjectKey(base64_encode(base64_encode(uniqidReal(39))), $user['public_key']),
+                        'timestamp' => time(),
+                    )
+                );
+
+                $countUpdatedUsers++;
+            }
+        }
+
+        // Encrypt data to return
+        echo prepareExchangedData(
+            array(
+                'countUpdatedUsers' => $countUpdatedUsers,
                 'error' => false,
             ),
             'encode'
