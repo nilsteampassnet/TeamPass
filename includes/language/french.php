@@ -1291,5 +1291,6 @@ return array(
     'settings_category_integration_title' => 'Interagir avec des systèmes externes ou activer des processus automatisés.',
     'settings_category_logging_title' => 'Journalisation & historique',
     'settings_category_logging_goal' => 'Gérer les journaux et tracer les actions des utilisateurs pour audit et traçabilité.',
+    'build_missing_api_keys' => 'Créer les clé API manquantes des utilisateurs',
 
 );
