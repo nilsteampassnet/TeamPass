@@ -1291,5 +1291,6 @@ e new password must:<br/> - Be different from the previous one<br/> - Contain at
     'settings_category_integration_title' => 'Interact with external systems or enable automated processes.',
     'settings_category_logging_title' => 'Logging & history',
     'settings_category_logging_goal' => 'Manage logs and track user actions for audit and traceability.',
+    'build_missing_api_keys' => 'Build missing API keys for users',
 
 );

@@ -32,6 +32,7 @@
  // - selected_items_to_be_imported
 
 return array(
+    'build_missing_api_keys' => 'Build missing API keys for users',
     'highlight_selected' => 'Highlight selected',
     'settings_category_general_info_title' => 'General information & installation paths',
     'settings_category_general_info_goal' => 'Define where TeamPass files and resources are stored.',

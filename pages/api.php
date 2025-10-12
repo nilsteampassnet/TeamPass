@@ -281,7 +281,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                         <?php echo $lang->get('users_api_access_info'); ?>
                                     </div>
                                     <div class="col-6">
-                                        <button type="button" class="btn btn-default pointer tooltips" title="<?php echo $lang->get('refresh'); ?>" id="button-refresh-users-api">
+                                        <button type="button" class="btn btn-default pointer infotip" title="<?php echo $lang->get('build_missing_api_keys'); ?>" id="button-refresh-users-api">
                                             <i class="fas fa-sync-alt"></i>
                                         </button>
                                     </div>
