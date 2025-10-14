@@ -3128,5 +3128,5 @@ function simulateUserKeyChangeDuration($userInfo): ?float
         );
     }
 
-    return $timeExecutionEstimation;
+    return $timeExecutionEstimation ?? 0;
 }

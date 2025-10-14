@@ -261,6 +261,14 @@ function passwordHandler(string $post_type, /*php8 array|null|string*/ $dataRece
          * User's authentication password in LDAP has changed
          */
         case 'change_user_ldap_auth_password'://action_password
+            // Check if no_password_provided is set
+            if (isset($dataReceived['no_password_provided']) && $dataReceived['no_password_provided'] === 1) {
+                // Handle case where no password is provided
+                // The action is that we will reset all personnal items keys
+                return resetUserPersonalItemKeys(
+                    (int) $session->get('user-id')
+                );
+            }
 
             // Users passwords are html escaped
             $userPassword = filter_var($dataReceived['current_password'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
@@ -3556,6 +3564,48 @@ function generateAnOTP(string $label, bool $with_qrcode = false, string $secretK
             'message' => '',
             'secret' => $secretKey,
             'qrcode' => $qrcode ?? '',
+        ),
+        'encode'
+    );
+}
+
+function resetUserPersonalItemKeys(int $userId): string
+{
+    $personalItems = DB::query(
+        'SELECT i.id, i.pw, s.share_key, s.increment_id
+        FROM ' . prefixTable('items') . ' i
+        INNER JOIN ' . prefixTable('sharekeys_items') . ' s ON i.id = s.object_id
+        WHERE i.perso = %i
+        AND s.user_id = %i',
+        1,
+        $userId
+    );
+
+    if (is_countable($personalItems) && count($personalItems) > 0) {
+        // Reset the keys for each personal item
+        foreach ($personalItems as $item) {
+            DB::update(
+                prefixTable('sharekeys_items'),
+                array('share_key' => ''),
+                'increment_id = %i',
+                $item['increment_id']
+            );
+        }
+
+        // Update user special status
+                DB::update(
+                    prefixTable('users'),
+                    array(
+                        'special' => 'none',
+                    ),
+                    'id = %i',
+                    $userId
+                );
+    }
+
+    return prepareExchangedData(
+        array(
+            'error' => false,
         ),
         'encode'
     );

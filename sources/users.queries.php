@@ -339,7 +339,7 @@ if (null !== $post_type) {
                 );
                 $new_user_id = DB::insertId();
                 // Create personnal folder
-                if ($has_personal_folder === 1) {
+                if ((int) $has_personal_folder === 1) {
                     DB::insert(
                         prefixTable('nested_tree'),
                         array(
@@ -354,7 +354,7 @@ if (null !== $post_type) {
                     $tree->rebuild();
                 }
                 // Create folder and role for domain
-                if ($new_folder_role_domain === 1) {
+                if ((int) $new_folder_role_domain === 1) {
                     // create folder
                     DB::insert(
                         prefixTable('nested_tree'),

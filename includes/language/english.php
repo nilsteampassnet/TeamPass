@@ -32,6 +32,7 @@
  // - selected_items_to_be_imported
 
 return array(
+    'ignore_this_password_is_lost' => 'I no longer remember my previous password. I understand that it will reset the password for my personal items.',
     'highlight_selected' => 'Highlight selected',
     'settings_category_general_info_title' => 'General information & installation paths',
     'settings_category_general_info_goal' => 'Define where TeamPass files and resources are stored.',

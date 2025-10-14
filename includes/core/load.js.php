@@ -265,7 +265,7 @@ if (
                             // USer's password has been reseted, he shall change it
                             if (debugJavascript === true) console.log('LDAP user password has to change his auth password')
                             // HIde
-                            $('.content-header, .content').addClass('hidden');
+                            $('.content-header, .content, #dialog-ldap-user-change-password-confirm-ignore-div').addClass('hidden');
 
                             // Show passwords inputs and form
                             $('#dialog-ldap-user-change-password-info')
@@ -291,7 +291,7 @@ if (
                             // USer's password has been reseted, he shall change it
                             if (debugJavascript === true) console.log('NEW LDAP - we need to encrypt private key')
                             // HIde
-                            $('.content-header, .content').addClass('hidden');
+                            $('.content-header, .content, #dialog-ldap-user-change-password-confirm-ignore-div').addClass('hidden');
 
                             // Show form
                             $('#dialog-ldap-user-change-password').removeClass('hidden');
@@ -338,7 +338,7 @@ if (
                         if (typeof data.queryResults !== 'undefined' && data.error === false && data.queryResults.special === 'encrypt_personal_items') {
                             // User has personal items to encrypt
                             if (debugJavascript === true) console.log('User has personal items to encrypt');
-                            $('#dialog-ldap-user-change-password').removeClass('hidden');
+                            $('#dialog-ldap-user-change-password, #dialog-ldap-user-change-password-confirm-ignore-div').removeClass('hidden');
                             $('.content, .content-header').addClass('hidden');
                         }
                     }
@@ -564,7 +564,7 @@ if (
                 // This case permits to handle a case where user has changed his password in LDAP                
                 if (debugJavascript === true) console.log('LDAP user password has to change his auth password')
                 // HIde
-                $('.content-header, .content').addClass('hidden');
+                $('.content-header, .content, #dialog-ldap-user-change-password-confirm-ignore-div').addClass('hidden');
 
                 // Show passwords inputs and form
                 $('#dialog-ldap-user-change-password-info')
@@ -1559,7 +1559,10 @@ if (
     */
     $(document).on('click', '#dialog-ldap-user-change-password-do', function() {
         // Start by changing the user password and send it by email
-        if ($('#dialog-ldap-user-change-password-old').val() !== "" && $('#dialog-ldap-user-change-password-current').val() !== "") {
+        if (
+            ($('#dialog-ldap-user-change-password-old').val() !== "" && $('#dialog-ldap-user-change-password-current').val() !== "")
+            || $('#dialog-ldap-user-change-password-confirm-ignore').is(':checked') === true
+         ) {
             // Case where a user is changing his authentication password
             if (debugJavascript === true) console.log('Reencryption based upon user auth password changed in LDAP');
 
@@ -1577,6 +1580,7 @@ if (
                 'user_id': store.get('teampassUser').user_id,
                 'previous_password': $('#dialog-ldap-user-change-password-old').val(),
                 'current_password': $('#dialog-ldap-user-change-password-current').val(),
+                'no_password_provided' : $('#dialog-ldap-user-change-password-confirm-ignore').is(':checked') === true ? 1 : 0,
             }
             if (debugJavascript === true) console.log(data);
 

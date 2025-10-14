@@ -844,6 +844,10 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                                     </div>
                                     <input type="password" class="form-control" id="dialog-ldap-user-change-password-current">
                                 </div>
+                                <div class="form-check mb-3 alert alert-danger icheck-red hidden" id="dialog-ldap-user-change-password-confirm-ignore-div">
+                                    <input type="checkbox" class="form-check-input form-item-control flat-blue" id="dialog-ldap-user-change-password-confirm-ignore" required>
+                                    <label class="form-check-label ml-3" for="dialog-ldap-user-change-password-confirm-ignore"><i class="fa-solid fa-bolt fa-lg mr-2"></i><?php echo $lang->get('ignore_this_password_is_lost'); ?></label>
+                                </div>
                                 <div class="form-control mt-3 font-weight-light grey" id="dialog-ldap-user-change-password-progress">
                                     <?php echo $lang->get('provide_current_psk_and_click_launch'); ?>
                                 </div>
