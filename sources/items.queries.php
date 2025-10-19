@@ -2802,10 +2802,14 @@ switch ($inputData['type']) {
                 );
                 $arrData['pwd_encryption_error'] = false;
                 $arrData['pwd_encryption_error_message'] = '';
-            } else {
+            } elseif ($userKey['share_key'] !== '') {
                 $pw = '';
                 $arrData['pwd_encryption_error'] = 'inconsistent_password';
                 $arrData['pwd_encryption_error_message'] = $lang->get('error_new_ldap_password_detected');
+            } else {
+                $pw = '';
+                $arrData['pwd_encryption_error'] = false;
+                $arrData['pwd_encryption_error_message'] = '';
             }
         }
 

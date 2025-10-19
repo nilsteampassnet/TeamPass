@@ -1292,5 +1292,6 @@ e new password must:<br/> - Be different from the previous one<br/> - Contain at
     'settings_category_logging_title' => 'Logging & history',
     'settings_category_logging_goal' => 'Manage logs and track user actions for audit and traceability.',
     'build_missing_api_keys' => 'Build missing API keys for users',
+    'ignore_this_password_is_lost' => 'I no longer remember my previous password. I understand that it will reset the password for my personal items.',
 
 );
