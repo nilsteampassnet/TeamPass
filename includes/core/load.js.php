@@ -1448,7 +1448,8 @@ if (
         // Start by testing if the temporary code is correct to decrypt an item
         data = {
             'user_id': store.get('teampassUser').user_id,
-            'password' : $('#dialog-ldap-user-build-keys-database-code').val(),
+            'otp' : $('#dialog-ldap-user-build-keys-database-code').val(),
+            'password' : $('#dialog-ldap-user-build-keys-database-userpassword').val(),
         }
         if (debugJavascript === true) {
             console.log('Testing if temporary code is correct in LDAP user case');
