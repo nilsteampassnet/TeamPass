@@ -60,11 +60,7 @@ class BaseController
     {
         $request = symfonyRequest::createFromGlobals();
         $queryString = $request->getQueryString();
-<<<<<<< HEAD
-        if ($request->getContentTypeFormat() !== 'json') {
-=======
         if ($request->getContentTypeFormat() != 'application/json') {
->>>>>>> 7bd3d6ef1 (Fixes in patch:)
             parse_str(html_entity_decode($queryString), $query);
             return $this->sanitizeUrl($query);
         }
