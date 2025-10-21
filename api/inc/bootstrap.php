@@ -76,6 +76,7 @@ function folderAction(array $actions, array $userData)
             'HTTP/1.1 404 Not Found',
             json_encode(['error' => 'API requested action is not allowed for this user'])
         );
+        return false;
     }
     // Perform the action
     require API_ROOT_PATH . "/Controller/Api/FolderController.php";
@@ -88,7 +89,7 @@ function checkUSerCRUDRights($userData, $actionToPerform): bool
 {
     if ($actionToPerform === 'create' && $userData['allowed_to_create'] === 1) {
         return true;
-    } elseif (in_array($actionToPerform, ['read', 'get', 'inFolders']) === true && $userData['allowed_to_read'] === 1) {
+    } elseif (in_array($actionToPerform, ['read', 'get', 'inFolders', 'listFolders']) === true && $userData['allowed_to_read'] === 1) {
         return true;
     } elseif ($actionToPerform === 'update' && $userData['allowed_to_update'] === 1) {
         return true;
