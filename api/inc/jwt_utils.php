@@ -120,10 +120,47 @@ function get_bearer_data($jwt) {
     // split the jwt
 	$tokenParts = explode('.', $jwt);
 	$payload = base64_decode($tokenParts[1]);
-	
+
     // HEADER: Get the access token from the header
     if (empty($payload) === false) {
         return json_decode($payload, true);
     }
     return null;
+}
+
+/**
+ * Get user encryption keys from database
+ * This function retrieves the user's public and private keys from the database
+ * and validates the session using key_tempo for security
+ *
+ * @param int $userId User ID from JWT token
+ * @param string $keyTempo Session key from JWT token
+ * @param string|null $userPassword Optional user password to decrypt private key
+ * @return array|null Array containing public_key and private_key, or null if validation fails
+ */
+function get_user_keys(int $userId, string $keyTempo, ?string $userPassword = null): ?array
+{
+    // Validate user session by checking key_tempo
+    $userInfo = DB::queryfirstrow(
+        "SELECT public_key, private_key, key_tempo
+        FROM " . prefixTable('users') . "
+        WHERE id = %i",
+        $userId
+    );
+
+    if (DB::count() === 0) {
+        // User not found
+        return null;
+    }
+
+    // Validate key_tempo matches (security check)
+    if ($userInfo['key_tempo'] !== $keyTempo) {
+        // Session invalid or expired
+        return null;
+    }
+
+    return [
+        'public_key' => $userInfo['public_key'],
+        'private_key' => $userInfo['private_key'],
+    ];
 }
