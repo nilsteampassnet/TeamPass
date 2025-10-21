@@ -28,6 +28,29 @@ use Symfony\Component\HttpFoundation\Request AS symfonyRequest;
 class ItemController extends BaseController
 {
 
+    /**
+     * Get user's private key from database
+     * Retrieves the user's encryption keys from the database using the session token
+     *
+     * @param array $userData User data from JWT token
+     * @return string|null Private key or null if not found/invalid session
+     */
+    private function getUserPrivateKey(array $userData): ?string
+    {
+        include_once API_ROOT_PATH . '/inc/jwt_utils.php';
+
+        $userKeys = get_user_keys(
+            (int) $userData['id'],
+            (string) $userData['key_tempo']
+        );
+
+        if ($userKeys === null) {
+            return null;
+        }
+
+        return $userKeys['private_key'];
+    }
+
 
     /**
      * Manage case inFolder - get items inside an array of folders
@@ -89,12 +112,19 @@ class ItemController extends BaseController
             try {
                 $itemModel = new ItemModel();
 
-                $arrItems = $itemModel->getItems($sqlExtra, $intLimit, $userData['private_key'], $userData['id']);
-                if (!empty($arrItems)) {
-                    $responseData = json_encode($arrItems);
+                // Get user's private key from database
+                $userPrivateKey = $this->getUserPrivateKey($userData);
+                if ($userPrivateKey === null) {
+                    $strErrorDesc = 'Invalid session or user keys not found';
+                    $strErrorHeader = 'HTTP/1.1 401 Unauthorized';
                 } else {
-                    $strErrorDesc = 'No content for this label';
-                    $strErrorHeader = 'HTTP/1.1 204 No Content';
+                    $arrItems = $itemModel->getItems($sqlExtra, $intLimit, $userPrivateKey, $userData['id']);
+                    if (!empty($arrItems)) {
+                        $responseData = json_encode($arrItems);
+                    } else {
+                        $strErrorDesc = 'No content for this label';
+                        $strErrorHeader = 'HTTP/1.1 204 No Content';
+                    }
                 }
             } catch (Error $e) {
                 $strErrorDesc = $e->getMessage().'. Something went wrong! Please contact support.4';
@@ -286,8 +316,15 @@ class ItemController extends BaseController
             try {
                 $itemModel = new ItemModel();
 
-                $arrItems = $itemModel->getItems($sqlExtra, 0, $userData['private_key'], $userData['id']);
-                $responseData = json_encode($arrItems);
+                // Get user's private key from database
+                $userPrivateKey = $this->getUserPrivateKey($userData);
+                if ($userPrivateKey === null) {
+                    $strErrorDesc = 'Invalid session or user keys not found';
+                    $strErrorHeader = 'HTTP/1.1 401 Unauthorized';
+                } else {
+                    $arrItems = $itemModel->getItems($sqlExtra, 0, $userPrivateKey, $userData['id']);
+                    $responseData = json_encode($arrItems);
+                }
             } catch (Error $e) {
                 $strErrorDesc = $e->getMessage().'. Something went wrong! Please contact support.6';
                 $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';

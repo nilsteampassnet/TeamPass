@@ -126,8 +126,6 @@ class AuthModel
                     (int) $userInfo['id'],
                     (string) $inputData['login'],
                     (int) $userInfo['personal_folder'],
-                    (string) $userInfo['public_key'],
-                    (string) $privateKeyClear,
                     (string) implode(",", $ret['folders']),
                     (string) implode(",", $ret['items']),
                     (string) $keyTempo,
@@ -152,12 +150,15 @@ class AuthModel
     /**
      * Create a JWT
      *
+     * Note: User encryption keys (public_key, private_key) are no longer stored in the JWT
+     * to reduce token size. They are retrieved from the database when needed using the
+     * get_user_keys() function which validates the session via key_tempo.
+     *
      * @param integer $id
      * @param string $login
      * @param integer $pf_enabled
-     * @param string $pubkey
-     * @param string $privkey
      * @param string $folders
+     * @param string $items
      * @param string $keyTempo
      * @param integer $admin
      * @param integer $manager
@@ -175,8 +176,6 @@ class AuthModel
         int $id,
         string $login,
         int $pf_enabled,
-        string $pubkey,
-        string $privkey,
         string $folders,
         string $items,
         string $keyTempo,
@@ -195,13 +194,11 @@ class AuthModel
         // Load config
         $configManager = new ConfigManager();
         $SETTINGS = $configManager->getAllSettings();
-        
+
 		$payload = [
             'username' => $login,
-            'id' => $id, 
+            'id' => $id,
             'exp' => (time() + $SETTINGS['api_token_duration'] + 600),
-            'public_key' => $pubkey,
-            'private_key' => $privkey,
             'pf_enabled' => $pf_enabled,
             'folders_list' => $folders,
             'restricted_items_list' => $items,
@@ -217,7 +214,7 @@ class AuthModel
             'allowed_to_update' => $allowed_to_update,
             'allowed_to_delete' => $allowed_to_delete,
         ];
-        
+
         return ['token' => JWT::encode($payload, DB_PASSWD, 'HS256')];
     }
 
