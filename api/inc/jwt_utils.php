@@ -130,37 +130,77 @@ function get_bearer_data($jwt) {
 
 /**
  * Get user encryption keys from database
- * This function retrieves the user's public and private keys from the database
- * and validates the session using key_tempo for security
+ *
+ * This function retrieves the user's public and private keys from the database.
+ * The private key is stored ENCRYPTED in the database and is decrypted using
+ * the session key from the JWT token.
+ *
+ * Security architecture (defense in depth):
+ * - The encrypted private key in DB is useless without the session_key
+ * - The session_key in JWT is useless without the encrypted key from DB
+ * - Both are required together to get the decrypted private key
+ * - key_tempo is validated to ensure session is still valid
  *
  * @param int $userId User ID from JWT token
- * @param string $keyTempo Session key from JWT token
- * @param string|null $userPassword Optional user password to decrypt private key
- * @return array|null Array containing public_key and private_key, or null if validation fails
+ * @param string $keyTempo Session token from JWT (for validation)
+ * @param string $sessionKey Session key from JWT (base64 encoded) for decryption
+ * @return array|null Array containing public_key and private_key (decrypted), or null if validation fails
  */
-function get_user_keys(int $userId, string $keyTempo, ?string $userPassword = null): ?array
+function get_user_keys(int $userId, string $keyTempo, string $sessionKey): ?array
 {
-    // Validate user session by checking key_tempo
+    require_once API_ROOT_PATH . '/inc/encryption_utils.php';
+
+    // Retrieve user's public key and encrypted private key from database
     $userInfo = DB::queryfirstrow(
-        "SELECT public_key, private_key, key_tempo
-        FROM " . prefixTable('users') . "
-        WHERE id = %i",
+        "SELECT u.public_key, u.key_tempo, a.encrypted_private_key
+        FROM " . prefixTable('users') . " AS u
+        INNER JOIN " . prefixTable('api') . " AS a ON (a.user_id = u.id)
+        WHERE u.id = %i",
         $userId
     );
 
     if (DB::count() === 0) {
-        // User not found
+        // User not found or no API configuration
+        error_log('get_user_keys: User not found or no API config for user ID ' . $userId);
         return null;
     }
 
-    // Validate key_tempo matches (security check)
+    // Validate key_tempo matches (security check - ensures session is still valid)
     if ($userInfo['key_tempo'] !== $keyTempo) {
         // Session invalid or expired
+        error_log('get_user_keys: Invalid key_tempo for user ID ' . $userId);
+        return null;
+    }
+
+    // Check if encrypted private key exists
+    if (empty($userInfo['encrypted_private_key'])) {
+        // No encrypted key found - user needs to re-authenticate
+        error_log('get_user_keys: No encrypted private key found for user ID ' . $userId);
+        return null;
+    }
+
+    // Decode the session key from base64
+    $sessionKeyDecoded = base64_decode($sessionKey, true);
+
+    if ($sessionKeyDecoded === false || strlen($sessionKeyDecoded) !== 32) {
+        error_log('get_user_keys: Invalid session key format');
+        return null;
+    }
+
+    // Decrypt the private key using the session key
+    $privateKeyDecrypted = decrypt_with_session_key(
+        $userInfo['encrypted_private_key'],
+        $sessionKeyDecoded
+    );
+
+    if ($privateKeyDecrypted === false) {
+        // Decryption failed - wrong key or tampered data
+        error_log('get_user_keys: Failed to decrypt private key for user ID ' . $userId);
         return null;
     }
 
     return [
         'public_key' => $userInfo['public_key'],
-        'private_key' => $userInfo['private_key'],
+        'private_key' => $privateKeyDecrypted, // Returns the DECRYPTED private key
     ];
 }

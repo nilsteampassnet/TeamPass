@@ -30,18 +30,28 @@ class ItemController extends BaseController
 
     /**
      * Get user's private key from database
-     * Retrieves the user's encryption keys from the database using the session token
      *
-     * @param array $userData User data from JWT token
-     * @return string|null Private key or null if not found/invalid session
+     * Retrieves the user's private key by decrypting it from the database.
+     * The private key is stored ENCRYPTED in the database and is decrypted
+     * using the session_key from the JWT token.
+     *
+     * @param array $userData User data from JWT token (must include id, key_tempo, and session_key)
+     * @return string|null Decrypted private key or null if not found/invalid session
      */
     private function getUserPrivateKey(array $userData): ?string
     {
         include_once API_ROOT_PATH . '/inc/jwt_utils.php';
 
+        // Verify session_key exists in JWT payload
+        if (!isset($userData['session_key']) || empty($userData['session_key'])) {
+            error_log('getUserPrivateKey: Missing session_key in JWT token for user ID ' . $userData['id']);
+            return null;
+        }
+
         $userKeys = get_user_keys(
             (int) $userData['id'],
-            (string) $userData['key_tempo']
+            (string) $userData['key_tempo'],
+            (string) $userData['session_key'] // Session key from JWT for decryption
         );
 
         if ($userKeys === null) {
