@@ -1007,6 +1007,47 @@ try {
     mysqli_rollback($db_link);
 }
 
+// Add status field on encrypted_private_key.
+try {
+    $alter_table_query = "
+        ALTER TABLE `" . $pre . "api`
+        ADD `encrypted_private_key` TEXT NULL
+    ";
+    mysqli_begin_transaction($db_link);
+    mysqli_query($db_link, $alter_table_query);
+    mysqli_commit($db_link);
+} catch (Exception $e) {
+    // Rollback transaction if field already exists.
+    mysqli_rollback($db_link);
+}
+
+// Add status field on session_key_salt.
+try {
+    $alter_table_query = "
+        ALTER TABLE `" . $pre . "api`
+        ADD `session_key_salt` VARCHAR(64) NULL
+    ";
+    mysqli_begin_transaction($db_link);
+    mysqli_query($db_link, $alter_table_query);
+    mysqli_commit($db_link);
+} catch (Exception $e) {
+    // Rollback transaction if field already exists.
+    mysqli_rollback($db_link);
+}
+
+// Add index idx_api_timestamp.
+try {
+    $alter_table_query = "
+        CREATE INDEX IF NOT EXISTS `idx_api_timestamp` ON `" . $pre . "api` (`timestamp`);
+    ";
+    mysqli_begin_transaction($db_link);
+    mysqli_query($db_link, $alter_table_query);
+    mysqli_commit($db_link);
+} catch (Exception $e) {
+    // Rollback transaction if index already exists.
+    mysqli_rollback($db_link);
+}
+
 //---<END 3.1.4
 
 
