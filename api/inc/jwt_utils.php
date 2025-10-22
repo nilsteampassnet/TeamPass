@@ -161,21 +161,21 @@ function get_user_keys(int $userId, string $keyTempo, string $sessionKey): ?arra
 
     if (DB::count() === 0) {
         // User not found or no API configuration
-        error_log('get_user_keys: User not found or no API config for user ID ' . $userId);
+        error_log('[API] get_user_keys: User not found or no API config for user ID ' . $userId);
         return null;
     }
 
     // Validate key_tempo matches (security check - ensures session is still valid)
     if ($userInfo['key_tempo'] !== $keyTempo) {
         // Session invalid or expired
-        error_log('get_user_keys: Invalid key_tempo for user ID ' . $userId);
+        error_log('[API] get_user_keys: Invalid key_tempo for user ID ' . $userId);
         return null;
     }
 
     // Check if encrypted private key exists
     if (empty($userInfo['encrypted_private_key'])) {
         // No encrypted key found - user needs to re-authenticate
-        error_log('get_user_keys: No encrypted private key found for user ID ' . $userId);
+        error_log('[API] get_user_keys: No encrypted private key found for user ID ' . $userId);
         return null;
     }
 
@@ -183,7 +183,7 @@ function get_user_keys(int $userId, string $keyTempo, string $sessionKey): ?arra
     $sessionKeyDecoded = base64_decode($sessionKey, true);
 
     if ($sessionKeyDecoded === false || strlen($sessionKeyDecoded) !== 32) {
-        error_log('get_user_keys: Invalid session key format');
+        error_log('[API] get_user_keys: Invalid session key format');
         return null;
     }
 
@@ -195,7 +195,7 @@ function get_user_keys(int $userId, string $keyTempo, string $sessionKey): ?arra
 
     if ($privateKeyDecrypted === false) {
         // Decryption failed - wrong key or tampered data
-        error_log('get_user_keys: Failed to decrypt private key for user ID ' . $userId);
+        error_log('[API] get_user_keys: Failed to decrypt private key for user ID ' . $userId);
         return null;
     }
 

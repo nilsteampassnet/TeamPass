@@ -47,7 +47,7 @@
 function encrypt_with_session_key(string $data, string $key)
 {
     if (strlen($key) !== 32) {
-        error_log('encrypt_with_session_key: Invalid key length. Expected 32 bytes, got ' . strlen($key));
+        error_log('[API] encrypt_with_session_key: Invalid key length. Expected 32 bytes, got ' . strlen($key));
         return false;
     }
 
@@ -68,7 +68,7 @@ function encrypt_with_session_key(string $data, string $key)
         );
 
         if ($ciphertext === false) {
-            error_log('encrypt_with_session_key: OpenSSL encryption failed');
+            error_log('[API] encrypt_with_session_key: OpenSSL encryption failed');
             return false;
         }
 
@@ -77,7 +77,7 @@ function encrypt_with_session_key(string $data, string $key)
         return base64_encode($nonce . $tag . $ciphertext);
 
     } catch (Exception $e) {
-        error_log('encrypt_with_session_key: Exception - ' . $e->getMessage());
+        error_log('[API] encrypt_with_session_key: Exception - ' . $e->getMessage());
         return false;
     }
 }
@@ -95,7 +95,7 @@ function encrypt_with_session_key(string $data, string $key)
 function decrypt_with_session_key(string $encryptedData, string $key)
 {
     if (strlen($key) !== 32) {
-        error_log('decrypt_with_session_key: Invalid key length. Expected 32 bytes, got ' . strlen($key));
+        error_log('[API] decrypt_with_session_key: Invalid key length. Expected 32 bytes, got ' . strlen($key));
         return false;
     }
 
@@ -104,13 +104,13 @@ function decrypt_with_session_key(string $encryptedData, string $key)
         $decoded = base64_decode($encryptedData, true);
 
         if ($decoded === false) {
-            error_log('decrypt_with_session_key: Invalid base64 data');
+            error_log('[API] decrypt_with_session_key: Invalid base64 data');
             return false;
         }
 
         // Extract components: nonce (12 bytes) + tag (16 bytes) + ciphertext (rest)
         if (strlen($decoded) < 28) {
-            error_log('decrypt_with_session_key: Encrypted data too short');
+            error_log('[API] decrypt_with_session_key: Encrypted data too short');
             return false;
         }
 
@@ -129,14 +129,14 @@ function decrypt_with_session_key(string $encryptedData, string $key)
         );
 
         if ($plaintext === false) {
-            error_log('decrypt_with_session_key: OpenSSL decryption failed (wrong key or tampered data)');
+            error_log('[API] decrypt_with_session_key: OpenSSL decryption failed (wrong key or tampered data)');
             return false;
         }
 
         return $plaintext;
 
     } catch (Exception $e) {
-        error_log('decrypt_with_session_key: Exception - ' . $e->getMessage());
+        error_log('[API] decrypt_with_session_key: Exception - ' . $e->getMessage());
         return false;
     }
 }
