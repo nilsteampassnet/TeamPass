@@ -2753,6 +2753,15 @@ function ldapCheckUserPassword(string $login, string $password, array $SETTINGS)
  */
 function deleteUserObjetsKeys(int $userId, array $SETTINGS = []): bool
 {
+    // Return if technical accounts
+    if ($userId === OTV_USER_ID
+        || $userId === SSH_USER_ID
+        || $userId === API_USER_ID
+        || $userId === TP_USER_ID
+    ) {
+        return false;
+    }
+
     // Load class DB
     loadClasses('DB');
 

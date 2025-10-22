@@ -45,7 +45,7 @@ require API_ROOT_PATH . "/Model/FolderModel.php";
  * @param array $userData
  * @return void
  */
-function itemAction(array $actions, array $userData)
+function itemAction(array $actions, array $userData): void
 {
     // Check if user has rights to perform the action
     if (checkUSerCRUDRights($userData, $actions[0]) === false) {
@@ -53,6 +53,7 @@ function itemAction(array $actions, array $userData)
             'HTTP/1.1 404 Not Found',
             json_encode(['error' => 'API requested action is not allowed for this user'])
         );
+        return;
     }
     // Perform the action
     require API_ROOT_PATH . "/Controller/Api/ItemController.php";    
@@ -68,7 +69,7 @@ function itemAction(array $actions, array $userData)
  * @param array $userData
  * @return void
  */
-function folderAction(array $actions, array $userData)
+function folderAction(array $actions, array $userData): void
 {
     // Check if user has rights to perform the action
     if (checkUSerCRUDRights($userData, $actions[0]) === false) {
@@ -76,6 +77,7 @@ function folderAction(array $actions, array $userData)
             'HTTP/1.1 404 Not Found',
             json_encode(['error' => 'API requested action is not allowed for this user'])
         );
+        return;
     }
     // Perform the action
     require API_ROOT_PATH . "/Controller/Api/FolderController.php";
@@ -88,7 +90,7 @@ function checkUSerCRUDRights($userData, $actionToPerform): bool
 {
     if ($actionToPerform === 'create' && $userData['allowed_to_create'] === 1) {
         return true;
-    } elseif (in_array($actionToPerform, ['read', 'get', 'inFolders']) === true && $userData['allowed_to_read'] === 1) {
+    } elseif (in_array($actionToPerform, ['read', 'get', 'inFolders', 'listFolders']) === true && $userData['allowed_to_read'] === 1) {
         return true;
     } elseif ($actionToPerform === 'update' && $userData['allowed_to_update'] === 1) {
         return true;

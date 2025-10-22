@@ -110,7 +110,34 @@ class AuthModel
                     'id = %i',
                     $userInfo['id']
                 );
-                
+
+                // Generate a unique session key for this API session (256 bits / 32 bytes)
+                // This key will be stored in the JWT and used to decrypt the private key
+                $sessionKey = random_bytes(32);
+                $sessionKeySalt = bin2hex(random_bytes(16));
+
+                // Encrypt the decrypted private key with the session key
+                // This allows us to store it securely in the database without exposing it
+                require_once API_ROOT_PATH . '/inc/encryption_utils.php';
+                $encryptedPrivateKey = encrypt_with_session_key($privateKeyClear, $sessionKey);
+
+                if ($encryptedPrivateKey === false) {
+                    return ["error" => "Login failed.", "info" => "Failed to encrypt private key"];
+                }
+
+                // Store the ENCRYPTED private key in the API table
+                // Even if the database is compromised, the key cannot be used without the session_key from the JWT
+                DB::update(
+                    prefixTable('api'),
+                    [
+                        'encrypted_private_key' => $encryptedPrivateKey,
+                        'session_key_salt' => $sessionKeySalt,
+                        'timestamp' => time(),
+                    ],
+                    'user_id = %i',
+                    $userInfo['id']
+                );
+
                 // get user folders list
                 $ret = $this->buildUserFoldersList($userInfo);
 
@@ -121,16 +148,15 @@ class AuthModel
                 // Log user
                 logEvents($SETTINGS, 'api', 'user_connection', (string) $userInfo['id'], stripslashes($userInfo['login']));
 
-                // create JWT
+                // create JWT with session key
                 return $this->createUserJWT(
                     (int) $userInfo['id'],
                     (string) $inputData['login'],
                     (int) $userInfo['personal_folder'],
-                    (string) $userInfo['public_key'],
-                    (string) $privateKeyClear,
                     (string) implode(",", $ret['folders']),
                     (string) implode(",", $ret['items']),
                     (string) $keyTempo,
+                    (string) base64_encode($sessionKey), // Session key for decrypting private key
                     (int) $userInfo['admin'],
                     (int) $userInfo['gestionnaire'],
                     (int) $userInfo['can_create_root_folder'],
@@ -152,13 +178,23 @@ class AuthModel
     /**
      * Create a JWT
      *
+     * Note: User encryption keys (public_key, private_key) are no longer stored in the JWT
+     * to reduce token size. Instead, the private key is encrypted with a session key and
+     * stored in the database. The session key is stored in the JWT (~44 bytes) which is
+     * used to decrypt the private key when needed.
+     *
+     * Security approach (defense in depth):
+     * - Encrypted private key in DB is useless without session_key
+     * - session_key in JWT is useless without encrypted private key from DB
+     * - Both are required together to access the decrypted private key
+     *
      * @param integer $id
      * @param string $login
      * @param integer $pf_enabled
-     * @param string $pubkey
-     * @param string $privkey
      * @param string $folders
+     * @param string $items
      * @param string $keyTempo
+     * @param string $sessionKey Session key (base64) for decrypting private key from DB
      * @param integer $admin
      * @param integer $manager
      * @param integer $can_create_root_folder
@@ -175,11 +211,10 @@ class AuthModel
         int $id,
         string $login,
         int $pf_enabled,
-        string $pubkey,
-        string $privkey,
         string $folders,
         string $items,
         string $keyTempo,
+        string $sessionKey,
         int $admin,
         int $manager,
         int $can_create_root_folder,
@@ -195,17 +230,16 @@ class AuthModel
         // Load config
         $configManager = new ConfigManager();
         $SETTINGS = $configManager->getAllSettings();
-        
+
 		$payload = [
             'username' => $login,
-            'id' => $id, 
+            'id' => $id,
             'exp' => (time() + $SETTINGS['api_token_duration'] + 600),
-            'public_key' => $pubkey,
-            'private_key' => $privkey,
             'pf_enabled' => $pf_enabled,
             'folders_list' => $folders,
             'restricted_items_list' => $items,
             'key_tempo' => $keyTempo,
+            'session_key' => $sessionKey, // Session key for decrypting private key from database
             'is_admin' => $admin,
             'is_manager' => $manager,
             'user_can_create_root_folder' => $can_create_root_folder,
@@ -217,7 +251,7 @@ class AuthModel
             'allowed_to_update' => $allowed_to_update,
             'allowed_to_delete' => $allowed_to_delete,
         ];
-        
+
         return ['token' => JWT::encode($payload, DB_PASSWD, 'HS256')];
     }
 

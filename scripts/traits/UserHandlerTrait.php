@@ -165,6 +165,7 @@ trait UserHandlerTrait {
     private function generateNewUserStep0($arguments) {
         // CLear old sharekeys
         if ($arguments['user_self_change'] === 0) {
+            $this->logger->log("Deleting old sharekeys for user {$arguments['new_user_id']}", 'INFO');
             deleteUserObjetsKeys($arguments['new_user_id'], $this->settings);
         }
     }
@@ -182,7 +183,7 @@ trait UserHandlerTrait {
             : null;
         $userInfo = $this->getOwnerInfos(
             $arguments['new_user_id'],
-            $arguments['new_user_pwd'],
+            empty($arguments['new_user_pwd']) === false ? $arguments['new_user_pwd'] : $arguments['new_user_code'],
             ($arguments['only_personal_items'] ?? 0) === 1 ? 1 : 0,
             $arguments['new_user_private_key'] ?? ''
         );
@@ -231,20 +232,45 @@ trait UserHandlerTrait {
                 $share_key_for_item = encryptUserObjectKey($itemKey, $userInfo['public_key']);
             }
 
-            // Save the new sharekey correctly encrypted in DB
-            $affected = DB::update(
-                prefixTable('sharekeys_items'),
-                array(
-                    'object_id' => (int) $record['id'],
-                    'user_id' => (int) $arguments['new_user_id'],
-                    'share_key' => $share_key_for_item,
-                ),
-                'increment_id = %i',
-                $currentUserKey['increment_id']
-            );
+            // Save the key in DB
+                DB::insert(
+                    prefixTable('sharekeys_items'),
+                    array(
+                        'object_id' => (int) $record['id'],
+                        'user_id' => (int) $arguments['new_user_id'],
+                        'share_key' => $share_key_for_item,
+                    )
+                );
 
-            // If now row was updated, it means the user has no key for this item, so we need to insert it
-            if ($affected === 0) {
+            /*
+            // If user is changing his own keys
+            if (isset($arguments['user_self_change']) &&(int) $arguments['user_self_change'] === 1) {
+                // Save the new sharekey correctly encrypted in DB
+                $affected = DB::update(
+                    prefixTable('sharekeys_items'),
+                    array(
+                        'object_id' => (int) $record['id'],
+                        'user_id' => (int) $arguments['new_user_id'],
+                        'share_key' => $share_key_for_item,
+                    ),
+                    'increment_id = %i',
+                    $currentUserKey['increment_id']
+                );
+
+                // If now row was updated, it means the user has no key for this item, so we need to insert it
+                if ($affected === 0) {
+                    DB::insert(
+                        prefixTable('sharekeys_items'),
+                        array(
+                            'object_id' => (int) $record['id'],
+                            'user_id' => (int) $arguments['new_user_id'],
+                            'share_key' => $share_key_for_item,
+                        )
+                    );
+                }
+            } else {
+                //$this->logger->log("Item ID: " . $record['id'] . " - " . strlen($share_key_for_item), 'INFO');
+                // Save the key in DB
                 DB::insert(
                     prefixTable('sharekeys_items'),
                     array(
@@ -254,6 +280,7 @@ trait UserHandlerTrait {
                     )
                 );
             }
+            */
         }
 
         // Commit transaction
@@ -700,6 +727,7 @@ trait UserHandlerTrait {
             );
         }
 
+        /*
         // Does user has personal items?
         $personalItemsCount = DB::queryFirstField(
             'SELECT COUNT(*)
@@ -721,6 +749,23 @@ trait UserHandlerTrait {
             'id = %i',
             $arguments['new_user_id']
         );
+        */
+
+        // if special status is generate-keys, then set it to none
+        if (isset($userInfo['special']) === true && $userInfo['special'] === 'generate-keys') {
+            DB::update(
+                prefixTable('users'),
+                array(
+                    'is_ready_for_usage' => 1,
+                    'otp_provided' => isset($arguments['otp_provided_new_value']) === true && (int) $arguments['otp_provided_new_value'] === 1 ? $arguments['otp_provided_new_value'] : 0,
+                    'ongoing_process_id' => NULL,
+                    'special' => 'none',
+                    'updated_at' => time(),
+                ),
+                'id = %i',
+                $arguments['new_user_id']
+            );
+        }
     }
     
 

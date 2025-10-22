@@ -261,6 +261,14 @@ function passwordHandler(string $post_type, /*php8 array|null|string*/ $dataRece
          * User's authentication password in LDAP has changed
          */
         case 'change_user_ldap_auth_password'://action_password
+            // Check if no_password_provided is set
+            if (isset($dataReceived['no_password_provided']) && $dataReceived['no_password_provided'] === 1) {
+                // Handle case where no password is provided
+                // The action is that we will reset all personnal items keys
+                return resetUserPersonalItemKeys(
+                    (int) $session->get('user-id')
+                );
+            }
 
             // Users passwords are html escaped
             $userPassword = filter_var($dataReceived['current_password'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
@@ -296,7 +304,8 @@ function passwordHandler(string $post_type, /*php8 array|null|string*/ $dataRece
         case 'test_current_user_password_is_correct'://action_password
             return isUserPasswordCorrect(
                 (int) $session->get('user-id'),
-                (string) $dataReceived['password'],
+                (string) filter_var($dataReceived['password'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                (string) filter_var($dataReceived['otp'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 $SETTINGS
             );
 
@@ -601,7 +610,7 @@ function mailHandler(string $post_type, /*php8 array|null|string */$dataReceived
  * @param array $SETTINGS
  * @return string
  */
-function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived, array $SETTINGS): string
+function keyHandler(string $post_type, $dataReceived, array $SETTINGS): string
 {
     $session = SessionManager::getSession();
     $lang = new Language($session->get('user-language') ?? 'english');
@@ -616,6 +625,7 @@ function keyHandler(string $post_type, /*php8 array|null|string */$dataReceived,
 
     $individual_user_can_perform = [
         'user_psk_reencryption',
+        'change_private_key_encryption_password'
     ];
 
     // Default values
@@ -1781,12 +1791,14 @@ Insert the log here and especially the answer of the query that failed.
  *
  * @param integer $post_user_id
  * @param string $post_user_password
+ * @param string $post_user_otp
  * @param array $SETTINGS
  * @return string
  */
 function isUserPasswordCorrect(
     int $post_user_id,
     string $post_user_password,
+    string $post_user_otp,
     array $SETTINGS
 ): string
 {
@@ -1827,14 +1839,40 @@ function isUserPasswordCorrect(
                     'encode'
                 );
             }
-
+            
             if ($currentUserKey !== null) {
                 // Decrypt itemkey with user key
                 // use old password to decrypt private_key
-                $session->set('user-private_key', decryptPrivateKey($post_user_password, $userInfo['private_key']));
-                $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $session->get('user-private_key'));
+                $possibleKeys = [
+                    $post_user_password,
+                    $post_user_otp,
+                ];
 
-                //echo $post_user_password."  --  ".$userInfo['private_key']. ";;";
+                $privateKeyDecrypted = null;
+
+                foreach ($possibleKeys as $key) {
+                    $result = decryptPrivateKey($key, $userInfo['private_key']);
+                    
+                    // If decryption is ok
+                    if (is_string($result) && $result !== '') {
+                        $privateKeyDecrypted = $result;
+                        break;
+                    }
+                }
+
+                if ($privateKeyDecrypted === null) {
+                    // No key is ok
+                    return prepareExchangedData(
+                        array(
+                            'error' => true,
+                            'message' => $lang->get('password_is_not_correct'),
+                        ),
+                        'encode'
+                    );
+                }
+
+                $session->set('user-private_key', $privateKeyDecrypted);
+                $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $privateKeyDecrypted);
 
                 if (empty(base64_decode($itemKey)) === false) {
                     // GOOD password
@@ -1851,8 +1889,7 @@ function isUserPasswordCorrect(
 
             // use the password check
             $passwordManager = new PasswordManager();
-            
-            if ($passwordManager->verifyPassword($userInfo['pw'], htmlspecialchars_decode($post_user_password)) === true) {
+            if ($passwordManager->verifyPassword($userInfo['pw'], $post_user_password) === true) {
                 // GOOD password
                 return prepareExchangedData(
                     array(
@@ -3556,6 +3593,48 @@ function generateAnOTP(string $label, bool $with_qrcode = false, string $secretK
             'message' => '',
             'secret' => $secretKey,
             'qrcode' => $qrcode ?? '',
+        ),
+        'encode'
+    );
+}
+
+function resetUserPersonalItemKeys(int $userId): string
+{
+    $personalItems = DB::query(
+        'SELECT i.id, i.pw, s.share_key, s.increment_id
+        FROM ' . prefixTable('items') . ' i
+        INNER JOIN ' . prefixTable('sharekeys_items') . ' s ON i.id = s.object_id
+        WHERE i.perso = %i
+        AND s.user_id = %i',
+        1,
+        $userId
+    );
+
+    if (is_countable($personalItems) && count($personalItems) > 0) {
+        // Reset the keys for each personal item
+        foreach ($personalItems as $item) {
+            DB::update(
+                prefixTable('sharekeys_items'),
+                array('share_key' => ''),
+                'increment_id = %i',
+                $item['increment_id']
+            );
+        }
+
+        // Update user special status
+                DB::update(
+                    prefixTable('users'),
+                    array(
+                        'special' => 'none',
+                    ),
+                    'id = %i',
+                    $userId
+                );
+    }
+
+    return prepareExchangedData(
+        array(
+            'error' => false,
         ),
         'encode'
     );

@@ -1174,9 +1174,15 @@ class DatabaseInstaller
             `allowed_to_read` int(1) NOT NULL DEFAULT '1',
             `allowed_to_update` int(1) NOT NULL DEFAULT '0',
             `allowed_to_delete` int(1) NOT NULL DEFAULT '0',
+            `encrypted_private_key` TEXT NULL,
+            `session_key_salt` VARCHAR(64) NULL,
             PRIMARY KEY (`increment_id`),
             KEY `USER` (`user_id`)
             ) CHARSET=utf8;"
+        );
+
+        DB::query(
+            "CREATE INDEX IF NOT EXISTS `idx_api_timestamp` ON `" . $this->inputData['tablePrefix'] . "api` (`timestamp`);"
         );
     }
 

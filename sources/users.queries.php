@@ -339,7 +339,7 @@ if (null !== $post_type) {
                 );
                 $new_user_id = DB::insertId();
                 // Create personnal folder
-                if ($has_personal_folder === 1) {
+                if ((int) $has_personal_folder === 1) {
                     DB::insert(
                         prefixTable('nested_tree'),
                         array(
@@ -354,7 +354,7 @@ if (null !== $post_type) {
                     $tree->rebuild();
                 }
                 // Create folder and role for domain
-                if ($new_folder_role_domain === 1) {
+                if ((int) $new_folder_role_domain === 1) {
                     // create folder
                     DB::insert(
                         prefixTable('nested_tree'),
@@ -2606,8 +2606,7 @@ if (null !== $post_type) {
 
             // Prepare variables
             $post_user_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
-            $post_user_pwd = isset($dataReceived['user_pwd']) === true ? ($dataReceived['user_pwd']) : '';
-            $post_user_code = ($dataReceived['user_code']);
+            $post_user_code = filter_var($dataReceived['user_code'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
             // Search TP_USER in db        
             $userTP = DB::queryFirstRow(
@@ -2634,12 +2633,14 @@ if (null !== $post_type) {
                     'process_type' => 'create_user_keys',
                     'arguments' => json_encode([
                         'new_user_id' => (int) $post_user_id,
-                        'new_user_pwd' => empty($post_user_pwd) === true ? '' : cryption($post_user_pwd, '','encrypt', $SETTINGS)['string'],
+                        'new_user_pwd' => '',
                         'new_user_code' => cryption($post_user_code, '','encrypt', $SETTINGS)['string'],
                         'owner_id' => (int) TP_USER_ID,
                         'creator_pwd' => $userTP['pw'],
                         'email_body' => $lang->get('email_body_user_config_5'),
                         'send_email' => 1,
+                        'otp_provided_new_value' => 0,
+                        'user_self_change' => 0,
                     ]),
                     'updated_at' => '',
                     'finished_at' => '',
@@ -2654,6 +2655,9 @@ if (null !== $post_type) {
                 isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH
             );
 
+            // Generate user keys with the code
+            $userKeys = generateUserKeys($post_user_code);
+
             //update user is not ready
             DB::update(
                 prefixTable('users'),
@@ -2662,6 +2666,8 @@ if (null !== $post_type) {
                     'otp_provided' => 0,
                     'ongoing_process_id' => $processId,
                     'special' => 'generate-keys',
+                    'public_key' => $userKeys['public_key'],
+                    'private_key' => $userKeys['private_key'],
                     // Notify user that he must re download his keys:
                     'keys_recovery_time' => NULL,
                 ),

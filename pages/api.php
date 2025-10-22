@@ -276,18 +276,29 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                             </div>
                             
                             <div class="tab-pane fade show" id="users" role="tabpanel" aria-labelledby="keys-tab">
-                                <small class="form-text text-muted mt-4">
-                                    <?php echo $lang->get('users_api_access_info'); ?>
-                                </small>
+                                <div class="row mb-4 mt-4">
+                                    <div class="col-6 text-muted">
+                                        <?php echo $lang->get('users_api_access_info'); ?>
+                                    </div>
+                                    <div class="col-6">
+                                        <button type="button" class="btn btn-default pointer infotip" title="<?php echo $lang->get('build_missing_api_keys'); ?>" id="button-refresh-users-api">
+                                            <i class="fas fa-sync-alt"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                
                                 <div class="mt-4">
                                     <?php
                                     $rowsKeys = DB::query(
                                         'SELECT a.*, u.name, u.lastname, u.login
                                         FROM ' . prefixTable('api') . ' AS a
                                         INNER JOIN ' . prefixTable('users') . ' AS u ON a.user_id = u.id
-                                        WHERE a.type = %s
+                                        WHERE a.type = %s AND u.disabled = %i AND u.deleted_at IS NULL AND u.id NOT IN %li AND u.admin = %i
                                         ORDER BY u.login ASC',
-                                        'user'
+                                        'user',
+                                        0,
+                                        [API_USER_ID, SSH_USER_ID, SSH_USER_ID, TP_USER_ID],
+                                        0
                                     );
                                     ?>
                                     <table class="table table-hover table-striped<?php echo DB::count() > 0 ? '' : ' hidden'; ?> table-responsive" style="width:100%" id="table-api-keys">
