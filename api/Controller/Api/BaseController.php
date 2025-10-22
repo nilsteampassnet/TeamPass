@@ -69,7 +69,7 @@ class BaseController
     }
 
     /**
-     * Undocumented function
+     * Sanitize URL elements.
      *
      * @param array $array
      * @return array|string
