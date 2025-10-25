@@ -5315,7 +5315,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                                         )
                                     $('#card-item-field-' + field.id)
                                         .children(".btn-copy-clipboard-clear")
-                                        .attr('data-clipboard-target', '#hidden-card-item-field-value-' + field.id);
+                                        .attr('data-clipboard-target', 'hidden-card-item-field-value-' + field.id);
                                 } else {
                                     // Show Field
                                     $('#card-item-field-' + field.id)
@@ -5392,13 +5392,12 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                                 }
 
                                 // Retrieve the value of the target field
-                                const targetElement = document.getElementById(targetId);
-                                if (!targetElement || !targetElement.textContent) {
-                                    return; // Stop if the target element or its value is empty
+                                if (!$('#'+targetId).val()) {
+                                    return; // Stop if target field has no value
                                 }
 
                                 // Copy the value to the clipboard
-                                await navigator.clipboard.writeText(targetElement.textContent);
+                                await navigator.clipboard.writeText($('#'+targetId).val());
 
                                 // Display a success notification
                                 toastr.remove();
