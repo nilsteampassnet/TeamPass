@@ -252,7 +252,7 @@ $zones = timezone_list();
                                     // get list of all timezones
                                     foreach ($zones as $key => $zone) {
                                         echo '
-                                <option value="' . $key . '"', isset($SETTINGS['timezone']) === true && (int) $SETTINGS['timezone'] === $key ? ' selected' : '', '>' . $zone . '</option>';
+                                <option value="' . $key . '"', isset($SETTINGS['timezone']) === true && $SETTINGS['timezone'] === $key ? ' selected' : '', '>' . $zone . '</option>';
                                     }
                                     ?>
                                 </select>
@@ -304,7 +304,7 @@ $zones = timezone_list();
                                     $languagesList = $languagesList ?? [];
                                     foreach ($languagesList as $teampassLang) {
                                         echo '
-                                <option value="' . $teampassLang . '"', isset($SETTINGS['default_language']) === true && (int) $SETTINGS['default_language'] === $teampassLang ? ' selected' : '', '>' . $teampassLang . '</option>';
+                                <option value="' . $teampassLang . '"', isset($SETTINGS['default_language']) === true && $SETTINGS['default_language'] === $teampassLang ? ' selected' : '', '>' . $teampassLang . '</option>';
                                     }
                                     ?>
                                 </select>

@@ -184,7 +184,7 @@ trait UserHandlerTrait {
         $userInfo = $this->getOwnerInfos(
             $arguments['new_user_id'],
             empty($arguments['new_user_pwd']) === false ? $arguments['new_user_pwd'] : $arguments['new_user_code'],
-            ($arguments['only_personal_items'] ?? 0) === 1 ? 1 : 0,
+            ((int) $arguments['only_personal_items'] ?? 0) === 1 ? 1 : 0,
             $arguments['new_user_private_key'] ?? ''
         );
 
@@ -198,7 +198,7 @@ trait UserHandlerTrait {
             WHERE perso =  %i
             ORDER BY id ASC
             LIMIT %i, %i',
-            ($arguments['only_personal_items'] ?? 0) === 1 ? 1 : 0,
+            ((int) $arguments['only_personal_items'] ?? 0) === 1 ? 1 : 0,
             $taskData['index'],
             $taskData['nb']
         );
@@ -231,18 +231,7 @@ trait UserHandlerTrait {
                 // Encrypt Item key
                 $share_key_for_item = encryptUserObjectKey($itemKey, $userInfo['public_key']);
             }
-
-            // Save the key in DB
-                DB::insert(
-                    prefixTable('sharekeys_items'),
-                    array(
-                        'object_id' => (int) $record['id'],
-                        'user_id' => (int) $arguments['new_user_id'],
-                        'share_key' => $share_key_for_item,
-                    )
-                );
-
-            /*
+            
             // If user is changing his own keys
             if (isset($arguments['user_self_change']) &&(int) $arguments['user_self_change'] === 1) {
                 // Save the new sharekey correctly encrypted in DB
@@ -269,7 +258,6 @@ trait UserHandlerTrait {
                     );
                 }
             } else {
-                //$this->logger->log("Item ID: " . $record['id'] . " - " . strlen($share_key_for_item), 'INFO');
                 // Save the key in DB
                 DB::insert(
                     prefixTable('sharekeys_items'),
@@ -280,7 +268,6 @@ trait UserHandlerTrait {
                     )
                 );
             }
-            */
         }
 
         // Commit transaction
@@ -692,8 +679,6 @@ trait UserHandlerTrait {
             return;
         }
 
-        echo("User keys generation process is finished for user {$arguments['new_user_id']} - Personal items status: ".$arguments['only_personal_items']);
-
         // if done then send email to new user
         // get user info
         $userInfo = DB::queryFirstRow(
@@ -759,7 +744,7 @@ trait UserHandlerTrait {
                     'is_ready_for_usage' => 1,
                     'otp_provided' => isset($arguments['otp_provided_new_value']) === true && (int) $arguments['otp_provided_new_value'] === 1 ? $arguments['otp_provided_new_value'] : 0,
                     'ongoing_process_id' => NULL,
-                    'special' => 'none',
+                    'special' => isset($arguments['userHasToEncryptPersonalItemsAfter']) === true && (int) $arguments['userHasToEncryptPersonalItemsAfter'] === 1 ? 'encrypt_personal_items_with_new_password' : 'none',
                     'updated_at' => time(),
                 ),
                 'id = %i',

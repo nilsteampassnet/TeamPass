@@ -3820,8 +3820,6 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                         html_visible = '<option value="0"><?php echo $lang->get('root'); ?></option>';
                         html_full_visible = '<option value="0"><?php echo $lang->get('root'); ?></option>';
                         html_active_visible = '<option value="0"><?php echo $lang->get('root'); ?></option>';
-                    } else {
-                        html_visible = '<option value="0" disabled="disabled"><?php echo $lang->get('root'); ?></option>';
                     }
 
                     //
@@ -6640,8 +6638,8 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                             }
 
 
-                            //
-                            $('#card-item-visibility').html(data.visibility);
+                            // Display the visibility
+                            $('#card-item-visibility').html(data.visibility || '<?php echo $lang->get('none'); ?>');
 
                             // Prepare Select2
                             $('.select2').select2({

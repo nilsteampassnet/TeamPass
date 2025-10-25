@@ -995,6 +995,9 @@ if (null !== $post_type) {
                     $parentId = $tabNodes[$nodeInfo->parent_id];
                 }
 
+                // Allocate personal folder flag
+                $nodeInfo->personal_folder = $isPersonal;
+
                 //create folder
                 DB::insert(
                     prefixTable('nested_tree'),
