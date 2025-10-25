@@ -3845,7 +3845,6 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                         .remove()
                         .end()
                         .append(html_visible);
-                    $(".no-root option[value='0']").remove();
 
                     if (debugJavascript === true) {
                         console.info('HTML VISIBLE:')
@@ -3859,10 +3858,6 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                             teampassUser.folders = html_visible;
                         }
                     );
-
-
-                    // remove ROOT option if exists
-                    $('#form-item-copy-destination option[value="0"]').remove();
                 } else {
                     toastr.remove();
                     toastr.error(

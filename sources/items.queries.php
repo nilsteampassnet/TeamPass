@@ -2802,7 +2802,7 @@ switch ($inputData['type']) {
                 );
                 $arrData['pwd_encryption_error'] = false;
                 $arrData['pwd_encryption_error_message'] = '';
-            } elseif ($userKey['share_key'] !== '') {
+            } elseif (isset($userKey) && $userKey['share_key'] !== '') {
                 $pw = '';
                 $arrData['pwd_encryption_error'] = 'inconsistent_password';
                 $arrData['pwd_encryption_error_message'] = $lang->get('error_new_ldap_password_detected');
@@ -6359,12 +6359,10 @@ switch ($inputData['type']) {
         );
 
         // Will we show the root folder?
-        if ($session->has('user-can_create_root_folder') && (int) $session->get('user-can_create_root_folder') && $session->has('user-can_create_root_folder') && (int) $session->get('user-can_create_root_folder') && null !== $session->get('user-can_create_root_folder') && (int) $session->get('user-can_create_root_folder') === 1
-        ) {
-            $arr_data['can_create_root_folder'] = 1;
-        } else {
-            $arr_data['can_create_root_folder'] = 0;
-        }
+        $canCreateFromUser = $session->has('user-can_create_root_folder') 
+            && (int) $session->get('user-can_create_root_folder') === 1;            
+        $canCreateFromSettings = !empty($SETTINGS['can_create_root_folder']);
+        $arr_data['can_create_root_folder'] = ($canCreateFromUser || $canCreateFromSettings) ? 1 : 0;
 
         // do we have a cache to be used?
         if (isset($dataReceived['force_refresh_cache']) === true && $dataReceived['force_refresh_cache'] === false) {

@@ -563,7 +563,7 @@ foreach ($rows as $reccord) {
                     </div>
                     <div class="form-group">
                         <label><?php echo $lang->get('select_destination_folder'); ?></label>
-                        <select class="form-control form-item-control select2 no-root" style="width:100%;" id="form-item-copy-destination"></select>
+                        <select class="form-control form-item-control select2" style="width:100%;" id="form-item-copy-destination"></select>
                     </div>
                 </div>
                 <div class="card-footer">
