@@ -625,7 +625,8 @@ function keyHandler(string $post_type, $dataReceived, array $SETTINGS): string
 
     $individual_user_can_perform = [
         'user_psk_reencryption',
-        'change_private_key_encryption_password'
+        'change_private_key_encryption_password',
+        'user_only_personal_items_encryption'
     ];
 
     // Default values
@@ -787,6 +788,7 @@ function keyHandler(string $post_type, $dataReceived, array $SETTINGS): string
                 (bool) filter_var($dataReceived['user_self_change'], FILTER_VALIDATE_BOOLEAN),
                 (string) filter_var($dataReceived['recovery_public_key'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 (string) filter_var($dataReceived['recovery_private_key'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                (bool) isset($dataReceived['user_has_to_encrypt_personal_items_after']) === true ? filter_var($dataReceived['user_has_to_encrypt_personal_items_after'], FILTER_VALIDATE_BOOLEAN) : false,
             );
 
         /*
@@ -821,6 +823,13 @@ function keyHandler(string $post_type, $dataReceived, array $SETTINGS): string
             return handleUserRecoveryKeysDownload(
                 (int) $filtered_user_id,
                 (array) $SETTINGS,
+            );
+
+        case 'user_only_personal_items_encryption': //action_key
+            return setUserOnlyPersonalItemsEncryption(                
+                (string) filter_var($dataReceived['userPreviousPwd'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                (string) filter_var($dataReceived['userCurrentPwd'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                (int) filter_var($dataReceived['userId'], FILTER_SANITIZE_NUMBER_INT),
             );
 
         /*
@@ -3403,8 +3412,7 @@ function changeUserLDAPAuthenticationPassword(
                 // We need to find a valid previous private key
                 $validPreviousKey = findValidPreviousPrivateKey(
                     $post_previous_pwd,
-                    $post_user_id,
-                    $userData
+                    $post_user_id
                 );
 
                 if ($validPreviousKey['private_key'] !== null) {
@@ -3479,10 +3487,9 @@ function changeUserLDAPAuthenticationPassword(
  * until one is able to decrypt the share_key of one item
  * @param string $previousPassword
  * @param int $userId
- * @param array $userData
  * @return array|null
  */
-function findValidPreviousPrivateKey($previousPassword, $userId, $userData) {
+function findValidPreviousPrivateKey($previousPassword, $userId) {
     // Retrieve all user's private keys in descending order (most recent first)
     $privateKeys = DB::query(
         "SELECT 
@@ -3570,6 +3577,13 @@ function increaseSessionDuration(
     return '[{"new_value":"expired"}]';
 }
 
+/**
+ * Generate an OTP secret and QR code
+ * @param string $label
+ * @param bool $with_qrcode
+ * @param string $secretKey
+ * @return string
+ */
 function generateAnOTP(string $label, bool $with_qrcode = false, string $secretKey = ''): string
 {
     // generate new secret
@@ -3598,6 +3612,11 @@ function generateAnOTP(string $label, bool $with_qrcode = false, string $secretK
     );
 }
 
+/**
+ * Reset all personal items keys for a user
+ * @param int $userId
+ * @return string
+ */
 function resetUserPersonalItemKeys(int $userId): string
 {
     $personalItems = DB::query(
@@ -3635,6 +3654,78 @@ function resetUserPersonalItemKeys(int $userId): string
     return prepareExchangedData(
         array(
             'error' => false,
+        ),
+        'encode'
+    );
+}
+
+/**
+ * Set user only personal items encryption
+ * @param string $userPreviousPwd
+ * @param string $userCurrentPwd
+ * @param int $userId
+ * @return string
+ */
+function setUserOnlyPersonalItemsEncryption(string $userPreviousPwd, string $userCurrentPwd, int $userId): string
+{
+    $session = SessionManager::getSession();
+    $lang = new Language($session->get('user-language') ?? 'english');
+
+    // We need to find a valid previous private key
+    $validPreviousKey = findValidPreviousPrivateKey(
+        $userPreviousPwd,
+        $userId
+    );
+    if ($validPreviousKey['private_key'] !== null) {
+        // Decrypt all personal items with this key
+        // Launch the re-encryption process for personal items
+        // Create process
+        DB::insert(
+            prefixTable('background_tasks'),
+            array(
+                'created_at' => time(),
+                'process_type' => 'create_user_keys',
+                'arguments' => json_encode([
+                    'new_user_id' => (int) $userId,
+                    'new_user_pwd' => cryption($userCurrentPwd, '','encrypt')['string'],
+                    'new_user_private_key' => cryption($validPreviousKey['private_key'], '','encrypt')['string'],
+                    'send_email' => 0,
+                    'otp_provided_new_value' => 0,
+                    'user_self_change' => 1,
+                    'only_personal_items' => 1,
+                ]),
+            )
+        );
+        $processId = DB::insertId();
+
+        // Create tasks
+        createUserTasks($processId, NUMBER_ITEMS_IN_BATCH);
+
+        // update user's new status
+        DB::update(
+            prefixTable('users'),
+            [
+                'is_ready_for_usage' => 1,
+                'otp_provided' => 1,
+                'ongoing_process_id' => $processId,
+                'special' => 'none',
+            ],
+            'id=%i',
+            $userId
+        );
+
+        return prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => $lang->get('done'),
+            ),
+            'encode'
+        );
+    }
+    return prepareExchangedData(
+        array(
+            'error' => true,
+            'message' => $lang->get('no_previous_valide_private_key'),
         ),
         'encode'
     );

@@ -92,7 +92,9 @@ class BackgroundTasksHandler {
      */
     private function releaseProcessLock() {
         $lockFile = empty(TASKS_LOCK_FILE) ? __DIR__.'/../files/teampass_background_tasks.lock' : TASKS_LOCK_FILE;
-        unlink($lockFile);
+        if (file_exists($lockFile)) {
+            unlink($lockFile);
+        }
     }
 
     /**
