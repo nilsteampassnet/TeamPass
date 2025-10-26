@@ -1293,5 +1293,8 @@ return array(
     'settings_category_logging_goal' => 'Gérer les journaux et tracer les actions des utilisateurs pour audit et traçabilité.',
     'build_missing_api_keys' => 'Créer les clé API manquantes des utilisateurs',
     'ignore_this_password_is_lost' => 'Je ne me souviens plus de mon ancien mot de passe. Je comprends que je perdrai l’accès aux mots de passe de mes éléments personnels.',
+    'an_error_occurred' => 'Une erreur est survenue',
+    'attention_user_password_change' => 'Votre mot de passe a changé; il est nécessaire de réencrypter vos objets personnels.',
+    'your_current_password' => 'Votre mot de passe actuel',
 
 );

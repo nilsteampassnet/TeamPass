@@ -2802,7 +2802,7 @@ switch ($inputData['type']) {
                 );
                 $arrData['pwd_encryption_error'] = false;
                 $arrData['pwd_encryption_error_message'] = '';
-            } elseif ($userKey['share_key'] !== '') {
+            } elseif (isset($userKey) && $userKey['share_key'] !== '') {
                 $pw = '';
                 $arrData['pwd_encryption_error'] = 'inconsistent_password';
                 $arrData['pwd_encryption_error_message'] = $lang->get('error_new_ldap_password_detected');
@@ -4063,66 +4063,6 @@ switch ($inputData['type']) {
             }
             $uniqueLoadData['categoriesStructure'] = $categoriesStructure;
 
-            /*$categoriesStructure = array();
-            if (isset($SETTINGS['item_extra_fields']) && (int) $SETTINGS['item_extra_fields'] === 1) {
-                $folderRow = DB::query(
-                    'SELECT f.id_category, c.title AS title
-                    FROM '.prefixTable('categories_folders').' AS f
-                    INNER JOIN '.prefixTable('categories').' AS c ON (c.id = f.id_category)
-                    WHERE f.id_folder = %i',
-                    $inputData['id']
-                );
-                foreach ($folderRow as $category) {
-                    $arrFields = array();
-                    // Get each category definition with fields
-                    $categoryRow = DB::query(
-                        "SELECT *
-                        FROM ".prefixTable("categories")."
-                        WHERE parent_id=%i
-                        ORDER BY `order` ASC",
-                        $category['id_category']
-                    );
-
-                    if (DB::count() > 0) {
-                        foreach ($categoryRow as $field) {
-                            // Is this Field visibile by user?
-                            if ($field['role_visibility'] === 'all'
-                                || count(
-                                    array_intersect(
-                                        explode(';', $session->get('user-roles')),
-                                        explode(',', $field['role_visibility'])
-                                    )
-                                ) > 0
-                            ) {
-                                array_push(
-                                    $arrFields,
-                                    array(
-                                        $field['id'],
-                                        $field['title'],
-                                        $field['encrypted_data'],
-                                        $field['type'],
-                                        $field['masked'],
-                                        $field['is_mandatory']
-                                    )
-                                );
-                            }
-                        }
-                    }
-
-                    // store the categories
-                    array_push(
-                        $categoriesStructure,
-                        array(
-                            $category['id_category'],
-                            $category['title'],
-                            $arrFields
-                        )
-                    );
-                }
-            }
-            $uniqueLoadData['categoriesStructure'] = $categoriesStructure;
-            */
-
             if ($session->has('system-list_folders_editable_by_role') && $session->has('system-list_folders_editable_by_role') && null !== $session->get('system-list_folders_editable_by_role')) {
                 $list_folders_editable_by_role = in_array($inputData['id'], $session->get('system-list_folders_editable_by_role'));
             } else {
@@ -4144,7 +4084,6 @@ switch ($inputData['type']) {
             $folderComplexity = $uniqueLoadData['folderComplexity'];
             $folder_is_personal = $uniqueLoadData['folder_is_personal'];
             $folder_is_in_personal = $uniqueLoadData['folder_is_in_personal'];
-            //$list_folders_editable_by_role = $uniqueLoadData['list_folders_editable_by_role'];
         }
         
         // prepare query WHere conditions
@@ -4165,54 +4104,36 @@ switch ($inputData['type']) {
             // List all ITEMS
             if ($folderIsPf === false) {
                 $where->add('i.inactif=%i', 0);
-                $sql_e='(SELECT date FROM ' . prefixTable('log_items') 
-                    . " WHERE action = 'at_creation' AND id_item=i.id " 
-                    . 'union all SELECT date FROM '. prefixTable('log_items') 
-                    . " WHERE action = 'at_modification' AND raison = 'at_pw'
-                    AND id_item=i.id ORDER BY date DESC LIMIT 1)";
-                $where->add('l.date=%l', $sql_e);
+                $where->add('i.deleted_at IS NULL');
 
                 $query_limit = ' LIMIT ' .
                     $start . ',' .
                     $post_nb_items_to_display_once;
-                //db::debugmode(true);
+                    
                 $rows = DB::query(
-                    'SELECT i.id AS id, i.item_key AS item_key, MIN(i.restricted_to) AS restricted_to, MIN(i.perso) AS perso,
-                    MIN(i.label) AS label, MIN(i.description) AS description, MIN(i.pw) AS pw, MIN(i.login) AS login,
-                    MIN(i.anyone_can_modify) AS anyone_can_modify, l.date AS date, i.id_tree AS tree_id, i.fa_icon AS fa_icon,
-                    MIN(n.renewal_period) AS renewal_period,
-                    MIN(l.action) AS log_action,
-                    l.id_user AS log_user,
-                    i.url AS link,
-                    i.email AS email
+                    'SELECT i.id AS id, i.item_key AS item_key, i.restricted_to, i.perso,
+                    i.label, i.description, i.pw, i.login,
+                    i.anyone_can_modify, i.id_tree AS tree_id, i.fa_icon,
+                    n.renewal_period, i.url AS link, i.email
                     FROM ' . prefixTable('items') . ' AS i
                     INNER JOIN ' . prefixTable('nested_tree') . ' AS n ON (i.id_tree = n.id)
-                    INNER JOIN ' . prefixTable('log_items') . ' AS l ON (i.id = l.id_item)
                     WHERE %l
-                    GROUP BY i.id, l.date, l.id_user, l.action
-                    ORDER BY i.label ASC, l.date DESC' . $query_limit,
+                    ORDER BY i.label ASC' . $query_limit,
                     $where
                 );
-                //db::debugmode(false);
             } else {
                 $post_nb_items_to_display_once = 'max';
                 $where->add('i.inactif=%i', 0);
 
                 $rows = DB::query(
-                    'SELECT i.id AS id, i.item_key AS item_key, MIN(i.restricted_to) AS restricted_to, MIN(i.perso) AS perso,
-                    MIN(i.label) AS label, MIN(i.description) AS description, MIN(i.pw) AS pw, MIN(i.login) AS login,
-                    MIN(i.anyone_can_modify) AS anyone_can_modify,l.date AS date, i.id_tree AS tree_id, i.fa_icon AS fa_icon,
-                    MIN(n.renewal_period) AS renewal_period,
-                    MIN(l.action) AS log_action,
-                    l.id_user AS log_user,
-                    i.url AS link,
-                    i.email AS email
+                    'SELECT i.id AS id, i.item_key AS item_key, i.restricted_to, i.perso,
+                    i.label, i.description, i.pw, i.login,
+                    i.anyone_can_modify, i.id_tree AS tree_id, i.fa_icon,
+                    n.renewal_period, i.url AS link, i.email
                     FROM ' . prefixTable('items') . ' AS i
                     INNER JOIN ' . prefixTable('nested_tree') . ' AS n ON (i.id_tree = n.id)
-                    INNER JOIN ' . prefixTable('log_items') . ' AS l ON (i.id = l.id_item)
                     WHERE %l
-                    GROUP BY i.id, l.date, l.id_user, l.action
-                    ORDER BY i.label ASC, l.date DESC',
+                    ORDER BY i.label ASC',
                     $where
                 );
             }
@@ -4458,16 +4379,13 @@ switch ($inputData['type']) {
             $rights = recupDroitCreationSansComplexite((int) $inputData['id']);
         }
 
-        // DELETE - 2.1.19 - AND (l.action = 'at_creation' OR (l.action = 'at_modification' AND l.raison LIKE 'at_pw :%'))
         // count
         if ((int) $start === 0) {
             DB::query(
                 'SELECT i.id
                 FROM ' . prefixTable('items') . ' as i
                 INNER JOIN ' . prefixTable('nested_tree') . ' as n ON (i.id_tree = n.id)
-                INNER JOIN ' . prefixTable('log_items') . ' as l ON (i.id = l.id_item)
-                WHERE %l
-                ORDER BY i.label ASC, l.date DESC',
+                WHERE %l',
                 $where
             );
             $counter_full = DB::count();
@@ -4476,22 +4394,18 @@ switch ($inputData['type']) {
 
         // Check list to be continued status
         if ($post_nb_items_to_display_once !== 'max' && ($post_nb_items_to_display_once + $start) < $counter_full) {
-            $listToBeContinued = 'yes';
-        } else {
-            $listToBeContinued = 'end';
+            $listToBeContinued = 1;
         }
 
         // Prepare returned values
         $returnValues = array(
             'html_json' => $html_json,
-            //'folder_requests_psk' => $findPfGroup,
             'arborescence' => $arr_arbo,
             'array_items' => $itemsIDList,
             'error' => $showError,
-            //'saltkey_is_required' => $folderIsPf === true ? 1 : 0,
             'show_clipboard_small_icons' => isset($SETTINGS['copy_to_clipboard_small_icons']) && (int) $SETTINGS['copy_to_clipboard_small_icons'] === 1 ? 1 : 0,
             'next_start' => intval($post_nb_items_to_display_once) + intval($start),
-            'list_to_be_continued' => $listToBeContinued,
+            'list_to_be_continued' => $listToBeContinued ?? 0,
             'items_count' => $counter,
             'counter_full' => $counter_full,
             'folder_complexity' => (int) $folderComplexity,
@@ -6359,12 +6273,10 @@ switch ($inputData['type']) {
         );
 
         // Will we show the root folder?
-        if ($session->has('user-can_create_root_folder') && (int) $session->get('user-can_create_root_folder') && $session->has('user-can_create_root_folder') && (int) $session->get('user-can_create_root_folder') && null !== $session->get('user-can_create_root_folder') && (int) $session->get('user-can_create_root_folder') === 1
-        ) {
-            $arr_data['can_create_root_folder'] = 1;
-        } else {
-            $arr_data['can_create_root_folder'] = 0;
-        }
+        $canCreateFromUser = $session->has('user-can_create_root_folder') 
+            && (int) $session->get('user-can_create_root_folder') === 1;            
+        $canCreateFromSettings = !empty($SETTINGS['can_create_root_folder']);
+        $arr_data['can_create_root_folder'] = ($canCreateFromUser || $canCreateFromSettings) ? 1 : 0;
 
         // do we have a cache to be used?
         if (isset($dataReceived['force_refresh_cache']) === true && $dataReceived['force_refresh_cache'] === false) {

@@ -1313,10 +1313,11 @@ if (null !== $post_type) {
             if (count($arrData['functions']) > 0) {
                 // refine folders based upon roles
                 $rows = DB::query(
-                    'SELECT folder_id, type
-                    FROM ' . prefixTable('roles_values') . '
-                    WHERE role_id IN %ls
-                    ORDER BY folder_id ASC',
+                    'SELECT rv.folder_id, rv.type
+                    FROM ' . prefixTable('roles_values') . ' as rv
+                    INNER JOIN ' . prefixTable('nested_tree') . ' as nt ON rv.folder_id = nt.id
+                    WHERE rv.role_id IN %ls AND nt.personal_folder = 0
+                    ORDER BY rv.folder_id ASC',
                     $arrData['functions']
                 );
                 foreach ($rows as $record) {

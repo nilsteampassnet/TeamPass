@@ -3480,6 +3480,7 @@ function upgradeRequired(): bool
  * @param boolean $user_self_change
  * @param string $recovery_public_key
  * @param string $recovery_private_key
+ * @param bool $userHasToEncryptPersonalItemsAfter
  * @return string
  */
 function handleUserKeys(
@@ -3494,7 +3495,8 @@ function handleUserKeys(
     string $emailBody = '',
     bool $user_self_change = false,
     string $recovery_public_key = '',
-    string $recovery_private_key = ''
+    string $recovery_private_key = '',
+    bool $userHasToEncryptPersonalItemsAfter = false
 ): string
 {
     $session = SessionManager::getSession();
@@ -3623,6 +3625,7 @@ function handleUserKeys(
                 'otp_provided_new_value' => 1,
                 'email_body' => empty($emailBody) === true ? '' : $lang->get($emailBody),
                 'user_self_change' => $user_self_change === true ? 1 : 0,
+                'userHasToEncryptPersonalItemsAfter' => $userHasToEncryptPersonalItemsAfter === true ? 1 : 0,
             ]),
         )
     );

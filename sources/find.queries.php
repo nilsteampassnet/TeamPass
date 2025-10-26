@@ -439,6 +439,7 @@ if (null === $request->query->get('type')) {
         $arr_data[$record['id']]['login'] = (string) strtr($record['login'], '"', '&quot;');
         $arr_data[$record['id']]['item_key'] = (string) $record['item_key'];
         $arr_data[$record['id']]['link'] = (string) $record['url'] !== '0' && empty($record['url']) === false ? filter_var($record['url'], FILTER_SANITIZE_URL) : '';
+
         // Is favorite?
         if (in_array($record['id'], $session->get('user-favorites')) === true) {
             $arr_data[$record['id']]['enable_favourites'] = 1;
@@ -446,14 +447,41 @@ if (null === $request->query->get('type')) {
             $arr_data[$record['id']]['enable_favourites'] = 0;
         }
 
-        // Anyone can modify?
-        $tmp = DB::queryFirstRow(
-            'SELECT anyone_can_modify FROM ' . prefixTable('items') . ' WHERE id = %i',
+        $displayItem = 0;
+        $need_sk = 0;
+        $canMove = 0;
+        $item_is_restricted_to_role = 0;
+        $user_is_included_in_role = 0;
+
+        $dataItem = DB::query(
+            'SELECT i.anyone_can_modify, i.perso, r.role_id 
+            FROM ' . prefixTable('items') . ' i
+            LEFT JOIN ' . prefixTable('restriction_to_roles') . ' r ON i.id = r.item_id
+            WHERE i.id = %i',
             $record['id']
         );
-        if (count($tmp) > 0) {
-            $arr_data[$record['id']]['anyone_can_modify'] = (int) $tmp['anyone_can_modify'];
+        if (count($dataItem) > 0) {
+        // Anyone can modify?
+            $arr_data[$record['id']]['anyone_can_modify'] = (int) $dataItem[0]['anyone_can_modify'];
+            
+            // list of restricted users
+            $roles = [];
+            foreach ($dataItem as $row) {
+                if ($row['role_id'] !== null) {
+                    $roles[] = $row['role_id'];
+                }
+            }            
+            if (count($roles) > 0) {
+                $item_is_restricted_to_role = 1;
+                foreach ($roles as $role_id) {
+                    if (in_array($role_id, $session->get('user-roles_array'))) {
+                        $user_is_included_in_role = 1;
+                        break;
+                    }
+                }
+            }
         } else {
+            // Anyone can modify?
             $arr_data[$record['id']]['anyone_can_modify'] = 0;
         }
 
@@ -473,22 +501,6 @@ if (null === $request->query->get('type')) {
             $arr_data[$record['id']]['expirationFlag'] = '';
         }
 
-        // list of restricted users
-        $displayItem = $need_sk = $canMove = $item_is_restricted_to_role = 0;
-        $user_is_included_in_role = 0;
-        $roles = DB::query(
-            'SELECT role_id FROM ' . prefixTable('restriction_to_roles') . ' WHERE item_id=%i',
-            $record['id']
-        );
-        if (count($roles) > 0) {
-            $item_is_restricted_to_role = 1;
-            foreach ($roles as $val) {
-                if (in_array($val['role_id'], $session->get('user-roles_array'))) {
-                    $user_is_included_in_role = 1;
-                    break;
-                }
-            }
-        }
         // Manage the restricted_to variable
         if (filter_input(INPUT_POST, 'restricted', FILTER_SANITIZE_FULL_SPECIAL_CHARS) !== null) {
             $restrictedTo = filter_input(INPUT_POST, 'restricted', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
@@ -503,10 +515,7 @@ if (null === $request->query->get('type')) {
                 $restrictedTo .= ',' . $session->get('user-id');
             }
         }
-
         $arr_data[$record['id']]['restricted'] = $restrictedTo;
-
-        
 
         // Is user in restricted list of users
         if (empty($record['restricted_to']) === false) {
@@ -535,7 +544,7 @@ if (null === $request->query->get('type')) {
         $itemIsPersonal = false;
         // Let's identify the rights belonging to this ITEM
         if ((int) $record['perso'] === 1
-            && DB::count() > 0
+            && count($dataItem) > 0
         ) {
             // Case 1 - Is this item personal and user its owner?
             // If yes then allow

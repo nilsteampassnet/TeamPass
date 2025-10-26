@@ -1007,42 +1007,8 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                 </div>
                 <!-- /.ENCRYPTION KEYS GENERATION -->
 
-                <!-- ENCRYPTION PERSONAL ITEMS GENERATION -->
-                <div class="card card-warning m-3 hidden" id="dialog-encryption-personal-items-after-upgrade">
-                    <div class="card-header">
-                        <h3 class="card-title">
-                            <i class="fa-solid fa-bullhorn mr-2"></i>
-                            <?php echo $lang->get('your_attention_is_required'); ?>
-                        </h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-sm-12 col-md-12">
-                                <div class="mb-2 alert alert-info" id="warning-text-changing-password">
-                                    <i class="icon fa-solid fa-info mr-2"></i>
-                                    <?php echo $lang->get('objects_encryption_explanation'); ?>
-                                </div>
-                                <div class="input-group mb-3">
-                                    <div class="input-group-prepend">
-                                        <span class="input-group-text"><?php echo $lang->get('personal_salt_key'); ?></span>
-                                    </div>
-                                    <input type="password" class="form-control" id="user-current-defuse-psk">
-                                </div>
-                                <div class="form-control mt-3 font-weight-light grey" id="user-current-defuse-psk-progress">
-                                    <?php echo $lang->get('provide_current_psk_and_click_launch'); ?>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-footer">
-                        <button class="btn btn-primary" id="button_do_personal_items_reencryption"><?php echo $lang->get('launch'); ?></button>
-                        <button class="btn btn-default float-right" id="button_close_personal_items_reencryption"><?php echo $lang->get('close'); ?></button>
-                    </div>
-                </div>
-                <!-- /.ENCRYPTION PERSONAL ITEMS GENERATION -->
-
                 <!-- ENCRYPTION PERSONAL ITEMS GENERATION WITH NEW PASSWORD -->
-                <div class="card card-warning m-3 hidden" id="dialog-encryption-personal-items-after-upgrade">
+                <div class="card card-warning m-3 hidden" id="dialog-encryption-personal-items-after-password-change">
                     <div class="card-header">
                         <h3 class="card-title">
                             <i class="fa-solid fa-bullhorn mr-2"></i>
@@ -1052,25 +1018,34 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                     <div class="card-body">
                         <div class="row">
                             <div class="col-sm-12 col-md-12">
-                                <div class="mb-2 alert alert-info" id="warning-text-changing-password">
+                                <div class="mb-2 alert alert-info">
                                     <i class="icon fa-solid fa-info mr-2"></i>
-                                    <?php echo $lang->get('objects_encryption_explanation'); ?>
-                                </div>
+                                    <?php echo $lang->get('attention_user_password_change'); ?>
+                                </div>                                
+
                                 <div class="input-group mb-3">
                                     <div class="input-group-prepend">
                                         <span class="input-group-text"><?php echo $lang->get('provide_your_previous_password'); ?></span>
                                     </div>
-                                    <input type="password" class="form-control" id="user-current-defuse-psk">
+                                    <input type="password" class="form-control" id="depiapc-previous-password">
+                                    <br/>
                                 </div>
-                                <div class="form-control mt-3 font-weight-light grey" id="user-current-defuse-psk-progress">
+                                <div class="input-group mb-3">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><?php echo $lang->get('your_current_password'); ?></span>
+                                    </div>
+                                    <input type="password" class="form-control" id="depiapc-current-password">
+                                </div>
+
+                                <div class="form-control mt-3 font-weight-light grey" id="depiapc-progress">
                                     <?php echo $lang->get('provide_current_psk_and_click_launch'); ?>
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div class="card-footer">
-                        <button class="btn btn-primary" id="button_do_personal_items_reencryption"><?php echo $lang->get('launch'); ?></button>
-                        <button class="btn btn-default float-right" id="button_close_personal_items_reencryption"><?php echo $lang->get('close'); ?></button>
+                        <button class="btn btn-primary" id="button_depiapc_do"><?php echo $lang->get('launch'); ?></button>
+                        <button class="btn btn-default float-right" id="button_depiapc_close"><?php echo $lang->get('close'); ?></button>
                     </div>
                 </div>
                 <!-- /.ENCRYPTION PERSONAL ITEMS GENERATION WITH NEW PASSWORD -->
