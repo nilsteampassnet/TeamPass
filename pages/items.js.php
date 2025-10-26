@@ -4155,15 +4155,14 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                         return false;
                     }
 
-                    // Hide New button if restricted folder
-                    if (data.access_level === 10) {
-                        $('#btn-new-item').addClass('hidden');
-                    } else {
-                        $('#btn-new-item').removeClass('hidden');
-                    }
+                    // Check if more items to be loaded
+                    const call_to_be_continued = !!data.list_to_be_continued;
 
+                    // Hide New button if restricted folder
+                    $('#btn-new-item').toggleClass('hidden', data.access_level === 10);
+                    
                     // to be done only in 1st list load
-                    if (data.list_to_be_continued === 'end') {
+                    if (call_to_be_continued === false) {
                         var initialQueryData = $.parseJSON(data.uniqueLoadData);
 
                         // Update hidden variables
@@ -4179,13 +4178,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                         
 
                         // display path of folders
-                        if ((initialQueryData.path.length > 0)) {
-                            $('#form-folder-path')
-                                .html('')
-                                .append(rebuildPath(initialQueryData.path));
-                        } else {
-                            $('#form-folder-path').html('');
-                        }
+                        $('#form-folder-path').html(
+                            initialQueryData.path.length > 0 ? rebuildPath(initialQueryData.path) : ''
+                        );
 
                     } else if (data.error === 'not_authorized') {
                         $('#items_folder_path').html('<i class="fa-solid fa-folder-open-o"></i>&nbsp;' + rebuildPath(data.arborescence));
@@ -4255,7 +4250,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                         // show items
                         sList(data.html_json);
 
-                        if (data.list_to_be_continued === 'yes') {
+                        if (call_to_be_continued === true) {
                             //set next start for query
                             store.update(
                                 'teampassApplication',
@@ -4267,13 +4262,13 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                             store.update(
                                 'teampassApplication',
                                 function(teampassApplication) {
-                                    teampassApplication.itemsListStart = data.list_to_be_continued;
+                                    teampassApplication.itemsListStart = false;
                                 }
                             );
                             $('.card-item-category').addClass('hidden');
                         }
 
-                        proceed_list_update(stop_listing_current_folder);
+                        proceed_list_update(call_to_be_continued);
                     } else {
                         //Display items
                         $('#item_details_no_personal_saltkey, #item_details_nok').addClass('hidden');
@@ -4292,7 +4287,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                         sList(data.html_json);
 
                         // Prepare next iteration if needed
-                        if (data.list_to_be_continued === 'yes') {
+                        if (call_to_be_continued === true) {
                             //set next start for query
                             store.update(
                                 'teampassApplication',
@@ -4304,7 +4299,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                             store.update(
                                 'teampassApplication',
                                 function(teampassApplication) {
-                                    teampassApplication.itemsListStart = data.list_to_be_continued;
+                                    teampassApplication.itemsListStart = false;
                                 }
                             );
                             $('.card-item-category').addClass('hidden');
@@ -4315,7 +4310,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                             }
                         }
 
-                        proceed_list_update(stop_listing_current_folder);
+                        proceed_list_update(call_to_be_continued);
                     }
                 }
             );
@@ -4574,7 +4569,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
         if (stop_proceeding === '1' ||
             (store.get('teampassApplication').itemsListFolderId !== '' &&
-                store.get('teampassApplication').itemsListStart !== 'end')
+                Number.isFinite(store.get('teampassApplication').itemsListStart))
         ) {
             // Clear storage
             store.update(
@@ -4593,7 +4588,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             return false;
         }
 
-        if (store.get('teampassApplication').itemsListStart !== 'end') {
+        if (Number.isFinite(store.get('teampassApplication').itemsListStart)) {
             //Check if nb of items do display > to 0
             if (store.get('teampassApplication').itemsShownByQuery > 0) {
                 ListerItems(
