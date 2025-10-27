@@ -174,6 +174,79 @@ if (
                 }
             });
         });
+        
+        // Show dialog to encrypt personal items after password change
+        // Actions on modal buttons
+        $(document).on('click', '#button_depiapc_do', function() {
+            // Check if we have the required fields
+            const bothFilled = $('#depiapc-previous-password').val() !== '' && $('#depiapc-current-password').val() !== '';
+            const ignoreChecked = $('#depiapc-ignore-password').is(':checked');
+
+            if (!bothFilled && !ignoreChecked) {
+                toastr.remove();
+                toastr.error(
+                    '<?php echo $lang->get('please_fill_in_all_required_fields'); ?>',
+                    '<?php echo $lang->get('caution'); ?>', {
+                        timeOut: 5000,
+                        progressBar: true
+                    }
+                );
+                return false;
+            }
+
+            // Show user
+            toastr.remove();
+            toastr.info('<?php echo $lang->get('in_progress'); ?><i class="fa-solid fa-circle-notch fa-spin fa-2x ml-3"></i>');
+
+            // Inform user
+            $("#depiapc-progress").html('<b><?php echo $lang->get('in_progress'); ?> <i class="fa-solid fa-spinner fa-pulse ml-3 text-primary"></i>');
+            $('#button_depiapc_do, #button_depiapc_close').attr('disabled', 'disabled');
+
+            var data = {
+                'userPreviousPwd' : $('#depiapc-previous-password').val(),
+                'userCurrentPwd' : $('#depiapc-current-password').val(),
+                'skipPasswordChange' : ignoreChecked ? 1 : 0,
+                'userId': store.get('teampassUser').user_id
+            };
+            // Do query
+            $.post(
+                "sources/main.queries.php", {
+                    'type': "user_only_personal_items_encryption",
+                    'type_category': 'action_key',
+                    'data': prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                    'key': '<?php echo $session->get('key'); ?>'
+                },
+                function(data) {
+                    data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
+                    if (debugJavascript === true) console.log(data)
+                    if (data.error === true) {
+                        // error
+                        toastr.remove();
+                        toastr.error(
+                            data.message,
+                            '<?php echo $lang->get('caution'); ?>', {
+                                timeOut: 5000,
+                                progressBar: true
+                            }
+                        );
+
+                        // Enable buttons
+                        $("#depiapc-progress").html('<?php echo $lang->get('an_error_occurred'); ?>');
+                        $('#button_depiapc_do, #button_depiapc_close').removeAttr('disabled');
+                        return false;
+                    } else {
+                        toastr.remove();
+                        // Enable buttons
+                        $("#depiapc-progress").html('<?php echo $lang->get('generate_new_keys_end'); ?>');
+                        $('#button_depiapc_close').removeAttr('disabled');
+                    }
+                }
+            );
+        });
+        $(document).on('click', '#button_depiapc_close', function() {
+            $('#dialog-encryption-personal-items-after-password-change').addClass('hidden');
+            $('.content, .content-header').removeClass('hidden');
+        });
     });
 
     /**
@@ -332,6 +405,12 @@ if (
                                 event.preventDefault();
                                 document.location.href = "index.php?page=profile&tab=keys";
                             });
+                        }
+                        
+                        
+                        if (typeof data.queryResults !== 'undefined' && data.queryResults.special !== null && data.queryResults.special === 'encrypt_personal_items_with_new_password') {
+                            showDialogEncryptPersonalItemsAfterPasswordChange();
+                            return;
                         }
 
                         // Does user has personal items to encrypt?
@@ -545,63 +624,7 @@ if (
         store.get('teampassUser').special === 'encrypt_personal_items_with_new_password'
     ) {
         // If user has to re-encrypt his personal item passwords after a password change
-        $('#dialog-encryption-personal-items-after-password-change').removeClass('hidden');
-        $('.content, .content-header').addClass('hidden');
-        
-        // Actions on modal buttons
-        $(document).on('click', '#button_depiapc_do', function() {
-            // Show user
-            toastr.remove();
-            toastr.info('<?php echo $lang->get('in_progress'); ?><i class="fa-solid fa-circle-notch fa-spin fa-2x ml-3"></i>');
-
-            // Inform user
-            $("#depiapc-progress").html('<b><?php echo $lang->get('in_progress'); ?> <i class="fa-solid fa-spinner fa-pulse ml-3 text-primary"></i>');
-            $('#button_depiapc_do, #button_depiapc_close').attr('disabled', 'disabled');
-
-            var data = {
-                'userPreviousPwd' : $('#depiapc-previous-password').val(),
-                'userCurrentPwd' : $('#depiapc-current-password').val(),
-                'userId': store.get('teampassUser').user_id
-            };
-            // Do query
-            $.post(
-                "sources/main.queries.php", {
-                    'type': "user_only_personal_items_encryption",
-                    'type_category': 'action_key',
-                    'data': prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
-                    'key': '<?php echo $session->get('key'); ?>'
-                },
-                function(data) {
-                    data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
-                    if (debugJavascript === true) console.log(data)
-                    if (data.error === true) {
-                        // error
-                        toastr.remove();
-                        toastr.error(
-                            data.message,
-                            '<?php echo $lang->get('caution'); ?>', {
-                                timeOut: 5000,
-                                progressBar: true
-                            }
-                        );
-
-                        // Enable buttons
-                        $("#depiapc-progress").html('<?php echo $lang->get('an_error_occurred'); ?>');
-                        $('#button_depiapc_do, #button_depiapc_close').removeAttr('disabled');
-                        return false;
-                    } else {
-                        toastr.remove();
-                        // Enable buttons
-                        $("#depiapc-progress").html('<?php echo $lang->get('generate_new_keys_end'); ?>');
-                        $('#button_depiapc_close').removeAttr('disabled');
-                    }
-                }
-            );
-        });
-        $(document).on('click', '#button_depiapc_close', function() {
-            $('#dialog-encryption-personal-items-after-password-change').addClass('hidden');
-            $('.content, .content-header').removeClass('hidden');
-        });
+        showDialogEncryptPersonalItemsAfterPasswordChange();
     }
 
 
@@ -2304,5 +2327,16 @@ if (
             );
             return '';
         }
+    }
+
+    /**
+     * Show dialog to re-encrypt personal items after password change
+     */
+    function showDialogEncryptPersonalItemsAfterPasswordChange() {
+        $('#dialog-encryption-personal-items-after-password-change').removeClass('hidden');
+        $('.content, .content-header').addClass('hidden');
+    
+        // Remove previous event listeners before adding new ones
+        $('#button_depiapc_do, #button_depiapc_close').off('click');
     }
 </script>
