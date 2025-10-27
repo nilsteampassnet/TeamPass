@@ -1177,12 +1177,9 @@ class DatabaseInstaller
             `encrypted_private_key` TEXT NULL,
             `session_key_salt` VARCHAR(64) NULL,
             PRIMARY KEY (`increment_id`),
-            KEY `USER` (`user_id`)
+            KEY `USER` (`user_id`),
+            KEY `idx_api_timestamp` (`timestamp`)
             ) CHARSET=utf8;"
-        );
-
-        DB::query(
-            "CREATE INDEX IF NOT EXISTS `idx_api_timestamp` ON `" . $this->inputData['tablePrefix'] . "api` (`timestamp`);"
         );
     }
 
