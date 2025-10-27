@@ -1036,6 +1036,13 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                                     </div>
                                     <input type="password" class="form-control" id="depiapc-current-password">
                                 </div>
+                                
+                                <div class="alert alert-danger mt-3" role="alert">                                    
+                                    <label>
+                                        <span class="mr-2 pointer fw-normal"><?php echo $lang->get('ignore_this_password_is_lost');?></span>
+                                        <input type="checkbox" id="depiapc-ignore-password" class="pointer flat-blue">
+                                    </label>
+                                </div>
 
                                 <div class="form-control mt-3 font-weight-light grey" id="depiapc-progress">
                                     <?php echo $lang->get('provide_current_psk_and_click_launch'); ?>

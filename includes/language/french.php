@@ -1296,5 +1296,6 @@ return array(
     'an_error_occurred' => 'Une erreur est survenue',
     'attention_user_password_change' => 'Votre mot de passe a changé; il est nécessaire de réencrypter vos objets personnels.',
     'your_current_password' => 'Votre mot de passe actuel',
+    'please_fill_in_all_required_fields' => 'Merci de renseigner les champs requis',
 
 );
