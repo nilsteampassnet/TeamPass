@@ -829,6 +829,7 @@ function keyHandler(string $post_type, $dataReceived, array $SETTINGS): string
             return setUserOnlyPersonalItemsEncryption(                
                 (string) filter_var($dataReceived['userPreviousPwd'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 (string) filter_var($dataReceived['userCurrentPwd'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                (bool) filter_var($dataReceived['skipPasswordChange'], FILTER_VALIDATE_BOOLEAN),
                 (int) filter_var($dataReceived['userId'], FILTER_SANITIZE_NUMBER_INT),
             );
 
@@ -3663,13 +3664,68 @@ function resetUserPersonalItemKeys(int $userId): string
  * Set user only personal items encryption
  * @param string $userPreviousPwd
  * @param string $userCurrentPwd
+ * @param bool $skipPasswordChange
  * @param int $userId
  * @return string
  */
-function setUserOnlyPersonalItemsEncryption(string $userPreviousPwd, string $userCurrentPwd, int $userId): string
+function setUserOnlyPersonalItemsEncryption(string $userPreviousPwd, string $userCurrentPwd, bool $skipPasswordChange, int $userId): string
 {
     $session = SessionManager::getSession();
     $lang = new Language($session->get('user-language') ?? 'english');
+
+    // In case where user doesn't know the previous password
+    // Then reset the status and remove sharekeys
+    if ($skipPasswordChange === true) {
+        // Remove all sharekeys for personal items
+        DB::query(
+            'UPDATE ' . prefixTable('sharekeys_items') . ' AS ski
+            INNER JOIN ' . prefixTable('items') . ' AS i ON ski.object_id = i.id
+            SET ski.share_key = ""
+            WHERE i.perso = 1
+            AND ski.user_id = %i',
+            $userId
+        );
+
+        // Remove all sharekeys for personal files
+        DB::query(
+            'UPDATE ' . prefixTable('sharekeys_files') . ' AS skf
+            INNER JOIN ' . prefixTable('items') . ' AS i ON skf.object_id = i.id
+            SET skf.share_key = ""
+            WHERE i.perso = 1
+            AND skf.user_id = %i',
+            $userId
+        );
+
+        // Remove all sharekeys for personal fields
+        DB::query(
+            'UPDATE ' . prefixTable('sharekeys_fields') . ' AS skf
+            INNER JOIN ' . prefixTable('items') . ' AS i ON skf.object_id = i.id
+            SET skf.share_key = ""
+            WHERE i.perso = 1
+            AND skf.user_id = %i',
+            $userId
+        );
+
+        // Set user as ready for usage
+        DB::update(
+            prefixTable('users'),
+            array(
+                'ongoing_process_id' => NULL,
+                'special' => 'none',
+                'updated_at' => time(),
+            ),
+            'id = %i',
+            $userId
+        );
+
+        return prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => $lang->get('done'),
+            ),
+            'encode'
+        );
+    }
 
     // We need to find a valid previous private key
     $validPreviousKey = findValidPreviousPrivateKey(

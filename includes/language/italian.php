@@ -1296,5 +1296,6 @@ e new password must:<br/> - Be different from the previous one<br/> - Contain at
     'an_error_occurred' => 'An error occurred',
     'attention_user_password_change' => 'Your password has changed, it is required to re-encrypt your personal items.',
     'your_current_password' => 'Your current password',
+    'please_fill_in_all_required_fields' => 'Please fill in all required fields',
 
 );
