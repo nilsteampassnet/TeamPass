@@ -89,6 +89,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         checkboxClass: 'icheckbox_flat-blue',
     });
 
+    $('#form-field-roles').select2({
+        width: '100%',
+        placeholder: '<?php echo $lang->get('select'); ?>'
+    });
+
     /**
      * NEW CATEGORY
      */
@@ -123,7 +128,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         var categoriesOptions = [];
         categoriesOptions.push({
             id: '',
-            text: '-- <?php echo $lang->get('select'); ?> --'
+            text: '-- <?php echo $lang->get('select'); ?> --',
+            disabled: true,
+            selected: true
         });
         $('.category').each(function() {
             categoriesOptions.push({
@@ -132,8 +139,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             });
         });
         $('#form-field-category').select2({
-            tags: true,
-            data: categoriesOptions
+            data: categoriesOptions,
+            placeholder: '-- <?php echo $lang->get('select'); ?> --',
+            allowClear: true
         });
         $('#form-field-category-div').removeClass('hidden');
 
@@ -160,7 +168,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
         // CLear existing list
         $('#form-field-order').html('');
-
 
         // Build list of fields in this category
         $('.field[data-category]').each(function() {
@@ -200,184 +207,188 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         $('#form-' + $(this).data('action')).addClass('hidden');
     });
 
-
-    $(document).on('click', '.save', function() {
+    // SAVE CATEGORY
+    $('#button-save-category').on('click', function() {
         var button = $(this),
             action = button.data('action'),
             editionOngoing = button.data('edit');
 
-        if (action === 'category') {
-            // CATEGORY SAVE
-            if ($('#form-category-label').val() !== '' &&
-                $('#form-category-folders').val() !== '' &&
-                $('#form-category-list').val() !== ''
-            ) {
-                // Prepare data
-                var data = {
-                        'label': DOMPurify.sanitize($('#form-category-label').val()),
-                        'folders': $('#form-category-folders').val(),
-                        'position': $('#form-category-list').val(),
-                        'edit': $('#button-save-category').data('edit') === true ? true : false,
-                        'categoryId': $('#form-category-label').data('id'),
-                    },
-                    actionToPerform = '';
+        if ($('#form-category-label').val() !== '' &&
+            $('#form-category-folders').val() !== '' &&
+            $('#form-category-list').val() !== ''
+        ) {
+            // Prepare data
+            var data = {
+                    'label': DOMPurify.sanitize($('#form-category-label').val()),
+                    'folders': $('#form-category-folders').val(),
+                    'position': $('#form-category-list').val(),
+                    'edit': $('#button-save-category').data('edit') === true ? true : false,
+                    'categoryId': $('#form-category-label').data('id'),
+                },
+                actionToPerform = '';
 
-                if (editionOngoing === true) {
-                    actionToPerform = 'edit_category';
-                } else {
-                    actionToPerform = 'add_new_category';
-                }
-
-                // Launch action
-                $.post(
-                    'sources/fields.queries.php', {
-                        type: actionToPerform,
-                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
-                        key: '<?php echo $session->get('key'); ?>'
-                    },
-                    function(data) {
-                        //decrypt data
-                        data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>');
-
-                        if (data.error === true) {
-                            // ERROR
-                            toastr.remove();
-                            toastr.error(
-                                data.message,
-                                '<?php echo $lang->get('error'); ?>', {
-                                    timeOut: 5000,
-                                    progressBar: true
-                                }
-                            );
-                        } else {
-                            // Reload list
-                            loadFieldsList()
-
-                            // Inform user
-                            toastr.remove();
-                            toastr.success(
-                                '<?php echo $lang->get('done'); ?>',
-                                '', {
-                                    timeOut: 1000
-                                }
-                            );
-
-                            // Show
-                            $('#table-fields').removeClass('hidden');
-                            $('#form-category').addClass('hidden');
-                        }
-
-                        $('#button-save-category').data('edit', false);
-                    }
-                );
+            if (editionOngoing === true) {
+                actionToPerform = 'edit_category';
             } else {
-                // ERROR
-                toastr.remove();
-                toastr.warning(
-                    '<?php echo $lang->get('all_fields_are_required'); ?>',
-                    '', {
-                        timeOut: 5000,
-                        progressBar: true
-                    }
-                );
+                actionToPerform = 'add_new_category';
             }
-        } else if (action === 'field') {
-            // FIELD SAVE
-            if ($('#form-field-label').val() !== '' &&
-                $('#form-field-type').val().length > 0 &&
-                $('#form-field-roles').val().length > 0 &&
-                $('#form-field-order').val() !== ''
-            ) {
-                // Prepare data
-                var data = {
-                        'label': $('#form-field-label').val(),
-                        'regex': $('#form-field-regex').val(),
-                        'type': $('#form-field-type').val(),
-                        'roles': $('#form-field-roles').val(),
-                        'mandatory': $('#form-field-mandatory').prop('checked') === true ? 1 : 0,
-                        'masked': $('#form-field-masked').prop('checked') === true ? 1 : 0,
-                        'encrypted': $('#form-field-encrypted').prop('checked') === true ? 1 : 0,
-                        'order': $('#form-field-order').val(),
-                        'fieldId': $('#form-field-label').data('id'),
-                        'categoryId': $('#form-field-label').data('category'),
-                    },
-                    actionToPerform = '';
 
-                if (editionOngoing === true) {
-                    actionToPerform = 'edit_field';
-                } else {
-                    actionToPerform = 'add_new_field';
+            // Launch action
+            $.post(
+                'sources/fields.queries.php', {
+                    type: actionToPerform,
+                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                    key: '<?php echo $session->get('key'); ?>'
+                },
+                function(data) {
+                    //decrypt data
+                    data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>');
 
-                    // Check if category is selected
-                    if ($('#form-field-category').val() === '') {
+                    if (data.error === true) {
+                        // ERROR
                         toastr.remove();
-                        toastr.warning(
-                            '<?php echo $lang->get('all_fields_are_required'); ?>',
-                            '', {
+                        toastr.error(
+                            data.message,
+                            '<?php echo $lang->get('error'); ?>', {
                                 timeOut: 5000,
                                 progressBar: true
                             }
                         );
-                        return false;
                     } else {
-                        data.categoryId = $('#form-field-category').val();
+                        // Reload list
+                        loadFieldsList()
+
+                        // Inform user
+                        toastr.remove();
+                        toastr.success(
+                            '<?php echo $lang->get('done'); ?>',
+                            '', {
+                                timeOut: 1000
+                            }
+                        );
+
+                        // Show
+                        $('#table-fields').removeClass('hidden');
+                        $('#form-category').addClass('hidden');
                     }
+
+                    $('#button-save-category').data('edit', false);
                 }
+            );
+        } else {
+            // ERROR
+            toastr.remove();
+            toastr.warning(
+                '<?php echo $lang->get('all_fields_are_required'); ?>',
+                '', {
+                    timeOut: 5000,
+                    progressBar: true
+                }
+            );
+        }
+    });
 
-                // Launch action
-                $.post(
-                    'sources/fields.queries.php', {
-                        type: actionToPerform,
-                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
-                        key: '<?php echo $session->get('key'); ?>'
-                    },
-                    function(data) {
-                        //decrypt data
-                        data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>');
-                        console.log(data);
+    // SAVE FIELD
+    $('#button-save-field').on('click', function() {
+        var button = $(this),
+            action = button.data('action'),
+            editionOngoing = button.data('edit');
 
-                        if (data.error === true) {
-                            // ERROR
-                            toastr.remove();
-                            toastr.error(
-                                data.message,
-                                '<?php echo $lang->get('error'); ?>', {
-                                    timeOut: 5000,
-                                    progressBar: true
-                                }
-                            );
-                        } else {
-                            // Reload list
-                            loadFieldsList()
+        if ($('#form-field-label').val() && $('#form-field-label').val() !== '' &&
+            $('#form-field-type').val() && typ$('#form-field-type').val() !== '' &&
+            $('#form-field-roles').val() && $('#form-field-roles').val() !== null && $('#form-field-roles').val().length > 0 &&
+            $('#form-field-order').val() && $('#form-field-order').val() !== ''
+        ) {
+            // Prepare data
+            var data = {
+                    'label': $('#form-field-label').val(),
+                    'regex': $('#form-field-regex').val(),
+                    'type': $('#form-field-type').val(),
+                    'roles': $('#form-field-roles').val(),
+                    'mandatory': $('#form-field-mandatory').prop('checked') === true ? 1 : 0,
+                    'masked': $('#form-field-masked').prop('checked') === true ? 1 : 0,
+                    'encrypted': $('#form-field-encrypted').prop('checked') === true ? 1 : 0,
+                    'order': $('#form-field-order').val(),
+                    'fieldId': $('#form-field-label').data('id'),
+                    'categoryId': $('#form-field-label').data('category'),
+                },
+                actionToPerform = '';
 
-                            // Inform user
-                            toastr.remove();
-                            toastr.success(
-                                '<?php echo $lang->get('done'); ?>',
-                                '', {
-                                    timeOut: 1000
-                                }
-                            );
-
-                            // Show
-                            $('#table-fields').removeClass('hidden');
-                            $('#form-field').addClass('hidden');
-                        }
-
-                        $('#button-save-field').data('edit', false);
-                    }
-                );
+            if (editionOngoing === true) {
+                actionToPerform = 'edit_field';
             } else {
-                // ERROR
-                toastr.remove();
-                toastr.warning(
-                    '<?php echo $lang->get('all_fields_are_required'); ?>',
-                    '', {
-                        timeOut: 5000,
-                        progressBar: true
-                    }
-                );
+                actionToPerform = 'add_new_field';
+
+                // Check if category is selected
+                var categoryValue = $('#form-field-category').val();
+                if (!categoryValue || categoryValue === '' || categoryValue === null) {
+                    toastr.remove();
+                    toastr.warning(
+                        '<?php echo $lang->get('all_fields_are_required'); ?>',
+                        '', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
+                    return false;
+                } else {
+                    data.categoryId = categoryValue;
+                }
             }
+
+            // Launch action
+            $.post(
+                'sources/fields.queries.php', {
+                    type: actionToPerform,
+                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                    key: '<?php echo $session->get('key'); ?>'
+                },
+                function(data) {
+                    //decrypt data
+                    data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>');
+                    console.log(data);
+
+                    if (data.error === true) {
+                        // ERROR
+                        toastr.remove();
+                        toastr.error(
+                            data.message,
+                            '<?php echo $lang->get('error'); ?>', {
+                                timeOut: 5000,
+                                progressBar: true
+                            }
+                        );
+                    } else {
+                        // Reload list
+                        loadFieldsList()
+
+                        // Inform user
+                        toastr.remove();
+                        toastr.success(
+                            '<?php echo $lang->get('done'); ?>',
+                            '', {
+                                timeOut: 1000
+                            }
+                        );
+
+                        // Show
+                        $('#table-fields').removeClass('hidden');
+                        $('#form-field').addClass('hidden');
+                    }
+
+                    $('#button-save-field').data('edit', false);
+                }
+            );
+        } else {
+            // ERROR
+            toastr.remove();
+            toastr.warning(
+                '<?php echo $lang->get('all_fields_are_required'); ?>',
+                '', {
+                    timeOut: 5000,
+                    progressBar: true
+                }
+            );
         }
     });
 

@@ -256,7 +256,7 @@ foreach ($folders as $folder) {
 
                                 <div class="form-group">
                                     <label><?php echo $lang->get('restrict_visibility_to'); ?></label>
-                                    <select class="form-control form-item-control select2" multiple="multiple" style="width:100%;" id="form-field-roles">
+                                    <select class="form-control form-item-control select2 no-save" multiple="multiple" style="width:100%;" id="form-field-roles">
                                         <?php
                                         // Build list of Roles
                                         echo '<option value="all">' . $lang->get('every_roles') . '</option>';
@@ -274,17 +274,17 @@ foreach ($rows as $record) {
 
                                 <div class="form-group hidden" id="form-field-category-div">
                                     <label><?php echo $lang->get('category'); ?></label>
-                                    <select class="form-control form-item-control select2" style="width:100%;" id="form-field-category"></select>
+                                    <select class="form-control form-item-control select2 no-save" style="width:100%;" id="form-field-category"></select>
                                 </div>
 
                                 <div class="form-group">
                                     <label><?php echo $lang->get('position'); ?></label>
-                                    <select class="form-control form-item-control select2" style="width:100%;" id="form-field-order"></select>
+                                    <select class="form-control form-item-control select2 no-save" style="width:100%;" id="form-field-order"></select>
                                 </div>
                             </div>
 
                             <div class="card-footer">
-                                <button type="button" class="btn btn-info save" data-action="field" data-edit="false" id="button-save-field"><?php echo $lang->get('confirm'); ?></button>
+                                <button type="button" class="btn btn-info" data-action="field" data-edit="false" id="button-save-field"><?php echo $lang->get('confirm'); ?></button>
                                 <button type="button" class="btn btn-default float-right cancel" data-action="field"><?php echo $lang->get('cancel'); ?></button>
                             </div>
                         </div>
