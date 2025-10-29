@@ -1132,7 +1132,7 @@ if (
                 'sources/main.queries.php', {
                     type: 'change_user_auth_password',
                     type_category: 'action_password',
-                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>", '', '', true, true),
                     key: "<?php echo $session->get('key'); ?>"
                 },
                 function(data) {
@@ -1413,7 +1413,7 @@ if (
             'sources/main.queries.php', {
                 type: 'test_current_user_password_is_correct',
                 type_category: 'action_password',
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>", '', '', true, true),
                 key: "<?php echo $session->get('key'); ?>"
             },
             function(data) {
@@ -1545,7 +1545,7 @@ if (
             'sources/main.queries.php', {
                 type: 'test_current_user_password_is_correct',
                 type_category: 'action_password',
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>", '', '', true, true),
                 key: "<?php echo $session->get('key'); ?>"
             },
             function(data) {
@@ -1669,7 +1669,6 @@ if (
                 'no_password_provided' : $('#dialog-ldap-user-change-password-confirm-ignore').is(':checked') === true ? 1 : 0,
             }
             if (debugJavascript === true) console.log(data);
-
             // Check user current password
             // and change the password
             // and use the password to re-encrypt the privatekey
@@ -1677,7 +1676,7 @@ if (
                 'sources/main.queries.php', {
                     type: 'change_user_ldap_auth_password',
                     type_category: 'action_password',
-                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                    data: prepareExchangedData(data, "encode", "<?php echo $session->get('key'); ?>", '', '', true, true),
                     key: "<?php echo $session->get('key'); ?>"
                 },
                 function(data) {
