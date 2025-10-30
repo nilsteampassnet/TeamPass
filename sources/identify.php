@@ -1000,8 +1000,20 @@ function prepareUserEncryptionKeys($userInfo, $passwordClear, array $SETTINGS = 
     try {
         $privateKeyClear = decryptPrivateKey($passwordClear, $userInfo['private_key']);
 
+        // Debug logging (remove in production)
+        if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+            error_log('TEAMPASS Transparent Recovery Debug - User: ' . ($userInfo['login'] ?? 'unknown'));
+            error_log('  - user_derivation_seed: ' . (empty($userInfo['user_derivation_seed']) ? 'EMPTY' : 'SET (' . strlen($userInfo['user_derivation_seed']) . ' chars)'));
+            error_log('  - private_key_backup: ' . (empty($userInfo['private_key_backup']) ? 'EMPTY' : 'SET'));
+            error_log('  - transparent_key_recovery_enabled: ' . ($SETTINGS['transparent_key_recovery_enabled'] ?? 'NOT_SET'));
+        }
+
         // If user has seed but no backup, create it on first successful login
         if (!empty($userInfo['user_derivation_seed']) && empty($userInfo['private_key_backup'])) {
+            if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                error_log('TEAMPASS Transparent Recovery - Creating backup for user ' . ($userInfo['login'] ?? 'unknown'));
+            }
+
             $derivedKey = deriveBackupKey($userInfo['user_derivation_seed'], $userInfo['public_key'], $SETTINGS);
             $cipher = new Crypt_AES();
             $cipher->setPassword($derivedKey);
