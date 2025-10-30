@@ -287,8 +287,8 @@ if (null !== $post_type) {
                 // Generate pwd
                 $password = generateQuickPassword();
 
-                // GEnerate new keys
-                $userKeys = generateUserKeys($password);
+                // Generate new keys with transparent recovery support
+                $userKeys = generateUserKeys($password, $SETTINGS);
 
                 // load password library
                 $passwordManager = new PasswordManager();
@@ -2261,36 +2261,47 @@ if (null !== $post_type) {
             }
 
             
-            // We need to create his keys
-            $userKeys = generateUserKeys($password);
+            // We need to create his keys with transparent recovery support
+            $userKeys = generateUserKeys($password, $SETTINGS);
+
+            // Prepare user data for insertion
+            $userData = array(
+                'login' => $post_login,
+                'pw' => $hashedPassword,
+                'email' => $post_email,
+                'name' => $post_name,
+                'lastname' => $post_lastname,
+                'admin' => '0',
+                'gestionnaire' => '0',
+                'can_manage_all_users' => '0',
+                'personal_folder' => (int) $SETTINGS['enable_pf_feature'] === 1 ? 1 : 0,
+                'fonction_id' => implode(';', $post_roles),
+                'groupes_interdits' => '',
+                'groupes_visibles' => '',
+                'last_pw_change' => time(),
+                'user_language' => $SETTINGS['default_language'],
+                'encrypted_psk' => '',
+                'isAdministratedByRole' => (isset($SETTINGS['oauth_new_user_is_administrated_by']) === true && empty($SETTINGS['oauth_new_user_is_administrated_by']) === false) ? $SETTINGS['oauth_new_user_is_administrated_by'] : 0,
+                'public_key' => $userKeys['public_key'],
+                'private_key' => $userKeys['private_key'],
+                'special' => 'user_added_from_ad',
+                'auth_type' => $post_authType,
+                'is_ready_for_usage' => isset($SETTINGS['enable_tasks_manager']) === true && (int) $SETTINGS['enable_tasks_manager'] === 1 ? 0 : 1,
+                'created_at' => time(),
+            );
+
+            // Add transparent recovery fields if available
+            if (isset($userKeys['user_seed'])) {
+                $userData['user_derivation_seed'] = $userKeys['user_seed'];
+                $userData['private_key_backup'] = $userKeys['private_key_backup'];
+                $userData['key_integrity_hash'] = $userKeys['key_integrity_hash'];
+                $userData['last_password_change'] = time();
+            }
 
             // Insert user in DB
             DB::insert(
                 prefixTable('users'),
-                array(
-                    'login' => $post_login,
-                    'pw' => $hashedPassword,
-                    'email' => $post_email,
-                    'name' => $post_name,
-                    'lastname' => $post_lastname,
-                    'admin' => '0',
-                    'gestionnaire' => '0',
-                    'can_manage_all_users' => '0',
-                    'personal_folder' => (int) $SETTINGS['enable_pf_feature'] === 1 ? 1 : 0,
-                    'fonction_id' => implode(';', $post_roles),
-                    'groupes_interdits' => '',
-                    'groupes_visibles' => '',
-                    'last_pw_change' => time(),
-                    'user_language' => $SETTINGS['default_language'],
-                    'encrypted_psk' => '',
-                    'isAdministratedByRole' => (isset($SETTINGS['oauth_new_user_is_administrated_by']) === true && empty($SETTINGS['oauth_new_user_is_administrated_by']) === false) ? $SETTINGS['oauth_new_user_is_administrated_by'] : 0,
-                    'public_key' => $userKeys['public_key'],
-                    'private_key' => $userKeys['private_key'],
-                    'special' => 'user_added_from_ad',
-                    'auth_type' => $post_authType,
-                    'is_ready_for_usage' => isset($SETTINGS['enable_tasks_manager']) === true && (int) $SETTINGS['enable_tasks_manager'] === 1 ? 0 : 1,
-                    'created_at' => time(),
-                )
+                $userData
             );
             $newUserId = DB::insertId();
 
@@ -2717,22 +2728,33 @@ if (null !== $post_type) {
                 isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH
             );
 
-            // Generate user keys with the code
-            $userKeys = generateUserKeys($post_user_code);
+            // Generate user keys with the code and transparent recovery support
+            $userKeys = generateUserKeys($post_user_code, $SETTINGS);
 
-            //update user is not ready
+            // Prepare update data
+            $updateData = array(
+                'is_ready_for_usage' => 1,
+                'otp_provided' => 0,
+                'ongoing_process_id' => $processId,
+                'special' => 'generate-keys',
+                'public_key' => $userKeys['public_key'],
+                'private_key' => $userKeys['private_key'],
+                // Notify user that he must re download his keys:
+                'keys_recovery_time' => NULL,
+            );
+
+            // Add transparent recovery fields if available
+            if (isset($userKeys['user_seed'])) {
+                $updateData['user_derivation_seed'] = $userKeys['user_seed'];
+                $updateData['private_key_backup'] = $userKeys['private_key_backup'];
+                $updateData['key_integrity_hash'] = $userKeys['key_integrity_hash'];
+                $updateData['last_password_change'] = time();
+            }
+
+            // Update user
             DB::update(
                 prefixTable('users'),
-                array(
-                    'is_ready_for_usage' => 1,
-                    'otp_provided' => 0,
-                    'ongoing_process_id' => $processId,
-                    'special' => 'generate-keys',
-                    'public_key' => $userKeys['public_key'],
-                    'private_key' => $userKeys['private_key'],
-                    // Notify user that he must re download his keys:
-                    'keys_recovery_time' => NULL,
-                ),
+                $updateData,
                 'id = %i',
                 $post_user_id
             );

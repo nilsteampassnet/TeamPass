@@ -2179,7 +2179,7 @@ function formatSizeUnits(int $bytes): string
  *
  * @return array
  */
-function generateUserKeys(string $userPwd): array
+function generateUserKeys(string $userPwd, ?array $SETTINGS = null): array
 {
     // Sanitize
     $antiXss = new AntiXSS();
@@ -2192,11 +2192,43 @@ function generateUserKeys(string $userPwd): array
     // Encrypt the privatekey
     $cipher->setPassword($userPwd);
     $privatekey = $cipher->encrypt($res['privatekey']);
-    return [
+
+    $result = [
         'private_key' => base64_encode($privatekey),
         'public_key' => base64_encode($res['publickey']),
         'private_key_clear' => base64_encode($res['privatekey']),
     ];
+
+    // Generate transparent recovery data if enabled
+    if ($SETTINGS !== null
+        && isset($SETTINGS['transparent_key_recovery_enabled'])
+        && $SETTINGS['transparent_key_recovery_enabled'] === '1') {
+
+        // Generate unique seed for this user
+        $userSeed = bin2hex(openssl_random_pseudo_bytes(32));
+
+        // Derive backup encryption key
+        $derivedKey = deriveBackupKey($userSeed, $result['public_key'], $SETTINGS);
+
+        // Encrypt private key with derived key (backup)
+        $cipherBackup = new Crypt_AES();
+        $cipherBackup->setPassword($derivedKey);
+        $privatekeyBackup = $cipherBackup->encrypt($res['privatekey']);
+
+        // Generate integrity hash if enabled
+        $integrityHash = null;
+        if (isset($SETTINGS['transparent_key_recovery_integrity_check'])
+            && $SETTINGS['transparent_key_recovery_integrity_check'] === '1') {
+            $serverSecret = getServerSecret($SETTINGS);
+            $integrityHash = generateKeyIntegrityHash($userSeed, $result['public_key'], $serverSecret);
+        }
+
+        $result['user_seed'] = $userSeed;
+        $result['private_key_backup'] = base64_encode($privatekeyBackup);
+        $result['key_integrity_hash'] = $integrityHash;
+    }
+
+    return $result;
 }
 
 /**
@@ -2255,6 +2287,365 @@ function encryptPrivateKey(string $userPwd, string $userPrivateKey): string
         }
     }
     return '';
+}
+
+/**
+ * Derives a backup encryption key from user seed and public key.
+ * Uses PBKDF2 with 100k iterations for strong key derivation.
+ *
+ * @param string $userSeed User's unique derivation seed (64 hex chars)
+ * @param string $publicKey User's public RSA key (base64 encoded)
+ * @param array $SETTINGS Teampass settings
+ *
+ * @return string Derived key (32 bytes, raw binary)
+ */
+function deriveBackupKey(string $userSeed, string $publicKey, array $SETTINGS): string
+{
+    // Sanitize inputs
+    $antiXss = new AntiXSS();
+    $userSeed = $antiXss->xss_clean($userSeed);
+    $publicKey = $antiXss->xss_clean($publicKey);
+
+    // Use public key hash as salt for key derivation
+    $salt = hash('sha256', $publicKey, true);
+
+    // Get PBKDF2 iterations from settings (default 100000)
+    $iterations = isset($SETTINGS['transparent_key_recovery_pbkdf2_iterations'])
+        ? (int) $SETTINGS['transparent_key_recovery_pbkdf2_iterations']
+        : 100000;
+
+    // PBKDF2 key derivation with SHA256
+    return hash_pbkdf2(
+        'sha256',
+        hex2bin($userSeed),
+        $salt,
+        $iterations,
+        32, // 256 bits key length
+        true // raw binary output
+    );
+}
+
+/**
+ * Generates key integrity hash to detect tampering.
+ *
+ * @param string $userSeed User derivation seed
+ * @param string $publicKey User public key
+ * @param string $serverSecret Server-wide secret key
+ *
+ * @return string HMAC hash (64 hex chars)
+ */
+function generateKeyIntegrityHash(string $userSeed, string $publicKey, string $serverSecret): string
+{
+    return hash_hmac('sha256', $userSeed . $publicKey, $serverSecret);
+}
+
+/**
+ * Verifies key integrity to detect SQL injection or tampering.
+ *
+ * @param array $userInfo User information from database
+ * @param string $serverSecret Server-wide secret key
+ *
+ * @return bool True if integrity is valid
+ */
+function verifyKeyIntegrity(array $userInfo, string $serverSecret): bool
+{
+    // Skip check if no integrity hash stored (legacy users)
+    if (empty($userInfo['key_integrity_hash'])) {
+        return true;
+    }
+
+    if (empty($userInfo['user_derivation_seed']) || empty($userInfo['public_key'])) {
+        return false;
+    }
+
+    $expectedHash = generateKeyIntegrityHash(
+        $userInfo['user_derivation_seed'],
+        $userInfo['public_key'],
+        $serverSecret
+    );
+
+    return hash_equals($expectedHash, $userInfo['key_integrity_hash']);
+}
+
+/**
+ * Gets server secret for integrity checks.
+ * Reads from file or generates if not exists.
+ *
+ * @param array $SETTINGS Teampass settings
+ *
+ * @return string Server secret key
+ */
+function getServerSecret(array $SETTINGS): string
+{
+    $secretPath = $SETTINGS['cpassman_dir'] . '/files/recovery_secret.key';
+
+    // Create directory if not exists
+    $filesDir = $SETTINGS['cpassman_dir'] . '/files';
+    if (!is_dir($filesDir)) {
+        mkdir($filesDir, 0755, true);
+    }
+
+    // Generate secret if not exists
+    if (!file_exists($secretPath)) {
+        $secret = bin2hex(openssl_random_pseudo_bytes(32));
+        file_put_contents($secretPath, $secret);
+        chmod($secretPath, 0400); // Read-only for owner
+        return $secret;
+    }
+
+    return file_get_contents($secretPath);
+}
+
+/**
+ * Creates user with transparent recovery capability.
+ * Generates both standard encrypted private key and backup.
+ *
+ * @param int $userId User ID
+ * @param string $password User password (clear)
+ * @param string $publicKey User public key
+ * @param string $privateKeyClear User private key (clear, base64)
+ * @param array $SETTINGS Teampass settings
+ *
+ * @return array Result with backup key data
+ */
+function createUserWithTransparentRecovery(
+    int $userId,
+    string $password,
+    string $publicKey,
+    string $privateKeyClear,
+    array $SETTINGS
+): array
+{
+    // Generate unique seed for this user
+    $userSeed = bin2hex(openssl_random_pseudo_bytes(32));
+
+    // Derive backup encryption key
+    $derivedKey = deriveBackupKey($userSeed, $publicKey, $SETTINGS);
+
+    // Encrypt private key with user password (standard)
+    $privateKeyEncrypted = encryptPrivateKey($password, $privateKeyClear);
+
+    // Encrypt private key with derived key (backup)
+    $cipher = new Crypt_AES();
+    $cipher->setPassword($derivedKey);
+    $privateKeyBackup = base64_encode($cipher->encrypt(base64_decode($privateKeyClear)));
+
+    // Generate integrity hash if enabled
+    $integrityHash = null;
+    if (isset($SETTINGS['transparent_key_recovery_integrity_check'])
+        && $SETTINGS['transparent_key_recovery_integrity_check'] === '1') {
+        $serverSecret = getServerSecret($SETTINGS);
+        $integrityHash = generateKeyIntegrityHash($userSeed, $publicKey, $serverSecret);
+    }
+
+    // Update user in database
+    DB::update(
+        prefixTable('users'),
+        [
+            'private_key' => $privateKeyEncrypted,
+            'user_derivation_seed' => $userSeed,
+            'private_key_backup' => $privateKeyBackup,
+            'key_integrity_hash' => $integrityHash,
+            'last_password_change' => time(),
+        ],
+        'id = %i',
+        $userId
+    );
+
+    return [
+        'success' => true,
+        'user_seed' => $userSeed,
+        'integrity_hash' => $integrityHash,
+    ];
+}
+
+/**
+ * Attempts transparent recovery when password change is detected.
+ *
+ * @param array $userInfo User information from database
+ * @param string $newPassword New password (clear)
+ * @param array $SETTINGS Teampass settings
+ *
+ * @return array Result with private key or error
+ */
+function attemptTransparentRecovery(array $userInfo, string $newPassword, array $SETTINGS): array
+{
+    try {
+        // Verify feature is enabled
+        if (!isset($SETTINGS['transparent_key_recovery_enabled'])
+            || $SETTINGS['transparent_key_recovery_enabled'] !== '1') {
+            return [
+                'success' => false,
+                'error' => 'transparent_recovery_disabled',
+                'private_key_clear' => '',
+            ];
+        }
+
+        // Check if user has recovery data
+        if (empty($userInfo['user_derivation_seed']) || empty($userInfo['private_key_backup'])) {
+            return [
+                'success' => false,
+                'error' => 'no_recovery_data',
+                'private_key_clear' => '',
+            ];
+        }
+
+        // Verify key integrity if enabled
+        if (isset($SETTINGS['transparent_key_recovery_integrity_check'])
+            && $SETTINGS['transparent_key_recovery_integrity_check'] === '1') {
+            $serverSecret = getServerSecret($SETTINGS);
+            if (!verifyKeyIntegrity($userInfo, $serverSecret)) {
+                // Critical security event - integrity check failed
+                logEvents(
+                    $SETTINGS,
+                    'security_alert',
+                    'key_integrity_check_failed',
+                    (string) $userInfo['id'],
+                    'User: ' . $userInfo['login']
+                );
+                return [
+                    'success' => false,
+                    'error' => 'integrity_check_failed',
+                    'private_key_clear' => '',
+                ];
+            }
+        }
+
+        // Derive backup key
+        $derivedKey = deriveBackupKey(
+            $userInfo['user_derivation_seed'],
+            $userInfo['public_key'],
+            $SETTINGS
+        );
+
+        // Decrypt private key using derived key
+        $cipher = new Crypt_AES();
+        $cipher->setPassword($derivedKey);
+        $privateKeyClear = base64_encode($cipher->decrypt(base64_decode($userInfo['private_key_backup'])));
+
+        // Re-encrypt with new password
+        $newPrivateKeyEncrypted = encryptPrivateKey($newPassword, $privateKeyClear);
+
+        // Re-encrypt backup with derived key (refresh)
+        $cipher->setPassword($derivedKey);
+        $newPrivateKeyBackup = base64_encode($cipher->encrypt(base64_decode($privateKeyClear)));
+
+        // Update database
+        DB::update(
+            prefixTable('users'),
+            [
+                'private_key' => $newPrivateKeyEncrypted,
+                'private_key_backup' => $newPrivateKeyBackup,
+                'last_password_change' => time(),
+            ],
+            'id = %i',
+            $userInfo['id']
+        );
+
+        // Log success
+        logEvents(
+            $SETTINGS,
+            'user_connection',
+            'auto_reencryption_success',
+            (string) $userInfo['id'],
+            'User: ' . $userInfo['login']
+        );
+
+        return [
+            'success' => true,
+            'private_key_clear' => $privateKeyClear,
+            'error' => '',
+        ];
+
+    } catch (Exception $e) {
+        // Log failure
+        logEvents(
+            $SETTINGS,
+            'security_alert',
+            'auto_reencryption_failed',
+            (string) $userInfo['id'],
+            'User: ' . $userInfo['login'] . ' - Error: ' . $e->getMessage()
+        );
+
+        return [
+            'success' => false,
+            'error' => 'decryption_failed: ' . $e->getMessage(),
+            'private_key_clear' => '',
+        ];
+    }
+}
+
+/**
+ * Handles external password change (LDAP/OAuth2) with automatic re-encryption.
+ *
+ * @param int $userId User ID
+ * @param string $newPassword New password (clear)
+ * @param array $userInfo User information from database
+ * @param array $SETTINGS Teampass settings
+ *
+ * @return bool True if handled successfully
+ */
+function handleExternalPasswordChange(int $userId, string $newPassword, array $userInfo, array $SETTINGS): bool
+{
+    // Skip if transparent recovery not enabled
+    if (!isset($SETTINGS['transparent_key_recovery_enabled'])
+        || $SETTINGS['transparent_key_recovery_enabled'] !== '1') {
+        return false;
+    }
+
+    // Check if password was changed recently (< 24h) to avoid duplicate processing
+    if (!empty($userInfo['last_password_change'])) {
+        $timeSinceChange = time() - (int) $userInfo['last_password_change'];
+        if ($timeSinceChange < 86400) { // 24 hours
+            return true; // Already processed
+        }
+    }
+
+    // Try to decrypt with new password first (maybe already updated)
+    try {
+        $testDecrypt = decryptPrivateKey($newPassword, $userInfo['private_key']);
+        if (!empty($testDecrypt)) {
+            // Password already works, just update timestamp
+            DB::update(
+                prefixTable('users'),
+                ['last_password_change' => time()],
+                'id = %i',
+                $userId
+            );
+            return true;
+        }
+    } catch (Exception $e) {
+        // Expected - old password doesn't work, continue with recovery
+    }
+
+    // Attempt transparent recovery
+    $result = attemptTransparentRecovery($userInfo, $newPassword, $SETTINGS);
+
+    if ($result['success']) {
+        return true;
+    }
+
+    // Recovery failed - disable user and alert admins
+    DB::update(
+        prefixTable('users'),
+        [
+            'disabled' => 1,
+            'special' => 'recrypt-private-key',
+        ],
+        'id = %i',
+        $userId
+    );
+
+    // Log critical event
+    logEvents(
+        $SETTINGS,
+        'security_alert',
+        'auto_reencryption_critical_failure',
+        (string) $userId,
+        'User: ' . $userInfo['login'] . ' - disabled due to key recovery failure'
+    );
+
+    return false;
 }
 
 /**
@@ -4645,4 +5036,98 @@ function insertPrivateKeyWithCurrentFlag(int $userId, string $privateKey) {
         DB::rollback();
         throw $e;
     }
+}
+
+/**
+ * Gets transparent recovery statistics for monitoring.
+ *
+ * @param array $SETTINGS Teampass settings
+ *
+ * @return array Statistics data
+ */
+function getTransparentRecoveryStats(array $SETTINGS): array
+{
+    // Count auto-recoveries in last 24h
+    $autoRecoveriesLast24h = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('log_system') . '
+         WHERE action = %s
+         AND date > %i',
+        'auto_reencryption_success',
+        time() - 86400
+    );
+
+    // Count failed recoveries (all time)
+    $failedRecoveries = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('log_system') . '
+         WHERE action = %s',
+        'auto_reencryption_failed'
+    );
+
+    // Count critical failures (all time)
+    $criticalFailures = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('log_system') . '
+         WHERE action = %s',
+        'auto_reencryption_critical_failure'
+    );
+
+    // Count users with transparent recovery enabled (have seed and backup)
+    $usersMigrated = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('users') . '
+         WHERE user_derivation_seed IS NOT NULL
+         AND private_key_backup IS NOT NULL
+         AND disabled = 0'
+    );
+
+    // Count total active users
+    $totalUsers = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('users') . '
+         WHERE disabled = 0
+         AND private_key IS NOT NULL
+         AND private_key != "none"'
+    );
+
+    // Get recent recovery events (last 10)
+    $recentEvents = DB::query(
+        'SELECT l.date, l.action, l.qui, l.label
+         FROM ' . prefixTable('log_system') . ' AS l
+         WHERE l.action IN %ls
+         ORDER BY l.date DESC
+         LIMIT 10',
+        ['auto_reencryption_success', 'auto_reencryption_failed', 'auto_reencryption_critical_failure']
+    );
+
+    // Calculate migration percentage
+    $migrationPercentage = $totalUsers > 0 ? round(($usersMigrated / $totalUsers) * 100, 2) : 0;
+
+    // Calculate failure rate (last 30 days)
+    $totalAttempts30d = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('log_system') . '
+         WHERE action IN %ls
+         AND date > %i',
+        ['auto_reencryption_success', 'auto_reencryption_failed'],
+        time() - (30 * 86400)
+    );
+
+    $failures30d = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('log_system') . '
+         WHERE action = %s
+         AND date > %i',
+        'auto_reencryption_failed',
+        time() - (30 * 86400)
+    );
+
+    $failureRate = $totalAttempts30d > 0 ? round(($failures30d / $totalAttempts30d) * 100, 2) : 0;
+
+    return [
+        'enabled' => isset($SETTINGS['transparent_key_recovery_enabled'])
+            && $SETTINGS['transparent_key_recovery_enabled'] === '1',
+        'auto_recoveries_last_24h' => (int) $autoRecoveriesLast24h,
+        'failed_recoveries_total' => (int) $failedRecoveries,
+        'critical_failures_total' => (int) $criticalFailures,
+        'users_migrated' => (int) $usersMigrated,
+        'total_users' => (int) $totalUsers,
+        'migration_percentage' => $migrationPercentage,
+        'failure_rate_30d' => $failureRate,
+        'recent_events' => $recentEvents,
+    ];
 }
