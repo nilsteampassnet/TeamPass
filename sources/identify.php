@@ -493,13 +493,24 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         $session->set('user-session_duration', (int) $lifetime);
 
         // User signature keys
-        $returnKeys = prepareUserEncryptionKeys($userInfo, $passwordClear);  
+        $returnKeys = prepareUserEncryptionKeys($userInfo, $passwordClear, $SETTINGS);
         $session->set('user-private_key', $returnKeys['private_key_clear']);
         $session->set('user-public_key', $returnKeys['public_key']);
 
+        // Update keys in DB if needed (for transparent recovery migration)
+        if (!empty($returnKeys['update_keys_in_db'])) {
+            DB::update(
+                prefixTable('users'),
+                $returnKeys['update_keys_in_db'],
+                'id = %i',
+                $userInfo['id']
+            );
+        }
+
         // Automatically detect LDAP password changes.
-        if ($userInfo['auth_type'] === 'ldap' && $returnKeys['private_key_clear'] === '') {
-            // Add special "recrypt-private-key" in database profile.
+        if (($userInfo['auth_type'] === 'ldap' || $userInfo['auth_type'] === 'oauth2')
+            && $returnKeys['private_key_clear'] === '') {
+            // Transparent recovery failed or not available - fallback to manual re-encryption
             DB::update(
                 prefixTable('users'),
                 array(
@@ -936,23 +947,33 @@ function canUserGetLog(
  *
  * @return array
  */
-function prepareUserEncryptionKeys($userInfo, $passwordClear) : array
+function prepareUserEncryptionKeys($userInfo, $passwordClear, array $SETTINGS = []) : array
 {
     if (is_null($userInfo['private_key']) === true || empty($userInfo['private_key']) === true || $userInfo['private_key'] === 'none') {
         // No keys have been generated yet
         // Create them
-        $userKeys = generateUserKeys($passwordClear);
+        $userKeys = generateUserKeys($passwordClear, $SETTINGS);
+
+        $updateData = [
+            'public_key' => $userKeys['public_key'],
+            'private_key' => $userKeys['private_key'],
+        ];
+
+        // Add transparent recovery data if available
+        if (isset($userKeys['user_seed'])) {
+            $updateData['user_derivation_seed'] = $userKeys['user_seed'];
+            $updateData['private_key_backup'] = $userKeys['private_key_backup'];
+            $updateData['key_integrity_hash'] = $userKeys['key_integrity_hash'];
+            $updateData['last_password_change'] = time();
+        }
 
         return [
             'public_key' => $userKeys['public_key'],
             'private_key_clear' => $userKeys['private_key_clear'],
-            'update_keys_in_db' => [
-                'public_key' => $userKeys['public_key'],
-                'private_key' => $userKeys['private_key'],
-            ],
+            'update_keys_in_db' => $updateData,
         ];
-    } 
-    
+    }
+
     if ($userInfo['special'] === 'generate-keys') {
         return [
             'public_key' => $userInfo['public_key'],
@@ -960,7 +981,7 @@ function prepareUserEncryptionKeys($userInfo, $passwordClear) : array
             'update_keys_in_db' => [],
         ];
     }
-    
+
     // Don't perform this in case of special login action
     if ($userInfo['special'] === 'otc_is_required_on_next_login' || $userInfo['special'] === 'user_added_from_ad') {
         return [
@@ -969,13 +990,68 @@ function prepareUserEncryptionKeys($userInfo, $passwordClear) : array
             'update_keys_in_db' => [],
         ];
     }
-    
-    // Uncrypt private key
-    return [
-        'public_key' => $userInfo['public_key'],
-        'private_key_clear' => decryptPrivateKey($passwordClear, $userInfo['private_key']),
-        'update_keys_in_db' => [],
-    ];
+
+    // Try to uncrypt private key with current password
+    try {
+        $privateKeyClear = decryptPrivateKey($passwordClear, $userInfo['private_key']);
+
+        // If user has seed but no backup, create it on first successful login
+        if (!empty($userInfo['user_derivation_seed']) && empty($userInfo['private_key_backup'])) {
+            $derivedKey = deriveBackupKey($userInfo['user_derivation_seed'], $userInfo['public_key'], $SETTINGS);
+            $cipher = new Crypt_AES();
+            $cipher->setPassword($derivedKey);
+            $privateKeyBackup = base64_encode($cipher->encrypt(base64_decode($privateKeyClear)));
+
+            // Generate integrity hash if enabled
+            $integrityHash = null;
+            if (isset($SETTINGS['transparent_key_recovery_integrity_check'])
+                && $SETTINGS['transparent_key_recovery_integrity_check'] === '1') {
+                $serverSecret = getServerSecret($SETTINGS);
+                $integrityHash = generateKeyIntegrityHash($userInfo['user_derivation_seed'], $userInfo['public_key'], $serverSecret);
+            }
+
+            return [
+                'public_key' => $userInfo['public_key'],
+                'private_key_clear' => $privateKeyClear,
+                'update_keys_in_db' => [
+                    'private_key_backup' => $privateKeyBackup,
+                    'key_integrity_hash' => $integrityHash,
+                    'last_password_change' => time(),
+                ],
+            ];
+        }
+
+        return [
+            'public_key' => $userInfo['public_key'],
+            'private_key_clear' => $privateKeyClear,
+            'update_keys_in_db' => [],
+        ];
+
+    } catch (Exception $e) {
+        // Decryption failed - try transparent recovery if available
+        if (isset($SETTINGS['transparent_key_recovery_enabled'])
+            && $SETTINGS['transparent_key_recovery_enabled'] === '1'
+            && !empty($userInfo['user_derivation_seed'])
+            && !empty($userInfo['private_key_backup'])) {
+
+            $recovery = attemptTransparentRecovery($userInfo, $passwordClear, $SETTINGS);
+
+            if ($recovery['success']) {
+                return [
+                    'public_key' => $userInfo['public_key'],
+                    'private_key_clear' => $recovery['private_key_clear'],
+                    'update_keys_in_db' => [],
+                ];
+            }
+        }
+
+        // Recovery failed or not available - return empty
+        return [
+            'public_key' => $userInfo['public_key'],
+            'private_key_clear' => '',
+            'update_keys_in_db' => [],
+        ];
+    }
 }
 
 
@@ -1371,7 +1447,7 @@ function finalizeAuthentication(
     } elseif ($passwordManager->verifyPassword($hashedPassword, $passwordClear) === false) {
         // Case where user is auth by LDAP but his password in Teampass is not synchronized
         // For example when user has changed his password in AD.
-        // So we need to update it in Teampass and ask for private key re-encryption
+        // So we need to update it in Teampass and handle private key re-encryption
         DB::update(
             prefixTable('users'),
             [
@@ -1380,6 +1456,12 @@ function finalizeAuthentication(
             'id = %i',
             $userInfo['id']
         );
+
+        // Try transparent recovery for automatic re-encryption
+        if (isset($SETTINGS['transparent_key_recovery_enabled'])
+            && $SETTINGS['transparent_key_recovery_enabled'] === '1') {
+            handleExternalPasswordChange($userInfo['id'], $passwordClear, $userInfo, $SETTINGS);
+        }
     }
 }
 
