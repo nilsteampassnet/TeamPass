@@ -494,8 +494,14 @@ function identifyUser(string $sentData, array $SETTINGS): bool
 
         // User signature keys
         $returnKeys = prepareUserEncryptionKeys($userInfo, $passwordClear, $SETTINGS);
-        $session->set('user-private_key', $returnKeys['private_key_clear']);
         $session->set('user-public_key', $returnKeys['public_key']);
+
+        // Did user has his AD password changed
+        if (null !== $session->get('user-private_key_recovered') && $session->get('user-private_key_recovered') === true) {
+            $session->set('user-private_key', $session->get('user-private_key'));
+        } else {
+            $session->set('user-private_key', $returnKeys['private_key_clear']);
+        }
 
         // Update keys in DB if needed (for transparent recovery migration)
         if (!empty($returnKeys['update_keys_in_db'])) {
@@ -505,23 +511,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                 'id = %i',
                 $userInfo['id']
             );
-        }
-
-        // Automatically detect LDAP password changes.
-        if (($userInfo['auth_type'] === 'ldap' || $userInfo['auth_type'] === 'oauth2')
-            && $returnKeys['private_key_clear'] === '') {
-            // Transparent recovery failed or not available - fallback to manual re-encryption
-            DB::update(
-                prefixTable('users'),
-                array(
-                    'special' => 'recrypt-private-key',
-                ),
-                'id = %i',
-                $userInfo['id']
-            );
-
-            // Store new value in userInfos.
-            $userInfo['special'] = 'recrypt-private-key';
         }
 
         // API key
@@ -1435,8 +1424,6 @@ function finalizeAuthentication(
 
     // Use the new hashed password if migration was successful
     $hashedPassword = $result['hashedPassword'];
-
-    error_log("passwordClear: ".$passwordClear." -- ".$passwordManager->verifyPassword($hashedPassword, $passwordClear));
     
     if (empty($userInfo['pw']) === true || $userInfo['special'] === 'user_added_from_ad') {
         // 2 cases are managed here:
@@ -1462,10 +1449,11 @@ function finalizeAuthentication(
             'id = %i',
             $userInfo['id']
         );
-error_log("Password updated in Teampass for user ID " . $userInfo['id']);
+
         // Try transparent recovery for automatic re-encryption
         if (isset($SETTINGS['transparent_key_recovery_enabled'])
-            && (int) $SETTINGS['transparent_key_recovery_enabled'] === 1) {
+            && (int) $SETTINGS['transparent_key_recovery_enabled'] === 1)
+        {
             handleExternalPasswordChange((int) $userInfo['id'], $passwordClear, $userInfo, $SETTINGS);
         }
     }

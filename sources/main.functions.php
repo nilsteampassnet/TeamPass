@@ -2390,6 +2390,7 @@ function getServerSecret(): string
  */
 function attemptTransparentRecovery(array $userInfo, string $newPassword, array $SETTINGS): array
 {
+    $session = SessionManager::getSession();
     try {
         // Verify feature is enabled
         if (!isset($SETTINGS['transparent_key_recovery_enabled'])
@@ -2449,7 +2450,7 @@ function attemptTransparentRecovery(array $userInfo, string $newPassword, array 
         // Re-encrypt backup with derived key (refresh)
         $cipher->setPassword($derivedKey);
         $newPrivateKeyBackup = base64_encode($cipher->encrypt(base64_decode($privateKeyClear)));
-
+        
         // Update database
         DB::update(
             prefixTable('users'),
@@ -2472,9 +2473,12 @@ function attemptTransparentRecovery(array $userInfo, string $newPassword, array 
             'User: ' . $userInfo['login']
         );
 
+        // Store in session for immediate use
+        $session->set('user-private_key', $privateKeyClear);
+        $session->set('user-private_key_recovered', true);
+
         return [
             'success' => true,
-            'private_key_clear' => $privateKeyClear,
             'error' => '',
         ];
 
@@ -2504,11 +2508,10 @@ function attemptTransparentRecovery(array $userInfo, string $newPassword, array 
  * @param array $userInfo User information from database
  * @param array $SETTINGS Teampass settings
  *
- * @return bool True if handled successfully
+ * @return bool True if  handled successfully
  */
 function handleExternalPasswordChange(int $userId, string $newPassword, array $userInfo, array $SETTINGS): bool
 {
-    error_log('Handling external password change for user ID: ' . $userId);
     // Skip if transparent recovery not enabled
     if (!isset($SETTINGS['transparent_key_recovery_enabled'])
         || $SETTINGS['transparent_key_recovery_enabled'] !== '1') {
@@ -2518,7 +2521,6 @@ function handleExternalPasswordChange(int $userId, string $newPassword, array $u
     // Check if password was changed recently (< 24h) to avoid duplicate processing
     if (!empty($userInfo['last_pw_change'])) {
         $timeSinceChange = time() - (int) $userInfo['last_pw_change'];
-        error_log('Time since last pw change for user ' . $userId . ': ' . $timeSinceChange . ' seconds');
         if ($timeSinceChange < 86400) { // 24 hours
             //return true; // Already processed
         }
@@ -2543,7 +2545,7 @@ function handleExternalPasswordChange(int $userId, string $newPassword, array $u
 
     // Attempt transparent recovery
     $result = attemptTransparentRecovery($userInfo, $newPassword, $SETTINGS);
-    
+
     if ($result['success']) {
         return true;
     }
