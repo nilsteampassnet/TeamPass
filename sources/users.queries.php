@@ -2295,7 +2295,7 @@ if (null !== $post_type) {
                 $userData['user_derivation_seed'] = $userKeys['user_seed'];
                 $userData['private_key_backup'] = $userKeys['private_key_backup'];
                 $userData['key_integrity_hash'] = $userKeys['key_integrity_hash'];
-                $userData['last_password_change'] = time();
+                $userData['last_pw_change'] = time();
             }
 
             // Insert user in DB
@@ -2748,7 +2748,7 @@ if (null !== $post_type) {
                 $updateData['user_derivation_seed'] = $userKeys['user_seed'];
                 $updateData['private_key_backup'] = $userKeys['private_key_backup'];
                 $updateData['key_integrity_hash'] = $userKeys['key_integrity_hash'];
-                $updateData['last_password_change'] = time();
+                $updateData['last_pw_change'] = time();
             }
 
             // Update user

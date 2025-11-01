@@ -969,7 +969,7 @@ function prepareUserEncryptionKeys($userInfo, $passwordClear, array $SETTINGS = 
             $updateData['user_derivation_seed'] = $userKeys['user_seed'];
             $updateData['private_key_backup'] = $userKeys['private_key_backup'];
             $updateData['key_integrity_hash'] = $userKeys['key_integrity_hash'];
-            $updateData['last_password_change'] = time();
+            $updateData['last_pw_change'] = time();
         }
 
         return [
@@ -999,15 +999,7 @@ function prepareUserEncryptionKeys($userInfo, $passwordClear, array $SETTINGS = 
     // Try to uncrypt private key with current password
     try {
         $privateKeyClear = decryptPrivateKey($passwordClear, $userInfo['private_key']);
-
-        // Debug logging (remove in production)
-        if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
-            error_log('TEAMPASS Transparent Recovery Debug - User: ' . ($userInfo['login'] ?? 'unknown'));
-            error_log('  - user_derivation_seed: ' . (empty($userInfo['user_derivation_seed']) ? 'EMPTY' : 'SET (' . strlen($userInfo['user_derivation_seed']) . ' chars)'));
-            error_log('  - private_key_backup: ' . (empty($userInfo['private_key_backup']) ? 'EMPTY' : 'SET'));
-            error_log('  - transparent_key_recovery_enabled: ' . ($SETTINGS['transparent_key_recovery_enabled'] ?? 'NOT_SET'));
-        }
-
+        
         // If user has seed but no backup, create it on first successful login
         if (!empty($userInfo['user_derivation_seed']) && empty($userInfo['private_key_backup'])) {
             if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
@@ -1022,8 +1014,8 @@ function prepareUserEncryptionKeys($userInfo, $passwordClear, array $SETTINGS = 
             // Generate integrity hash if enabled
             $integrityHash = null;
             if (isset($SETTINGS['transparent_key_recovery_integrity_check'])
-                && $SETTINGS['transparent_key_recovery_integrity_check'] === '1') {
-                $serverSecret = getServerSecret($SETTINGS);
+                && (int) $SETTINGS['transparent_key_recovery_integrity_check'] === 1) {
+                $serverSecret = getServerSecret();
                 $integrityHash = generateKeyIntegrityHash($userInfo['user_derivation_seed'], $userInfo['public_key'], $serverSecret);
             }
 
@@ -1033,7 +1025,7 @@ function prepareUserEncryptionKeys($userInfo, $passwordClear, array $SETTINGS = 
                 'update_keys_in_db' => [
                     'private_key_backup' => $privateKeyBackup,
                     'key_integrity_hash' => $integrityHash,
-                    'last_password_change' => time(),
+                    'last_pw_change' => time(),
                 ],
             ];
         }
@@ -1448,6 +1440,8 @@ function finalizeAuthentication(
 
     // Use the new hashed password if migration was successful
     $hashedPassword = $result['hashedPassword'];
+
+    error_log("passwordClear: ".$passwordClear." -- ".$passwordManager->verifyPassword($hashedPassword, $passwordClear));
     
     if (empty($userInfo['pw']) === true || $userInfo['special'] === 'user_added_from_ad') {
         // 2 cases are managed here:
@@ -1473,11 +1467,11 @@ function finalizeAuthentication(
             'id = %i',
             $userInfo['id']
         );
-
+error_log("Password updated in Teampass for user ID " . $userInfo['id']);
         // Try transparent recovery for automatic re-encryption
         if (isset($SETTINGS['transparent_key_recovery_enabled'])
-            && $SETTINGS['transparent_key_recovery_enabled'] === '1') {
-            handleExternalPasswordChange($userInfo['id'], $passwordClear, $userInfo, $SETTINGS);
+            && (int) $SETTINGS['transparent_key_recovery_enabled'] === 1) {
+            handleExternalPasswordChange((int) $userInfo['id'], $passwordClear, $userInfo, $SETTINGS);
         }
     }
 }

@@ -1900,7 +1900,6 @@ function defuseFileEncrypt(
  *
  * @param string $source_file path to source file
  * @param string $target_file path to target file
- * @param array  $SETTINGS    Settings
  * @param string $password    A password
  *
  * @return string|bool
@@ -2218,8 +2217,8 @@ function generateUserKeys(string $userPwd, ?array $SETTINGS = null): array
         // Generate integrity hash if enabled
         $integrityHash = null;
         if (isset($SETTINGS['transparent_key_recovery_integrity_check'])
-            && $SETTINGS['transparent_key_recovery_integrity_check'] === '1') {
-            $serverSecret = getServerSecret($SETTINGS);
+            && (int) $SETTINGS['transparent_key_recovery_integrity_check'] === 1) {
+            $serverSecret = getServerSecret();
             $integrityHash = generateKeyIntegrityHash($userSeed, $result['public_key'], $serverSecret);
         }
 
@@ -2370,93 +2369,14 @@ function verifyKeyIntegrity(array $userInfo, string $serverSecret): bool
 /**
  * Gets server secret for integrity checks.
  * Reads from file or generates if not exists.
- *
- * @param array $SETTINGS Teampass settings
- *
+ * *
  * @return string Server secret key
  */
-function getServerSecret(array $SETTINGS): string
+function getServerSecret(): string
 {
-    $secretPath = $SETTINGS['cpassman_dir'] . '/files/recovery_secret.key';
-
-    // Create directory if not exists
-    $filesDir = $SETTINGS['cpassman_dir'] . '/files';
-    if (!is_dir($filesDir)) {
-        mkdir($filesDir, 0755, true);
-    }
-
-    // Generate secret if not exists
-    if (!file_exists($secretPath)) {
-        $secret = bin2hex(openssl_random_pseudo_bytes(32));
-        file_put_contents($secretPath, $secret);
-        chmod($secretPath, 0400); // Read-only for owner
-        return $secret;
-    }
-
-    return file_get_contents($secretPath);
-}
-
-/**
- * Creates user with transparent recovery capability.
- * Generates both standard encrypted private key and backup.
- *
- * @param int $userId User ID
- * @param string $password User password (clear)
- * @param string $publicKey User public key
- * @param string $privateKeyClear User private key (clear, base64)
- * @param array $SETTINGS Teampass settings
- *
- * @return array Result with backup key data
- */
-function createUserWithTransparentRecovery(
-    int $userId,
-    string $password,
-    string $publicKey,
-    string $privateKeyClear,
-    array $SETTINGS
-): array
-{
-    // Generate unique seed for this user
-    $userSeed = bin2hex(openssl_random_pseudo_bytes(32));
-
-    // Derive backup encryption key
-    $derivedKey = deriveBackupKey($userSeed, $publicKey, $SETTINGS);
-
-    // Encrypt private key with user password (standard)
-    $privateKeyEncrypted = encryptPrivateKey($password, $privateKeyClear);
-
-    // Encrypt private key with derived key (backup)
-    $cipher = new Crypt_AES();
-    $cipher->setPassword($derivedKey);
-    $privateKeyBackup = base64_encode($cipher->encrypt(base64_decode($privateKeyClear)));
-
-    // Generate integrity hash if enabled
-    $integrityHash = null;
-    if (isset($SETTINGS['transparent_key_recovery_integrity_check'])
-        && $SETTINGS['transparent_key_recovery_integrity_check'] === '1') {
-        $serverSecret = getServerSecret($SETTINGS);
-        $integrityHash = generateKeyIntegrityHash($userSeed, $publicKey, $serverSecret);
-    }
-
-    // Update user in database
-    DB::update(
-        prefixTable('users'),
-        [
-            'private_key' => $privateKeyEncrypted,
-            'user_derivation_seed' => $userSeed,
-            'private_key_backup' => $privateKeyBackup,
-            'key_integrity_hash' => $integrityHash,
-            'last_password_change' => time(),
-        ],
-        'id = %i',
-        $userId
-    );
-
-    return [
-        'success' => true,
-        'user_seed' => $userSeed,
-        'integrity_hash' => $integrityHash,
-    ];
+    $ascii_key = file_get_contents(SECUREPATH.'/'.SECUREFILE);
+    $key = Key::loadFromAsciiSafeString($ascii_key);
+    return $key->saveToAsciiSafeString();
 }
 
 /**
@@ -2492,8 +2412,8 @@ function attemptTransparentRecovery(array $userInfo, string $newPassword, array 
 
         // Verify key integrity if enabled
         if (isset($SETTINGS['transparent_key_recovery_integrity_check'])
-            && $SETTINGS['transparent_key_recovery_integrity_check'] === '1') {
-            $serverSecret = getServerSecret($SETTINGS);
+            && (int) $SETTINGS['transparent_key_recovery_integrity_check'] === 1) {
+            $serverSecret = getServerSecret();
             if (!verifyKeyIntegrity($userInfo, $serverSecret)) {
                 // Critical security event - integrity check failed
                 logEvents(
@@ -2536,7 +2456,8 @@ function attemptTransparentRecovery(array $userInfo, string $newPassword, array 
             [
                 'private_key' => $newPrivateKeyEncrypted,
                 'private_key_backup' => $newPrivateKeyBackup,
-                'last_password_change' => time(),
+                'last_pw_change' => time(),
+                'special' => 'none',
             ],
             'id = %i',
             $userInfo['id']
@@ -2587,6 +2508,7 @@ function attemptTransparentRecovery(array $userInfo, string $newPassword, array 
  */
 function handleExternalPasswordChange(int $userId, string $newPassword, array $userInfo, array $SETTINGS): bool
 {
+    error_log('Handling external password change for user ID: ' . $userId);
     // Skip if transparent recovery not enabled
     if (!isset($SETTINGS['transparent_key_recovery_enabled'])
         || $SETTINGS['transparent_key_recovery_enabled'] !== '1') {
@@ -2594,10 +2516,11 @@ function handleExternalPasswordChange(int $userId, string $newPassword, array $u
     }
 
     // Check if password was changed recently (< 24h) to avoid duplicate processing
-    if (!empty($userInfo['last_password_change'])) {
-        $timeSinceChange = time() - (int) $userInfo['last_password_change'];
+    if (!empty($userInfo['last_pw_change'])) {
+        $timeSinceChange = time() - (int) $userInfo['last_pw_change'];
+        error_log('Time since last pw change for user ' . $userId . ': ' . $timeSinceChange . ' seconds');
         if ($timeSinceChange < 86400) { // 24 hours
-            return true; // Already processed
+            //return true; // Already processed
         }
     }
 
@@ -2608,7 +2531,7 @@ function handleExternalPasswordChange(int $userId, string $newPassword, array $u
             // Password already works, just update timestamp
             DB::update(
                 prefixTable('users'),
-                ['last_password_change' => time()],
+                ['last_pw_change' => time()],
                 'id = %i',
                 $userId
             );
@@ -2620,7 +2543,7 @@ function handleExternalPasswordChange(int $userId, string $newPassword, array $u
 
     // Attempt transparent recovery
     $result = attemptTransparentRecovery($userInfo, $newPassword, $SETTINGS);
-
+    
     if ($result['success']) {
         return true;
     }
