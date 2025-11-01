@@ -96,6 +96,9 @@ $post_operation = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_
 
 if (isset($post_operation) === true && empty($post_operation) === false && strpos($post_operation, 'step') === false) {
     $total = 0;
+    /**
+     * TAG - 20230604_1
+     */
     if ($post_operation === '20230604_1') {
         // ---->
         // OPERATION - 20230604_1 - generate key for item_key
@@ -160,6 +163,9 @@ if (isset($post_operation) === true && empty($post_operation) === false && strpo
             // if item is personal and user is not owner
 
             installPurgeUnnecessaryKeys(true, 0,$pre);
+    } elseif ($post_operation === 'Transparent_recovery_migration') {
+        // OPERATION for users transparent recovery
+        $finish = transparentRecovery($pre);
     }
     // Return back
     echo '[{"finish":"'.$finish.'" , "next":"", "error":"", "total":"'.$total.'"}]';
@@ -167,7 +173,71 @@ if (isset($post_operation) === true && empty($post_operation) === false && strpo
     mysqli_commit($db_link);
 }
 
+/**
+ * 3.1.5 - Transparent Key Recovery
+ * Generate user_derivation_seed for existing users (will be finalized on first login)
+ * Process in batches of 50 users to avoid timeout
+ */
+function transparentRecovery(string $pre)
+{
+    global $db_link;
+    $batch_size = 50;
+    $offset = 0;
 
+    // Check if transparent_key_recovery_migration log entry exists
+    $result = mysqli_query(
+        $db_link,
+        "SELECT * FROM `" . $pre . "log_system`
+        WHERE label = 'transparent_key_recovery_migration' AND qui = 'system'"
+    );
+
+    if (mysqli_num_rows($result) === 0) {
+        while (true) {
+            $result = mysqli_query(
+                $db_link,
+                "SELECT id FROM `" . $pre . "users`
+                WHERE user_derivation_seed IS NULL
+                AND disabled = 0
+                AND private_key IS NOT NULL
+                AND private_key != 'none'
+                LIMIT " . $offset . ", " . $batch_size
+            );
+
+            if (mysqli_num_rows($result) === 0) {
+                break;
+            }
+
+            while ($row = mysqli_fetch_assoc($result)) {
+                // Generate unique seed for each user
+                $user_seed = bin2hex(openssl_random_pseudo_bytes(32));
+
+                mysqli_query(
+                    $db_link,
+                    "UPDATE `" . $pre . "users`
+                    SET user_derivation_seed = '" . $user_seed . "',
+                        last_pw_change = " . time() . "
+                    WHERE id = " . intval($row['id'])
+                );
+            }
+
+            $offset += $batch_size;
+        }
+
+        // Add log entry for migration completion
+        mysqli_query(
+            $db_link,
+            "INSERT INTO `" . $pre . "log_system`
+            (`date`, `label`, `qui`, `action`)
+            VALUES
+                ('" . time() . "', 'transparent_key_recovery_migration', '1', 'Transparent key recovery migration completed')"
+        );
+    }
+    return 1;
+}
+
+/**
+ * 
+ */
 function populateItemsTable_CreatedAt($pre)
 {
     global $db_link;

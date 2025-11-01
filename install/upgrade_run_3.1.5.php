@@ -3,23 +3,23 @@
  * Teampass - a collaborative passwords manager.
  * ---
  * This file is part of the TeamPass project.
- *
+ * 
  * TeamPass is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by
  * the Free Software Foundation, version 3 of the License.
- *
+ * 
  * TeamPass is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- *
+ * 
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
- *
+ * 
  * Certain components of this file may be under different licenses. For
  * details, see the `licenses` directory or individual file headers.
  * ---
- * @file      upgrade_run_3.2.0_transparent_recovery.php
+ * @file      upgrade_run_3.1.5.php
  * @author    Nils Laumaillé (nils@teampass.net)
  * @copyright 2009-2025 Teampass.net
  * @license   GPL-3.0
@@ -36,7 +36,7 @@ require_once __DIR__.'/../sources/main.functions.php';
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
-$lang = new Language();
+$lang = new Language(); 
 error_reporting(E_ERROR | E_PARSE);
 set_time_limit(600);
 $_SESSION['CPM'] = 1;
@@ -50,6 +50,7 @@ require_once '../includes/language/english.php';
 require_once '../includes/config/include.php';
 require_once '../includes/config/settings.php';
 require_once 'tp.functions.php';
+require_once 'libs/aesctr.php';
 
 // DataBase
 // Test DB connexion
@@ -74,16 +75,20 @@ if ($db_link) {
     exit();
 }
 
+// Load libraries
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
+
+
 //---------------------------------------------------------------------
 
-//--->BEGIN 3.2.0 - Transparent Key Recovery
+//--->BEGIN 3.1.5
 
 // Add new columns to users table
 $columns_to_add = [
     'user_derivation_seed' => "ALTER TABLE `" . $pre . "users` ADD COLUMN `user_derivation_seed` VARCHAR(64) NULL DEFAULT NULL AFTER `private_key`",
     'private_key_backup' => "ALTER TABLE `" . $pre . "users` ADD COLUMN `private_key_backup` TEXT NULL DEFAULT NULL AFTER `user_derivation_seed`",
-    'key_integrity_hash' => "ALTER TABLE `" . $pre . "users` ADD COLUMN `key_integrity_hash` VARCHAR(64) NULL DEFAULT NULL AFTER `private_key_backup`",
-    'last_password_change' => "ALTER TABLE `" . $pre . "users` ADD COLUMN `last_password_change` INT(12) NULL DEFAULT NULL AFTER `key_integrity_hash`"
+    'key_integrity_hash' => "ALTER TABLE `" . $pre . "users` ADD COLUMN `key_integrity_hash` VARCHAR(64) NULL DEFAULT NULL AFTER `private_key_backup`"
 ];
 
 foreach ($columns_to_add as $column => $query) {
@@ -94,10 +99,10 @@ foreach ($columns_to_add as $column => $query) {
     }
 }
 
-// Add index on last_password_change
-$result = mysqli_query($db_link, "SHOW INDEX FROM `" . $pre . "users` WHERE Key_name = 'idx_last_password_change'");
+// Add index on last_pw_change
+$result = mysqli_query($db_link, "SHOW INDEX FROM `" . $pre . "users` WHERE Key_name = 'idx_last_pw_change'");
 if (mysqli_num_rows($result) === 0) {
-    mysqli_query($db_link, "CREATE INDEX idx_last_password_change ON `" . $pre . "users`(last_password_change)");
+    mysqli_query($db_link, "CREATE INDEX idx_last_pw_change ON `" . $pre . "users`(last_pw_change)");
 }
 
 // Add new settings for transparent recovery
@@ -118,51 +123,14 @@ foreach ($settings as $setting) {
     }
 }
 
-// Generate user_derivation_seed for existing users (will be finalized on first login)
-// Process in batches of 50 users to avoid timeout
-$batch_size = 50;
-$offset = 0;
+//---<END 3.1.5
 
-while (true) {
-    $result = mysqli_query(
-        $db_link,
-        "SELECT id FROM `" . $pre . "users`
-         WHERE user_derivation_seed IS NULL
-         AND disabled = 0
-         AND private_key IS NOT NULL
-         AND private_key != 'none'
-         LIMIT " . $offset . ", " . $batch_size
-    );
 
-    if (mysqli_num_rows($result) === 0) {
-        break;
-    }
+// Close connection
+mysqli_close($db_link);
 
-    while ($row = mysqli_fetch_assoc($result)) {
-        // Generate unique seed for each user
-        $user_seed = bin2hex(openssl_random_pseudo_bytes(32));
-
-        mysqli_query(
-            $db_link,
-            "UPDATE `" . $pre . "users`
-             SET user_derivation_seed = '" . $user_seed . "',
-                 last_password_change = " . time() . "
-             WHERE id = " . intval($row['id'])
-        );
-    }
-
-    $offset += $batch_size;
-}
-
-// Add log entry for migration completion
-mysqli_query(
-    $db_link,
-    "INSERT INTO `" . $pre . "log_system`
-     (`date`, `label`, `qui`, `action`)
-     VALUES
-     ('" . time() . "', 'system', 'system', 'Transparent key recovery migration completed')"
-);
-
-//---<END 3.2.0
-
+// Finished
 echo '[{"finish":"1" , "next":"", "error":""}]';
+
+
+//---< FUNCTIONS
