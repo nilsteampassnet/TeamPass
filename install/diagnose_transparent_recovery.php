@@ -19,7 +19,7 @@ echo "\n=== TRANSPARENT RECOVERY DIAGNOSTIC ===\n\n";
 
 // 1. Check if columns exist
 echo "1. Checking database schema...\n";
-$columns = ['user_derivation_seed', 'private_key_backup', 'key_integrity_hash', 'last_password_change'];
+$columns = ['user_derivation_seed', 'private_key_backup', 'key_integrity_hash', 'last_pw_change'];
 $missingColumns = [];
 
 foreach ($columns as $column) {
@@ -121,7 +121,7 @@ $sampleUser = DB::queryFirstRow(
      user_derivation_seed,
      CASE WHEN private_key_backup IS NULL THEN 'NULL' ELSE 'SET' END AS backup_status,
      CASE WHEN key_integrity_hash IS NULL THEN 'NULL' ELSE 'SET' END AS integrity_status,
-     last_password_change
+     last_pw_change
      FROM " . prefixTable('users') . "
      WHERE disabled = 0
      AND private_key IS NOT NULL
@@ -135,22 +135,22 @@ if ($sampleUser) {
     echo "   Seed: " . ($sampleUser['user_derivation_seed'] ? 'SET (' . strlen($sampleUser['user_derivation_seed']) . ' chars)' : 'NULL') . "\n";
     echo "   Backup: {$sampleUser['backup_status']}\n";
     echo "   Integrity: {$sampleUser['integrity_status']}\n";
-    echo "   Last password change: " . ($sampleUser['last_password_change'] ? date('Y-m-d H:i:s', $sampleUser['last_password_change']) : 'NULL') . "\n";
+    echo "   Last password change: " . ($sampleUser['last_pw_change'] ? date('Y-m-d H:i:s', $sampleUser['last_pw_change']) : 'NULL') . "\n";
 }
 
 // 6. Check recent events
 echo "\n6. Recent transparent recovery events...\n";
 $events = DB::query(
-    "SELECT date, action, label
+    "SELECT date, type, label
      FROM " . prefixTable('log_system') . "
-     WHERE action IN ('auto_reencryption_success', 'auto_reencryption_failed', 'auto_reencryption_critical_failure')
+     WHERE type IN ('auto_reencryption_success', 'auto_reencryption_failed', 'auto_reencryption_critical_failure')
      ORDER BY date DESC
      LIMIT 5"
 );
 
 if (count($events) > 0) {
     foreach ($events as $event) {
-        echo "   " . date('Y-m-d H:i:s', $event['date']) . " - {$event['action']} - {$event['label']}\n";
+        echo "   " . date('Y-m-d H:i:s', $event['date']) . " - {$event['type']} - {$event['label']}\n";
     }
 } else {
     echo "   No events yet\n";

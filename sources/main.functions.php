@@ -2518,11 +2518,11 @@ function handleExternalPasswordChange(int $userId, string $newPassword, array $u
         return false;
     }
 
-    // Check if password was changed recently (< 24h) to avoid duplicate processing
+    // Check if password was changed recently (< 30s) to avoid duplicate processing
     if (!empty($userInfo['last_pw_change'])) {
         $timeSinceChange = time() - (int) $userInfo['last_pw_change'];
-        if ($timeSinceChange < 86400) { // 24 hours
-            //return true; // Already processed
+        if ($timeSinceChange < 30) { // 30 seconds
+            return true; // Already processed
         }
     }
 

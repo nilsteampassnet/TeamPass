@@ -936,33 +936,6 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                 <!-- /.USER PROVIDES TEMPORARY CODE -->
 
 
-                <!-- ENCRYPTION KEYS GENERATION -->
-                <div class="card card-warning m-3 mt-3 hidden" id="dialog-encryption-keys">
-                    <div class="card-header">
-                        <h3 class="card-title">
-                            <i class="fa-solid fa-bullhorn mr-2"></i>
-                            <?php echo $lang->get('your_attention_is_required'); ?>
-                        </h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-sm-12 col-md-12">
-                                <div class="mb-2 alert alert-info" id="warning-text-reencryption">
-                                    <i class="icon fa-solid fa-info mr-2"></i>
-                                    <?php echo $lang->get('objects_encryption_explanation'); ?>
-                                </div>
-                            </div>
-                        </div>
-                        <input type="hidden" id="sharekeys_reencryption_target_user" value="">
-                    </div>
-                    <div class="card-footer">
-                        <button class="btn btn-primary" id="button_do_sharekeys_reencryption"><?php echo $lang->get('launch'); ?></button>
-                        <button class="btn btn-default float-right" id="button_close_sharekeys_reencryption"><?php echo $lang->get('close'); ?></button>
-                    </div>
-                </div>
-                <!-- /.ENCRYPTION KEYS GENERATION -->
-
-
                 <!-- ENCRYPTION KEYS GENERATION FOR LDAP NEW USER -->
                 <div class="card card-warning m-3 mt-3 hidden" id="dialog-ldap-user-build-keys-database">
                     <div class="card-header">

@@ -733,7 +733,8 @@ class DatabaseInstaller
             `aes_iv` TEXT NULL DEFAULT NULL,
             `split_view_mode` tinyint(1) NOT null DEFAULT '0',
             PRIMARY KEY (`id`),
-            UNIQUE KEY `login` (`login`)
+            UNIQUE KEY `login` (`login`),
+            KEY `idx_last_pw_change` (`last_pw_change`)
             ) CHARSET=utf8;"
         );
 

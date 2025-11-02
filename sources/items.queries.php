@@ -2941,7 +2941,7 @@ switch ($inputData['type']) {
                 logItems(
                     $SETTINGS,
                     (int) $inputData['id'],
-                    $dataItem['label'],
+                    $dataItem['label'] ?? '',
                     (int) $session->get('user-id'),
                     'at_shown',
                     $session->get('user-login')

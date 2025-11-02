@@ -499,7 +499,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         // User signature keys
         $returnKeys = prepareUserEncryptionKeys($userInfo, $passwordClear, $SETTINGS);
         $session->set('user-public_key', $returnKeys['public_key']);
-
+        
         // Did user has his AD password changed
         if (null !== $session->get('user-private_key_recovered') && $session->get('user-private_key_recovered') === true) {
             $session->set('user-private_key', $session->get('user-private_key'));
@@ -1485,8 +1485,8 @@ function externalAdCreateUser(
     array $SETTINGS
 ): array
 {
-    // Generate user keys pair
-    $userKeys = generateUserKeys($passwordClear);
+    // Generate user keys pair with transparent recovery support
+    $userKeys = generateUserKeys($passwordClear, $SETTINGS);
 
     // Create password hash
     $passwordManager = new PasswordManager();
@@ -1517,41 +1517,49 @@ function externalAdCreateUser(
         $userGroups = $SETTINGS['oauth_selfregistered_user_belongs_to_role'];
     }
 
+    // Prepare user data
+    $userData = [
+        'login' => (string) $login,
+        'pw' => (string) $hashedPassword,
+        'email' => (string) $userEmail,
+        'name' => (string) $userName,
+        'lastname' => (string) $userLastname,
+        'admin' => '0',
+        'gestionnaire' => '0',
+        'can_manage_all_users' => '0',
+        'personal_folder' => $SETTINGS['enable_pf_feature'] === '1' ? '1' : '0',
+        'groupes_interdits' => '',
+        'groupes_visibles' => '',
+        'fonction_id' => $userGroups,
+        'last_pw_change' => (int) time(),
+        'user_language' => (string) $SETTINGS['default_language'],
+        'encrypted_psk' => '',
+        'isAdministratedByRole' => $authType === 'ldap' ?
+            (isset($SETTINGS['ldap_new_user_is_administrated_by']) === true && empty($SETTINGS['ldap_new_user_is_administrated_by']) === false ? $SETTINGS['ldap_new_user_is_administrated_by'] : 0)
+            : (
+                $authType === 'oauth2' ?
+                (isset($SETTINGS['oauth_new_user_is_administrated_by']) === true && empty($SETTINGS['oauth_new_user_is_administrated_by']) === false ? $SETTINGS['oauth_new_user_is_administrated_by'] : 0)
+                : 0
+            ),
+        'public_key' => $userKeys['public_key'],
+        'private_key' => $userKeys['private_key'],
+        'special' => 'none',
+        'auth_type' => $authType,
+        'otp_provided' => '1',
+        'is_ready_for_usage' => '0',
+        'created_at' => time(),
+    ];
+
+    // Add transparent recovery fields if available
+    if (isset($userKeys['user_seed'])) {
+        $userData['user_derivation_seed'] = $userKeys['user_seed'];
+        $userData['private_key_backup'] = $userKeys['private_key_backup'];
+        $userData['key_integrity_hash'] = $userKeys['key_integrity_hash'];
+        $userData['last_pw_change'] = time();
+    }
+
     // Insert user in DB
-    DB::insert(
-        prefixTable('users'),
-        [
-            'login' => (string) $login,
-            'pw' => (string) $hashedPassword,
-            'email' => (string) $userEmail,
-            'name' => (string) $userName,
-            'lastname' => (string) $userLastname,
-            'admin' => '0',
-            'gestionnaire' => '0',
-            'can_manage_all_users' => '0',
-            'personal_folder' => $SETTINGS['enable_pf_feature'] === '1' ? '1' : '0',
-            'groupes_interdits' => '',
-            'groupes_visibles' => '',
-            'fonction_id' => $userGroups,
-            'last_pw_change' => (int) time(),
-            'user_language' => (string) $SETTINGS['default_language'],
-            'encrypted_psk' => '',
-            'isAdministratedByRole' => $authType === 'ldap' ?
-                (isset($SETTINGS['ldap_new_user_is_administrated_by']) === true && empty($SETTINGS['ldap_new_user_is_administrated_by']) === false ? $SETTINGS['ldap_new_user_is_administrated_by'] : 0)
-                : (
-                    $authType === 'oauth2' ?
-                    (isset($SETTINGS['oauth_new_user_is_administrated_by']) === true && empty($SETTINGS['oauth_new_user_is_administrated_by']) === false ? $SETTINGS['oauth_new_user_is_administrated_by'] : 0)
-                    : 0
-                ),
-            'public_key' => $userKeys['public_key'],
-            'private_key' => $userKeys['private_key'],
-            'special' => 'none',
-            'auth_type' => $authType,
-            'otp_provided' => '1',
-            'is_ready_for_usage' => '0',
-            'created_at' => time(),
-        ]
-    );
+    DB::insert(prefixTable('users'), $userData);
     $newUserId = DB::insertId();
 
     // Create the API key
@@ -2382,11 +2390,21 @@ function shouldUserAuthWithOauth2(
         if ((bool) $userInfo['oauth2_login_ongoing'] === true) {
             // Case where user exists in Teampass password login type
             if ((string) $userInfo['auth_type'] === 'ldap' || (string) $userInfo['auth_type'] === 'local') {
+                // Add transparent recovery data if available
+                /*if (isset($userKeys['user_seed'])) {
+                    // Recrypt user private key with oauth2
+                    recryptUserPrivateKeyWithOauth2(
+                        (int) $userInfo['id'],
+                        $userKeys['user_seed'],
+                        $userKeys['public_key']
+                    );
+                }*/
+                    error_log('Switch user ' . $username . ' auth_type to oauth2');
                 // Update user in database:
                 DB::update(
                     prefixTable('users'),
                     array(
-                        'special' => 'recrypt-private-key',
+                        //'special' => 'recrypt-private-key',
                         'auth_type' => 'oauth2',
                     ),
                     'id = %i',
@@ -2568,6 +2586,17 @@ function checkOauth2User(
                 'id = %i',
                 $userInfo['id']
             );
+
+            // Transparent recovery: handle external OAuth2 password change
+            if (isset($SETTINGS['transparent_key_recovery_enabled'])
+                && (int) $SETTINGS['transparent_key_recovery_enabled'] === 1) {
+                handleExternalPasswordChange(
+                    (int) $userInfo['id'],
+                    $passwordClear,
+                    $userInfo,
+                    $SETTINGS
+                );
+            }
         }
 
         return [
@@ -2649,13 +2678,13 @@ function createOauth2User(
             }
         }
         // Rebuild indexes
-        $userInfo['groups'] = array_values($userInfo['groups']);
+        $userInfo['groups'] = array_values($userInfo['groups'] ?? []);
         
         // Create Oauth2 user if not exists and tasks enabled
         $ret = externalAdCreateUser(
             $username,
             $passwordClear,
-            $userInfo['mail'],
+            $userInfo['mail'] ?? '',
             is_null($userInfo['givenname']) ? (is_null($userInfo['givenName']) ? '' : $userInfo['givenName']) : $userInfo['givenname'],
             is_null($userInfo['surname']) ? '' : $userInfo['surname'],
             'oauth2',
