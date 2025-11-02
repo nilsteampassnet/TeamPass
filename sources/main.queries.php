@@ -207,7 +207,7 @@ function mainQuery(array $SETTINGS)
  * @param array $SETTINGS
  * @return string
  */
-function passwordHandler(string $post_type, /*php8 array|null|string*/ $dataReceived, array $SETTINGS): string
+function passwordHandler(string $post_type, array|null|string $dataReceived, array $SETTINGS): string
 {
     $session = SessionManager::getSession();
     $lang = new Language($session->get('user-language') ?? 'english');
@@ -269,7 +269,7 @@ function passwordHandler(string $post_type, /*php8 array|null|string*/ $dataRece
                     (int) $session->get('user-id')
                 );
             }
-
+            
             // Users passwords are html escaped
             $userPassword = filter_var($dataReceived['current_password'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
@@ -279,9 +279,8 @@ function passwordHandler(string $post_type, /*php8 array|null|string*/ $dataRece
                 $session->get('user-id')
             )['pw'];
 
-            $passwordManager = new PasswordManager();
-
             // Verify provided user password
+            $passwordManager = new PasswordManager();
             if (!$passwordManager->verifyPassword($userHash, $userPassword)) {
                 return prepareExchangedData(
                     array(
@@ -3297,7 +3296,7 @@ function changeUserLDAPAuthenticationPassword(
     // Load user's language
     $lang = new Language($session->get('user-language') ?? 'english');
     
-    if (isUserIdValid($post_user_id) === true) {
+    if ((bool) isUserIdValid($post_user_id) === true) {
         // Get user info
         $userData = DB::queryFirstRow(
             'SELECT u.auth_type, u.login, u.private_key, u.special
@@ -3307,8 +3306,8 @@ function changeUserLDAPAuthenticationPassword(
         );
 
         if (DB::count() > 0) {
-            // 
-            if ($userData['auth_type'] === 'ldap' && empty($userData['private_key']) === false && $userData['special'] === 'encrypt_personal_items') {
+            // User found
+            if ($userData['auth_type'] === 'ldap' && empty($userData['private_key']) === false && $userData['special'] === 'recrypt-private-key') {
                 // Now check if current password is correct (only if not ldap)
                 if ($userData['special'] === 'auth-pwd-change') {
                     // As it is a change for an LDAP user
@@ -3346,7 +3345,7 @@ function changeUserLDAPAuthenticationPassword(
                 // For this, just check if it is possible to decrypt the privatekey
                 // And try to decrypt one existing key
                 $privateKey = decryptPrivateKey($post_previous_pwd, $userData['private_key']);
-
+error_log(">".$post_previous_pwd);
                 if (empty($privateKey) === true) {
                     return prepareExchangedData(
                         array(

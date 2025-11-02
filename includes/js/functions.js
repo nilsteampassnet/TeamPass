@@ -160,12 +160,12 @@ function jsonErrorHdl(message)
  * @param  {[type]} functionName  [description]
  * @return {[type]} purify [description]
  */
-function prepareExchangedData(data, type, key, fileName = '', functionName = '', purify = true)
+function prepareExchangedData(data, type, key, fileName = '', functionName = '', purify = true, bStringify = false)
 {
     if (type === 'decode') {
         if (parseInt($('#encryptClientServerStatus').val()) === 0) {
             try {
-                return purifyData($.parseJSON(data));
+                return purifyData($.parseJSON(data), false, false, false, bStringify);
             }
             catch (e) {
                 return jsonErrorHdl(data);
@@ -173,7 +173,7 @@ function prepareExchangedData(data, type, key, fileName = '', functionName = '',
         } else {
             try {
                 let encryption = new Encryption();
-                return purifyData(JSON.parse(encryption.decrypt(data, key)));
+                return purifyData(JSON.parse(encryption.decrypt(data, key)), false, false, false, bStringify);
             }
             catch (e) {
                 return jsonErrorHdl('<b>Next error occurred</b><div>' + e + '</div>'
@@ -183,10 +183,10 @@ function prepareExchangedData(data, type, key, fileName = '', functionName = '',
         }
     } else if (type === 'encode') {
         if (parseInt($('#encryptClientServerStatus').val()) === 0) {
-            return purify === true ? purifyData(data) : data;
+            return purify === true ? purifyData(data, false, false, false, bStringify) : data;
         } else {
             let encryption = new Encryption();
-            return purify === true ? purifyData(encryption.encrypt(data, key)) : encryption.encrypt(data, key);
+            return purify === true ? purifyData(encryption.encrypt(data, key), false, false, false, bStringify) : encryption.encrypt(data, key);
         }
     } else {
         return false;
@@ -435,10 +435,11 @@ function simplePurifier(
  * Can exclude some fields from purification
  */
 const htmlFields = ['description', 'desc', 'html'];
-const ignoredFields = ['pw'];
-function purifyData(obj, bHtml = false, bSvg = false, bSvgFilters = false) {
+const ignoredFields = ['pw', 'previous_password', 'current_password', 'old_password', 'new_password', 'otp'];
+function purifyData(obj, bHtml = false, bSvg = false, bSvgFilters = false, bStringify = false) {
     if (Array.isArray(obj)) {
-        return obj.map(item => purifyData(item, bHtml, bSvg, bSvgFilters));
+        const purifiedObject = obj.map(item => purifyData(item, bHtml, bSvg, bSvgFilters, false));
+        return (bStringify === true) ? JSON.stringify(purifiedObject) : purifiedObject;
     } else if (typeof obj === 'object' && obj !== null) {
         let purifiedObject = {};
         for (let key in obj) {
@@ -451,12 +452,14 @@ function purifyData(obj, bHtml = false, bSvg = false, bSvgFilters = false) {
                         obj[key],
                         forceHtml ? true : bHtml,
                         bSvg,
-                        bSvgFilters
+                        bSvgFilters,
+                        false
                     );
                 }
             }
         }
-        return purifiedObject;
+        const result = (bStringify === true) ? JSON.stringify(purifiedObject) : purifiedObject;
+        return result;
     } else if (typeof obj === 'string') {
         return simplePurifier(obj, bHtml, bSvg, bSvgFilters);
     } else {
