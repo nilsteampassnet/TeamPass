@@ -112,10 +112,10 @@ includes/.externals/tp.config.php 361da70add00e1069f22191dbb07503c
 includes/avatars/.htaccess df51d5d900c2228ec1349362838401e7
 includes/avatars/empty_file.txt d41d8cd98f00b204e9800998ecf8427e
 includes/config/.htaccess 51622ead2639d535e7a955a8a7a10613
-includes/config/include.php de54488d790bcc045e52f1779b7d2468
+includes/config/include.php 3fba0236e26bfbfcceff473a84fd31b4
 includes/config/index.html 5f1f28d1adcb7eac03989f0ca3e7068e
 includes/config/settings.sample.php c966188ae4f3174b907fc467c96ac036
-includes/core/load.js.php 24b39a9a8b688004d82ce6e3f5578474
+includes/core/load.js.php 9b884e1303702bda73cf9736074588e4
 includes/core/login.js.php 351dcf1deaea3ac50920d6515c44bf62
 includes/core/login.oauth2.php d2da59d5963870e975344449c1bc4328
 includes/core/login.php bb817c345ba6de38aa1c9c250d8e3da9
@@ -172,7 +172,7 @@ includes/images/teampass-pwa.png 6974640cf785e5c323e5a3f3e20c4548
 includes/images/yubico.png 13c2bd79082e0590fc947ccf8e532905
 includes/index.html 5f1f28d1adcb7eac03989f0ca3e7068e
 includes/js/CreateRandomString.js 169408165b8be967ba25505524d1f676
-includes/js/functions.js b174482aa8f1df4be18a7c305804e4c1
+includes/js/functions.js 9daa3f1bd0698091d76561d4e7d49d84
 includes/js/secure-clipboard-cleaner.js 098bc87fbbc3e0b8626306dcd8a10273
 includes/language/arabic.php fbead6ad419ab93ec4af5fe46316dd46
 includes/language/bulgarian.php d84887551742301c98e81da2b5028df4
@@ -404,8 +404,8 @@ pages/export.js.php 0ab7cabbe675eb9491ddb3b532b27aba
 pages/export.php 31bf9614d6135ad9fd9db3ba3228ac06
 pages/favorites.js.php 20bb5e87ecd099cd9f1d465abb19f175
 pages/favourites.php 022d8a3f61713acc3d43cf9c2045709d
-pages/fields.js.php 66c73ccf80a8c6629aaeb8316ba964ce
-pages/fields.php b2b9a5e2dcc93328e1ce0880ae29f859
+pages/fields.js.php 4b98fe5a8cc9c2adaa88bceff523e77b
+pages/fields.php e07454000628eb17229ec5f734a7eea0
 pages/folders.js.php e0cdd305f848fe97a08ad8e9abcadb26
 pages/folders.php 522b29ad368b3889c73c0fbf6ea6135d
 pages/import.js.php ae1039a857d7f41ada3b7789bd6ba9ba
@@ -3705,7 +3705,7 @@ sources/items.queries.php 419e5808549702f50f151ce990f9e293
 sources/ldap.queries.php 8347f492f841663828410a9a72e829ac
 sources/logs.datatables.php 762156d1ffdbe9970d232e8a2c9764ed
 sources/main.functions.php f0cb75cc7c1bc72bc5765d9ed0776b29
-sources/main.queries.php 7f76b0601f313065086b3d78b513b53a
+sources/main.queries.php 521d326d08723b66b00be4da55d24594
 sources/oauth.php edd9fca8b228780548f927c291670f53
 sources/roles.queries.php 812d89d05969b25236a3a12124ff63c9
 sources/scheduler.php f2b3bd68de593c6e8575e4ebd9a53652
