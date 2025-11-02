@@ -295,7 +295,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             editionOngoing = button.data('edit');
 
         if ($('#form-field-label').val() && $('#form-field-label').val() !== '' &&
-            $('#form-field-type').val() && typ$('#form-field-type').val() !== '' &&
+            $('#form-field-type').val() && $('#form-field-type').val() !== '' &&
             $('#form-field-roles').val() && $('#form-field-roles').val() !== null && $('#form-field-roles').val().length > 0 &&
             $('#form-field-order').val() && $('#form-field-order').val() !== ''
         ) {
