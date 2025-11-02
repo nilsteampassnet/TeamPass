@@ -43,7 +43,7 @@ New columns added to `teampass_users`:
 | `user_derivation_seed` | VARCHAR(64) | Unique random seed (256 bits) |
 | `private_key_backup` | TEXT | Private key encrypted with derived key |
 | `key_integrity_hash` | VARCHAR(64) | HMAC integrity check |
-| `last_password_change` | INT(12) | Timestamp of last password change |
+| `last_pw_change` | INT(12) | Timestamp of last password change |
 
 ### Security Features
 

@@ -1955,6 +1955,7 @@ function changePrivateKeyEncryptionPassword(
             $post_user_id
         );
         if (DB::count() > 0 && empty($userData['private_key']) === false) {
+            error_log("post_action_type: ".$post_action_type." -- ".decryptPrivateKey($post_new_code, $userData['private_key'])." -- ".decryptPrivateKey($post_current_code, $userData['private_key']));
             if ($post_action_type === 'encrypt_privkey_with_user_password') {
                 // Here the user has his private key encrypted with an OTC.
                 // We need to encrypt it with his real password
