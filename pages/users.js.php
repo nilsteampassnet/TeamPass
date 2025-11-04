@@ -1943,9 +1943,14 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             return;
         }
         
+        var originalIcon = btn.find('i').attr('class');
+        btn.find('i').attr('class', 'fa-solid fa-circle-notch fa-spin');
+        btn.prop('disabled', true);
+
         const data_to_send = {
             'user_id': userId,
         }
+
         
         $.post(
             'sources/users.queries.php',
@@ -1958,23 +1963,36 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
                 
                 if (data.error) {
+                    // Restore button
+                    btn.find('i').attr('class', originalIcon);
+                    btn.prop('disabled', false);
+
                     toastr.error(
                         data.message,
                         '', {
-                            timeOut: 1000
+                            timeOut: 5000
                         }
                     );
-                    btn.prop('disabled', false);
                 } else {
                     toastr.success(
                         data.message,
                         '', {
-                            timeOut: 1000
+                            timeOut: 2000
                         }
                     );
+                    
+                    // Remove the line
                     btn.closest('tr').fadeOut(300, function() {
-                        $(this).remove();
-                    });
+                    $(this).remove();
+                    
+                    // Check if some lines remain
+                    var remainingRows = $('#table-deleted-users tbody tr:visible').length;
+                    if (remainingRows === 0) {
+                        $('#table-deleted-users tbody').html(
+                            '<tr><td colspan="5" class="text-center"><?php echo $lang->get("no_deleted_users"); ?></td></tr>'
+                        );
+                    }
+                });
                 }
             }
         );
