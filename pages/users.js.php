@@ -661,10 +661,14 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             $('.only-admin').addClass('hidden');
         }
 
+        var action = $(this).data('action');        
+        // Hide all
+        $('.user-content').addClass('hidden');    
+        // Show only the corresponding content
+        $('.user-content[data-content="' + action + '"]').removeClass('hidden');
+
         if ($(this).data('action') === 'new') {
             // ADD NEW USER
-            $('#row-list').addClass('hidden');
-            $('#row-form, #group-create-special-folder, .not-for-admin').removeClass('hidden');
 
             // HIDE FROM FORM ELEMENTS ONLY FOR ADMIN
             if (parseInt(store.get('teampassUser').user_admin) === 1) {
@@ -718,8 +722,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
 
             // EDIT EXISTING USER
-            $('#row-list, #group-create-special-folder, #group-delete-user').addClass('hidden');
-            $('#row-form').removeClass('hidden');
             $('.form-check-input').iCheck('enable');
 
             // Personal folder
@@ -1067,8 +1069,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         } else if ($(this).data('action') === 'cancel') {
             $('.clear-me').val('');
             $('.select2').val('').change();
-            $('.extra-form, #row-folders').addClass('hidden');
-            $('#row-list').removeClass('hidden');
+            $('.user-content').addClass('hidden');
+            $('#users-list').removeClass('hidden');
 
             // Prepare checks
             $('.form-check-input').iCheck('uncheck');
@@ -1225,8 +1227,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             // ---
 
         } else if ($(this).data('action') === 'logs') {
-            $('#row-list, #row-folders').addClass('hidden');
-            $('#row-logs').removeClass('hidden');
             $('#row-logs-title').text(
                 $(this).data('fullname')
             )
@@ -1500,9 +1500,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             // --- END
             //
         } else if ($(this).data('action') === 'propagate') {
-            $('#row-list, #row-folders').addClass('hidden');
-            $('#row-propagate').removeClass('hidden');
-
             // Show spinner
             toastr.remove();
             toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
@@ -1641,25 +1638,19 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             // --- END
             //
         } else if ($(this).data('action') === 'ldap-sync') {
-            $('.extra-form, .form').addClass('hidden');
-            $('#row-ldap').removeClass('hidden');
-
             refreshListUsersLDAP();
 
             //
             // --- END
             //
         } else if ($(this).data('action') === 'oauth2-sync') {
-            $('.extra-form, .form').addClass('hidden');
-            $('#row-oauth2').removeClass('hidden');
-
             refreshListUsersOAuth2();
 
             //
             // --- END
             //
         } else if ($(this).data('action') === 'close') {
-            $('.extra-form, .form').addClass('hidden');
+            $('.user-content').addClass('hidden');
             $('#users-list').removeClass('hidden');
 
             //
@@ -1679,8 +1670,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             // --- END
             //
         } else if ($(this).data('action') === 'close-new-role') {
-            $('#ldap-users-table').removeClass('hidden');
-            $('#ldap-new-role').addClass('hidden');
+            $('.user-content').addClass('hidden');
+            $('#users-list').removeClass('hidden');
 
             //
             // --- END
@@ -1912,14 +1903,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             // --- END
             //
         } else if ($(this).data('action') === 'deleted-users') {
-            if ($('#deleted-users-section').hasClass("hidden") === false) {
-                $('.extra-form, .form, #deleted-users-section').addClass('hidden');
-                $('#users-list').removeClass('hidden');
-                return false;
-            }
-            $('.extra-form, .form').addClass('hidden');
-            $('#deleted-users-section').removeClass('hidden');
-
             refreshListDeletedUsers();
 
             /**/
@@ -2282,7 +2265,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     });
 
     $(document).on('click', '.btn-close-deleted-users', function() {
-        $('.extra-form, .form, #deleted-users-section').addClass('hidden');
+        $('.user-content').addClass('hidden');
         $('#users-list').removeClass('hidden');
         $('html, body').animate({scrollTop: 0}, 'slow');
     });

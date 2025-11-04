@@ -176,7 +176,7 @@ foreach ($treeDesc as $t) {
                 </div>
 
                 <!-- /.card-header -->
-                <div class="card-body form" id="users-list">
+                <div class="card-body form user-content" id="users-list" data-content="refresh">
                     <label><input type="checkbox" id="warnings_display" class="tp-action pointer" data-action="refresh"><span class="ml-2 pointer"><?php echo $lang->get('display_warning_icons');?></span></label>
                     <table id="table-users" class="table table-striped nowrap table-responsive-sm">
                         <thead>
@@ -203,7 +203,7 @@ foreach ($treeDesc as $t) {
 
 
     <!-- USER LDAP SYNCHRONIZATION -->
-    <div class="row hidden extra-form" id="row-ldap">
+    <div class="row hidden extra-form user-content" id="row-ldap" data-content="ldap-sync">
         <div class="col-12">
             <div class="card card-primary">
                 <div class="card-header">
@@ -280,7 +280,7 @@ foreach ($treeDesc as $t) {
 
 
     <!-- USER OAUTH2 SYNCHRONIZATION -->
-    <div class="row hidden extra-form" id="row-oauth2">
+    <div class="row hidden extra-form user-content" id="row-oauth2" data-content="oauth2-sync">
         <div class="col-12">
             <div class="card card-primary">
                 <div class="card-header">
@@ -356,7 +356,7 @@ foreach ($treeDesc as $t) {
     </div>
 
     <!-- USER FORM -->
-    <div class="row hidden extra-form" id="row-form">
+    <div class="row hidden extra-form user-content" id="row-form" data-content="new">
         <div class="col-12">
             <div class="card card-primary">
                 <div class="card-header">
@@ -461,7 +461,7 @@ foreach ($treeDesc as $t) {
     </div>
 
     <!-- USER LOGS -->
-    <div class="row hidden extra-form" id="row-logs">
+    <div class="row hidden extra-form user-content" id="row-logs" data-content="logs">
         <div class="col-12">
             <div class="card card-primary">
                 <div class="card-header">
@@ -493,7 +493,7 @@ foreach ($treeDesc as $t) {
     </div>
 
     <!-- USER VISIBLE FOLDERS -->
-    <div class="row hidden extra-form" id="row-folders">
+    <div class="row hidden extra-form user-content" id="row-folders" data-content="visible-folders">
         <div class="col-12">
             <div class="card card-primary">
                 <div class="card-header">
@@ -514,7 +514,7 @@ foreach ($treeDesc as $t) {
     </div>
 
     <!-- PROPAGATE USER RIGHTS -->
-    <div class="row hidden extra-form" id="row-propagate">
+    <div class="row hidden extra-form user-content" id="row-propagate" data-content="propagate">
         <div class="col-12">
             <div class="card card-primary">
                 <div class="card-header">
@@ -576,7 +576,7 @@ foreach ($treeDesc as $t) {
     </div>
 
 
-    <div class="card mt-4 hidden" id="deleted-users-section">
+    <div class="card mt-4 extra-form user-content hidden" id="deleted-users-section" data-content="deleted-users">
         <div class="card-header">
             <h5><?php echo $lang->get('deleted_users'); ?></h5>
         </div>
