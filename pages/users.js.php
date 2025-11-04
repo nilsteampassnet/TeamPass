@@ -1912,50 +1912,15 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             // --- END
             //
         } else if ($(this).data('action') === 'deleted-users') {
+            if ($('#deleted-users-section').hasClass("hidden") === false) {
+                $('.extra-form, .form, #deleted-users-section').addClass('hidden');
+                $('#users-list').removeClass('hidden');
+                return false;
+            }
             $('.extra-form, .form').addClass('hidden');
             $('#deleted-users-section').removeClass('hidden');
 
-            var list = $('#deleted-users-list');
-                        
-            $.post(
-                'sources/users.queries.php',
-                {
-                    type: 'list_deleted_users',
-                    key: '<?php echo $session->get('key'); ?>'
-                },
-                function(data) {
-                    data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
-                    
-                    if (data.error) {
-                        toastr.error(data.message);
-                        return;
-                    }
-                    
-                    var tbody = $('#table-deleted-users tbody');
-                    tbody.empty();
-                    
-                    if (data.result.users.length === 0) {
-                        tbody.append('<tr><td colspan="5" class="text-center"><?php echo $lang->get("no_deleted_users"); ?></td></tr>');
-                    } else {
-                        $.each(data.result.users, function(i, user) {
-                            var row = '<tr>' +
-                                '<td>' + user.login + '</td>' +
-                                '<td>' + (user.email || '-') + '</td>' +
-                                '<td>' + new Date(user.deleted_at * 1000).toLocaleDateString() + '</td>' +
-                                '<td>' + user.days_since_deletion + ' <?php echo $lang->get("days"); ?></td>' +
-                                '<td>' +
-                                    '<button class="btn btn-sm btn-danger btn-purge-user" data-user-id="' + user.id + '">' +
-                                        '<i class="fas fa-trash"></i> <?php echo $lang->get("purge"); ?>' +
-                                    '</button>' +
-                                '</td>' +
-                            '</tr>';
-                            tbody.append(row);
-                        });
-                    }
-                    
-                    list.slideDown();
-                }
-            );
+            refreshListDeletedUsers();
 
             /**/
             //
@@ -1978,11 +1943,15 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             return;
         }
         
+        const data_to_send = {
+            'user_id': userId,
+        }
+        
         $.post(
             'sources/users.queries.php',
             {
                 type: 'purge_user',
-                user_id: userId,
+                data : prepareExchangedData(JSON.stringify(data_to_send), 'encode', '<?php echo $session->get('key'); ?>'),
                 key: '<?php echo $session->get('key'); ?>'
             },
             function(data) {
@@ -2011,7 +1980,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         );
     });
     
-    // Purge old users
+    // Purge old users in mass
     $('#btn-purge-old-users').on('click', function() {
         var btn = $(this);
         var retention = btn.data('retention');
@@ -2020,35 +1989,284 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             return;
         }
         
-        btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> <?php echo $lang->get("processing"); ?>');
+        btn.prop('disabled', true);
         
+        const data_to_send = {
+            'days_retention': retention,
+        }
+        
+        // Step 1 : Get list of users to purge
         $.post(
             'sources/users.queries.php',
             {
-                type: 'purge_old_users',
-                days_retention: retention,
+                type: 'get_purgeable_users',
+                data : prepareExchangedData(JSON.stringify(data_to_send), 'encode', '<?php echo $session->get('key'); ?>'),
                 key: '<?php echo $session->get('key'); ?>'
             },
             function(data) {
                 data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
-                console.log(data)
+                console.log('Users to purge:', data);
+                
+                if (data.error) {
+                    toastr.remove();
+                    toastr.error(data.message);
+                    btn.prop('disabled', false);
+                    return;
+                }
+                
+                if (data.user_ids.length === 0) {
+                    toastr.remove();
+                    toastr.info('<?php echo $lang->get('no_users_to_purge'); ?>');
+                    btn.prop('disabled', false);
+                    return;
+                }
+
+                // Step 2 : Process in batches of 2
+                processPurgeBatch(data.user_ids, retention, btn);
+            }
+        ).fail(function() {
+            toastr.remove();
+            toastr.error('<?php echo $lang->get('an_error_occurred'); ?>');
+            btn.prop('disabled', false);
+        });
+    });
+
+    function refreshListDeletedUsers()
+    {
+        var list = $('#deleted-users-list');
+                        
+        $.post(
+            'sources/users.queries.php',
+            {
+                type: 'list_deleted_users',
+                key: '<?php echo $session->get('key'); ?>'
+            },
+            function(data) {
+                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+                
                 if (data.error) {
                     toastr.error(data.message);
+                    return;
+                }
+                
+                var tbody = $('#table-deleted-users tbody');
+                tbody.empty();
+                
+                if (data.result.users.length === 0) {
+                    tbody.append('<tr><td colspan="5" class="text-center"><?php echo $lang->get("no_deleted_users"); ?></td></tr>');
                 } else {
-                    toastr.success(
-                        data.message,
-                        '', {
-                            timeOut: 1000
+                    $.each(data.result.users, function(i, user) {
+                        var row = '<tr>' +
+                            '<td>' + user.login + '</td>' +
+                            '<td>' + (user.email || '-') + '</td>' +
+                            '<td>' + new Date(user.deleted_at * 1000).toLocaleDateString() + '</td>' +
+                            '<td>' + user.days_since_deletion + ' <?php echo $lang->get("days"); ?></td>' +
+                            '<td>' +
+                                '<button class="btn btn-sm btn-danger btn-purge-user" data-user-id="' + user.id + '">' +
+                                    '<i class="fas fa-trash infotip" title="<?php echo $lang->get("purge"); ?>"></i>' +
+                                '</button>' +
+                                '<button class="btn btn-sm btn-success ml-2 btn-restore-user" data-user-id="' + user.id + '">' +
+                                    '<i class="fas fa-undo infotip" title="<?php echo $lang->get("restore"); ?>"></i>' +
+                                '</button>' +
+                            '</td>' +
+                        '</tr>';
+                        tbody.append(row);
+                    });
+                }
+                
+                list.slideDown();
+            }
+        );
+    }
+
+    /**
+     * Perform the purge 
+     */
+    function processPurgeBatch(userIds, retention, btn) {
+        var totalUsers = userIds.length;
+        var processedCount = 0;
+        var successCount = 0;
+        var errorCount = 0;
+        var errors = [];
+        var batchSize = 2; // Only 2 users
+        var currentIndex = 0;
+        
+        // Show progress bar
+        var progressToast = toastr.info(
+            '<div class="progress" style="margin-top: 10px;">' +
+                '<div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" ' +
+                    'style="width: 0%;" id="purge-progress-bar">' +
+                    '0/' + totalUsers +
+                '</div>' +
+            '</div>' +
+            '<div style="margin-top: 10px; font-size: 12px;" id="purge-progress-text">' +
+                '<?php echo $lang->get('starting_purge'); ?>...' +
+            '</div>',
+            '<?php echo $lang->get('purging_users'); ?><i class="fa-solid fa-broom fa-beat-fade ml-2"></i>',
+            {
+                timeOut: 0,
+                extendedTimeOut: 0,
+                closeButton: false,
+                tapToDismiss: false,
+                escapeHtml: false
+            }
+        );
+        
+        /**
+         * Treat next lot
+         */
+        function processNextBatch() {
+            if (currentIndex >= totalUsers) {
+                // All users has been treated
+                finalizePurge();
+                return;
+            }
+            
+            // Get next lot
+            var batch = userIds.slice(currentIndex, currentIndex + batchSize);
+            currentIndex += batch.length;
+            
+            // update progressbar
+            updateProgress(processedCount, totalUsers);
+        
+            const data_to_send = {
+                'days_retention': retention,
+                'user_ids': batch,
+            }
+            
+            // Perform lot
+            $.post(
+                'sources/users.queries.php',
+                {
+                    type: 'purge_users_batch',
+                    data : prepareExchangedData(JSON.stringify(data_to_send), 'encode', '<?php echo $session->get('key'); ?>'),
+                    key: '<?php echo $session->get('key'); ?>'
+                },
+                function(data) {
+                    data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+                    console.log('Batch result:', data);
+                    
+                    if (data.error) {
+                        errorCount += batch.length;
+                        errors.push(data.message);
+                    } else {
+                        successCount += data.purged_count;
+                        errorCount += (batch.length - data.purged_count);
+                        
+                        if (data.errors && data.errors.length > 0) {
+                            errors = errors.concat(data.errors);
                         }
-                    );
-                    // Rafraîchir la liste
-                    $('#btn-show-deleted-users').trigger('click');
-                    $('#btn-show-deleted-users').trigger('click');
+                    }
+                    
+                    processedCount += batch.length;
+                    
+                    // Perform next lot
+                    processNextBatch();
+                }
+            ).fail(function(xhr, status, error) {
+                console.error('Batch processing failed:', error);
+                errorCount += batch.length;
+                errors.push('Batch error: ' + error);
+                processedCount += batch.length;
+                
+                // Precess anyway next lot
+                processNextBatch();
+            });
+        }
+        
+        /**
+         * Updating the progressbar
+         */
+        function updateProgress(processed, total) {
+            var percentage = Math.round((processed / total) * 100);
+            $('#purge-progress-bar')
+                .css('width', percentage + '%')
+                .text(processed + '/' + total);
+            
+            $('#purge-progress-text').text(
+                '<?php echo $lang->get('purging_in_progress'); ?>: ' + processed + '/' + total
+            );
+        }
+        
+        /**
+         * Finalize the purge process
+         */
+        function finalizePurge() {
+            toastr.remove();
+            
+            // SHow sumary
+            var message = '<?php echo $lang->get('purge_completed'); ?><br>' +
+                        '<?php echo $lang->get('success'); ?>: ' + successCount + '<br>';
+            
+            if (errorCount > 0) {
+                message += '<?php echo $lang->get('errors'); ?>: ' + errorCount + '<br>';
+                
+                if (errors.length > 0 && errors.length <= 5) {
+                    message += '<br><small>' + errors.join('<br>') + '</small>';
+                } else if (errors.length > 5) {
+                    message += '<br><small>' + errors.slice(0, 5).join('<br>') + 
+                            '<br><?php echo $lang->get('and_x_more_errors'); ?>'.replace('%x%', (errors.length - 5)) +
+                            '</small>';
+                }
+                
+                toastr.warning(message, '', {
+                    //timeOut: 10000,
+                    escapeHtml: false
+                });
+            } else {
+                toastr.success(message, '', {
+                    //timeOut: 5000,
+                    escapeHtml: false
+                });
+            }
+            
+            // Enable back the button
+            btn.prop('disabled', false);
+            
+            // Refresh the list of deleted users
+            if (successCount > 0) {
+                if ($('#deleted-users-list').is(':visible')) {
+                    refreshListDeletedUsers();
                 }
             }
-        ).always(function() {
-            btn.prop('disabled', false).html('<i class="fas fa-broom"></i> <?php echo $lang->get("purge_users_90days"); ?>');
-        });
+        }
+        
+        // Start process
+        processNextBatch();
+    }
+
+    $(document).on('click', '.btn-restore-user', function() {
+        var userId = $(this).data('user-id');
+        
+        const data_to_send = {
+            'user_id': userId,
+        }
+        
+        $.post(
+            'sources/users.queries.php',
+            {
+                type: 'restore_user',
+                data : prepareExchangedData(JSON.stringify(data_to_send), 'encode', '<?php echo $session->get('key'); ?>'),
+                key: '<?php echo $session->get('key'); ?>'
+            },
+            function(data) {
+                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+                
+                if (data.error === false) {
+                    toastr.success('User restored successfully');
+                    // Rafraîchissez la liste des utilisateurs
+                    location.reload();
+                } else {
+                    toastr.error(data.message);
+                }
+            }
+        );
+    });
+
+    $(document).on('click', '.btn-close-deleted-users', function() {
+        $('.extra-form, .form, #deleted-users-section').addClass('hidden');
+        $('#users-list').removeClass('hidden');
+        $('html, body').animate({scrollTop: 0}, 'slow');
     });
 
 

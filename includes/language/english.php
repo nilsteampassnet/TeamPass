@@ -32,6 +32,15 @@
  // - selected_items_to_be_imported
 
 return array(
+    'deleted_date' => 'Deleted date',
+    'days_since' => 'Days since',
+    'no_deleted_users' => 'No deleted users found',
+    'no_users_to_purge' => 'No users to purge',
+    'and_x_more_errors' => '... and %x% more errors',
+    'purge_completed' => 'Purge completed',
+    'purging_users' => 'Purging users',
+    'starting_purge' => 'Starting purge',
+    'purging_in_progress' => 'Purge in progress',
     'confirm_purge_old_users' => 'Are you sure you want to permanently delete users who have been in the deleted users list for more than the specified retention period?',
     'purge_users_90days' => 'Purge users deleted more than 90 days ago',
     'deleted_users' => 'Deleted users',
