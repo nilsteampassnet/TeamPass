@@ -602,6 +602,10 @@ foreach ($treeDesc as $t) {
                     <tbody></tbody>
                 </table>
             </div>
+
+            <div class="card-footer">
+                <button type="button" class="btn btn-default float-right btn-close-deleted-users"><?php echo $lang->get('cancel'); ?></button>
+            </div>
         </div>
     </div>
 
