@@ -176,7 +176,7 @@ $tree->rebuild();
                                 </div>
                                 <div class="form-group">
                                     <label><?php echo $lang->get('folders'); ?></label>
-                                    <select class="form-control form-item-control select2" multiple="multiple" style="width:100%;" id="form-category-folders">
+                                    <select class="form-control form-item-control select2 no-save" multiple="multiple" style="width:100%;" id="form-category-folders">
                                         <?php
                                         $folders = $tree->getDescendants();
 foreach ($folders as $folder) {
