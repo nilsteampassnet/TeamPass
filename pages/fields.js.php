@@ -217,6 +217,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             $('#form-category-folders').val() !== '' &&
             $('#form-category-list').val() !== ''
         ) {
+            // SHow user
+            toastr.remove();
+            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+
             // Prepare data
             var data = {
                     'label': DOMPurify.sanitize($('#form-category-label').val()),
