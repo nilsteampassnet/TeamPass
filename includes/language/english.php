@@ -32,6 +32,9 @@
  // - selected_items_to_be_imported
 
 return array(
+    'perform_transparent_recovery_check' => 'Perform transparent password recovery diagnostic',
+    'transparent_key_recovery_pbkdf2_iterations' => 'PBKDF2 iterations for password transparent recovery',
+    'transparent_key_recovery_pbkdf2_iterations_tip' => 'Number of iterations for PBKDF2 key derivation in password transparent recovery. Higher values increase security but may impact performance. Adjust based on server capabilities.',
     'please_fill_in_all_required_fields' => 'Please fill in all required fields',
     'an_error_occurred' => 'An error occurred',
     'attention_user_password_change' => 'Your password has changed, it is required to re-encrypt your personal items.',

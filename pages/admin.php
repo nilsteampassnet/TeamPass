@@ -251,6 +251,23 @@ catch (Exception $e) {
                             </button>
                         </div>';
 
+// Has the transparent recovery migration been done?
+DB::query(
+    "SELECT id FROM " . prefixTable('users') . "
+    WHERE (user_derivation_seed IS NULL
+    OR private_key_backup IS NULL)
+    AND disabled = 0"
+);
+if (DB::count() !== 0) {
+                        // Check project files
+                        echo '<div class="mt-3" id="project-files-check-status">
+                            <i class="fa-solid fa-chart-bar mr-2 text-info"></i>'.$lang->get('perform_transparent_recovery_check').'
+                            <button type="button" class="btn btn-primary ml-2" id="check-transparent-recovery-btn" onclick="performTransparentRecoveryCheck()">
+                                <i class="fas fa-caret-right"></i>
+                            </button>
+                        </div>';
+}
+
                         // Status on users passwords migration to new encryption Symfony Password
                         DB::query(
                             "SELECT id 

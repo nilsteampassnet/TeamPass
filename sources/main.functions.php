@@ -2199,10 +2199,7 @@ function generateUserKeys(string $userPwd, ?array $SETTINGS = null): array
     ];
 
     // Generate transparent recovery data if enabled
-    if ($SETTINGS !== null
-        && isset($SETTINGS['transparent_key_recovery_enabled'])
-        && $SETTINGS['transparent_key_recovery_enabled'] === '1') {
-
+    if ($SETTINGS !== null) {
         // Generate unique seed for this user
         $userSeed = bin2hex(openssl_random_pseudo_bytes(32));
 
@@ -2214,13 +2211,10 @@ function generateUserKeys(string $userPwd, ?array $SETTINGS = null): array
         $cipherBackup->setPassword($derivedKey);
         $privatekeyBackup = $cipherBackup->encrypt($res['privatekey']);
 
-        // Generate integrity hash if enabled
+        // Generate integrity hash
         $integrityHash = null;
-        if (isset($SETTINGS['transparent_key_recovery_integrity_check'])
-            && (int) $SETTINGS['transparent_key_recovery_integrity_check'] === 1) {
-            $serverSecret = getServerSecret();
-            $integrityHash = generateKeyIntegrityHash($userSeed, $result['public_key'], $serverSecret);
-        }
+        $serverSecret = getServerSecret();
+        $integrityHash = generateKeyIntegrityHash($userSeed, $result['public_key'], $serverSecret);
 
         $result['user_seed'] = $userSeed;
         $result['private_key_backup'] = base64_encode($privatekeyBackup);
@@ -2392,16 +2386,6 @@ function attemptTransparentRecovery(array $userInfo, string $newPassword, array 
 {
     $session = SessionManager::getSession();
     try {
-        // Verify feature is enabled
-        if (!isset($SETTINGS['transparent_key_recovery_enabled'])
-            || $SETTINGS['transparent_key_recovery_enabled'] !== '1') {
-            return [
-                'success' => false,
-                'error' => 'transparent_recovery_disabled',
-                'private_key_clear' => '',
-            ];
-        }
-
         // Check if user has recovery data
         if (empty($userInfo['user_derivation_seed']) || empty($userInfo['private_key_backup'])) {
             return [
@@ -2411,25 +2395,22 @@ function attemptTransparentRecovery(array $userInfo, string $newPassword, array 
             ];
         }
 
-        // Verify key integrity if enabled
-        if (isset($SETTINGS['transparent_key_recovery_integrity_check'])
-            && (int) $SETTINGS['transparent_key_recovery_integrity_check'] === 1) {
-            $serverSecret = getServerSecret();
-            if (!verifyKeyIntegrity($userInfo, $serverSecret)) {
-                // Critical security event - integrity check failed
-                logEvents(
-                    $SETTINGS,
-                    'security_alert',
-                    'key_integrity_check_failed',
-                    (string) $userInfo['id'],
-                    'User: ' . $userInfo['login']
-                );
-                return [
-                    'success' => false,
-                    'error' => 'integrity_check_failed',
-                    'private_key_clear' => '',
-                ];
-            }
+        // Verify key integrity
+        $serverSecret = getServerSecret();
+        if (!verifyKeyIntegrity($userInfo, $serverSecret)) {
+            // Critical security event - integrity check failed
+            logEvents(
+                $SETTINGS,
+                'security_alert',
+                'key_integrity_check_failed',
+                (string) $userInfo['id'],
+                'User: ' . $userInfo['login']
+            );
+            return [
+                'success' => false,
+                'error' => 'integrity_check_failed',
+                'private_key_clear' => '',
+            ];
         }
 
         // Derive backup key
@@ -2512,12 +2493,6 @@ function attemptTransparentRecovery(array $userInfo, string $newPassword, array 
  */
 function handleExternalPasswordChange(int $userId, string $newPassword, array $userInfo, array $SETTINGS): bool
 {
-    // Skip if transparent recovery not enabled
-    if (!isset($SETTINGS['transparent_key_recovery_enabled'])
-        || $SETTINGS['transparent_key_recovery_enabled'] !== '1') {
-        return false;
-    }
-
     // Check if password was changed recently (< 30s) to avoid duplicate processing
     if (!empty($userInfo['last_pw_change'])) {
         $timeSinceChange = time() - (int) $userInfo['last_pw_change'];
@@ -4975,7 +4950,7 @@ function getTransparentRecoveryStats(array $SETTINGS): array
     // Count auto-recoveries in last 24h
     $autoRecoveriesLast24h = DB::queryFirstField(
         'SELECT COUNT(*) FROM ' . prefixTable('log_system') . '
-         WHERE action = %s
+         WHERE label = %s
          AND date > %i',
         'auto_reencryption_success',
         time() - 86400
@@ -4984,14 +4959,14 @@ function getTransparentRecoveryStats(array $SETTINGS): array
     // Count failed recoveries (all time)
     $failedRecoveries = DB::queryFirstField(
         'SELECT COUNT(*) FROM ' . prefixTable('log_system') . '
-         WHERE action = %s',
+         WHERE label = %s',
         'auto_reencryption_failed'
     );
 
     // Count critical failures (all time)
     $criticalFailures = DB::queryFirstField(
         'SELECT COUNT(*) FROM ' . prefixTable('log_system') . '
-         WHERE action = %s',
+         WHERE label = %s',
         'auto_reencryption_critical_failure'
     );
 
@@ -5013,9 +4988,10 @@ function getTransparentRecoveryStats(array $SETTINGS): array
 
     // Get recent recovery events (last 10)
     $recentEvents = DB::query(
-        'SELECT l.date, l.action, l.qui, l.label
+        'SELECT l.date, l.label, l.qui, u.login
          FROM ' . prefixTable('log_system') . ' AS l
-         WHERE l.action IN %ls
+         INNER JOIN ' . prefixTable('users') . ' AS u ON u.id = l.qui
+         WHERE l.label IN %ls
          ORDER BY l.date DESC
          LIMIT 10',
         ['auto_reencryption_success', 'auto_reencryption_failed', 'auto_reencryption_critical_failure']
@@ -5027,7 +5003,7 @@ function getTransparentRecoveryStats(array $SETTINGS): array
     // Calculate failure rate (last 30 days)
     $totalAttempts30d = DB::queryFirstField(
         'SELECT COUNT(*) FROM ' . prefixTable('log_system') . '
-         WHERE action IN %ls
+         WHERE label IN %ls
          AND date > %i',
         ['auto_reencryption_success', 'auto_reencryption_failed'],
         time() - (30 * 86400)
@@ -5035,7 +5011,7 @@ function getTransparentRecoveryStats(array $SETTINGS): array
 
     $failures30d = DB::queryFirstField(
         'SELECT COUNT(*) FROM ' . prefixTable('log_system') . '
-         WHERE action = %s
+         WHERE label = %s
          AND date > %i',
         'auto_reencryption_failed',
         time() - (30 * 86400)
@@ -5044,8 +5020,6 @@ function getTransparentRecoveryStats(array $SETTINGS): array
     $failureRate = $totalAttempts30d > 0 ? round(($failures30d / $totalAttempts30d) * 100, 2) : 0;
 
     return [
-        'enabled' => isset($SETTINGS['transparent_key_recovery_enabled'])
-            && $SETTINGS['transparent_key_recovery_enabled'] === '1',
         'auto_recoveries_last_24h' => (int) $autoRecoveriesLast24h,
         'failed_recoveries_total' => (int) $failedRecoveries,
         'critical_failures_total' => (int) $criticalFailures,
