@@ -57,36 +57,22 @@ New columns added to `teampass_users`:
 
 ### 1. Run Database Migration
 
-Execute the migration script:
-
-```bash
-php install/upgrade_run_3.2.0_transparent_recovery.php
-```
-
-This will:
+During upgrade process, it will:
 - Add new columns to the users table
 - Generate seeds for existing users
-- Create configuration settings
+- Create configuration setting
 
 ### 2. Configure Settings
 
-The following settings are available in the admin panel:
+The following setting is available in the admin panel:
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `transparent_key_recovery_enabled` | 1 | Enable/disable the feature |
 | `transparent_key_recovery_pbkdf2_iterations` | 100000 | PBKDF2 iterations (adjust for performance) |
-| `transparent_key_recovery_integrity_check` | 1 | Enable integrity verification |
-| `transparent_key_recovery_max_age_days` | 730 | Maximum age for recovery data |
 
 ### 3. Server Secret Generation
 
-A server secret is automatically generated on first use:
-
-```bash
-# Location: /path/to/teampass/files/recovery_secret.key
-# Permissions: 0400 (read-only for owner)
-```
+The server secret used is the existing SECUREFILE
 
 **IMPORTANT**: Back up this file! If lost, transparent recovery will fail.
 
@@ -103,25 +89,7 @@ A server secret is automatically generated on first use:
 
 #### Monitoring
 
-Check recovery statistics:
-
-```php
-$stats = getTransparentRecoveryStats($SETTINGS);
-```
-
-Returns:
-```php
-[
-    'enabled' => true,
-    'auto_recoveries_last_24h' => 5,
-    'failed_recoveries_total' => 2,
-    'users_migrated' => 450,
-    'total_users' => 500,
-    'migration_percentage' => 90.0,
-    'failure_rate_30d' => 2.5,
-    'recent_events' => [...]
-]
-```
+Check recovery statistics from admin home page.
 
 #### Logs
 
@@ -145,66 +113,13 @@ If failure rate exceeds 5%, review:
 
 ### Existing Users
 
-1. **Phase 1 (Migration Script)**: Generates `user_derivation_seed` for all users
+1. **Phase 1 (Upgrade process)**: Generates `user_derivation_seed` for all users
 2. **Phase 2 (First Login)**: Creates `private_key_backup` when user logs in
 3. **Complete**: User has full transparent recovery capability
 
 ### New Users
 
 New users created after deployment automatically receive all recovery data.
-
-## Security Considerations
-
-### Threat Model
-
-| Threat | Risk | Mitigation |
-|--------|------|------------|
-| Database dump stolen | LOW | 256-bit seed + PBKDF2 makes brute-force infeasible |
-| SQL injection | MEDIUM | Integrity hash detects tampering |
-| Server compromise (RCE) | CRITICAL | Same as existing system (inherent risk) |
-
-### Best Practices
-
-1. **Backup Server Secret**: Store `/files/recovery_secret.key` securely
-2. **Monitor Logs**: Watch for unusual recovery patterns
-3. **Regular Audits**: Review recovery statistics monthly
-4. **Rate Limiting**: Feature includes 24h cooldown per user
-5. **Integrity Checks**: Keep enabled in production
-
-## Performance
-
-### Benchmarks
-
-| Operation | Time | Impact |
-|-----------|------|--------|
-| Normal login | +0ms | None |
-| Recovery operation | +150ms | Acceptable (occasional) |
-| User creation | +100ms | Minimal |
-| PBKDF2 (100k iterations) | ~80ms | Adjustable |
-
-### Scalability
-
-Tested with:
-- ✅ 100 users: No issues
-- ✅ 500 users: No issues
-- ✅ 5,000 users: Recommended batch migration
-- ✅ 10,000+ users: Reduce PBKDF2 iterations if needed
-
-## Troubleshooting
-
-### Recovery Failed
-
-**Symptoms**: User sees "recrypt-private-key" message
-
-**Causes**:
-- Backup not yet created (pre-migration user)
-- Server secret file missing/corrupted
-- Database integrity issue
-
-**Resolution**:
-1. Check server secret exists: `/files/recovery_secret.key`
-2. Review logs for specific error
-3. If needed, regenerate user keys (admin action)
 
 ### High Failure Rate
 
@@ -225,46 +140,9 @@ Tested with:
 2. Check server resources (CPU)
 3. Verify database indexes created
 
-## API Reference
-
-### Main Functions
-
-#### `deriveBackupKey(string $userSeed, string $publicKey, array $SETTINGS): string`
-
-Derives backup encryption key using PBKDF2.
-
-#### `attemptTransparentRecovery(array $userInfo, string $newPassword, array $SETTINGS): array`
-
-Attempts to recover and re-encrypt private key.
-
-Returns:
-```php
-[
-    'success' => true|false,
-    'private_key_clear' => '...',
-    'error' => 'error_message'
-]
-```
-
-#### `handleExternalPasswordChange(int $userId, string $newPassword, array $userInfo, array $SETTINGS): bool`
-
-Handles complete password change flow for external auth.
-
-#### `getTransparentRecoveryStats(array $SETTINGS): array`
-
-Retrieves recovery statistics for monitoring.
-
-## Version History
-
-### 3.2.0 (2025)
-- Initial implementation of Transparent Key Recovery
-- PBKDF2-based key derivation
-- Integrity verification system
-- Monitoring and statistics
-
 ## Credits
 
-Developed for TeamPass 3.2.0+
+Developed for TeamPass 3.1.5+
 License: GPL-3.0
 
 ## Support
@@ -275,4 +153,4 @@ For issues or questions:
 
 ---
 
-**Last Updated**: 2025-01-30
+**Last Updated**: 2025-11-06

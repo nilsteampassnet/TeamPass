@@ -314,6 +314,212 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
         );
     });
 
+    function performTransparentRecoveryCheck()
+    {
+        if (requestRunning === true) {
+            return false;
+        }
+
+        requestRunning = true;
+        $('#check-transparent-recovery-btn').html('<i class="fa-solid fa-spinner fa-spin"></i>');
+
+        // Remove the file from the list
+        $('#transparent-recovery-result').remove();
+        $('#transparent-recovery-result-container').addClass('hidden');
+    
+        $.post(
+    "sources/admin.queries.php", {
+        type: "transparentRecoveryCheck",
+        key: "<?php echo $session->get('key'); ?>"
+    },
+    function(data) {
+        // Handle server answer
+        try {
+            data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
+        } catch (e) {
+            // error
+            toastr.remove();
+            toastr.error(
+                '<?php echo $lang->get('server_answer_error') . '<br />' . $lang->get('server_returned_data') . ':<br />'; ?>' + data.error,
+                '', {
+                    closeButton: true,
+                    positionClass: 'toast-bottom-right'
+                }
+            );
+            return false;
+        }
+        
+        let stats = data.stats;
+        
+        // Build full html
+        let html = '<div class="container-fluid p-0">';
+        
+        // === Main stats ===
+        html += '<div class="row mb-3">' +
+            '<div class="col-md-4 mb-2">' +
+                '<div class="card text-center border-success">' +
+                    '<div class="card-body py-2">' +
+                        '<h4 class="text-success mb-0">' + stats.users_migrated + '</h4>' +
+                        '<small class="text-muted">Migrated Users</small>' +
+                    '</div>' +
+                '</div>' +
+            '</div>' +
+            '<div class="col-md-4 mb-2">' +
+                '<div class="card text-center border-info">' +
+                    '<div class="card-body py-2">' +
+                        '<h4 class="text-info mb-0">' + stats.total_users + '</h4>' +
+                        '<small class="text-muted">Total Users</small>' +
+                    '</div>' +
+                '</div>' +
+            '</div>' +
+            '<div class="col-md-4 mb-2">' +
+                '<div class="card text-center border-primary">' +
+                    '<div class="card-body py-2">' +
+                        '<h4 class="text-primary mb-0">' + stats.migration_percentage + '%</h4>' +
+                        '<small class="text-muted">Progress</small>' +
+                    '</div>' +
+                '</div>' +
+            '</div>' +
+        '</div>';
+
+        // === Progress bar ===
+        html += '<div class="mb-3">' +
+                    '<label class="font-weight-bold mb-1">Migration Progress</label>' +
+                    '<div class="progress" style="height: 25px;">' +
+                        '<div class="progress-bar progress-bar-striped bg-success" ' +
+                            'role="progressbar" ' +
+                            'style="width: ' + stats.migration_percentage + '%">' +
+                            stats.migration_percentage + '%' +
+                        '</div>' +
+                    '</div>' +
+                '</div>';
+
+        // === Error stats ===
+        html += '<div class="row mb-3">' +
+                    '<div class="col-md-4 mb-2">' +
+                        '<div class="card text-center border-warning">' +
+                            '<div class="card-body py-2">' +
+                                '<h5 class="text-warning mb-0">' + stats.auto_recoveries_last_24h + '</h5>' +
+                                '<small class="text-muted">Auto Recoveries (24h)</small>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="col-md-4 mb-2">' +
+                        '<div class="card text-center border-danger">' +
+                            '<div class="card-body py-2">' +
+                                '<h5 class="text-danger mb-0">' + stats.failed_recoveries_total + '</h5>' +
+                                '<small class="text-muted">Total Failures</small>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="col-md-4 mb-2">' +
+                        '<div class="card text-center border-danger">' +
+                            '<div class="card-body py-2">' +
+                                '<h5 class="text-danger mb-0">' + stats.critical_failures_total + '</h5>' +
+                                '<small class="text-muted">Critical Failures</small>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>';
+
+        // === Failure rate ===
+        html += '<div class="mb-3">' +
+                    '<div class="card border-secondary">' +
+                        '<div class="card-body py-2 d-flex justify-content-between align-items-center">' +
+                            '<span class="font-weight-bold">Failure Rate (30 days)</span>' +
+                            '<span class="badge badge-secondary badge-pill" style="font-size: 1.1rem;">' +
+                                stats.failure_rate_30d + '%' +
+                            '</span>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>';
+
+        // === Recent events ===
+        html += '<div class="card">' +
+                    '<div class="card-header bg-dark text-white py-2">' +
+                        '<h6 class="mb-0">' +
+                            '<i class="fas fa-history mr-2"></i>' +
+                            'Recent Events (' + stats.recent_events.length + ')' +
+                        '</h6>' +
+                    '</div>' +
+                    '<div class="card-body p-0">' +
+                        '<div style="max-height: 300px; overflow-y: auto;">';
+        
+        // Events list
+        if (stats.recent_events.length === 0) {
+            html += '<div class="text-center p-3 text-muted">No recent events</div>';
+        } else {
+            html += '<ul class="list-group list-group-flush">';
+            
+            $.each(stats.recent_events, function(i, event) {
+                // Format the date
+                let eventDate = new Date(event.date * 1000);
+                let formattedDate = eventDate.toLocaleString('fr-FR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                // Define icons and badge classes
+                let iconClass = 'fa-check-circle text-success';
+                let badgeClass = 'badge-success';
+                
+                if (event.label.includes('failure') || event.label.includes('error')) {
+                    iconClass = 'fa-times-circle text-danger';
+                    badgeClass = 'badge-danger';
+                } else if (event.label.includes('warning')) {
+                    iconClass = 'fa-exclamation-triangle text-warning';
+                    badgeClass = 'badge-warning';
+                }
+                
+                // Build event
+                html += '<li class="list-group-item py-2">' +
+                            '<div class="d-flex justify-content-between align-items-start">' +
+                                '<div>' +
+                                    '<i class="fas ' + iconClass + ' mr-2"></i>' +
+                                    '<span class="badge ' + badgeClass + ' mr-2">' + 
+                                        event.label.replace(/_/g, ' ') + 
+                                    '</span>' +
+                                    '<br>' +
+                                    '<small class="text-muted ml-4">' + formattedDate + '</small>' +
+                                '</div>' +
+                                '<span class="badge badge-secondary">User ' + event.login + '</span>' +
+                            '</div>' +
+                        '</li>';
+            });
+            
+            html += '</ul>';
+        }
+        
+        html += '</div>' + // end max-height
+                    '</div>' + // end card-body
+                '</div>' + // end card
+                '</div>'; // end container-fluid
+
+        // Show modal
+        showModalDialogBox(
+            '#warningModal',
+            '<i class="fas fa-chart-bar fa-lg mr-2"></i>Migration statistics',
+            html,
+            '',
+            'Close',
+            true
+        );
+
+        // Actions on modal buttons
+        $(document).on('click', '#warningModalButtonClose', function() {
+            // Nothing
+        });
+
+        $('#check-transparent-recovery-btn').html('<i class="fas fa-caret-right"></i>');
+
+        requestRunning = false;
+    }
+);
+    }
+
     /**
      * Perform project files integrity check
      */

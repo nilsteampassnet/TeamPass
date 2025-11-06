@@ -1000,13 +1000,10 @@ function prepareUserEncryptionKeys($userInfo, $passwordClear, array $SETTINGS = 
             $cipher->setPassword($derivedKey);
             $privateKeyBackup = base64_encode($cipher->encrypt(base64_decode($privateKeyClear)));
 
-            // Generate integrity hash if enabled
+            // Generate integrity hash
             $integrityHash = null;
-            if (isset($SETTINGS['transparent_key_recovery_integrity_check'])
-                && (int) $SETTINGS['transparent_key_recovery_integrity_check'] === 1) {
-                $serverSecret = getServerSecret();
-                $integrityHash = generateKeyIntegrityHash($userInfo['user_derivation_seed'], $userInfo['public_key'], $serverSecret);
-            }
+            $serverSecret = getServerSecret();
+            $integrityHash = generateKeyIntegrityHash($userInfo['user_derivation_seed'], $userInfo['public_key'], $serverSecret);
 
             return [
                 'public_key' => $userInfo['public_key'],
@@ -1026,10 +1023,8 @@ function prepareUserEncryptionKeys($userInfo, $passwordClear, array $SETTINGS = 
         ];
 
     } catch (Exception $e) {
-        // Decryption failed - try transparent recovery if available
-        if (isset($SETTINGS['transparent_key_recovery_enabled'])
-            && $SETTINGS['transparent_key_recovery_enabled'] === '1'
-            && !empty($userInfo['user_derivation_seed'])
+        // Decryption failed - try transparent recovery
+        if (!empty($userInfo['user_derivation_seed'])
             && !empty($userInfo['private_key_backup'])) {
 
             $recovery = attemptTransparentRecovery($userInfo, $passwordClear, $SETTINGS);
@@ -1456,11 +1451,7 @@ function finalizeAuthentication(
         );
 
         // Try transparent recovery for automatic re-encryption
-        if (isset($SETTINGS['transparent_key_recovery_enabled'])
-            && (int) $SETTINGS['transparent_key_recovery_enabled'] === 1)
-        {
-            handleExternalPasswordChange((int) $userInfo['id'], $passwordClear, $userInfo, $SETTINGS);
-        }
+        handleExternalPasswordChange((int) $userInfo['id'], $passwordClear, $userInfo, $SETTINGS);
     }
 }
 
@@ -2588,15 +2579,12 @@ function checkOauth2User(
             );
 
             // Transparent recovery: handle external OAuth2 password change
-            if (isset($SETTINGS['transparent_key_recovery_enabled'])
-                && (int) $SETTINGS['transparent_key_recovery_enabled'] === 1) {
-                handleExternalPasswordChange(
-                    (int) $userInfo['id'],
-                    $passwordClear,
-                    $userInfo,
-                    $SETTINGS
-                );
-            }
+            handleExternalPasswordChange(
+                (int) $userInfo['id'],
+                $passwordClear,
+                $userInfo,
+                $SETTINGS
+            );
         }
 
         return [

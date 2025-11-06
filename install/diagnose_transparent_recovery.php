@@ -41,10 +41,7 @@ if (!empty($missingColumns)) {
 // 2. Check settings
 echo "\n2. Checking configuration settings...\n";
 $settings = [
-    'transparent_key_recovery_enabled',
     'transparent_key_recovery_pbkdf2_iterations',
-    'transparent_key_recovery_integrity_check',
-    'transparent_key_recovery_max_age_days'
 ];
 
 foreach ($settings as $setting) {
