@@ -32,6 +32,10 @@
  // - selected_items_to_be_imported
 
 return array(
+    'no_folder_selected' => 'No directory is selected',
+    'show_subfolders_in_main_view' => 'Show sub-directories in main items list',
+    'no_subfolders' => 'No sub-directories',
+    'show_hide_folders' => 'Show/Hide directories',
     'copy_sub_directories' => 'Copy sub-directories',
     'copy_items' => 'Copy items',
     'deleted_date' => 'Deleted date',

@@ -462,6 +462,22 @@ foreach ($session->get('user-roles_array') as $role) {
                                     </div>
 
                                     <div class="form-group">
+                                        <label class="col-sm-10 control-label"><?php echo $lang->get('show_subfolders_in_main_view'); ?></label>
+                                        <div class="col-sm-10">
+                                            <select class="form-control" id="profile-user-show_subfolders">
+                                                
+                                                <option value="0" <?php echo $session->has('user-show_subfolders') && $session->get('user-show_subfolders') && null !== $session->get('user-show_subfolders') && $session->get('user-show_subfolders') === 0 ? 'selected' : '';?>>
+                                                    <?php echo $lang->get('no'); ?>
+                                                </option>
+
+                                                <option value="1" <?php echo $session->has('user-show_subfolders') && $session->get('user-show_subfolders') && null !== $session->get('user-show_subfolders') && (int) $session->get('user-show_subfolders') === 1 ? 'selected' : '';?>>
+                                                    <?php echo $lang->get('yes'); ?>
+                                                </option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
                                         <div class="row">
                                             <div class="col-sm-offset-2 col-sm-2">
                                                 <button type="button" class="btn btn-info" id="profile-user-save-settings"><?php echo $lang->get('save'); ?></button>
