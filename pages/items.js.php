@@ -2306,14 +2306,15 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         toastr.remove();
         toastr
             .info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
-
+        
+        // Launch action
         var data = {
             'source_folder_id': $('#form-folder-copy-source option:selected').val(),
             'target_folder_id': $('#form-folder-copy-destination option:selected').val(),
             'folder_label': DOMPurify.sanitize($('#form-folder-copy-label').val(), {USE_PROFILES: {html: false}}),
+            'copy_subdirectories': $('#form-folder-copy-sub-directories').is(':checked') === true ? 1 : 0,
+            'copy_items': $('#form-folder-copy-items').is(':checked') === true ? 1 : 0,
         }
-
-        // Launch action
         $.post(
             'sources/folders.queries.php', {
                 type: 'copy_folder',

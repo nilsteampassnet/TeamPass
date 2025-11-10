@@ -32,6 +32,8 @@
  // - selected_items_to_be_imported
 
 return array(
+    'copy_sub_directories' => 'Copy sub-directories',
+    'copy_items' => 'Copy items',
     'please_fill_in_all_required_fields' => 'Please fill in all required fields',
     'an_error_occurred' => 'An error occurred',
     'attention_user_password_change' => 'Your password has changed, it is required to re-encrypt your personal items.',
