@@ -7239,9 +7239,6 @@ function getCurrentAccessRights(int $userId, int $itemId, int $treeId, string $a
         return getAccessResponse(false, true, false, false);
     }
     
-    // Retrieve user's visible folders from the cache_tree table
-    $visibleFolders = getUserVisibleFolders($userId);
-    
     // Check if the folder is in the user's read-only list
     if (in_array($treeId, $session->get('user-read_only_folders'))) {
         return getAccessResponse(false, true, false, false);
@@ -7251,6 +7248,9 @@ function getCurrentAccessRights(int $userId, int $itemId, int $treeId, string $a
     if (in_array($treeId, $session->get('user-allowed_folders_by_definition'))) {
         return getAccessResponse(false, true, true, true);
     }
+    
+    // Retrieve user's visible folders from the cache_tree table
+    $visibleFolders = getUserVisibleFolders($userId);
     
     // Check if the folder is personal to the user
     foreach ($visibleFolders as $folder) {
