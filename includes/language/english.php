@@ -34,6 +34,12 @@
 return array(
     'copy_sub_directories' => 'Copy sub-directories',
     'copy_items' => 'Copy items',
+    'confirm_purge_old_users' => 'Are you sure you want to permanently delete users who have been in the deleted users list for more than the specified retention period?',
+    'purge_users_90days' => 'Purge users deleted more than 90 days ago',
+    'deleted_users' => 'Deleted users',
+    'user_purged_successfully' => 'User successfully purged',
+    'users_purged_successfully' => 'Users successfully purged',
+    'confirm_purge_user' => 'Are you sure you want to permanently delete this user?',
     'please_fill_in_all_required_fields' => 'Please fill in all required fields',
     'an_error_occurred' => 'An error occurred',
     'attention_user_password_change' => 'Your password has changed, it is required to re-encrypt your personal items.',

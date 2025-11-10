@@ -1911,10 +1911,144 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             //
             // --- END
             //
+        } else if ($(this).data('action') === 'deleted-users') {
+            $('.extra-form, .form').addClass('hidden');
+            $('#deleted-users-section').removeClass('hidden');
+
+            var list = $('#deleted-users-list');
+                        
+            $.post(
+                'sources/users.queries.php',
+                {
+                    type: 'list_deleted_users',
+                    key: '<?php echo $session->get('key'); ?>'
+                },
+                function(data) {
+                    data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+                    
+                    if (data.error) {
+                        toastr.error(data.message);
+                        return;
+                    }
+                    
+                    var tbody = $('#table-deleted-users tbody');
+                    tbody.empty();
+                    
+                    if (data.result.users.length === 0) {
+                        tbody.append('<tr><td colspan="5" class="text-center"><?php echo $lang->get("no_deleted_users"); ?></td></tr>');
+                    } else {
+                        $.each(data.result.users, function(i, user) {
+                            var row = '<tr>' +
+                                '<td>' + user.login + '</td>' +
+                                '<td>' + (user.email || '-') + '</td>' +
+                                '<td>' + new Date(user.deleted_at * 1000).toLocaleDateString() + '</td>' +
+                                '<td>' + user.days_since_deletion + ' <?php echo $lang->get("days"); ?></td>' +
+                                '<td>' +
+                                    '<button class="btn btn-sm btn-danger btn-purge-user" data-user-id="' + user.id + '">' +
+                                        '<i class="fas fa-trash"></i> <?php echo $lang->get("purge"); ?>' +
+                                    '</button>' +
+                                '</td>' +
+                            '</tr>';
+                            tbody.append(row);
+                        });
+                    }
+                    
+                    list.slideDown();
+                }
+            );
+
+            /**/
+            //
+            // --- END
+            //
         }
 
         event.preventDefault();
         event.stopPropagation();
+    });
+
+    // Purge single user
+    $(document).on('click', '.btn-purge-user', function() {
+        var btn = $(this);
+        var userId = btn.data('user-id');
+        
+        btn.prop('disabled', true);
+        
+        if (!confirm('<?php echo $lang->get("confirm_purge_user"); ?>')) {
+            return;
+        }
+        
+        $.post(
+            'sources/users.queries.php',
+            {
+                type: 'purge_user',
+                user_id: userId,
+                key: '<?php echo $session->get('key'); ?>'
+            },
+            function(data) {
+                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+                
+                if (data.error) {
+                    toastr.error(
+                        data.message,
+                        '', {
+                            timeOut: 1000
+                        }
+                    );
+                    btn.prop('disabled', false);
+                } else {
+                    toastr.success(
+                        data.message,
+                        '', {
+                            timeOut: 1000
+                        }
+                    );
+                    btn.closest('tr').fadeOut(300, function() {
+                        $(this).remove();
+                    });
+                }
+            }
+        );
+    });
+    
+    // Purge old users
+    $('#btn-purge-old-users').on('click', function() {
+        var btn = $(this);
+        var retention = btn.data('retention');
+        
+        if (!confirm('<?php echo $lang->get("confirm_purge_old_users"); ?>'.replace('%days%', retention))) {
+            return;
+        }
+        
+        btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> <?php echo $lang->get("processing"); ?>');
+        
+        $.post(
+            'sources/users.queries.php',
+            {
+                type: 'purge_old_users',
+                days_retention: retention,
+                key: '<?php echo $session->get('key'); ?>'
+            },
+            function(data) {
+                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+                console.log(data)
+                if (data.error) {
+                    toastr.error(data.message);
+                } else {
+                    toastr.success(
+                        data.message,
+                        '', {
+                            timeOut: 1000
+                        }
+                    );
+                    // Rafraîchir la liste
+                    $('#btn-show-deleted-users').trigger('click');
+                    $('#btn-show-deleted-users').trigger('click');
+                }
+            }
+        ).always(function() {
+            btn.prop('disabled', false).html('<i class="fas fa-broom"></i> <?php echo $lang->get("purge_users_90days"); ?>');
+        });
     });
 
 

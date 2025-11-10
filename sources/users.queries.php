@@ -492,122 +492,178 @@ if (null !== $post_type) {
             }
 
             // Prepare variables
-            $post_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
+            $userId  = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
+
+            if (empty($userId)) {
+                echo prepareExchangedData(
+                    [
+                        'error' => true,
+                        'message' => $lang->get('error_empty_data'),
+                    ],
+                    'encode'
+                );
+                break;
+            }
 
             // Get info about user to delete
             $data_user = DB::queryFirstRow(
                 'SELECT login, admin, isAdministratedByRole FROM ' . prefixTable('users') . '
                 WHERE id = %i',
-                $post_id
-            );
+                $userId 
+            );        
+            if (empty($data_user)) {
+                throw new Exception($lang->get('error_user_not_exists'));
+            }
 
-            // Is this user allowed to do this?
-            if (
-                (int) $session->get('user-admin') === 1
-                || (in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array')))
-                || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $data_user['admin'] !== 1)
-            ) {
-                // delete user in database
-                /*DB::delete(
-                    prefixTable('users'),
-                    'id = %i',
-                    $post_id
-                );*/
-                DB::update(
-                    prefixTable('users'),
-                    array(
-                        'login' => $data_user['login'].'_deleted_'.time(),
-                        'deleted_at' => time(),
-                    ),
-                    'id = %i',
-                    $post_id
-                );
-                // delete user api
-                DB::delete(
-                    prefixTable('api'),
-                    'user_id = %i',
-                    $post_id
-                );
-                // delete personal folder and subfolders
-                $data = DB::queryFirstRow(
-                    'SELECT id FROM ' . prefixTable('nested_tree') . '
-                    WHERE title = %s AND personal_folder = %i',
-                    $post_id,
-                    '1'
-                );
-                // Get through each subfolder
-                if (!empty($data['id'])) {
-                    $folders = $tree->getDescendants($data['id'], true);
-                    foreach ($folders as $folder) {
-                        // delete folder
-                        DB::delete(prefixTable('nested_tree'), 'id = %i AND personal_folder = %i', $folder->id, '1');
-                        // delete items & logs
-                        $items = DB::query(
-                            'SELECT id FROM ' . prefixTable('items') . '
-                            WHERE id_tree=%i AND perso = %i',
-                            $folder->id,
-                            '1'
-                        );
-                        foreach ($items as $item) {
-                            // Delete item
-                            DB::delete(prefixTable('items'), 'id = %i', $item['id']);
-                            // log
-                            DB::delete(prefixTable('log_items'), 'id_item = %i', $item['id']);
+            DB::startTransaction();
+            try {
+                // Is this user allowed to do this?
+                if (
+                    (int) $session->get('user-admin') === 1
+                    || (in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array')))
+                    || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $data_user['admin'] !== 1)
+                ) {
+                    $timestamp = time();
+                    $deletedSuffix = '_deleted_' . $timestamp;
+
+                    // delete user in database
+                    DB::update(
+                        prefixTable('users'),
+                        array(
+                            'login' => $data_user['login'].$deletedSuffix,
+                            'deleted_at' => $timestamp,
+                            'disabled' => 1,
+                            'public_key' => '',
+                            'private_key' => '',
+                            'special' => 'none',
+                            'auth_type' => 'none'
+                        ),
+                        'id = %i',
+                        $userId
+                    );
+
+                    // delete user api
+                    DB::delete(
+                        prefixTable('api'),
+                        'user_id = %i',
+                        $userId
+                    );
+                    
+                    // Delete cache
+                    DB::delete(
+                        prefixTable('cache'),
+                        'author = %i',
+                        $userId
+                    );
+
+                    // delete personal folder and subfolders
+                    $data = DB::queryFirstRow(
+                        'SELECT id FROM ' . prefixTable('nested_tree') . '
+                        WHERE title = %s AND personal_folder = %i',
+                        $userId,
+                        '1'
+                    );
+
+                    // Delete tokens
+                    DB::delete(
+                        prefixTable('tokens'),
+                        'user_id = %i',
+                        $userId
+                    );
+
+                    // Delete private keys
+                    DB::delete(
+                        prefixTable('user_private_keys'),
+                        'user_id = %i',
+                        $userId
+                    );
+
+                    // Get through each subfolder
+                    if (!empty($data['id'])) {
+                        $folders = $tree->getDescendants($data['id'], true);
+                        foreach ($folders as $folder) {
+                            // delete folder
+                            DB::delete(prefixTable('nested_tree'), 'id = %i AND personal_folder = %i', $folder->id, '1');
+                            // delete items & logs
+                            $items = DB::query(
+                                'SELECT id FROM ' . prefixTable('items') . '
+                                WHERE id_tree=%i AND perso = %i',
+                                $folder->id,
+                                '1'
+                            );
+                            foreach ($items as $item) {
+                                // Delete item
+                                DB::delete(prefixTable('items'), 'id = %i', $item['id']);
+                                // log
+                                DB::delete(prefixTable('log_items'), 'id_item = %i', $item['id']);
+                            }
                         }
+                        // rebuild tree
+                        $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+                        $tree->rebuild();
                     }
-                    // rebuild tree
-                    $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
-                    $tree->rebuild();
-                }
 
-                // Delete objects keys
-                deleteUserObjetsKeys((int) $post_id, $SETTINGS);
+                    // Delete objects keys
+                    deleteUserObjetsKeys((int) $userId, $SETTINGS);
 
 
-                // Delete any process related to user
-                $processes = DB::query(
-                    'SELECT increment_id
-                    FROM ' . prefixTable('background_tasks') . '
-                    WHERE JSON_EXTRACT(arguments, "$.new_user_id") = %i',
-                    $post_id
-                );
-                $process_id = -1;
-                foreach ($processes as $process) {
-                    // Delete task
-                    DB::delete(
-                        prefixTable('background_subtasks'),
-                        'task_id = %i',
-                        $process['increment_id']
+                    // Delete any process related to user
+                    $processes = DB::query(
+                        'SELECT increment_id
+                        FROM ' . prefixTable('background_tasks') . '
+                        WHERE JSON_EXTRACT(arguments, "$.new_user_id") = %i',
+                        $userId
                     );
-                    $process_id = $process['increment_id'];
-                }
-                // Delete main process
-                if ($process_id > -1) {
-                    DB::delete(
-                        prefixTable('background_tasks'),
-                        'increment_id = %i',
-                        $process_id
+                    $process_id = -1;
+                    foreach ($processes as $process) {
+                        // Delete task
+                        DB::delete(
+                            prefixTable('background_subtasks'),
+                            'task_id = %i',
+                            $process['increment_id']
+                        );
+                        $process_id = $process['increment_id'];
+                    }
+                    // Delete main process
+                    if ($process_id > -1) {
+                        DB::delete(
+                            prefixTable('background_tasks'),
+                            'increment_id = %i',
+                            $process_id
+                        );
+                    }
+                    
+                    // update LOG
+                    logEvents($SETTINGS, 'user_mngt', 'at_user_deleted', (string) $session->get('user-id'), $session->get('user-login'), $userId);
+
+                    DB::commit();
+
+                    //Send back
+                    echo prepareExchangedData(
+                        array(
+                            'error' => false,
+                            'message' => '',
+                        ),
+                        'encode'
+                    );
+                } else {
+                    //Send back
+                    echo prepareExchangedData(
+                        array(
+                            'error' => false,
+                            'message' => $lang->get('error_not_allowed_to'),
+                        ),
+                        'encode'
                     );
                 }
+            } catch (Exception $e) {
+                DB::rollback();
                 
-                // update LOG
-                logEvents($SETTINGS, 'user_mngt', 'at_user_deleted', (string) $session->get('user-id'), $session->get('user-login'), $post_id);
-
-                //Send back
                 echo prepareExchangedData(
-                    array(
-                        'error' => false,
-                        'message' => '',
-                    ),
-                    'encode'
-                );
-            } else {
-                //Send back
-                echo prepareExchangedData(
-                    array(
-                        'error' => false,
-                        'message' => $lang->get('error_not_allowed_to'),
-                    ),
+                    [
+                        'error' => true,
+                        'message' => $lang->get('error') . ': ' . $e->getMessage(),
+                    ],
                     'encode'
                 );
             }
@@ -2832,6 +2888,87 @@ if (null !== $post_type) {
             );
             
             break;
+        
+        case "list_deleted_users":
+            // Check KEY
+            if ($post_key !== $session->get('key')) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            $result = listDeletedUsers();
+            echo prepareExchangedData(
+                array(
+                    'error' => false,
+                    'result' => $result,
+                    'debug' => '',
+                ),
+                'encode'
+            );
+            
+            break;
+        
+        case "purge_user":
+            // Check KEY
+            if ($post_key !== $session->get('key')) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            $userId = filter_input(INPUT_POST, 'user_id', FILTER_SANITIZE_NUMBER_INT);
+        
+            if (empty($userId)) {
+                echo prepareExchangedData([
+                    'error' => true,
+                    'message' => $lang->get('error_empty_data'),
+                ], 'encode');
+                break;
+            }
+            
+            $result = purgeDeletedUserById($userId);
+
+            echo prepareExchangedData(
+                $result,
+                'encode'
+            );
+            
+            break;
+        
+        case "purge_old_users":
+            // Check KEY
+            if ($post_key !== $session->get('key')) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            $daysRetention = filter_input(INPUT_POST, 'days_retention', FILTER_SANITIZE_NUMBER_INT);
+            $daysRetention = empty($daysRetention) ? 90 : (int)$daysRetention;            
+            $result = purgeOldDeletedUsers($daysRetention);
+
+            echo prepareExchangedData(
+                $result,
+                'encode'
+            );
+            
+            break;
     }
     // # NEW LOGIN FOR USER HAS BEEN DEFINED ##
 } elseif (!empty(filter_input(INPUT_POST, 'newValue', FILTER_SANITIZE_FULL_SPECIAL_CHARS))) {
@@ -2936,6 +3073,136 @@ if (null !== $post_type) {
             echo 'Non';
         }
     }
+}
+
+/**
+ * List deleted users
+ * 
+ * @return array
+ */
+function listDeletedUsers(): array
+{
+    $users = DB::query(
+        "SELECT id, login, email, deleted_at, 
+                DATEDIFF(NOW(), FROM_UNIXTIME(deleted_at)) as days_since_deletion
+         FROM " . prefixTable("users") . " 
+         WHERE deleted_at IS NOT NULL 
+         AND deleted_at > 0
+         ORDER BY deleted_at DESC"
+    );
+    
+    return [
+        'error' => false,
+        'users' => $users,
+        'count' => count($users)
+    ];
+}
+
+/**
+ * Purge deleted user by ID
+ * 
+ * @param int $userId
+ * @return array
+ */
+function purgeDeletedUserById($userId): array
+{
+    $session = SessionManager::getSession();
+    $lang = new Language($session->get('user-language') ?? 'english');
+    
+    // Vérifier que l'utilisateur est bien marqué deleted
+    $user = DB::queryFirstRow(
+        "SELECT id, login, deleted_at FROM " . prefixTable("users") . " 
+         WHERE id = %i 
+         AND deleted_at IS NOT NULL 
+         AND deleted_at > 0",
+        $userId
+    );
+    
+    if (!$user) {
+        return [
+            'error' => true,
+            'message' => 'User not found or not deleted'
+        ];
+    }
+    
+    DB::startTransaction();
+    
+    try {        
+        // Supprimer l'utilisateur définitivement
+        DB::delete(
+            prefixTable('users'),
+            'id = %i',
+            $userId
+        );
+        
+        // Log de la purge
+        logEvents(
+            $GLOBALS['SETTINGS'],
+            'user_mngt',
+            'user_purged',
+            (string) $_SESSION['user_id'],
+            $_SESSION['login'],
+            $userId
+        );
+        
+        DB::commit();
+        
+        return [
+            'error' => false,
+            'message' => $lang->get('user_purged_successfully')
+        ];
+        
+    } catch (Exception $e) {
+        DB::rollback();
+        return [
+            'error' => true,
+            'message' => $e->getMessage()
+        ];
+    }
+}
+
+/**
+ * Purge old deleted users
+ * 
+ * @param int $daysRetention
+ * @return array
+ */
+function purgeOldDeletedUsers($daysRetention = 90): array
+{
+    $session = SessionManager::getSession();
+    $lang = new Language($session->get('user-language') ?? 'english');
+
+    $cutoffTimestamp = time() - ($daysRetention * 86400);
+    
+    // Récupérer les utilisateurs à purger
+    $usersToDelete = DB::query(
+        "SELECT id, login FROM " . prefixTable("users") . " 
+         WHERE deleted_at IS NOT NULL 
+         AND deleted_at > 0
+         AND deleted_at < %i",
+        $cutoffTimestamp
+    );
+    
+    $purgedCount = 0;
+    $errors = [];
+    
+    foreach ($usersToDelete as $user) {
+        $result = purgeDeletedUserById($user['id']);
+        
+        if ($result['error']) {
+            $errors[] = $user['login'] . ': ' . $result['message'];
+        } else {
+            $purgedCount++;
+        }
+    }
+    
+    return [
+        'error' => count($errors) > 0,
+        'purged_count' => $purgedCount,
+        'total_found' => count($usersToDelete),
+        'errors' => $errors,
+        'message' => $purgedCount . ' ' . $lang->get('users_purged_successfully')
+    ];
 }
 
 /**

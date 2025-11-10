@@ -170,6 +170,8 @@ foreach ($treeDesc as $t) {
                             <i class="fa-solid fa-plug mr-2"></i>' . $lang->get('oauth2_synchronization') . '
                         </button>' : '';
                                     ?>
+                        <button type="button" class="btn btn-primary btn-sm tp-action mr-2" data-action="deleted-users">
+                            <i class="fa-solid fa-user-xmark mr-2"></i><?php echo $lang->get('deleted_users'); ?>
                     </h3>
                 </div>
 
@@ -569,6 +571,36 @@ foreach ($treeDesc as $t) {
                     <button type="button" class="btn btn-default float-right tp-action" data-action="cancel"><?php echo $lang->get('cancel'); ?></button>
                 </div>
 
+            </div>
+        </div>
+    </div>
+
+
+    <div class="card mt-4 hidden" id="deleted-users-section">
+        <div class="card-header">
+            <h5><?php echo $lang->get('deleted_users'); ?></h5>
+        </div>
+        <div class="card-body">
+            <button type="button" 
+                    class="btn btn-warning mb-3" 
+                    id="btn-purge-old-users"
+                    data-retention="90">
+                <i class="fas fa-broom"></i> <?php echo $lang->get('purge_users_90days'); ?>
+            </button>
+            
+            <div id="deleted-users-list" style="">
+                <table class="table table-striped" id="table-deleted-users">
+                    <thead>
+                        <tr>
+                            <th><?php echo $lang->get('login'); ?></th>
+                            <th><?php echo $lang->get('email'); ?></th>
+                            <th><?php echo $lang->get('deleted_date'); ?></th>
+                            <th><?php echo $lang->get('days_since'); ?></th>
+                            <th><?php echo $lang->get('actions'); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
             </div>
         </div>
     </div>
