@@ -3346,7 +3346,6 @@ function changeUserLDAPAuthenticationPassword(
                 // For this, just check if it is possible to decrypt the privatekey
                 // And try to decrypt one existing key
                 $privateKey = decryptPrivateKey($post_previous_pwd, $userData['private_key']);
-error_log(">".$post_previous_pwd);
                 if (empty($privateKey) === true) {
                     return prepareExchangedData(
                         array(

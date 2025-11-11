@@ -5102,9 +5102,9 @@ switch ($inputData['type']) {
             // Remove all item sharekeys items
             DB::delete(
                 prefixTable('sharekeys_items'),
-                'object_id = %i AND user_id != %i',
+                'object_id = %i AND user_id NOT IN %ls',
                 $inputData['itemId'],
-                $session->get('user-id')
+                [$session->get('user-id'), TP_USER_ID, API_USER_ID, OTV_USER_ID,SSH_USER_ID]
             );
 
             // Remove all item sharekeys fields
@@ -5414,8 +5414,7 @@ switch ($inputData['type']) {
                     // ---
                     // ---
                 } elseif (
-                    (int) $dataSource['personal_folder'] === 0
-                    && (int) $dataDestination['personal_folder'] === 1
+                    (int) $dataSource['personal_folder'] === 0 && (int) $dataDestination['personal_folder'] === 1
                 ) {
                     // Source is public and destination is personal
                     // Decrypt and remove all sharekeys (items, fields, files)
@@ -5424,9 +5423,9 @@ switch ($inputData['type']) {
                     // Remove all item sharekeys items
                     DB::delete(
                         prefixTable('sharekeys_items'),
-                        'object_id = %i AND user_id != %i',
+                        'object_id = %i AND user_id NOT IN %ls',
                         $item_id,
-                        $session->get('user-id')
+                        [$session->get('user-id'), TP_USER_ID, API_USER_ID, OTV_USER_ID,SSH_USER_ID]
                     );
 
                     // Remove all item sharekeys fields
