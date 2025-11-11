@@ -490,6 +490,18 @@ $zones = timezone_list();
                                 <div class='toggle toggle-modern' id='restricted_to_roles' data-toggle-on='<?php echo isset($SETTINGS['restricted_to_roles']) === true && (int) $SETTINGS['restricted_to_roles'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='restricted_to_roles_input' value='<?php echo isset($SETTINGS['restricted_to_roles']) && (int) $SETTINGS['restricted_to_roles'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
+                        
+                        <div class='row mb-2 option' data-keywords="user ui setting login length password">
+                            <div class='col-10'>
+                                <?php echo $lang->get('transparent_key_recovery_pbkdf2_iterations'); ?>
+                                <small id='passwordHelpBlock' class='form-text text-muted'>
+                                    <?php echo $lang->get('transparent_key_recovery_pbkdf2_iterations_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <input type='number' class='form-control form-control-sm' id='transparent_key_recovery_pbkdf2_iterations' value='<?php echo htmlspecialchars($SETTINGS['transparent_key_recovery_pbkdf2_iterations']) ?? '60'; ?>'>
+                            </div>
+                        </div>
 
                     </div>
                 </div>

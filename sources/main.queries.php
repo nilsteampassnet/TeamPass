@@ -1954,6 +1954,7 @@ function changePrivateKeyEncryptionPassword(
             $post_user_id
         );
         if (DB::count() > 0 && empty($userData['private_key']) === false) {
+            error_log("post_action_type: ".$post_action_type." -- ".decryptPrivateKey($post_new_code, $userData['private_key'])." -- ".decryptPrivateKey($post_current_code, $userData['private_key']));
             if ($post_action_type === 'encrypt_privkey_with_user_password') {
                 // Here the user has his private key encrypted with an OTC.
                 // We need to encrypt it with his real password
@@ -3345,7 +3346,6 @@ function changeUserLDAPAuthenticationPassword(
                 // For this, just check if it is possible to decrypt the privatekey
                 // And try to decrypt one existing key
                 $privateKey = decryptPrivateKey($post_previous_pwd, $userData['private_key']);
-error_log(">".$post_previous_pwd);
                 if (empty($privateKey) === true) {
                     return prepareExchangedData(
                         array(

@@ -941,6 +941,20 @@ if (intval($tmp) === 0) {
     );
 }
 
+// Add is_template field on nested_tree.
+try {
+    $alter_table_query = "
+        ALTER TABLE `" . $pre . "nested_tree`
+        ADD `is_template` TINYINT(1) NULL DEFAULT 0
+    ";
+    mysqli_begin_transaction($db_link);
+    mysqli_query($db_link, $alter_table_query);
+    mysqli_commit($db_link);
+} catch (Exception $e) {
+    // Rollback transaction if field already exists.
+    mysqli_rollback($db_link);
+}
+
 // Add new table user_private_keys
 mysqli_query(
     $db_link,
@@ -1004,6 +1018,20 @@ try {
     
 } catch (Exception $e) {
     // In case of error, rollback the transaction
+    mysqli_rollback($db_link);
+}
+
+// Change field 'valeur' type in misc.
+try {
+    $alter_table_query = "
+        ALTER TABLE `" . $pre . "users`
+        ADD `show_subfolders` tinyint(1) NOT NULL DEFAULT 0
+    ";
+    mysqli_begin_transaction($db_link);
+    mysqli_query($db_link, $alter_table_query);
+    mysqli_commit($db_link);
+} catch (Exception $e) {
+    // Rollback transaction if field already exists.
     mysqli_rollback($db_link);
 }
 

@@ -862,6 +862,17 @@ foreach ($rows as $reccord) {
                         <select class="form-control form-folder-control select2" style="width:100%;" id="form-folder-copy-destination" required>
                         </select>
                     </div>
+                    <div class="form-group">
+                        <label><?php echo $lang->get('options'); ?></label>
+                        <div class="input-group input-group-sm">
+                            <input type="checkbox" class="flat-blue ml-2" id="form-folder-copy-sub-directories">
+                            <label for="form-folder-copy-sub-directories" class="ml-2"><?php echo $lang->get('copy_sub_directories'); ?></label>
+                        </div>    
+                        <div class="input-group input-group-sm">
+                            <input type="checkbox" class="flat-blue ml-2" id="form-folder-copy-items">
+                            <label for="form-folder-copy-items" class="ml-2"><?php echo $lang->get('copy_items'); ?></label>
+                        </div> 
+                    </div>
                 </div>
                 <div class="card-footer">
                     <button type="submit" class="btn btn-primary" id="form-folder-copy-perform"><?php echo $lang->get('perform'); ?></button>
@@ -986,6 +997,7 @@ foreach ($rows as $reccord) {
                                     <div class="dropdown-menu">
                                         <a class="dropdown-item tp-action" href="#" data-folder-action="items-checkbox"><i class="fa-regular fa-square-check mr-2"></i><?php echo $lang->get('item_checkbox'); ?></a>
                                         <a class="dropdown-item tp-action" href="#" data-folder-action="items-delete"><i class="fa-regular fa-trash-can mr-2"></i><?php echo $lang->get('delete_items'); ?></a>
+                                        <a class="dropdown-item tp-action" href="#" data-folder-action="subfolders-show-hide"><i class="fa-regular fa-eye-slash mr-2"></i><?php echo $lang->get('show_hide_folders'); ?></a>
                                         <div class="dropdown-divider show-delete-checkbox hidden"></div>
                                         <a class="dropdown-item tp-action show-delete-checkbox hidden" href="#" data-folder-action="">
                                             <div class="input-group input-group-sm">
@@ -1027,6 +1039,12 @@ foreach ($rows as $reccord) {
                 <!-- /.card-header -->
                 <div class="card-body p-0">
                     <div class="table-responsive">
+                        <table class="table table-sm table-hover table-striped hidden" id="table_teampass_subfolders_list" style="width:100%;">
+                            <tbody id="teampass_subfolders_list">
+                                <tr><td colspan="100%" class="text-center"><i class="fa-solid fa-spinner fa-spin fa-2x"></i></td></tr>
+                            </tbody>
+                        </table>
+
                         <table class="table table-truncated table-hover table-striped" id="table_teampass_items_list" style="width:100%;">
                             <tbody id="teampass_items_list"></tbody>
                         </table>

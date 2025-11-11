@@ -287,8 +287,8 @@ if (null !== $post_type) {
                 // Generate pwd
                 $password = generateQuickPassword();
 
-                // GEnerate new keys
-                $userKeys = generateUserKeys($password);
+                // Generate new keys with transparent recovery support
+                $userKeys = generateUserKeys($password, $SETTINGS);
 
                 // load password library
                 $passwordManager = new PasswordManager();
@@ -492,122 +492,178 @@ if (null !== $post_type) {
             }
 
             // Prepare variables
-            $post_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
+            $userId  = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
+
+            if (empty($userId)) {
+                echo prepareExchangedData(
+                    [
+                        'error' => true,
+                        'message' => $lang->get('error_empty_data'),
+                    ],
+                    'encode'
+                );
+                break;
+            }
 
             // Get info about user to delete
             $data_user = DB::queryFirstRow(
                 'SELECT login, admin, isAdministratedByRole FROM ' . prefixTable('users') . '
                 WHERE id = %i',
-                $post_id
-            );
+                $userId 
+            );        
+            if (empty($data_user)) {
+                throw new Exception($lang->get('error_user_not_exists'));
+            }
 
-            // Is this user allowed to do this?
-            if (
-                (int) $session->get('user-admin') === 1
-                || (in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array')))
-                || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $data_user['admin'] !== 1)
-            ) {
-                // delete user in database
-                /*DB::delete(
-                    prefixTable('users'),
-                    'id = %i',
-                    $post_id
-                );*/
-                DB::update(
-                    prefixTable('users'),
-                    array(
-                        'login' => $data_user['login'].'_deleted_'.time(),
-                        'deleted_at' => time(),
-                    ),
-                    'id = %i',
-                    $post_id
-                );
-                // delete user api
-                DB::delete(
-                    prefixTable('api'),
-                    'user_id = %i',
-                    $post_id
-                );
-                // delete personal folder and subfolders
-                $data = DB::queryFirstRow(
-                    'SELECT id FROM ' . prefixTable('nested_tree') . '
-                    WHERE title = %s AND personal_folder = %i',
-                    $post_id,
-                    '1'
-                );
-                // Get through each subfolder
-                if (!empty($data['id'])) {
-                    $folders = $tree->getDescendants($data['id'], true);
-                    foreach ($folders as $folder) {
-                        // delete folder
-                        DB::delete(prefixTable('nested_tree'), 'id = %i AND personal_folder = %i', $folder->id, '1');
-                        // delete items & logs
-                        $items = DB::query(
-                            'SELECT id FROM ' . prefixTable('items') . '
-                            WHERE id_tree=%i AND perso = %i',
-                            $folder->id,
-                            '1'
-                        );
-                        foreach ($items as $item) {
-                            // Delete item
-                            DB::delete(prefixTable('items'), 'id = %i', $item['id']);
-                            // log
-                            DB::delete(prefixTable('log_items'), 'id_item = %i', $item['id']);
+            DB::startTransaction();
+            try {
+                // Is this user allowed to do this?
+                if (
+                    (int) $session->get('user-admin') === 1
+                    || (in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array')))
+                    || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $data_user['admin'] !== 1)
+                ) {
+                    $timestamp = time();
+                    $deletedSuffix = '_deleted_' . $timestamp;
+
+                    // delete user in database
+                    DB::update(
+                        prefixTable('users'),
+                        array(
+                            'login' => $data_user['login'].$deletedSuffix,
+                            'deleted_at' => $timestamp,
+                            'disabled' => 1,
+                            'special' => 'none',
+                            'auth_type' => 'none'
+                        ),
+                        'id = %i',
+                        $userId
+                    );
+
+                    /*
+                    // delete user api
+                    DB::delete(
+                        prefixTable('api'),
+                        'user_id = %i',
+                        $userId
+                    );
+                    
+                    // Delete cache
+                    DB::delete(
+                        prefixTable('cache'),
+                        'author = %i',
+                        $userId
+                    );
+
+                    // delete personal folder and subfolders
+                    $data = DB::queryFirstRow(
+                        'SELECT id FROM ' . prefixTable('nested_tree') . '
+                        WHERE title = %s AND personal_folder = %i',
+                        $userId,
+                        '1'
+                    );
+
+                    // Delete tokens
+                    DB::delete(
+                        prefixTable('tokens'),
+                        'user_id = %i',
+                        $userId
+                    );
+
+                    // Delete private keys
+                    DB::delete(
+                        prefixTable('user_private_keys'),
+                        'user_id = %i',
+                        $userId
+                    );
+
+                    // Get through each subfolder
+                    if (!empty($data['id'])) {
+                        $folders = $tree->getDescendants($data['id'], true);
+                        foreach ($folders as $folder) {
+                            // delete folder
+                            DB::delete(prefixTable('nested_tree'), 'id = %i AND personal_folder = %i', $folder->id, '1');
+                            // delete items & logs
+                            $items = DB::query(
+                                'SELECT id FROM ' . prefixTable('items') . '
+                                WHERE id_tree=%i AND perso = %i',
+                                $folder->id,
+                                '1'
+                            );
+                            foreach ($items as $item) {
+                                // Delete item
+                                DB::delete(prefixTable('items'), 'id = %i', $item['id']);
+                                // log
+                                DB::delete(prefixTable('log_items'), 'id_item = %i', $item['id']);
+                            }
                         }
+                        // rebuild tree
+                        $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+                        $tree->rebuild();
                     }
-                    // rebuild tree
-                    $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
-                    $tree->rebuild();
-                }
 
-                // Delete objects keys
-                deleteUserObjetsKeys((int) $post_id, $SETTINGS);
+                    // Delete objects keys
+                    deleteUserObjetsKeys((int) $userId, $SETTINGS);
 
 
-                // Delete any process related to user
-                $processes = DB::query(
-                    'SELECT increment_id
-                    FROM ' . prefixTable('background_tasks') . '
-                    WHERE JSON_EXTRACT(arguments, "$.new_user_id") = %i',
-                    $post_id
-                );
-                $process_id = -1;
-                foreach ($processes as $process) {
-                    // Delete task
-                    DB::delete(
-                        prefixTable('background_subtasks'),
-                        'task_id = %i',
-                        $process['increment_id']
+                    // Delete any process related to user
+                    $processes = DB::query(
+                        'SELECT increment_id
+                        FROM ' . prefixTable('background_tasks') . '
+                        WHERE JSON_EXTRACT(arguments, "$.new_user_id") = %i',
+                        $userId
                     );
-                    $process_id = $process['increment_id'];
-                }
-                // Delete main process
-                if ($process_id > -1) {
-                    DB::delete(
-                        prefixTable('background_tasks'),
-                        'increment_id = %i',
-                        $process_id
+                    $process_id = -1;
+                    foreach ($processes as $process) {
+                        // Delete task
+                        DB::delete(
+                            prefixTable('background_subtasks'),
+                            'task_id = %i',
+                            $process['increment_id']
+                        );
+                        $process_id = $process['increment_id'];
+                    }
+                    // Delete main process
+                    if ($process_id > -1) {
+                        DB::delete(
+                            prefixTable('background_tasks'),
+                            'increment_id = %i',
+                            $process_id
+                        );
+                    }
+                    */
+                    
+                    // update LOG
+                    logEvents($SETTINGS, 'user_mngt', 'at_user_deleted', (string) $session->get('user-id'), $session->get('user-login'), $userId);
+
+                    DB::commit();
+
+                    //Send back
+                    echo prepareExchangedData(
+                        array(
+                            'error' => false,
+                            'message' => '',
+                        ),
+                        'encode'
+                    );
+                } else {
+                    //Send back
+                    echo prepareExchangedData(
+                        array(
+                            'error' => false,
+                            'message' => $lang->get('error_not_allowed_to'),
+                        ),
+                        'encode'
                     );
                 }
+            } catch (Exception $e) {
+                DB::rollback();
                 
-                // update LOG
-                logEvents($SETTINGS, 'user_mngt', 'at_user_deleted', (string) $session->get('user-id'), $session->get('user-login'), $post_id);
-
-                //Send back
                 echo prepareExchangedData(
-                    array(
-                        'error' => false,
-                        'message' => '',
-                    ),
-                    'encode'
-                );
-            } else {
-                //Send back
-                echo prepareExchangedData(
-                    array(
-                        'error' => false,
-                        'message' => $lang->get('error_not_allowed_to'),
-                    ),
+                    [
+                        'error' => true,
+                        'message' => $lang->get('error') . ': ' . $e->getMessage(),
+                    ],
                     'encode'
                 );
             }
@@ -1704,6 +1760,7 @@ if (null !== $post_type) {
                     'name' => isset($dataReceived['name']) === true ? $dataReceived['name'] : '',
                     'lastname' => isset($dataReceived['lastname']) === true ? $dataReceived['lastname'] : '',
                     'split_view_mode' => isset($dataReceived['split_view_mode']) === true ? $dataReceived['split_view_mode'] : '',
+                    'show_subfolders' => isset($dataReceived['show_subfolders']) === true ? $dataReceived['show_subfolders'] : '',
                 ];
                 
                 $filters = [
@@ -1715,6 +1772,7 @@ if (null !== $post_type) {
                     'name' => 'trim|escape',
                     'lastname' => 'trim|escape',
                     'split_view_mode' => 'cast:integer',
+                    'show_subfolders' => 'cast:integer',
                 ];
                 
                 $inputData = dataSanitizer(
@@ -1733,10 +1791,12 @@ if (null !== $post_type) {
                 // Data to update
                 $update_fields = [
                     'split_view_mode' => $inputData['split_view_mode'],
+                    'show_subfolders' => $inputData['show_subfolders'],
                 ];
 
                 // Update SETTINGS
                 $session->set('user-split_view_mode', (int) $inputData['split_view_mode']);
+                $session->set('user-show_subfolders', (int) $inputData['show_subfolders']);
 
                 // User profile edit enabled
                 if (($SETTINGS['disable_user_edit_profile'] ?? '0') === '0') {
@@ -1802,6 +1862,7 @@ if (null !== $post_type) {
                     'lastname' => $session->get('user-lastname'),
                     'email' => $session->get('user-email'),
                     'split_view_mode' => $session->get('user-split_view_mode'),
+                    'show_subfolders' => $session->get('user-show_subfolders'),
                 ),
                 'encode'
             );
@@ -2200,36 +2261,47 @@ if (null !== $post_type) {
             }
 
             
-            // We need to create his keys
-            $userKeys = generateUserKeys($password);
+            // We need to create his keys with transparent recovery support
+            $userKeys = generateUserKeys($password, $SETTINGS);
+
+            // Prepare user data for insertion
+            $userData = array(
+                'login' => $post_login,
+                'pw' => $hashedPassword,
+                'email' => $post_email,
+                'name' => $post_name,
+                'lastname' => $post_lastname,
+                'admin' => '0',
+                'gestionnaire' => '0',
+                'can_manage_all_users' => '0',
+                'personal_folder' => (int) $SETTINGS['enable_pf_feature'] === 1 ? 1 : 0,
+                'fonction_id' => implode(';', $post_roles),
+                'groupes_interdits' => '',
+                'groupes_visibles' => '',
+                'last_pw_change' => time(),
+                'user_language' => $SETTINGS['default_language'],
+                'encrypted_psk' => '',
+                'isAdministratedByRole' => (isset($SETTINGS['oauth_new_user_is_administrated_by']) === true && empty($SETTINGS['oauth_new_user_is_administrated_by']) === false) ? $SETTINGS['oauth_new_user_is_administrated_by'] : 0,
+                'public_key' => $userKeys['public_key'],
+                'private_key' => $userKeys['private_key'],
+                'special' => 'user_added_from_ad',
+                'auth_type' => $post_authType,
+                'is_ready_for_usage' => isset($SETTINGS['enable_tasks_manager']) === true && (int) $SETTINGS['enable_tasks_manager'] === 1 ? 0 : 1,
+                'created_at' => time(),
+            );
+
+            // Add transparent recovery fields if available
+            if (isset($userKeys['user_seed'])) {
+                $userData['user_derivation_seed'] = $userKeys['user_seed'];
+                $userData['private_key_backup'] = $userKeys['private_key_backup'];
+                $userData['key_integrity_hash'] = $userKeys['key_integrity_hash'];
+                $userData['last_pw_change'] = time();
+            }
 
             // Insert user in DB
             DB::insert(
                 prefixTable('users'),
-                array(
-                    'login' => $post_login,
-                    'pw' => $hashedPassword,
-                    'email' => $post_email,
-                    'name' => $post_name,
-                    'lastname' => $post_lastname,
-                    'admin' => '0',
-                    'gestionnaire' => '0',
-                    'can_manage_all_users' => '0',
-                    'personal_folder' => (int) $SETTINGS['enable_pf_feature'] === 1 ? 1 : 0,
-                    'fonction_id' => implode(';', $post_roles),
-                    'groupes_interdits' => '',
-                    'groupes_visibles' => '',
-                    'last_pw_change' => time(),
-                    'user_language' => $SETTINGS['default_language'],
-                    'encrypted_psk' => '',
-                    'isAdministratedByRole' => (isset($SETTINGS['oauth_new_user_is_administrated_by']) === true && empty($SETTINGS['oauth_new_user_is_administrated_by']) === false) ? $SETTINGS['oauth_new_user_is_administrated_by'] : 0,
-                    'public_key' => $userKeys['public_key'],
-                    'private_key' => $userKeys['private_key'],
-                    'special' => 'user_added_from_ad',
-                    'auth_type' => $post_authType,
-                    'is_ready_for_usage' => isset($SETTINGS['enable_tasks_manager']) === true && (int) $SETTINGS['enable_tasks_manager'] === 1 ? 0 : 1,
-                    'created_at' => time(),
-                )
+                $userData
             );
             $newUserId = DB::insertId();
 
@@ -2656,22 +2728,33 @@ if (null !== $post_type) {
                 isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH
             );
 
-            // Generate user keys with the code
-            $userKeys = generateUserKeys($post_user_code);
+            // Generate user keys with the code and transparent recovery support
+            $userKeys = generateUserKeys($post_user_code, $SETTINGS);
 
-            //update user is not ready
+            // Prepare update data
+            $updateData = array(
+                'is_ready_for_usage' => 1,
+                'otp_provided' => 0,
+                'ongoing_process_id' => $processId,
+                'special' => 'generate-keys',
+                'public_key' => $userKeys['public_key'],
+                'private_key' => $userKeys['private_key'],
+                // Notify user that he must re download his keys:
+                'keys_recovery_time' => NULL,
+            );
+
+            // Add transparent recovery fields if available
+            if (isset($userKeys['user_seed'])) {
+                $updateData['user_derivation_seed'] = $userKeys['user_seed'];
+                $updateData['private_key_backup'] = $userKeys['private_key_backup'];
+                $updateData['key_integrity_hash'] = $userKeys['key_integrity_hash'];
+                $updateData['last_pw_change'] = time();
+            }
+
+            // Update user
             DB::update(
                 prefixTable('users'),
-                array(
-                    'is_ready_for_usage' => 1,
-                    'otp_provided' => 0,
-                    'ongoing_process_id' => $processId,
-                    'special' => 'generate-keys',
-                    'public_key' => $userKeys['public_key'],
-                    'private_key' => $userKeys['private_key'],
-                    // Notify user that he must re download his keys:
-                    'keys_recovery_time' => NULL,
-                ),
+                $updateData,
                 'id = %i',
                 $post_user_id
             );
@@ -2737,7 +2820,6 @@ if (null !== $post_type) {
                 $user_id
             );
 
-            //print_r($processesProgress);
             $finished_steps = 0;
             $nb_steps = count($processesProgress);
             foreach($processesProgress as $process) {
@@ -2832,6 +2914,265 @@ if (null !== $post_type) {
             );
             
             break;
+        
+        case "list_deleted_users":
+            // Check KEY
+            if ($post_key !== $session->get('key')) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            $result = listDeletedUsers();
+
+            echo prepareExchangedData(
+                array(
+                    'error' => false,
+                    'result' => $result,
+                    'debug' => '',
+                ),
+                'encode'
+            );
+            
+            break;
+        
+        case "purge_user":
+            // Check KEY
+            if ($post_key !== $session->get('key')) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // Prepare variables
+            $userId = (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
+        
+            if (empty($userId)) {
+                echo prepareExchangedData([
+                    'error' => true,
+                    'message' => $lang->get('error_empty_data'),
+                ], 'encode');
+                break;
+            }
+            
+            $result = purgeDeletedUserById($userId);
+
+            echo prepareExchangedData(
+                $result,
+                'encode'
+            );
+            
+            break;
+
+        case 'get_purgeable_users':
+            // Check KEY
+            if ($post_key !== $session->get('key')) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // Check if user is admin
+            if ($session->get('user-admin') !== 1 && $session->get('user-can_manage_all_users') !== 1) {
+                echo prepareExchangedData(
+                    [
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed'),
+                    ],
+                    'encode'
+                );
+                break;
+            }
+
+            // Prepare variables
+            $daysRetention = filter_var($dataReceived['days_retention'], FILTER_SANITIZE_NUMBER_INT);
+            $daysRetention = empty($daysRetention) ? 90 : (int)$daysRetention;
+            $cutoffTimestamp = time() - ($daysRetention * 86400);
+            
+            try {
+                // Get list of users to delete
+                $users = DB::query(
+                    "SELECT id FROM " . prefixTable("users") . " 
+                    WHERE deleted_at IS NOT NULL 
+                    AND deleted_at > 0
+                    AND deleted_at < %i
+                    ORDER BY deleted_at ASC",
+                    $cutoffTimestamp
+                );
+                
+                $userIds = array_column($users, 'id');
+                
+                echo prepareExchangedData(
+                    [
+                        'error' => false,
+                        'user_ids' => $userIds,
+                        'count' => count($userIds),
+                        'retention_days' => $daysRetention
+                    ],
+                    'encode'
+                );
+                
+            } catch (Exception $e) {
+                echo prepareExchangedData(
+                    [
+                        'error' => true,
+                        'message' => $lang->get('error') . ': ' . $e->getMessage(),
+                    ],
+                    'encode'
+                );
+            }
+            
+            break;
+
+        case 'purge_users_batch':            
+            // Check KEY
+            if ($post_key !== $session->get('key')) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // Check if user is admin
+            if ($session->get('user-admin') !== 1 && $session->get('user-can_manage_all_users') !== 1) {
+                echo prepareExchangedData(
+                    [
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed'),
+                    ],
+                    'encode'
+                );
+                break;
+            }
+
+            // Prepare variables
+            $daysRetention = filter_var($dataReceived['days_retention'], FILTER_SANITIZE_NUMBER_INT);
+            $userIds = filter_var_array(
+                $dataReceived['user_ids'],
+                FILTER_SANITIZE_NUMBER_INT
+            );
+            
+            // Ensure user id has been provided
+            if (empty($userIds) || !is_array($userIds)) {
+                echo prepareExchangedData(
+                    [
+                        'error' => true,
+                        'message' => $lang->get('error_empty_data'),
+                    ],
+                    'encode'
+                );
+                break;
+            }
+            
+            $purgedCount = 0;
+            $errors = [];
+            $cutoffTimestamp = time() - ((int)$daysRetention * 86400);        
+                        
+            foreach ($userIds as $userId) {
+                $userId = (int)$userId;
+                
+                try {
+                    $result = purgeDeletedUserById($userId);
+                    $purgedCount++;
+                    
+                } catch (Exception $e) {
+                    DB::rollback();
+                    $errors[] = "User ID $userId: " . $e->getMessage();
+                }
+            }
+            
+            echo prepareExchangedData(
+                [
+                    'error' => false,
+                    'purged_count' => $purgedCount,
+                    'total_in_batch' => count($userIds),
+                    'errors' => $errors,
+                    'message' => $purgedCount . ' user(s) purged in this batch'
+                ],
+                'encode'
+            );
+            
+            break;
+
+        case 'restore_user':
+            // Check KEY
+            if ($post_key !== $session->get('key')) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // Check if user is admin
+            if ($session->get('user-admin') !== 1) {
+                echo prepareExchangedData(
+                    array('error' => true, 'message' => 'Insufficient rights'),
+                    'encode'
+                );
+                break;
+            }
+
+            // Prepare variables
+            $userId = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
+            
+            // Get info about user
+            $data_user = DB::queryFirstRow(
+                'SELECT login FROM ' . prefixTable('users') . ' WHERE id = %i',
+                $userId
+            );
+            
+            if ($data_user === null) {
+                echo prepareExchangedData(
+                    array('error' => true, 'message' => 'User not found'),
+                    'encode'
+                );
+                break;
+            }
+            
+            // Remove user suffix "_deleted_timestamp"
+            $deletedSuffix = '_deleted_' . substr($data_user['login'], strrpos($data_user['login'], '_deleted_') + 9);
+            $originalLogin = str_replace($deletedSuffix, '', $data_user['login']);
+            
+            // Restore user
+            DB::update(
+                prefixTable('users'),
+                array(
+                    'login' => $originalLogin,
+                    'deleted_at' => null,
+                    'disabled' => 0,
+                ),
+                'id = %i',
+                $userId
+            );
+            
+            echo prepareExchangedData(
+                array('error' => false, 'message' => 'User restored successfully'),
+                'encode'
+            );
+            break;
     }
     // # NEW LOGIN FOR USER HAS BEEN DEFINED ##
 } elseif (!empty(filter_input(INPUT_POST, 'newValue', FILTER_SANITIZE_FULL_SPECIAL_CHARS))) {
@@ -2861,7 +3202,7 @@ if (null !== $post_type) {
         // Check that operation is allowed
         if (in_array(
             $value[0],
-            array('login', 'pw', 'email', 'treeloadstrategy', 'usertimezone', 'yubico_user_key', 'yubico_user_id', 'agses-usercardid', 'user_language', 'psk', 'split_view_mode')
+            array('login', 'pw', 'email', 'treeloadstrategy', 'usertimezone', 'yubico_user_key', 'yubico_user_id', 'agses-usercardid', 'user_language', 'psk', 'split_view_mode', 'show_subfolders')
         )) {
             DB::update(
                 prefixTable('users'),
@@ -2890,6 +3231,7 @@ if (null !== $post_type) {
                 'agses-usercardid' => null, 
                 'email' => 'user-email',
                 'split_view_mode' => 'user-split_view_mode',
+                'show_subfolders' => 'user-show_subfolders',
             ];
             // Update session
             if (array_key_exists($value[0], $sessionMapping)) {
@@ -2937,6 +3279,227 @@ if (null !== $post_type) {
         }
     }
 }
+
+/**
+ * List deleted users
+ * 
+ * @return array
+ */
+function listDeletedUsers(): array
+{
+    $users = DB::query(
+        "SELECT id, login, email, deleted_at, 
+                DATEDIFF(NOW(), FROM_UNIXTIME(deleted_at)) as days_since_deletion
+         FROM " . prefixTable("users") . " 
+         WHERE deleted_at IS NOT NULL 
+         AND deleted_at > 0
+         ORDER BY deleted_at DESC"
+    );
+    
+    return [
+        'error' => false,
+        'users' => $users,
+        'count' => count($users)
+    ];
+}
+
+/**
+ * Purge deleted user by ID
+ * 
+ * @param int $userId
+ * @return array
+ */
+function purgeDeletedUserById($userId): array
+{
+    $session = SessionManager::getSession();
+    $lang = new Language($session->get('user-language') ?? 'english');
+    
+    // Vérifier que l'utilisateur est bien marqué deleted
+    $user = DB::queryFirstRow(
+        "SELECT id, login, deleted_at FROM " . prefixTable("users") . " 
+         WHERE id = %i 
+         AND deleted_at IS NOT NULL 
+         AND deleted_at > 0",
+        $userId
+    );
+    
+    if (!$user) {
+        return [
+            'error' => true,
+            'message' => 'User not found or not deleted'
+        ];
+    }
+
+    DB::startTransaction();
+    
+    try {
+        // Delete private keys
+        DB::delete(
+            prefixTable('user_private_keys'),
+            'user_id = %i',
+            $userId
+        );       
+
+        // delete user api
+        DB::delete(
+            prefixTable('api'),
+            'user_id = %i',
+            $userId
+        );
+        
+        // Delete cache
+        DB::delete(
+            prefixTable('cache'),
+            'author = %i',
+            $userId
+        );
+
+        // delete personal folder and subfolders
+        $data = DB::queryFirstRow(
+            'SELECT id FROM ' . prefixTable('nested_tree') . '
+            WHERE title = %s AND personal_folder = %i',
+            $userId,
+            '1'
+        );
+
+        // Delete tokens
+        DB::delete(
+            prefixTable('tokens'),
+            'user_id = %i',
+            $userId
+        );
+
+        // Get through each subfolder
+        if (!empty($data['id'])) {
+            $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+            $folders = $tree->getDescendants($data['id'], true);
+            foreach ($folders as $folder) {
+                // delete folder
+                DB::delete(prefixTable('nested_tree'), 'id = %i AND personal_folder = %i', $folder->id, '1');
+                // delete items & logs
+                $items = DB::query(
+                    'SELECT id FROM ' . prefixTable('items') . '
+                    WHERE id_tree=%i AND perso = %i',
+                    $folder->id,
+                    '1'
+                );
+                foreach ($items as $item) {
+                    // Delete item
+                    DB::delete(prefixTable('items'), 'id = %i', $item['id']);
+                    // log
+                    DB::delete(prefixTable('log_items'), 'id_item = %i', $item['id']);
+                }
+            }
+            // rebuild tree
+            $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+            $tree->rebuild();
+        }
+
+        // Delete objects keys
+        deleteUserObjetsKeys((int) $userId);
+        
+        // Delete user
+        DB::delete(
+            prefixTable('users'),
+            'id = %i',
+            $userId
+        );   
+
+        // Delete any process related to user
+        $processes = DB::query(
+            'SELECT increment_id
+            FROM ' . prefixTable('background_tasks') . '
+            WHERE JSON_EXTRACT(arguments, "$.new_user_id") = %i',
+            $userId
+        );
+        $process_id = -1;
+        foreach ($processes as $process) {
+            // Delete task
+            DB::delete(
+                prefixTable('background_subtasks'),
+                'task_id = %i',
+                $process['increment_id']
+            );
+            $process_id = $process['increment_id'];
+        }
+        // Delete main process
+        if ($process_id > -1) {
+            DB::delete(
+                prefixTable('background_tasks'),
+                'increment_id = %i',
+                $process_id
+            );
+        }
+        
+        // Log de la purge
+        logEvents(
+            $GLOBALS['SETTINGS'],
+            'user_mngt',
+            'user_purged',
+            (string) $session->get('user-id'),
+            $session->get('login'),
+            $userId
+        );
+        
+        DB::commit();
+        
+        return [
+            'error' => false,
+            'message' => $lang->get('user_purged_successfully')
+        ];
+        
+    } catch (Exception $e) {
+        DB::rollback();
+        return [
+            'error' => true,
+            'message' => $e->getMessage()
+        ];
+    }
+}
+
+/**
+ * Purge old deleted users
+ * 
+ * @param int $daysRetention
+ * @return array
+ *//*
+function purgeOldDeletedUsers($daysRetention = 90): array
+{
+    $session = SessionManager::getSession();
+    $lang = new Language($session->get('user-language') ?? 'english');
+
+    $cutoffTimestamp = time() - ($daysRetention * 86400);
+    
+    // Récupérer les utilisateurs à purger
+    $usersToDelete = DB::query(
+        "SELECT id, login FROM " . prefixTable("users") . " 
+         WHERE deleted_at IS NOT NULL 
+         AND deleted_at > 0
+         AND deleted_at < %i",
+        $cutoffTimestamp
+    );
+    
+    $purgedCount = 0;
+    $errors = [];
+    
+    foreach ($usersToDelete as $user) {
+        $result = purgeDeletedUserById($user['id']);
+        
+        if ($result['error']) {
+            $errors[] = $user['login'] . ': ' . $result['message'];
+        } else {
+            $purgedCount++;
+        }
+    }
+    
+    return [
+        'error' => count($errors) > 0,
+        'purged_count' => $purgedCount,
+        'total_found' => count($usersToDelete),
+        'errors' => $errors,
+        'message' => $purgedCount . ' ' . $lang->get('users_purged_successfully')
+    ];
+}*/
 
 /**
  * Return the level of access on a folder.

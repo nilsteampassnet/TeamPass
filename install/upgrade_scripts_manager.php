@@ -58,6 +58,8 @@ $scripts_list = array(
     array('upgrade_operations.php', 'populateItemsTable_DeletedAt'),
     array('upgrade_operations.php', '20231017_1'),
     array('upgrade_run_3.1.php', 'user_id'),
+    array('upgrade_run_3.1.5.php', 'user_id'),
+    array('upgrade_operations.php', 'Transparent_recovery_migration'),
 );
 $param = '';
 

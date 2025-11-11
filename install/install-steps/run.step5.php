@@ -594,6 +594,10 @@ class DatabaseInstaller
             array('admin', 'oauth_selfregistered_user_belongs_to_role', '0'),
             array('admin', 'oauth_self_register_groups', ''),
             array('admin', 'task_duration_estimation', '0'),
+            array('admin', 'transparent_key_recovery_enabled', '1'),
+            array('admin', 'transparent_key_recovery_pbkdf2_iterations', '100000'),
+            array('admin', 'transparent_key_recovery_integrity_check', '1'),
+            array('admin', 'transparent_key_recovery_max_age_days', '730')
         );
         foreach ($aMiscVal as $elem) {
             //Check if exists before inserting
@@ -712,6 +716,9 @@ class DatabaseInstaller
             `yubico_user_id` varchar(100) NOT null DEFAULT 'none',
             `public_key` TEXT NULL DEFAULT NULL,
             `private_key` TEXT NULL DEFAULT NULL,
+            `user_derivation_seed` VARCHAR(64) NULL DEFAULT NULL,
+            `private_key_backup` TEXT NULL DEFAULT NULL,
+            `key_integrity_hash` VARCHAR(64) NULL DEFAULT NULL,
             `special` VARCHAR(250) NOT NULL DEFAULT 'none',
             `auth_type` VARCHAR(200) NOT NULL DEFAULT 'local',
             `is_ready_for_usage` BOOLEAN NOT NULL DEFAULT FALSE,
@@ -726,7 +733,8 @@ class DatabaseInstaller
             `aes_iv` TEXT NULL DEFAULT NULL,
             `split_view_mode` tinyint(1) NOT null DEFAULT '0',
             PRIMARY KEY (`id`),
-            UNIQUE KEY `login` (`login`)
+            UNIQUE KEY `login` (`login`),
+            KEY `idx_last_pw_change` (`last_pw_change`)
             ) CHARSET=utf8;"
         );
 

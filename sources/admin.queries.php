@@ -2727,6 +2727,31 @@ switch ($post_type) {
         );
 
         break;
+
+    case "transparentRecoveryCheck":
+        // Check KEY and rights
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        $stats = getTransparentRecoveryStats($SETTINGS);
+        
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'stats' => $stats,
+            ),
+            'encode'
+        );
+
+        break;
     
 }
 

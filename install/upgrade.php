@@ -773,12 +773,13 @@ function manageUpgradeScripts(file_number)
             .dismissOthers();
     }
 
-    request = $.post("upgrade_scripts_manager.php",
+    request = $.post(
+        "upgrade_scripts_manager.php",
         {
             file_number : parseInt(file_number)
         },
         function(data) {
-            console.log(data[0])
+            //console.log(data[0])
             // work not finished
             if (data[0].finish !== "1") {
                 // loop

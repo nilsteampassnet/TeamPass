@@ -106,3 +106,21 @@ Setting up an OTP code for one item is performed in the edition form.
 * Finally, you can decide to enable or not showing the OTP code
 
 ![1](../../_media/tp3_otp_2.png)
+
+## Show sub-directories with Items list
+
+Sub-directories can be displayed inside the items list.
+
+![1](../../_media/tp3_subfolders_1.png)
+
+This feature is by default disabled and can be enabled from the user's profile.
+* Open `My Profile`
+* Select `Settings` tab
+* Enable option `Show sub-directories in main items list`
+* Save your changes
+
+Once enabled, you may also hide or show the sub-directories list using special list: 
+* Open `Item menu`
+* Click `Show/Hide directories`
+
+![1](../../_media/tp3_subfolders_2.png)

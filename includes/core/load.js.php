@@ -530,23 +530,6 @@ if (
         
         // ---
     } else if (store.get('teampassUser') !== undefined &&
-        store.get('teampassUser').special === 'ldap_password_has_changed_do_reencryption'
-    ) {
-        // Now we need to perform re-encryption due to LDAP password change
-        if (debugJavascript === true) console.log('show password change');
-        // HIde
-        $('.content-header, .content, #button_do_sharekeys_reencryption').addClass('hidden');
-        $('#warning-text-reencryption').html('<i class="icon fa-solid fa-info mr-2"></i><?php echo $lang->get('ldap_password_change_warning'); ?>');
-
-        // Show passwords inputs and form
-        $('#dialog-encryption-keys, .ask-for-previous-password').removeClass('hidden');
-
-        $('#sharekeys_reencryption_target_user').val(store.get('teampassUser').user_id);
-
-        $('#button_do_sharekeys_reencryption').removeClass('hidden');
-        
-        // ---
-    } else if (store.get('teampassUser') !== undefined &&
         store.get('teampassUser').special === 'private_items_to_encrypt'
     ) {
         // If user has to re-encrypt his personal item passwords
@@ -1573,7 +1556,7 @@ if (
                         'user_id': store.get('teampassUser').user_id,
                         'current_code': $('#dialog-ldap-user-build-keys-database-code').val(),
                         'new_code': $('#dialog-ldap-user-build-keys-database-userpassword').val(),
-                        'action_type' : '',
+                        'action_type' : 'encrypt_privkey_with_user_password',
                     }
                     if (debugJavascript === true) console.log(data);
                     
