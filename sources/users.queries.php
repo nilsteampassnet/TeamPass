@@ -2955,7 +2955,7 @@ if (null !== $post_type) {
             }
 
             // Prepare variables
-            $userId = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
+            $userId = (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
         
             if (empty($userId)) {
                 echo prepareExchangedData([
