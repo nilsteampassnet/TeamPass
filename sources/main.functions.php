@@ -4362,30 +4362,30 @@ function purgeUnnecessaryKeysForUser(int $user_id=0)
         // Item keys
         DB::delete(
             prefixTable('sharekeys_items'),
-            'object_id IN %li AND user_id NOT IN (%i, '.TP_USER_ID.')',
+            'object_id IN %li AND user_id NOT IN %ls',
             $personalItems,
-            $user_id
+            [$user_id, TP_USER_ID, API_USER_ID, OTV_USER_ID,SSH_USER_ID]
         );
         // Files keys
         DB::delete(
             prefixTable('sharekeys_files'),
-            'object_id IN %li AND user_id NOT IN (%i, '.TP_USER_ID.')',
+            'object_id IN %li AND user_id NOT IN %ls',
             $personalItems,
-            $user_id
+            [$user_id, TP_USER_ID, API_USER_ID, OTV_USER_ID,SSH_USER_ID]
         );
         // Fields keys
         DB::delete(
             prefixTable('sharekeys_fields'),
-            'object_id IN %li AND user_id NOT IN (%i, '.TP_USER_ID.')',
+            'object_id IN %li AND user_id NOT IN %ls',
             $personalItems,
-            $user_id
+            [$user_id, TP_USER_ID, API_USER_ID, OTV_USER_ID,SSH_USER_ID]
         );
         // Logs keys
         DB::delete(
             prefixTable('sharekeys_logs'),
-            'object_id IN %li AND user_id NOT IN (%i, '.TP_USER_ID.')',
+            'object_id IN %li AND user_id NOT IN %ls',
             $personalItems,
-            $user_id
+            [$user_id, TP_USER_ID, API_USER_ID, OTV_USER_ID,SSH_USER_ID]
         );
     }
 }
@@ -4873,27 +4873,27 @@ function EnsurePersonalItemHasOnlyKeysForOwner(int $userId, int $itemId): bool
     // Delete all keys for this item except for the owner and TeamPass system user
     DB::delete(
         prefixTable('sharekeys_items'),
-        'object_id = %i AND user_id != %i',
+        'object_id = %i AND user_id NOT IN %ls',
         $itemId,
-        $userId
+        [$userId, TP_USER_ID, API_USER_ID, OTV_USER_ID,SSH_USER_ID]
     );
     DB::delete(
         prefixTable('sharekeys_files'),
-        'object_id IN (SELECT id FROM '.prefixTable('files').' WHERE id_item = %i) AND user_id != %i',
+        'object_id IN (SELECT id FROM '.prefixTable('files').' WHERE id_item = %i) AND user_id NOT IN %ls',
         $itemId,
-        $userId
+        [$userId, TP_USER_ID, API_USER_ID, OTV_USER_ID,SSH_USER_ID]
     );
     DB::delete(
         prefixTable('sharekeys_fields'),
-        'object_id IN (SELECT id FROM '.prefixTable('fields').' WHERE id_item = %i) AND user_id != %i',
+        'object_id IN (SELECT id FROM '.prefixTable('fields').' WHERE id_item = %i) AND user_id NOT IN %ls',
         $itemId,
-        $userId
+        [$userId, TP_USER_ID, API_USER_ID, OTV_USER_ID,SSH_USER_ID]
     );
     DB::delete(
         prefixTable('sharekeys_logs'),
-        'object_id IN (SELECT id FROM '.prefixTable('log_items').' WHERE id_item = %i) AND user_id != %i',
+        'object_id IN (SELECT id FROM '.prefixTable('log_items').' WHERE id_item = %i) AND user_id NOT IN %ls',
         $itemId,
-        $userId
+        [$userId, TP_USER_ID, API_USER_ID, OTV_USER_ID,SSH_USER_ID]
     );
 
     return true;
