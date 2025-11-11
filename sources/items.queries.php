@@ -6413,6 +6413,7 @@ switch ($inputData['type']) {
         }
 
         $ret = [];
+        $subfolders = [];
         $foldersArray = json_decode($inputData['data'], true);
         if (is_array($foldersArray) === true && $inputData['data'] !== '[null]') {
             $rows = DB::query(
@@ -6429,6 +6430,17 @@ switch ($inputData['type']) {
                     );
                 }
             }
+
+            // Get subfolders title of parent folder
+            $ids = $tree->getDescendants($foldersArray[0], false, true, true);
+            if (count($ids) > 0) {
+                $subfolders = DB::queryFirstColumn(
+                    'SELECT title
+                    FROM ' . prefixTable('nested_tree') . '
+                    WHERE id IN %li',
+                    $ids
+                );
+            }
         }
 
         // send data
@@ -6436,6 +6448,7 @@ switch ($inputData['type']) {
             [
                 'error' => '',
                 'result' => $ret,
+                'subfolders' => $subfolders,
             ],
             'encode'
         );

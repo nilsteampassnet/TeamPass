@@ -1104,6 +1104,19 @@ if (null !== $post_type) {
                     // even the inactive ones
                     // because if user has access to the folder
                     // he should have access to all items in it
+
+                    // We will use TP_USER in order to decrypt and crypt passwords
+                    $userTpInfo = DB::queryFirstRow(
+                        'SELECT pw, public_key, private_key, login, name
+                        FROM ' . prefixTable('users') . '
+                        WHERE id = %i',
+                        TP_USER_ID
+                    );
+                    $decryptedData = cryption($userTpInfo['pw'], '', 'decrypt', $SETTINGS);
+                    $userTpPwd = $decryptedData['string'] ?? '';
+                    $userTpPrivateKey = decryptPrivateKey($userTpPwd, $userTpInfo['private_key']);
+                    
+                    $errorItems = [];
                     $rows = DB::query(
                         'SELECT *
                         FROM ' . prefixTable('items') . '
@@ -1138,89 +1151,79 @@ if (null !== $post_type) {
                             (int) $dataDeleted !== 1
                             || (isset($item_restored['date']) === true && (int) $item_deleted['date'] < (int) $item_restored['date'])
                         ) {
-                            // Get the ITEM object key for the user
-                            $userKey = DB::queryFirstRow(
+                             // Get the ITEM object key for the user
+                            $itemUserTpKey = DB::queryFirstRow(
                                 'SELECT share_key
                                 FROM ' . prefixTable('sharekeys_items') . '
                                 WHERE user_id = %i AND object_id = %i',
-                                $session->get('user-id'),
+                                TP_USER_ID,
                                 $record['id']
                             );
-                            if (DB::count() === 0) {
-                                // ERROR - No sharekey found for this item and user
-                                echo prepareExchangedData(
-                                    array(
-                                        'error' => true,
-                                        'message' => $lang->get('error_not_allowed_to'),
-                                    ),
-                                    'encode'
-                                );
-                                break;
-                            }                            
-
-                            // Decrypt / Encrypt the password
-                            $cryptedStuff = doDataEncryption(
-                                base64_decode(
-                                    doDataDecryption(
-                                        $record['pw'],
-                                        decryptUserObjectKey(
-                                            $userKey['share_key'],
-                                            $session->get('user-private_key')
+                            if (DB::count() > 0) {
+                                // Decrypt / Encrypt the password
+                                $cryptedStuff = doDataEncryption(
+                                    base64_decode(
+                                        doDataDecryption(
+                                            $record['pw'],
+                                            decryptUserObjectKey(
+                                                $itemUserTpKey['share_key'],
+                                                $userTpPrivateKey
+                                            )
                                         )
                                     )
-                                )
-                            );
+                                );                                
 
-                            // Insert the new record and get the new auto_increment id
-                            DB::insert(
-                                prefixTable('items'),
-                                array(
-                                    'label' => substr($record['label'], 0, 500),
-                                    'description' => empty($record['description']) === true ? '' : $record['description'],
-                                    'id_tree' => $newFolderId,
-                                    'pw' => $cryptedStuff['encrypted'],
-                                    'pw_iv' => '',
-                                    'url' => empty($record['url']) === true ? '' : substr($record['url'], 0, 500),
-                                    'login' => empty($record['login']) === true ? '' : substr($record['login'], 0, 200),
-                                    'viewed_no' => 0,
-                                    'encryption_type' => 'teampass_aes',
-                                    'item_key' => uniqidReal(50),
-                                    'created_at' => time(),
-                                )
-                            );
-                            $newItemId = DB::insertId();
+                                // Insert the new record and get the new auto_increment id
+                                DB::insert(
+                                    prefixTable('items'),
+                                    array(
+                                        'label' => substr($record['label'], 0, 500),
+                                        'description' => empty($record['description']) === true ? '' : $record['description'],
+                                        'id_tree' => $newFolderId,
+                                        'pw' => $cryptedStuff['encrypted'],
+                                        'pw_iv' => '',
+                                        'url' => empty($record['url']) === true ? '' : substr($record['url'], 0, 500),
+                                        'login' => empty($record['login']) === true ? '' : substr($record['login'], 0, 200),
+                                        'viewed_no' => 0,
+                                        'encryption_type' => 'teampass_aes',
+                                        'item_key' => uniqidReal(50),
+                                        'created_at' => time(),
+                                    )
+                                );
+                                $newItemId = DB::insertId();
 
-                            // Create task for the new item
-                            storeTask(
-                                'item_copy',
-                                $session->get('user-id'),
-                                (int) $nodeInfo->personal_folder,
-                                (int) $newFolderId,
-                                (int) $newItemId,
-                                $cryptedStuff['objectKey'],
-                            );
+                                // Create task for the new item
+                                storeTask(
+                                    'item_copy',
+                                    $session->get('user-id'),
+                                    (int) $nodeInfo->personal_folder,
+                                    (int) $newFolderId,
+                                    (int) $newItemId,
+                                    $cryptedStuff['objectKey'],
+                                );
 
-                            // Add this duplicate in logs
-                            logItems(
-                                $SETTINGS,
-                                (int) $newItemId,
-                                $record['label'],
-                                $session->get('user-id'),
-                                'at_creation',
-                                $session->get('user-login')
-                            );
-                            // Add the fact that item has been copied in logs
-                            logItems(
-                                $SETTINGS,
-                                (int) $newItemId,
-                                $record['label'],
-                                $session->get('user-id'),
-                                'at_copy',
-                                $session->get('user-login')
-                            );
+                                // Add this duplicate in logs
+                                logItems(
+                                    $SETTINGS,
+                                    (int) $newItemId,
+                                    $record['label'],
+                                    $session->get('user-id'),
+                                    'at_creation',
+                                    $session->get('user-login')
+                                );
+                                // Add the fact that item has been copied in logs
+                                logItems(
+                                    $SETTINGS,
+                                    (int) $newItemId,
+                                    $record['label'],
+                                    $session->get('user-id'),
+                                    'at_copy',
+                                    $session->get('user-login')
+                                );
 
-                            // Add item to cache table
-                            updateCacheTable('add_value', (int) $newItemId);
+                                // Add item to cache table
+                                updateCacheTable('add_value', (int) $newItemId);
+                            }
                         }
                     }
                 }
@@ -1248,6 +1251,7 @@ if (null !== $post_type) {
 
             $data = array(
                 'error' => '',
+                'errorItems' => !empty($errorItems) ? $errorItems : [],
             );
 
             // send data

@@ -1312,5 +1312,8 @@ e new password must:<br/> - Be different from the previous one<br/> - Contain at
     'user_purged_successfully' => 'User successfully purged',
     'users_purged_successfully' => 'Users successfully purged',
     'confirm_purge_user' => 'Are you sure you want to permanently delete this user?',
+    'transparent_key_recovery_pbkdf2_iterations' => 'PBKDF2 iterations for password transparent recovery',
+    'transparent_key_recovery_pbkdf2_iterations_tip' => 'Number of iterations for PBKDF2 key derivation in password transparent recovery. Higher values increase security but may impact performance. Adjust based on server capabilities.',
+    'some_items_not_copied_empty_password' => 'Some items have been copied with empty passwords.',
 
 );

@@ -332,7 +332,7 @@ case 'perform_fix_pf_items-step3':
             'decode'
         );
 
-        // Get PT_USER info
+        // Get TP_USER info
         $userInfo = DB::queryFirstRow(
             'SELECT pw, public_key, private_key, login, name
             FROM ' . prefixTable('users') . '

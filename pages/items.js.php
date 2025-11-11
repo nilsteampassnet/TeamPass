@@ -2318,7 +2318,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         // Show cog
         toastr.remove();
         toastr
-            .info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+            .info('<?php echo $lang->get('please_wait_folders_in_construction'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
         
         // Launch action
         var data = {
@@ -2357,14 +2357,34 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     ListerItems($('#form-folder-copy-destination option:selected').val(), '', 0);
                     // Back to list
                     closeItemDetailsCard();
+                    $('#folders-tree-card, .columns-position').removeClass('hidden');
+                    $('#folder-tree-container').addClass('col-md-5').removeClass('col-md-3').removeClass('hidden');
+                    $('#items-list-container').addClass('col-md-7').removeClass('col-md-4').removeClass('hidden');
+                    $('#items-details-container').addClass('hidden');
+                    $('.form-folder-action').addClass('hidden');
+
+                    // If some items have empty password
                     // Warn user
-                    toastr.remove();
-                    toastr.success(
-                        '<?php echo $lang->get('success'); ?>',
-                        '', {
-                            timeOut: 1000
-                        }
-                    );
+                    if (data.errorItems.length > 0) {
+                        let itemList = '<ul>';
+                        data.errorItems.forEach(function(item) {
+                            itemList += '<li>' + item + '</li>';
+                        });
+                        itemList += '</ul>';
+                        toastr.remove();
+                        toastr.warning(
+                            '<?php echo $lang->get('some_items_not_copied_empty_password'); ?>:<br>' + itemList,
+                            '<?php echo $lang->get('caution'); ?>'
+                        );
+                    } else {
+                        toastr.remove();
+                        toastr.success(
+                            '<?php echo $lang->get('success'); ?>',
+                            '', {
+                                timeOut: 4000
+                            }
+                        );
+                    }
                 }
             }
         );
@@ -3991,8 +4011,10 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                                     'teampassApplication',
                                     function(teampassApplication) {
                                         foldersList = currentFoldersList;
+                                        subFoldersList = data.subfolders;
                                     }
                                 );
+
                                 return true;
                             }
                         });
@@ -4117,8 +4139,14 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         
         // Show list of sub directories - Load only once
         if (store.get('teampassUser').show_subfolders === 1 && start === 0) {
-            console.log('Afficher les sous-répertoires - '+start)
-            displaySubfolders(store.get('teampassApplication').foldersList, groupe_id);
+            // if undefined wait 1.5s until queries are done
+            if(store.get('teampassApplication').foldersList === undefined) {
+                setTimeout(() => {
+                displaySubfolders(store.get('teampassApplication').foldersList, groupe_id);
+                }, 1500);
+            } else {
+                displaySubfolders(store.get('teampassApplication').foldersList, groupe_id);
+            }
         }
 
         // Hide any info
