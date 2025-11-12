@@ -155,11 +155,13 @@ if (null !== $post_type) {
                 INNER JOIN ' . prefixTable('items') . ' as i ON (l.id_item=i.id)
                 LEFT JOIN ' . prefixTable('users') . ' as u ON (l.id_user=u.id)
                 LEFT JOIN ' . prefixTable('nested_tree') . ' as n ON (i.id_tree=n.id)
-                INNER JOIN ' . prefixTable('automatic_del') . ' as a ON (l.id_item = a.item_id)
-                WHERE i.inactif = %i
-                AND l.action = %s',
-                1,
-                'at_delete'
+                LEFT JOIN ' . prefixTable('automatic_del') . ' as a ON (l.id_item = a.item_id)
+                WHERE l.action = %s
+                AND i.perso = %i
+                AND TRIM(COALESCE(i.deleted_at, "")) <> ""
+                ORDER BY l.id_item ASC, CAST(l.date AS UNSIGNED) DESC',
+                'at_delete',
+                0
             );
             $prev_id = '';
             foreach ($rows as $record) {
@@ -276,6 +278,7 @@ if (null !== $post_type) {
                         prefixTable('items'),
                         array(
                             'inactif' => '0',
+                            'deleted_at' => null,
                         ),
                         'id_tree = %s',
                         (int) $folderId
@@ -309,6 +312,7 @@ if (null !== $post_type) {
                     prefixTable('items'),
                     array(
                         'inactif' => '0',
+                        'deleted_at' => null,
                     ),
                     'id = %i',
                     $itemId
