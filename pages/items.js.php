@@ -3799,6 +3799,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
                     // Do drag'n'drop for the folders
                     prepareFolderDragNDrop();
+
+                    // Prepare copy to clipboard
+                    PrepareCopyToClipboard();
                 }
             }
         );
@@ -3917,7 +3920,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
      */
     function displaySubfolders(folders, parentId) {
         // Manage case where no folders
-        if (folders === '') {
+        if (folders === '' || folders === undefined) {
             $('#teampass_subfolders_list').html('<tr><td colspan="2" class="text-center text-muted"><?php echo $lang->get('no_folder_selected');?></td></tr>');
             return false;
         }
@@ -4576,6 +4579,8 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             }
         });
 
+        
+
         // Sort entries
         var $tbody = $('#teampass_items_list');
         $tbody.find('tr').sort(function(a, b) {
@@ -4702,107 +4707,109 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             // Do drag'n'drop for the folders
             prepareFolderDragNDrop();
 
-            
-            // Prepare clipboard for PAssword
-            // Click handler to copy passwords
-            document.querySelectorAll('.fa-clickable-password').forEach(element => {
-                element.addEventListener('click', async function() {
-                    try {
-                        // Get the item key
-                        const itemKey = this.getAttribute('data-item-key');
-
-                        // Fetch the password from the server
-                        const password = await getItemPassword('at_password_copied', 'item_key', itemKey);
-
-                        if (!password) {
-                            // A password can be empty. Just exit.
-                            return;
-                        }
-
-                        // Copy the password to the clipboard
-                        await navigator.clipboard.writeText(password);
-
-                        // User notifications
-                        const clipboardDuration = parseInt(store.get('teampassSettings').clipboard_life_duration) || 0;
-                        if (clipboardDuration === 0) {
-                            toastr.info('<?php echo $lang->get("copy_to_clipboard"); ?>', '', {
-                                timeOut: 2000,
-                                positionClass: 'toast-bottom-right',
-                                progressBar: true
-                            });
-                        } else {
-                            toastr.warning('<?php echo $lang->get("clipboard_will_be_cleared"); ?>', '', {
-                                timeOut: clipboardDuration * 1000,
-                                progressBar: true
-                            });
-
-                            // Clear the clipboard content after a delay
-                            const cleaner = new ClipboardCleaner(clipboardDuration);
-                            cleaner.scheduleClearing(
-                                () => {
-                                    const clipboardStatus = JSON.parse(localStorage.getItem('clipboardStatus'));
-                                    if (clipboardStatus.status === 'unsafe') {
-                                        return;                                        
-                                    }
-                                    toastr.success('<?php echo $lang->get("clipboard_cleared"); ?>', '', {
-                                        timeOut: 2000,
-                                        positionClass: 'toast-bottom-right'
-                                    });
-                                },
-                                (error) => {
-                                    return;
-                                }
-                            );
-                        }
-                    } catch (error) {
-                        toastr.error('<?php echo $lang->get("clipboard_error"); ?>', '', {
-                            timeOut: 3000,
-                            positionClass: 'toast-bottom-right',
-                            progressBar: true
-                        });
-                    }
-                });
-            });
-
-            // Select all elements with class .fa-clickable-login
-            document.querySelectorAll('.fa-clickable-login').forEach(element => {
-                element.addEventListener('click', async function() {
-                    try {
-                        // Get text in attribute data-clipboard-text
-                        const loginText = this.getAttribute('data-clipboard-text');
-
-                        if (!loginText) {
-                            return;
-                        }
-
-                        // Copy text to clipboard
-                        await navigator.clipboard.writeText(loginText);
-
-                        // Send notification to user
-                        toastr.info(
-                            '<?php echo $lang->get("copy_to_clipboard"); ?>',
-                            '', {
-                                timeOut: 2000,
-                                positionClass: 'toast-bottom-right',
-                                progressBar: true
-                            }
-                        );
-                    } catch (error) {
-                        toastr.error(
-                            '<?php echo $lang->get("clipboard_error"); ?>',
-                            '', {
-                                timeOut: 3000,
-                                positionClass: 'toast-bottom-right',
-                                progressBar: true
-                            }
-                        );
-                    }
-                });
-            });
-
+            // Prepare copy to clipboard
+            PrepareCopyToClipboard();
         }
     }
 
+    function PrepareCopyToClipboard() {
+        // Prepare clipboard for PAssword
+        // Click handler to copy passwords
+        document.querySelectorAll('.fa-clickable-password').forEach(element => {
+            element.addEventListener('click', async function() {
+                try {
+                    // Get the item key
+                    const itemKey = this.getAttribute('data-item-key');
+
+                    // Fetch the password from the server
+                    const password = await getItemPassword('at_password_copied', 'item_key', itemKey);
+
+                    if (!password) {
+                        // A password can be empty. Just exit.
+                        return;
+                    }
+
+                    // Copy the password to the clipboard
+                    await navigator.clipboard.writeText(password);
+
+                    // User notifications
+                    const clipboardDuration = parseInt(store.get('teampassSettings').clipboard_life_duration) || 0;
+                    if (clipboardDuration === 0) {
+                        toastr.info('<?php echo $lang->get("copy_to_clipboard"); ?>', '', {
+                            timeOut: 2000,
+                            positionClass: 'toast-bottom-right',
+                            progressBar: true
+                        });
+                    } else {
+                        toastr.warning('<?php echo $lang->get("clipboard_will_be_cleared"); ?>', '', {
+                            timeOut: clipboardDuration * 1000,
+                            progressBar: true
+                        });
+
+                        // Clear the clipboard content after a delay
+                        const cleaner = new ClipboardCleaner(clipboardDuration);
+                        cleaner.scheduleClearing(
+                            () => {
+                                const clipboardStatus = JSON.parse(localStorage.getItem('clipboardStatus'));
+                                if (clipboardStatus.status === 'unsafe') {
+                                    return;                                        
+                                }
+                                toastr.success('<?php echo $lang->get("clipboard_cleared"); ?>', '', {
+                                    timeOut: 2000,
+                                    positionClass: 'toast-bottom-right'
+                                });
+                            },
+                            (error) => {
+                                return;
+                            }
+                        );
+                    }
+                } catch (error) {
+                    toastr.error('<?php echo $lang->get("clipboard_error"); ?>', '', {
+                        timeOut: 3000,
+                        positionClass: 'toast-bottom-right',
+                        progressBar: true
+                    });
+                }
+            });
+        });
+
+        // Select all elements with class .fa-clickable-login
+        document.querySelectorAll('.fa-clickable-login').forEach(element => {
+            element.addEventListener('click', async function() {
+                try {
+                    // Get text in attribute data-clipboard-text
+                    const loginText = this.getAttribute('data-clipboard-text');
+                    
+                    if (!loginText) {
+                        return;
+                    }
+
+                    // Copy text to clipboard
+                    await navigator.clipboard.writeText(loginText);
+
+                    // Send notification to user
+                    toastr.info(
+                        '<?php echo $lang->get("copy_to_clipboard"); ?>',
+                        '', {
+                            timeOut: 2000,
+                            positionClass: 'toast-bottom-right',
+                            progressBar: true
+                        }
+                    );
+                } catch (error) {
+                    toastr.error(
+                        '<?php echo $lang->get("clipboard_error"); ?>',
+                        '', {
+                            timeOut: 3000,
+                            positionClass: 'toast-bottom-right',
+                            progressBar: true
+                        }
+                    );
+                }
+            });
+        });
+    }
 
     function checkAccess(itemId, treeId, userId, actionType) {
         var data = {
@@ -5467,19 +5474,46 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                             try {
                                 // Retrieve the target defined by data-clipboard-target
                                 const targetId = this.getAttribute('data-clipboard-target');
-                                if (!targetId) {
-                                    return; // Stop if no target ID is defined
+                                
+                                if (!targetId) return;
+
+                                // Grab the node (login => <span>, url => <span> ou <a>, email => <span>, etc.)
+                                const $el = $('#'+targetId);
+                                if ($el.length === 0) throw new Error('target-not-found');
+
+                                // Compute text to copy depending on element type
+                                let textToCopy = '';
+                                if ($el.is('input, textarea')) {
+                                    textToCopy = $el.val() || '';
+                                } else if ($el.is('a')) {
+                                // For links, prefer href; fallback to visible text
+                                textToCopy = $el.attr('href') || ($el.text() || '').trim();
+                                } else {
+                                    // span/div/etc.
+                                    textToCopy = ($el.text() || '').trim();
+                                }	
+                                if (!textToCopy) throw new Error('empty');
+
+                                // Try modern API, fallback to execCommand
+                                const fallbackCopy = () => {
+                                    const ta = document.createElement('textarea');
+                                    ta.value = textToCopy;
+                                    ta.setAttribute('readonly', '');
+                                    ta.style.position = 'absolute';
+                                    ta.style.left = '-9999px';
+                                    document.body.appendChild(ta);
+                                    ta.select();
+                                    document.execCommand('copy');
+                                    document.body.removeChild(ta);
+                                };
+                    
+                                if (navigator.clipboard && navigator.clipboard.writeText) {
+                                    await navigator.clipboard.writeText(textToCopy);
+                                } else {
+                                    fallbackCopy();
                                 }
 
-                                // Retrieve the value of the target field
-                                if (!$('#'+targetId).val()) {
-                                    return; // Stop if target field has no value
-                                }
-
-                                // Copy the value to the clipboard
-                                await navigator.clipboard.writeText($('#'+targetId).val());
-
-                                // Display a success notification
+                                // Success toast
                                 toastr.remove();
                                 toastr.info(
                                     '<?php echo $lang->get("copy_to_clipboard"); ?>',
