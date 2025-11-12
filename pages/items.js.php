@@ -5474,19 +5474,46 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                             try {
                                 // Retrieve the target defined by data-clipboard-target
                                 const targetId = this.getAttribute('data-clipboard-target');
-                                if (!targetId) {
-                                    return; // Stop if no target ID is defined
+                                
+                                if (!targetId) return;
+
+                                // Grab the node (login => <span>, url => <span> ou <a>, email => <span>, etc.)
+                                const $el = $('#'+targetId);
+                                if ($el.length === 0) throw new Error('target-not-found');
+
+                                // Compute text to copy depending on element type
+                                let textToCopy = '';
+                                if ($el.is('input, textarea')) {
+                                    textToCopy = $el.val() || '';
+                                } else if ($el.is('a')) {
+                                // For links, prefer href; fallback to visible text
+                                textToCopy = $el.attr('href') || ($el.text() || '').trim();
+                                } else {
+                                    // span/div/etc.
+                                    textToCopy = ($el.text() || '').trim();
+                                }	
+                                if (!textToCopy) throw new Error('empty');
+
+                                // Try modern API, fallback to execCommand
+                                const fallbackCopy = () => {
+                                    const ta = document.createElement('textarea');
+                                    ta.value = textToCopy;
+                                    ta.setAttribute('readonly', '');
+                                    ta.style.position = 'absolute';
+                                    ta.style.left = '-9999px';
+                                    document.body.appendChild(ta);
+                                    ta.select();
+                                    document.execCommand('copy');
+                                    document.body.removeChild(ta);
+                                };
+                    
+                                if (navigator.clipboard && navigator.clipboard.writeText) {
+                                    await navigator.clipboard.writeText(textToCopy);
+                                } else {
+                                    fallbackCopy();
                                 }
 
-                                // Retrieve the value of the target field
-                                if (!$('#'+targetId).val()) {
-                                    return; // Stop if target field has no value
-                                }
-
-                                // Copy the value to the clipboard
-                                await navigator.clipboard.writeText($('#'+targetId).val());
-
-                                // Display a success notification
+                                // Success toast
                                 toastr.remove();
                                 toastr.info(
                                     '<?php echo $lang->get("copy_to_clipboard"); ?>',
