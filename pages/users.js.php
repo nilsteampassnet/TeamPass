@@ -159,7 +159,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '" data-action="reset-antibruteforce"><i class="fa-solid fa-lock mr-2"></i><?php echo $lang->get('bruteforce_reset_account'); ?></li>' +
                         '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '" data-action="logs"><i class="fa-solid fa-newspaper mr-2"></i><?php echo $lang->get('see_logs'); ?></li>' +
                         '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="qrcode"><i class="fa-solid fa-qrcode mr-2"></i><?php echo $lang->get('user_ga_code'); ?></li>' +
-                        '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '"data-action="access-rights"><i class="fa-solid fa-sitemap mr-2"></i><?php echo $lang->get('user_folders_rights'); ?></li>' +
+                        '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '"data-action="visible-folders"><i class="fa-solid fa-sitemap mr-2"></i><?php echo $lang->get('user_folders_rights'); ?></li>' +
                         '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '"data-action="disable-user"><i class="fa-solid fa-user-slash text-warning mr-2" disabled></i><?php echo $lang->get('disable_enable'); ?></li>' +
                         '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '"data-action="delete-user"><i class="fa-solid fa-user-minus text-danger mr-2" disabled></i><?php echo $lang->get('delete'); ?></li>' +
                         '</ul>' +
@@ -289,8 +289,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         oTable.ajax.reload();
 
         // Show list of users
-        $('#row-form').addClass('hidden');
-        $('#row-list').removeClass('hidden');
+        //$('#row-form').addClass('hidden');
+        //$('#header-menu').removeClass('hidden');
     });
 
 
@@ -376,7 +376,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
                     // Show list of users
                     $('#row-form').addClass('hidden');
-                    $('#row-list').removeClass('hidden');
+                    $('#header-menu').removeClass('hidden');
 
                     // Hide dialogbox
                     $('#warningModal').modal('hide');
@@ -661,14 +661,26 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             $('.only-admin').addClass('hidden');
         }
 
-        var action = $(this).data('action');        
-        // Hide all
-        $('.user-content').addClass('hidden');    
-        // Show only the corresponding content
-        $('.user-content[data-content="' + action + '"]').removeClass('hidden');
+        var action = $(this).data('action');
+        var trackedActions = ['edit', 'new', 'logs', 'visible-folders', 'propagate', 'deleted-users', 'refresh', 'ldap-sync', 'oauth2-sync'];
+        
+        // Show relevant content
+        if (trackedActions.includes(action)) {
+            $('.user-content').addClass('hidden');    // Hide all        
+            $('.user-content[data-content="' + action + '"]').removeClass('hidden');
+            $('.user-content[data-content-alternative="' + action + '"]').removeClass('hidden');            
+        
+            // Show header menu if expected
+            if ($('.user-content[data-content="' + action + '"]').hasClass('with-header-menu')) {
+                $('#header-menu').removeClass('hidden');
+            } else {
+                $('#header-menu').addClass('hidden');
+            }
+        }
 
         if ($(this).data('action') === 'new') {
             // ADD NEW USER
+            $('#group-create-special-folder, .not-for-admin').removeClass('hidden');
 
             // HIDE FROM FORM ELEMENTS ONLY FOR ADMIN
             if (parseInt(store.get('teampassUser').user_admin) === 1) {
@@ -689,7 +701,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             $('#form-create-special-folder').iCheck('disable');
 
             // Personal folder
-            if (store.get('teampassSettings').enable_pf_feature === '1') {
+            if (store.get('teampassSettings') !== undefined && store.get('teampassSettings').enable_pf_feature === '1') {
                 $('#form-create-personal-folder')
                     .iCheck('enable')
                     .iCheck('check');
@@ -698,7 +710,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             }
             
             // MFA enabled
-            if (store.get('teampassSettings').duo === '1' || store.get('teampassSettings').google_authentication === '1') {
+            if (store.get('teampassSettings') !== undefined && (store.get('teampassSettings').duo === '1' || store.get('teampassSettings').google_authentication === '1')) {
                 $('#form-create-mfa-enabled')
                     .iCheck('enable')
                     .iCheck('check');
@@ -725,12 +737,12 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             $('.form-check-input').iCheck('enable');
 
             // Personal folder
-            if (parseInt(store.get('teampassSettings').enable_pf_feature) === 0) {
+            if (store.get('teampassSettings') !== undefined && parseInt(store.get('teampassSettings').enable_pf_feature) === 0) {
                 $('#form-create-personal-folder').iCheck('disable');
             }
 
             // HIDE FROM FORM ELEMENTS ONLY FOR ADMIN
-            if (parseInt(store.get('teampassUser').user_admin) === 1) {
+            if (store.get('teampassSettings') !== undefined && parseInt(store.get('teampassUser').user_admin) === 1) {
                 $('input[type=radio].only-admin').iCheck('enable');
             } else {
                 $('input[type=radio].only-admin').iCheck('disable');
@@ -1034,14 +1046,16 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         oTable.ajax.reload();
 
                         // Prepare UI
-                        $('#row-list, #group-create-special-folder, #group-delete-user').removeClass('hidden');
+                        //$('#header-menu, #group-create-special-folder, #group-delete-user').removeClass('hidden');
                         $('#row-form').addClass('hidden');
 
                         // Clean form
                         $('.clear-me').val('');
                         $('.select2').val('').change();
-                        $('.extra-form, #row-folders').addClass('hidden');
-                        $('#row-list').removeClass('hidden');
+
+                        // Hide and show relevant divs
+                        $('.user-content').addClass('hidden');
+                        $('#users-list, #header-menu').removeClass('hidden');
 
                         // Prepare checks
                         $('.form-check-input').iCheck('uncheck');
@@ -1069,8 +1083,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         } else if ($(this).data('action') === 'cancel') {
             $('.clear-me').val('');
             $('.select2').val('').change();
+
+            // Hide and show relevant divs
             $('.user-content').addClass('hidden');
-            $('#users-list').removeClass('hidden');
+            $('#users-list, #header-menu').removeClass('hidden');
 
             // Prepare checks
             $('.form-check-input').iCheck('uncheck');
@@ -1227,6 +1243,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             // ---
 
         } else if ($(this).data('action') === 'logs') {
+            //$('#header-menu, #row-folders').addClass('hidden');
+           // $('#row-logs').removeClass('hidden');
+
             $('#row-logs-title').text(
                 $(this).data('fullname')
             )
@@ -1286,9 +1305,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 },
             });
             
-        } else if ($(this).data('action') === 'access-rights') {
-            $('#row-list, #row-logs').addClass('hidden');
-            $('#row-folders').removeClass('hidden');
+        } else if ($(this).data('action') === 'visible-folders') {
             $('#row-folders-title').text(
                 $(this).data('fullname')
             )
@@ -1492,14 +1509,15 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             // --- END
             //
         } else if ($(this).data('action') === 'refresh') {
-            $('.extra-form, .form').addClass('hidden');
-            $('#users-list').removeClass('hidden');
             toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
             oTable.ajax.reload();
             //
             // --- END
             //
         } else if ($(this).data('action') === 'propagate') {
+            //$('#header-menu, #row-folders').addClass('hidden');
+            //$('#row-propagate').removeClass('hidden');
+
             // Show spinner
             toastr.remove();
             toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
@@ -1602,8 +1620,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     } else {
                         $('.clear-me').val('');
                         $('.select2').val('').change();
-                        $('.extra-form, #row-folders').addClass('hidden');
-                        $('#row-list').removeClass('hidden');
+                        //$('.extra-form, #row-folders').addClass('hidden');
+                        //$('#header-menu').removeClass('hidden');
 
                         // Prepare checks
                         $('.form-check-input')
@@ -1638,19 +1656,25 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             // --- END
             //
         } else if ($(this).data('action') === 'ldap-sync') {
+            $('.extra-form, .form').addClass('hidden');
+            $('#row-ldap').removeClass('hidden');
+
             refreshListUsersLDAP();
 
             //
             // --- END
             //
         } else if ($(this).data('action') === 'oauth2-sync') {
+            $('.extra-form, .form').addClass('hidden');
+            $('#row-oauth2').removeClass('hidden');
+
             refreshListUsersOAuth2();
 
             //
             // --- END
             //
         } else if ($(this).data('action') === 'close') {
-            $('.user-content').addClass('hidden');
+            $('.extra-form, .form, .user-content').addClass('hidden');
             $('#users-list').removeClass('hidden');
 
             //
@@ -2265,6 +2289,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     });
 
     $(document).on('click', '.btn-close-deleted-users', function() {
+        //$('.extra-form, .form, #deleted-users-section').addClass('hidden');
         $('.user-content').addClass('hidden');
         $('#users-list').removeClass('hidden');
         $('html, body').animate({scrollTop: 0}, 'slow');

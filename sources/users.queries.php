@@ -1496,16 +1496,18 @@ if (null !== $post_type) {
                 $rows = DB::query(
                     'SELECT *
                     FROM ' . prefixTable('users') . '
-                    WHERE admin = %i AND isAdministratedByRole IN %ls',
-                    '0',
-                    array_filter($session->get('user-roles_array'))
+                    WHERE admin = %i AND isAdministratedByRole IN %ls AND deleted_at IS NULL and disabled = %i',
+                    0,
+                    array_filter($session->get('user-roles_array')),
+                    0
                 );
             } else {
                 $rows = DB::query(
                     'SELECT *
                     FROM ' . prefixTable('users') . '
-                    WHERE admin = %i',
-                    '0'
+                    WHERE admin = %i AND deleted_at IS NULL and disabled = %i',
+                    0,
+                    0
                 );
             }
 
