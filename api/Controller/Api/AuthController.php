@@ -35,28 +35,37 @@ class AuthController extends BaseController
         $request = symfonyRequest::createFromGlobals();
         $requestMethod = $request->getMethod();
         $strErrorDesc = $responseData = $strErrorHeader = '';
-        $arrQueryStringParams = $this->getQueryStringParams();
 
         if (strtoupper($requestMethod) === 'POST') {
             require API_ROOT_PATH . "/Model/AuthModel.php";
             try {
                 $authModel = new AuthModel();
-                $arrUser = $authModel->getUserAuth(
-                    $arrQueryStringParams['login'],
-                    $arrQueryStringParams['password'],
-                    $arrQueryStringParams['apikey']
-                );
+
+                // Leer el JSON del body del POST
+                $body = $request->getContent();
+                $data = json_decode($body, true);
+
+                $login = $data['login'] ?? null;
+                $password = $data['password'] ?? null;
+                $apikey = $data['apikey'] ?? null;
+
+                // Validación mínima para evitar null
+                if (!$login || !$password || !$apikey) {
+                    throw new Exception('Missing parameter');
+                }
+
+                $arrUser = $authModel->getUserAuth($login, $password, $apikey);
+
                 if (array_key_exists("token", $arrUser)) {
                     $responseData = json_encode($arrUser);
                 } else {
                     $strErrorDesc = $arrUser['error'] . " (" . $arrUser['info'] . ")";
                     $strErrorHeader = 'HTTP/1.1 401 Unauthorized';
                 }
-            } catch (Error $e) {
+            } catch (Error|Exception $e) {
                 $strErrorDesc = $e->getMessage().' Something went wrong! Please contact support.2';
                 $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
             }
-            
         } else {
             $strErrorDesc = 'Method '.$requestMethod.' not supported';
             $strErrorHeader = 'HTTP/1.1 422 Unprocessable Entity';
