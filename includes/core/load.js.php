@@ -313,6 +313,7 @@ if (
                                 teampassUser.is_ready_for_usage = data.queryResults.is_ready_for_usage;
                                 teampassUser.ongoing_process_id = data.queryResults.ongoing_process_id;
                                 teampassUser.keys_recovery_time = data.queryResults.keys_recovery_time;
+                                teampassUser.personal_items_migrated = data.queryResults.personal_items_migrated;
                             }
                         );
                         
@@ -1062,8 +1063,17 @@ if (
             $(".fade").removeClass("out");
 
             // Is user not ready
-            if (typeof store.get('teampassUser') !== 'undefined' && typeof store.get('teampassUser').is_ready_for_usage !== 'undefined' && parseInt(store.get('teampassUser').is_ready_for_usage) === 0) {
-                $('#user_not_ready').removeClass('hidden');
+            if (typeof store.get('teampassUser') !== 'undefined' && typeof store.get('teampassUser').is_ready_for_usage !== 'undefined' 
+                && parseInt(store.get('teampassUser').is_ready_for_usage) === 0
+            ) {
+                if (typeof store.get('teampassUser').personal_items_migrated !== 'undefined' 
+                && parseInt(store.get('teampassUser').personal_items_migrated) === 0) {
+                    $('#user_not_ready_text').html('<?php echo $lang->get('account_not_ready_personal_items_migration_ongoing'); ?>');
+                    $('#user_not_ready').removeClass('hidden');
+                } else {
+                    $('#user_not_ready_text').html('<?php echo $lang->get('account_not_ready'); ?>');
+                    $('#user_not_ready').removeClass('hidden');
+                }
             }
         },
         5000
