@@ -633,6 +633,9 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             }
         }
 
+        // Version 3.1.5 - Migrate personal items password to similar encryption protocol as public ones.
+        checkAndMigratePersonalItems($session->get('user-id'), $session->get('user-private_key'), $passwordClear);
+
         // Set some settings
         $SETTINGS['update_needed'] = '';
 

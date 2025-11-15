@@ -3154,7 +3154,7 @@ function getUserInfo(
     if (isUserIdValid($post_user_id) === true) {
         // Get user info
         $userData = DB::queryFirstRow(
-            'SELECT special, auth_type, is_ready_for_usage, ongoing_process_id, otp_provided, keys_recovery_time
+            'SELECT special, auth_type, is_ready_for_usage, ongoing_process_id, otp_provided, keys_recovery_time, personal_items_migrated
             FROM ' . prefixTable('users') . '
             WHERE id = %i',
             $post_user_id

@@ -32,6 +32,7 @@
  // - selected_items_to_be_imported
 
 return array(
+    'account_not_ready_personal_items_migration_ongoing' => 'Account is being migrated, please wait a couple of minutes.',
     'some_items_not_copied_empty_password' => 'Some items could not be copied because they have empty passwords.',
     'no_folder_selected' => 'No directory is selected',
     'show_subfolders_in_main_view' => 'Show sub-directories in main items list',
