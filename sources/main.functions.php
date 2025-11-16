@@ -3879,7 +3879,7 @@ function handleUserKeys(
     // Handle private key
     insertPrivateKeyWithCurrentFlag(
         $userId,
-        $userKeys['private_key'],        
+        $userKeys['private_key'],
     );
 
     // Save in DB

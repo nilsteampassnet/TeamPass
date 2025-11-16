@@ -165,7 +165,7 @@ trait UserHandlerTrait {
     private function generateNewUserStep0($arguments) {
         // CLear old sharekeys
         if ($arguments['user_self_change'] === 0) {
-            $this->logger->log("Deleting old sharekeys for user {$arguments['new_user_id']}", 'INFO');
+            if (LOG_TASKS=== true) $this->logger->log("Deleting old sharekeys for user {$arguments['new_user_id']}", 'INFO');
             deleteUserObjetsKeys($arguments['new_user_id'], $this->settings);
         }
     }
@@ -195,33 +195,31 @@ trait UserHandlerTrait {
         $rows = DB::query(
             'SELECT id, pw, perso
             FROM ' . prefixTable('items') . '
-            WHERE perso =  %i
             ORDER BY id ASC
             LIMIT %i, %i',
-            ((int) $arguments['only_personal_items'] ?? 0) === 1 ? 1 : 0,
             $taskData['index'],
             $taskData['nb']
         );
         
         foreach ($rows as $record) {
             // Get itemKey from current user
-            $currentUserKey = DB::queryFirstRow(
+            $itemShareKey = DB::queryFirstRow(
                 'SELECT share_key, increment_id
                 FROM ' . prefixTable('sharekeys_items') . '
                 WHERE object_id = %i AND user_id = %i',
                 $record['id'],
-                (int) $record['perso'] === 0 ? $arguments['owner_id'] : $arguments['new_user_id']
+                (int) $arguments['owner_id']
             );
 
             // do we have any input? (#3481)
-            if ($currentUserKey === null || count($currentUserKey) === 0) {
+            if ($itemShareKey === null || count($itemShareKey) === 0) {
                 continue;
             }
-
+            
             // Decrypt itemkey with expected private key
             $itemKey = decryptUserObjectKey(
-                $currentUserKey['share_key'],
-                (int) $record['perso'] === 0 ? $ownerInfo['private_key'] : $userInfo['private_key']
+                $itemShareKey['share_key'],
+                $ownerInfo['private_key']
             );
             
             // Prevent to change key if its key is empty
@@ -243,7 +241,7 @@ trait UserHandlerTrait {
                         'share_key' => $share_key_for_item,
                     ),
                     'increment_id = %i',
-                    $currentUserKey['increment_id']
+                    $itemShareKey['increment_id']
                 );
 
                 // If now row was updated, it means the user has no key for this item, so we need to insert it

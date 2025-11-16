@@ -216,7 +216,7 @@ return array(
     'regenerate_only_personal_items_keys' => 'Only regenerate my personal items keys (it requires your public and private keys). This will not impact shared items.',
     'please_confirm_task_to_be_run' => 'Please confirm the task to be performed',
     'recovery_keys_not_downloaded' => 'Recovery keys not downloaded',
-    'no_recovery_keys' => 'I do not have recovery keys. This will only regenerate key for shared items (no impact on personal ones that will become unusable).',
+    'no_recovery_keys' => 'I do not have recovery keys. Passwords will be encrypted relying on master key (not as reliable as recovery keys).',
     'provide_recovery_keys' => 'Provide your recovery keys',
     'public_key' => 'Public key',
     'private_key' => 'Private key',

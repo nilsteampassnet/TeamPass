@@ -1137,7 +1137,7 @@ return array(
     'existing_valid_otv_links' => 'OTV valid links',
     'started' => 'Started',
     'recovery_keys_not_downloaded' => 'Recovery keys not downloaded',
-    'no_recovery_keys' => 'I do not have recovery keys. This will clear all passwords from my personal items.',
+    'no_recovery_keys' => 'I do not have recovery keys. Passwords will be encrypted relying on master key (not as reliable as recovery keys)',
     'provide_recovery_keys' => 'Provide your recovery keys',
     'public_key' => 'Public key',
     'private_key' => 'Private key',
