@@ -16,7 +16,17 @@
 
 /**
 *   Countdown before session expiration
+*   Periodically syncs with server to ensure accuracy
 **/
+// Global variable to track last server sync time
+if (typeof lastSessionSync === 'undefined') {
+    var lastSessionSync = 0;
+}
+// Sync interval: 5 minutes (300000 ms)
+if (typeof sessionSyncInterval === 'undefined') {
+    var sessionSyncInterval = 300000;
+}
+
 function countdown()
 {
     // if a process is in progress then do not decrease the time counter.
@@ -24,7 +34,7 @@ function countdown()
         $('.countdown-icon')
             .addClass('fas fa-history')
             .removeClass('far fa-clock');
-        
+
         $(this).delay(1000).queue(function()
         {
             countdown();
@@ -32,6 +42,13 @@ function countdown()
         });
 
         return false;
+    }
+
+    // Periodically sync session time with server (every 5 minutes)
+    let currentTime = new Date().getTime();
+    if (currentTime - lastSessionSync > sessionSyncInterval) {
+        syncSessionTimeWithServer();
+        lastSessionSync = currentTime;
     }
 
     // Continue
@@ -80,6 +97,49 @@ function countdown()
     {
         countdown();
         $(this).dequeue();
+    });
+}
+
+/**
+ * Synchronize session time with server
+ * This ensures the countdown reflects the actual server-side session state
+ */
+function syncSessionTimeWithServer() {
+    // Check if we have the necessary data
+    if (typeof store === 'undefined' || !store.get('teampassUser')) {
+        return;
+    }
+
+    var data = {
+        'user_id': store.get('teampassUser').user_id,
+    };
+
+    $.ajax({
+        type: 'POST',
+        url: 'sources/main.queries.php',
+        data: {
+            type: 'user_get_session_time',
+            type_category: 'action_user',
+            data: prepareExchangedData(JSON.stringify(data), 'encode', store.get('teampassUser').key),
+            key: store.get('teampassUser').key
+        },
+        dataType: 'text',
+        async: true,
+        success: function(serverData) {
+            try {
+                var decodedData = prepareExchangedData(serverData, 'decode', store.get('teampassUser').key);
+                if (decodedData && decodedData.timestamp !== undefined && decodedData.timestamp > 0) {
+                    // Update temps_restant with server value
+                    $('#temps_restant').val(decodedData.timestamp);
+                }
+            } catch (e) {
+                // Silently fail - will retry in next sync interval
+                console.log('Session sync failed:', e);
+            }
+        },
+        error: function() {
+            // Silently fail - will retry in next sync interval
+        }
     });
 }
 

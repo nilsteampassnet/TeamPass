@@ -57,6 +57,18 @@ class PerformChecks
     {
         // Check if session is valid
         if (count($this->sessionVar) > 0) {
+            // Get session object to check session duration
+            $session = SessionManager::getSession();
+
+            // Check if session has expired based on user-session_duration
+            // This prevents AJAX requests from working with expired sessions
+            if ($session->has('user-session_duration') &&
+                $session->get('user-session_duration') !== null &&
+                !empty($session->get('user-session_duration')) &&
+                $session->get('user-session_duration') < time()) {
+                return false; // Session has expired
+            }
+
             // if user is not logged in
             if (isset($this->sessionVar['login']) === true && is_null($this->sessionVar['login']) === false && empty($this->sessionVar['login']) === false) {
                 return $this->initialLogin();
