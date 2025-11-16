@@ -76,7 +76,7 @@ function countdown()
     DayTill = CHour + ':' + CMinute + ':' + CSecond;
 
     // Session will soon be closed
-    if (DayTill === '00:00:50') {
+    if (DayTill === '00:02:00') {
         showExtendSession();
         $('#countdown').css('color', 'red');
     }
