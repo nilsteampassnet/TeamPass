@@ -315,7 +315,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
     });
 
     /**
-     * Build the dialog with Transparent Revery status
+     * Build the dialog with Transparent Recovery status
      */
     function performTransparentRecoveryCheck()
     {
@@ -523,7 +523,9 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
         );
     }
 
-
+    /**
+     * Build the dialog with Personal Items Migration status
+     */
     function performPersonalItemsMigrationCheck()
     {
         if (requestRunning === true) {
@@ -559,10 +561,8 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                     return false;
                 }
                 
+                // Get statistics values
                 let stats = data.stats;
-                console.log(stats)
-
-                
                 
                 // Build full html
                 let html = '<div class="container-fluid p-0">';

@@ -107,7 +107,7 @@ When a user logs in for the first time after the migration is deployed:
 
 ✅ **Users don't need to do anything**  
 ✅ **Users can continue working during migration**  
-✅ **Personal items remain accessible during migration**  
+✅ **Personal items remain accessible during migration** (nevertheless prefer not to edit them)
 ✅ **No data loss risk**  
 ✅ **No password changes required**
 
@@ -234,7 +234,7 @@ During migration, the user's private key must be temporarily stored to encrypt s
 2. **Encryption**: Private key is encrypted with Defuse Crypto using a unique migration session key
 3. **Storage**: Encrypted private key stored in subtask JSON (temporary)
 4. **Processing**: Background worker decrypts private key only when user session is active
-5. **Cleanup**: Encrypted private key removed from subtasks after 24h
+5. **Cleanup**: Encrypted private key removed from subtasks once done
 
 **Important**: Private key is never stored in plain text and is only accessible when user is logged in.
 
@@ -333,7 +333,7 @@ AND st.status = 'error';
 
 ### Will my personal items be accessible during migration?
 
-Prefer not to access the personal items.
+Prefer not to edit the personal items.
 
 ### What happens if I log out during migration?
 
