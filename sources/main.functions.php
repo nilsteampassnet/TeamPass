@@ -2835,43 +2835,52 @@ function storeUsersShareKey(
     $userId = ($apiUserId === -1) ? (int) $session->get('user-id') : $apiUserId;
     
     // $onlyForUser is only dynamically set by external calls
-    if (
-        $onlyForUser === true || (int) $post_folder_is_personal === 1
-    ) {
-        // Only create the sharekey for a user
-        $user = DB::queryFirstRow(
-            'SELECT public_key
+    if ($onlyForUser === true || (int) $post_folder_is_personal === 1) {
+        // For personal items, create sharekeys for the owner user and TP_USER         
+        $userIds = [$userId, TP_USER_ID];
+
+        // Get public keys for all target users
+        $users = DB::query(
+            'SELECT id, public_key
             FROM ' . prefixTable('users') . '
-            WHERE id = %i
+            WHERE id IN %li
             AND public_key != ""',
-            $userId
+            $userIds
         );
 
-        if (empty($objectKey) === false) {
-            DB::insert(
-                $object_name,
-                [
-                    'object_id' => (int) $post_object_id,
-                    'user_id' => $userId,
-                    'share_key' => encryptUserObjectKey(
-                        $objectKey,
-                        $user['public_key']
-                    ),
-                ]
-            );
-        } else if (count($objectKeyArray) > 0) {
-            foreach ($objectKeyArray as $object) {
-                DB::insert(
-                    $object_name,
-                    [
-                        'object_id' => (int) $object['objectId'],
-                        'user_id' => $userId,
-                        'share_key' => encryptUserObjectKey(
-                            $object['objectKey'],
-                            $user['public_key']
-                        ),
-                    ]
-                );
+        if (empty($users) === false) {
+            if (empty($objectKey) === false) {
+                // Single object key
+                foreach ($users as $user) {
+                    DB::insert(
+                        $object_name,
+                        [
+                            'object_id' => (int) $post_object_id,
+                            'user_id' => (int) $user['id'],
+                            'share_key' => encryptUserObjectKey(
+                                $objectKey,
+                                $user['public_key']
+                            ),
+                        ]
+                    );
+                }
+            } else if (count($objectKeyArray) > 0) {
+                // Multiple object keys
+                foreach ($users as $user) {
+                    foreach ($objectKeyArray as $object) {
+                        DB::insert(
+                            $object_name,
+                            [
+                                'object_id' => (int) $object['objectId'],
+                                'user_id' => (int) $user['id'],
+                                'share_key' => encryptUserObjectKey(
+                                    $object['objectKey'],
+                                    $user['public_key']
+                                ),
+                            ]
+                        );
+                    }
+                }
             }
         }
     } else {

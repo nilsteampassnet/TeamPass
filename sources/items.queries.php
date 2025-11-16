@@ -190,6 +190,7 @@ $tpUsersIDs = [
     OTV_USER_ID,
     SSH_USER_ID,
     API_USER_ID,
+    TP_USER_ID,
     $session->get('user-id'),
 ];
 
@@ -532,7 +533,7 @@ switch ($inputData['type']) {
                                     (int) $newObjectId,
                                     $cryptedStuff['objectKey'],
                                     true,   // only for the item creator
-                                    false,  // no delete all
+                                    false,  // delete all
                                 );
 
                                 array_push(
@@ -5104,7 +5105,7 @@ switch ($inputData['type']) {
                 prefixTable('sharekeys_items'),
                 'object_id = %i AND user_id NOT IN %ls',
                 $inputData['itemId'],
-                [$session->get('user-id'), TP_USER_ID, API_USER_ID, OTV_USER_ID,SSH_USER_ID]
+                [$session->get('user-id'), TP_USER_ID]
             );
 
             // Remove all item sharekeys fields
@@ -5118,9 +5119,9 @@ switch ($inputData['type']) {
             foreach ($rows as $field) {
                 DB::delete(
                     prefixTable('sharekeys_fields'),
-                    'object_id = %i AND user_id != %i',
+                    'object_id = %i AND user_id NOT IN %ls',
                     $field['id'],
-                    $session->get('user-id')
+                    [$session->get('user-id'), TP_USER_ID]
                 );
             }
 
@@ -5135,9 +5136,9 @@ switch ($inputData['type']) {
             foreach ($rows as $attachment) {
                 DB::delete(
                     prefixTable('sharekeys_files'),
-                    'object_id = %i AND user_id != %i',
+                    'object_id = %i AND user_id NOT IN %ls',
                     $attachment['id'],
-                    $session->get('user-id')
+                    [$session->get('user-id'), TP_USER_ID]
                 );
             }
 
@@ -5205,7 +5206,6 @@ switch ($inputData['type']) {
                 }
             }
 
-            // Get the FIELDS object key for the user
             // Get fields for this Item
             $rows = DB::query(
                 'SELECT id
