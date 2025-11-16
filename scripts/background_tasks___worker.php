@@ -124,7 +124,7 @@ class TaskWorker {
                     'login' => $this->taskData['receiver_name'],
                 ]
             );
-        } elseif ($this->processType === 'create_user_keys') {
+        } elseif ($this->processType === 'create_user_keys' || $this->processType === 'migrate_user_personal_items') {
             $arguments = json_encode(
                 [
                     'user_id' => $this->taskData['new_user_id'],

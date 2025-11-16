@@ -107,8 +107,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     <!-- /.card-header -->
                     <div class="card-body">
                         <div class="alert bg-olive disabled" role="alert">
-                            <p>People sponsoring my open source work each month help motivate me to devote time and resources to producing the best quality work I can for everyone who uses Teampass.</p>
-                            <p>Read my <a href="https://github.com/sponsors/nilsteampassnet" target="_blank">Github Sponsor page</a>.</p>
+                            <p>Sponsors enable dedicated development time for maintenance, new features, and community support. Help ensure TeamPass continues delivering enterprise-quality password management for all.</p>
+                            <p>Sponsor on <a href="https://github.com/sponsors/nilsteampassnet" target="_blank">Github Sponsor page</a>.</p>
                         </div>
                     </div>
                 </div>
