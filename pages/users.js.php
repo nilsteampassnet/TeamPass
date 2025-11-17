@@ -1855,7 +1855,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             const data_to_send = {
                 'user_id': userID,
             }
-
+//TODO : analyser et supprimer peut etre le OTP code pour une user AD
             $.post(
                 "sources/users.queries.php", {
                     type: "get_user_infos",
@@ -3011,8 +3011,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         // manage keys encryption for new user
         // Case where we need to encrypt new keys for the user
         // Process is: 
-        // 2/ clear all keys for this user
-        // 3/ generate keys for this user with encryption key
+        // 1/ clear all keys for this user
+        // 2/ generate keys for this user with encryption key
 
         if (ProcessInProgress === false) {
             ProcessInProgress = true;

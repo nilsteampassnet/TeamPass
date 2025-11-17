@@ -118,7 +118,7 @@ function performVisibleFoldersHtmlUpdate (int $user_id)
         'SELECT increment_id, data FROM ' . prefixTable('cache_tree') . ' WHERE user_id = %i',
         $user_id
     );
-    $folders = json_decode($cache_tree['data'], true);//print_r($folders);
+    $folders = json_decode($cache_tree['data'], true);
     foreach ($folders as $folder) {
         $idFolder = (int) explode("li_", $folder['id'])[1];
 
