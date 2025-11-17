@@ -28,8 +28,14 @@
 
 use TeampassClasses\Language\Language;
 
+/**
+ * Trait for user migration handling
+ * 
+ * Requires UserHandlerTrait to be used in the same class
+ * 
+ * @method array getOwnerInfos(int $owner_id, string $owner_pwd, ?int $only_personal_items = 0, ?string $owner_private_key = '') Get owner information (from UserHandlerTrait)
+ */
 trait MigrateUserHandlerTrait {
-    use UserHandlerTrait;
     abstract protected function completeTask();
 
     /**
