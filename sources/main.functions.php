@@ -2198,28 +2198,26 @@ function generateUserKeys(string $userPwd, ?array $SETTINGS = null): array
         'private_key_clear' => base64_encode($res['privatekey']),
     ];
 
-    // Generate transparent recovery data if enabled
-    if ($SETTINGS !== null) {
-        // Generate unique seed for this user
-        $userSeed = bin2hex(openssl_random_pseudo_bytes(32));
+    // Generate transparent recovery data
+    // Generate unique seed for this user
+    $userSeed = bin2hex(openssl_random_pseudo_bytes(32));
 
-        // Derive backup encryption key
-        $derivedKey = deriveBackupKey($userSeed, $result['public_key'], $SETTINGS);
+    // Derive backup encryption key
+    $derivedKey = deriveBackupKey($userSeed, $result['public_key'], $SETTINGS);
 
-        // Encrypt private key with derived key (backup)
-        $cipherBackup = new Crypt_AES();
-        $cipherBackup->setPassword($derivedKey);
-        $privatekeyBackup = $cipherBackup->encrypt($res['privatekey']);
+    // Encrypt private key with derived key (backup)
+    $cipherBackup = new Crypt_AES();
+    $cipherBackup->setPassword($derivedKey);
+    $privatekeyBackup = $cipherBackup->encrypt($res['privatekey']);
 
-        // Generate integrity hash
-        $integrityHash = null;
-        $serverSecret = getServerSecret();
-        $integrityHash = generateKeyIntegrityHash($userSeed, $result['public_key'], $serverSecret);
+    // Generate integrity hash
+    $integrityHash = null;
+    $serverSecret = getServerSecret();
+    $integrityHash = generateKeyIntegrityHash($userSeed, $result['public_key'], $serverSecret);
 
-        $result['user_seed'] = $userSeed;
-        $result['private_key_backup'] = base64_encode($privatekeyBackup);
-        $result['key_integrity_hash'] = $integrityHash;
-    }
+    $result['user_seed'] = $userSeed;
+    $result['private_key_backup'] = base64_encode($privatekeyBackup);
+    $result['key_integrity_hash'] = $integrityHash;
 
     return $result;
 }
@@ -2292,7 +2290,7 @@ function encryptPrivateKey(string $userPwd, string $userPrivateKey): string
  *
  * @return string Derived key (32 bytes, raw binary)
  */
-function deriveBackupKey(string $userSeed, string $publicKey, array $SETTINGS): string
+function deriveBackupKey(string $userSeed, string $publicKey, ?array $SETTINGS = null): string
 {
     // Sanitize inputs
     $antiXss = new AntiXSS();
