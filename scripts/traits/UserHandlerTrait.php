@@ -760,7 +760,7 @@ trait UserHandlerTrait {
      * @param string $owner_pwd Owner password
      * @return array Owner information
      */
-    private function getOwnerInfos(int $owner_id, string $owner_pwd, int $only_personal_items = 0, string $owner_private_key = ''): array {
+    private function getOwnerInfos(int $owner_id, string $owner_pwd, ?int $only_personal_items = 0, ?string $owner_private_key = ''): array {
         $userInfo = DB::queryFirstRow(
             'SELECT pw, public_key, private_key, login, name
             FROM ' . prefixTable('users') . '
