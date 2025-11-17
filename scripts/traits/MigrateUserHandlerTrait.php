@@ -29,6 +29,7 @@
 use TeampassClasses\Language\Language;
 
 trait MigrateUserHandlerTrait {
+    use UserHandlerTrait;
     abstract protected function completeTask();
 
     /**
