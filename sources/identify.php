@@ -1004,7 +1004,6 @@ function prepareUserEncryptionKeys($userInfo, $passwordClear, array $SETTINGS = 
             $privateKeyBackup = base64_encode($cipher->encrypt(base64_decode($privateKeyClear)));
 
             // Generate integrity hash
-            $integrityHash = null;
             $serverSecret = getServerSecret();
             $integrityHash = generateKeyIntegrityHash($userInfo['user_derivation_seed'], $userInfo['public_key'], $serverSecret);
 

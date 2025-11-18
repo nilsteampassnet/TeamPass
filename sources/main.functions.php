@@ -2211,7 +2211,6 @@ function generateUserKeys(string $userPwd, ?array $SETTINGS = null): array
     $privatekeyBackup = $cipherBackup->encrypt($res['privatekey']);
 
     // Generate integrity hash
-    $integrityHash = null;
     $serverSecret = getServerSecret();
     $integrityHash = generateKeyIntegrityHash($userSeed, $result['public_key'], $serverSecret);
 
