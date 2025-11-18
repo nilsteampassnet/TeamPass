@@ -181,41 +181,21 @@ if ($goTreeRefresh['state'] === true || empty($inputData['nodeId']) === false ||
         $listRestrictedFoldersForItemsKeys
     ) === true)
     {
-        if ($inputData['userTreeLoadStrategy'] === 'sequential') {
-            // SEQUENTIAL MODE
-            $completTree = $tree->getDescendants(empty($nodeId) === true ? 0 : (int) $nodeId, false, true, false);
-            foreach ($completTree as $child) {
-                recursiveTree(
-                    (int) $child->id,
-                    $child,
-                    /** @scrutinizer ignore-type */ $tree,
-                    $listFoldersLimitedKeys,
-                    $listRestrictedFoldersForItemsKeys,
-                    $last_visible_parent,
-                    $last_visible_parent_level,
-                    $SETTINGS,
-                    $inputData,
-                    $ret_json
-                );
-            }
-
-        } else {
-            // FULL MODE
-            $completTree = $tree->getTreeWithChildren();
-            foreach ($completTree[0]->children as $child) {
-                recursiveTree(
-                    (int) $child,
-                    $completTree[$child],
-                    /** @scrutinizer ignore-type */ $tree,
-                    $listFoldersLimitedKeys,
-                    $listRestrictedFoldersForItemsKeys,
-                    $last_visible_parent,
-                    $last_visible_parent_level,
-                    $SETTINGS,
-                    $inputData,
-                    $ret_json
-                );
-            }
+        // Note: Condition with sequential/full option has been removed (see #4900)
+        $completTree = $tree->getTreeWithChildren();
+        foreach ($completTree[0]->children as $child) {
+            recursiveTree(
+                (int) $child,
+                $completTree[$child],
+                /** @scrutinizer ignore-type */ $tree,
+                $listFoldersLimitedKeys,
+                $listRestrictedFoldersForItemsKeys,
+                $last_visible_parent,
+                $last_visible_parent_level,
+                $SETTINGS,
+                $inputData,
+                $ret_json
+            );
         }
     }
 
