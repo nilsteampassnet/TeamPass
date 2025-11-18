@@ -310,12 +310,6 @@ foreach ($session->get('user-roles_array') as $role) {
                                             <span id="profile-plupload-runtime" class="text-danger" data-enabled="0"><?php echo $lang->get('error_upload_runtime_not_found'); ?></span>
                                         </a>
                                     </li>
-                                    <li class="list-group-item">
-                                        <b><i class="fas fa-stream fa-fw fa-lg mr-2"></i><?php echo $lang->get('tree_load_strategy'); ?></b>
-                                        <a class="float-right">
-                                            <?php echo null !== $session->get('user-tree_load_strategy') ? $session->get('user-tree_load_strategy') : ''; ?>
-                                        </a>
-                                    </li>
                                     <?php
                                     if (isset($SETTINGS['api']) === true && (int) $SETTINGS['api'] === 1) {
                                         echo '
@@ -426,24 +420,7 @@ foreach ($session->get('user-roles_array') as $role) {
                                             </select>
                                         </div>
                                     </div>
-                                <?php endif; /* disable_user_edit_language */
-                                if (($SETTINGS['disable_user_edit_tree_load_strategy'] ?? '0') === '0') : ?>
-                                    <div class="form-group">
-                                        <label class="col-sm-10 control-label"><?php echo $lang->get('tree_load_strategy'); ?></label>
-                                        <div class="col-sm-10">
-                                            <select class="form-control" id="profile-user-treeloadstrategy">
-                                                
-                                                <option value="sequential" <?php echo $session->has('user-tree_load_strategy') && $session->get('user-tree_load_strategy') && null !== $session->get('user-tree_load_strategy') && $session->get('user-tree_load_strategy') === 'sequential' ? ' selected' : '';?>>
-                                                    <?php echo $lang->get('sequential'); ?>
-                                                </option>
-                                                
-                                                <option value="full" <?php echo $session->has('user-tree_load_strategy') && $session->get('user-tree_load_strategy') && null !== $session->get('user-tree_load_strategy') && $session->get('user-tree_load_strategy') === 'full' ? ' selected' : '';?>>
-                                                    <?php echo $lang->get('full'); ?>
-                                                </option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                <?php endif; /* disable_user_edit_tree_load_strategy */ ?>
+                                <?php endif; /* disable_user_edit_language */ ?>
 
                                     <div class="form-group">
                                         <label class="col-sm-10 control-label"><?php echo $lang->get('items_page_split_view_mode'); ?></label>

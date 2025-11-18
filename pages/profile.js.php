@@ -231,7 +231,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             'email': formEmail,
             'timezone': $('#profile-user-timezone').val() ?? '',
             'language': ($('#profile-user-language').val() ?? '').toLowerCase(),
-            'treeloadstrategy': ($('#profile-user-treeloadstrategy').val() ?? '').toLowerCase(),
             'split_view_mode': $('#profile-user-split_view_mode').val(),
             'show_subfolders': $('#profile-user-show_subfolders').val(),
         }
@@ -287,7 +286,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             teampassUser.user_email = data.email;
                             teampassUser.user_language = data.language;
                             teampassUser.user_timezone = data.timezone;
-                            teampassUser.user_treeloadstrategy = data.treeloadstrategy;
                             teampassUser.user_agsescardid = data.agsescardid;
                             teampassUser.split_view_mode = data.split_view_mode;
                             teampassUser.show_subfolders = data.show_subfolders;

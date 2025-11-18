@@ -478,10 +478,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         $session->set('user-is_ready_for_usage', $userInfo['is_ready_for_usage']);
         $session->set('user-personal_folder_enabled', $userInfo['personal_folder']);
         $session->set(
-            'user-tree_load_strategy',
-            (isset($userInfo['treeloadstrategy']) === false || empty($userInfo['treeloadstrategy']) === true) ? 'full' : $userInfo['treeloadstrategy']
-        );
-        $session->set(
             'user-split_view_mode',
             (isset($userInfo['split_view_mode']) === false || empty($userInfo['split_view_mode']) === true) ? 0 : (int) $userInfo['split_view_mode']
         );

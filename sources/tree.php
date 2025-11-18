@@ -97,7 +97,6 @@ $data = [
     'noAccessFolders' => null !== $session->get('user-no_access_folders') ? json_encode($session->get('user-no_access_folders')) : '{}',
     'personalFolders' => null !== $session->get('user-personal_folders') ? json_encode($session->get('user-personal_folders')) : '{}',
     'userCanCreateRootFolder' => null !== $session->get('user-can_create_root_folder') ? json_encode($session->get('user-can_create_root_folder')) : '{}',
-    'userTreeLoadStrategy' => null !== $session->get('user-tree_load_strategy') ? $session->get('user-tree_load_strategy') : '',
 ];
 
 $filters = [
@@ -116,7 +115,6 @@ $filters = [
     'noAccessFolders' => 'cast:array',
     'personalFolders' => 'cast:array',
     'userCanCreateRootFolder' => 'cast:array',
-    'userTreeLoadStrategy' => 'trim|escape',
 ];
 
 $inputData = dataSanitizer(
@@ -143,7 +141,7 @@ $goTreeRefresh = loadTreeStrategy(
     (int) $inputData['forceRefresh']
 );
 // We don't use the cache if an ID of folder is provided
-if ($goTreeRefresh['state'] === true || empty($inputData['nodeId']) === false || $inputData['userTreeLoadStrategy'] === 'sequential') {
+if ($goTreeRefresh['state'] === true || empty($inputData['nodeId']) === false) {
     // Build tree
     $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
@@ -181,41 +179,21 @@ if ($goTreeRefresh['state'] === true || empty($inputData['nodeId']) === false ||
         $listRestrictedFoldersForItemsKeys
     ) === true)
     {
-        if ($inputData['userTreeLoadStrategy'] === 'sequential') {
-            // SEQUENTIAL MODE
-            $completTree = $tree->getDescendants(empty($nodeId) === true ? 0 : (int) $nodeId, false, true, false);
-            foreach ($completTree as $child) {
-                recursiveTree(
-                    (int) $child->id,
-                    $child,
-                    /** @scrutinizer ignore-type */ $tree,
-                    $listFoldersLimitedKeys,
-                    $listRestrictedFoldersForItemsKeys,
-                    $last_visible_parent,
-                    $last_visible_parent_level,
-                    $SETTINGS,
-                    $inputData,
-                    $ret_json
-                );
-            }
-
-        } else {
-            // FULL MODE
-            $completTree = $tree->getTreeWithChildren();
-            foreach ($completTree[0]->children as $child) {
-                recursiveTree(
-                    (int) $child,
-                    $completTree[$child],
-                    /** @scrutinizer ignore-type */ $tree,
-                    $listFoldersLimitedKeys,
-                    $listRestrictedFoldersForItemsKeys,
-                    $last_visible_parent,
-                    $last_visible_parent_level,
-                    $SETTINGS,
-                    $inputData,
-                    $ret_json
-                );
-            }
+        // FULL MODE - Load complete tree with cache optimization
+        $completTree = $tree->getTreeWithChildren();
+        foreach ($completTree[0]->children as $child) {
+            recursiveTree(
+                (int) $child,
+                $completTree[$child],
+                /** @scrutinizer ignore-type */ $tree,
+                $listFoldersLimitedKeys,
+                $listRestrictedFoldersForItemsKeys,
+                $last_visible_parent,
+                $last_visible_parent_level,
+                $SETTINGS,
+                $inputData,
+                $ret_json
+            );
         }
     }
 
@@ -454,7 +432,7 @@ function handleNode(
     if (isset($currentNode->children) === false) {
         $currentNode->children = $tree->getDescendants($nodeId, false, true, true);
     }
-    if ($inputData['userTreeLoadStrategy'] === 'full' && isset($currentNode->children) === true) {
+    if (isset($currentNode->children) === true) {
         foreach ($currentNode->children as $child) {
             recursiveTree(
                 (int) $child,
@@ -539,10 +517,6 @@ function prepareNodeJson(
                 'can_edit' => (int) $inputData['userCanCreateRootFolder'],
             )
         );
-        
-        if ($inputData['userTreeLoadStrategy'] === 'sequential') {
-            $ret_json[count($ret_json) - 1]['children'] = $nbSubfolders > 0 ? true : false;
-        }
 
     } elseif ($nodeData['show_but_block'] === true) {
         array_push(

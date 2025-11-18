@@ -1757,19 +1757,17 @@ if (null !== $post_type) {
                     'email' => isset($dataReceived['email']) === true ? $dataReceived['email'] : '',
                     'timezone' => isset($dataReceived['timezone']) === true ? $dataReceived['timezone'] : '',
                     'language' => isset($dataReceived['language']) === true ? $dataReceived['language'] : '',
-                    'treeloadstrategy' => isset($dataReceived['treeloadstrategy']) === true ? $dataReceived['treeloadstrategy'] : '',
                     'agsescardid' => isset($dataReceived['agsescardid']) === true ? $dataReceived['agsescardid'] : '',
                     'name' => isset($dataReceived['name']) === true ? $dataReceived['name'] : '',
                     'lastname' => isset($dataReceived['lastname']) === true ? $dataReceived['lastname'] : '',
                     'split_view_mode' => isset($dataReceived['split_view_mode']) === true ? $dataReceived['split_view_mode'] : '',
                     'show_subfolders' => isset($dataReceived['show_subfolders']) === true ? $dataReceived['show_subfolders'] : '',
                 ];
-                
+
                 $filters = [
                     'email' => 'trim|escape',
                     'timezone' => 'trim|escape',
                     'language' => 'trim|escape',
-                    'treeloadstrategy' => 'trim|escape',
                     'agsescardid' => 'trim|escape',
                     'name' => 'trim|escape',
                     'lastname' => 'trim|escape',
@@ -1826,14 +1824,6 @@ if (null !== $post_type) {
                     $update_fields['usertimezone'] = $inputData['timezone'];
                     // Update session
                     $session->set('user-timezone', $inputData['timezone']);
-                }
-
-                // User can edit tree load strategy
-                if (($SETTINGS['disable_user_edit_tree_load_strategy'] ?? '0') === '0') {
-                    // Update database
-                    $update_fields['treeloadstrategy'] = $inputData['treeloadstrategy'];
-                    // Update session
-                    $session->set('user-tree_load_strategy', $inputData['treeloadstrategy']);
                 }
 
                 // update user
@@ -3204,7 +3194,7 @@ if (null !== $post_type) {
         // Check that operation is allowed
         if (in_array(
             $value[0],
-            array('login', 'pw', 'email', 'treeloadstrategy', 'usertimezone', 'yubico_user_key', 'yubico_user_id', 'agses-usercardid', 'user_language', 'psk', 'split_view_mode', 'show_subfolders')
+            array('login', 'pw', 'email', 'usertimezone', 'yubico_user_key', 'yubico_user_id', 'agses-usercardid', 'user_language', 'psk', 'split_view_mode', 'show_subfolders')
         )) {
             DB::update(
                 prefixTable('users'),
@@ -3227,10 +3217,9 @@ if (null !== $post_type) {
             // refresh SESSION if requested
             // Session keys mapping
             $sessionMapping = [
-                'treeloadstrategy' => 'user-tree_load_strategy',
                 'usertimezone' => 'user-timezone',
                 'userlanguage' => 'user-language',
-                'agses-usercardid' => null, 
+                'agses-usercardid' => null,
                 'email' => 'user-email',
                 'split_view_mode' => 'user-split_view_mode',
                 'show_subfolders' => 'user-show_subfolders',
