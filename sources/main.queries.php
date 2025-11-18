@@ -1991,6 +1991,9 @@ function changePrivateKeyEncryptionPassword(
                 $post_user_id
             );
 
+            // Update the table user_private_key
+            insertPrivateKeyWithCurrentFlag($post_user_id, $hashedPrivateKey);
+
             $session->set('user-private_key', $privateKey);
         }
 

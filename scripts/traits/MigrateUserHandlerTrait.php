@@ -26,8 +26,6 @@
  * @see       https://www.teampass.net
  */
 
-use TeampassClasses\Language\Language;
-
 /**
  * Trait for user migration handling
  * 
@@ -590,8 +588,6 @@ trait MigrateUserHandlerTrait {
      * @param array $arguments Arguments for the task
      */
     private function migratePersonalItemsStepFinal($arguments) {
-        $lang = new Language('english');
-        
         // update LOG
         logEvents(
             $this->settings,
