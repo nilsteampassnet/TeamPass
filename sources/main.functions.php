@@ -3066,41 +3066,31 @@ function deleteUserObjetsKeys(int $userId, array $SETTINGS = []): bool
     // expect if personal item
     DB::delete(
         prefixTable('sharekeys_items'),
-        'user_id = %i AND object_id NOT IN (SELECT i.id FROM ' . prefixTable('items') . ' AS i WHERE i.perso = 1)',
+        'user_id = %i',// AND object_id NOT IN (SELECT i.id FROM ' . prefixTable('items') . ' AS i WHERE i.perso = 1)'',
         $userId
     );
     // Remove all item sharekeys files
     DB::delete(
         prefixTable('sharekeys_files'),
-        'user_id = %i AND object_id NOT IN (
-            SELECT f.id 
-            FROM ' . prefixTable('items') . ' AS i 
-            INNER JOIN ' . prefixTable('files') . ' AS f ON f.id_item = i.id
-            WHERE i.perso = 1
-        )',
+        'user_id = %i',
         $userId
     );
     // Remove all item sharekeys fields
     DB::delete(
         prefixTable('sharekeys_fields'),
-        'user_id = %i AND object_id NOT IN (
-            SELECT c.id 
-            FROM ' . prefixTable('items') . ' AS i 
-            INNER JOIN ' . prefixTable('categories_items') . ' AS c ON c.item_id = i.id
-            WHERE i.perso = 1
-        )',
+        'user_id = %i',
         $userId
     );
     // Remove all item sharekeys logs
     DB::delete(
         prefixTable('sharekeys_logs'),
-        'user_id = %i AND object_id NOT IN (SELECT i.id FROM ' . prefixTable('items') . ' AS i WHERE i.perso = 1)',
+        'user_id = %i', // AND object_id NOT IN (SELECT i.id FROM ' . prefixTable('items') . ' AS i WHERE i.perso = 1)',
         $userId
     );
     // Remove all item sharekeys suggestions
     DB::delete(
         prefixTable('sharekeys_suggestions'),
-        'user_id = %i AND object_id NOT IN (SELECT i.id FROM ' . prefixTable('items') . ' AS i WHERE i.perso = 1)',
+        'user_id = %i',// AND object_id NOT IN (SELECT i.id FROM ' . prefixTable('items') . ' AS i WHERE i.perso = 1)',
         $userId
     );
     return false;
