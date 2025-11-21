@@ -181,7 +181,7 @@ class PerformChecks
         
         // load user's data
         $data = DB::queryfirstrow(
-            'SELECT id, login, key_tempo, admin, gestionnaire, can_manage_all_users FROM ' . prefixTable('users') . ' WHERE id = %i',
+            'SELECT id, login, key_tempo, admin, gestionnaire, can_manage_all_users, deleted_at FROM ' . prefixTable('users') . ' WHERE id = %i',
             $this->sessionVar['user_id']
         );
         
@@ -189,7 +189,12 @@ class PerformChecks
         if (empty($data['login']) === true || empty($data['key_tempo']) === true || $data['key_tempo'] !== $this->sessionVar['user_key']) {
             return false;
         }
-        
+
+        // check if user has been deleted
+        if ($data['deleted_at'] !== null) {
+            return false;
+        }
+
         if (
             ((int) $data['admin'] === 1 && $this->isValueInArray($pageVisited, $pagesRights['admin']) === true)
             ||

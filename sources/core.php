@@ -238,11 +238,12 @@ if ((isset($get['session']) === true
 // CHECK IF SESSION EXISTS AND IF SESSION IS VALID
 if (empty($session->get('user-session_duration')) === false) {
     $dataSession = DB::queryFirstRow(
-        'SELECT key_tempo FROM ' . prefixTable('users') . ' WHERE id=%i',
+        'SELECT key_tempo, deleted_at FROM ' . prefixTable('users') . ' WHERE id=%i',
         $session->get('user-id')
     );
 } else {
     $dataSession['key_tempo'] = '';
+    $dataSession['deleted_at'] = null;
 }
 
 if (
@@ -253,7 +254,8 @@ if (
     && (empty($session->get('user-session_duration')) === true
         || $session->get('user-session_duration') < time()
         || null === $session->get('key')
-        || empty($dataSession['key_tempo']) === true)
+        || empty($dataSession['key_tempo']) === true
+        || $dataSession['deleted_at'] !== null)
 ) {
     // Update table by deleting ID
     DB::update(
