@@ -1954,15 +1954,10 @@ function changePrivateKeyEncryptionPassword(
             $post_user_id
         );
         if (DB::count() > 0 && empty($userData['private_key']) === false) {
-            if ($post_action_type === 'encrypt_privkey_with_user_password') {
-                // Here the user has his private key encrypted with an OTC.
-                // We need to encrypt it with his real password
-                $privateKey = decryptPrivateKey($post_new_code, $userData['private_key']);
-                $hashedPrivateKey = encryptPrivateKey($post_current_code, $privateKey);
-            } else {
-                $privateKey = decryptPrivateKey($post_current_code, $userData['private_key']);
-                $hashedPrivateKey = encryptPrivateKey($post_new_code, $privateKey);
-            }
+            // Here the user has his private key encrypted with an OTC.
+            // We need to encrypt it with his real password
+            $privateKey = decryptPrivateKey($post_current_code, $userData['private_key']);
+            $hashedPrivateKey = encryptPrivateKey($post_new_code, $privateKey);
 
             // Should fail here to avoid break user private key.
             if (strlen($privateKey) === 0 || strlen($hashedPrivateKey) < 30) {

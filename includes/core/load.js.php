@@ -1432,8 +1432,8 @@ if (
                     // Change privatekey encryption with user-s password
                     data = {
                         'user_id': store.get('teampassUser').user_id,
-                        'current_code': $('#dialog-user-temporary-code-current-password').val(),
-                        'new_code': $('#dialog-user-temporary-code-value').val(),
+                        'new_code': $('#dialog-user-temporary-code-current-password').val(),
+                        'current_code': $('#dialog-user-temporary-code-value').val(),
                         'action_type' : 'encrypt_privkey_with_user_password',
                     }
                     if (debugJavascript === true) console.log(data);
