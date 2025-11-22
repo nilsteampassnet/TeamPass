@@ -241,6 +241,10 @@ if (empty($session->get('user-session_duration')) === false) {
         'SELECT key_tempo, deleted_at FROM ' . prefixTable('users') . ' WHERE id=%i',
         $session->get('user-id')
     );
+    // Ensure deleted_at is set
+    if (!isset($dataSession['deleted_at'])) {
+        $dataSession['deleted_at'] = null;
+    }
 } else {
     $dataSession['key_tempo'] = '';
     $dataSession['deleted_at'] = null;
@@ -390,11 +394,11 @@ if (
 if ($session->has('user-timezone') && null !== $session->get('user-id') && empty($session->get('user-id')) === false) {
     // query on user
     $data = DB::queryFirstRow(
-        'SELECT login, admin, gestionnaire, can_manage_all_users, groupes_visibles, groupes_interdits, fonction_id, last_connexion, roles_from_ad_groups, auth_type, last_pw_change FROM ' . prefixTable('users') . ' WHERE id=%i',
+        'SELECT login, admin, gestionnaire, can_manage_all_users, groupes_visibles, groupes_interdits, fonction_id, last_connexion, roles_from_ad_groups, auth_type, last_pw_change, deleted_at FROM ' . prefixTable('users') . ' WHERE id=%i',
         $session->get('user-id')
     );
     //Check if user has been deleted or unlogged
-    if (empty($data) === true) {
+    if (empty($data) === true || (isset($data['deleted_at']) && $data['deleted_at'] !== null)) {
         // erase session table
         $session->invalidate();
         //redirection to index
