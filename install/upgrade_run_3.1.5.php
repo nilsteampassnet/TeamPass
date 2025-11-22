@@ -87,17 +87,33 @@ $error = [];
 
 // Add new columns to users table
 $columns_to_add = [
-    'user_derivation_seed' => "ALTER TABLE `" . $pre . "users` ADD COLUMN `user_derivation_seed` VARCHAR(64) NULL DEFAULT NULL AFTER `private_key`",
-    'private_key_backup' => "ALTER TABLE `" . $pre . "users` ADD COLUMN `private_key_backup` TEXT NULL DEFAULT NULL AFTER `user_derivation_seed`",
-    'key_integrity_hash' => "ALTER TABLE `" . $pre . "users` ADD COLUMN `key_integrity_hash` VARCHAR(64) NULL DEFAULT NULL AFTER `private_key_backup`",
-    'personal_items_migrated' => "ALTER TABLE `" . $pre . "users` ADD COLUMN `personal_items_migrated` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Personal items migrated to sharekeys system (0=not migrated, 1=migrated)' AFTER `is_ready_for_usage`"
+    [
+        'table' => 'users',
+        'column' => 'user_derivation_seed',
+        'query' => "ALTER TABLE `" . $pre . "users` ADD COLUMN `user_derivation_seed` VARCHAR(64) NULL DEFAULT NULL AFTER `private_key`"
+    ],
+    [
+        'table' => 'users',
+        'column' => 'private_key_backup',
+        'query' => "ALTER TABLE `" . $pre . "users` ADD COLUMN `private_key_backup` TEXT NULL DEFAULT NULL AFTER `user_derivation_seed`"
+    ],
+    [
+        'table' => 'users',
+        'column' => 'key_integrity_hash',
+        'query' => "ALTER TABLE `" . $pre . "users` ADD COLUMN `key_integrity_hash` VARCHAR(64) NULL DEFAULT NULL AFTER `private_key_backup`"
+    ],
+    [
+        'table' => 'users',
+        'column' => 'personal_items_migrated',
+        'query' => "ALTER TABLE `" . $pre . "users` ADD COLUMN `personal_items_migrated` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Personal items migrated to sharekeys system (0=not migrated, 1=migrated)' AFTER `is_ready_for_usage`"
+    ]
 ];
 
-foreach ($columns_to_add as $column => $query) {
+foreach ($columns_to_add as $column_info) {
     // Check if column exists
-    $result = mysqli_query($db_link, "SHOW COLUMNS FROM `" . $pre . "users` LIKE '" . $column . "'");
+    $result = mysqli_query($db_link, "SHOW COLUMNS FROM `" . $pre . $column_info['table'] . "` LIKE '" . $column_info['column'] . "'");
     if (mysqli_num_rows($result) === 0) {
-        mysqli_query($db_link, $query);
+        mysqli_query($db_link, $column_info['query']);
     }
 }
 
