@@ -1281,7 +1281,7 @@ function handleNewUser(string $username, string $passwordClear, array $userADInf
     $userInfo = externalAdCreateUser(
         $username,
         $passwordClear,
-        $userADInfos['mail'][0],
+        $userADInfos['mail'][0] ?? '',
         $userADInfos['givenname'][0],
         $userADInfos['sn'][0],
         'ldap',
@@ -2056,11 +2056,12 @@ class initialChecks {
             WHERE login = %s AND deleted_at IS NULL',
             $login
         );
-    
+        $dataUserCount = DB::count();
+        
         // User doesn't exist then return error
         // Except if user creation from LDAP is enabled
         if (
-            DB::count() === 0
+            $dataUserCount === 0
             && !filter_var($enable_ad_user_auto_creation, FILTER_VALIDATE_BOOLEAN) 
             && !filter_var($oauth2_enabled, FILTER_VALIDATE_BOOLEAN)
         ) {
@@ -2068,7 +2069,7 @@ class initialChecks {
         }
 
         // Check if similar login deleted exists
-        $deletedUser = DB::queryFirstRow(
+        DB::queryFirstRow(
             'SELECT id, login
             FROM ' . prefixTable('users') . '
             WHERE login LIKE %s AND deleted_at IS NOT NULL',
@@ -2084,15 +2085,15 @@ class initialChecks {
     
         $data['ldap_user_to_be_created'] = (
             filter_var($enable_ad_user_auto_creation, FILTER_VALIDATE_BOOLEAN) &&
-            DB::count() === 0 &&
+            $dataUserCount === 0 &&
             !$data['oauth2_login_ongoing']
         );
         $data['oauth2_user_not_exists'] = (
             filter_var($oauth2_enabled, FILTER_VALIDATE_BOOLEAN) &&
-            DB::count() === 0 &&
+            $dataUserCount === 0 &&
             $data['oauth2_login_ongoing']
         );
-    
+
         return $data;
     }
 
