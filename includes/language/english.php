@@ -32,6 +32,7 @@
  // - selected_items_to_be_imported
 
 return array(
+    'error_user_deleted_exists' => 'User has been deleted',
     'account_not_ready_personal_items_migration_ongoing' => 'Account is being migrated, please wait a couple of minutes.',
     'some_items_not_copied_empty_password' => 'Some items could not be copied because they have empty passwords.',
     'no_folder_selected' => 'No directory is selected',

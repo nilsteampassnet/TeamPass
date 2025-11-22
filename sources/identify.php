@@ -2066,7 +2066,19 @@ class initialChecks {
         ) {
             throw new Exception("error");
         }
-    
+
+        // Check if similar login deleted exists
+        $deletedUser = DB::queryFirstRow(
+            'SELECT id, login
+            FROM ' . prefixTable('users') . '
+            WHERE login LIKE %s AND deleted_at IS NOT NULL',
+            $login . '_deleted_%'
+        );
+
+        if (DB::count() > 0) {
+            throw new Exception("error_user_deleted_exists");
+        }
+
         // We cannot create a user with LDAP if the OAuth2 login is ongoing
         $data['oauth2_login_ongoing'] = filter_var($session->get('userOauth2Info')['oauth2LoginOngoing'] ?? false, FILTER_VALIDATE_BOOLEAN) ?? false;
     
@@ -2184,7 +2196,7 @@ function identifyDoInitialChecks(
             'error' => true,
             'array' => [
                 'error' => true,
-                'message' => $lang->get('error_bad_credentials'),
+                'message' => null !== $e->getMessage() && $e->getMessage() === 'error_user_deleted_exists' ? $lang->get('error_user_deleted_exists') : $lang->get('error_bad_credentials'),
             ]
         ];
     }

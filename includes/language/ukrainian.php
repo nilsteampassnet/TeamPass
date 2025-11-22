@@ -1314,5 +1314,6 @@ return array(
     'transparent_key_recovery_pbkdf2_iterations' => 'PBKDF2 iterations for password transparent recovery',
     'transparent_key_recovery_pbkdf2_iterations_tip' => 'Number of iterations for PBKDF2 key derivation in password transparent recovery. Higher values increase security but may impact performance. Adjust based on server capabilities.',
     'some_items_not_copied_empty_password' => 'Some items have been copied with empty passwords.',
+    'error_user_deleted_exists' => 'User has been deleted',
 
 );
