@@ -274,7 +274,7 @@ if (null !== $post_type) {
                 );
                 break;
             }
-            // Check if user already exists
+            // Check if user already exists (active user)
             $data = DB::query(
                 'SELECT id, fonction_id, groupes_interdits, groupes_visibles
                 FROM ' . prefixTable('users') . '
@@ -283,7 +283,16 @@ if (null !== $post_type) {
                 $login
             );
 
-            if (DB::count() === 0) {
+            // Check if a soft-deleted user with this login exists
+            $deletedUser = DB::queryFirstRow(
+                'SELECT id, login, deleted_at
+                FROM ' . prefixTable('users') . '
+                WHERE login LIKE %s
+                AND deleted_at IS NOT NULL',
+                $login . '_deleted_%'
+            );
+
+            if (DB::count() === 0 && empty($deletedUser) === true) {
                 // Generate pwd
                 $password = generateQuickPassword();
 
@@ -457,10 +466,16 @@ if (null !== $post_type) {
                     'encode'
                 );
             } else {
+                // Check if it's a soft-deleted user
+                $errorMessage = $lang->get('error_user_exists');
+                if (empty($deletedUser) === false) {
+                    $errorMessage = 'A deleted user with this login already exists (ID: ' . $deletedUser['id'] . '). Please restore the user instead of creating a new one.';
+                }
+
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => $lang->get('error_user_exists'),
+                        'message' => $errorMessage,
                     ),
                     'encode'
                 );
@@ -3165,6 +3180,25 @@ error_log("OTC: ".$post_user_code);
             // Remove user suffix "_deleted_timestamp"
             $deletedSuffix = '_deleted_' . substr($data_user['login'], strrpos($data_user['login'], '_deleted_') + 9);
             $originalLogin = str_replace($deletedSuffix, '', $data_user['login']);
+                        
+            // Check if an active user with the original login already exists
+            $existingUser = DB::queryFirstRow(
+                'SELECT id FROM ' . prefixTable('users') . '
+                WHERE login = %s AND deleted_at IS NULL AND id != %i',
+                $originalLogin,
+                $userId
+            );
+
+            if (DB::count() > 0) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => 'Cannot restore user: an active user with login "' . $originalLogin . '" already exists (ID: ' . $existingUser['id'] . ')'
+                    ),
+                    'encode'
+                );
+                break;
+            }
             
             // Restore user
             DB::update(
