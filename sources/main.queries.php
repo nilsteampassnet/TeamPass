@@ -1954,16 +1954,10 @@ function changePrivateKeyEncryptionPassword(
             $post_user_id
         );
         if (DB::count() > 0 && empty($userData['private_key']) === false) {
-            error_log("post_action_type: ".$post_action_type." -- ".decryptPrivateKey($post_new_code, $userData['private_key'])." -- ".decryptPrivateKey($post_current_code, $userData['private_key']));
-            if ($post_action_type === 'encrypt_privkey_with_user_password') {
-                // Here the user has his private key encrypted with an OTC.
-                // We need to encrypt it with his real password
-                $privateKey = decryptPrivateKey($post_new_code, $userData['private_key']);
-                $hashedPrivateKey = encryptPrivateKey($post_current_code, $privateKey);
-            } else {
-                $privateKey = decryptPrivateKey($post_current_code, $userData['private_key']);
-                $hashedPrivateKey = encryptPrivateKey($post_new_code, $privateKey);
-            }
+            // Here the user has his private key encrypted with an OTC.
+            // We need to encrypt it with his real password
+            $privateKey = decryptPrivateKey($post_current_code, $userData['private_key']);
+            $hashedPrivateKey = encryptPrivateKey($post_new_code, $privateKey);
 
             // Should fail here to avoid break user private key.
             if (strlen($privateKey) === 0 || strlen($hashedPrivateKey) < 30) {
@@ -1991,6 +1985,9 @@ function changePrivateKeyEncryptionPassword(
                 'id = %i',
                 $post_user_id
             );
+
+            // Update the table user_private_key
+            insertPrivateKeyWithCurrentFlag($post_user_id, $hashedPrivateKey);
 
             $session->set('user-private_key', $privateKey);
         }
@@ -2139,17 +2136,11 @@ function generateOneTimeCode(
 
             // GEnerate new keys
             $userKeys = generateUserKeys($password);
-
-            // Save in DB
-            DB::update(
-                prefixTable('users'),
-                array(
-                    'public_key' => $userKeys['public_key'],
-                    'private_key' => $userKeys['private_key'],
-                    'special' => 'generate-keys',
-                ),
-                'id=%i',
-                $userId
+            
+            // Handle private key
+            insertPrivateKeyWithCurrentFlag(
+                $userId,
+                $userKeys['private_key'],        
             );
 
             return prepareExchangedData(
@@ -3154,7 +3145,7 @@ function getUserInfo(
     if (isUserIdValid($post_user_id) === true) {
         // Get user info
         $userData = DB::queryFirstRow(
-            'SELECT special, auth_type, is_ready_for_usage, ongoing_process_id, otp_provided, keys_recovery_time
+            'SELECT special, auth_type, is_ready_for_usage, ongoing_process_id, otp_provided, keys_recovery_time, personal_items_migrated
             FROM ' . prefixTable('users') . '
             WHERE id = %i',
             $post_user_id

@@ -2198,28 +2198,25 @@ function generateUserKeys(string $userPwd, ?array $SETTINGS = null): array
         'private_key_clear' => base64_encode($res['privatekey']),
     ];
 
-    // Generate transparent recovery data if enabled
-    if ($SETTINGS !== null) {
-        // Generate unique seed for this user
-        $userSeed = bin2hex(openssl_random_pseudo_bytes(32));
+    // Generate transparent recovery data
+    // Generate unique seed for this user
+    $userSeed = bin2hex(openssl_random_pseudo_bytes(32));
 
-        // Derive backup encryption key
-        $derivedKey = deriveBackupKey($userSeed, $result['public_key'], $SETTINGS);
+    // Derive backup encryption key
+    $derivedKey = deriveBackupKey($userSeed, $result['public_key'], $SETTINGS);
 
-        // Encrypt private key with derived key (backup)
-        $cipherBackup = new Crypt_AES();
-        $cipherBackup->setPassword($derivedKey);
-        $privatekeyBackup = $cipherBackup->encrypt($res['privatekey']);
+    // Encrypt private key with derived key (backup)
+    $cipherBackup = new Crypt_AES();
+    $cipherBackup->setPassword($derivedKey);
+    $privatekeyBackup = $cipherBackup->encrypt($res['privatekey']);
 
-        // Generate integrity hash
-        $integrityHash = null;
-        $serverSecret = getServerSecret();
-        $integrityHash = generateKeyIntegrityHash($userSeed, $result['public_key'], $serverSecret);
+    // Generate integrity hash
+    $serverSecret = getServerSecret();
+    $integrityHash = generateKeyIntegrityHash($userSeed, $result['public_key'], $serverSecret);
 
-        $result['user_seed'] = $userSeed;
-        $result['private_key_backup'] = base64_encode($privatekeyBackup);
-        $result['key_integrity_hash'] = $integrityHash;
-    }
+    $result['user_seed'] = $userSeed;
+    $result['private_key_backup'] = base64_encode($privatekeyBackup);
+    $result['key_integrity_hash'] = $integrityHash;
 
     return $result;
 }
@@ -2292,7 +2289,7 @@ function encryptPrivateKey(string $userPwd, string $userPrivateKey): string
  *
  * @return string Derived key (32 bytes, raw binary)
  */
-function deriveBackupKey(string $userSeed, string $publicKey, array $SETTINGS): string
+function deriveBackupKey(string $userSeed, string $publicKey, ?array $SETTINGS = null): string
 {
     // Sanitize inputs
     $antiXss = new AntiXSS();
@@ -2835,43 +2832,52 @@ function storeUsersShareKey(
     $userId = ($apiUserId === -1) ? (int) $session->get('user-id') : $apiUserId;
     
     // $onlyForUser is only dynamically set by external calls
-    if (
-        $onlyForUser === true || (int) $post_folder_is_personal === 1
-    ) {
-        // Only create the sharekey for a user
-        $user = DB::queryFirstRow(
-            'SELECT public_key
+    if ($onlyForUser === true || (int) $post_folder_is_personal === 1) {
+        // For personal items, create sharekeys for the owner user and TP_USER         
+        $userIds = [$userId, TP_USER_ID];
+
+        // Get public keys for all target users
+        $users = DB::query(
+            'SELECT id, public_key
             FROM ' . prefixTable('users') . '
-            WHERE id = %i
+            WHERE id IN %li
             AND public_key != ""',
-            $userId
+            $userIds
         );
 
-        if (empty($objectKey) === false) {
-            DB::insert(
-                $object_name,
-                [
-                    'object_id' => (int) $post_object_id,
-                    'user_id' => $userId,
-                    'share_key' => encryptUserObjectKey(
-                        $objectKey,
-                        $user['public_key']
-                    ),
-                ]
-            );
-        } else if (count($objectKeyArray) > 0) {
-            foreach ($objectKeyArray as $object) {
-                DB::insert(
-                    $object_name,
-                    [
-                        'object_id' => (int) $object['objectId'],
-                        'user_id' => $userId,
-                        'share_key' => encryptUserObjectKey(
-                            $object['objectKey'],
-                            $user['public_key']
-                        ),
-                    ]
-                );
+        if (empty($users) === false) {
+            if (empty($objectKey) === false) {
+                // Single object key
+                foreach ($users as $user) {
+                    DB::insert(
+                        $object_name,
+                        [
+                            'object_id' => (int) $post_object_id,
+                            'user_id' => (int) $user['id'],
+                            'share_key' => encryptUserObjectKey(
+                                $objectKey,
+                                $user['public_key']
+                            ),
+                        ]
+                    );
+                }
+            } else if (count($objectKeyArray) > 0) {
+                // Multiple object keys
+                foreach ($users as $user) {
+                    foreach ($objectKeyArray as $object) {
+                        DB::insert(
+                            $object_name,
+                            [
+                                'object_id' => (int) $object['objectId'],
+                                'user_id' => (int) $user['id'],
+                                'share_key' => encryptUserObjectKey(
+                                    $object['objectKey'],
+                                    $user['public_key']
+                                ),
+                            ]
+                        );
+                    }
+                }
             }
         }
     } else {
@@ -3060,41 +3066,31 @@ function deleteUserObjetsKeys(int $userId, array $SETTINGS = []): bool
     // expect if personal item
     DB::delete(
         prefixTable('sharekeys_items'),
-        'user_id = %i AND object_id NOT IN (SELECT i.id FROM ' . prefixTable('items') . ' AS i WHERE i.perso = 1)',
+        'user_id = %i',// AND object_id NOT IN (SELECT i.id FROM ' . prefixTable('items') . ' AS i WHERE i.perso = 1)'',
         $userId
     );
     // Remove all item sharekeys files
     DB::delete(
         prefixTable('sharekeys_files'),
-        'user_id = %i AND object_id NOT IN (
-            SELECT f.id 
-            FROM ' . prefixTable('items') . ' AS i 
-            INNER JOIN ' . prefixTable('files') . ' AS f ON f.id_item = i.id
-            WHERE i.perso = 1
-        )',
+        'user_id = %i',
         $userId
     );
     // Remove all item sharekeys fields
     DB::delete(
         prefixTable('sharekeys_fields'),
-        'user_id = %i AND object_id NOT IN (
-            SELECT c.id 
-            FROM ' . prefixTable('items') . ' AS i 
-            INNER JOIN ' . prefixTable('categories_items') . ' AS c ON c.item_id = i.id
-            WHERE i.perso = 1
-        )',
+        'user_id = %i',
         $userId
     );
     // Remove all item sharekeys logs
     DB::delete(
         prefixTable('sharekeys_logs'),
-        'user_id = %i AND object_id NOT IN (SELECT i.id FROM ' . prefixTable('items') . ' AS i WHERE i.perso = 1)',
+        'user_id = %i', // AND object_id NOT IN (SELECT i.id FROM ' . prefixTable('items') . ' AS i WHERE i.perso = 1)',
         $userId
     );
     // Remove all item sharekeys suggestions
     DB::delete(
         prefixTable('sharekeys_suggestions'),
-        'user_id = %i AND object_id NOT IN (SELECT i.id FROM ' . prefixTable('items') . ' AS i WHERE i.perso = 1)',
+        'user_id = %i',// AND object_id NOT IN (SELECT i.id FROM ' . prefixTable('items') . ' AS i WHERE i.perso = 1)',
         $userId
     );
     return false;
@@ -3870,7 +3866,7 @@ function handleUserKeys(
     // Handle private key
     insertPrivateKeyWithCurrentFlag(
         $userId,
-        $userKeys['private_key'],        
+        $userKeys['private_key'],
     );
 
     // Save in DB
@@ -4939,94 +4935,172 @@ function insertPrivateKeyWithCurrentFlag(int $userId, string $privateKey) {
 }
 
 /**
- * Gets transparent recovery statistics for monitoring.
- *
- * @param array $SETTINGS Teampass settings
- *
- * @return array Statistics data
+ * Check and migrate personal items at user login
+ * After successful authentication and private key decryption
+ * 
+ * @param int $userId User ID
+ * @param string $privateKeyDecrypted Decrypted private key from login
+ * @param string $passwordClear Clear user password
+ * @return void
  */
-function getTransparentRecoveryStats(array $SETTINGS): array
+function checkAndMigratePersonalItems($userId, $privateKeyDecrypted, $passwordClear) {
+    $session = SessionManager::getSession();
+    $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+
+    // 1. Check migration flag in users table
+    $user = DB::queryFirstRow(
+        "SELECT personal_items_migrated, login 
+         FROM ".prefixTable('users')." 
+         WHERE id = %i",
+        $userId
+    );
+    
+    if ((int) $user['personal_items_migrated'] === 1) {
+        return; // Already migrated, nothing to do
+    }
+    
+    // 2. Check if user actually has personal items to migrate
+    $personalFolderId = DB::queryFirstField(
+        "SELECT id FROM ".prefixTable('nested_tree') ."
+         WHERE personal_folder = 1 
+         AND title = %s",
+        $userId
+    );
+    
+    if (!$personalFolderId) {
+        // User has no personal folder, mark as migrated
+        DB::update(prefixTable('users'), [
+            'personal_items_migrated' => 1
+        ], ['id' => $userId]);
+        return;
+    }
+    
+    // 3. Count items to migrate
+    // Get list of all personal subfolders
+    $personalFoldersIds = $tree->getDescendants($personalFolderId, true, false, true);
+    $itemsToMigrate = DB::query(
+        "SELECT i.id
+         FROM ".prefixTable('items')." i
+         WHERE i.perso = 1 
+         AND i.id_tree IN %li",
+        $personalFoldersIds
+    );
+    
+    $totalItems = count($itemsToMigrate);
+    
+    if ($totalItems == 0) {
+        // No items to migrate, mark user as migrated
+        DB::update(prefixTable('users'), [
+            'personal_items_migrated' => 1
+        ], ['id' => $userId]);
+        return;
+    }
+    
+    // 4. Check if migration task already exists and is pending
+    $existingTask = DB::queryFirstRow(
+        "SELECT increment_id, status FROM ".prefixTable('background_tasks')."
+         WHERE process_type = 'migrate_user_personal_items'
+         AND item_id = %i
+         AND status IN ('pending', 'in_progress')
+         ORDER BY created_at DESC LIMIT 1",
+        $userId
+    );
+    
+    if ($existingTask) {
+        // Migration already in progress
+        $session->set('migration_personal_items_in_progress', true);
+        return;
+    }
+    
+    // 5. Create migration task
+    createUserMigrationTask($userId, $privateKeyDecrypted, $passwordClear, json_encode($personalFoldersIds));
+    
+    // 6. Notify user
+    $session->set('migration_personal_items_started', true);
+    $session->set('migration_total_items', $totalItems);
+}
+
+/**
+ * Create migration task for a specific user
+ * 
+ * @param int $userId User ID
+ * @param string $privateKeyDecrypted Decrypted private key
+ * @param string $passwordClear Clear user password
+ * @param string $personalFolderIds
+ * @return void
+ */
+function createUserMigrationTask($userId, $privateKeyDecrypted, $passwordClear, $personalFolderIds): void
 {
-    // Count auto-recoveries in last 24h
-    $autoRecoveriesLast24h = DB::queryFirstField(
-        'SELECT COUNT(*) FROM ' . prefixTable('log_system') . '
-         WHERE label = %s
-         AND date > %i',
-        'auto_reencryption_success',
-        time() - 86400
+    // Decrypt all personal items with this key
+    // Launch the re-encryption process for personal items
+    // Create process
+    DB::insert(
+        prefixTable('background_tasks'),
+        array(
+            'created_at' => time(),
+            'process_type' => 'migrate_user_personal_items',
+            'arguments' => json_encode([
+                'user_id' => (int) $userId,
+                'user_pwd' => cryption($passwordClear, '','encrypt')['string'],
+                'user_private_key' => cryption($privateKeyDecrypted, '','encrypt')['string'],
+                'personal_folders_ids' => $personalFolderIds,
+            ]),
+            'is_in_progress' => 0,
+            'status' => 'pending',
+            'item_id' => $userId // Use item_id to store user_id for easy filtering
+        )
     );
+    $processId = DB::insertId();
 
-    // Count failed recoveries (all time)
-    $failedRecoveries = DB::queryFirstField(
-        'SELECT COUNT(*) FROM ' . prefixTable('log_system') . '
-         WHERE label = %s',
-        'auto_reencryption_failed'
+    // Create tasks
+    createUserMigrationSubTasks($processId, NUMBER_ITEMS_IN_BATCH);
+
+    // update user's new status
+    DB::update(
+        prefixTable('users'),
+        [
+            'is_ready_for_usage' => 0,
+            'ongoing_process_id' => $processId,
+        ],
+        'id=%i',
+        $userId
     );
+}
 
-    // Count critical failures (all time)
-    $criticalFailures = DB::queryFirstField(
-        'SELECT COUNT(*) FROM ' . prefixTable('log_system') . '
-         WHERE label = %s',
-        'auto_reencryption_critical_failure'
-    );
+function createUserMigrationSubTasks($processId, $nbItemsToTreat): void
+{
+    // Prepare the subtask queries
+    $queries = [
+        'user-personal-items-migration-step10' => 'SELECT * FROM ' . prefixTable('items'),
 
-    // Count users with transparent recovery enabled (have seed and backup)
-    $usersMigrated = DB::queryFirstField(
-        'SELECT COUNT(*) FROM ' . prefixTable('users') . '
-         WHERE user_derivation_seed IS NOT NULL
-         AND private_key_backup IS NOT NULL
-         AND disabled = 0'
-    );
+        'user-personal-items-migration-step20' => 'SELECT * FROM ' . prefixTable('log_items') . 
+                    ' WHERE raison LIKE "at_pw :%" AND encryption_type = "teampass_aes"',
 
-    // Count total active users
-    $totalUsers = DB::queryFirstField(
-        'SELECT COUNT(*) FROM ' . prefixTable('users') . '
-         WHERE disabled = 0
-         AND private_key IS NOT NULL
-         AND private_key != "none"'
-    );
+        'user-personal-items-migration-step30' => 'SELECT * FROM ' . prefixTable('categories_items') . 
+                    ' WHERE encryption_type = "teampass_aes"',
 
-    // Get recent recovery events (last 10)
-    $recentEvents = DB::query(
-        'SELECT l.date, l.label, l.qui, u.login
-         FROM ' . prefixTable('log_system') . ' AS l
-         INNER JOIN ' . prefixTable('users') . ' AS u ON u.id = l.qui
-         WHERE l.label IN %ls
-         ORDER BY l.date DESC
-         LIMIT 10',
-        ['auto_reencryption_success', 'auto_reencryption_failed', 'auto_reencryption_critical_failure']
-    );
+        'user-personal-items-migration-step40' => 'SELECT * FROM ' . prefixTable('suggestion'),
 
-    // Calculate migration percentage
-    $migrationPercentage = $totalUsers > 0 ? round(($usersMigrated / $totalUsers) * 100, 2) : 0;
-
-    // Calculate failure rate (last 30 days)
-    $totalAttempts30d = DB::queryFirstField(
-        'SELECT COUNT(*) FROM ' . prefixTable('log_system') . '
-         WHERE label IN %ls
-         AND date > %i',
-        ['auto_reencryption_success', 'auto_reencryption_failed'],
-        time() - (30 * 86400)
-    );
-
-    $failures30d = DB::queryFirstField(
-        'SELECT COUNT(*) FROM ' . prefixTable('log_system') . '
-         WHERE label = %s
-         AND date > %i',
-        'auto_reencryption_failed',
-        time() - (30 * 86400)
-    );
-
-    $failureRate = $totalAttempts30d > 0 ? round(($failures30d / $totalAttempts30d) * 100, 2) : 0;
-
-    return [
-        'auto_recoveries_last_24h' => (int) $autoRecoveriesLast24h,
-        'failed_recoveries_total' => (int) $failedRecoveries,
-        'critical_failures_total' => (int) $criticalFailures,
-        'users_migrated' => (int) $usersMigrated,
-        'total_users' => (int) $totalUsers,
-        'migration_percentage' => $migrationPercentage,
-        'failure_rate_30d' => $failureRate,
-        'recent_events' => $recentEvents,
+        'user-personal-items-migration-step50' => 'SELECT * FROM ' . prefixTable('files') . ' AS f
+                        INNER JOIN ' . prefixTable('items') . ' AS i ON i.id = f.id_item
+                        WHERE f.status = "' . TP_ENCRYPTION_NAME . '"'
     ];
+
+    // Perform loop on $queries to create sub-tasks
+    foreach ($queries as $step => $query) {
+        DB::query($query);
+        createAllSubTasks($step, DB::count(), $nbItemsToTreat, $processId);
+    }
+
+    // Create subtask for step final
+    DB::insert(
+        prefixTable('background_subtasks'),
+        array(
+            'task_id' => $processId,
+            'created_at' => time(),
+            'task' => json_encode([
+                'step' => 'user-personal-items-migration-step-final',
+            ]),
+        )
+    );
 }

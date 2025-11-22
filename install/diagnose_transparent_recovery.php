@@ -156,14 +156,12 @@ if (count($events) > 0) {
 echo "\n=== DIAGNOSTIC COMPLETE ===\n\n";
 
 // Summary
-if (empty($missingColumns)) {
-    if ($usersWithBackup == $totalUsers) {
-        echo "✅ ALL SYSTEMS OK - All users have transparent recovery enabled\n\n";
-    } else if ($usersWithSeed == $totalUsers) {
-        echo "⚠️  PARTIAL - All users have seeds, but some need to login to create backup\n\n";
-    } else {
-        echo "⚠️  INCOMPLETE - Some users haven't been migrated yet\n\n";
-    }
+// Note: If we reach this point, $missingColumns is guaranteed to be empty
+// because the script would have exited earlier (line 38) if any columns were missing
+if ($usersWithBackup == $totalUsers) {
+    echo "✅ ALL SYSTEMS OK - All users have transparent recovery enabled\n\n";
+} else if ($usersWithSeed == $totalUsers) {
+    echo "⚠️  PARTIAL - All users have seeds, but some need to login to create backup\n\n";
 } else {
-    echo "❌ MIGRATION REQUIRED - Run the migration script first\n\n";
+    echo "⚠️  INCOMPLETE - Some users haven't been migrated yet\n\n";
 }

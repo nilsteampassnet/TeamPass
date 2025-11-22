@@ -16,15 +16,34 @@
 
 /**
 *   Countdown before session expiration
+*   Periodically syncs with server to ensure accuracy
 **/
+// Initialize last session sync time from sessionStorage (persistent across page reloads)
+if (typeof lastSessionSync === 'undefined') {
+    var lastSessionSync = parseInt(sessionStorage.getItem('lastSessionSync')) || 0;
+}
+// Sync interval: 5 minutes (300000 ms)
+if (typeof sessionSyncInterval === 'undefined') {
+    var sessionSyncInterval = 300000;
+}
+// Track if extend session dialog has been shown
+if (typeof extendSessionShown === 'undefined') {
+    var extendSessionShown = false;
+}
+
 function countdown()
 {
+    // Do not execute countdown on login page
+    if ($('body').hasClass('login-page')) {
+        return false;
+    }
+
     // if a process is in progress then do not decrease the time counter.
     if (typeof ProcessInProgress !== 'undefined' && ProcessInProgress === true) {
         $('.countdown-icon')
             .addClass('fas fa-history')
             .removeClass('far fa-clock');
-        
+
         $(this).delay(1000).queue(function()
         {
             countdown();
@@ -32,6 +51,14 @@ function countdown()
         });
 
         return false;
+    }
+
+    // Periodically sync session time with server (every 5 minutes)
+    let currentTime = new Date().getTime();
+    if (lastSessionSync > 0 && currentTime - lastSessionSync > sessionSyncInterval) {
+        syncSessionTimeWithServer();
+        lastSessionSync = currentTime;
+        sessionStorage.setItem('lastSessionSync', currentTime.toString());
     }
 
     // Continue
@@ -58,14 +85,18 @@ function countdown()
     }
     DayTill = CHour + ':' + CMinute + ':' + CSecond;
 
-    // Session will soon be closed
-    if (DayTill === '00:00:50') {
+    // Session will soon be closed (check if <= 2 minutes using numeric comparison)
+    if (second <= 120 && extendSessionShown === false) {
         showExtendSession();
+        $('#countdown').css('color', 'red');
+        extendSessionShown = true;
+    } else if (second <= 120) {
+        // Keep the countdown red even if dialog was already shown
         $('#countdown').css('color', 'red');
     }
 
-    // Manage end of session
-    if ($('#temps_restant').val() !== '' && DayTill <= '00:00:00' && parseInt($('#please_login').val()) !== 1) {
+    // Manage end of session (check if <= 0 seconds using numeric comparison)
+    if ($('#temps_restant').val() !== '' && second <= 0 && parseInt($('#please_login').val()) !== 1) {
         $('#please_login').val('1');
         $(location).attr('href','index.php?session=expired');
     }
@@ -80,6 +111,49 @@ function countdown()
     {
         countdown();
         $(this).dequeue();
+    });
+}
+
+/**
+ * Synchronize session time with server
+ * This ensures the countdown reflects the actual server-side session state
+ */
+function syncSessionTimeWithServer() {
+    // Check if we have the necessary data
+    if (typeof store === 'undefined' || !store.get('teampassUser')) {
+        return;
+    }
+
+    var data = {
+        'user_id': store.get('teampassUser').user_id,
+    };
+
+    $.ajax({
+        type: 'POST',
+        url: 'sources/main.queries.php',
+        data: {
+            type: 'user_get_session_time',
+            type_category: 'action_user',
+            data: prepareExchangedData(JSON.stringify(data), 'encode', store.get('teampassUser').key),
+            key: store.get('teampassUser').key
+        },
+        dataType: 'text',
+        async: true,
+        success: function(serverData) {
+            try {
+                var decodedData = prepareExchangedData(serverData, 'decode', store.get('teampassUser').key);
+                if (decodedData && decodedData.timestamp !== undefined && decodedData.timestamp > 0) {
+                    // Update temps_restant with server value
+                    $('#temps_restant').val(decodedData.timestamp);
+                }
+            } catch (e) {
+                // Silently fail - will retry in next sync interval
+                console.log('Session sync failed:', e);
+            }
+        },
+        error: function() {
+            // Silently fail - will retry in next sync interval
+        }
     });
 }
 

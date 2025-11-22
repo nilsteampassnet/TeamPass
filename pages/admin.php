@@ -107,8 +107,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     <!-- /.card-header -->
                     <div class="card-body">
                         <div class="alert bg-olive disabled" role="alert">
-                            <p>People sponsoring my open source work each month help motivate me to devote time and resources to producing the best quality work I can for everyone who uses Teampass.</p>
-                            <p>Read my <a href="https://github.com/sponsors/nilsteampassnet" target="_blank">Github Sponsor page</a>.</p>
+                            <p>Sponsors enable dedicated development time for maintenance, new features, and community support. Help ensure TeamPass continues delivering enterprise-quality password management for all.</p>
+                            <p>Sponsor on <a href="https://github.com/sponsors/nilsteampassnet" target="_blank">Github Sponsor page</a>.</p>
                         </div>
                     </div>
                 </div>
@@ -260,7 +260,7 @@ DB::query(
 );
 if (DB::count() !== 0) {
                         // Check project files
-                        echo '<div class="mt-3" id="project-files-check-status">
+                        echo '<div class="mt-3" id="transparent-recovery-migration-status">
                             <i class="fa-solid fa-chart-bar mr-2 text-info"></i>'.$lang->get('perform_transparent_recovery_check').'
                             <button type="button" class="btn btn-primary ml-2" id="check-transparent-recovery-btn" onclick="performTransparentRecoveryCheck()">
                                 <i class="fas fa-caret-right"></i>
@@ -268,6 +268,25 @@ if (DB::count() !== 0) {
                         </div>';
 }
 
+// Has the personal items migration been done for users?
+$stats = DB::query(
+    "SELECT 
+        COUNT(*) as total_users,
+        SUM(CASE WHEN personal_items_migrated = 1 THEN 1 ELSE 0 END) as migrated_users,
+        SUM(CASE WHEN personal_items_migrated = 0 THEN 1 ELSE 0 END) as pending_users
+    FROM " . prefixTable('users') . "
+    WHERE disabled = 0 AND deleted_at IS NULL"
+);
+$progressPercent = ($stats[0]['migrated_users'] / $stats[0]['total_users']) * 100;
+if ($progressPercent !== 100) {
+                        // Check project files
+                        echo '<div class="mt-3" id="personal-items-migration-status">
+                            <i class="fa-solid fa-chart-bar mr-2 text-info"></i>Get personal items migration status
+                            <button type="button" class="btn btn-primary ml-2" id="personal-items-migration-btn" onclick="performPersonalItemsMigrationCheck()">
+                                <i class="fas fa-caret-right"></i>
+                            </button>
+                        </div>';
+}
                         // Status on users passwords migration to new encryption Symfony Password
                         DB::query(
                             "SELECT id 

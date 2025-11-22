@@ -20,3 +20,5 @@
 - [Introduction](api/api-basic.md)
 - **Help**
 - [Tips](misc/tips.md)
+- [Troubleshooting](misc/troubleshooting.md)
+- [Session-management](misc/session-management.md)

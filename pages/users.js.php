@@ -152,10 +152,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             ''
                         ) +
                         '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="edit"><i class="fa-solid fa-pen mr-2"></i><?php echo $lang->get('edit'); ?></li>' +
-                        ($(data).data('otp-provided') !== ""?
-                            '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="new-otp"><i class="fa-solid fa-mask mr-2"></i><?php echo $lang->get('generate_new_otp'); ?></li>' :
-                            ''
-                        ) +
                         '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '" data-action="reset-antibruteforce"><i class="fa-solid fa-lock mr-2"></i><?php echo $lang->get('bruteforce_reset_account'); ?></li>' +
                         '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '" data-action="logs"><i class="fa-solid fa-newspaper mr-2"></i><?php echo $lang->get('see_logs'); ?></li>' +
                         '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="qrcode"><i class="fa-solid fa-qrcode mr-2"></i><?php echo $lang->get('user_ga_code'); ?></li>' +
@@ -1854,13 +1850,12 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             //
             // --- END
             //
-        } else if ($(this).data('action') === 'new-otp') {// Check if no tasks on-going for this user
             const userID = $(this).data('id');
 
             const data_to_send = {
                 'user_id': userID,
             }
-
+//TODO : analyser et supprimer peut etre le OTP code pour une user AD
             $.post(
                 "sources/users.queries.php", {
                     type: "get_user_infos",
@@ -3016,8 +3011,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         // manage keys encryption for new user
         // Case where we need to encrypt new keys for the user
         // Process is: 
-        // 2/ clear all keys for this user
-        // 3/ generate keys for this user with encryption key
+        // 1/ clear all keys for this user
+        // 2/ generate keys for this user with encryption key
 
         if (ProcessInProgress === false) {
             ProcessInProgress = true;
@@ -3035,6 +3030,125 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             console.log(parameters);
             console.info('Prepare TASK for new user encryption keys')
         }
+
+        // Si userTemporaryCode est fourni, on l'utilise directement
+        if (userTemporaryCode && userTemporaryCode !== '') {
+            // Utiliser le code temporaire fourni
+            const data_otc = {
+                error: false,
+                code: userTemporaryCode,
+                visible_otp: <?php echo ADMIN_VISIBLE_OTP_ON_LDAP_IMPORT;?>  // Pas besoin de montrer le OTP car il est déjà fourni
+            };
+
+            // Passer directement à la création des tâches
+            createUserTasks(data_otc, data, authType);
+        } else {
+            // Générer un nouveau code temporaire
+            $.post(
+                'sources/main.queries.php', {
+                    type: 'generate_temporary_encryption_key',
+                    type_category: 'action_key',
+                    data: prepareExchangedData(JSON.stringify(parameters), "encode", "<?php echo $session->get('key'); ?>"),
+                    key: "<?php echo $session->get('key'); ?>"
+                },
+                function(data_otc) {
+                    data_otc = prepareExchangedData(data_otc, 'decode', '<?php echo $session->get('key'); ?>');
+
+                    if (data_otc.error !== false) {
+                        // Show error
+                        toastr.remove();
+                        toastr.error(
+                            data_otc.message,
+                            '<?php echo $lang->get('caution'); ?>', {
+                                timeOut: 5000,
+                                progressBar: true
+                            }
+                        );
+                        ProcessInProgress = false;
+                    } else {
+                        // Passer à la création des tâches
+                        createUserTasks(data_otc, data, authType);
+                    }
+                }
+            );
+        }
+
+        // Fonction pour créer les tâches utilisateur
+        function createUserTasks(data_otc, data, authType) {
+            // update the process
+            // add all tasks
+            const data_to_send = {
+                user_id: data.user_id,
+                user_code: data_otc.code,
+            };
+
+            //console.log(data_to_send);
+            //return false;
+
+            // Do query
+            $.post(
+                "sources/users.queries.php", {
+                    type: "create_new_user_tasks",
+                    data: prepareExchangedData(JSON.stringify(data_to_send), 'encode', '<?php echo $session->get('key'); ?>'),
+                    key: '<?php echo $session->get('key'); ?>'
+                },
+                function(data_tasks) {
+                    data_tasks = prepareExchangedData(data_tasks, "decode", "<?php echo $session->get('key'); ?>");
+                     console.log(data_tasks)
+                     console.log(data_otc)
+                    
+                    if (data_tasks.error === true) {
+                        // error
+                        toastr.remove();
+                        toastr.error(
+                            data_tasks.message,
+                            '<?php echo $lang->get('caution'); ?>', {
+                                timeOut: 5000,
+                                progressBar: true
+                            }
+                        );
+                    } else {
+                        // show message to user
+                        // If expected, show the OPT to the admin
+                        if (data_otc.visible_otp === 1) {
+                            showModalDialogBox(
+                                '#warningModal',
+                                '<i class="fa-solid fa-user-secret mr-2"></i><?php echo $lang->get('your_attention_is_required'); ?>',
+                                '<?php echo $lang->get('show_encryption_code_to_admin'); ?>' +
+                                '<div><input class="form-control form-item-control flex-nowrap ml-2" value="' + data_otc.code + '" readonly></div>',
+                                '',
+                                '<?php echo $lang->get('close'); ?>'
+                            );
+                        }
+
+
+                        // Now close in progress toast
+                        $('.close-toastr-progress').closest('.toast').remove();
+                        
+                        // refresh the list of users in LDAP not added in Teampass
+                        if (authType === 'ldap') {
+                            refreshListUsersLDAP();
+                        } else if (authType === 'oauth2') {
+                            refreshListUsersOAuth2();
+                        }  
+
+                        // Refresh list of users in Teampass
+                        oTable.ajax.reload();
+
+                        toastr.success(
+                            '<?php echo $lang->get('done'); ?>',
+                            '', {
+                                timeOut: 1000
+                            }
+                        );
+                    }
+                    ProcessInProgress = false;
+                }
+            );
+        }
+    }
+
+/*
         $.post(
             'sources/main.queries.php', {
                 type: 'generate_temporary_encryption_key',
@@ -3129,7 +3243,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 }
             }
         );
-    }
+    }*/
 
     /**
      * Permits to change the auth type of the user

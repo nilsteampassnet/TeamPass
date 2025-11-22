@@ -79,6 +79,7 @@ if ($db_link) {
 $superGlobal = new SuperGlobal();
 $lang = new Language(); 
 
+$error = [];
 
 //---------------------------------------------------------------------
 
@@ -88,7 +89,8 @@ $lang = new Language();
 $columns_to_add = [
     'user_derivation_seed' => "ALTER TABLE `" . $pre . "users` ADD COLUMN `user_derivation_seed` VARCHAR(64) NULL DEFAULT NULL AFTER `private_key`",
     'private_key_backup' => "ALTER TABLE `" . $pre . "users` ADD COLUMN `private_key_backup` TEXT NULL DEFAULT NULL AFTER `user_derivation_seed`",
-    'key_integrity_hash' => "ALTER TABLE `" . $pre . "users` ADD COLUMN `key_integrity_hash` VARCHAR(64) NULL DEFAULT NULL AFTER `private_key_backup`"
+    'key_integrity_hash' => "ALTER TABLE `" . $pre . "users` ADD COLUMN `key_integrity_hash` VARCHAR(64) NULL DEFAULT NULL AFTER `private_key_backup`",
+    'personal_items_migrated' => "ALTER TABLE `" . $pre . "users` ADD COLUMN `personal_items_migrated` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Personal items migrated to sharekeys system (0=not migrated, 1=migrated)' AFTER `is_ready_for_usage`"
 ];
 
 foreach ($columns_to_add as $column => $query) {
@@ -99,11 +101,41 @@ foreach ($columns_to_add as $column => $query) {
     }
 }
 
-// Add index on last_pw_change
-$result = mysqli_query($db_link, "SHOW INDEX FROM `" . $pre . "users` WHERE Key_name = 'idx_last_pw_change'");
-if (mysqli_num_rows($result) === 0) {
-    mysqli_query($db_link, "CREATE INDEX idx_last_pw_change ON `" . $pre . "users`(last_pw_change)");
+
+// Add indexes on tables
+$indexes_to_add = [    
+    [
+        'table' => 'users',
+        'index' => 'idx_last_pw_change',
+        'columns' => 'last_pw_change'
+    ],
+    [
+        'table' => 'users',
+        'index' => 'idx_personal_items_migrated',
+        'columns' => 'personal_items_migrated'
+    ]
+];
+foreach ($indexes_to_add as $index_config) {
+    $table = $pre . $index_config['table'];
+    $index_name = $index_config['index'];
+    $columns = $index_config['columns'];
+    
+    // Check if index exists
+    $result = mysqli_query(
+        $db_link, 
+        "SHOW INDEX FROM `{$table}` WHERE Key_name = '" . mysqli_real_escape_string($db_link, $index_name) . "'"
+    );
+    
+    if ($result && mysqli_num_rows($result) === 0) {
+        // Create index
+        $query = "CREATE INDEX `{$index_name}` ON `{$table}` ({$columns})";
+        
+        if (!mysqli_query($db_link, $query)) {
+            $error[] = "Failed to create index {$index_name} on {$table}: " . mysqli_error($db_link);
+        }
+    }
 }
+
 
 // Add new settings for transparent recovery
 $settings = [
@@ -130,7 +162,7 @@ foreach ($settings as $setting) {
 mysqli_close($db_link);
 
 // Finished
-echo '[{"finish":"1" , "next":"", "error":""}]';
+echo '[{"finish":"1" , "next":"", "error":"'.(count($error) > 0 ? json_encode($error) : '').'"}]';
 
 
 //---< FUNCTIONS

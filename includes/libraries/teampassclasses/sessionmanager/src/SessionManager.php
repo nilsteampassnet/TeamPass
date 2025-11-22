@@ -53,8 +53,13 @@ class SessionManager
                 $request = Request::createFromGlobals();
                 $isSecure = $request->isSecure();
 
+                // Cookie lifetime is set to 24 hours to maintain PHP session data
+                // This is longer than the application session duration (default 60 min)
+                // to prevent PHP garbage collection from destroying session files prematurely.
+                // The actual session expiration is controlled by user-session_duration
+                // which is validated on every request in PerformChecks::checkSession()
                 session_set_cookie_params([
-                    'lifetime' => 86400, // 1 day cookie - this to bypass session.gc_maxlifetime short value in php.ini 
+                    'lifetime' => 86400, // 24 hours - keeps PHP session alive while app session is controlled separately
                     'path' => '/',
                     'secure' => $isSecure,
                     'httponly' => true,

@@ -313,6 +313,7 @@ if (
                                 teampassUser.is_ready_for_usage = data.queryResults.is_ready_for_usage;
                                 teampassUser.ongoing_process_id = data.queryResults.ongoing_process_id;
                                 teampassUser.keys_recovery_time = data.queryResults.keys_recovery_time;
+                                teampassUser.personal_items_migrated = data.queryResults.personal_items_migrated;
                             }
                         );
                         
@@ -1062,8 +1063,17 @@ if (
             $(".fade").removeClass("out");
 
             // Is user not ready
-            if (typeof store.get('teampassUser') !== 'undefined' && typeof store.get('teampassUser').is_ready_for_usage !== 'undefined' && parseInt(store.get('teampassUser').is_ready_for_usage) === 0) {
-                $('#user_not_ready').removeClass('hidden');
+            if (typeof store.get('teampassUser') !== 'undefined' && typeof store.get('teampassUser').is_ready_for_usage !== 'undefined' 
+                && parseInt(store.get('teampassUser').is_ready_for_usage) === 0
+            ) {
+                if (typeof store.get('teampassUser').personal_items_migrated !== 'undefined' 
+                && parseInt(store.get('teampassUser').personal_items_migrated) === 0) {
+                    $('#user_not_ready_text').html('<?php echo $lang->get('account_not_ready_personal_items_migration_ongoing'); ?>');
+                    $('#user_not_ready').removeClass('hidden');
+                } else {
+                    $('#user_not_ready_text').html('<?php echo $lang->get('account_not_ready'); ?>');
+                    $('#user_not_ready').removeClass('hidden');
+                }
             }
         },
         5000
@@ -1215,7 +1225,7 @@ if (
                 'encrypt_with_user_pwd': true,
                 'generate_user_new_password': true,
                 'email_body': 'email_body_user_config_3',
-                'user_has_to_encrypt_personal_items_after': true,
+                'user_has_to_encrypt_personal_items_after': false,
             };
             $.post(
                 "sources/main.queries.php", {
@@ -1422,8 +1432,8 @@ if (
                     // Change privatekey encryption with user-s password
                     data = {
                         'user_id': store.get('teampassUser').user_id,
-                        'current_code': $('#dialog-user-temporary-code-current-password').val(),
-                        'new_code': $('#dialog-user-temporary-code-value').val(),
+                        'new_code': $('#dialog-user-temporary-code-current-password').val(),
+                        'current_code': $('#dialog-user-temporary-code-value').val(),
                         'action_type' : 'encrypt_privkey_with_user_password',
                     }
                     if (debugJavascript === true) console.log(data);

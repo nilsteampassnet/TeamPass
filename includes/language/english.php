@@ -32,6 +32,7 @@
  // - selected_items_to_be_imported
 
 return array(
+    'account_not_ready_personal_items_migration_ongoing' => 'Account is being migrated, please wait a couple of minutes.',
     'some_items_not_copied_empty_password' => 'Some items could not be copied because they have empty passwords.',
     'no_folder_selected' => 'No directory is selected',
     'show_subfolders_in_main_view' => 'Show sub-directories in main items list',
@@ -215,7 +216,7 @@ return array(
     'regenerate_only_personal_items_keys' => 'Only regenerate my personal items keys (it requires your public and private keys). This will not impact shared items.',
     'please_confirm_task_to_be_run' => 'Please confirm the task to be performed',
     'recovery_keys_not_downloaded' => 'Recovery keys not downloaded',
-    'no_recovery_keys' => 'I do not have recovery keys. This will only regenerate key for shared items (no impact on personal ones that will become unusable).',
+    'no_recovery_keys' => 'I do not have recovery keys. Passwords will be encrypted relying on master key (not as reliable as recovery keys).',
     'provide_recovery_keys' => 'Provide your recovery keys',
     'public_key' => 'Public key',
     'private_key' => 'Private key',

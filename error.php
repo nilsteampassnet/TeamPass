@@ -97,12 +97,73 @@ if (
                     For security reason, you have been disconnected. Click to <a href="./includes/core/logout.php?token=<?php echo $session->get('key'); ?>">log in</a>.
                 </p>
 
+                <!-- Redirection Timer Section -->
+                <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
+                    <p style="color: #666; font-size: 14px; margin-bottom: 10px;">
+                        Redirecting to home page in <strong><span id="countdown-timer">10</span> seconds</strong>
+                    </p>
+                    <div style="width: 100%; height: 4px; background: #f0f0f0; border-radius: 2px; overflow: hidden;">
+                        <div id="progress-bar" style="height: 100%; background: #dc3545; width: 100%; transition: width 0.1s linear;"></div>
+                    </div>
+                </div>
+                <!-- /.redirection-timer -->
+
             </div>
             <!-- /.error-content -->
         </div>
         <!-- /.error-page -->
     </section>
     <!-- /.content -->
+
+    <script>
+        // Check if user has already been redirected to error page
+        if (sessionStorage.getItem('errorPageVisited') === 'true') {
+            // Already visited, do nothing to prevent reloading
+            // This stops the countdown from restarting
+        } else {
+            // Mark that error page has been visited
+            sessionStorage.setItem('errorPageVisited', 'true');
+
+            // Function to initialize countdown
+            function initializeCountdown() {
+                let secondsRemaining = 10;
+                const timerElement = document.getElementById('countdown-timer');
+                const progressBar = document.getElementById('progress-bar');
+
+                // Verify elements exist before starting
+                if (!timerElement || !progressBar) {
+                    console.error('Countdown elements not found');
+                    return;
+                }
+
+                // Update timer every second
+                const countdownInterval = setInterval(function() {
+                    secondsRemaining--;
+
+                    // Update timer text
+                    timerElement.textContent = secondsRemaining;
+
+                    // Update progress bar
+                    const progress = (secondsRemaining / 10) * 100;
+                    progressBar.style.width = progress + '%';
+
+                    // Redirect when timer reaches 0
+                    if (secondsRemaining <= 0) {
+                        clearInterval(countdownInterval);
+                        window.location.href = './includes/core/logout.php?token=<?php echo $session->get('key'); ?>';
+                    }
+                }, 1000); // Update every 1 second
+            }
+
+            // Execute immediately if DOM is already loaded, otherwise wait for DOMContentLoaded
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initializeCountdown);
+            } else {
+                // DOM is already loaded (interactive or complete)
+                initializeCountdown();
+            }
+        }
+    </script>
 <?php
 }
 

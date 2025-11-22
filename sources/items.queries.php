@@ -190,6 +190,7 @@ $tpUsersIDs = [
     OTV_USER_ID,
     SSH_USER_ID,
     API_USER_ID,
+    TP_USER_ID,
     $session->get('user-id'),
 ];
 
@@ -532,7 +533,7 @@ switch ($inputData['type']) {
                                     (int) $newObjectId,
                                     $cryptedStuff['objectKey'],
                                     true,   // only for the item creator
-                                    false,  // no delete all
+                                    false,  // delete all
                                 );
 
                                 array_push(
@@ -5104,7 +5105,7 @@ switch ($inputData['type']) {
                 prefixTable('sharekeys_items'),
                 'object_id = %i AND user_id NOT IN %ls',
                 $inputData['itemId'],
-                [$session->get('user-id'), TP_USER_ID, API_USER_ID, OTV_USER_ID,SSH_USER_ID]
+                [$session->get('user-id'), TP_USER_ID]
             );
 
             // Remove all item sharekeys fields
@@ -5118,9 +5119,9 @@ switch ($inputData['type']) {
             foreach ($rows as $field) {
                 DB::delete(
                     prefixTable('sharekeys_fields'),
-                    'object_id = %i AND user_id != %i',
+                    'object_id = %i AND user_id NOT IN %ls',
                     $field['id'],
-                    $session->get('user-id')
+                    [$session->get('user-id'), TP_USER_ID]
                 );
             }
 
@@ -5135,9 +5136,9 @@ switch ($inputData['type']) {
             foreach ($rows as $attachment) {
                 DB::delete(
                     prefixTable('sharekeys_files'),
-                    'object_id = %i AND user_id != %i',
+                    'object_id = %i AND user_id NOT IN %ls',
                     $attachment['id'],
-                    $session->get('user-id')
+                    [$session->get('user-id'), TP_USER_ID]
                 );
             }
 
@@ -5205,7 +5206,6 @@ switch ($inputData['type']) {
                 }
             }
 
-            // Get the FIELDS object key for the user
             // Get fields for this Item
             $rows = DB::query(
                 'SELECT id
@@ -7239,9 +7239,6 @@ function getCurrentAccessRights(int $userId, int $itemId, int $treeId, string $a
         return getAccessResponse(false, true, false, false);
     }
     
-    // Retrieve user's visible folders from the cache_tree table
-    $visibleFolders = getUserVisibleFolders($userId);
-    
     // Check if the folder is in the user's read-only list
     if (in_array($treeId, $session->get('user-read_only_folders'))) {
         return getAccessResponse(false, true, false, false);
@@ -7251,6 +7248,9 @@ function getCurrentAccessRights(int $userId, int $itemId, int $treeId, string $a
     if (in_array($treeId, $session->get('user-allowed_folders_by_definition'))) {
         return getAccessResponse(false, true, true, true);
     }
+    
+    // Retrieve user's visible folders from the cache_tree table
+    $visibleFolders = getUserVisibleFolders($userId);
     
     // Check if the folder is personal to the user
     foreach ($visibleFolders as $folder) {

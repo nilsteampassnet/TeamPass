@@ -335,6 +335,7 @@ if (null !== $post_type) {
                         'can_create_root_folder' => empty($post_root_level) === true ? 0 : $post_root_level,
                         'mfa_enabled' => empty($mfa_enabled) === true ? 0 : $mfa_enabled,
                         'created_at' => time(),
+                        'personal_items_migrated' => 1,
                     )
                 );
                 $new_user_id = DB::insertId();
@@ -2290,6 +2291,7 @@ if (null !== $post_type) {
                 'auth_type' => $post_authType,
                 'is_ready_for_usage' => isset($SETTINGS['enable_tasks_manager']) === true && (int) $SETTINGS['enable_tasks_manager'] === 1 ? 0 : 1,
                 'created_at' => time(),
+                'personal_items_migrated' => 1,
             );
 
             // Add transparent recovery fields if available
@@ -2306,6 +2308,12 @@ if (null !== $post_type) {
                 $userData
             );
             $newUserId = DB::insertId();
+
+            // Handle private key
+            insertPrivateKeyWithCurrentFlag(
+                $newUserId,
+                $userKeys['private_key'],        
+            );
 
             // Create the API key
             DB::insert(
@@ -2682,7 +2690,7 @@ if (null !== $post_type) {
             // Prepare variables
             $post_user_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
             $post_user_code = filter_var($dataReceived['user_code'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-
+error_log("OTC: ".$post_user_code);
             // Search TP_USER in db        
             $userTP = DB::queryFirstRow(
                 'SELECT pw

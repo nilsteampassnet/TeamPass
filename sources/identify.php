@@ -633,6 +633,9 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             }
         }
 
+        // Version 3.1.5 - Migrate personal items password to similar encryption protocol as public ones.
+        checkAndMigratePersonalItems($session->get('user-id'), $session->get('user-private_key'), $passwordClear);
+
         // Set some settings
         $SETTINGS['update_needed'] = '';
 
@@ -1001,7 +1004,6 @@ function prepareUserEncryptionKeys($userInfo, $passwordClear, array $SETTINGS = 
             $privateKeyBackup = base64_encode($cipher->encrypt(base64_decode($privateKeyClear)));
 
             // Generate integrity hash
-            $integrityHash = null;
             $serverSecret = getServerSecret();
             $integrityHash = generateKeyIntegrityHash($userInfo['user_derivation_seed'], $userInfo['public_key'], $serverSecret);
 

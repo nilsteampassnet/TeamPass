@@ -6928,7 +6928,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
                 // Warn user that it starts
                 toastr.info(
-                    '<i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>'
+                    '<i class="fa-solid fa-circle-notch fa-spin fa-2x"></i><?php echo $lang->get('please_wait'); ?>'
                 );
 
                 // Hide helper
@@ -6969,8 +6969,8 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                         $('#itcount_' + data.to_folder).text(refreshFolderCounters($('#itcount_' + data.to_folder).text(), 'increment'));
 
                         toastr.remove();
-                        toastr.info(
-                            '<?php echo $lang->get('success'); ?>',
+                        toastr.success(
+                            '<?php echo $lang->get('done'); ?>',
                             '', {
                                 timeOut: 1000
                             }

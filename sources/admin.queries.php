@@ -2752,7 +2752,177 @@ switch ($post_type) {
         );
 
         break;
+
+    case "personalItemsMigrationCheck":
+        // Check KEY and rights
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        $stats = getPersonalItemsMigrationStats($SETTINGS);
+        
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'stats' => $stats,
+            ),
+            'encode'
+        );
+
+        break;
     
+}
+
+/**
+ * Gets personal items migration statistics for monitoring.
+ *
+ * @param array $SETTINGS Teampass settings
+ *
+ * @return array Statistics data
+ */
+function getPersonalItemsMigrationStats(array $SETTINGS): array
+{
+    // Get migration statistics
+    $stats = DB::query(
+        "SELECT 
+            COUNT(*) as total_users,
+            SUM(CASE WHEN personal_items_migrated = 1 THEN 1 ELSE 0 END) as migrated_users,
+            SUM(CASE WHEN personal_items_migrated = 0 THEN 1 ELSE 0 END) as pending_users
+        FROM " . prefixTable('users') . "
+        WHERE disabled = 0 AND deleted_at IS NULL AND id NOT IN %li",
+        [TP_USER_ID, API_USER_ID, OTV_USER_ID,SSH_USER_ID]
+    );
+
+    $progressPercent = ($stats[0]['migrated_users'] / $stats[0]['total_users']) * 100;
+
+    // Get users pending migration
+    $pendingUsers = DB::query(
+        "SELECT id, login, email, last_connexion
+        FROM teampass_users
+        WHERE personal_items_migrated = 0
+        AND disabled = 0 AND deleted_at IS NULL AND id NOT IN %li
+        ORDER BY last_connexion DESC",
+        [TP_USER_ID, API_USER_ID, OTV_USER_ID,SSH_USER_ID]
+    );
+
+    // Get users ready
+    $doneUsers = DB::query(
+        "SELECT id, login, email, last_connexion
+        FROM teampass_users
+        WHERE personal_items_migrated = 1
+        AND disabled = 0 AND deleted_at IS NULL AND id NOT IN %li
+        ORDER BY last_connexion DESC",
+        [TP_USER_ID, API_USER_ID, OTV_USER_ID,SSH_USER_ID]
+    );
+
+    return [
+        'progressPercent' => $progressPercent,
+        'pendingUsers' => $pendingUsers,
+        'doneUsers' => $doneUsers,
+        'totalUsers' => $stats[0]['total_users'],
+    ];
+}
+
+
+
+/**
+ * Gets transparent recovery statistics for monitoring.
+ *
+ * @param array $SETTINGS Teampass settings
+ *
+ * @return array Statistics data
+ */
+function getTransparentRecoveryStats(array $SETTINGS): array
+{
+    // Count auto-recoveries in last 24h
+    $autoRecoveriesLast24h = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('log_system') . '
+         WHERE label = %s
+         AND date > %i',
+        'auto_reencryption_success',
+        time() - 86400
+    );
+
+    // Count failed recoveries (all time)
+    $failedRecoveries = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('log_system') . '
+         WHERE label = %s',
+        'auto_reencryption_failed'
+    );
+
+    // Count critical failures (all time)
+    $criticalFailures = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('log_system') . '
+         WHERE label = %s',
+        'auto_reencryption_critical_failure'
+    );
+
+    // Count users with transparent recovery enabled (have seed and backup)
+    $usersMigrated = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('users') . '
+         WHERE user_derivation_seed IS NOT NULL
+         AND private_key_backup IS NOT NULL
+         AND disabled = 0'
+    );
+
+    // Count total active users
+    $totalUsers = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('users') . '
+         WHERE disabled = 0
+         AND private_key IS NOT NULL
+         AND private_key != "none"'
+    );
+
+    // Get recent recovery events (last 10)
+    $recentEvents = DB::query(
+        'SELECT l.date, l.label, l.qui, u.login
+         FROM ' . prefixTable('log_system') . ' AS l
+         INNER JOIN ' . prefixTable('users') . ' AS u ON u.id = l.qui
+         WHERE l.label IN %ls
+         ORDER BY l.date DESC
+         LIMIT 10',
+        ['auto_reencryption_success', 'auto_reencryption_failed', 'auto_reencryption_critical_failure']
+    );
+
+    // Calculate migration percentage
+    $migrationPercentage = $totalUsers > 0 ? round(($usersMigrated / $totalUsers) * 100, 2) : 0;
+
+    // Calculate failure rate (last 30 days)
+    $totalAttempts30d = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('log_system') . '
+         WHERE label IN %ls
+         AND date > %i',
+        ['auto_reencryption_success', 'auto_reencryption_failed'],
+        time() - (30 * 86400)
+    );
+
+    $failures30d = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('log_system') . '
+         WHERE label = %s
+         AND date > %i',
+        'auto_reencryption_failed',
+        time() - (30 * 86400)
+    );
+
+    $failureRate = $totalAttempts30d > 0 ? round(($failures30d / $totalAttempts30d) * 100, 2) : 0;
+
+    return [
+        'auto_recoveries_last_24h' => (int) $autoRecoveriesLast24h,
+        'failed_recoveries_total' => (int) $failedRecoveries,
+        'critical_failures_total' => (int) $criticalFailures,
+        'users_migrated' => (int) $usersMigrated,
+        'total_users' => (int) $totalUsers,
+        'migration_percentage' => $migrationPercentage,
+        'failure_rate_30d' => $failureRate,
+        'recent_events' => $recentEvents,
+    ];
 }
 
 /**

@@ -1137,7 +1137,7 @@ return array(
     'existing_valid_otv_links' => 'Liens à visualisation valides',
     'started' => 'Lancé',
     'recovery_keys_not_downloaded' => 'Clés de récupération non téléchargées',
-    'no_recovery_keys' => 'Je ne dispose pas des clés de récupération. Cette opération effacera tous les mots de passe des mes objets personnels.',
+    'no_recovery_keys' => 'Je ne dispose pas des clés de récupération. Les mots de passe seront générés à partir de la clé principale (peut-être moins complet que les clés de récupération).',
     'provide_recovery_keys' => 'Fournir vos clés de récupération',
     'public_key' => 'Clé publique',
     'private_key' => 'Clé privée',
