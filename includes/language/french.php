@@ -1315,5 +1315,6 @@ return array(
     'transparent_key_recovery_pbkdf2_iterations' => 'Itérations PBKDF2 pour la récupération transparente du mot de passe',
     'transparent_key_recovery_pbkdf2_iterations_tip' => 'Nombre d&apos;itérations pour la dérivation de clé PBKDF2 dans la récupération transparente de mot de passe. Des valeurs plus élevées améliorent la sécurité mais peuvent affecter les performances. Ajustez en fonction des capacités du serveur.',
     'some_items_not_copied_empty_password' => 'Certains objets ont été copiés avec un mot de passe vide.',
+    'error_user_deleted_exists' => 'L&apos;utilisateur est supprimé',
 
 );
