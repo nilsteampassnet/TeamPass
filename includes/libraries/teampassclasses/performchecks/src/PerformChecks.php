@@ -196,6 +196,11 @@ class PerformChecks
             'SELECT id, login, key_tempo, admin, gestionnaire, can_manage_all_users FROM ' . prefixTable('users') . ' WHERE id = %i',
             $this->sessionVar['user_id']
         );
+
+        // check if user has been deleted
+        if (isset($data['deleted_at']) && $data['deleted_at'] !== null) {
+            return false;
+        }
         
         // check if user exists and tempo key is coherant
         if (empty($data['login']) === true || empty($data['key_tempo']) === true || $data['key_tempo'] !== $this->sessionVar['user_key']) {
