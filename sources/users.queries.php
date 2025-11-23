@@ -1418,7 +1418,6 @@ if (null !== $post_type) {
                 $tree_desc = $tree->getDescendants();
                 foreach ($tree_desc as $t) {
                     if ((int) $t->personal_folder === 1 && $t->title !== $rowUser['id']) {
-                        error_log($t->title ." -- " . $rowUser['id']);
                         // skip personal folders
                         continue;
                     }

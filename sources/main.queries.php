@@ -346,7 +346,7 @@ function userHandler(string $post_type, array|null|string $dataReceived, array $
     ];
 
     // Default values
-    $filtered_user_id = $session->get('user-id');
+    $filtered_user_id = (int) $session->get('user-id');
 
     // User can't manage users and requested type is administrative.
     if ((int) $session->get('user-admin') !== 1 &&
@@ -386,7 +386,7 @@ function userHandler(string $post_type, array|null|string $dataReceived, array $
                 && (int) $targetUserInfos['gestionnaire'] !== 1)
         ) {
             // This user is allowed to modify other users.
-            $filtered_user_id = $dataReceived['user_id'];
+            $filtered_user_id = (int) $dataReceived['user_id'];
         }
     }
 
