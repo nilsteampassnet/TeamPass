@@ -25,7 +25,16 @@ ADMIN_PWD="${ADMIN_PWD:-}"
 
 INSTALL_MODE="${INSTALL_MODE:-manual}"
 TEAMPASS_URL="${TEAMPASS_URL:-http://localhost}"
-TEAMPASS_VERSION="${TEAMPASS_VERSION:-3.1.5.2}"
+
+# Extract version from PHP constants (TP_VERSION and TP_VERSION_MINOR)
+if [ -f "/var/www/html/includes/config/include.php" ]; then
+    TP_VERSION=$(grep "define('TP_VERSION'" /var/www/html/includes/config/include.php | sed -n "s/.*'\([0-9.]*\)'.*/\1/p")
+    TP_VERSION_MINOR=$(grep "define('TP_VERSION_MINOR'" /var/www/html/includes/config/include.php | sed -n "s/.*'\([0-9]*\)'.*/\1/p")
+    TEAMPASS_VERSION="${TP_VERSION}.${TP_VERSION_MINOR}"
+else
+    # Fallback if include.php is not available yet
+    TEAMPASS_VERSION="${TEAMPASS_VERSION:-3.1.5.2}"
+fi
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
