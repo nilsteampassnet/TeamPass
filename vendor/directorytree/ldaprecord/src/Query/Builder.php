@@ -1063,6 +1063,15 @@ class Builder
      */
     public function whereIn(string $field, array $values): static
     {
+        if (empty($values)) {
+            // If the array of values is empty, we will
+            // add an empty OR filter to the query to
+            // ensure that no results are returned.
+            $this->rawFilter('(|)');
+
+            return $this;
+        }
+
         return $this->orFilter(function (Builder $query) use ($field, $values) {
             foreach ($values as $value) {
                 $query->whereEquals($field, $value);

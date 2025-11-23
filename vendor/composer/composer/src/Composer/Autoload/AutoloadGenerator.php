@@ -1214,6 +1214,7 @@ HEADER;
                 ]
             );
             $value = ltrim(Preg::replace('/^ */m', '    $0$0', $value));
+            $value = Preg::replace('/ +$/m', '', $value);
 
             $file .= sprintf("    public static $%s = %s;\n\n", $prop, $value);
             if ('files' !== $prop) {

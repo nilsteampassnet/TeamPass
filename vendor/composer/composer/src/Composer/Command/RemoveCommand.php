@@ -36,10 +36,7 @@ class RemoveCommand extends BaseCommand
 {
     use CompletionTrait;
 
-    /**
-     * @return void
-     */
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->setName('remove')
@@ -54,6 +51,7 @@ class RemoveCommand extends BaseCommand
                 new InputOption('no-install', null, InputOption::VALUE_NONE, 'Skip the install step after updating the composer.lock file.'),
                 new InputOption('no-audit', null, InputOption::VALUE_NONE, 'Skip the audit step after updating the composer.lock file (can also be set via the COMPOSER_NO_AUDIT=1 env var).'),
                 new InputOption('audit-format', null, InputOption::VALUE_REQUIRED, 'Audit output format. Must be "table", "plain", "json", or "summary".', Auditor::FORMAT_SUMMARY, Auditor::FORMATS),
+                new InputOption('no-security-blocking', null, InputOption::VALUE_NONE, 'Allows installing packages with security advisories or that are abandoned (can also be set via the COMPOSER_NO_SECURITY_BLOCKING=1 env var).'),
                 new InputOption('update-no-dev', null, InputOption::VALUE_NONE, 'Run the dependency update with the --no-dev option.'),
                 new InputOption('update-with-dependencies', 'w', InputOption::VALUE_NONE, 'Allows inherited dependencies to be updated with explicit dependencies (can also be set via the COMPOSER_WITH_DEPENDENCIES=1 env var). (Deprecated, is now default behavior)'),
                 new InputOption('update-with-all-dependencies', 'W', InputOption::VALUE_NONE, 'Allows all inherited dependencies to be updated, including those that are root requirements (can also be set via the COMPOSER_WITH_ALL_DEPENDENCIES=1 env var).'),
@@ -261,6 +259,7 @@ EOT
         $authoritative = $input->getOption('classmap-authoritative') || $composer->getConfig()->get('classmap-authoritative');
         $apcuPrefix = $input->getOption('apcu-autoloader-prefix');
         $apcu = $apcuPrefix !== null || $input->getOption('apcu-autoloader') || $composer->getConfig()->get('apcu-autoloader');
+        $minimalChanges = $input->getOption('minimal-changes') || $composer->getConfig()->get('update-with-minimal-changes');
 
         $updateAllowTransitiveDependencies = Request::UPDATE_LISTED_WITH_TRANSITIVE_DEPS_NO_ROOT_REQUIRE;
         $flags = '';
@@ -285,9 +284,8 @@ EOT
             ->setUpdateAllowTransitiveDependencies($updateAllowTransitiveDependencies)
             ->setPlatformRequirementFilter($this->getPlatformRequirementFilter($input))
             ->setDryRun($dryRun)
-            ->setAudit(!$input->getOption('no-audit'))
-            ->setAuditFormat($this->getAuditFormat($input))
-            ->setMinimalUpdate($input->getOption('minimal-changes'))
+            ->setAuditConfig($this->createAuditConfig($composer->getConfig(), $input))
+            ->setMinimalUpdate($minimalChanges)
         ;
 
         // if no lock is present, we do not do a partial update as

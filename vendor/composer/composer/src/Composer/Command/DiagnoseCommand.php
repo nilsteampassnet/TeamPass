@@ -30,13 +30,11 @@ use Composer\Repository\PlatformRepository;
 use Composer\Plugin\CommandEvent;
 use Composer\Plugin\PluginEvents;
 use Composer\Repository\RepositorySet;
-use Composer\Repository\RootPackageRepository;
 use Composer\Util\ConfigValidator;
 use Composer\Util\Git;
 use Composer\Util\IniHelper;
 use Composer\Util\ProcessExecutor;
 use Composer\Util\HttpDownloader;
-use Composer\Util\StreamContextFactory;
 use Composer\Util\Platform;
 use Composer\SelfUpdate\Keys;
 use Composer\SelfUpdate\Versions;
@@ -467,7 +465,6 @@ EOT
     }
 
     /**
-     * @param  string             $token
      * @throws TransportException
      * @return mixed|string
      */
@@ -617,12 +614,20 @@ EOT
             $brotliVersion = isset($version['brotli_version']) && $version['brotli_version'] !== '' ? $version['brotli_version'] : 'missing';
             $sslVersion = isset($version['ssl_version']) && $version['ssl_version'] !== '' ? $version['ssl_version'] : 'missing';
             $hasZstd = isset($version['features']) && defined('CURL_VERSION_ZSTD') && 0 !== ($version['features'] & CURL_VERSION_ZSTD);
+            $httpVersions = '1.0, 1.1';
+            if (isset($version['features']) && \defined('CURL_VERSION_HTTP2') && \defined('CURL_HTTP_VERSION_2_0') && (CURL_VERSION_HTTP2 & $version['features']) !== 0) {
+                $httpVersions .= ', 2';
+            }
+            if (isset($version['features']) && \defined('CURL_VERSION_HTTP3') && ($version['features'] & CURL_VERSION_HTTP3) !== 0) {
+                $httpVersions .= ', 3';
+            }
 
             return '<comment>'.$version['version'].'</comment> '.
                 'libz <comment>'.$libzVersion.'</comment> '.
                 'brotli <comment>'.$brotliVersion.'</comment> '.
                 'zstd <comment>'.($hasZstd ? 'supported' : 'missing').'</comment> '.
-                'ssl <comment>'.$sslVersion.'</comment>';
+                'ssl <comment>'.$sslVersion.'</comment> '.
+                'HTTP <comment>'.$httpVersions.'</comment>';
         }
 
         return '<error>missing, using php streams fallback, which reduces performance</error>';
