@@ -1364,7 +1364,7 @@ if (null !== $post_type) {
 
             // get User info
             $rowUser = DB::queryFirstRow(
-                'SELECT login, name, lastname, email, disabled, fonction_id, groupes_interdits, groupes_visibles, isAdministratedByRole, avatar_thumb, roles_from_ad_groups
+                'SELECT id, login, name, lastname, email, disabled, fonction_id, groupes_interdits, groupes_visibles, isAdministratedByRole, avatar_thumb, roles_from_ad_groups
                 FROM ' . prefixTable('users') . '
                 WHERE id = %i',
                 $post_id
@@ -1372,6 +1372,7 @@ if (null !== $post_type) {
 
             // get rights
             $arrFolders = [];
+            $foldersData = [];
             $html = '';
 
             if (isset($SETTINGS['ldap_mode']) === true && (int) $SETTINGS['ldap_mode'] === 1 && isset($SETTINGS['enable_ad_users_with_ad_groups']) === true && (int) $SETTINGS['enable_ad_users_with_ad_groups'] === 1) {
@@ -1416,6 +1417,11 @@ if (null !== $post_type) {
                 
                 $tree_desc = $tree->getDescendants();
                 foreach ($tree_desc as $t) {
+                    if ((int) $t->personal_folder === 1 && $t->title !== $rowUser['id']) {
+                        error_log($t->title ." -- " . $rowUser['id']);
+                        // skip personal folders
+                        continue;
+                    }
                     foreach ($arrFolders as $fld) {
                         if ($fld['id'] === $t->id) {
                             // get folder name
@@ -1426,39 +1432,14 @@ if (null !== $post_type) {
                                 $fld['id']
                             );
 
-                            // manage indentation
-                            $ident = '';
-                            for ($y = 1; $y < $row['nlevel']; ++$y) {
-                                $ident .= '<i class="fas fa-long-arrow-alt-right mr-2"></i>';
-                            }
+                            $foldersData[] = [
+                                'id' => $row['id'],
+                                'title' => $row['title'],
+                                'nlevel' => $row['nlevel'],
+                                'type' => $fld['type'],
+                                'special' => $fld['special']
+                            ];
 
-                            // manage right icon
-                            if ($fld['type'] == 'W') {
-                                $label = '<i class="fas fa-indent infotip text-success mr-2" title="' . $lang->get('write') . '"></i>' .
-                                    '<i class="fas fa-edit infotip text-success mr-2" title="' . $lang->get('edit') . '"></i>' .
-                                    '<i class="fas fa-eraser infotip text-success" title="' . $lang->get('delete') . '"></i>';
-                            } elseif ($fld['type'] == 'ND') {
-                                $label = '<i class="fas fa-indent infotip text-warning mr-2" title="' . $lang->get('write') . '"></i>' .
-                                    '<i class="fas fa-edit infotip text-success mr-2" title="' . $lang->get('edit') . '"></i>' .
-                                    '<i class="fas fa-eraser infotip text-danger" title="' . $lang->get('no_delete') . '"></i>';
-                            } elseif ($fld['type'] == 'NE') {
-                                $label = '<i class="fas fa-indent infotip text-warning mr-2" title="' . $lang->get('write') . '"></i>' .
-                                    '<i class="fas fa-edit infotip text-danger mr-2" title="' . $lang->get('no_edit') . '"></i>' .
-                                    '<i class="fas fa-eraser infotip text-success" title="' . $lang->get('delete') . '"></i>';
-                            } elseif ($fld['type'] == 'NDNE') {
-                                $label = '<i class="fas fa-indent infotip text-warning mr-2" title="' . $lang->get('write') . '"></i>' .
-                                    '<i class="fas fa-edit infotip text-danger mr-2" title="' . $lang->get('no_edit') . '"></i>' .
-                                    '<i class="fas fa-eraser infotip text-danger" title="' . $lang->get('no_delete') . '"></i>';
-                            } elseif ($fld['type'] == '') {
-                                $label = '<i class="fas fa-eye-slash infotip text-danger mr-2" title="' . $lang->get('no_access') . '"></i>';
-                            } else {
-                                $label = '<i class="fas fa-eye infotip text-info mr-2" title="' . $lang->get('read') . '"></i>';
-                            }
-
-                            $html .= '<tr><td>' . $ident . $row['title'] .
-                                ' <small class="text-info">[' . $row['id'] . ']</small>'.
-                                ($fld['special'] === true ? '<i class="fas fa-user-tag infotip text-primary ml-5" title="' . $lang->get('user_specific_right') . '"></i>' : '').
-                                '</td><td>' . $label . '</td></tr>';
                             break;
                         }
                     }
@@ -1472,9 +1453,13 @@ if (null !== $post_type) {
 
             echo prepareExchangedData(
                 array(
-                    'html' => $html_full,
+                    'folders' => $foldersData,
+                    'user' => [
+                        'login' => $rowUser['login'],
+                        'name' => $rowUser['name'],
+                        'lastname' => $rowUser['lastname']
+                    ],
                     'error' => false,
-                    'login' => $rowUser['login'],
                     'message' => '',
                 ),
                 'encode'

@@ -497,14 +497,12 @@ foreach ($treeDesc as $t) {
         <div class="col-12">
             <div class="card card-primary">
                 <div class="card-header">
-                    <h3 class="card-title"><?php echo $lang->get('access_rights_for_user'); ?> <span id="row-folders-title"></span></h3>
+                    <h3 class="card-title"><?php echo $lang->get('access_rights_for_user'); ?> <b><span id="row-folders-title"></span></b></h3>
                 </div>
 
                 <!-- /.card-header -->
                 <!-- table start -->
-                <div class="card-body" id="row-folders-results">
-
-                </div>
+                <div class="card-body" id="row-folders-results"></div>
 
                 <div class="card-footer">
                     <button type="button" class="btn btn-default float-right tp-action" data-action="cancel"><?php echo $lang->get('cancel'); ?></button>
@@ -588,7 +586,7 @@ foreach ($treeDesc as $t) {
                 <i class="fas fa-broom"></i> <?php echo $lang->get('purge_users_90days'); ?>
             </button>
             
-            <div id="deleted-users-list" style="">
+            <div id="deleted-users-list">
                 <table class="table table-striped" id="table-deleted-users">
                     <thead>
                         <tr>

@@ -1335,8 +1335,50 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             }
                         );
                     } else {
+                        // Generate HTML from data
+                        let html = '<table id="table-folders" class="table table-bordered table-striped dt-responsive nowrap" style="width:100%"><tbody>';
+                        
+                        data.folders.forEach(folder => {
+                            // Manage indentation
+                            let ident = '';
+                            for (let y = 1; y < folder.nlevel; ++y) {
+                                ident += '<i class="fas fa-long-arrow-alt-right mr-2"></i>';
+                            }
+
+                            // Manage right icon
+                            let label = '';
+                            if (folder.type === 'W') {
+                                label = '<i class="fas fa-indent infotip text-success mr-2" title="<?php echo $lang->get('write'); ?>"></i>' +
+                                        '<i class="fas fa-edit infotip text-success mr-2" title="<?php echo $lang->get('edit'); ?>"></i>' +
+                                        '<i class="fas fa-eraser infotip text-success" title="<?php echo $lang->get('delete'); ?>"></i>';
+                            } else if (folder.type === 'ND') {
+                                label = '<i class="fas fa-indent infotip text-warning mr-2" title="<?php echo $lang->get('write'); ?>"></i>' +
+                                        '<i class="fas fa-edit infotip text-success mr-2" title="<?php echo $lang->get('edit'); ?>"></i>' +
+                                        '<i class="fas fa-eraser infotip text-danger" title="<?php echo $lang->get('no_delete'); ?>"></i>';
+                            } else if (folder.type === 'NE') {
+                                label = '<i class="fas fa-indent infotip text-warning mr-2" title="<?php echo $lang->get('write'); ?>"></i>' +
+                                        '<i class="fas fa-edit infotip text-danger mr-2" title="<?php echo $lang->get('no_edit'); ?>"></i>' +
+                                        '<i class="fas fa-eraser infotip text-success" title="<?php echo $lang->get('delete'); ?>"></i>';
+                            } else if (folder.type === 'NDNE') {
+                                label = '<i class="fas fa-indent infotip text-warning mr-2" title="<?php echo $lang->get('write'); ?>"></i>' +
+                                        '<i class="fas fa-edit infotip text-danger mr-2" title="<?php echo $lang->get('no_edit'); ?>"></i>' +
+                                        '<i class="fas fa-eraser infotip text-danger" title="<?php echo $lang->get('no_delete'); ?>"></i>';
+                            } else if (folder.type === '') {
+                                label = '<i class="fas fa-eye-slash infotip text-danger mr-2" title="<?php echo $lang->get('no_access'); ?>"></i>';
+                            } else {
+                                label = '<i class="fas fa-eye infotip text-info mr-2" title="<?php echo $lang->get('read'); ?>"></i>';
+                            }
+
+                            html += '<tr><td>' + ident + folder.title +
+                                ' <small class="text-info">[' + folder.id + ']</small>' +
+                                (folder.special === true ? '<i class="fas fa-user-tag infotip text-primary ml-5" title="<?php echo $lang->get('user_specific_right'); ?>"></i>' : '') +
+                                '</td><td>' + label + '</td></tr>';
+                        });
+
+                        html += '</tbody></table>';
+
                         // Show table
-                        $('#row-folders-results').html(htmlDecode(data.html));
+                        $('#row-folders-results').html(html);
 
                         // Prepare tooltips
                         $('.infotip').tooltip();
