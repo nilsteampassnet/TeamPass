@@ -194,7 +194,7 @@
             "description": "A set of additional repositories where packages can be found.",
             "additionalProperties": {
                 "anyOf": [
-                    { "$ref": "#/definitions/repository" },
+                    { "$ref": "#/definitions/anonymous-repository" },
                     { "type": "boolean", "enum": [false] }
                 ]
             },
@@ -424,20 +424,44 @@
                 },
                 "audit": {
                     "type": "object",
-                    "description": "Security audit configuration options",
+                    "description": "Security audit and version blocking configuration options",
                     "properties": {
                         "ignore": {
                             "anyOf": [
                                 {
                                     "type": "object",
-                                    "description": "A list of advisory ids, remote ids or CVE ids (keys) and the explanations (values) for why they're being ignored. The listed items are reported but let the audit command pass.",
+                                    "description": "A list of advisory ids, remote ids, CVE ids or package names (keys) with either explanations (string values) or detailed configuration (object values with 'apply' and 'reason' fields) for why they're ignored.",
                                     "additionalProperties": {
-                                        "type": ["string", "string"]
+                                        "anyOf": [
+                                            {
+                                                "type": "string",
+                                                "description": "Explanation for ignoring this advisory (applies to audit reports and version blocking)"
+                                            },
+                                            {
+                                                "type": "object",
+                                                "description": "Detailed configuration for ignoring this advisory",
+                                                "properties": {
+                                                    "apply": {
+                                                        "type": "string",
+                                                        "enum": ["audit", "block", "all"],
+                                                        "description": "Where to apply this ignore: 'audit' (only audit reports), 'block' (only version blocking), or 'all' (both)"
+                                                    },
+                                                    "reason": {
+                                                        "type": "string",
+                                                        "description": "Explanation for ignoring this advisory, e.g. vulnerable code path not reachable in application"
+                                                    }
+                                                }
+                                            },
+                                            {
+                                                "type": "null",
+                                                "description": "Ignore without explanation (applies to audit reports and version blocking)"
+                                            }
+                                        ]
                                     }
                                 },
                                 {
                                     "type": "array",
-                                    "description": "A set of advisory ids, remote ids or CVE ids that are reported but let the audit command pass.",
+                                    "description": "A set of advisory ids, remote ids, CVE ids or package names that are reported but let the audit command pass. Applies to audit reports and version blocking.",
                                     "items": {
                                         "type": "string"
                                     }
@@ -446,7 +470,101 @@
                         },
                         "abandoned": {
                             "enum": ["ignore", "report", "fail"],
-                            "description": "Whether abandoned packages should be ignored, reported as problems or cause an audit failure."
+                            "description": "Whether abandoned packages should be ignored, reported as problems or cause an audit failure. Applies only to audit reports, not to version blocking."
+                        },
+                        "ignore-severity": {
+                            "anyOf": [
+                                {
+                                    "type": "object",
+                                    "description": "A list of severities (keys) with either explanations (string values) or detailed configuration (object values with 'apply' fields) for why they're ignored.",
+                                    "additionalProperties": {
+                                        "anyOf": [
+                                            {
+                                                "type": "string",
+                                                "description": "Explanation for ignoring this severity (applies to audit reports and version blocking)"
+                                            },
+                                            {
+                                                "type": "object",
+                                                "description": "Detailed configuration for ignoring this severity",
+                                                "properties": {
+                                                    "apply": {
+                                                        "type": "string",
+                                                        "enum": ["audit", "block", "all"],
+                                                        "description": "Where to apply this ignore: 'audit' (only audit reports), 'block' (only version blocking), or 'all' (both)"
+                                                    }
+                                                }
+                                            },
+                                            {
+                                                "type": "null",
+                                                "description": "Ignore without explanation (applies to audit reports and version blocking)"
+                                            }
+                                        ]
+                                    }
+                                },
+                                {
+                                    "type": "array",
+                                    "description": "A list of severities for which advisories with matching severity will be ignored, e.g. critical, high, medium, low, or none. Applies to audit reports and version blocking.",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                }
+                            ]
+                        },
+                        "ignore-unreachable": {
+                            "type": "boolean",
+                            "description": "Whether repositories that are unreachable or return a non-200 status code should be ignored or not. Applies only to the composer audit command, does not affect audit report summaries in other commands or version blocking."
+                        },
+                        "block-insecure": {
+                            "type": "boolean",
+                            "description": "Whether insecure versions should be blocked during a composer update/require command or not.",
+                            "default": true
+                        },
+                        "block-abandoned": {
+                            "type": "boolean",
+                            "description": "Whether abandoned packages should be blocked during a composer update/require command or not. Applies only if blocking of insecure versions is enabled.",
+                            "default": false
+                        },
+                        "ignore-abandoned": {
+                            "anyOf": [
+                                {
+                                    "type": "object",
+                                    "description": "A list of abandoned package names (keys) with either explanations (string values) or detailed configuration (object values with 'apply' and 'reason' fields) for why they're ignored.",
+                                    "additionalProperties": {
+                                        "anyOf": [
+                                            {
+                                                "type": "string",
+                                                "description": "Explanation for ignoring this abandoned package (applies to audit reports and version blocking)"
+                                            },
+                                            {
+                                                "type": "object",
+                                                "description": "Detailed configuration for ignoring this abandoned package",
+                                                "properties": {
+                                                    "apply": {
+                                                        "type": "string",
+                                                        "enum": ["audit", "block", "all"],
+                                                        "description": "Where to apply this ignore: 'audit' (only audit reports), 'block' (only version blocking), or 'all' (both)"
+                                                    },
+                                                    "reason": {
+                                                        "type": "string",
+                                                        "description": "Explanation for ignoring this abandoned package"
+                                                    }
+                                                }
+                                            },
+                                            {
+                                                "type": "null",
+                                                "description": "Ignore without explanation (applies to audit reports and version blocking)"
+                                            }
+                                        ]
+                                    }
+                                },
+                                {
+                                    "type": "array",
+                                    "description": "A set of abandoned package names that are reported but let the audit command pass and that are not blocked during updates/requires.",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                }
+                            ]
                         }
                     }
                 },
@@ -519,6 +637,35 @@
                         "type": "string"
                     }
                 },
+                "custom-headers": {
+                    "type": "object",
+                    "description": "Custom HTTP headers for specific domains.",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "description": "A header in format 'Header-Name: Header-Value'"
+                        }
+                    }
+                },
+                "forgejo-token": {
+                    "type": "object",
+                    "description": "An object of domain name => forgejo username/access token, typically {\"codeberg.org\":{\"username\": \"<username>\", \"token\": \"<access-token>\"}}.",
+                    "additionalProperties": {
+                        "type": ["object"],
+                        "required": ["username", "token"],
+                        "properties": {
+                            "username": {
+                                "type": "string",
+                                "description": "The username used for Forgejo authentication"
+                            },
+                            "token": {
+                                "type": "string",
+                                "description": "The access token used for Forgejo authentication"
+                            }
+                        }
+                    }
+                },
                 "disable-tls": {
                     "type": "boolean",
                     "description": "Defaults to `false`. If set to true all HTTPS URLs will be tried with HTTP instead and no network level encryption is performed. Enabling this is a security risk and is NOT recommended. The better way is to enable the php_openssl extension in php.ini."
@@ -556,6 +703,28 @@
                             "password": {
                                 "type": "string",
                                 "description": "The password used for HTTP Basic authentication"
+                            }
+                        }
+                    }
+                },
+                "client-certificate": {
+                    "type": "object",
+                    "description": "An object of domain name => {\"local_cert\": \"...\", \"local_pk\"?: \"...\", \"passphrase\"?: \"...\"} to provide client certificate.",
+                    "additionalProperties": {
+                        "type": "object",
+                        "required": ["local_cert"],
+                        "properties": {
+                            "local_cert": {
+                                "type": "string",
+                                "description": "Path to a certificate (pem) or pair certificate+key (pem)"
+                            },
+                            "local_pk": {
+                                "type": "string",
+                                "description": "Path to a private key file (pem)"
+                            },
+                            "passphrase": {
+                                "type": "string",
+                                "description": "Passphrase for private key"
                             }
                         }
                     }
@@ -654,6 +823,13 @@
                         "type": "string"
                     }
                 },
+                "forgejo-domains": {
+                    "type": "array",
+                    "description": "A list of domains to use in forgejo mode. This is used for custom Forgejo setups, defaults to [\"codeberg.org\"].",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "bitbucket-oauth": {
                     "type": "object",
                     "description": "An object of domain name => {\"consumer-key\": \"...\", \"consumer-secret\": \"...\"}.",
@@ -706,15 +882,21 @@
                 },
                 "platform-check": {
                     "type": ["boolean", "string"],
+                    "enum": ["php-only", true, false],
                     "description": "Defaults to \"php-only\" which checks only the PHP version. Setting to true will also check the presence of required PHP extensions. If set to false, Composer will not create and require a platform_check.php file as part of the autoloader bootstrap."
                 },
                 "bump-after-update": {
                     "type": ["string", "boolean"],
+                    "enum": ["dev", "no-dev", true, false],
                     "description": "Defaults to false and can be any of true, false, \"dev\"` or \"no-dev\"`. If set to true, Composer will run the bump command after running the update command. If set to \"dev\" or \"no-dev\" then only the corresponding dependencies will be bumped."
                 },
                 "allow-missing-requirements": {
                     "type": ["boolean"],
                     "description": "Defaults to false. If set to true, Composer will allow install when lock file is not up to date with the latest changes in composer.json."
+                },
+                "update-with-minimal-changes": {
+                    "type": ["boolean"],
+                    "description": "Defaults to false. If set to true, Composer will only perform absolutely necessary changes to transitive dependencies during update."
                 }
             }
         },
@@ -887,10 +1069,17 @@
                 { "$ref": "#/definitions/package-repository" }
             ]
         },
+        "anonymous-repository": {
+            "allOf": [
+                { "$ref": "#/definitions/repository" },
+                { "not": { "required": ["name"] } }
+            ]
+        },
         "composer-repository": {
             "type": "object",
             "required": ["type", "url"],
             "properties": {
+                "name": { "type":  "string" },
                 "type": { "type": "string", "enum": ["composer"] },
                 "url": { "type": "string" },
                 "canonical": { "type": "boolean" },
@@ -918,7 +1107,8 @@
             "type": "object",
             "required": ["type", "url"],
             "properties": {
-                "type": { "type": "string", "enum": ["vcs", "github", "git", "gitlab", "bitbucket", "git-bitbucket", "hg", "fossil", "perforce", "svn"] },
+                "name": { "type":  "string" },
+                "type": { "type": "string", "enum": ["vcs", "github", "git", "gitlab", "bitbucket", "git-bitbucket", "hg", "fossil", "perforce", "svn", "forgejo"] },
                 "url": { "type": "string" },
                 "canonical": { "type": "boolean" },
                 "only": {
@@ -951,6 +1141,7 @@
             "type": "object",
             "required": ["type", "url"],
             "properties": {
+                "name": { "type":  "string" },
                 "type": { "type": "string", "enum": ["path"] },
                 "url": { "type": "string" },
                 "canonical": { "type": "boolean" },
@@ -982,6 +1173,7 @@
             "type": "object",
             "required": ["type", "url"],
             "properties": {
+                "name": { "type":  "string" },
                 "type": { "type": "string", "enum": ["artifact"] },
                 "url": { "type": "string" },
                 "canonical": { "type": "boolean" },
@@ -1003,6 +1195,7 @@
             "type": "object",
             "required": ["type", "url"],
             "properties": {
+                "name": { "type":  "string" },
                 "type": { "type": "string", "enum": ["pear"] },
                 "url": { "type": "string" },
                 "canonical": { "type": "boolean" },
@@ -1025,6 +1218,7 @@
             "type": "object",
             "required": ["type", "package"],
             "properties": {
+                "name": { "type":  "string" },
                 "type": { "type": "string", "enum": ["package"] },
                 "canonical": { "type": "boolean" },
                 "only": {

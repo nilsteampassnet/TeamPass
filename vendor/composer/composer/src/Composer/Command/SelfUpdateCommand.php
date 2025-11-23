@@ -78,6 +78,20 @@ EOT
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
+        if (strpos(__FILE__, 'phar:') !== 0) {
+            if (str_contains(strtr(__DIR__, '\\', '/'), 'vendor/composer/composer')) {
+                $projDir = dirname(__DIR__, 6);
+                $output->writeln('<error>This instance of Composer does not have the self-update command.</error>');
+                $output->writeln('<comment>You are running Composer installed as a package in your current project ("'.$projDir.'").</comment>');
+                $output->writeln('<comment>To update Composer, download a composer.phar from https://getcomposer.org and then run `composer.phar update composer/composer` in your project.</comment>');
+            } else {
+                $output->writeln('<error>This instance of Composer does not have the self-update command.</error>');
+                $output->writeln('<comment>This could be due to a number of reasons, such as Composer being installed as a system package on your OS, or Composer being installed as a package in the current project.</comment>');
+            }
+
+            return 1;
+        }
+
         if ($_SERVER['argv'][0] === 'Standard input code') {
             return 1;
         }
@@ -555,7 +569,7 @@ TAGSPUBKEY
 
         try {
             // Test the phar validity
-            $phar = new \Phar($pharFile);
+            $phar = new Phar($pharFile);
             // Free the variable to unlock the file
             unset($phar);
             $result = true;
@@ -588,7 +602,7 @@ TAGSPUBKEY
     /**
      * Invokes a UAC prompt to update composer.phar as an admin
      *
-     * Uses a .vbs script to elevate and run the cmd.exe copy command.
+     * Uses either sudo.exe or VBScript to elevate and run cmd.exe move.
      *
      * @param  string $localFilename The composer.phar location
      * @param  string $newFilename   The downloaded or backup phar
@@ -610,35 +624,45 @@ TAGSPUBKEY
 
         $tmpFile = tempnam(sys_get_temp_dir(), '');
         if (false === $tmpFile) {
-            $io->writeError('<error>Operation failed.'.$helpMessage.'</error>');
+            $io->writeError('<error>Operation failed. '.$helpMessage.'</error>');
 
             return false;
         }
-        $script = $tmpFile.'.vbs';
+
+        exec('sudo config 2> NUL', $output, $exitCode);
+        $usingSudo = $exitCode === 0;
+
+        $script = $usingSudo ? $tmpFile.'.bat' : $tmpFile.'.vbs';
         rename($tmpFile, $script);
 
         $checksum = hash_file('sha256', $newFilename);
 
-        // cmd's internal copy is fussy about backslashes
+        // cmd's internal move is fussy about backslashes
         $source = str_replace('/', '\\', $newFilename);
         $destination = str_replace('/', '\\', $localFilename);
 
-        $vbs = <<<EOT
+        if ($usingSudo) {
+            $code = sprintf('move "%s" "%s"', $source, $destination);
+        } else {
+            $code = <<<EOT
 Set UAC = CreateObject("Shell.Application")
-UAC.ShellExecute "cmd.exe", "/c copy /b /y ""$source"" ""$destination""", "", "runas", 0
-Wscript.Sleep(300)
+UAC.ShellExecute "cmd.exe", "/c move /y ""$source"" ""$destination""", "", "runas", 0
 EOT;
+        }
 
-        file_put_contents($script, $vbs);
-        exec('"'.$script.'"');
+        file_put_contents($script, $code);
+        $command = $usingSudo ? sprintf('sudo "%s"', $script) : sprintf('"%s"', $script);
+        exec($command);
+
+        // Allow time for the operation to complete
+        usleep(300000);
         @unlink($script);
 
-        // see if the file was copied and is still accessible
+        // see if the file was moved and is still accessible
         if ($result = Filesystem::isReadable($localFilename) && (hash_file('sha256', $localFilename) === $checksum)) {
             $io->writeError('<info>Operation succeeded.</info>');
-            @unlink($newFilename);
         } else {
-            $io->writeError('<error>Operation failed.'.$helpMessage.'</error>');
+            $io->writeError('<error>Operation failed. '.$helpMessage.'</error>');
         }
 
         return $result;

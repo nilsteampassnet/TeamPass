@@ -20,6 +20,7 @@ use Composer\Util\Silencer;
 use LogicException;
 use RuntimeException;
 use Symfony\Component\Console\Application as BaseApplication;
+use Symfony\Component\Console\Command\Command as SymfonyCommand;
 use Symfony\Component\Console\Exception\CommandNotFoundException;
 use Symfony\Component\Console\Exception\ExceptionInterface;
 use Symfony\Component\Console\Helper\HelperSet;
@@ -208,7 +209,7 @@ class Application extends BaseApplication
                         $io->writeError('<info>No composer.json in current directory, to use the one at '.$dir.' run interactively or set config.use-parent-dir to true</info>');
                         break;
                     }
-                    if ($useParentDirIfNoJsonAvailable === true || $io->askConfirmation('<info>No composer.json in current directory, do you want to use the one at '.$dir.'?</info> [<comment>Y,n</comment>]? ')) {
+                    if ($useParentDirIfNoJsonAvailable === true || $io->askConfirmation('<info>No composer.json in current directory, do you want to use the one at '.$dir.'?</info> [<comment>y,n</comment>]? ')) {
                         if ($useParentDirIfNoJsonAvailable === true) {
                             $io->writeError('<info>No composer.json in current directory, changing working directory to '.$dir.'</info>');
                         } else {
@@ -381,9 +382,26 @@ class Application extends BaseApplication
 
                                 $aliases = $composer['scripts-aliases'][$script] ?? [];
 
-                                $scriptAlias = new Command\ScriptAliasCommand($script, $description, $aliases);
+                                //if the command is not an array of commands, and points to a valid Command subclass, import its details directly
+                                if (is_string($dummy) && class_exists($dummy) && is_subclass_of($dummy, SymfonyCommand::class)) {
+                                    $cmd = new $dummy($script);
+
+                                    //makes sure the command is find()'able by the name defined in composer.json, and the name isn't overridden in its configure()
+                                    if ($cmd->getName() !== '' && $cmd->getName() !== null && $cmd->getName() !== $script) {
+                                        $io->writeError('<warning>The script named '.$script.' in composer.json has a mismatched name in its class definition. For consistency, either use the same name, or do not define one inside the class.</warning>');
+                                        $cmd->setName($script); //override it with the defined script name
+                                    }
+
+                                    if ($cmd->getDescription() === '' && is_string($description)) {
+                                        $cmd->setDescription($description);
+                                    }
+                                } else {
+                                    //fallback to usual aliasing behavior
+                                    $cmd = new Command\ScriptAliasCommand($script, $description, $aliases);
+                                }
+
                                 // Compatibility layer for symfony/console <7.4
-                                method_exists($this, 'addCommand') ? $this->addCommand($scriptAlias) : $this->add($scriptAlias);
+                                method_exists($this, 'addCommand') ? $this->addCommand($cmd) : $this->add($cmd);
                             }
                         }
                     }
@@ -455,15 +473,14 @@ class Application extends BaseApplication
     }
 
     /**
-     * @throws \RuntimeException
-     * @return ?string
+     * @throws RuntimeException
      */
     private function getNewWorkingDir(InputInterface $input): ?string
     {
         /** @var string|null $workingDir */
         $workingDir = $input->getParameterOption(['--working-dir', '-d'], null, true);
         if (null !== $workingDir && !is_dir($workingDir)) {
-            throw new \RuntimeException('Invalid working directory specified, '.$workingDir.' does not exist.');
+            throw new RuntimeException('Invalid working directory specified, '.$workingDir.' does not exist.');
         }
 
         return $workingDir;
@@ -602,11 +619,11 @@ class Application extends BaseApplication
 
     /**
      * Initializes all the composer commands.
-     * @return \Symfony\Component\Console\Command\Command[]
+     * @return SymfonyCommand[]
      */
     protected function getDefaultCommands(): array
     {
-        $commands = array_merge(parent::getDefaultCommands(), [
+        return array_merge(parent::getDefaultCommands(), [
             new Command\AboutCommand(),
             new Command\ConfigCommand(),
             new Command\DependsCommand(),
@@ -637,13 +654,9 @@ class Application extends BaseApplication
             new Command\FundCommand(),
             new Command\ReinstallCommand(),
             new Command\BumpCommand(),
+            new Command\RepositoryCommand(),
+            new Command\SelfUpdateCommand(),
         ]);
-
-        if (strpos(__FILE__, 'phar:') === 0 || '1' === Platform::getEnv('COMPOSER_TESTS_ARE_RUNNING')) {
-            $commands[] = new Command\SelfUpdateCommand();
-        }
-
-        return $commands;
     }
 
     /**

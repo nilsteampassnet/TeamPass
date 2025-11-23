@@ -16,7 +16,6 @@ use Composer\Factory;
 use Composer\Json\JsonFile;
 use Composer\Json\JsonValidationException;
 use Composer\Package\BasePackage;
-use Composer\Package\Package;
 use Composer\Pcre\Preg;
 use Composer\Repository\CompositeRepository;
 use Composer\Repository\PlatformRepository;
@@ -29,8 +28,6 @@ use Symfony\Component\Console\Input\InputInterface;
 use Composer\Console\Input\InputOption;
 use Composer\Util\ProcessExecutor;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Process\ExecutableFinder;
-use Symfony\Component\Process\Process;
 use Symfony\Component\Console\Helper\FormatterHelper;
 
 /**
@@ -47,10 +44,8 @@ class InitCommand extends BaseCommand
 
     /**
      * @inheritDoc
-     *
-     * @return void
      */
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->setName('init')
@@ -89,7 +84,7 @@ EOT
         $io = $this->getIO();
 
         $allowlist = ['name', 'description', 'author', 'type', 'homepage', 'require', 'require-dev', 'stability', 'license', 'autoload'];
-        $options = array_filter(array_intersect_key($input->getOptions(), array_flip($allowlist)), function ($val) { return $val !== null && $val !== []; });
+        $options = array_filter(array_intersect_key($input->getOptions(), array_flip($allowlist)), static function ($val) { return $val !== null && $val !== []; });
 
         if (isset($options['name']) && !Preg::isMatch('{^[a-z0-9]([_.-]?[a-z0-9]+)*\/[a-z0-9](([_.]|-{1,2})?[a-z0-9]+)*$}D', $options['name'])) {
             throw new \InvalidArgumentException(
@@ -150,10 +145,6 @@ EOT
                 return 1;
             }
         } else {
-            if (json_encode($options) === '{"require":{}}') {
-                throw new \RuntimeException('You have to run this command in interactive mode, or specify at least some data using --name, --require, etc.');
-            }
-
             $io->writeError('Writing '.$file->getPath());
         }
 
@@ -212,14 +203,26 @@ EOT
         return 0;
     }
 
+    protected function initialize(InputInterface $input, OutputInterface $output): void
+    {
+        parent::initialize($input, $output);
+
+        if (!$input->isInteractive()) {
+            if ($input->getOption('name') === null) {
+                $input->setOption('name', $this->getDefaultPackageName());
+            }
+
+            if ($input->getOption('author') === null) {
+                $input->setOption('author', $this->getDefaultAuthor());
+            }
+        }
+    }
+
     /**
      * @inheritDoc
-     *
-     * @return void
      */
-    protected function interact(InputInterface $input, OutputInterface $output)
+    protected function interact(InputInterface $input, OutputInterface $output): void
     {
-        $git = $this->getGitConfig();
         $io = $this->getIO();
         /** @var FormatterHelper $formatter */
         $formatter = $this->getHelperSet()->get('formatter');
@@ -269,30 +272,7 @@ EOT
             '',
         ]);
 
-        $cwd = realpath(".");
-
-        $name = $input->getOption('name');
-        if (null === $name) {
-            $name = basename($cwd);
-            $name = $this->sanitizePackageNameComponent($name);
-
-            $vendor = $name;
-            if (!empty($_SERVER['COMPOSER_DEFAULT_VENDOR'])) {
-                $vendor = $_SERVER['COMPOSER_DEFAULT_VENDOR'];
-            } elseif (isset($git['github.user'])) {
-                $vendor = $git['github.user'];
-            } elseif (!empty($_SERVER['USERNAME'])) {
-                $vendor = $_SERVER['USERNAME'];
-            } elseif (!empty($_SERVER['USER'])) {
-                $vendor = $_SERVER['USER'];
-            } elseif (get_current_user()) {
-                $vendor = get_current_user();
-            }
-
-            $vendor = $this->sanitizePackageNameComponent($vendor);
-
-            $name = $vendor . '/' . $name;
-        }
+        $name = $input->getOption('name') ?? $this->getDefaultPackageName();
 
         $name = $io->askAndValidate(
             'Package name (<vendor>/<name>) [<comment>'.$name.'</comment>]: ',
@@ -321,23 +301,7 @@ EOT
         );
         $input->setOption('description', $description);
 
-        if (null === $author = $input->getOption('author')) {
-            if (!empty($_SERVER['COMPOSER_DEFAULT_AUTHOR'])) {
-                $author_name = $_SERVER['COMPOSER_DEFAULT_AUTHOR'];
-            } elseif (isset($git['user.name'])) {
-                $author_name = $git['user.name'];
-            }
-
-            if (!empty($_SERVER['COMPOSER_DEFAULT_EMAIL'])) {
-                $author_email = $_SERVER['COMPOSER_DEFAULT_EMAIL'];
-            } elseif (isset($git['user.email'])) {
-                $author_email = $git['user.email'];
-            }
-
-            if (isset($author_name, $author_email)) {
-                $author = sprintf('%s <%s>', $author_name, $author_email);
-            }
-        }
+        $author = $input->getOption('author') ?? $this->getDefaultAuthor();
 
         $author = $io->askAndValidate(
             'Author ['.(is_string($author) ? '<comment>'.$author.'</comment>, ' : '') . 'n to skip]: ',
@@ -646,5 +610,53 @@ EOT
         $name = Preg::replace('{([_.-]){2,}}u', '$1', $name);
 
         return $name;
+    }
+
+    private function getDefaultPackageName(): string
+    {
+        $git = $this->getGitConfig();
+        $cwd = realpath(".");
+        $name = basename($cwd);
+        $name = $this->sanitizePackageNameComponent($name);
+
+        $vendor = $name;
+        if (!empty($_SERVER['COMPOSER_DEFAULT_VENDOR'])) {
+            $vendor = $_SERVER['COMPOSER_DEFAULT_VENDOR'];
+        } elseif (isset($git['github.user'])) {
+            $vendor = $git['github.user'];
+        } elseif (!empty($_SERVER['USERNAME'])) {
+            $vendor = $_SERVER['USERNAME'];
+        } elseif (!empty($_SERVER['USER'])) {
+            $vendor = $_SERVER['USER'];
+        } elseif (get_current_user()) {
+            $vendor = get_current_user();
+        }
+
+        $vendor = $this->sanitizePackageNameComponent($vendor);
+
+        return $vendor . '/' . $name;
+    }
+
+    private function getDefaultAuthor(): ?string
+    {
+        $git = $this->getGitConfig();
+
+        if (!empty($_SERVER['COMPOSER_DEFAULT_AUTHOR'])) {
+            $author_name = $_SERVER['COMPOSER_DEFAULT_AUTHOR'];
+        } elseif (isset($git['user.name'])) {
+            $author_name = $git['user.name'];
+        }
+
+        if (!empty($_SERVER['COMPOSER_DEFAULT_EMAIL'])) {
+            $author_email = $_SERVER['COMPOSER_DEFAULT_EMAIL'];
+        } elseif (isset($git['user.email'])) {
+            $author_email = $git['user.email'];
+        }
+
+        if (isset($author_name, $author_email)) {
+            return sprintf('%s <%s>', $author_name, $author_email);
+        }
+
+        return null;
     }
 }

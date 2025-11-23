@@ -245,8 +245,17 @@ class Math_BigInteger
     function __construct($x = 0, $base = 10)
     {
         if (!defined('MATH_BIGINTEGER_MODE')) {
+
+            // https://github.com/php/php-src/commit/e0a0e216a909dc4ee4ea7c113a5f41d49525f02e broke GMP
+            // https://github.com/php/php-src/commit/424ba0f2ff9677d16b4e339e90885bd4bc49fcf1 fixed it
+            // see https://github.com/php/php-src/issues/16870 for more info
+            if (version_compare(PHP_VERSION, '8.2.25', '<=')) {
+                $gmpOK = true;
+            } else {
+                $gmpOK = !in_array(PHP_VERSION_ID, array(80226, 80314, 80400, 80401));
+            }
             switch (true) {
-                case extension_loaded('gmp'):
+                case extension_loaded('gmp') && $gmpOK:
                     define('MATH_BIGINTEGER_MODE', MATH_BIGINTEGER_MODE_GMP);
                     break;
                 case extension_loaded('bcmath'):
@@ -863,6 +872,44 @@ class Math_BigInteger
         if ($this->precision > 0) {
             // recalculate $this->bitmask
             $this->setPrecision($this->precision);
+        }
+    }
+
+    /**
+     *  __serialize() magic method
+     *
+     * __sleep / __wakeup were depreciated in PHP 8.5
+     * Will be called, automatically, when serialize() is called on a Math_BigInteger object.
+     *
+     * @see self::__unserialize()
+     * @access public
+     */
+    function __serialize()
+    {
+        $result = array('hex' => $this->toHex(true));
+        if ($this->precision > 0) {
+            $result['precision'] = $this->precision;
+        }
+        return $result;
+    }
+
+    /**
+     *  __unserialize() magic method
+     *
+     * __sleep / __wakeup were depreciated in PHP 8.5
+     * Will be called, automatically, when unserialize() is called on a Math_BigInteger object.
+     *
+     * @see self::__serialize()
+     * @access public
+     */
+    function __unserialize($data)
+    {
+        $temp = new Math_BigInteger($data['hex'], -16);
+        $this->value = $temp->value;
+        $this->is_negative = $temp->is_negative;
+        if (isset($data['precision']) && $data['precision'] > 0) {
+            // recalculate $this->bitmask
+            $this->setPrecision($data['precision']);
         }
     }
 

@@ -17,7 +17,6 @@ use Composer\CaBundle\CaBundle;
 use Composer\Pcre\Preg;
 use Composer\Util\ProcessExecutor;
 use Symfony\Component\Finder\Finder;
-use Symfony\Component\Process\Process;
 use Seld\PharUtils\Timestamps;
 use Seld\PharUtils\Linter;
 
@@ -51,19 +50,19 @@ class Compiler
 
         $process = new ProcessExecutor();
 
-        if (0 !== $process->execute(['git', 'log', '--pretty=%H', '-n1', 'HEAD'], $output, dirname(dirname(__DIR__)))) {
+        if (0 !== $process->execute(['git', 'log', '--pretty=%H', '-n1', 'HEAD'], $output, dirname(__DIR__, 2))) {
             throw new \RuntimeException('Can\'t run git log. You must ensure to run compile from composer git repository clone and that git binary is available.');
         }
         $this->version = trim($output);
 
-        if (0 !== $process->execute(['git', 'log', '-n1', '--pretty=%ci', 'HEAD'], $output, dirname(dirname(__DIR__)))) {
+        if (0 !== $process->execute(['git', 'log', '-n1', '--pretty=%ci', 'HEAD'], $output, dirname(__DIR__, 2))) {
             throw new \RuntimeException('Can\'t run git log. You must ensure to run compile from composer git repository clone and that git binary is available.');
         }
 
         $this->versionDate = new \DateTime(trim($output));
         $this->versionDate->setTimezone(new \DateTimeZone('UTC'));
 
-        if (0 === $process->execute(['git', 'describe', '--tags', '--exact-match', 'HEAD'], $output, dirname(dirname(__DIR__)))) {
+        if (0 === $process->execute(['git', 'describe', '--tags', '--exact-match', 'HEAD'], $output, dirname(__DIR__, 2))) {
             $this->version = trim($output);
         } else {
             // get branch-alias defined in composer.json for dev-main (if any)
@@ -197,6 +196,8 @@ class Compiler
             'vendor/symfony/polyfill-mbstring/bootstrap80.php',
             'vendor/symfony/polyfill-php73/Resources/stubs/JsonException.php',
             'vendor/symfony/service-contracts/Attribute/SubscribedService.php',
+            'vendor/symfony/polyfill-php84/Resources/stubs/Deprecated.php',
+            'vendor/symfony/polyfill-php84/bootstrap82.php',
         ]);
     }
 
