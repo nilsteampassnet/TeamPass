@@ -122,7 +122,11 @@ Please participate to improving its translation by joining Teampass POEditor pro
 
 ## Licence Agreement
 
-For detailed information on the licenses of our dependencies and our licence policy, please see [Detailed Licence Information](/licences/dependencies.licences.md).
+Teampass maintains strict license compliance with GPL-3.0. All dependencies are regularly audited.
+
+- **Full compliance report:** [LICENSE_COMPLIANCE_REPORT.md](licences/LICENSE_COMPLIANCE_REPORT.md)
+- **Audit tool:** Run `php licences/compliance-checker.php`
+- **Last audit:** [date from report]
 
 ## Website
 

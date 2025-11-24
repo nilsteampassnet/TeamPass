@@ -1,0 +1,62 @@
+{
+    "_comment": "Manually maintain this file with JavaScript/CSS dependencies",
+    "last_updated": "2025-11-24",
+    "dependencies": [
+        {
+            "name": "jQuery",
+            "version": "3.x",
+            "licenses": [
+                "MIT"
+            ],
+            "description": "JavaScript library",
+            "homepage": "https://jquery.org",
+            "location": "/plugins/jquery/",
+            "type": "JavaScript"
+        },
+        {
+            "name": "AdminLTE",
+            "version": "3.x",
+            "licenses": [
+                "MIT"
+            ],
+            "description": "Admin dashboard template",
+            "homepage": "https://adminlte.io",
+            "location": "/plugins/adminlte/",
+            "type": "CSS/JavaScript"
+        },
+        {
+            "name": "Bootstrap",
+            "version": "4.x",
+            "licenses": [
+                "MIT"
+            ],
+            "description": "CSS framework",
+            "homepage": "https://getbootstrap.com",
+            "location": "/plugins/bootstrap/",
+            "type": "CSS/JavaScript"
+        },
+        {
+            "name": "DataTables",
+            "version": "1.x",
+            "licenses": [
+                "MIT"
+            ],
+            "description": "Table plugin for jQuery",
+            "homepage": "https://datatables.net",
+            "location": "/plugins/datatables/",
+            "type": "JavaScript"
+        },
+        {
+            "name": "Font Awesome",
+            "version": "5.x",
+            "licenses": [
+                "CC BY 4.0",
+                "SIL OFL 1.1"
+            ],
+            "description": "Icon library",
+            "homepage": "https://fontawesome.com",
+            "location": "/plugins/fontawesome/",
+            "type": "Fonts/CSS"
+        }
+    ]
+}
