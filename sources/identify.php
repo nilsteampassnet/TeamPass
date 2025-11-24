@@ -612,6 +612,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         if (!empty($returnKeys['update_keys_in_db'])) {
             $updateData = array_merge($updateData, $returnKeys['update_keys_in_db']);
         }
+        // User's roles - Convert , to ; (will be saved in final UPDATE)
         if (strpos($userInfo['fonction_id'] !== NULL ? (string) $userInfo['fonction_id'] : '', ',') !== -1) {
             $userInfo['fonction_id'] = str_replace(',', ';', (string) $userInfo['fonction_id']);    // Convert , to ;
             $updateData['fonction_id'] = $userInfo['fonction_id'];
@@ -621,6 +622,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             $session->set('user-manager', (int) $userInfo['gestionnaire']);
             $session->set('user-can_manage_all_users',(int)  $userInfo['can_manage_all_users']);
             $session->set('user-read_only', (int) $userInfo['read_only']);
+            // Permissions will be saved in final UPDATE below
 
             $updateData['admin'] = $userInfo['admin'];
             $updateData['gestionnaire'] = $userInfo['gestionnaire'];
