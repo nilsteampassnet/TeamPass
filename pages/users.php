@@ -128,6 +128,8 @@ foreach ($treeDesc as $t) {
     }
 }
 
+// Should we show the new user form?
+$showNewUser = $request->query->get('action') === 'new';
 ?>
 
 <!-- Content Header (Page header) -->
@@ -176,7 +178,7 @@ foreach ($treeDesc as $t) {
                 </div>
 
                 <!-- /.card-header -->
-                <div class="card-body form user-content with-header-menu" id="users-list" data-content="refresh">
+                <div class="card-body form user-content with-header-menu <?php echo $showNewUser ? 'hidden' : '';?>" id="users-list" data-content="refresh">
                     <label><input type="checkbox" id="warnings_display" class="tp-action pointer" data-action="refresh"><span class="ml-2 pointer"><?php echo $lang->get('display_warning_icons');?></span></label>
                     <table id="table-users" class="table table-striped nowrap table-responsive-sm">
                         <thead>
@@ -356,7 +358,7 @@ foreach ($treeDesc as $t) {
     </div>
 
     <!-- USER FORM -->
-    <div class="row hidden extra-form user-content" id="row-form" data-content="new" data-content-alternative="edit">
+    <div class="row <?php echo $showNewUser ? '' : 'hidden';?> extra-form user-content" id="row-form" data-content="new" data-content-alternative="edit">
         <div class="col-12">
             <div class="card card-primary">
                 <div class="card-header">

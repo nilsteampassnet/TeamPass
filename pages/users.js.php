@@ -1083,7 +1083,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             // Hide and show relevant divs
             $('.user-content').addClass('hidden');
             $('#users-list, #header-menu').removeClass('hidden');
-
+            
             // Prepare checks
             $('.form-check-input').iCheck('uncheck');
 
