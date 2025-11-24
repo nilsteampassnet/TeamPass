@@ -507,16 +507,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             $session->set('user-private_key', $returnKeys['private_key_clear']);
         }
 
-        // Update keys in DB if needed (for transparent recovery migration)
-        if (!empty($returnKeys['update_keys_in_db'])) {
-            DB::update(
-                prefixTable('users'),
-                $returnKeys['update_keys_in_db'],
-                'id = %i',
-                $userInfo['id']
-            );
-        }
-
         // API key
         $session->set(
             'user-api_key',
@@ -544,19 +534,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         $session->set('user-accessible_folders', empty($userInfo['groupes_visibles']) === false ? explode(';', $userInfo['groupes_visibles']) : []);
         $session->set('user-no_access_folders', empty($userInfo['groupes_interdits']) === false ? explode(';', $userInfo['groupes_interdits']) : []);
         
-        // User's roles
-        if (strpos($userInfo['fonction_id'] !== NULL ? (string) $userInfo['fonction_id'] : '', ',') !== -1) {
-            // Convert , to ;
-            $userInfo['fonction_id'] = str_replace(',', ';', (string) $userInfo['fonction_id']);
-            DB::update(
-                prefixTable('users'),
-                [
-                    'fonction_id' => $userInfo['fonction_id'],
-                ],
-                'id = %i',
-                $session->get('user-id')
-            );
-        }
         // Append with roles from AD groups
         if (is_null($userInfo['roles_from_ad_groups']) === false) {
             $userInfo['fonction_id'] = empty($userInfo['fonction_id'])  === true ? $userInfo['roles_from_ad_groups'] : $userInfo['fonction_id']. ';' . $userInfo['roles_from_ad_groups'];
@@ -614,23 +591,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                     $session->set('user-pw_complexity', (int) $role['complexity']);
                 }
             }
-            if ($adjustPermissions) {
-                $session->set('user-admin', (int) $userInfo['admin']);
-                $session->set('user-manager', (int) $userInfo['gestionnaire']);
-                $session->set('user-can_manage_all_users',(int)  $userInfo['can_manage_all_users']);
-                $session->set('user-read_only', (int) $userInfo['read_only']);
-                DB::update(
-                    prefixTable('users'),
-                    [
-                        'admin' => $userInfo['admin'],
-                        'gestionnaire' => $userInfo['gestionnaire'],
-                        'can_manage_all_users' => $userInfo['can_manage_all_users'],
-                        'read_only' => $userInfo['read_only'],
-                    ],
-                    'id = %i',
-                    $session->get('user-id')
-                );
-            }
         }
 
         // Version 3.1.5 - Migrate personal items password to similar encryption protocol as public ones.
@@ -640,20 +600,39 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         $SETTINGS['update_needed'] = '';
 
         // Update table
+        $updateData = [
+            'key_tempo' => $session->get('key'),
+            'last_connexion' => time(),
+            'timestamp' => time(),
+            'disabled' => 0,
+            'session_end' => $session->get('user-session_duration'),
+            'user_ip' => $dataReceived['client'],
+        ];
+        // Update keys in DB if needed (for transparent recovery migration)
+        if (!empty($returnKeys['update_keys_in_db'])) {
+            $updateData = array_merge($updateData, $returnKeys['update_keys_in_db']);
+        }
+        if (strpos($userInfo['fonction_id'] !== NULL ? (string) $userInfo['fonction_id'] : '', ',') !== -1) {
+            $userInfo['fonction_id'] = str_replace(',', ';', (string) $userInfo['fonction_id']);    // Convert , to ;
+            $updateData['fonction_id'] = $userInfo['fonction_id'];
+        }        
+        if (isset($adjustPermissions) && $adjustPermissions) {
+            $session->set('user-admin', (int) $userInfo['admin']);
+            $session->set('user-manager', (int) $userInfo['gestionnaire']);
+            $session->set('user-can_manage_all_users',(int)  $userInfo['can_manage_all_users']);
+            $session->set('user-read_only', (int) $userInfo['read_only']);
+
+            $updateData['admin'] = $userInfo['admin'];
+            $updateData['gestionnaire'] = $userInfo['gestionnaire'];
+            $updateData['can_manage_all_users'] = $userInfo['can_manage_all_users'];
+            $updateData['read_only'] = $userInfo['read_only'];
+        }
+
+        // UPdate user info in table
         DB::update(
             prefixTable('users'),
-            array_merge(
-                [
-                    'key_tempo' => $session->get('key'),
-                    'last_connexion' => time(),
-                    'timestamp' => time(),
-                    'disabled' => 0,
-                    'session_end' => $session->get('user-session_duration'),
-                    'user_ip' => $dataReceived['client'],
-                ],
-                $returnKeys['update_keys_in_db']
-            ),
-            'id=%i',
+            $updateData, 
+            'id=%i', 
             $userInfo['id']
         );
         
@@ -685,19 +664,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         }
         // Get some more elements
         $session->set('system-screen_height', $dataReceived['screenHeight']);
-
-        // Get last seen items
-        $session->set('user-nb_roles', 0);
-        foreach ($session->get('user-latest_items') as $item) {
-            if (! empty($item)) {
-                $dataLastItems = DB::queryFirstRow(
-                    'SELECT id,label,id_tree
-                    FROM ' . prefixTable('items') . '
-                    WHERE id=%i',
-                    $item
-                );
-            }
-        }
 
         // Get cahce tree info
         $cacheTreeData = DB::queryFirstRow(
