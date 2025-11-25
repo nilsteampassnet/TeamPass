@@ -3047,18 +3047,13 @@ case 'get_system_health':
     
     // Encryption check
     $encryptionStatus = 'success';
-    $encryptionText = $lang->get('admin_health_status_ok');
+    $encryptionText = $lang->get('health_status_ok');
     
     // Check if secure file exists
     if (isset($SETTINGS['securepath']) && isset($SETTINGS['securefile']) && !file_exists($SETTINGS['securepath'] . DIRECTORY_SEPARATOR . $SETTINGS['securefile'])) {
         $encryptionStatus = 'danger';
-        $encryptionText = $lang->get('admin_health_secure_file_missing');
+        $encryptionText = $lang->get('health_secure_file_missing');
     }
-    
-    // Database check
-    $databaseStatus = 'success';
-    $databaseVersion = DB::queryFirstField('SELECT VERSION()');
-    $databaseText = $databaseVersion;
     
     // Active sessions count
     $sessionsCount = DB::queryFirstField(
@@ -3089,11 +3084,11 @@ case 'get_system_health':
         );
         
         $cronStatus = 'success';
-        $cronText = $lang->get('admin_health_status_ok');
+        $cronText = $lang->get('health_status_ok');
         
         if (!$lastCron || (time() - (int) $lastCron) > 120) {
             $cronStatus = 'warning';
-            $cronText = $lang->get('admin_health_cron_delayed');
+            $cronText = $lang->get('health_cron_delayed');
         }
     }
     
@@ -3119,10 +3114,6 @@ case 'get_system_health':
             'encryption' => array(
                 'status' => $encryptionStatus,
                 'text' => $encryptionText,
-            ),
-            'database' => array(
-                'status' => $databaseStatus,
-                'text' => $databaseText,
             ),
             'sessions' => array(
                 'count' => (int) $sessionsCount,
@@ -3296,10 +3287,10 @@ case 'export_statistics':
     
     // Gather statistics
     $stats = array(
-        $lang->get('admin_stat_active_users') => DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('users') . ' WHERE disabled = 0'),
-        $lang->get('admin_stat_total_items') => DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('items') . ' WHERE inactif = 0'),
-        $lang->get('admin_stat_total_folders') => DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('nested_tree')),
-        $lang->get('admin_stat_logs_24h') => DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('log_items') . ' WHERE date > ' . (time() - 86400)),
+        $lang->get('active_users') => DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('users') . ' WHERE disabled = 0'),
+        $lang->get('total_items') => DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('items') . ' WHERE inactif = 0'),
+        $lang->get('total_folders') => DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('nested_tree')),
+        $lang->get('logs_24h') => DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('log_items') . ' WHERE date > ' . (time() - 86400)),
     );
     
     // Write statistics

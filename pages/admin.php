@@ -88,7 +88,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
         <div class="row mb-2">
             <div class="col-sm-6">
                 <h1 class="m-0 text-dark">
-                    <i class="fas fa-tachometer-alt"></i> <?php echo $lang->get('admin_tab_dashboard'); ?>
+                    <i class="fas fa-tachometer-alt"></i> <?php echo $lang->get('dashboard'); ?>
                 </h1>
             </div>
             <div class="col-sm-6">
@@ -144,17 +144,17 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                 <div class="small-box bg-info">
                                     <div class="inner">
                                         <h3 id="stat-users-active">-</h3>
-                                        <p><?php echo $lang->get('admin_stat_active_users'); ?></p>
+                                        <p><?php echo $lang->get('active_users'); ?></p>
                                         <div class="small text-white">
-                                            <span><?php echo $lang->get('admin_stat_online'); ?>: <strong id="stat-users-online">-</strong></span><br>
-                                            <span><?php echo $lang->get('admin_stat_blocked'); ?>: <strong id="stat-users-blocked">-</strong></span>
+                                            <span><?php echo $lang->get('online'); ?>: <strong id="stat-users-online">-</strong></span><br>
+                                            <span><?php echo $lang->get('blocked'); ?>: <strong id="stat-users-blocked">-</strong></span>
                                         </div>
                                     </div>
                                     <div class="icon">
                                         <i class="fas fa-users"></i>
                                     </div>
                                     <a href="index.php?page=users" class="small-box-footer">
-                                        <?php echo $lang->get('admin_stat_more_info'); ?> <i class="fas fa-arrow-circle-right"></i>
+                                        <?php echo $lang->get('open'); ?> <i class="fas fa-arrow-circle-right"></i>
                                     </a>
                                     <div class="overlay" id="loading-stat-users" style="display:none;">
                                         <i class="fas fa-sync fa-spin"></i>
@@ -167,17 +167,17 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                 <div class="small-box bg-success">
                                     <div class="inner">
                                         <h3 id="stat-items-total">-</h3>
-                                        <p><?php echo $lang->get('admin_stat_total_items'); ?></p>
+                                        <p><?php echo $lang->get('total_items'); ?></p>
                                         <div class="small text-white">
-                                            <span><?php echo $lang->get('admin_stat_shared'); ?>: <strong id="stat-items-shared">-</strong></span><br>
-                                            <span><?php echo $lang->get('admin_stat_personal'); ?>: <strong id="stat-items-personal">-</strong></span>
+                                            <span><?php echo $lang->get('shared'); ?>: <strong id="stat-items-shared">-</strong></span><br>
+                                            <span><?php echo $lang->get('personal'); ?>: <strong id="stat-items-personal">-</strong></span>
                                         </div>
                                     </div>
                                     <div class="icon">
                                         <i class="fas fa-key"></i>
                                     </div>
                                     <a href="index.php?page=utilities.deletion" class="small-box-footer">
-                                        <?php echo $lang->get('admin_stat_more_info'); ?> <i class="fas fa-arrow-circle-right"></i>
+                                        <?php echo $lang->get('open'); ?> <i class="fas fa-arrow-circle-right"></i>
                                     </a>
                                     <div class="overlay" id="loading-stat-items" style="display:none;">
                                         <i class="fas fa-sync fa-spin"></i>
@@ -190,17 +190,17 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                 <div class="small-box bg-warning">
                                     <div class="inner">
                                         <h3 id="stat-folders-total">-</h3>
-                                        <p><?php echo $lang->get('admin_stat_total_folders'); ?></p>
+                                        <p><?php echo $lang->get('total_folders'); ?></p>
                                         <div class="small text-white">
-                                            <span><?php echo $lang->get('admin_stat_public'); ?>: <strong id="stat-folders-public">-</strong></span><br>
-                                            <span><?php echo $lang->get('admin_stat_personal'); ?>: <strong id="stat-folders-personal">-</strong></span>
+                                            <span><?php echo $lang->get('public'); ?>: <strong id="stat-folders-public">-</strong></span><br>
+                                            <span><?php echo $lang->get('personal'); ?>: <strong id="stat-folders-personal">-</strong></span>
                                         </div>
                                     </div>
                                     <div class="icon">
                                         <i class="fas fa-folder-open"></i>
                                     </div>
                                     <a href="index.php?page=folders" class="small-box-footer">
-                                        <?php echo $lang->get('admin_stat_more_info'); ?> <i class="fas fa-arrow-circle-right"></i>
+                                        <?php echo $lang->get('open'); ?> <i class="fas fa-arrow-circle-right"></i>
                                     </a>
                                     <div class="overlay" id="loading-stat-folders" style="display:none;">
                                         <i class="fas fa-sync fa-spin"></i>
@@ -213,132 +213,19 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                 <div class="small-box bg-danger">
                                     <div class="inner">
                                         <h3 id="stat-logs-actions">-</h3>
-                                        <p><?php echo $lang->get('admin_stat_logs_24h'); ?></p>
+                                        <p><?php echo $lang->get('logs_24h'); ?></p>
                                         <div class="small text-white">
-                                            <span><?php echo $lang->get('admin_stat_accesses'); ?>: <strong id="stat-logs-accesses">-</strong></span><br>
-                                            <span><?php echo $lang->get('admin_stat_errors'); ?>: <strong id="stat-logs-errors">-</strong></span>
+                                            <span><?php echo $lang->get('accesses'); ?>: <strong id="stat-logs-accesses">-</strong></span><br>
+                                            <span><?php echo $lang->get('errors'); ?>: <strong id="stat-logs-errors">-</strong></span>
                                         </div>
                                     </div>
                                     <div class="icon">
                                         <i class="fas fa-file-alt"></i>
                                     </div>
                                     <a href="index.php?page=utilities.logs" class="small-box-footer">
-                                        <?php echo $lang->get('admin_stat_more_info'); ?> <i class="fas fa-arrow-circle-right"></i>
+                                        <?php echo $lang->get('open'); ?> <i class="fas fa-arrow-circle-right"></i>
                                     </a>
                                     <div class="overlay" id="loading-stat-logs" style="display:none;">
-                                        <i class="fas fa-sync fa-spin"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Live Activity and System Status Row -->
-                        <div class="row">
-                            <!-- Live Activity Card -->
-                            <div class="col-lg-6">
-                                <div class="card card-warning">
-                                    <div class="card-header">
-                                        <h3 class="card-title">
-                                            <i class="fas fa-circle text-danger blink"></i> 
-                                            <?php echo $lang->get('admin_live_activity'); ?>
-                                        </h3>
-                                        <div class="card-tools">
-                                            <span class="badge badge-warning" id="activity-refresh-countdown">10s</span>
-                                        </div>
-                                    </div>
-                                    <div class="card-body p-0" style="max-height: 350px; overflow-y: auto;">
-                                        <ul class="list-group list-group-flush" id="live-activity-list">
-                                            <li class="list-group-item text-center text-muted">
-                                                <i class="fas fa-sync fa-spin"></i> <?php echo $lang->get('admin_loading'); ?>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                    <div class="card-footer clearfix">
-                                        <a href="index.php?page=items_logs" class="btn btn-sm btn-warning float-right">
-                                            <?php echo $lang->get('admin_view_all_logs'); ?>
-                                        </a>
-                                    </div>
-                                    <div class="overlay" id="loading-activity" style="display:none;">
-                                        <i class="fas fa-sync fa-spin"></i>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- System Status Card -->
-                            <div class="col-lg-6">
-                                <div class="card card-primary">
-                                    <div class="card-header">
-                                        <h3 class="card-title">
-                                            <i class="fas fa-server"></i> 
-                                            <?php echo $lang->get('admin_tasks_status'); ?>
-                                        </h3>
-                                        <div class="card-tools">
-                                            <span class="badge badge-primary" id="status-refresh-countdown">60s</span>
-                                        </div>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="row mt-3">
-                                            <div class="col-6">
-                                                <div class="description-block">
-                                                    <h5 class="description-header" id="system-last-cron">--</h5>
-                                                    <span class="description-text"><?php echo $lang->get('admin_system_last_cron'); ?></span>
-                                                </div>
-                                            </div>
-                                            <div class="col-6">
-                                                <div class="description-block">
-                                                    <h5 class="description-header" id="system-tasks">-</h5>
-                                                    <span class="description-text"><?php echo $lang->get('admin_system_tasks_queue'); ?></span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="row mt-3">
-                                            <div class="col-12">
-                                                <div class="alert alert-warning hidden" id="task_duration_status"></div>
-                                            </div>
-                                        </div>
-                                        <?php
-// Instantiate the adapter and repository
-try {
-    // Get last cron execution timestamp
-    DB::query(
-        'SELECT valeur
-        FROM ' . prefixTable('misc') . '
-        WHERE type = %s AND intitule = %s and valeur >= %d',
-        'admin',
-        'last_cron_exec',
-        time() - 600 // max 10 minutes
-    );
-
-    if (DB::count() === 0) {
-        ?>
-                                        <div class="row mt-3">
-                                            <div class="col-12">
-                                            <div class="callout callout-info alert-dismissible mt-3" role="alert">
-                                                <h5><i class="fa-solid fa-info mr-2"></i><?php echo $lang->get('information'); ?></h5>
-                                                <?php echo str_replace("#teampass_path#", $SETTINGS['cpassman_dir'], $lang->get('tasks_information')); ?>
-                                                <div class="mt-2">
-                                                    <a href="index.php?page=tasks#settings" class="btn btn-info" role="button"><i class="fa-solid fa-arrow-up-right-from-square mr-2"></i><?php echo $lang->get('open_tasks_settings'); ?></a>
-                                                </div>
-                                            </div>
-                                            </div>
-                                        </div>
-        <?php
-    }
-}
-catch (Exception $e) {
-    if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
-        error_log('TEAMPASS Error - admin page - '.$e->getMessage());
-    }
-    echo 'An error occurred. Please refer to server logs.';
-}
-?>
-                                    </div>
-                                    <div class="card-footer">
-                                        <a href="index.php?page=tasks" class="btn btn-sm btn-primary">
-                                            <?php echo $lang->get('admin_view_tasks'); ?>
-                                        </a>
-                                    </div>
-                                    <div class="overlay" id="loading-status" style="display:none;">
                                         <i class="fas fa-sync fa-spin"></i>
                                     </div>
                                 </div>
@@ -348,23 +235,19 @@ catch (Exception $e) {
                         <!-- System Health and Teampass Information Row -->
                         <div class="row">
                             <!-- System Health Card -->
-                            <div class="col-lg-6">
+                            <div class="col-lg-5">
                                 <div class="card card-success">
                                     <div class="card-header">
                                         <h3 class="card-title">
                                             <i class="fas fa-heartbeat"></i> 
-                                            <?php echo $lang->get('admin_system_health'); ?>
+                                            <?php echo $lang->get('system_health'); ?>
                                         </h3>
                                     </div>
                                     <div class="card-body">
                                         <ul class="list-group list-group-flush">
                                             <li class="list-group-item d-flex justify-content-between align-items-center">
-                                                <span><i class="fas fa-lock text-success"></i> <?php echo $lang->get('admin_health_encryption'); ?></span>
+                                                <span><i class="fas fa-lock text-success"></i> <?php echo $lang->get('health_encryption'); ?></span>
                                                 <span class="badge badge-success" id="health-encryption">-</span>
-                                            </li>
-                                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                                <span><i class="fas fa-database text-success"></i> <?php echo $lang->get('admin_health_database'); ?></span>
-                                                <span class="badge badge-success" id="health-database">-</span>
                                             </li>
                                             <!--
                                             <li class="list-group-item d-flex justify-content-between align-items-center">
@@ -373,15 +256,15 @@ catch (Exception $e) {
                                             </li>
 -->
                                             <li class="list-group-item d-flex justify-content-between align-items-center">
-                                                <span><i class="fas fa-user-clock text-success"></i> <?php echo $lang->get('admin_health_sessions'); ?></span>
+                                                <span><i class="fas fa-user-clock text-success"></i> <?php echo $lang->get('health_sessions'); ?></span>
                                                 <span class="badge badge-info" id="health-sessions">-</span>
                                             </li>
                                             <li class="list-group-item d-flex justify-content-between align-items-center">
-                                                <span><i class="fas fa-history text-success"></i> <?php echo $lang->get('admin_health_cron'); ?></span>
+                                                <span><i class="fas fa-history text-success"></i> <?php echo $lang->get('health_cron'); ?></span>
                                                 <span class="badge badge-success" id="health-cron">-</span>
                                             </li>
                                             <li class="list-group-item d-flex justify-content-between align-items-center">
-                                                <span><i class="fas fa-file-code text-warning"></i> <?php echo $lang->get('admin_health_unknown_files'); ?></span>
+                                                <span><i class="fas fa-file-code text-warning"></i> <?php echo $lang->get('health_unknown_files'); ?></span>
                                                 <span class="badge badge-warning" id="health-unknown-files">-</span>
                                             </li>
                                         </ul>
@@ -393,7 +276,7 @@ catch (Exception $e) {
                             </div>
                             
                             <!-- Teampass Information Card -->
-                            <div class="col-lg-6">
+                            <div class="col-lg-7">
                                 <div class="card card-default">
                                     <div class="card-header">
                                         <h3 class="card-title">
@@ -487,10 +370,12 @@ catch (Exception $e) {
                                         if (DB::count() > 0) {
                                             ?>
                                         <li class="list-group-item d-flex justify-content-between align-items-center">
-                                            <span><i class="fa-solid fa-triangle-exclamation text-warning"></i>
-                                            Password Encryption Migration Required<br>
-                                            <?php echo DB::count();?> user accounts still use the legacy encryption library and must be migrated before upgrading to version 3.2.0.<br>
-                                            To migrate: Users must either log in once or have their password updated via the Users management page.
+                                            <span><i class="fa-solid fa-hand text-warning"></i>
+                                            Password Encryption Migration Required <span class="badge badge-warning"><?php echo DB::count();?> remaing users</span>
+                                            </span>
+                                            <span>
+                                            <i class="fa-solid fa-info-circle text-primary open-info" data-info="<?php echo DB::count();?> user accounts still use the legacy encryption library and must be migrated before upgrading to version 3.2.0.<br>
+                                            To migrate: Users must either log in once or have their password updated via the Users management page." data-size="lg" data-title="Importante notice"></i>
                                             </span>
                                         </li>
                                             <?php
@@ -541,6 +426,261 @@ catch (Exception $e) {
                         </div>
                         -->
                         
+                        <!-- Live Activity and System Status Row -->
+                        <div class="row">
+                            <!-- Live Activity Card -->
+                            <div class="col-lg-6">
+                                <div class="card card-warning">
+                                    <div class="card-header">
+                                        <h3 class="card-title">
+                                            <i class="fas fa-circle text-danger blink"></i> 
+                                            <?php echo $lang->get('live_activity'); ?>
+                                        </h3>
+                                        <div class="card-tools">
+                                            <span class="badge badge-warning" id="activity-refresh-countdown">10s</span>
+                                        </div>
+                                    </div>
+                                    <div class="card-body p-0" style="max-height: 350px; overflow-y: auto;">
+                                        <ul class="list-group list-group-flush" id="live-activity-list">
+                                            <li class="list-group-item text-center text-muted">
+                                                <i class="fas fa-sync fa-spin"></i> <?php echo $lang->get('loading'); ?>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    <div class="card-footer clearfix">
+                                        <a href="index.php?page=utilities.logs#items" class="btn btn-sm btn-warning float-right">
+                                            <?php echo $lang->get('view_all_logs'); ?>
+                                        </a>
+                                    </div>
+                                    <div class="overlay" id="loading-activity" style="display:none;">
+                                        <i class="fas fa-sync fa-spin"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- System Status Card -->
+                            <div class="col-lg-6">
+                                <div class="card card-primary">
+                                    <div class="card-header">
+                                        <h3 class="card-title">
+                                            <i class="fas fa-server"></i> 
+                                            <?php echo $lang->get('admin_tasks_status'); ?>
+                                        </h3>
+                                        <div class="card-tools">
+                                            <span class="badge badge-primary" id="status-refresh-countdown">60s</span>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row mt-3">
+                                            <div class="col-6">
+                                                <div class="description-block">
+                                                    <h5 class="description-header" id="system-last-cron">--</h5>
+                                                    <span class="description-text"><?php echo $lang->get('system_last_cron'); ?></span>
+                                                </div>
+                                            </div>
+                                            <div class="col-6">
+                                                <div class="description-block">
+                                                    <h5 class="description-header" id="system-tasks">-</h5>
+                                                    <span class="description-text"><?php echo $lang->get('tasks_queue'); ?></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row mt-3">
+                                            <div class="col-12">
+                                                <div class="alert alert-warning hidden" id="task_duration_status"></div>
+                                            </div>
+                                        </div>
+                                        <?php
+// Instantiate the adapter and repository
+try {
+    // Get last cron execution timestamp
+    DB::query(
+        'SELECT valeur
+        FROM ' . prefixTable('misc') . '
+        WHERE type = %s AND intitule = %s and valeur >= %d',
+        'admin',
+        'last_cron_exec',
+        time() - 600 // max 10 minutes
+    );
+
+    if (DB::count() === 0) {
+        ?>
+                                        <div class="row mt-3">
+                                            <div class="col-12">
+                                            <div class="callout callout-info alert-dismissible mt-3" role="alert">
+                                                <h5><i class="fa-solid fa-info mr-2"></i><?php echo $lang->get('information'); ?></h5>
+                                                <?php echo str_replace("#teampass_path#", $SETTINGS['cpassman_dir'], $lang->get('tasks_information')); ?>
+                                                <div class="mt-2">
+                                                    <a href="index.php?page=tasks#settings" class="btn btn-info" role="button"><i class="fa-solid fa-arrow-up-right-from-square mr-2"></i><?php echo $lang->get('open_tasks_settings'); ?></a>
+                                                </div>
+                                            </div>
+                                            </div>
+                                        </div>
+        <?php
+    }
+}
+catch (Exception $e) {
+    if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+        error_log('TEAMPASS Error - admin page - '.$e->getMessage());
+    }
+    echo 'An error occurred. Please refer to server logs.';
+}
+?>
+                                    </div>
+                                    <div class="card-footer">
+                                        <a href="index.php?page=tasks#settings" class="btn btn-sm btn-primary">
+                                            <?php echo $lang->get('view_tasks'); ?>
+                                        </a>
+                                    </div>
+                                    <div class="overlay" id="loading-status" style="display:none;">
+                                        <i class="fas fa-sync fa-spin"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+<?php
+// Get server information
+$serverVersionFull = DB::serverVersion();
+$dbType = (stripos($serverVersionFull, 'MariaDB') !== false) ? 'MariaDB' : 'MySQL';
+$versionParts = explode('-', $serverVersionFull);
+$dbVersion = $versionParts[0];
+
+// Get database size
+$dbSize = DB::queryFirstField(
+    "SELECT ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) AS size 
+    FROM information_schema.TABLES 
+    WHERE table_schema = DATABASE()"
+);
+$dbSizeFormatted = $dbSize . ' MB';
+
+// Get other PHP info
+$phpVersion = phpversion();
+$memoryLimit = ini_get('memory_limit');
+$memoryUsage = round(memory_get_usage() / 1024, 2) . ' KB';
+$maxExecutionTime = ini_get('max_execution_time') . 's';
+$maxUploadSize = ini_get('upload_max_filesize');
+
+// Get OS info
+$osInfo = php_uname('s') . ' ' . php_uname('r');
+
+// Get timezone
+$timezone = date_default_timezone_get();
+$serverTime = date('H:i:s');
+
+// Check internet connection (optional)
+$internetStatus = @fsockopen("www.google.com", 80, $errno, $errstr, 3);
+$internetConnected = ($internetStatus !== false);
+if ($internetStatus) {
+    fclose($internetStatus);
+}
+?>
+
+                        <!-- Server Information Row -->
+                        <div class="row">
+                            <div class="col-lg-12">
+                                <div class="card card-info">
+                                    <div class="card-header">
+                                        <h3 class="card-title">
+                                            <i class="fas fa-server"></i> 
+                                            Server Information
+                                        </h3>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <!-- System & Network -->
+                                            <div class="col-lg-3 col-md-6 col-sm-12">
+                                                <h6 class="text-muted mb-3">
+                                                    <i class="fas fa-desktop text-info"></i> System & Network
+                                                </h6>
+                                                <div class="mb-2">
+                                                    <i class="fab fa-linux text-primary"></i>
+                                                    <small class="text-muted">OS:</small>
+                                                    <span class="float-right"><strong><?php echo $osInfo; ?></strong></span>
+                                                </div>
+                                                <div class="mb-2">
+                                                    <i class="fas fa-globe text-<?php echo $internetConnected ? 'success' : 'danger'; ?>"></i>
+                                                    <small class="text-muted">Internet:</small>
+                                                    <span class="float-right">
+                                                        <span class="badge badge-<?php echo $internetConnected ? 'success' : 'danger'; ?>">
+                                                            <i class="fas fa-<?php echo $internetConnected ? 'check' : 'times'; ?>"></i> 
+                                                            <?php echo $internetConnected ? 'Connected' : 'Disconnected'; ?>
+                                                        </span>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- PHP Configuration -->
+                                            <div class="col-lg-3 col-md-6 col-sm-12">
+                                                <h6 class="text-muted mb-3">
+                                                    <i class="fab fa-php text-info"></i> PHP Configuration
+                                                </h6>
+                                                <div class="mb-2">
+                                                    <i class="fas fa-code text-primary"></i>
+                                                    <small class="text-muted">Version:</small>
+                                                    <span class="float-right"><strong><?php echo $phpVersion; ?></strong></span>
+                                                </div>
+                                                <div class="mb-2">
+                                                    <i class="fas fa-memory text-warning"></i>
+                                                    <small class="text-muted">Memory limit:</small>
+                                                    <span class="float-right"><strong><?php echo $memoryLimit; ?></strong></span>
+                                                </div>
+                                                <div class="mb-2">
+                                                    <i class="fas fa-chart-area text-success"></i>
+                                                    <small class="text-muted">Memory usage:</small>
+                                                    <span class="float-right"><strong><?php echo $memoryUsage; ?></strong></span>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- PHP Limits -->
+                                            <div class="col-lg-3 col-md-6 col-sm-12">
+                                                <h6 class="text-muted mb-3">
+                                                    <i class="fas fa-sliders-h text-info"></i> PHP Limits
+                                                </h6>
+                                                <div class="mb-2">
+                                                    <i class="fas fa-clock text-warning"></i>
+                                                    <small class="text-muted">Max execution:</small>
+                                                    <span class="float-right"><strong><?php echo $maxExecutionTime; ?></strong></span>
+                                                </div>
+                                                <div class="mb-2">
+                                                    <i class="fas fa-file-upload text-primary"></i>
+                                                    <small class="text-muted">Max upload:</small>
+                                                    <span class="float-right"><strong><?php echo $maxUploadSize; ?></strong></span>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Database & Time -->
+                                            <div class="col-lg-3 col-md-6 col-sm-12">
+                                                <h6 class="text-muted mb-3">
+                                                    <i class="fas fa-database text-info"></i> Database & Time
+                                                </h6>
+                                                <div class="mb-2">
+                                                    <i class="fas fa-server text-success"></i>
+                                                    <small class="text-muted"><?php echo $dbType; ?>:</small>
+                                                    <span class="float-right"><strong><?php echo $dbVersion; ?></strong></span>
+                                                </div>
+                                                <div class="mb-2">
+                                                    <i class="fas fa-hdd text-warning"></i>
+                                                    <small class="text-muted">DB size:</small>
+                                                    <span class="float-right"><strong><?php echo $dbSizeFormatted; ?></strong></span>
+                                                </div>
+                                                <div class="mb-2">
+                                                    <i class="fas fa-clock text-primary"></i>
+                                                    <small class="text-muted">Server time:</small>
+                                                    <span class="float-right"><strong><?php echo $serverTime; ?></strong></span>
+                                                </div>
+                                                <div class="mb-2">
+                                                    <i class="fas fa-map-marker-alt text-danger"></i>
+                                                    <small class="text-muted">Timezone:</small>
+                                                    <span class="float-right"><strong><?php echo $timezone; ?></strong></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Sponsoring Row -->
                         <div class="row">
                             <div class="col-lg-12">
@@ -562,11 +702,11 @@ catch (Exception $e) {
                                                 </p>
                                             </div>
                                             <div class="col-md-4 text-center">
-                                                <a href="https://github.com/sponsors/nilsteampassnet" target="_blank" class="btn btn-danger btn-lg mb-2">
+                                                <a href="https://github.com/sponsors/nilsteampassnet" target="_blank" class="btn btn-danger btn-lg">
                                                     <i class="fab fa-github"></i> <?php echo $lang->get('admin_support_github_sponsors'); ?>
                                                 </a>
                                                 <br>
-                                                <a href="https://www.paypal.com/donate/?hosted_button_id=XUVWYJ7J92X6L" target="_blank" class="btn btn-primary btn-lg">
+                                                <a href="https://www.paypal.com/donate/?hosted_button_id=XUVWYJ7J92X6L" target="_blank" class="btn btn-primary btn-lg mt-2">
                                                     <i class="fab fa-paypal"></i> <?php echo $lang->get('admin_support_paypal'); ?>
                                                 </a>
                                                 <p class="text-muted mt-3 small">
@@ -581,105 +721,33 @@ catch (Exception $e) {
                         
                     </div>
                     
-                    <!-- ============================================ -->
-                    <!-- SYSTEM TAB -->
-                    <!-- ============================================ -->
-                    <div class="tab-pane fade" id="tab-system" role="tabpanel" aria-labelledby="tab-system-link">
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle"></i> <?php echo $lang->get('admin_system_tab_info'); ?>
-                        </div>
-                        <!-- System settings will be loaded here via JavaScript -->
-                        <div id="system-settings-container">
-                            <div class="text-center">
-                                <i class="fas fa-sync fa-spin fa-3x text-muted"></i>
-                                <p class="mt-3"><?php echo $lang->get('admin_loading'); ?></p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- ============================================ -->
-                    <!-- USERS TAB -->
-                    <!-- ============================================ -->
-                    <div class="tab-pane fade" id="tab-users" role="tabpanel" aria-labelledby="tab-users-link">
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle"></i> <?php echo $lang->get('admin_users_tab_info'); ?>
-                        </div>
-                        <!-- Users content will be loaded here -->
-                        <div id="users-content-container">
-                            <div class="text-center">
-                                <i class="fas fa-sync fa-spin fa-3x text-muted"></i>
-                                <p class="mt-3"><?php echo $lang->get('admin_loading'); ?></p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- ============================================ -->
-                    <!-- FOLDERS TAB -->
-                    <!-- ============================================ -->
-                    <div class="tab-pane fade" id="tab-folders" role="tabpanel" aria-labelledby="tab-folders-link">
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle"></i> <?php echo $lang->get('admin_folders_tab_info'); ?>
-                        </div>
-                        <!-- Folders statistics and shortcuts -->
-                        <div id="folders-content-container">
-                            <div class="text-center">
-                                <i class="fas fa-sync fa-spin fa-3x text-muted"></i>
-                                <p class="mt-3"><?php echo $lang->get('admin_loading'); ?></p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- ============================================ -->
-                    <!-- SECURITY TAB -->
-                    <!-- ============================================ -->
-                    <div class="tab-pane fade" id="tab-security" role="tabpanel" aria-labelledby="tab-security-link">
-                        <div class="alert alert-warning">
-                            <i class="fas fa-exclamation-triangle"></i> <?php echo $lang->get('admin_security_tab_info'); ?>
-                        </div>
-                        <!-- Security dashboard will be loaded here -->
-                        <div id="security-content-container">
-                            <div class="text-center">
-                                <i class="fas fa-sync fa-spin fa-3x text-muted"></i>
-                                <p class="mt-3"><?php echo $lang->get('admin_loading'); ?></p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- ============================================ -->
-                    <!-- DATABASE TAB -->
-                    <!-- ============================================ -->
-                    <div class="tab-pane fade" id="tab-database" role="tabpanel" aria-labelledby="tab-database-link">
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle"></i> <?php echo $lang->get('admin_database_tab_info'); ?>
-                        </div>
-                        <!-- Database stats and tools will be loaded here -->
-                        <div id="database-content-container">
-                            <div class="text-center">
-                                <i class="fas fa-sync fa-spin fa-3x text-muted"></i>
-                                <p class="mt-3"><?php echo $lang->get('admin_loading'); ?></p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- ============================================ -->
-                    <!-- TOOLS TAB -->
-                    <!-- ============================================ -->
-                    <div class="tab-pane fade" id="tab-tools" role="tabpanel" aria-labelledby="tab-tools-link">
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle"></i> <?php echo $lang->get('admin_tools_tab_info'); ?>
-                        </div>
-                        <!-- Admin tools will be loaded here -->
-                        <div id="tools-content-container">
-                            <div class="text-center">
-                                <i class="fas fa-sync fa-spin fa-3x text-muted"></i>
-                                <p class="mt-3"><?php echo $lang->get('admin_loading'); ?></p>
-                            </div>
-                        </div>
-                    </div>
-                    
                 </div>
             </div>
         </div>
         
     </div>
 </section>
+
+<!-- Info Modal -->
+<div class="modal fade" id="info-modal" tabindex="-1" role="dialog" aria-labelledby="info-modal-title" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-info">
+                <h5 class="modal-title" id="info-modal-title">
+                    <i class="fas fa-info-circle"></i> Information
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="info-modal-body">
+                <!-- Content will be inserted here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="fas fa-times"></i> Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

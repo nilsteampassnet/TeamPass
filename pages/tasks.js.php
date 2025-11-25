@@ -282,11 +282,20 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
 
     $(document).ready(function(){
-        // Handle tab selection from url
-        let url = location.href.replace(/\/$/, "");
-        if (location.hash) {
-            const hash = url.split("#");
-            $('#tasksSettingsPage a[href="#'+hash[1]+'"]').tab("show");
+        // Check if there's a hash in URL
+        if (window.location.hash) {
+            var hash = window.location.hash; // e.g., #items
+            
+            // Find and activate the corresponding tab
+            var tabTrigger = $('a[href="' + hash + '"]');
+            
+            if (tabTrigger.length) {
+                // Activate the tab using Bootstrap
+                tabTrigger.tab('show');
+                
+                // Alternative if using data-toggle
+                // tabTrigger.trigger('click');
+            }
         }
 
         // Fetch data

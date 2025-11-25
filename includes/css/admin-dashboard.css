@@ -528,3 +528,84 @@
         page-break-inside: avoid;
     }
 }
+
+/* Server Information Card */
+.card-body h6.text-muted {
+    border-bottom: 1px solid #dee2e6;
+    padding-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.card-body .mb-2 {
+    padding: 0.25rem 0;
+    border-bottom: 1px dotted #e9ecef;
+}
+
+.card-body .mb-2:last-child {
+    border-bottom: none;
+}
+
+.card-body .float-right {
+    font-size: 0.9rem;
+}
+
+/* Make .open-info elements look clickable */
+.open-info {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.open-info:hover {
+    opacity: 0.8;
+    transform: scale(1.05);
+}
+
+/* Style for info modal */
+#info-modal .modal-body {
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+#info-modal .modal-body h6 {
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+    color: #17a2b8;
+}
+
+#info-modal .modal-body ul {
+    margin-bottom: 1rem;
+}
+
+/* Center modal vertically and horizontally */
+#info-modal .modal-dialog {
+    display: flex;
+    align-items: center;
+    min-height: calc(100vh - 1rem);
+    margin: 0.5rem auto;
+}
+
+@media (min-width: 576px) {
+    #info-modal .modal-dialog {
+        min-height: calc(100vh - 3.5rem);
+        margin: 1.75rem auto;
+    }
+}
+
+/* Smooth transitions for system health updates */
+#health-encryption,
+#health-database,
+#health-sessions,
+#health-cron,
+#health-unknown-files {
+    transition: all 0.3s ease-in-out;
+}
+
+/* Smooth transitions - prevent flash */
+.card .badge {
+    transition: background-color 0.3s ease, color 0.3s ease;
+    min-width: 50px;
+}
+
+.list-group-item {
+    transition: background-color 0.2s ease;
+}

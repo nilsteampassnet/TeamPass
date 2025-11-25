@@ -290,7 +290,7 @@ function loadLiveActivity() {
             } else if (data.activities && data.activities.length === 0) {
                 $('#live-activity-list').html(`
                     <li class="list-group-item text-center text-muted">
-                        <i class="fas fa-info-circle"></i> <?php echo $lang->get('admin_no_recent_activity'); ?>
+                        <i class="fas fa-info-circle"></i> <?php echo $lang->get('no_recent_activity'); ?>
                     </li>
                 `)
             } else {
@@ -341,8 +341,6 @@ function loadSystemStatus() {
  * @return {void}
  */
 function loadSystemHealth() {
-    $('#loading-health').show()
-    
     $.ajax({
         url: 'sources/admin.queries.php',
         type: 'POST',
@@ -353,36 +351,46 @@ function loadSystemHealth() {
         },
         success: function(data) {
             if (data.error === false) {
+                // Pass ID without #
                 updateHealthBadge('health-encryption', data.encryption.status, data.encryption.text)
-                updateHealthBadge('health-database', data.database.status, data.database.text)
-                updateHealthBadge('health-sessions', 'info', data.sessions.count + ' <?php echo $lang->get('admin_active'); ?>')
+                updateHealthBadge('health-sessions', 'info', data.sessions.count + ' active')
                 updateHealthBadge('health-cron', data.cron.status, data.cron.text)
-                updateHealthBadge('health-unknown-files', data.unknown_files.count > 0 ? 'warning' : 'success', 
-                    data.unknown_files.count + ' <?php echo $lang->get('admin_detected'); ?>')
-            } else {
-                showErrorToast(data.message || '<?php echo $lang->get('error_occurred'); ?>')
+                updateHealthBadge('health-unknown-files', 
+                    data.unknown_files.count > 0 ? 'warning' : 'success', 
+                    data.unknown_files.count
+                )
             }
         },
-        error: handleAjaxError,
-        complete: function() {
-            $('#loading-health').hide()
-        }
+        error: handleAjaxError
     })
 }
 
 /**
- * Update health badge status
+ * Update health badge
  * 
- * @param {string} elementId - Badge element ID
- * @param {string} status - Status type (success, warning, danger, info)
- * @param {string} text - Badge text
+ * @param {string} id - Element ID (without #)
+ * @param {string} status - Badge status class
+ * @param {string|number} text - Badge text
  * @return {void}
  */
-function updateHealthBadge(elementId, status, text) {
-    $(`#${elementId}`)
-        .removeClass('badge-success badge-warning badge-danger badge-info')
-        .addClass(`badge-${status}`)
-        .text(text)
+function updateHealthBadge(id, status, text) {
+    try {
+        const badge = $('#' + id)
+        if (!badge.length) return
+        
+        const newText = (text === undefined || text === null) ? '-' : String(text)
+        
+        if (badge.text().trim() !== newText) {
+            badge.text(newText)
+        }
+        
+        if (status) {
+            badge.removeClass('badge-success badge-warning badge-danger badge-info badge-secondary')
+                .addClass('badge-' + status)
+        }
+    } catch (e) {
+        console.error('updateHealthBadge error:', e, 'id:', id, 'status:', status, 'text:', text)
+    }
 }
 
 /**
@@ -781,10 +789,10 @@ function performSimulateUserKeyChangeDuration() {
             let html = '';
             if (data.error === false) {
                 if (data.setupProposal === false && data.estimatedTime !== null) {
-                    html = '<i class="fa-solid fa-circle-exclamation text-warning mr-2"></i>'
-                        + 'Estimated time to process all keys is about <b>' + data.estimatedTime + '</b> seconds.<br/>'
-                        + 'It is suggested to allow <b>' + data.proposedDuration + '</b> seconds for a background task to run.<br/>'
-                        + 'You should adapt from <a href="index.php?page=tasks">Tasks Parameters page</a>.';
+                    html = '<i class="fa-solid fa-clock text-info mr-2"></i>'
+                        + '<strong>Recommended Action:</strong> This operation requires approximately <strong>' + data.estimatedTime + '</strong> seconds.<br/>'
+                        + 'Please ensure the background task timeout is set to at least <strong>' + data.proposedDuration + '</strong> seconds in the '
+                        + '<a href="index.php?page=tasks#settings" class="alert-link">Task Parameters</a> page.';
                     
                     $('#task_duration_status')
                         .html(html)
@@ -1457,5 +1465,31 @@ $(window).on('beforeunload', function() {
     AdminRefreshManager.stopAll()
 })
 
+/**
+ * Open info modal when clicking on .open-info elements
+ * 
+ * @return {void}
+ */
+$(document).on('click', '.open-info', function(e) {
+    e.preventDefault()
+    
+    const content = $(this).data('info')
+    const title = $(this).data('title') || 'Information'
+    const size = $(this).data('size') || 'lg' // sm, lg, xl
+    
+    // Update modal size
+    const modalDialog = $('#info-modal .modal-dialog')
+    modalDialog.removeClass('modal-sm modal-lg modal-xl')
+    if (size !== 'default') {
+        modalDialog.addClass('modal-' + size)
+    }
+    
+    // Update modal content
+    $('#info-modal-title').html('<i class="fas fa-info-circle"></i> ' + title)
+    $('#info-modal-body').html(content)
+    
+    // Show modal
+    $('#info-modal').modal('show')
+})
 //]]>
 </script>
