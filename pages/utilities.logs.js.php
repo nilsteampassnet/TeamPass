@@ -90,6 +90,16 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     var oTableAdmin;
     var oTableErrors;
 
+    // Decode HTML entities (e.g. &eacute; -> é, &amp; -> &)
+    function decodeHtmlEntities(str) {
+        if (str === null || str === undefined) {
+            return '';
+        }
+        var txt = document.createElement('textarea');
+        txt.innerHTML = str;
+        return txt.value;
+    }
+
     // What type of form? Edit or new user
     store.update(
         'teampassApplication',
@@ -185,6 +195,16 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 return filter;
             }
         },
+        'columnDefs': [
+            {
+                // 0 = Date, 1 = Action, 2 = User
+                'targets': [2],
+                'render': function (data, type, row, meta) {
+                    if (type !== 'display') { return data; }
+                    return decodeHtmlEntities(data);
+                }
+            }
+        ],
         'language': {
             'url': '<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $session->get('user-language'); ?>.txt'
         },
@@ -233,6 +253,16 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     d.letter = _alphabetSearch
                 }*/
             },
+            'columnDefs': [
+                {
+                    // Label + User
+                    'targets': [1, 2],
+                    'render': function (data, type) {
+                        if (type !== 'display') { return data; }
+                        return decodeHtmlEntities(data);
+                    }
+                }
+            ],
             'language': {
                 'url': '<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $session->get('user-language'); ?>.txt'
             },
@@ -282,6 +312,15 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     d.letter = _alphabetSearch
                 }*/
             },
+            'columnDefs': [
+                {
+                    'targets': [1, 2],
+                    'render': function (data, type) {
+                        if (type !== 'display') { return data; }
+                        return decodeHtmlEntities(data);
+                    }
+                }
+            ],
             'language': {
                 'url': '<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $session->get('user-language'); ?>.txt'
             },
@@ -331,21 +370,32 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     d.letter = _alphabetSearch
                 }*/
             },
+            'columnDefs': [
+                {
+                    // 0 = Date, 1 = Label, 2 = User
+                    'targets': [1, 2],
+                    'render': function (data, type) {
+                        if (type !== 'display') {
+                            return data;
+                        }
+                        return decodeHtmlEntities(data);
+                    }
+                }
+            ],
             'language': {
                 'url': '<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $session->get('user-language'); ?>.txt'
             },
             'preDrawCallback': function() {
                 toastr.remove();
-                toastr.info('<?php echo $lang->get('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+                toastr.info('<?php echo $lang->get('loading_data'); ?> . <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
             },
             'drawCallback': function() {
                 // Inform user
                 toastr.remove();
                 toastr.success(
                     '<?php echo $lang->get('done'); ?>',
-                    '', {
-                        timeOut: 1000
-                    }
+                    '',
+                    { timeOut: 1000 }
                 );
             },
         });
@@ -380,21 +430,32 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     d.letter = _alphabetSearch
                 }*/
             },
+            'columnDefs': [
+                {
+                    // 0 = Date, 1 = Author, 2 = Action, 3 = Who
+                    'targets': [1, 3],
+                    'render': function (data, type) {
+                        if (type !== 'display') {
+                            return data;
+                        }
+                        return decodeHtmlEntities(data);
+                    }
+                }
+            ],
             'language': {
                 'url': '<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $session->get('user-language'); ?>.txt'
             },
             'preDrawCallback': function() {
                 toastr.remove();
-                toastr.info('<?php echo $lang->get('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+                toastr.info('<?php echo $lang->get('loading_data'); ?> . <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
             },
             'drawCallback': function() {
                 // Inform user
                 toastr.remove();
                 toastr.success(
                     '<?php echo $lang->get('done'); ?>',
-                    '', {
-                        timeOut: 1000
-                    }
+                    '',
+                    { timeOut: 1000 }
                 );
             },
         });
@@ -472,7 +533,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             'responsive': true,
             'stateSave': true,
             'autoWidth': true,
-            'ajax': {
+             'ajax': {
                 url: '<?php echo $SETTINGS['cpassman_url']; ?>/sources/logs.datatables.php?action=items',
                 data: function(filter) {
                     var val = $("select", "#table-items_filter").val();
@@ -480,6 +541,18 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     return filter;
                 }
             },
+            'columnDefs': [
+                {
+                    // 0=Date, 1=ID, 2=Label, 3=Folder, 4=User
+                    'targets': [2, 3, 4],
+                    'render': function(data, type, row, meta) {
+                        if (type !== 'display') {
+                            return data;
+                        }
+                        return decodeHtmlEntities(data);
+                    }
+                }
+            ],
             'language': {
                 'url': '<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $session->get('user-language'); ?>.txt'
             },
