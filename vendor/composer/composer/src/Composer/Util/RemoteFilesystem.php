@@ -72,7 +72,6 @@ class RemoteFilesystem
      * @param IOInterface $io         The IO instance
      * @param Config      $config     The config
      * @param mixed[]     $options    The options
-     * @param AuthHelper  $authHelper
      */
     public function __construct(IOInterface $io, Config $config, array $options = [], bool $disableTls = false, ?AuthHelper $authHelper = null)
     {
@@ -637,13 +636,13 @@ class RemoteFilesystem
             $headers[] = 'Connection: close';
         }
 
-        $headers = $this->authHelper->addAuthenticationHeader($headers, $originUrl, $this->fileUrl);
-
-        $options['http']['follow_location'] = 0;
-
         if (isset($options['http']['header']) && !is_array($options['http']['header'])) {
             $options['http']['header'] = explode("\r\n", trim($options['http']['header'], "\r\n"));
         }
+        $options = $this->authHelper->addAuthenticationOptions($options, $originUrl, $this->fileUrl);
+
+        $options['http']['follow_location'] = 0;
+
         foreach ($headers as $header) {
             $options['http']['header'][] = $header;
         }

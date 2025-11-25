@@ -613,5 +613,23 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         }
     });
 
+    $(document).ready(function() {
+        // Check if there's a hash in URL
+        if (window.location.hash) {
+            var hash = window.location.hash; // e.g., #items
+            
+            // Find and activate the corresponding tab
+            var tabTrigger = $('a[href="' + hash + '"]');
+            
+            if (tabTrigger.length) {
+                // Activate the tab using Bootstrap
+                tabTrigger.tab('show');
+                
+                // Alternative if using data-toggle
+                // tabTrigger.trigger('click');
+            }
+        }
+    });
+
     //]]>
 </script>

@@ -1,0 +1,39 @@
+[mysqld]
+# TeamPass MariaDB Configuration
+
+# Character set
+character-set-server = utf8mb4
+collation-server = utf8mb4_unicode_ci
+
+# Performance
+max_allowed_packet = 64M
+max_connections = 150
+table_open_cache = 2000
+tmp_table_size = 64M
+max_heap_table_size = 64M
+
+# InnoDB
+innodb_buffer_pool_size = 256M
+innodb_log_file_size = 64M
+innodb_flush_log_at_trx_commit = 2
+innodb_flush_method = O_DIRECT
+
+# Query cache (disabled in MariaDB 10.6+)
+# query_cache_type = 0
+# query_cache_size = 0
+
+# Binary logging (optional, for replication/backup)
+# log_bin = /var/lib/mysql/mysql-bin.log
+# expire_logs_days = 7
+# max_binlog_size = 100M
+
+# Slow query log (for debugging)
+slow_query_log = 0
+slow_query_log_file = /var/log/mysql/slow-query.log
+long_query_time = 2
+
+[client]
+default-character-set = utf8mb4
+
+[mysql]
+default-character-set = utf8mb4

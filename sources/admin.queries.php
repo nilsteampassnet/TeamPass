@@ -2777,6 +2777,547 @@ switch ($post_type) {
         );
 
         break;
+        
+    case 'get_dashboard_stats':
+    /**
+     * Get dashboard statistics
+     * Returns: users, items, folders, and logs statistics
+     * 
+     * @return array {
+     *   users: {active: int, online: int, blocked: int},
+     *   items: {total: int, shared: int, personal: int},
+     *   folders: {total: int, public: int, personal: int},
+     *   logs: {actions: int, accesses: int, errors: int}
+     * }
+     */
+    
+    // Users statistics
+    $usersActive = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('users') . ' 
+        WHERE disabled = %i AND deleted_at IS NULL',
+        0
+    );
+    
+    $usersOnline = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('users') . ' 
+        WHERE session_end > %i AND disabled = %i',
+        time(),
+        0
+    );
+    
+    $usersBlocked = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('users') . ' 
+        WHERE disabled = %i AND deleted_at IS NULL',
+        1
+    );
+    
+    // Items statistics
+    $itemsTotal = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('items') . ' 
+        WHERE inactif = %i AND deleted_at IS NULL',
+        0
+    );
+    
+    $itemsShared = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('items') . ' 
+        WHERE inactif = %i AND perso = %i AND deleted_at IS NULL',
+        0,
+        0
+    );
+    
+    $itemsPersonal = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('items') . ' 
+        WHERE inactif = %i AND perso = %i AND deleted_at IS NULL',
+        0,
+        1
+    );
+    
+    // Folders statistics
+    $foldersTotal = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('nested_tree')
+    );
+    
+    $foldersPublic = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('nested_tree') . ' 
+        WHERE personal_folder = %i',
+        0
+    );
+    
+    $foldersPersonal = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('nested_tree') . ' 
+        WHERE personal_folder = %i',
+        1
+    );
+    
+    // Logs statistics (last 24 hours)
+    $timestamp24h = time() - 86400;
+    
+    $logsActions = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('log_items') . ' 
+        WHERE date > %i',
+        $timestamp24h
+    );
+    
+    $logsAccesses = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('log_items') . ' 
+        WHERE date > %i AND action = %s',
+        $timestamp24h,
+        'at_shown'
+    );
+    
+    $logsErrors = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('log_system') . ' 
+        WHERE date > %i AND type = %s',
+        $timestamp24h,
+        'error'
+    );
+    
+    echo prepareExchangedData(
+        array(
+            'error' => false,
+            'users' => array(
+                'active' => (int) $usersActive,
+                'online' => (int) $usersOnline,
+                'blocked' => (int) $usersBlocked,
+            ),
+            'items' => array(
+                'total' => (int) $itemsTotal,
+                'shared' => (int) $itemsShared,
+                'personal' => (int) $itemsPersonal,
+            ),
+            'folders' => array(
+                'total' => (int) $foldersTotal,
+                'public' => (int) $foldersPublic,
+                'personal' => (int) $foldersPersonal,
+            ),
+            'logs' => array(
+                'actions' => (int) $logsActions,
+                'accesses' => (int) $logsAccesses,
+                'errors' => (int) $logsErrors,
+            ),
+        ),
+        'encode'
+    );
+    break;
+
+// ========================================
+// LIVE ACTIVITY ENDPOINT
+// ========================================
+
+case 'get_live_activity':
+    /**
+     * Get recent activity (last 5 minutes, max 10 entries)
+     * 
+     * @return array [{
+     *   timestamp: int,
+     *   user_id: int,
+     *   user_login: string,
+     *   action: string,
+     *   action_text: string,
+     *   item_id: int|null,
+     *   item_label: string|null
+     * }]
+     */
+    
+    $timestamp5min = time() - 300; // 5 minutes ago
+    
+    $activities = DB::query(
+        'SELECT l.date, l.id_user, u.login, l.action, l.raison, l.id_item, i.label 
+        FROM ' . prefixTable('log_items') . ' AS l
+        LEFT JOIN ' . prefixTable('users') . ' AS u ON l.id_user = u.id
+        LEFT JOIN ' . prefixTable('items') . ' AS i ON l.id_item = i.id
+        WHERE l.date > %i
+        ORDER BY l.date DESC
+        LIMIT 10',
+        $timestamp5min
+    );
+    
+    $activityList = array();
+    
+    foreach ($activities as $activity) {
+        // Translate action to readable text
+        $actionText = '';
+        switch ($activity['action']) {
+            case 'at_shown':
+                $actionText = $lang->get('action_accessed');
+                break;
+            case 'at_creation':
+                $actionText = $lang->get('action_created');
+                break;
+            case 'at_modification':
+                $actionText = $lang->get('action_modified');
+                break;
+            case 'at_delete':
+                $actionText = $lang->get('action_deleted');
+                break;
+            case 'at_manual':
+                $actionText = $lang->get('action_manual');
+                break;
+            case 'at_password_shown_edit_form':
+                $actionText = $lang->get('opened_edit_form_of');
+                break;
+            case 'at_copy':
+                $actionText = $lang->get('copied');
+                break;
+            default:
+                $actionText = $activity['action'];
+        }
+        
+        $activityList[] = array(
+            'timestamp' => (int) $activity['date'],
+            'user_id' => (int) $activity['id_user'],
+            'user_login' => $activity['login'] ?? $lang->get('unknown'),
+            'action' => $activity['action'],
+            'action_text' => strtolower($actionText),
+            'item_id' => $activity['id_item'] ? (int) $activity['id_item'] : null,
+            'item_label' => $activity['label'] ?? null,
+        );
+    }
+    
+    echo prepareExchangedData(
+        array(
+            'error' => false,
+            'activities' => $activityList,
+        ),
+        'encode'
+    );
+    break;
+
+// ========================================
+// SYSTEM STATUS ENDPOINT
+// ========================================
+
+case 'get_system_status':
+    /**
+     * Get system status (CPU, RAM, disk, tasks queue)
+     * 
+     * @return array {
+     *   tasks_queue: int,
+     *   last_cron: string
+     * }
+     */
+        
+    // Tasks queue count
+    $tasksQueue = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('background_tasks') . ' 
+        WHERE finished_at IS NULL OR finished_at = 0'
+    );
+    
+    // Last cron execution
+    $lastCronLog = DB::queryFirstRow(
+        'SELECT created_at FROM ' . prefixTable('background_tasks_logs') . ' 
+        ORDER BY created_at DESC 
+        LIMIT 1'
+    );
+    
+    $lastCronText = $lang->get('never');
+    if ($lastCronLog && isset($lastCronLog['created_at'])) {
+        $timeDiff = time() - (int) $lastCronLog['created_at'];
+        if ($timeDiff < 60) {
+            $lastCronText = $timeDiff . 's ' . $lang->get('ago');
+        } elseif ($timeDiff < 3600) {
+            $lastCronText = floor($timeDiff / 60) . 'm ' . $lang->get('ago');
+        } elseif ($timeDiff < 86400) {
+            $lastCronText = floor($timeDiff / 3600) . 'h ' . $lang->get('ago');
+        } else {
+            $lastCronText = floor($timeDiff / 86400) . 'd ' . $lang->get('ago');
+        }
+    }
+    
+    echo prepareExchangedData(
+        array(
+            'error' => false,
+            'tasks_queue' => (int) $tasksQueue,
+            'last_cron' => $lastCronText,
+        ),
+        'encode'
+    );
+    break;
+
+// ========================================
+// SYSTEM HEALTH ENDPOINT
+// ========================================
+
+case 'get_system_health':
+    /**
+     * Get system health checks
+     * 
+     * @return array {
+     *   encryption: {status: string, text: string},
+     *   database: {status: string, text: string},
+     *   sessions: {count: int},
+     *   cron: {status: string, text: string},
+     *   unknown_files: {count: int}
+     * }
+     */
+    
+    // Encryption check
+    $encryptionStatus = 'success';
+    $encryptionText = $lang->get('health_status_ok');
+    
+    // Check if secure file exists
+    if (isset($SETTINGS['securepath']) && isset($SETTINGS['securefile']) && !file_exists($SETTINGS['securepath'] . DIRECTORY_SEPARATOR . $SETTINGS['securefile'])) {
+        $encryptionStatus = 'danger';
+        $encryptionText = $lang->get('health_secure_file_missing');
+    }
+    
+    // Active sessions count
+    $sessionsCount = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('users') . ' 
+        WHERE session_end > %i',
+        time()
+    );
+    
+    // Is cron installed
+    DB::query(
+        'SELECT valeur
+        FROM ' . prefixTable('misc') . '
+        WHERE type = %s AND intitule = %s and valeur >= %d',
+        'admin',
+        'last_cron_exec',
+        time() - 600 // max 10 minutes
+    );
+
+    if (DB::count() === 0) {
+        $cronStatus = 'danger';
+        $cronText = $lang->get('error');
+    } else {
+        // Cron check (last execution should be < 2 minutes ago)
+        $lastCron = DB::queryFirstField(
+            'SELECT created_at FROM ' . prefixTable('background_tasks_logs') . ' 
+            ORDER BY created_at DESC 
+            LIMIT 1'
+        );
+        
+        $cronStatus = 'success';
+        $cronText = $lang->get('health_status_ok');
+        
+        if (!$lastCron || (time() - (int) $lastCron) > 120) {
+            $cronStatus = 'warning';
+            $cronText = $lang->get('health_cron_delayed');
+        }
+    }
+    
+    // Unknown files count
+    $unknownFilesData = DB::queryFirstField(
+        'SELECT valeur FROM ' . prefixTable('misc') . ' 
+        WHERE type = %s AND intitule = %s',
+        'admin',
+        'unknown_files'
+    );
+    
+    $unknownFilesCount = 0;
+    if ($unknownFilesData) {
+        $unknownFiles = json_decode($unknownFilesData, true);
+        if (is_array($unknownFiles)) {
+            $unknownFilesCount = count($unknownFiles);
+        }
+    }
+    
+    echo prepareExchangedData(
+        array(
+            'error' => false,
+            'encryption' => array(
+                'status' => $encryptionStatus,
+                'text' => $encryptionText,
+            ),
+            'sessions' => array(
+                'count' => (int) $sessionsCount,
+            ),
+            'cron' => array(
+                'status' => $cronStatus,
+                'text' => $cronText,
+            ),
+            'unknown_files' => array(
+                'count' => $unknownFilesCount,
+            ),
+        ),
+        'encode'
+    );
+    break;
+
+// ========================================
+// QUICK ACTIONS - CLEAN OLD LOGS
+// ========================================
+
+case 'clean_old_logs':
+    /**
+     * Clean logs older than 90 days
+     * 
+     * @return array {
+     *   error: bool,
+     *   message: string,
+     *   deleted_count: int
+     * }
+     */
+    
+    $threshold = time() - (90 * 86400); // 90 days ago
+    
+    // Delete old log_items entries
+    DB::delete(
+        prefixTable('log_items'),
+        'date < %i',
+        $threshold
+    );
+    
+    $deletedItems = DB::affectedRows();
+    
+    // Delete old log_system entries
+    DB::delete(
+        prefixTable('log_system'),
+        'date < %i',
+        $threshold
+    );
+    
+    $deletedSystem = DB::affectedRows();
+    
+    $totalDeleted = $deletedItems + $deletedSystem;
+    
+    // Log the action
+    logEvents(
+        $SETTINGS,
+        'admin_action',
+        'clean_old_logs',
+        (string) $session->get('user-id'),
+        $session->get('user-login'),
+        'Cleaned ' . $totalDeleted . ' old log entries'
+    );
+    
+    echo prepareExchangedData(
+        array(
+            'error' => false,
+            'message' => $lang->get('admin_logs_cleaned_success'),
+            'deleted_count' => $totalDeleted,
+        ),
+        'encode'
+    );
+    break;
+
+// ========================================
+// QUICK ACTIONS - TEST ENCRYPTION (KEPT FOR COMPATIBILITY)
+// ========================================
+
+case 'test_encryption':
+    /**
+     * Test encryption system integrity
+     * 
+     * @return array {
+     *   error: bool,
+     *   message: string
+     * }
+     */
+    
+    try {
+        // Test string
+        $testString = 'TeamPass Encryption Test ' . time();
+        
+        // Get encryption key
+        $key = file_get_contents($SETTINGS['securepath'] . DIRECTORY_SEPARATOR . $SETTINGS['securefile']);
+        
+        if ($key === false) {
+            throw new Exception($lang->get('admin_encryption_key_not_found'));
+        }
+        
+        // Use Defuse encryption (TeamPass's current encryption method)
+        require_once $SETTINGS['cpassman_dir'] . '/vendor/defuse/php-encryption/src/Exception/EnvironmentIsBrokenException.php';
+        require_once $SETTINGS['cpassman_dir'] . '/vendor/defuse/php-encryption/src/Exception/BadFormatException.php';
+        require_once $SETTINGS['cpassman_dir'] . '/vendor/defuse/php-encryption/src/Exception/WrongKeyOrModifiedCiphertextException.php';
+        require_once $SETTINGS['cpassman_dir'] . '/vendor/defuse/php-encryption/src/Crypto.php';
+        require_once $SETTINGS['cpassman_dir'] . '/vendor/defuse/php-encryption/src/Key.php';
+        
+        $encryptionKey = \Defuse\Crypto\Key::loadFromAsciiSafeString($key);
+        
+        // Encrypt test string
+        $encrypted = \Defuse\Crypto\Crypto::encrypt($testString, $encryptionKey);
+        
+        // Decrypt test string
+        $decrypted = \Defuse\Crypto\Crypto::decrypt($encrypted, $encryptionKey);
+        
+        // Verify
+        if ($decrypted !== $testString) {
+            throw new Exception($lang->get('admin_encryption_test_failed'));
+        }
+        
+        // Log the test
+        logEvents(
+            $SETTINGS,
+            'admin_action',
+            'test_encryption',
+            (string) $session->get('user-id'),
+            $session->get('user-login'),
+            'Encryption test successful'
+        );
+        
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => $lang->get('admin_encryption_test_success'),
+            ),
+            'encode'
+        );
+        
+    } catch (Exception $e) {
+        echo prepareExchangedData(
+            array(
+                'error' => true,
+                'message' => $e->getMessage(),
+            ),
+            'encode'
+        );
+    }
+    break;
+
+// ========================================
+// QUICK ACTIONS - EXPORT STATISTICS
+// ========================================
+
+case 'export_statistics':
+    /**
+     * Export statistics as CSV file
+     * 
+     * @return void (file download)
+     */
+    
+    // Set headers for CSV download
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename="teampass_statistics_' . date('Y-m-d_H-i-s') . '.csv"');
+    
+    // Create output stream
+    $output = fopen('php://output', 'w');
+    
+    // Write CSV headers
+    fputcsv($output, array(
+        $lang->get('admin_export_metric'),
+        $lang->get('admin_export_value'),
+    ));
+    
+    // Gather statistics
+    $stats = array(
+        $lang->get('active_users') => DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('users') . ' WHERE disabled = 0'),
+        $lang->get('total_items') => DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('items') . ' WHERE inactif = 0'),
+        $lang->get('total_folders') => DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('nested_tree')),
+        $lang->get('logs_24h') => DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('log_items') . ' WHERE date > ' . (time() - 86400)),
+    );
+    
+    // Write statistics
+    foreach ($stats as $metric => $value) {
+        fputcsv($output, array($metric, $value));
+    }
+    
+    fclose($output);
+    
+    // Log the export
+    logEvents(
+        $SETTINGS,
+        'admin_action',
+        'export_statistics',
+        (string) $session->get('user-id'),
+        $session->get('user-login'),
+        'Statistics exported'
+    );
+    
+    exit;
+    break;
     
 }
 
