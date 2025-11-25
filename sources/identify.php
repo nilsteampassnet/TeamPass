@@ -450,252 +450,34 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         $session_time = min($dataReceived['duree_session'], $max_time);
         $lifetime = time() + ($session_time * 60);
 
-        // Save old key
-        $old_key = $session->get('key');
-
-        // Good practice: reset PHPSESSID and key after successful authentication
-        $session->migrate();
-        $session->set('key', generateQuickPassword(30, false));
-
-        // Save account in SESSION
-        $session->set('user-login', stripslashes($username));
-        $session->set('user-name', empty($userInfo['name']) === false ? stripslashes($userInfo['name']) : '');
-        $session->set('user-lastname', empty($userInfo['lastname']) === false ? stripslashes($userInfo['lastname']) : '');
-        $session->set('user-id', (int) $userInfo['id']);
-        $session->set('user-admin', (int) $userInfo['admin']);
-        $session->set('user-manager', (int) $userInfo['gestionnaire']);
-        $session->set('user-can_manage_all_users', $userInfo['can_manage_all_users']);
-        $session->set('user-read_only', $userInfo['read_only']);
-        $session->set('user-last_pw_change', $userInfo['last_pw_change']);
-        $session->set('user-last_pw', $userInfo['last_pw']);
-        $session->set('user-force_relog', $userInfo['force-relog']);
-        $session->set('user-can_create_root_folder', $userInfo['can_create_root_folder']);
-        $session->set('user-email', $userInfo['email']);
-        //$session->set('user-ga', $userInfo['ga']);
-        $session->set('user-avatar', $userInfo['avatar']);
-        $session->set('user-avatar_thumb', $userInfo['avatar_thumb']);
-        $session->set('user-upgrade_needed', $userInfo['upgrade_needed']);
-        $session->set('user-is_ready_for_usage', $userInfo['is_ready_for_usage']);
-        $session->set('user-personal_folder_enabled', $userInfo['personal_folder']);
-        $session->set(
-            'user-tree_load_strategy',
-            (isset($userInfo['treeloadstrategy']) === false || empty($userInfo['treeloadstrategy']) === true) ? 'full' : $userInfo['treeloadstrategy']
-        );
-        $session->set(
-            'user-split_view_mode',
-            (isset($userInfo['split_view_mode']) === false || empty($userInfo['split_view_mode']) === true) ? 0 : (int) $userInfo['split_view_mode']
-        );
-        $session->set(
-            'user-show_subfolders',
-            (isset($userInfo['show_subfolders']) === false || empty($userInfo['show_subfolders']) === true) ? 0 : (int) $userInfo['show_subfolders']
-        );
-        $session->set('user-language', $userInfo['user_language']);
-        $session->set('user-timezone', $userInfo['usertimezone']);
-        $session->set('user-keys_recovery_time', $userInfo['keys_recovery_time']);
+        // Build user session - Extracted to separate function for readability
+        $sessionData = buildUserSession($session, $userInfo, $username, $passwordClear, $SETTINGS, $lifetime);
+        $old_key = $sessionData['old_key'];
+        $returnKeys = $sessionData['returnKeys'];
         
-        // manage session expiration
-        $session->set('user-session_duration', (int) $lifetime);
-
-        // User signature keys
-        $returnKeys = prepareUserEncryptionKeys($userInfo, $passwordClear, $SETTINGS);
-        $session->set('user-public_key', $returnKeys['public_key']);
+        // Setup user roles and permissions - Extracted to separate function for readability
+        $rolesDbUpdateData = setupUserRolesAndPermissions($session, $userInfo, $SETTINGS);
         
-        // Did user has his AD password changed
-        if (null !== $session->get('user-private_key_recovered') && $session->get('user-private_key_recovered') === true) {
-            $session->set('user-private_key', $session->get('user-private_key'));
-        } else {
-            $session->set('user-private_key', $returnKeys['private_key_clear']);
-        }
-
-        // API key
-        $session->set(
-            'user-api_key',
-            empty($userInfo['api_key']) === false ? base64_decode(decryptUserObjectKey($userInfo['api_key'], $returnKeys['private_key_clear'])) : '',
-        );
+        // Perform post-login tasks - Extracted to separate function for readability
+        $isNewExternalUser = $userLdap['user_initial_creation_through_external_ad'] === true 
+            || $userOauth2['retExternalAD']['has_been_created'] === 1;
         
-        $session->set('user-special', $userInfo['special']);
-        $session->set('user-auth_type', $userInfo['auth_type']);
-
-        // check feedback regarding user password validity
-        $return = checkUserPasswordValidity(
+        // Merge roles DB update into returnKeys for performPostLoginTasks
+        $returnKeys['roles_db_update'] = $rolesDbUpdateData;
+        
+        performPostLoginTasks(
+            $session,
             $userInfo,
-            (int) $session->get('user-num_days_before_exp'),
-            (int) $session->get('user-last_pw_change'),
-            $SETTINGS
-        );
-        $session->set('user-validite_pw', $return['validite_pw']);
-        $session->set('user-last_pw_change', $return['last_pw_change']);
-        $session->set('user-num_days_before_exp', $return['numDaysBeforePwExpiration']);
-        $session->set('user-force_relog', $return['user_force_relog']);
-        
-        $session->set('user-last_connection', empty($userInfo['last_connexion']) === false ? (int) $userInfo['last_connexion'] : (int) time());
-        $session->set('user-latest_items', empty($userInfo['latest_items']) === false ? explode(';', $userInfo['latest_items']) : []);
-        $session->set('user-favorites', empty($userInfo['favourites']) === false ? explode(';', $userInfo['favourites']) : []);
-        $session->set('user-accessible_folders', empty($userInfo['groupes_visibles']) === false ? explode(';', $userInfo['groupes_visibles']) : []);
-        $session->set('user-no_access_folders', empty($userInfo['groupes_interdits']) === false ? explode(';', $userInfo['groupes_interdits']) : []);
-        
-        // Append with roles from AD groups
-        if (is_null($userInfo['roles_from_ad_groups']) === false) {
-            $userInfo['fonction_id'] = empty($userInfo['fonction_id'])  === true ? $userInfo['roles_from_ad_groups'] : $userInfo['fonction_id']. ';' . $userInfo['roles_from_ad_groups'];
-        }
-        // store
-        $session->set('user-roles', $userInfo['fonction_id']);
-        $session->set('user-roles_array', array_unique(array_filter(explode(';', $userInfo['fonction_id']))));
-        
-        // build array of roles
-        $session->set('user-pw_complexity', 0);
-        $session->set('system-array_roles', []);
-        if (count($session->get('user-roles_array')) > 0) {
-            $rolesList = DB::query(
-                'SELECT id, title, complexity
-                FROM ' . prefixTable('roles_title') . '
-                WHERE id IN %li',
-                $session->get('user-roles_array')
-            );
-            $excludeUser = isset($SETTINGS['exclude_user']) ? str_contains($session->get('user-login'), $SETTINGS['exclude_user']) : false;
-            $adjustPermissions = ($session->get('user-id') >= 1000000 && !$excludeUser && (isset($SETTINGS['admin_needle']) || isset($SETTINGS['manager_needle']) || isset($SETTINGS['tp_manager_needle']) || isset($SETTINGS['read_only_needle'])));
-            if ($adjustPermissions) {
-                $userInfo['admin'] = $userInfo['gestionnaire'] = $userInfo['can_manage_all_users'] = $userInfo['read_only'] = 0;
-            }
-            foreach ($rolesList as $role) {
-                SessionManager::addRemoveFromSessionAssociativeArray(
-                    'system-array_roles',
-                    [
-                        'id' => $role['id'],
-                        'title' => $role['title'],
-                    ],
-                    'add'
-                );
-                
-                if ($adjustPermissions) {
-                    if (isset($SETTINGS['admin_needle']) && str_contains($role['title'], $SETTINGS['admin_needle'])) {
-                        $userInfo['gestionnaire'] = $userInfo['can_manage_all_users'] = $userInfo['read_only'] = 0;
-                        $userInfo['admin'] = 1;
-                    }    
-                    if (isset($SETTINGS['manager_needle']) && str_contains($role['title'], $SETTINGS['manager_needle'])) {
-                        $userInfo['admin'] = $userInfo['can_manage_all_users'] = $userInfo['read_only'] = 0;
-                        $userInfo['gestionnaire'] = 1;
-                    }
-                    if (isset($SETTINGS['tp_manager_needle']) && str_contains($role['title'], $SETTINGS['tp_manager_needle'])) {
-                        $userInfo['admin'] = $userInfo['gestionnaire'] = $userInfo['read_only'] = 0;
-                        $userInfo['can_manage_all_users'] = 1;
-                    }
-                    if (isset($SETTINGS['read_only_needle']) && str_contains($role['title'], $SETTINGS['read_only_needle'])) {
-                        $userInfo['admin'] = $userInfo['gestionnaire'] = $userInfo['can_manage_all_users'] = 0;
-                        $userInfo['read_only'] = 1;
-                    }
-                }
-
-                // get highest complexity
-                if ($session->get('user-pw_complexity') < (int) $role['complexity']) {
-                    $session->set('user-pw_complexity', (int) $role['complexity']);
-                }
-            }
-        }
-
-        // Version 3.1.5 - Migrate personal items password to similar encryption protocol as public ones.
-        checkAndMigratePersonalItems($session->get('user-id'), $session->get('user-private_key'), $passwordClear);
-
-        // Set some settings
-        $SETTINGS['update_needed'] = '';
-
-        // Update table
-        $updateData = [
-            'key_tempo' => $session->get('key'),
-            'last_connexion' => time(),
-            'timestamp' => time(),
-            'disabled' => 0,
-            'session_end' => $session->get('user-session_duration'),
-            'user_ip' => $dataReceived['client'],
-        ];
-        // Update keys in DB if needed (for transparent recovery migration)
-        if (!empty($returnKeys['update_keys_in_db'])) {
-            $updateData = array_merge($updateData, $returnKeys['update_keys_in_db']);
-        }
-        // User's roles - Convert , to ; (will be saved in final UPDATE)
-        if (strpos($userInfo['fonction_id'] !== NULL ? (string) $userInfo['fonction_id'] : '', ',') !== -1) {
-            $userInfo['fonction_id'] = str_replace(',', ';', (string) $userInfo['fonction_id']);    // Convert , to ;
-            $updateData['fonction_id'] = $userInfo['fonction_id'];
-        }        
-        if (isset($adjustPermissions) && $adjustPermissions) {
-            $session->set('user-admin', (int) $userInfo['admin']);
-            $session->set('user-manager', (int) $userInfo['gestionnaire']);
-            $session->set('user-can_manage_all_users',(int)  $userInfo['can_manage_all_users']);
-            $session->set('user-read_only', (int) $userInfo['read_only']);
-            // Permissions will be saved in final UPDATE below
-
-            $updateData['admin'] = $userInfo['admin'];
-            $updateData['gestionnaire'] = $userInfo['gestionnaire'];
-            $updateData['can_manage_all_users'] = $userInfo['can_manage_all_users'];
-            $updateData['read_only'] = $userInfo['read_only'];
-        }
-
-        // UPdate user info in table
-        DB::update(
-            prefixTable('users'),
-            $updateData, 
-            'id=%i', 
-            $userInfo['id']
+            $passwordClear,
+            $SETTINGS,
+            $dataReceived,
+            $returnKeys,
+            $isNewExternalUser
         );
         
-        // Get user's rights
-        if ($userLdap['user_initial_creation_through_external_ad'] === true || $userOauth2['retExternalAD']['has_been_created'] === 1) {
-            // is new LDAP user. Show only his personal folder
-            if ($SETTINGS['enable_pf_feature'] === '1') {
-                $session->set('user-personal_visible_folders', [$userInfo['id']]);
-                $session->set('user-personal_folders', [$userInfo['id']]);
-            } else {
-                $session->set('user-personal_visible_folders', []);
-                $session->set('user-personal_folders', []);
-            }
-            $session->set('user-roles_array', []);
-            $session->set('user-read_only_folders', []);
-            $session->set('user-list_folders_limited', []);
-            $session->set('system-list_folders_editable_by_role', []);
-            $session->set('system-list_restricted_folders_for_items', []);
-            $session->set('user-nb_folders', 1);
-            $session->set('user-nb_roles', 1);
-        } else {
-            identifyUserRights(
-                $userInfo['groupes_visibles'],
-                $session->get('user-no_access_folders'),
-                $userInfo['admin'],
-                $userInfo['fonction_id'],
-                $SETTINGS
-            );
-        }
-        // Get some more elements
-        $session->set('system-screen_height', $dataReceived['screenHeight']);
-
-        // Get cahce tree info
-        $cacheTreeData = DB::queryFirstRow(
-            'SELECT visible_folders
-            FROM ' . prefixTable('cache_tree') . '
-            WHERE user_id=%i',
-            (int) $session->get('user-id')
-        );
-        if (DB::count() > 0 && empty($cacheTreeData['visible_folders']) === true) {
-            $session->set('user-cache_tree', '');
-            // Prepare new task
-            DB::insert(
-                prefixTable('background_tasks'),
-                array(
-                    'created_at' => time(),
-                    'process_type' => 'user_build_cache_tree',
-                    'arguments' => json_encode([
-                        'user_id' => (int) $session->get('user-id'),
-                    ], JSON_HEX_QUOT | JSON_HEX_TAG),
-                    'updated_at' => null,
-                    'finished_at' => null,
-                    'output' => null,
-                )
-            );
-        } else {
-            $session->set('user-cache_tree', $cacheTreeData['visible_folders']);
-        }
-
         // send back the random key
         $return = $dataReceived['randomstring'];
+
         // Send email
         if (
             isKeyExistingAndEqual('enable_send_email_on_user_login', 1, $SETTINGS) === true
@@ -729,29 +511,14 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         // Ensure Complexity levels are translated
         defineComplexity();
         echo prepareExchangedData(
-            [
-                'value' => $return,
-                'user_id' => $session->get('user-id') !== null ? $session->get('user-id') : '',
-                'user_admin' => null !== $session->get('user-admin') ? $session->get('user-admin') : 0,
-                'initial_url' => $antiXss->xss_clean($sessionUrl),
-                'pwd_attempts' => 0,
-                'error' => false,
-                'message' => $session->has('user-upgrade_needed') && (int) $session->get('user-upgrade_needed') && (int) $session->get('user-upgrade_needed') === 1 ? 'ask_for_otc' : '',
-                'first_connection' => $session->get('user-validite_pw') === 0 ? true : false,
-                'password_complexity' => TP_PW_COMPLEXITY[$session->get('user-pw_complexity')][1],
-                'password_change_expected' => $userInfo['special'] === 'password_change_expected' ? true : false,
-                'private_key_conform' => $session->get('user-id') !== null
-                    && empty($session->get('user-private_key')) === false
-                    && $session->get('user-private_key') !== 'none' ? true : false,
-                'session_key' => $session->get('key'),
-                'can_create_root_folder' => null !== $session->get('user-can_create_root_folder') ? (int) $session->get('user-can_create_root_folder') : '',
-                'upgrade_needed' => isset($userInfo['upgrade_needed']) === true ? (int) $userInfo['upgrade_needed'] : 0,
-                'special' => isset($userInfo['special']) === true ? (int) $userInfo['special'] : 0,
-                'split_view_mode' => isset($userInfo['split_view_mode']) === true ? (int) $userInfo['split_view_mode'] : 0,
-                'show_subfolders' => isset($userInfo['show_subfolders']) === true ? (int) $userInfo['show_subfolders'] : 0,
-                'validite_pw' => $session->get('user-validite_pw') !== null ? $session->get('user-validite_pw') : '',
-                'num_days_before_exp' => $session->get('user-num_days_before_exp') !== null ? (int) $session->get('user-num_days_before_exp') : '',
-            ],
+            buildAuthResponse(
+                $session,
+                $sessionUrl,
+                (int) $sessionPwdAttempts,
+                $return,
+                $userInfo,
+                true  // success
+            ),
             'encode',
             $old_key
         );
@@ -761,49 +528,544 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     } elseif ((int) $userInfo['disabled'] === 1) {
         // User and password is okay but account is locked
         echo prepareExchangedData(
-            [
-                'value' => $return,
-                'user_id' => $session->get('user-id') !== null ? (int) $session->get('user-id') : '',
-                'user_admin' => null !== $session->get('user-admin') ? $session->get('user-admin') : 0,
-                'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
-                'pwd_attempts' => 0,
-                'error' => 'user_is_locked',
-                'message' => $lang->get('account_is_locked'),
-                'first_connection' => $session->get('user-validite_pw') === 0 ? true : false,
-                'password_complexity' => TP_PW_COMPLEXITY[$session->get('user-pw_complexity')][1],
-                'password_change_expected' => $userInfo['special'] === 'password_change_expected' ? true : false,
-                'private_key_conform' => $session->has('user-private_key') && null !== $session->get('user-private_key')
-                    && empty($session->get('user-private_key')) === false
-                    && $session->get('user-private_key') !== 'none' ? true : false,
-                'session_key' => $session->get('key'),
-                'can_create_root_folder' => null !== $session->get('user-can_create_root_folder') ? (int) $session->get('user-can_create_root_folder') : '',
-            ],
+            buildAuthResponse(
+                $session,
+                $sessionUrl,
+                0,
+                $return,
+                $userInfo,
+                false,  // not success
+                'user_is_locked',
+                $lang->get('account_is_locked')
+            ),
             'encode'
         );
         return false;
     }
 
     echo prepareExchangedData(
-        [
-            'value' => $return,
-            'user_id' => $session->get('user-id') !== null ? (int) $session->get('user-id') : '',
-            'user_admin' => null !== $session->get('user-admin') ? $session->get('user-admin') : 0,
-            'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
-            'pwd_attempts' => (int) $sessionPwdAttempts,
-            'error' => true,
-            'message' => $lang->get('error_not_allowed_to_authenticate'),
-            'first_connection' => $session->get('user-validite_pw') === 0 ? true : false,
-            'password_complexity' => TP_PW_COMPLEXITY[$session->get('user-pw_complexity')][1],
-            'password_change_expected' => $userInfo['special'] === 'password_change_expected' ? true : false,
-            'private_key_conform' => $session->get('user-id') !== null
-                    && empty($session->get('user-private_key')) === false
-                    && $session->get('user-private_key') !== 'none' ? true : false,
-            'session_key' => $session->get('key'),
-            'can_create_root_folder' => null !== $session->get('user-can_create_root_folder') ? (int) $session->get('user-can_create_root_folder') : '',
-        ],
+        buildAuthResponse(
+            $session,
+            $sessionUrl,
+            $sessionPwdAttempts,
+            $return,
+            $userInfo,
+            false,  // not success
+            true,
+            $lang->get('error_not_allowed_to_authenticate')
+        ),
         'encode'
     );
     return false;
+}
+
+/**
+ * Build authentication response array
+ * Unified function to avoid code duplication in identifyUser()
+ *
+ * @param SessionManager $session
+ * @param string $sessionUrl
+ * @param int $sessionPwdAttempts
+ * @param string $returnValue
+ * @param array $userInfo
+ * @param bool $success
+ * @param string|bool $errorType
+ * @param string $errorMessage
+ * @return array
+ */
+function buildAuthResponse(
+    $session,
+    string $sessionUrl,
+    int $sessionPwdAttempts,
+    string $returnValue,
+    array $userInfo,
+    bool $success = true,
+    $errorType = false,
+    string $errorMessage = ''
+): array {
+    $antiXss = new AntiXSS();
+    $session = SessionManager::getSession();
+    
+    // Base response (common to all responses)
+    $response = [
+        'value' => $returnValue,
+        'user_id' => $session->get('user-id') !== null ? (int) $session->get('user-id') : '',
+        'user_admin' => null !== $session->get('user-admin') ? (int) $session->get('user-admin') : 0,
+        'initial_url' => $success ? $antiXss->xss_clean($sessionUrl) : $sessionUrl,
+        'pwd_attempts' => $success ? 0 : $sessionPwdAttempts,
+        'first_connection' => $session->get('user-validite_pw') === 0 ? true : false,
+        'password_complexity' => TP_PW_COMPLEXITY[$session->get('user-pw_complexity')][1],
+        'password_change_expected' => ($userInfo['special'] ?? '') === 'password_change_expected' ? true : false,
+        'private_key_conform' => $session->get('user-id') !== null
+            && empty($session->get('user-private_key')) === false
+            && $session->get('user-private_key') !== 'none' ? true : false,
+        'session_key' => $session->get('key'),
+        'can_create_root_folder' => null !== $session->get('user-can_create_root_folder') ? (int) $session->get('user-can_create_root_folder') : '',
+    ];
+
+    // Add error or success specific fields
+    if (!$success) {
+        $response['error'] = $errorType === false ? true : $errorType;
+        $response['message'] = $errorMessage;
+    } else {
+        // Success-specific fields
+        $response['error'] = false;
+        $response['message'] = $session->has('user-upgrade_needed') 
+            && (int) $session->get('user-upgrade_needed') 
+            && (int) $session->get('user-upgrade_needed') === 1 
+                ? 'ask_for_otc' 
+                : '';
+        $response['upgrade_needed'] = isset($userInfo['upgrade_needed']) === true ? (int) $userInfo['upgrade_needed'] : 0;
+        $response['special'] = isset($userInfo['special']) === true ? (int) $userInfo['special'] : 0;
+        $response['split_view_mode'] = isset($userInfo['split_view_mode']) === true ? (int) $userInfo['split_view_mode'] : 0;
+        $response['show_subfolders'] = isset($userInfo['show_subfolders']) === true ? (int) $userInfo['show_subfolders'] : 0;
+        $response['validite_pw'] = $session->get('user-validite_pw') !== null ? $session->get('user-validite_pw') : '';
+        $response['num_days_before_exp'] = $session->get('user-num_days_before_exp') !== null ? (int) $session->get('user-num_days_before_exp') : '';
+    }
+
+    return $response;
+}
+
+/**
+ * Build and configure user session variables
+ * Extracts session configuration logic from identifyUser()
+ *
+ * @param SessionManager $session
+ * @param array $userInfo
+ * @param string $username
+ * @param string $passwordClear
+ * @param array $SETTINGS
+ * @param int $lifetime
+ * @return array Returns encryption keys data
+ */
+function buildUserSession(
+    $session,
+    array $userInfo,
+    string $username,
+    string $passwordClear,
+    array $SETTINGS,
+    int $lifetime
+): array {
+    $session = SessionManager::getSession();
+
+    // Save old key for response encryption
+    $old_key = $session->get('key');
+
+    // Good practice: reset PHPSESSID and key after successful authentication
+    $session->migrate();
+    $session->set('key', generateQuickPassword(30, false));
+
+    // Save account in SESSION - Basic user info
+    $session->set('user-login', stripslashes($username));
+    $session->set('user-name', empty($userInfo['name']) === false ? stripslashes($userInfo['name']) : '');
+    $session->set('user-lastname', empty($userInfo['lastname']) === false ? stripslashes($userInfo['lastname']) : '');
+    $session->set('user-id', (int) $userInfo['id']);
+    $session->set('user-admin', (int) $userInfo['admin']);
+    $session->set('user-manager', (int) $userInfo['gestionnaire']);
+    $session->set('user-can_manage_all_users', $userInfo['can_manage_all_users']);
+    $session->set('user-read_only', $userInfo['read_only']);
+    $session->set('user-last_pw_change', $userInfo['last_pw_change']);
+    $session->set('user-last_pw', $userInfo['last_pw']);
+    $session->set('user-force_relog', $userInfo['force-relog']);
+    $session->set('user-can_create_root_folder', $userInfo['can_create_root_folder']);
+    $session->set('user-email', $userInfo['email']);
+    $session->set('user-avatar', $userInfo['avatar']);
+    $session->set('user-avatar_thumb', $userInfo['avatar_thumb']);
+    $session->set('user-upgrade_needed', $userInfo['upgrade_needed']);
+    $session->set('user-is_ready_for_usage', $userInfo['is_ready_for_usage']);
+    $session->set('user-personal_folder_enabled', $userInfo['personal_folder']);
+    $session->set(
+        'user-tree_load_strategy',
+        (isset($userInfo['treeloadstrategy']) === false || empty($userInfo['treeloadstrategy']) === true) ? 'full' : $userInfo['treeloadstrategy']
+    );
+    $session->set(
+        'user-split_view_mode',
+        (isset($userInfo['split_view_mode']) === false || empty($userInfo['split_view_mode']) === true) ? 0 : (int) $userInfo['split_view_mode']
+    );
+    $session->set(
+        'user-show_subfolders',
+        (isset($userInfo['show_subfolders']) === false || empty($userInfo['show_subfolders']) === true) ? 0 : (int) $userInfo['show_subfolders']
+    );
+    $session->set('user-language', $userInfo['user_language']);
+    $session->set('user-timezone', $userInfo['usertimezone']);
+    $session->set('user-keys_recovery_time', $userInfo['keys_recovery_time']);
+    
+    // Manage session expiration
+    $session->set('user-session_duration', (int) $lifetime);
+
+    // User signature keys
+    $returnKeys = prepareUserEncryptionKeys($userInfo, $passwordClear, $SETTINGS);
+    $session->set('user-public_key', $returnKeys['public_key']);
+    
+    // Did user has his AD password changed
+    if (null !== $session->get('user-private_key_recovered') && $session->get('user-private_key_recovered') === true) {
+        $session->set('user-private_key', $session->get('user-private_key'));
+    } else {
+        $session->set('user-private_key', $returnKeys['private_key_clear']);
+    }
+
+    // API key
+    $session->set(
+        'user-api_key',
+        empty($userInfo['api_key']) === false ? base64_decode(decryptUserObjectKey($userInfo['api_key'], $returnKeys['private_key_clear'])) : '',
+    );
+    
+    $session->set('user-special', $userInfo['special']);
+    $session->set('user-auth_type', $userInfo['auth_type']);
+
+    // Check feedback regarding user password validity
+    $return = checkUserPasswordValidity(
+        $userInfo,
+        (int) $session->get('user-num_days_before_exp'),
+        (int) $session->get('user-last_pw_change'),
+        $SETTINGS
+    );
+    $session->set('user-validite_pw', $return['validite_pw']);
+    $session->set('user-last_pw_change', $return['last_pw_change']);
+    $session->set('user-num_days_before_exp', $return['numDaysBeforePwExpiration']);
+    $session->set('user-force_relog', $return['user_force_relog']);
+    
+    $session->set('user-last_connection', empty($userInfo['last_connexion']) === false ? (int) $userInfo['last_connexion'] : (int) time());
+    $session->set('user-latest_items', empty($userInfo['latest_items']) === false ? explode(';', $userInfo['latest_items']) : []);
+    $session->set('user-favorites', empty($userInfo['favourites']) === false ? explode(';', $userInfo['favourites']) : []);
+    $session->set('user-accessible_folders', empty($userInfo['groupes_visibles']) === false ? explode(';', $userInfo['groupes_visibles']) : []);
+    $session->set('user-no_access_folders', empty($userInfo['groupes_interdits']) === false ? explode(';', $userInfo['groupes_interdits']) : []);
+
+    return [
+        'old_key' => $old_key,
+        'returnKeys' => $returnKeys,
+    ];
+}
+
+/**
+ * Perform post-login tasks
+ * Handles migration, DB updates, rights configuration, cache and email notifications
+ *
+ * @param SessionManager $session
+ * @param array $userInfo
+ * @param string $passwordClear
+ * @param array $SETTINGS
+ * @param array $dataReceived
+ * @param array $returnKeys
+ * @param bool $isNewExternalUser
+ * @return void
+ */
+function performPostLoginTasks(
+    $session,
+    array $userInfo,
+    string $passwordClear,
+    array $SETTINGS,
+    array $dataReceived,
+    array $returnKeys,
+    bool $isNewExternalUser
+): void {
+    $session = SessionManager::getSession();
+
+    // Version 3.1.5 - Migrate personal items password to similar encryption protocol as public ones.
+    checkAndMigratePersonalItems($session->get('user-id'), $session->get('user-private_key'), $passwordClear);
+
+    // Set some settings
+    $SETTINGS['update_needed'] = '';
+
+    // Update table - Final user update in database
+    $finalUpdateData = [
+        'key_tempo' => $session->get('key'),
+        'last_connexion' => time(),
+        'timestamp' => time(),
+        'disabled' => 0,
+        'session_end' => $session->get('user-session_duration'),
+        'user_ip' => $dataReceived['client'],
+    ];
+
+    // Merge encryption keys update if needed
+    if (!empty($returnKeys['update_keys_in_db'])) {
+        $finalUpdateData = array_merge($finalUpdateData, $returnKeys['update_keys_in_db']);
+    }
+    
+    // Merge role-based permissions update if needed
+    if (!empty($returnKeys['roles_db_update'])) {
+        $finalUpdateData = array_merge($finalUpdateData, $returnKeys['roles_db_update']);
+    }
+    
+    // Merge fonction_id conversion if needed
+    if (strpos($userInfo['fonction_id'] ?? '', ';') !== false) {
+        $finalUpdateData['fonction_id'] = $userInfo['fonction_id'];
+    }
+
+    DB::update(
+        prefixTable('users'),
+        $finalUpdateData,
+        'id=%i',
+        $userInfo['id']
+    );
+    
+    // Get user's rights
+    if ($isNewExternalUser) {
+        // is new LDAP/OAuth2 user. Show only his personal folder
+        if ($SETTINGS['enable_pf_feature'] === '1') {
+            $session->set('user-personal_visible_folders', [$userInfo['id']]);
+            $session->set('user-personal_folders', [$userInfo['id']]);
+        } else {
+            $session->set('user-personal_visible_folders', []);
+            $session->set('user-personal_folders', []);
+        }
+        $session->set('user-roles_array', []);
+        $session->set('user-read_only_folders', []);
+        $session->set('user-list_folders_limited', []);
+        $session->set('system-list_folders_editable_by_role', []);
+        $session->set('system-list_restricted_folders_for_items', []);
+        $session->set('user-nb_folders', 1);
+        $session->set('user-nb_roles', 1);
+    } else {
+        identifyUserRights(
+            $userInfo['groupes_visibles'],
+            $session->get('user-no_access_folders'),
+            $userInfo['admin'],
+            $userInfo['fonction_id'],
+            $SETTINGS
+        );
+    }
+    
+    // Get some more elements
+    $session->set('system-screen_height', $dataReceived['screenHeight']);
+
+    // Get cache tree info
+    $cacheTreeData = DB::queryFirstRow(
+        'SELECT visible_folders
+        FROM ' . prefixTable('cache_tree') . '
+        WHERE user_id=%i',
+        (int) $session->get('user-id')
+    );
+    if (DB::count() > 0 && empty($cacheTreeData['visible_folders']) === true) {
+        $session->set('user-cache_tree', '');
+        // Prepare new task
+        DB::insert(
+            prefixTable('background_tasks'),
+            array(
+                'created_at' => time(),
+                'process_type' => 'user_build_cache_tree',
+                'arguments' => json_encode([
+                    'user_id' => (int) $session->get('user-id'),
+                ], JSON_HEX_QUOT | JSON_HEX_TAG),
+                'updated_at' => null,
+                'finished_at' => null,
+                'output' => null,
+            )
+        );
+    } else {
+        $session->set('user-cache_tree', $cacheTreeData['visible_folders']);
+    }
+
+    // Send email notification if enabled
+    $lang = new Language($session->get('user-language') ?? 'english');
+    if (
+        isKeyExistingAndEqual('enable_send_email_on_user_login', 1, $SETTINGS) === true
+        && (int) $userInfo['admin'] !== 1
+    ) {
+        // get all Admin users
+        $val = DB::queryFirstRow('SELECT email FROM ' . prefixTable('users') . " WHERE admin = %i and email != ''", 1);
+        if (DB::count() > 0) {
+            // Add email to table
+            prepareSendingEmail(
+                $lang->get('email_subject_on_user_login'),
+                str_replace(
+                    [
+                        '#tp_user#',
+                        '#tp_date#',
+                        '#tp_time#',
+                    ],
+                    [
+                        ' ' . $session->get('user-login') . ' (IP: ' . getClientIpServer() . ')',
+                        date($SETTINGS['date_format'], (int) $session->get('user-last_connection')),
+                        date($SETTINGS['time_format'], (int) $session->get('user-last_connection')),
+                    ],
+                    $lang->get('email_body_on_user_login')
+                ),
+                $val['email'],
+                $lang->get('administrator')
+            );
+        }
+    }
+}
+
+/**
+ * Determine if user permissions should be adjusted based on role names
+ * Logic: Users with ID >= 1000000 get permissions from role "needles" in titles
+ *
+ * @param int $userId
+ * @param string $userLogin
+ * @param array $SETTINGS
+ * @return bool
+ */
+function shouldAdjustPermissionsFromRoleNames(int $userId, string $userLogin, array $SETTINGS): bool
+{
+    if ($userId < 1000000) {
+        return false;
+    }
+
+    $excludeUser = isset($SETTINGS['exclude_user']) ? str_contains($userLogin, $SETTINGS['exclude_user']) : false;
+    if ($excludeUser) {
+        return false;
+    }
+
+    return isset($SETTINGS['admin_needle']) 
+        || isset($SETTINGS['manager_needle']) 
+        || isset($SETTINGS['tp_manager_needle']) 
+        || isset($SETTINGS['read_only_needle']);
+}
+
+/**
+ * Apply role-based permissions using "needle" detection in role titles
+ * 
+ * @param array $role
+ * @param array $currentPermissions
+ * @param array $SETTINGS
+ * @return array Updated permissions
+ */
+function applyRoleNeedlePermissions(array $role, array $currentPermissions, array $SETTINGS): array
+{
+    $needleConfig = [
+        'admin_needle' => [
+            'admin' => 1,
+            'gestionnaire' => 0,
+            'can_manage_all_users' => 0,
+            'read_only' => 0,
+        ],
+        'manager_needle' => [
+            'admin' => 0,
+            'gestionnaire' => 1,
+            'can_manage_all_users' => 0,
+            'read_only' => 0,
+        ],
+        'tp_manager_needle' => [
+            'admin' => 0,
+            'gestionnaire' => 0,
+            'can_manage_all_users' => 1,
+            'read_only' => 0,
+        ],
+        'read_only_needle' => [
+            'admin' => 0,
+            'gestionnaire' => 0,
+            'can_manage_all_users' => 0,
+            'read_only' => 1,
+        ],
+    ];
+
+    foreach ($needleConfig as $needleSetting => $permissions) {
+        if (isset($SETTINGS[$needleSetting]) && str_contains($role['title'], $SETTINGS[$needleSetting])) {
+            return $permissions;
+        }
+    }
+
+    return $currentPermissions;
+}
+
+/**
+ * Setup user roles and permissions
+ * Handles role conversion, AD groups merge, and permission calculation
+ *
+ * @param SessionManager $session
+ * @param array $userInfo (passed by reference to allow modifications)
+ * @param array $SETTINGS
+ * @return array DB update data if permissions were adjusted
+ */
+function setupUserRolesAndPermissions($session, array &$userInfo, array $SETTINGS): array
+{
+    $session = SessionManager::getSession();
+
+    // User's roles - Convert , to ; if needed
+    if (strpos($userInfo['fonction_id'] !== NULL ? (string) $userInfo['fonction_id'] : '', ',') !== -1) {
+        $userInfo['fonction_id'] = str_replace(',', ';', (string) $userInfo['fonction_id']);
+    }
+    
+    // Append with roles from AD groups
+    if (is_null($userInfo['roles_from_ad_groups']) === false) {
+        $userInfo['fonction_id'] = empty($userInfo['fonction_id']) === true 
+            ? $userInfo['roles_from_ad_groups'] 
+            : $userInfo['fonction_id'] . ';' . $userInfo['roles_from_ad_groups'];
+    }
+    
+    // Store roles in session
+    $session->set('user-roles', $userInfo['fonction_id']);
+    $session->set('user-roles_array', array_unique(array_filter(explode(';', $userInfo['fonction_id']))));
+    
+    // Build array of roles and calculate permissions
+    $session->set('user-pw_complexity', 0);
+    $session->set('system-array_roles', []);
+    
+    $dbUpdateData = [];
+    
+    if (count($session->get('user-roles_array')) > 0) {
+        // Get roles from database
+        $rolesList = DB::query(
+            'SELECT id, title, complexity
+            FROM ' . prefixTable('roles_title') . '
+            WHERE id IN %li',
+            $session->get('user-roles_array')
+        );
+        
+        // Check if we should adjust permissions based on role names
+        $adjustPermissions = shouldAdjustPermissionsFromRoleNames(
+            $session->get('user-id'),
+            $session->get('user-login'),
+            $SETTINGS
+        );
+        
+        if ($adjustPermissions) {
+            // Reset all permissions initially
+            $userInfo['admin'] = $userInfo['gestionnaire'] = $userInfo['can_manage_all_users'] = $userInfo['read_only'] = 0;
+        }
+        
+        // Process each role
+        foreach ($rolesList as $role) {
+            // Add to session roles array
+            SessionManager::addRemoveFromSessionAssociativeArray(
+                'system-array_roles',
+                [
+                    'id' => $role['id'],
+                    'title' => $role['title'],
+                ],
+                'add'
+            );
+            
+            // Adjust permissions based on role title "needles"
+            if ($adjustPermissions) {
+                $newPermissions = applyRoleNeedlePermissions($role, [
+                    'admin' => $userInfo['admin'],
+                    'gestionnaire' => $userInfo['gestionnaire'],
+                    'can_manage_all_users' => $userInfo['can_manage_all_users'],
+                    'read_only' => $userInfo['read_only'],
+                ], $SETTINGS);
+                
+                $userInfo['admin'] = $newPermissions['admin'];
+                $userInfo['gestionnaire'] = $newPermissions['gestionnaire'];
+                $userInfo['can_manage_all_users'] = $newPermissions['can_manage_all_users'];
+                $userInfo['read_only'] = $newPermissions['read_only'];
+            }
+
+            // Get highest complexity
+            if ($session->get('user-pw_complexity') < (int) $role['complexity']) {
+                $session->set('user-pw_complexity', (int) $role['complexity']);
+            }
+        }
+        
+        // If permissions were adjusted, update session and prepare DB update
+        if ($adjustPermissions) {
+            $session->set('user-admin', (int) $userInfo['admin']);
+            $session->set('user-manager', (int) $userInfo['gestionnaire']);
+            $session->set('user-can_manage_all_users', (int) $userInfo['can_manage_all_users']);
+            $session->set('user-read_only', (int) $userInfo['read_only']);
+            
+            $dbUpdateData = [
+                'admin' => $userInfo['admin'],
+                'gestionnaire' => $userInfo['gestionnaire'],
+                'can_manage_all_users' => $userInfo['can_manage_all_users'],
+                'read_only' => $userInfo['read_only'],
+            ];
+        }
+    }
+    
+    return $dbUpdateData;
 }
 
 /**
