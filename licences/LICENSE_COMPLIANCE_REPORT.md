@@ -1,6 +1,6 @@
 # Teampass License Compliance Report
 
-**Generated:** 2025-11-24 10:17:26
+**Generated:** 2025-11-25 14:25:01
 **Project License:** GNU General Public License v3.0
 
 ## PHP Dependencies (Composer)
@@ -160,4 +160,4 @@ php licences/compliance-checker.php
 
 ---
 
-*Auto-generated report - Last updated: 2025-11-24 10:17:26*
+*Auto-generated report - Last updated: 2025-11-25 14:25:01*

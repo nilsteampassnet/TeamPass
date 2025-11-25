@@ -32,6 +32,8 @@
  // - selected_items_to_be_imported
 
 return array(
+    'copied' => 'Copied',
+    'opened_edit_form_of' => 'Opened edit form of',
     'admin_info_header' => 'Administration Dashboard',
     'admin_last_refresh' => 'Last refresh',
     'admin_view_changelog_github' => 'View Changelog on GitHub',
@@ -46,10 +48,7 @@ return array(
     'public' => 'Public',
     'logs_24h' => 'Logs (24h)',
     'accesses' => 'Accesses',
-    'errors' => 'Errors',
-    'open' => 'Open',
     'live_activity' => 'Live Activity',
-    'loading' => 'Loading...',
     'no_recent_activity' => 'No recent activity',
     'view_all_logs' => 'View all logs',
     'ago' => 'ago',

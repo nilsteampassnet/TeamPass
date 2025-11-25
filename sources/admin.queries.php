@@ -2953,6 +2953,12 @@ case 'get_live_activity':
             case 'at_manual':
                 $actionText = $lang->get('action_manual');
                 break;
+            case 'at_password_shown_edit_form':
+                $actionText = $lang->get('opened_edit_form_of');
+                break;
+            case 'at_copy':
+                $actionText = $lang->get('copied');
+                break;
             default:
                 $actionText = $activity['action'];
         }
@@ -2962,7 +2968,7 @@ case 'get_live_activity':
             'user_id' => (int) $activity['id_user'],
             'user_login' => $activity['login'] ?? $lang->get('unknown'),
             'action' => $activity['action'],
-            'action_text' => $actionText,
+            'action_text' => strtolower($actionText),
             'item_id' => $activity['id_item'] ? (int) $activity['id_item'] : null,
             'item_label' => $activity['label'] ?? null,
         );

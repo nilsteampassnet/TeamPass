@@ -1173,5 +1173,7 @@ return array(
     'admin_tasks_status' => 'État des tâches',
     'database_integrity' => 'Intégrité de la base de données',
     'get_personal_items_migration_status' => 'Obtenir l&apos;état de la migration des éléments personnels',
+    'copied' => 'A copié',
+    'opened_edit_form_of' => 'Ouverture en édition de',
 
 );
