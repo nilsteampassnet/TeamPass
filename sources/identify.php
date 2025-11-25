@@ -497,8 +497,8 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                         ],
                         [
                             ' ' . $session->get('user-login') . ' (IP: ' . getClientIpServer() . ')',
-                            date($SETTINGS['date_format'], (int) $session->get('user-last_connection')),
-                            date($SETTINGS['time_format'], (int) $session->get('user-last_connection')),
+                            date($SETTINGS['date_format'], (int) time()),
+                            date($SETTINGS['time_format'], (int) time()),
                         ],
                         $lang->get('email_body_on_user_login')
                     ),
@@ -876,8 +876,8 @@ function performPostLoginTasks(
                     ],
                     [
                         ' ' . $session->get('user-login') . ' (IP: ' . getClientIpServer() . ')',
-                        date($SETTINGS['date_format'], (int) $session->get('user-last_connection')),
-                        date($SETTINGS['time_format'], (int) $session->get('user-last_connection')),
+                        date($SETTINGS['date_format'], (int) time()),
+                        date($SETTINGS['time_format'], (int) time()),
                     ],
                     $lang->get('email_body_on_user_login')
                 ),

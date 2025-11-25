@@ -30,14 +30,283 @@ declare(strict_types=1);
  */
 
 use TeampassClasses\SessionManager\SessionManager;
+use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use TeampassClasses\Language\Language;
+use TeampassClasses\NestedTree\NestedTree;
+use TeampassClasses\PerformChecks\PerformChecks;
+use TeampassClasses\ConfigManager\ConfigManager;
 
+// Load functions
+require_once __DIR__.'/../sources/main.functions.php';
+
+// init
+loadClasses('DB');
 $session = SessionManager::getSession();
+$request = SymfonyRequest::createFromGlobals();
 $lang = new Language($session->get('user-language') ?? 'english');
+
+// Load config
+$configManager = new ConfigManager();
+$SETTINGS = $configManager->getAllSettings();
+
+// Do checks
+$checkUserAccess = new PerformChecks(
+    dataSanitizer(
+        [
+            'type' => htmlspecialchars($request->request->get('type', ''), ENT_QUOTES, 'UTF-8'),
+        ],
+        [
+            'type' => 'trim|escape',
+        ],
+    ),
+    [
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
+    ]
+);
+// Handle the case
+echo $checkUserAccess->caseHandler();
+if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('admin') === false) {
+    // Not allowed page
+    $session->set('system-error_code', ERR_NOT_ALLOWED);
+    include $SETTINGS['cpassman_dir'] . '/error.php';
+    exit;
+}
+
+// Define Timezone
+date_default_timezone_set($SETTINGS['timezone'] ?? 'UTC');
+
+// Set header properties
+header('Content-type: text/html; charset=utf-8');
+header('Cache-Control: no-cache, no-store, must-revalidate');
+
+// --------------------------------- //
 
 ?>
 
 <script type='text/javascript'>
+
+var requestRunning = false,
+    debugJavascript = false;
+
+/**
+ * ADMIN
+ */
+// <- PREPARE TOGGLES
+$('.toggle').toggles({
+    drag: true,
+    click: true,
+    text: {
+        on: '<?php echo $lang->get('yes'); ?>',
+        off: '<?php echo $lang->get('no'); ?>'
+    },
+    on: true,
+    animate: 250,
+    easing: 'swing',
+    width: 50,
+    height: 20,
+    type: 'compact'
+});
+$('.toggle').on('toggle', function(e, active) {
+    if (active) {
+        $("#" + e.target.id + "_input").val(1);
+        if (e.target.id == "allow_print") {
+            $("#roles_allowed_to_print_select").prop("disabled", false);
+        }
+        if (e.target.id == "anyone_can_modify") {
+            $("#form-item-row-modify").removeClass('hidden');
+        }
+        if (e.target.id == "restricted_to") {
+            $("#form-item-row-restricted").removeClass('hidden');
+        }
+    } else {
+        $("#" + e.target.id + "_input").val(0);
+        if (e.target.id == "allow_print") {
+            $("#roles_allowed_to_print_select").prop("disabled", true);
+        }
+        if (e.target.id == "anyone_can_modify") {
+            $("#form-item-row-modify").addClass('hidden');
+        }
+        if (e.target.id == "restricted_to") {
+            $("#form-item-row-restricted").addClass('hidden');
+        }
+    }
+
+    var data = {
+        "field": e.target.id,
+        "value": $("#" + e.target.id + "_input").val(),
+    }
+    if (debugJavascript === true) {
+        console.log('Sending to server:');
+        console.log(data);
+    }
+    // Store in DB   
+    $.post(
+        "sources/admin.queries.php", {
+            type: "save_option_change",
+            data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+            key: "<?php echo $session->get('key'); ?>"
+        },
+        function(data) {
+            // Handle server answer
+            try {
+                data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
+            } catch (e) {
+                // error
+                toastr.remove();
+                toastr.error(
+                    '<?php echo $lang->get('server_answer_error') . '<br />' . $lang->get('server_returned_data') . ':<br />'; ?>' + data.error,
+                    '', {
+                        closeButton: true,
+                        positionClass: 'toast-bottom-right'
+                    }
+                );
+                return false;
+            }
+            if (debugJavascript === true) {
+                console.log('Response from server:');
+                console.log(data);
+            }
+            if (data.error === false) {
+                toastr.remove();
+                toastr.success(
+                    '<?php echo $lang->get('saved'); ?>',
+                    '', {
+                        timeOut: 2000,
+                        progressBar: true
+                    }
+                );
+            }
+        }
+    );
+});
+// .-> END. TOGGLES
+
+// <- PREPARE SELECT2
+$('.select2').select2({
+    language: '<?php echo $userLang = $session->get('user-language_code'); echo isset($userLang) === null ? $userLang : 'EN'; ?>'
+});
+
+/**
+ * For MULTIPLE select2, we save the value when the dropdown is closed (to avoid multiple saves while user selects options)
+ * or when the field loses focus (click elsewhere, tab, etc.)
+*/
+$('.select2[multiple]').on('select2:close', function() {
+    var $field = $(this);
+    var field = $field.attr('id');
+    
+    if (field === '' || field === undefined || $field.hasClass('no-save') === true) {
+        return false;
+    }
+    
+    saveFieldValue($field, field, true);
+});
+
+// Also save when the field loses focus (click elsewhere, tab, etc.)
+$('.select2[multiple]').on('blur', function() {
+    var $field = $(this);
+    var field = $field.attr('id');
+    
+    if (field === '' || field === undefined || $field.hasClass('no-save') === true) {
+        return false;
+    }
+
+    // Small delay to ensure Select2 has finished processing
+    setTimeout(function() {
+        saveFieldValue($field, field, true);
+    }, 100);
+});
+
+// For SIMPLE select2 and other fields - save on change
+$(document).on('change', '.form-control-sm:not(.select2[multiple]), .setting-ldap:not(.select2[multiple])', function() {
+    var $field = $(this);
+    var field = $field.attr('id');
+    
+    if (field === '' || field === undefined || $field.hasClass('no-save') === true) {
+        return false;
+    }
+    
+    var isSelect2 = $field.hasClass('select2');
+    
+    saveFieldValue($field, field, isSelect2);
+});
+
+function saveFieldValue($field, field, isSelect2) {
+    // Prevent launch of similar query in case of doubleclick
+    if (requestRunning === true) {
+        return false;
+    }
+    
+    var value = $.isArray($field.val()) === false ? $field.val() : JSON.stringify($field.val().map(Number));
+    
+    // Sanitize value
+    if (isSelect2 === false) {
+        value = fieldDomPurifierWithWarning('#' + field, false, false, false, true);
+    }
+    
+    if (value === false) {
+        return false;
+    }
+    
+    $('#' + field).val(value);
+    
+    requestRunning = true;
+    
+    // Manage special cases
+    if (field === 'tasks_history_delay') {
+        value = parseInt(value) * 3600 * 24;
+    }
+    
+    var data = {
+        "field": field,
+        "value": value,
+    }
+    
+    // Store in DB   
+    $.post(
+        "sources/admin.queries.php", {
+            type: "save_option_change",
+            data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+            key: "<?php echo $session->get('key'); ?>"
+        },
+        function(data) {
+            // Handle server answer
+            try {
+                data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
+            } catch (e) {
+                // error
+                toastr.remove();
+                toastr.error(
+                    '<?php echo $lang->get('server_answer_error') . '<br />' . $lang->get('server_returned_data') . ':<br />'; ?>' + data.error,
+                    '', {
+                        closeButton: true,
+                        positionClass: 'toast-bottom-right'
+                    }
+                );
+                requestRunning = false;
+                return false;
+            }
+            
+            if (data.error === false) {
+                toastr.remove();
+                toastr.success(
+                    '<?php echo $lang->get('saved'); ?>',
+                    '', {
+                        timeOut: 2000,
+                        progressBar: true
+                    }
+                );
+            }
+            requestRunning = false;
+        }
+    ).fail(function() {
+        requestRunning = false;
+        toastr.error('<?php echo $lang->get('error'); ?>', '', {
+            closeButton: true,
+            positionClass: 'toast-bottom-right'
+        });
+    });
+}
 //<![CDATA[
 
 // ===================================
@@ -59,15 +328,11 @@ const AdminRefreshManager = {
             this.isPageVisible = !document.hidden
             
             if (this.isPageVisible) {
-                console.log('Page visible - resuming auto-refresh')
                 this.resumeAll()
             } else {
-                console.log('Page hidden - pausing auto-refresh')
                 this.pauseAll()
             }
         })
-        
-        console.log('AdminRefreshManager initialized')
     },
     
     /**
@@ -81,7 +346,6 @@ const AdminRefreshManager = {
      */
     start: function(name, callback, interval, countdownElementId) {
         if (!this.isPageVisible) {
-            console.log(`Not starting timer ${name} - page not visible`)
             return
         }
         
@@ -117,8 +381,6 @@ const AdminRefreshManager = {
             countdownTimer: countdownTimer,
             countdownElementId: countdownElementId
         }
-        
-        console.log(`Started timer: ${name} with interval ${interval}ms`)
     },
     
     /**
@@ -134,7 +396,6 @@ const AdminRefreshManager = {
                 clearInterval(this.timers[name].countdownTimer)
             }
             delete this.timers[name]
-            console.log(`Stopped timer: ${name}`)
         }
     },
     
@@ -150,7 +411,6 @@ const AdminRefreshManager = {
                 clearInterval(this.timers[name].countdownTimer)
             }
         })
-        console.log('All timers paused')
     },
     
     /**
@@ -177,7 +437,6 @@ const AdminRefreshManager = {
                 }, 1000)
             }
         })
-        console.log('All timers resumed')
     },
     
     /**
@@ -187,7 +446,6 @@ const AdminRefreshManager = {
      */
     stopAll: function() {
         Object.keys(this.timers).forEach(name => this.stop(name))
-        console.log('All timers stopped')
     }
 }
 
@@ -399,7 +657,6 @@ function updateHealthBadge(id, status, text) {
  * @return {void}
  */
 function initDashboardTab() {
-    console.log('Initializing dashboard tab')
     
     // Load initial data
     loadDashboardStats()
@@ -613,7 +870,6 @@ function exportStatistics() {
  */
 function handleTabChange(e) {
     const tabId = $(e.target).attr('href')
-    console.log('Tab changed to:', tabId)
     
     // Stop all refresh timers when changing tabs
     AdminRefreshManager.stopAll()
@@ -1434,9 +1690,7 @@ function performPersonalItemsMigrationCheck()
 // DOCUMENT READY
 // ===================================
 
-$(document).ready(function() {
-    console.log('Admin page initializing...')
-    
+$(document).ready(function() {    
     // Initialize refresh manager
     AdminRefreshManager.init()
     
@@ -1456,8 +1710,6 @@ $(document).ready(function() {
         performDBIntegrityCheck,
         500
     );
-    
-    console.log('Admin page initialized successfully')
 })
 
 // Cleanup on page unload

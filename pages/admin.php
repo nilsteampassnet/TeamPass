@@ -358,16 +358,22 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                             <?php
                                         }
                                         // Status on users passwords migration to new encryption Symfony Password
-                                        DB::query(
-                                            "SELECT id 
-                                            FROM ".prefixTable('users')." 
-                                            WHERE pw LIKE '$2y$10$%' 
-                                            AND pw NOT LIKE '$2y$13$%' 
-                                            AND id NOT IN (9999991,9999997,9999998,9999999)
-                                            AND (login NOT LIKE '%_deleted_%'
-                                            OR deleted_at IS NULL)"
+                                        $excluded_ids = array(9999991, 9999997, 9999998, 9999999);
+                                        $user_results = DB::query(
+                                            "SELECT login 
+                                            FROM ".prefixTable('users')."
+                                            WHERE pw LIKE %s
+                                            AND pw NOT LIKE %s
+                                            AND id NOT IN %ls
+                                            AND (login NOT LIKE %s OR deleted_at IS NULL)",
+                                            '$2y$10$%',
+                                            '$2y$13$%',
+                                            $excluded_ids,
+                                            '%_deleted_%'
                                         );
                                         if (DB::count() > 0) {
+                                            $logins_array = array_column($user_results, 'login');
+                                            $logins_list = implode(', ', $logins_array);
                                             ?>
                                         <li class="list-group-item d-flex justify-content-between align-items-center">
                                             <span><i class="fa-solid fa-hand text-warning"></i>
@@ -375,7 +381,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                             </span>
                                             <span>
                                             <i class="fa-solid fa-info-circle text-primary open-info" data-info="<?php echo DB::count();?> user accounts still use the legacy encryption library and must be migrated before upgrading to version 3.2.0.<br>
-                                            To migrate: Users must either log in once or have their password updated via the Users management page." data-size="lg" data-title="Importante notice"></i>
+                                            To migrate: Users must either log in once or have their password updated via the Users management page.<p class='mt-2'>List of remaining users: <?php echo $logins_list;?></p>" data-size="lg" data-title="Importante notice"></i>
                                             </span>
                                         </li>
                                             <?php
@@ -391,40 +397,6 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                 </div>
                             </div>
                         </div>
-                        
-                        <!-- Quick Actions Row -->
-                         <!--
-                        <div class="row">
-                            <div class="col-lg-12">
-                                <div class="card card-info">
-                                    <div class="card-header">
-                                        <h3 class="card-title">
-                                            <i class="fas fa-bolt"></i> 
-                                            <?php echo $lang->get('admin_quick_actions'); ?>
-                                        </h3>
-                                    </div>
-                                    <div class="card-body">
-                                        <button type="button" class="btn btn-primary btn-block mb-2" id="btn-reload-cache">
-                                            <i class="fas fa-sync"></i> <?php echo $lang->get('admin_action_reload_cache'); ?>
-                                        </button>
-                                        <button type="button" class="btn btn-warning btn-block mb-2" id="btn-clean-logs">
-                                            <i class="fas fa-broom"></i> <?php echo $lang->get('admin_action_clean_logs'); ?>
-                                        </button>
-                                        <button type="button" class="btn btn-info btn-block mb-2" id="btn-export-stats">
-                                            <i class="fas fa-download"></i> <?php echo $lang->get('admin_action_export_stats'); ?>
-                                        </button>
-                                        <hr>
-                                        <a href="index.php?page=users&action=new" class="btn btn-secondary btn-block mb-2">
-                                            <i class="fas fa-user-plus"></i> <?php echo $lang->get('admin_action_create_user'); ?>
-                                        </a>
-                                        <a href="index.php?page=folders&action=new" class="btn btn-secondary btn-block">
-                                            <i class="fas fa-folder-plus"></i> <?php echo $lang->get('admin_action_create_folder'); ?>
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        -->
                         
                         <!-- Live Activity and System Status Row -->
                         <div class="row">
