@@ -1051,7 +1051,7 @@ function prepareSendingEmail(
             'created_at' => time(),
             'process_type' => 'send_email',
             'arguments' => json_encode([
-                'subject' => $subject,
+                'subject' => html_entity_decode((string) $subject, ENT_QUOTES | ENT_HTML5, 'UTF-8'),
                 'receivers' => $email,
                 'body' => $body,
                 'receiver_name' => $receiverName,
