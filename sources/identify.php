@@ -513,10 +513,10 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         echo prepareExchangedData(
             buildAuthResponse(
                 $session,
-                $sessionUrl,
+                (string) $sessionUrl,
                 (int) $sessionPwdAttempts,
-                $return,
-                $userInfo,
+                (string) $return,
+                (array) $userInfo ?? [],
                 true  // success
             ),
             'encode',
@@ -530,10 +530,10 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         echo prepareExchangedData(
             buildAuthResponse(
                 $session,
-                $sessionUrl,
+                (string) $sessionUrl,
                 0,
-                $return,
-                $userInfo,
+                (string) $return,
+                (array) $userInfo ?? [],
                 false,  // not success
                 'user_is_locked',
                 $lang->get('account_is_locked')
@@ -546,10 +546,10 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     echo prepareExchangedData(
         buildAuthResponse(
             $session,
-            $sessionUrl,
-            $sessionPwdAttempts,
-            $return,
-            $userInfo,
+            (string) $sessionUrl,
+            (int) $sessionPwdAttempts,
+            (string) $return,
+            (array) $userInfo ?? [],
             false,  // not success
             true,
             $lang->get('error_not_allowed_to_authenticate')

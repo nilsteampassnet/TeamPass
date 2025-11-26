@@ -2989,7 +2989,7 @@ case 'get_live_activity':
 
 case 'get_system_status':
     /**
-     * Get system status (CPU, RAM, disk, tasks queue)
+     * Get system status (tasks queue)
      * 
      * @return array {
      *   tasks_queue: int,
