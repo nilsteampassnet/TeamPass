@@ -461,15 +461,29 @@ const AdminRefreshManager = {
 function loadDashboardStats() {
     $('#loading-stat-users, #loading-stat-items, #loading-stat-folders, #loading-stat-logs').show()
     
-    $.ajax({
-        url: 'sources/admin.queries.php',
-        type: 'POST',
-        dataType: 'json',
-        data: {
+    $.post(
+        'sources/admin.queries.php', {
             type: 'get_dashboard_stats',
             key: '<?php echo $session->get('key'); ?>'
         },
-        success: function(data) {
+        function(data) {
+            // Handle server answer
+            try {
+                data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
+                console.log(data)
+            } catch (e) {
+                // error
+                toastr.remove();
+                toastr.error(
+                    '<?php echo $lang->get('server_answer_error') . '<br />' . $lang->get('server_returned_data') . ':<br />'; ?>' + data.error,
+                    '', {
+                        closeButton: true,
+                        positionClass: 'toast-bottom-right'
+                    }
+                );
+                return false;
+            }
+
             if (data.error === false) {
                 // Users stats
                 $('#stat-users-active').text(data.users.active)
@@ -495,12 +509,10 @@ function loadDashboardStats() {
             } else {
                 showErrorToast(data.message || '<?php echo $lang->get('error_occurred'); ?>')
             }
-        },
-        error: handleAjaxError,
-        complete: function() {
+
             $('#loading-stat-users, #loading-stat-items, #loading-stat-folders, #loading-stat-logs').hide()
         }
-    })
+    );
 }
 
 /**
@@ -511,15 +523,28 @@ function loadDashboardStats() {
 function loadLiveActivity() {
     $('#loading-activity').show()
     
-    $.ajax({
-        url: 'sources/admin.queries.php',
-        type: 'POST',
-        dataType: 'json',
-        data: {
+    $.post(
+        'sources/admin.queries.php', {
             type: 'get_live_activity',
             key: '<?php echo $session->get('key'); ?>'
         },
-        success: function(data) {
+        function(data) {
+            // Handle server answer
+            try {
+                data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
+            } catch (e) {
+                // error
+                toastr.remove();
+                toastr.error(
+                    '<?php echo $lang->get('server_answer_error') . '<br />' . $lang->get('server_returned_data') . ':<br />'; ?>' + data.error,
+                    '', {
+                        closeButton: true,
+                        positionClass: 'toast-bottom-right'
+                    }
+                );
+                return false;
+            }
+
             if (data.error === false && data.activities && data.activities.length > 0) {
                 let html = ''
                 
@@ -554,12 +579,9 @@ function loadLiveActivity() {
             } else {
                 showErrorToast(data.message || '<?php echo $lang->get('error_occurred'); ?>')
             }
-        },
-        error: handleAjaxError,
-        complete: function() {
-            $('#loading-activity').hide()
+            $('#loading-activity').hide();
         }
-    })
+    );
 }
 
 /**
@@ -570,27 +592,36 @@ function loadLiveActivity() {
 function loadSystemStatus() {
     $('#loading-status').show()
     
-    $.ajax({
-        url: 'sources/admin.queries.php',
-        type: 'POST',
-        dataType: 'json',
-        data: {
+    $.post(
+        'sources/admin.queries.php', {
             type: 'get_system_status',
             key: '<?php echo $session->get('key'); ?>'
         },
-        success: function(data) {
+        function(data) {
+            // Handle server answer
+            try {
+                data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
+            } catch (e) {
+                // error
+                toastr.remove();
+                toastr.error(
+                    '<?php echo $lang->get('server_answer_error') . '<br />' . $lang->get('server_returned_data') . ':<br />'; ?>' + data.error,
+                    '', {
+                        closeButton: true,
+                        positionClass: 'toast-bottom-right'
+                    }
+                );
+                return false;
+            }
             if (data.error === false) {
                 $('#system-tasks').text(data.tasks_queue)
                 $('#system-last-cron').text(data.last_cron)
             } else {
                 showErrorToast(data.message || '<?php echo $lang->get('error_occurred'); ?>')
             }
-        },
-        error: handleAjaxError,
-        complete: function() {
-            $('#loading-status').hide()
+            $('#loading-status').hide();
         }
-    })
+    );
 }
 
 /**
@@ -599,15 +630,28 @@ function loadSystemStatus() {
  * @return {void}
  */
 function loadSystemHealth() {
-    $.ajax({
-        url: 'sources/admin.queries.php',
-        type: 'POST',
-        dataType: 'json',
-        data: {
+    $.post(
+        'sources/admin.queries.php', {
             type: 'get_system_health',
             key: '<?php echo $session->get('key'); ?>'
         },
-        success: function(data) {
+        function(data) {
+            // Handle server answer
+            try {
+                data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
+            } catch (e) {
+                // error
+                toastr.remove();
+                toastr.error(
+                    '<?php echo $lang->get('server_answer_error') . '<br />' . $lang->get('server_returned_data') . ':<br />'; ?>' + data.error,
+                    '', {
+                        closeButton: true,
+                        positionClass: 'toast-bottom-right'
+                    }
+                );
+                return false;
+            }
+            
             if (data.error === false) {
                 // Pass ID without #
                 updateHealthBadge('health-encryption', data.encryption.status, data.encryption.text)
@@ -618,9 +662,8 @@ function loadSystemHealth() {
                     data.unknown_files.count
                 )
             }
-        },
-        error: handleAjaxError
-    })
+        }
+    );
 }
 
 /**
@@ -778,84 +821,6 @@ function showSuccessToast(message) {
 function handleAjaxError(xhr, status, error) {
     console.error('AJAX Error:', status, error)
     showErrorToast('<?php echo $lang->get('error_ajax_request'); ?>')
-}
-
-// ===================================
-// QUICK ACTIONS HANDLERS
-// ===================================
-
-/**
- * Reload cache table
- * 
- * @return {void}
- */
-function reloadCacheTable() {
-    const btn = $('#btn-reload-cache')
-    btn.prop('disabled', true).html('<i class="fas fa-spin fa-spinner"></i> <?php echo $lang->get('admin_action_processing'); ?>')
-    
-    $.ajax({
-        url: 'sources/admin.queries.php',
-        type: 'POST',
-        dataType: 'json',
-        data: {
-            type: 'reload_cache_table',
-            key: '<?php echo $session->get('key'); ?>'
-        },
-        success: function(data) {
-            if (data.error === false) {
-                showSuccessToast('<?php echo $lang->get('admin_action_cache_reloaded'); ?>')
-            } else {
-                showErrorToast(data.message || '<?php echo $lang->get('error_occurred'); ?>')
-            }
-        },
-        error: handleAjaxError,
-        complete: function() {
-            btn.prop('disabled', false).html('<i class="fas fa-sync"></i> <?php echo $lang->get('admin_action_reload_cache'); ?>')
-        }
-    })
-}
-
-/**
- * Clean old logs
- * 
- * @return {void}
- */
-function cleanOldLogs() {
-    if (!confirm('<?php echo $lang->get('admin_action_clean_logs_confirm'); ?>')) return
-    
-    const btn = $('#btn-clean-logs')
-    btn.prop('disabled', true).html('<i class="fas fa-spin fa-spinner"></i> <?php echo $lang->get('admin_action_processing'); ?>')
-    
-    $.ajax({
-        url: 'sources/admin.queries.php',
-        type: 'POST',
-        dataType: 'json',
-        data: {
-            type: 'clean_old_logs',
-            key: '<?php echo $session->get('key'); ?>'
-        },
-        success: function(data) {
-            if (data.error === false) {
-                showSuccessToast('<?php echo $lang->get('admin_action_logs_cleaned'); ?> (' + data.deleted_count + ')')
-            } else {
-                showErrorToast(data.message || '<?php echo $lang->get('error_occurred'); ?>')
-            }
-        },
-        error: handleAjaxError,
-        complete: function() {
-            btn.prop('disabled', false).html('<i class="fas fa-broom"></i> <?php echo $lang->get('admin_action_clean_logs'); ?>')
-        }
-    })
-}
-
-/**
- * Export statistics
- * 
- * @return {void}
- */
-function exportStatistics() {
-    showSuccessToast('<?php echo $lang->get('admin_action_export_started'); ?>')
-    window.location.href = 'sources/admin.queries.php?type=export_statistics&key=<?php echo $session->get('key'); ?>'
 }
 
 // ===================================
@@ -1700,11 +1665,6 @@ $(document).ready(function() {
     // Listen for tab changes
     $('.nav-tabs a[data-toggle="pill"]').on('shown.bs.tab', handleTabChange)
     
-    // Quick action button handlers
-    $('#btn-reload-cache').on('click', reloadCacheTable)
-    $('#btn-clean-logs').on('click', cleanOldLogs)
-    $('#btn-export-stats').on('click', exportStatistics)
-
     // Perform DB integrity check
     setTimeout(
         performDBIntegrityCheck,

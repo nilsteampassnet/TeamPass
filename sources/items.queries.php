@@ -485,7 +485,7 @@ switch ($inputData['type']) {
 
                 // Create sharekeys for the user itself
                 storeUsersShareKey(
-                    prefixTable('sharekeys_items'),
+                    'sharekeys_items',
                     (int) $post_folder_is_personal,
                     (int) $newID,
                     $cryptedStuff['objectKey'],
@@ -528,7 +528,7 @@ switch ($inputData['type']) {
             
                                 // Create sharekeys for user
                                 storeUsersShareKey(
-                                    prefixTable('sharekeys_fields'),
+                                    'sharekeys_fields',
                                     (int) $post_folder_is_personal,
                                     (int) $newObjectId,
                                     $cryptedStuff['objectKey'],
@@ -1220,7 +1220,7 @@ switch ($inputData['type']) {
 
                 // Create sharekeys for users
                 storeUsersShareKey(
-                    prefixTable('sharekeys_items'),
+                    'sharekeys_items',
                     (int) $post_folder_is_personal,
                     (int) $inputData['itemId'],
                     $encrypted_password_key,
@@ -1374,7 +1374,7 @@ switch ($inputData['type']) {
 
                                 // Create sharekeys for users
                                 storeUsersShareKey(
-                                    prefixTable('sharekeys_fields'),
+                                    'sharekeys_fields',
                                     (int) $post_folder_is_personal,
                                     (int) $newId,
                                     $cryptedStuff['objectKey'],
@@ -1473,7 +1473,7 @@ switch ($inputData['type']) {
 
                                     // Create sharekeys for users
                                     storeUsersShareKey(
-                                        prefixTable('sharekeys_fields'),
+                                        'sharekeys_fields',
                                         (int) $post_folder_is_personal,
                                         (int) $dataTmpCat['field_item_id'],
                                         $cryptedStuff['objectKey'],
@@ -2344,7 +2344,7 @@ switch ($inputData['type']) {
 
             // Create sharekeys for users of this new ITEM
             storeUsersShareKey(
-                prefixTable('sharekeys_items'),
+                'sharekeys_items',
                 (int) $dataDestination['personal_folder'],
                 (int) $newItemId,
                 $itemDataArray['pwd'],
@@ -2409,7 +2409,7 @@ switch ($inputData['type']) {
                 if ((int) $field['encrypted_data'] === 1) {
                     // Create sharekeys for user
                     storeUsersShareKey(
-                        prefixTable('sharekeys_fields'),
+                        'sharekeys_fields',
                         (int) $dataDestination['personal_folder'],
                         (int) $newFieldId,
                         $cryptedStuff['objectKey'],
@@ -2502,7 +2502,7 @@ switch ($inputData['type']) {
                     );
 
                     storeUsersShareKey(
-                        prefixTable('sharekeys_files'),
+                        'sharekeys_files',
                         (int) $dataDestination['personal_folder'],
                         (int) $newFileId,
                         $newFile['objectKey'],
@@ -5195,13 +5195,11 @@ switch ($inputData['type']) {
 
                 foreach ($users as $user) {
                     // Insert in DB the new object key for this item by user
-                    DB::insert(
+                    insertOrUpdateSharekey(
                         prefixTable('sharekeys_items'),
-                        array(
-                            'object_id' => $inputData['itemId'],
-                            'user_id' => (int) $user['id'],
-                            'share_key' => encryptUserObjectKey($objectKey, $user['public_key']),
-                        )
+                        (int) $inputData['itemId'],
+                        (int) $user['id'],
+                        encryptUserObjectKey($objectKey, $user['public_key'])
                     );
                 }
             }
@@ -5234,13 +5232,11 @@ switch ($inputData['type']) {
                     );
                     foreach ($users as $user) {
                         // Insert in DB the new object key for this item by user
-                        DB::insert(
+                        insertOrUpdateSharekey(
                             prefixTable('sharekeys_fields'),
-                            array(
-                                'object_id' => $field['id'],
-                                'user_id' => (int) $user['id'],
-                                'share_key' => encryptUserObjectKey($objectKey, $user['public_key']),
-                            )
+                            (int) $field['id'],
+                            (int) $user['id'],
+                            encryptUserObjectKey($objectKey, $user['public_key'])
                         );
                     }
                 }
@@ -5276,13 +5272,11 @@ switch ($inputData['type']) {
 
                     foreach ($users as $user) {
                         // Insert in DB the new object key for this item by user
-                        DB::insert(
+                        insertOrUpdateSharekey(
                             prefixTable('sharekeys_files'),
-                            array(
-                                'object_id' => $attachment['id'],
-                                'user_id' => (int) $user['id'],
-                                'share_key' => encryptUserObjectKey($objectKey, $user['public_key']),
-                            )
+                            (int) $attachment['id'],
+                            (int) $user['id'],
+                            encryptUserObjectKey($objectKey, $user['public_key'])
                         );
                     }
                 }
@@ -5523,13 +5517,11 @@ switch ($inputData['type']) {
 
                         foreach ($users as $user) {
                             // Insert in DB the new object key for this item by user
-                            DB::insert(
+                            insertOrUpdateSharekey(
                                 prefixTable('sharekeys_items'),
-                                array(
-                                    'object_id' => $item_id,
-                                    'user_id' => (int) $user['id'],
-                                    'share_key' => encryptUserObjectKey($objectKey, $user['public_key']),
-                                )
+                                (int) $item_id,
+                                (int) $user['id'],
+                                encryptUserObjectKey($objectKey, $user['public_key'])
                             );
                         }
                     }
@@ -5564,13 +5556,11 @@ switch ($inputData['type']) {
 
                             foreach ($users as $user) {
                                 // Insert in DB the new object key for this item by user
-                                DB::insert(
+                                insertOrUpdateSharekey(
                                     prefixTable('sharekeys_fields'),
-                                    array(
-                                        'object_id' => $field['id'],
-                                        'user_id' => (int) $user['id'],
-                                        'share_key' => encryptUserObjectKey($objectKey, $user['public_key']),
-                                    )
+                                    (int) $field['id'],
+                                    (int) $user['id'],
+                                    encryptUserObjectKey($objectKey, $user['public_key'])
                                 );
                             }
                         }
@@ -5606,13 +5596,11 @@ switch ($inputData['type']) {
 
                             foreach ($users as $user) {
                                 // Insert in DB the new object key for this item by user
-                                DB::insert(
+                                insertOrUpdateSharekey(
                                     prefixTable('sharekeys_files'),
-                                    array(
-                                        'object_id' => $attachment['id'],
-                                        'user_id' => (int) $user['id'],
-                                        'share_key' => encryptUserObjectKey($objectKey, $user['public_key']),
-                                    )
+                                    (int) $attachment['id'],
+                                    (int) $user['id'],
+                                    encryptUserObjectKey($objectKey, $user['public_key'])
                                 );
                             }
                         }
@@ -6664,7 +6652,7 @@ switch ($inputData['type']) {
 
         // Create sharekeys for users
         storeUsersShareKey(
-            prefixTable('sharekeys_items'),
+            'sharekeys_items',
             0,
             (int) $newID,
             $cryptedStuff['objectKey'],

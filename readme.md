@@ -9,6 +9,7 @@ Teampass is a Collaborative Passwords Manager solution installed On-Premise.
 ![](https://img.shields.io/github/stars/nilsteampassnet/TeamPass?style=social)
 ![](https://img.shields.io/github/license/nilsteampassnet/teampass)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://makeapullrequest.com)
+![](https://img.shields.io/docker/pulls/teampass/teampass?label=Docker%20Pulls)
 
 ![](https://img.shields.io/github/v/release/nilsteampassnet/Teampass)
 ![](https://img.shields.io/github/commits-since/nilsteampassnet/teampass/latest)
@@ -16,16 +17,16 @@ Teampass is a Collaborative Passwords Manager solution installed On-Premise.
 [![Build Status](https://scrutinizer-ci.com/g/nilsteampassnet/TeamPass/badges/build.png?b=master)](https://scrutinizer-ci.com/g/nilsteampassnet/TeamPass/build-status/master)
 [![Code Intelligence Status](https://scrutinizer-ci.com/g/nilsteampassnet/TeamPass/badges/code-intelligence.svg?b=master)](https://scrutinizer-ci.com/code-intelligence)
 
-> Copyright © 2009-2024, [Nils Laumaillé](Nils@Teampass.net)
+> Copyright © 2009-2025, [Nils Laumaillé](Nils@Teampass.net)
 
 <!-- MDTOC maxdepth:2 firsth1:0 numbering:0 flatten:0 bullets:1 updateOnSave:1 -->
 
 - [Requirements](#requirements)
   - [About PHP versions](#about-php-versions)
+- [Installation](#installation)
+  - [Docker (Recommended)](#docker-recommended)
+  - [Traditional Installation](#traditional-installation)
 - [Documentation](#documentation)
-  - [Run from Docker image](#run-from-docker-image)
-  - [Install with Docker](#install-with-docker)
-  - [Install with Docker Compose](#install-with-docker-compose)
 - [Languages](#languages)
 - [Licence Agreement](#licence-agreement)
 - [Website](#website)
@@ -36,7 +37,7 @@ Teampass is a Collaborative Passwords Manager solution installed On-Premise.
 ## Requirements
 
 * MySQL 5.7 or higher,
-* Mariadb 10.7 or higher
+* MariaDB 10.7 or higher
 * PHP 8.1 or newer,
 * PHP extensions:
   * mcrypt
@@ -51,13 +52,6 @@ Teampass is a Collaborative Passwords Manager solution installed On-Premise.
   * curl
   * gmp
 
-Website article with instructions: https://www.valters.eu/teampass-a-self-hosted-password-manager-to-increase-organizations-cybersecurity/  
-
-
-
-YouTube video: https://youtu.be/eXieWAIsGzc?feature=shared
-
-
 ### About PHP versions
 
 Teampass should be installed using the most recent PHP version.
@@ -68,39 +62,70 @@ Nevertheless, Teampass can be used with PHP 7.4 version.
 The Github Teampass project has a dedicated branch called `PHP_7.4` for this version.
 Notice that only bug fixing will be performed on this branch.
 
+## Installation
+
+### Docker (Recommended)
+
+The easiest way to run Teampass is using Docker. We provide official images on Docker Hub with production-ready configurations.
+
+**Quick Start:**
+
+```bash
+# Download compose files
+curl -O https://raw.githubusercontent.com/nilsteampassnet/TeamPass/master/docker/docker-compose/docker-compose.yml
+curl -O https://raw.githubusercontent.com/nilsteampassnet/TeamPass/master/docker/docker-compose/.env.example
+
+# Configure
+cp .env.example .env
+nano .env  # Set secure passwords
+
+# Start Teampass
+docker-compose up -d
+```
+
+**Available registries:**
+- Docker Hub: `teampass/teampass`
+- GitHub Container Registry: `ghcr.io/nilsteampassnet/teampass`
+
+**📚 Complete Docker Documentation:**
+- **[Docker Installation Guide](DOCKER.md)** - Complete guide with configuration options
+- **[Migration Guide](DOCKER-MIGRATION.md)** - Upgrade from older Docker versions
+- **[Docker Hub](https://hub.docker.com/r/teampass/teampass)** - Official images and tags
+
+**Key Features:**
+- ✅ Optimized Alpine-based image (PHP 8.3-FPM + Nginx)
+- ✅ Automatic SSL support with Let's Encrypt
+- ✅ Health checks and monitoring
+- ✅ Optional automatic installation
+- ✅ Persistent volumes for data safety
+
+### Traditional Installation
+
+For traditional server installations without Docker:
+
+**Resources:**
+- 📖 [Official Documentation](https://documentation.teampass.net)
+- 📝 Website article: [TeamPass Installation Guide](https://www.valters.eu/teampass-a-self-hosted-password-manager-to-increase-organizations-cybersecurity/)
+- 🎥 YouTube video: [Installation Tutorial](https://youtu.be/eXieWAIsGzc?feature=shared)
+
 ## Documentation
 
 > ✍️ [Documentation](https://documentation.teampass.net) is available.
 
-### Run from Docker image
-
-[@valterseu](https://github.com/valterseu) created a Docker image from scratch with no dependencies and fully automated that you can also use.
-
-Open the [Docker Hub image](https://hub.docker.com/r/valterseu/teampass) and get all information.
-
-Complete usage documentation can be found at [GitHub Docker image URL](https://github.com/valterseu/TeamPass).
-
-### Install with Docker
-The Docker image provided will create a Teampass installation in its `/var/www/html/` directory, which you should mount as a volume to keep persistent. **SSL is not provided** if you use this image without a proxy in front of it. See the included [Docker Compose file](docker-compose.yml) for an example setup.
-
-**Note:** Use `/var/www/html/sk` as your "Absolute path to saltkey" during installation.
-
-
-### Install with Docker Compose
-The included [docker-compose.yml](docker-compose.yml) file is an example setup, using virtual host-based reverse proxy routing to provide SSL. If you want to use the Compose file as-is, you will need to provide an SSL certificate with a CN matching the `teampass` service's `VIRTUAL_HOST` variable. See the documentation for the [jwilder/nginx-proxy](https://github.com/jwilder/nginx-proxy) image for details. In short, you'll need to put your certificate file (with extension .crt, e.g. teampass.domain.local.crt) and the according private key file (with extension .key, e.g. teampass.domain.local.key) into the directory ssl, named exactly after the FQDN you put into the `VIRTUAL_HOST` variable. Make sure to restart the nginx service after changes to the certificate or at least signal it with the reload command: `docker-compose exec nginx nginx -s reload`.
-
-**Note1:** The database's hostname is `db`. You can find the database's credentials in the environment variables of the `db` service.
-
-**Note2:** Use `/var/www/html/sk` as your "Absolute path to saltkey" during installation.
+**Key documentation:**
+- [Docker Installation](DOCKER.md) - Complete Docker deployment guide
+- [Docker Migration](DOCKER-MIGRATION.md) - Upgrade from older versions
+- [Official Documentation](https://documentation.teampass.net) - Full user and admin guides
+- [API Documentation](https://documentation.teampass.net/api/) - REST API reference
 
 ## Languages
 
-Teampass is currently available in the following languages:
-* ENGLISH
+Teampass is currently available in 19 languages:
 * CATALAN
 * CHINESE
 * CZECH
 * DUTCH
+* ENGLISH
 * ESTONIAN
 * FRENCH
 * GERMAN
@@ -117,16 +142,12 @@ Teampass is currently available in the following languages:
 * UKRAINIAN
 * VIETNAMESE
 
-Languages strings are managed at [POEditor.com](https://poeditor.com/projects/view?id=433631). 
+Languages strings are managed at [POEditor.com](https://poeditor.com/projects/view?id=433631).
 Please participate to improving its translation by joining Teampass POEditor project.
 
 ## Licence Agreement
 
-Teampass maintains strict license compliance with GPL-3.0. All dependencies are regularly audited.
-
-- **Full compliance report:** [LICENSE_COMPLIANCE_REPORT.md](licences/LICENSE_COMPLIANCE_REPORT.md)
-- **Audit tool:** Run `php licences/compliance-checker.php`
-- **Last audit:** [date from report]
+For detailed information on the licenses of our dependencies and our licence policy, please see [Detailed Licence Information](/licences/dependencies.licences.md).
 
 ## Website
 
@@ -136,3 +157,11 @@ Visit [Teampass.net](https://teampass.net/)
 
 If you discover bugs, please report them in [Github Issues](https://github.com/nilsteampassnet/TeamPass/issues).
 
+---
+
+## Support & Community
+
+- 💬 [Reddit Community](https://www.reddit.com/r/TeamPass/)
+- 📧 [Email](mailto:nils@teampass.net)
+- 🐛 [Issue Tracker](https://github.com/nilsteampassnet/TeamPass/issues)
+- 📖 [Documentation](https://documentation.teampass.net)

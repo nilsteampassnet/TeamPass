@@ -1175,5 +1175,7 @@ return array(
     'get_personal_items_migration_status' => 'Status der Migration persönlicher Einträge abrufen',
     'copied' => 'Copied',
     'opened_edit_form_of' => 'Opened edit form of',
+    'mfa_short' => 'MFA',
+    'utils' => 'Extras',
 
 );

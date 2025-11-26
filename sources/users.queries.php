@@ -2689,7 +2689,7 @@ if (null !== $post_type) {
             // Prepare variables
             $post_user_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
             $post_user_code = filter_var($dataReceived['user_code'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-error_log("OTC: ".$post_user_code);
+
             // Search TP_USER in db        
             $userTP = DB::queryFirstRow(
                 'SELECT pw
