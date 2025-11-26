@@ -77,13 +77,20 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 }
 ?>
 
-
 <script type='text/javascript'>
     //<![CDATA[
 
     var oTableLoggedIn,
         oTableConnections;
 
+    function decodeHtmlEntities(str) {
+        if (str === null || str === undefined) {
+            return '';
+        }
+        var txt = document.createElement('textarea');
+        txt.innerHTML = str;
+        return txt.value;
+    }
 
     // Prepare tooltips
     $('.infotip').tooltip();
@@ -134,13 +141,26 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 }
             );
         },
-        'columnDefs': [{
-            'width': '80px',
-            'targets': 0,
-            'render': function(data, type, row, meta) {
-                return '<i class="far fa-trash-alt text-danger pointer action" data-id="' + $(data).data('id') + '" data-type="item-edited"></i>';
+        'columnDefs': [
+            {
+                'width': '80px',
+                'targets': 0,
+                'render': function(data, type, row, meta) {
+                    // Trashbox icon
+                    return '<i class="far fa-trash-alt text-danger action" data-id="' + $(data).data('id') + '" data-type="item-edited"></i>';
+                }
+            },
+            {
+                // 0 = action, 1 = duration, 2 = user, 3 = label
+                'targets': [2, 3],
+                'render': function(data, type, row, meta) {
+                    if (type !== 'display') {
+                        return data;
+                    }
+                    return decodeHtmlEntities(data);
+                }
             }
-        }],
+        ]
     });
 
     /**
@@ -186,13 +206,26 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     }
                 );
             },
-            'columnDefs': [{
-                'width': '80px',
-                'targets': 0,
-                'render': function(data, type, row, meta) {
-                    return '<i class="far fa-trash-alt text-danger pointer action" data-id="' + $(data).data('id') + '" data-type="disconnect-user"></i>';
+            'columnDefs': [
+                {
+                    'width': '80px',
+                    'targets': 0,
+                    'render': function(data, type, row, meta) {
+                        // Disconnect Icon
+                        return '<i class="far fa-trash-alt text-danger action" data-id="' + $(data).data('id') + '" data-type="disconnect-user"></i>';
+                    }
+                },
+                {
+                    // 0 = action, 1 = user, 2 = role, 3 = connected since
+                    'targets': [1],
+                    'render': function(data, type, row, meta) {
+                        if (type !== 'display') {
+                            return data;
+                        }
+                        return decodeHtmlEntities(data);
+                    }
                 }
-            }],
+            ]
         });
     }
 
@@ -242,8 +275,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             );
         }
     });
-
-
 
     //]]>
 </script>
