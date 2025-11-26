@@ -513,7 +513,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         echo prepareExchangedData(
             buildAuthResponse(
                 $session,
-                $sessionUrl,
+                (string) $sessionUrl,
                 (int) $sessionPwdAttempts,
                 $return,
                 $userInfo,
@@ -530,7 +530,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         echo prepareExchangedData(
             buildAuthResponse(
                 $session,
-                $sessionUrl,
+                (string) $sessionUrl,
                 0,
                 $return,
                 $userInfo,
@@ -546,8 +546,8 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     echo prepareExchangedData(
         buildAuthResponse(
             $session,
-            $sessionUrl,
-            $sessionPwdAttempts,
+            (string) $sessionUrl,
+            (int) $sessionPwdAttempts,
             $return,
             $userInfo,
             false,  // not success

@@ -2822,7 +2822,7 @@ function storeUsersShareKey(
     // Delete existing entries for this object
     if ($deleteAll === true) {
         DB::delete(
-            $object_name,
+            prefixTable($object_name),
             'object_id = %i',
             $post_object_id
         );
@@ -2849,32 +2849,22 @@ function storeUsersShareKey(
             if (empty($objectKey) === false) {
                 // Single object key
                 foreach ($users as $user) {
-                    DB::insert(
+                    insertOrUpdateSharekey(
                         $object_name,
-                        [
-                            'object_id' => (int) $post_object_id,
-                            'user_id' => (int) $user['id'],
-                            'share_key' => encryptUserObjectKey(
-                                $objectKey,
-                                $user['public_key']
-                            ),
-                        ]
+                        (int) $post_object_id,
+                        (int) $user['id'],
+                        encryptUserObjectKey($objectKey, $user['public_key'])
                     );
                 }
             } else if (count($objectKeyArray) > 0) {
                 // Multiple object keys
                 foreach ($users as $user) {
                     foreach ($objectKeyArray as $object) {
-                        DB::insert(
+                        insertOrUpdateSharekey(
                             $object_name,
-                            [
-                                'object_id' => (int) $object['objectId'],
-                                'user_id' => (int) $user['id'],
-                                'share_key' => encryptUserObjectKey(
-                                    $object['objectKey'],
-                                    $user['public_key']
-                                ),
-                            ]
+                            (int) $object['objectId'],
+                            (int) $user['id'],
+                            encryptUserObjectKey($object['objectKey'], $user['public_key'])
                         );
                     }
                 }
@@ -2893,39 +2883,67 @@ function storeUsersShareKey(
             AND public_key != ""',
             $user_ids
         );
-        //DB::debugmode(false);
         foreach ($users as $user) {
             // Insert in DB the new object key for this item by user
             if (count($objectKeyArray) === 0) {
-                if (WIP === true) error_log('TEAMPASS Debug - storeUsersShareKey case1 - ' . $object_name . ' - ' . $post_object_id . ' - ' . $user['id'] . ' - ' . $objectKey);
-                DB::insert(
+                if (WIP === true) {
+                    error_log('TEAMPASS Debug - storeUsersShareKey case1 - ' . $object_name . ' - ' . $post_object_id . ' - ' . $user['id']);
+                }
+                
+                insertOrUpdateSharekey(
                     $object_name,
-                    [
-                        'object_id' => $post_object_id,
-                        'user_id' => (int) $user['id'],
-                        'share_key' => encryptUserObjectKey(
-                            $objectKey,
-                            $user['public_key']
-                        ),
-                    ]
+                    $post_object_id,
+                    (int) $user['id'],
+                    encryptUserObjectKey($objectKey, $user['public_key'])
                 );
             } else {
                 foreach ($objectKeyArray as $object) {
-                    if (WIP === true) error_log('TEAMPASS Debug - storeUsersShareKey case2 - ' . $object_name . ' - ' . $object['objectId'] . ' - ' . $user['id'] . ' - ' . $object['objectKey']);
-                    DB::insert(
+                    if (WIP === true) {
+                        error_log('TEAMPASS Debug - storeUsersShareKey case2 - ' . $object_name . ' - ' . $object['objectId'] . ' - ' . $user['id']);
+                    }
+                    
+                    insertOrUpdateSharekey(
                         $object_name,
-                        [
-                            'object_id' => (int) $object['objectId'],
-                            'user_id' => (int) $user['id'],
-                            'share_key' => encryptUserObjectKey(
-                                $object['objectKey'],
-                                $user['public_key']
-                            ),
-                        ]
+                        (int) $object['objectId'],
+                        (int) $user['id'],
+                        encryptUserObjectKey($object['objectKey'], $user['public_key'])
                     );
                 }
             }
         }
+    }
+}
+
+/**
+ * Insert or update sharekey for a user
+ * Handles duplicate key errors gracefully
+ * 
+ * @param string $tableName Table name (without prefix)
+ * @param int $objectId Object ID
+ * @param int $userId User ID
+ * @param string $shareKey Encrypted share key
+ * @return bool Success status
+ */
+function insertOrUpdateSharekey(
+    string $tableName,
+    int $objectId,
+    int $userId,
+    string $shareKey
+): bool {
+    try {
+        DB::query(
+            'INSERT INTO ' . prefixTable($tableName) . ' 
+            (object_id, user_id, share_key) 
+            VALUES (%i, %i, %s)
+            ON DUPLICATE KEY UPDATE share_key = VALUES(share_key)',
+            $objectId,
+            $userId,
+            $shareKey
+        );
+        return true;
+    } catch (Exception $e) {
+        error_log('TEAMPASS Error - insertOrUpdateSharekey: ' . $e->getMessage());
+        return false;
     }
 }
 

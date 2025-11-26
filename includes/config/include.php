@@ -41,7 +41,7 @@ define('TP_COPYRIGHT', '2009-'.date('Y'));
 define('TP_ALLOWED_TAGS', '<b><i><sup><sub><em><strong><u><br><br /><a><strike><ul><blockquote><blockquote><img><li><h1><h2><h3><h4><h5><ol><small><font>');
 define('TP_FILE_PREFIX', 'EncryptedFile_');
 define('NUMBER_ITEMS_IN_BATCH', 1000);
-define('WIP', false);
+define('WIP', true);
 define('UPGRADE_SEND_EMAILS', true);
 define('KEY_LENGTH', 16);
 define('EDITION_LOCK_PERIOD', 86400);   // Defines the delay for which an item edition lock is active
@@ -49,7 +49,7 @@ define('LOG_TO_SERVER', false);         // Defines if logs are sent to the serve
 define('OAUTH2_REDIRECTURI', 'index.php?post_type=oauth2');
 
 // Tasks Handler
-define('LOG_TASKS', false); // Can be used in order to log background tasks
+define('LOG_TASKS', true); // Can be used in order to log background tasks
 define('LOG_TASKS_FILE', '../files/teampass_tasks.log'); // By default, its is stored folder 'files', otherwize it is inside server error log. 🫸 Ensure you have the right to write in the log file
 define('TASKS_LOCK_FILE', ''); // By default, it is stored in folder 'files'. 🫸 If you change this, ensure you have the right to write in the lock file
 

@@ -233,38 +233,21 @@ trait UserHandlerTrait {
             // If user is changing his own keys
             if (isset($arguments['user_self_change']) &&(int) $arguments['user_self_change'] === 1) {
                 // Save the new sharekey correctly encrypted in DB
-                $affected = DB::update(
+                insertOrUpdateSharekey(
                     prefixTable('sharekeys_items'),
-                    array(
-                        'object_id' => (int) $record['id'],
-                        'user_id' => (int) $arguments['new_user_id'],
-                        'share_key' => $share_key_for_item,
-                    ),
-                    'increment_id = %i',
-                    $itemShareKey['increment_id']
-                );
-
-                // If now row was updated, it means the user has no key for this item, so we need to insert it
-                if ($affected === 0) {
-                    DB::insert(
-                        prefixTable('sharekeys_items'),
-                        array(
-                            'object_id' => (int) $record['id'],
-                            'user_id' => (int) $arguments['new_user_id'],
-                            'share_key' => $share_key_for_item,
-                        )
-                    );
-                }
+                    (int) $record['id'],
+                    (int) $arguments['new_user_id'],
+                    $share_key_for_item
+                );                
+                    
             } else {
                 // Save the key in DB
-                DB::insert(
+                insertOrUpdateSharekey(
                     prefixTable('sharekeys_items'),
-                    array(
-                        'object_id' => (int) $record['id'],
-                        'user_id' => (int) $arguments['new_user_id'],
-                        'share_key' => $share_key_for_item,
-                    )
-                );
+                    (int) $record['id'],
+                    (int) $arguments['new_user_id'],
+                    $share_key_for_item
+                ); 
             }
         }
 
@@ -325,13 +308,11 @@ trait UserHandlerTrait {
 
             // Save the key in DB
             if ($arguments['user_self_change'] === false) {
-                DB::insert(
+                insertOrUpdateSharekey(
                     prefixTable('sharekeys_logs'),
-                    array(
-                        'object_id' => (int) $record['increment_id'],
-                        'user_id' => (int) $arguments['new_user_id'],
-                        'share_key' => $share_key_for_item,
-                    )
+                    (int) $record['increment_id'],
+                    (int) $arguments['new_user_id'],
+                    $share_key_for_item
                 );
             } else {
                 // Get itemIncrement from selected user
@@ -412,13 +393,11 @@ trait UserHandlerTrait {
 
                 // Save the key in DB
                 if ($arguments['user_self_change'] === false) {
-                    DB::insert(
+                    insertOrUpdateSharekey(
                         prefixTable('sharekeys_fields'),
-                        array(
-                            'object_id' => (int) $record['id'],
-                            'user_id' => (int) $arguments['new_user_id'],
-                            'share_key' => $share_key_for_item,
-                        )
+                        (int) $record['id'],
+                        (int) $arguments['new_user_id'],
+                        $share_key_for_item
                     );
                 } else {
                     // Get itemIncrement from selected user
@@ -503,13 +482,11 @@ trait UserHandlerTrait {
 
             // Save the key in DB
             if ($arguments['user_self_change'] === false) {
-                DB::insert(
+                insertOrUpdateSharekey(
                     prefixTable('sharekeys_suggestions'),
-                    array(
-                        'object_id' => (int) $record['id'],
-                        'user_id' => (int) $arguments['new_user_id'],
-                        'share_key' => $share_key_for_item,
-                    )
+                    (int) $record['id'],
+                    (int) $arguments['new_user_id'],
+                    $share_key_for_item
                 );
             } else {
                 // Get itemIncrement from selected user
@@ -601,34 +578,13 @@ trait UserHandlerTrait {
             // Encrypt Item key
             $share_key_for_item = encryptUserObjectKey($itemKey, $userInfo['public_key']);
 
-            $currentUserKey = DB::queryFirstRow(
-                'SELECT increment_id
-                FROM ' . prefixTable('sharekeys_files') . '
-                WHERE object_id = %i AND user_id = %i',
-                $record['id'],
-                $arguments['new_user_id']
-            );
             // Save the key in DB
-            if (DB::count() > 0) {
-                // NOw update
-                DB::update(
-                    prefixTable('sharekeys_files'),
-                    array(
-                        'share_key' => $share_key_for_item,
-                    ),
-                    'increment_id = %i',
-                    $currentUserKey['increment_id']
-                );
-            } else {
-                DB::insert(
-                    prefixTable('sharekeys_files'),
-                    array(
-                        'object_id' => (int) $record['id'],
-                        'user_id' => (int) $arguments['new_user_id'],
-                        'share_key' => $share_key_for_item,
-                    )
-                );
-            }
+            insertOrUpdateSharekey(
+                prefixTable('sharekeys_files'),
+                (int) $record['id'],
+                (int) $arguments['new_user_id'],
+                $share_key_for_item
+            );
         }
 
         // Commit transaction

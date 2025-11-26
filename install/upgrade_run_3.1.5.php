@@ -118,23 +118,63 @@ foreach ($columns_to_add as $column_info) {
 }
 
 
+// Drop previous index
+$tables = ['sharekeys_items', 'sharekeys_fields', 'sharekeys_files', 'sharekeys_suggestions', 'sharekeys_logs'];
+foreach ($tables as $table) {
+    mysqli_query($db_link, "DROP INDEX IF EXISTS `idx_object_user` ON `{$pre}{$table}`");
+}
+
+
 // Add indexes on tables
 $indexes_to_add = [    
     [
         'table' => 'users',
         'index' => 'idx_last_pw_change',
-        'columns' => 'last_pw_change'
+        'columns' => 'last_pw_change',
+        'unique' => false
     ],
     [
         'table' => 'users',
         'index' => 'idx_personal_items_migrated',
-        'columns' => 'personal_items_migrated'
+        'columns' => 'personal_items_migrated',
+        'unique' => false
+    ],
+    [
+        'table' => 'sharekeys_items',
+        'index' => 'idx_unique_object_user',
+        'columns' => 'object_id, user_id',
+        'unique' => true
+    ],
+    [
+        'table' => 'sharekeys_fields',
+        'index' => 'idx_unique_object_user',
+        'columns' => 'object_id, user_id',
+        'unique' => true
+    ],
+    [
+        'table' => 'sharekeys_files',
+        'index' => 'idx_unique_object_user',
+        'columns' => 'object_id, user_id',
+        'unique' => true
+    ],
+    [
+        'table' => 'sharekeys_suggestions',
+        'index' => 'idx_unique_object_user',
+        'columns' => 'object_id, user_id',
+        'unique' => true
+    ],
+    [
+        'table' => 'sharekeys_logs',
+        'index' => 'idx_unique_object_user',
+        'columns' => 'object_id, user_id',
+        'unique' => true
     ]
 ];
 foreach ($indexes_to_add as $index_config) {
     $table = $pre . $index_config['table'];
     $index_name = $index_config['index'];
     $columns = $index_config['columns'];
+    $is_unique = isset($index_config['unique']) && $index_config['unique'] === true;
     
     // Check if index exists
     $result = mysqli_query(
@@ -143,9 +183,10 @@ foreach ($indexes_to_add as $index_config) {
     );
     
     if ($result && mysqli_num_rows($result) === 0) {
-        // Create index
-        $query = "CREATE INDEX `{$index_name}` ON `{$table}` ({$columns})";
-        
+        // Create index (unique or standard)
+        $index_type = $is_unique ? 'UNIQUE INDEX' : 'INDEX';
+        $query = "CREATE {$index_type} `{$index_name}` ON `{$table}` ({$columns})";
+                
         if (!mysqli_query($db_link, $query)) {
             $error[] = "Failed to create index {$index_name} on {$table}: " . mysqli_error($db_link);
         }
