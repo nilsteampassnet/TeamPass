@@ -255,7 +255,7 @@ function db_error_handler(array $params): void
  * @param string|array $groupesVisiblesUser  [description]
  * @param string|array $groupesInterditsUser [description]
  * @param string       $isAdmin              [description]
- * @param string       $idFonctions          [description]
+ * @param string|null       $idFonctions          [description]
  *
  * @return bool
  */
@@ -263,7 +263,7 @@ function identifyUserRights(
     $groupesVisiblesUser,
     $groupesInterditsUser,
     $isAdmin,
-    $idFonctions,
+    ?string $idFonctions,
     $SETTINGS
 ) {
     $session = SessionManager::getSession();
@@ -272,9 +272,7 @@ function identifyUserRights(
     // Check if user is ADMINISTRATOR    
     (int) $isAdmin === 1 ?
         identAdmin(
-            $idFonctions,
-            $SETTINGS, /** @scrutinizer ignore-type */
-            $tree
+            $idFonctions ?? ''
         )
         :
         identUser(
@@ -302,12 +300,10 @@ function identifyUserRights(
  * Identify administrator.
  *
  * @param string $idFonctions Roles of user
- * @param array  $SETTINGS    Teampass settings
- * @param object $tree        Tree of folders
  *
  * @return bool
  */
-function identAdmin($idFonctions, $SETTINGS, $tree)
+function identAdmin(string $idFonctions)
 {
     
     $session = SessionManager::getSession();
@@ -330,7 +326,7 @@ function identAdmin($idFonctions, $SETTINGS, $tree)
     $session->set('user-accessible_folders', $groupesVisibles);
 
     // get complete list of ROLES
-    $tmp = explode(';', $idFonctions);
+    $tmp = array_filter(explode(';', $idFonctions !== null ? $idFonctions : ''));
     $rows = DB::query(
         'SELECT * FROM ' . prefixTable('roles_title') . '
         ORDER BY title ASC'

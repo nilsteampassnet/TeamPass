@@ -131,7 +131,7 @@ includes/.externals/tp.config.php 361da70add00e1069f22191dbb07503c
 includes/avatars/.htaccess df51d5d900c2228ec1349362838401e7
 includes/avatars/empty_file.txt d41d8cd98f00b204e9800998ecf8427e
 includes/config/.htaccess 51622ead2639d535e7a955a8a7a10613
-includes/config/include.php a061cb19d75a62a71e22bcb88543e4e4
+includes/config/include.php d59f5b0aa597c6fa9bf26d09fbdc5e30
 includes/config/index.html 5f1f28d1adcb7eac03989f0ca3e7068e
 includes/config/settings.sample.php c966188ae4f3174b907fc467c96ac036
 includes/core/load.js.php 3b371fcd2b851c75c0718fd07135d24c
@@ -3734,7 +3734,7 @@ sources/items.logs.php 3b9eaeb8fa7a487161bfbfd771aa7c4b
 sources/items.queries.php 7887a7f4b2c81161844e52aa061ace54
 sources/ldap.queries.php 8347f492f841663828410a9a72e829ac
 sources/logs.datatables.php 762156d1ffdbe9970d232e8a2c9764ed
-sources/main.functions.php 1fcc611912916b56c4b6fa6756d44d43
+sources/main.functions.php e5ac503b19c5b6ba7e30d94d431052e1
 sources/main.queries.php d248a8a977074e9be0ac18deabf76dc6
 sources/oauth.php edd9fca8b228780548f927c291670f53
 sources/roles.queries.php 812d89d05969b25236a3a12124ff63c9
