@@ -726,6 +726,7 @@ class DatabaseInstaller
             `special` VARCHAR(250) NOT NULL DEFAULT 'none',
             `auth_type` VARCHAR(200) NOT NULL DEFAULT 'local',
             `is_ready_for_usage` BOOLEAN NOT NULL DEFAULT FALSE,
+            `personal_items_migrated` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Personal items migrated to sharekeys system (0=not migrated, 1=migrated)',
             `otp_provided` BOOLEAN NOT NULL DEFAULT FALSE,
             `roles_from_ad_groups` varchar(1000) NULL DEFAULT NULL,
             `ongoing_process_id` VARCHAR(100) NULL DEFAULT NULL,
