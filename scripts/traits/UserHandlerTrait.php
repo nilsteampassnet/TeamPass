@@ -230,25 +230,13 @@ trait UserHandlerTrait {
                 $share_key_for_item = encryptUserObjectKey($itemKey, $userInfo['public_key']);
             }
             
-            // If user is changing his own keys
-            if (isset($arguments['user_self_change']) &&(int) $arguments['user_self_change'] === 1) {
-                // Save the new sharekey correctly encrypted in DB
-                insertOrUpdateSharekey(
-                    prefixTable('sharekeys_items'),
-                    (int) $record['id'],
-                    (int) $arguments['new_user_id'],
-                    $share_key_for_item
-                );                
-                    
-            } else {
-                // Save the key in DB
-                insertOrUpdateSharekey(
-                    prefixTable('sharekeys_items'),
-                    (int) $record['id'],
-                    (int) $arguments['new_user_id'],
-                    $share_key_for_item
-                ); 
-            }
+            // Save the new sharekey correctly encrypted in DB
+            insertOrUpdateSharekey(
+                prefixTable('sharekeys_items'),
+                (int) $record['id'],
+                (int) $arguments['new_user_id'],
+                $share_key_for_item
+            ); 
         }
 
         // Commit transaction
@@ -307,35 +295,12 @@ trait UserHandlerTrait {
             $share_key_for_item = encryptUserObjectKey($itemKey, $userInfo['public_key']);
 
             // Save the key in DB
-            if ($arguments['user_self_change'] === false) {
-                insertOrUpdateSharekey(
-                    prefixTable('sharekeys_logs'),
-                    (int) $record['increment_id'],
-                    (int) $arguments['new_user_id'],
-                    $share_key_for_item
-                );
-            } else {
-                // Get itemIncrement from selected user
-                if ((int) $arguments['new_user_id'] !== (int) $arguments['owner_id']) {
-                    $currentUserKey = DB::queryFirstRow(
-                        'SELECT increment_id
-                        FROM ' . prefixTable('sharekeys_items') . '
-                        WHERE object_id = %i AND user_id = %i',
-                        $record['id'],
-                        $arguments['new_user_id']
-                    );
-                }
-
-                // NOw update
-                DB::update(
-                    prefixTable('sharekeys_logs'),
-                    array(
-                        'share_key' => $share_key_for_item,
-                    ),
-                    'increment_id = %i',
-                    $currentUserKey['increment_id']
-                );
-            }
+            insertOrUpdateSharekey(
+                prefixTable('sharekeys_logs'),
+                (int) $record['increment_id'],
+                (int) $arguments['new_user_id'],
+                $share_key_for_item
+            );
         }
 
         // Commit transaction
@@ -384,44 +349,24 @@ trait UserHandlerTrait {
                 $arguments['owner_id']
             );
 
-            if (isset($currentUserKey['share_key']) === true) {
-                // Decrypt itemkey with admin key
-                $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $ownerInfo['private_key']);
-
-                // Encrypt Item key
-                $share_key_for_item = encryptUserObjectKey($itemKey, $userInfo['public_key']);
-
-                // Save the key in DB
-                if ($arguments['user_self_change'] === false) {
-                    insertOrUpdateSharekey(
-                        prefixTable('sharekeys_fields'),
-                        (int) $record['id'],
-                        (int) $arguments['new_user_id'],
-                        $share_key_for_item
-                    );
-                } else {
-                    // Get itemIncrement from selected user
-                    if ((int) $arguments['new_user_id'] !== (int) $arguments['owner_id']) {
-                        $currentUserKey = DB::queryFirstRow(
-                            'SELECT increment_id
-                            FROM ' . prefixTable('sharekeys_items') . '
-                            WHERE object_id = %i AND user_id = %i',
-                            $record['id'],
-                            $arguments['new_user_id']
-                        );
-                    }
-
-                    // NOw update
-                    DB::update(
-                        prefixTable('sharekeys_fields'),
-                        array(
-                            'share_key' => $share_key_for_item,
-                        ),
-                        'increment_id = %i',
-                        $currentUserKey['increment_id']
-                    );
-                }
+            // do we have any input?
+            if ($currentUserKey === null || count($currentUserKey) === 0) {
+                continue;
             }
+            
+            // Decrypt itemkey with admin key
+            $itemKey = decryptUserObjectKey($currentUserKey['share_key'], $ownerInfo['private_key']);
+
+            // Encrypt Item key
+            $share_key_for_item = encryptUserObjectKey($itemKey, $userInfo['public_key']);
+
+            // Save the key in DB
+            insertOrUpdateSharekey(
+                prefixTable('sharekeys_fields'),
+                (int) $record['id'],
+                (int) $arguments['new_user_id'],
+                $share_key_for_item
+            );
         }
 
         // Commit transaction
@@ -481,35 +426,12 @@ trait UserHandlerTrait {
             $share_key_for_item = encryptUserObjectKey($itemKey, $userInfo['public_key']);
 
             // Save the key in DB
-            if ($arguments['user_self_change'] === false) {
-                insertOrUpdateSharekey(
-                    prefixTable('sharekeys_suggestions'),
-                    (int) $record['id'],
-                    (int) $arguments['new_user_id'],
-                    $share_key_for_item
-                );
-            } else {
-                // Get itemIncrement from selected user
-                if ((int) $arguments['new_user_id'] !== (int) $arguments['owner_id']) {
-                    $currentUserKey = DB::queryFirstRow(
-                        'SELECT increment_id
-                        FROM ' . prefixTable('sharekeys_items') . '
-                        WHERE object_id = %i AND user_id = %i',
-                        $record['id'],
-                        $arguments['new_user_id']
-                    );
-                }
-
-                // NOw update
-                DB::update(
-                    prefixTable('sharekeys_suggestions'),
-                    array(
-                        'share_key' => $share_key_for_item,
-                    ),
-                    'increment_id = %i',
-                    $currentUserKey['increment_id']
-                );
-            }
+            insertOrUpdateSharekey(
+                prefixTable('sharekeys_suggestions'),
+                (int) $record['id'],
+                (int) $arguments['new_user_id'],
+                $share_key_for_item
+            );
         }
 
         // Commit transaction

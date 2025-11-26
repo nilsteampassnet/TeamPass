@@ -2918,7 +2918,7 @@ function storeUsersShareKey(
  * Insert or update sharekey for a user
  * Handles duplicate key errors gracefully
  * 
- * @param string $tableName Table name (without prefix)
+ * @param string $tableName Table name (with prefix)
  * @param int $objectId Object ID
  * @param int $userId User ID
  * @param string $shareKey Encrypted share key
@@ -2932,7 +2932,7 @@ function insertOrUpdateSharekey(
 ): bool {
     try {
         DB::query(
-            'INSERT INTO ' . prefixTable($tableName) . ' 
+            'INSERT INTO ' . $tableName . ' 
             (object_id, user_id, share_key) 
             VALUES (%i, %i, %s)
             ON DUPLICATE KEY UPDATE share_key = VALUES(share_key)',
