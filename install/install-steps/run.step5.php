@@ -244,7 +244,7 @@ class DatabaseInstaller
                 `object_id` int(12) NOT NULL,
                 `user_id` int(12) NOT NULL,
                 `share_key` text NOT NULL,
-                PRIMARY KEY (`increment_id`)
+                PRIMARY KEY (`increment_id`),
                 UNIQUE KEY idx_unique_object_user (object_id, user_id)
             ) CHARSET=utf8;"
         );
@@ -278,7 +278,7 @@ class DatabaseInstaller
                 `object_id` int(12) NOT NULL,
                 `user_id` int(12) NOT NULL,
                 `share_key` text NOT NULL,
-                PRIMARY KEY (`increment_id`)
+                PRIMARY KEY (`increment_id`),
                 UNIQUE KEY idx_unique_object_user (object_id, user_id)
             ) CHARSET=utf8;'
         );
@@ -293,7 +293,7 @@ class DatabaseInstaller
                 `object_id` int(12) NOT NULL,
                 `user_id` int(12) NOT NULL,
                 `share_key` text NOT NULL,
-                PRIMARY KEY (`increment_id`)
+                PRIMARY KEY (`increment_id`),
                 UNIQUE KEY idx_unique_object_user (object_id, user_id)
             ) CHARSET=utf8;'
         );
@@ -308,7 +308,7 @@ class DatabaseInstaller
                 `object_id` int(12) NOT NULL,
                 `user_id` int(12) NOT NULL,
                 `share_key` text NOT NULL,
-                PRIMARY KEY (`increment_id`)
+                PRIMARY KEY (`increment_id`),
                 UNIQUE KEY idx_unique_object_user (object_id, user_id)
             ) CHARSET=utf8;'
         );
