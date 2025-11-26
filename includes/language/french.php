@@ -1175,5 +1175,7 @@ return array(
     'get_personal_items_migration_status' => 'Obtenir l&apos;état de la migration des éléments personnels',
     'copied' => 'A copié',
     'opened_edit_form_of' => 'Ouverture en édition de',
+    'mfa_short' => 'MFA',
+    'utils' => 'Utilitaires',
 
 );

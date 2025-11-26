@@ -29,6 +29,8 @@
  */
 
 return array(
+    'utils' => 'Utilities',
+    'mfa_short' => 'MFA',
     'copied' => 'Copied',
     'opened_edit_form_of' => 'Opened edit form of',
     'admin_info_header' => 'Administration Dashboard',

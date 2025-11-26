@@ -2850,7 +2850,7 @@ function storeUsersShareKey(
                 // Single object key
                 foreach ($users as $user) {
                     insertOrUpdateSharekey(
-                        $object_name,
+                        prefixTable($object_name),
                         (int) $post_object_id,
                         (int) $user['id'],
                         encryptUserObjectKey($objectKey, $user['public_key'])
@@ -2861,7 +2861,7 @@ function storeUsersShareKey(
                 foreach ($users as $user) {
                     foreach ($objectKeyArray as $object) {
                         insertOrUpdateSharekey(
-                            $object_name,
+                            prefixTable($object_name),
                             (int) $object['objectId'],
                             (int) $user['id'],
                             encryptUserObjectKey($object['objectKey'], $user['public_key'])
@@ -2891,7 +2891,7 @@ function storeUsersShareKey(
                 }
                 
                 insertOrUpdateSharekey(
-                    $object_name,
+                    prefixTable($object_name),
                     $post_object_id,
                     (int) $user['id'],
                     encryptUserObjectKey($objectKey, $user['public_key'])
@@ -2903,7 +2903,7 @@ function storeUsersShareKey(
                     }
                     
                     insertOrUpdateSharekey(
-                        $object_name,
+                        prefixTable($object_name),
                         (int) $object['objectId'],
                         (int) $user['id'],
                         encryptUserObjectKey($object['objectKey'], $user['public_key'])
