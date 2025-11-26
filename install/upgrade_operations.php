@@ -166,11 +166,66 @@ if (isset($post_operation) === true && empty($post_operation) === false && strpo
     } elseif ($post_operation === 'Transparent_recovery_migration') {
         // OPERATION for users transparent recovery
         $finish = transparentRecovery($pre);
+    } elseif ($post_operation === 'clean_duplicate_sharekeys') {
+        $tables = ['sharekeys_items', 'sharekeys_fields', 'sharekeys_files', 'sharekeys_suggestions', 'sharekeys_logs'];
+        foreach ($tables as $table) {
+            cleanDuplicateSharekeys($pre.$table);
+        }
     }
     // Return back
     echo '[{"finish":"'.$finish.'" , "next":"", "error":"", "total":"'.$total.'"}]';
     // Commit transaction.
     mysqli_commit($db_link);
+}
+
+/**
+ * 3.1.5.5
+ * Clean duplicate sharekeys from database
+ * Keeps only the most recent entry for each object_id/user_id pair
+ * 
+ * @param string $tableName Table name (without prefix)
+ * @return int Number of duplicates removed
+ */
+function cleanDuplicateSharekeys(string $tableName): int
+{
+    global $db_link;
+    
+    // Find duplicates
+    $result = mysqli_query(
+        $db_link,
+        "SELECT object_id, user_id, COUNT(*) as count
+        FROM `" . $tableName . "`
+        GROUP BY object_id, user_id
+        HAVING count > 1"
+    );
+    
+    if (!$result) {
+        return 1;
+    }
+    
+    while ($duplicate = mysqli_fetch_assoc($result)) {
+        // Keep only the most recent entry (highest increment_id)
+        $deleteQuery = "DELETE FROM `" . $tableName . "`
+            WHERE object_id = " . (int) $duplicate['object_id'] . "
+            AND user_id = " . (int) $duplicate['user_id'] . "
+            AND increment_id NOT IN (
+                SELECT * FROM (
+                    SELECT MAX(increment_id)
+                    FROM `" . $tableName . "`
+                    WHERE object_id = " . (int) $duplicate['object_id'] . "
+                    AND user_id = " . (int) $duplicate['user_id'] . "
+                ) as temp
+            )";
+        
+        if (mysqli_query($db_link, $deleteQuery)) {
+            // Do nothing and continue
+        } else {
+            error_log('TEAMPASS Error - cleanDuplicateSharekeys delete failed: ' . mysqli_error($db_link));
+        }
+    }
+    
+    mysqli_free_result($result);
+    return 1;
 }
 
 /**

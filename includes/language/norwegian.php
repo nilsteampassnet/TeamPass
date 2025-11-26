@@ -1175,5 +1175,7 @@ return array(
     'get_personal_items_migration_status' => 'Get personal items migration status',
     'copied' => 'Copied',
     'opened_edit_form_of' => 'Opened edit form of',
+    'mfa_short' => 'MFA',
+    'utils' => 'Verktøy',
 
 );

@@ -439,23 +439,19 @@ if (null !== $post_type_upload && $post_type_upload === 'item_attachments') {
         );
         foreach ($users as $user) {
             // Insert in DB the new object key for this item by user
-            DB::insert(
+            insertOrUpdateSharekey(
                 prefixTable('sharekeys_files'),
-                array(
-                    'object_id' => $newID,
-                    'user_id' => (int) $user['id'],
-                    'share_key' => encryptUserObjectKey($newFile['objectKey'], $user['public_key']),
-                )
+                (int) $newID,
+                (int) $user['id'],
+                encryptUserObjectKey($newFile['objectKey'], $user['public_key'])
             );
         }
     } else {
-        DB::insert(
+        insertOrUpdateSharekey(
             prefixTable('sharekeys_files'),
-            array(
-                'object_id' => (int) $newID,
-                'user_id' => (int) $session->get('user-id'),
-                'share_key' => encryptUserObjectKey($newFile['objectKey'], $session->get('user-public_key')),
-            )
+            (int) $newID,
+            (int) $session->get('user-id'),
+            encryptUserObjectKey($newFile['objectKey'], $session->get('user-public_key'))
         );
     }
 

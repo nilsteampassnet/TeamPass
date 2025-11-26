@@ -136,7 +136,6 @@ if ($post_type === 'identify_user') {
  */
 function identifyUser(string $sentData, array $SETTINGS): bool
 {
-    $antiXss = new AntiXSS();
     $session = SessionManager::getSession();
     $request = SymfonyRequest::createFromGlobals();
     $lang = new Language($session->get('user-language') ?? 'english');

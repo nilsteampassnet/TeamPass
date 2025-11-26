@@ -441,7 +441,7 @@ class ItemModel
     ) : void {
         // Create share keys for the creator
         storeUsersShareKey(
-            prefixTable('sharekeys_items'),
+            'sharekeys_items',
             (int) $itemInfos['personal_folder'],
             (int) $newID,
             $passwordKey,

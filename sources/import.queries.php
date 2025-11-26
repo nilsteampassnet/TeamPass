@@ -745,7 +745,7 @@ switch ($inputData['type']) {
                     } else {
                         // Create sharekeys for current user
                         storeUsersShareKey(
-                            prefixTable('sharekeys_items'),
+                            'sharekeys_items',
                             (int) $item['folder_id'],
                             (int) $newId,
                             $cryptedStuff['objectKey'],
@@ -755,7 +755,7 @@ switch ($inputData['type']) {
                 } else {
                     // Create sharekeys for current user
                     storeUsersShareKey(
-                        prefixTable('sharekeys_items'),
+                        'sharekeys_items',
                         (int) $personalFolder,
                         (int) $newId,
                         $cryptedStuff['objectKey'],
@@ -1246,7 +1246,7 @@ switch ($inputData['type']) {
 
             // Create sharekeys for users
             storeUsersShareKey(
-                prefixTable('sharekeys_items'),
+                'sharekeys_items',
                 $post_folders[$item['parentFolderId']]['isPF'] === true ? 1 : 0,
                 (int) $newId,
                 $cryptedStuff['objectKey'],
