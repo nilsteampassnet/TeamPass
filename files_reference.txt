@@ -3734,7 +3734,7 @@ sources/items.logs.php 3b9eaeb8fa7a487161bfbfd771aa7c4b
 sources/items.queries.php 7887a7f4b2c81161844e52aa061ace54
 sources/ldap.queries.php 8347f492f841663828410a9a72e829ac
 sources/logs.datatables.php 762156d1ffdbe9970d232e8a2c9764ed
-sources/main.functions.php 1fcc611912916b56c4b6fa6756d44d43
+sources/main.functions.php e5ac503b19c5b6ba7e30d94d431052e1
 sources/main.queries.php d248a8a977074e9be0ac18deabf76dc6
 sources/oauth.php edd9fca8b228780548f927c291670f53
 sources/roles.queries.php 812d89d05969b25236a3a12124ff63c9
