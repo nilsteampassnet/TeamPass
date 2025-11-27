@@ -898,7 +898,6 @@ return array(
     'mapped_with_role' => 'Maped amb el rol',
     'ad_groupe_and_roles_mapping' => 'Mapeig de grups de AD i rols',
     'select_adgroup_mapping' => 'Seleccioneu el rol per mapar amb el grup d&apos;AD actuals',
-    'provide_label' => 'Indiqui un text',
     'uploading' => 'Carregant ...',
     'account_not_ready' => 'Compte en la construcció',
     'add_new_job' => 'Afegiu una nova feina',

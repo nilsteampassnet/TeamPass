@@ -1259,7 +1259,7 @@ return array(
     'sending_emails' => 'Wysyłanie wiadomości email',
     'sync_new_ldap_password' => 'Zsynchronizuj nowe hasło',
     'settings_ldap_tls_certifacte_check' => 'Sprawdzanie certyfikatu dla LDAP TLS',
-    'settings_ldap_tls_certifacte_check_tip' => 'Określa strategię sprawdzania certyfikatu. <a href=\"https://gist.github.com/heiglandreas/8a299a6f47a13ba463c3f2da41c679f7\" target=\"_blank\">Więcej informacji</a>.'https://gist.github.com/heiglandreas/8a299a6f47a13ba463c3f2da41c679f7" target="_blank">More information</a>.',
+    'settings_ldap_tls_certifacte_check_tip' => 'Określa strategię sprawdzania certyfikatu. <a href="https://gist.github.com/heiglandreas/8a299a6f47a13ba463c3f2da41c679f7" target="_blank">Więcej informacji</a>.',
     'process_details' => 'Szczegóły procesu',
     'updated_at' => 'Zaktualizowany o',
     'tasks' => 'Zadania',
