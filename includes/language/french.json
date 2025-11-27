@@ -1,0 +1,461 @@
+[
+    {
+        "term": "user_config_not_compliant",
+        "definition": "La configuration utilisateur n'est pas conforme",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "fix_personal_items_empty",
+        "definition": "Corriger les éléments personnels vides",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "fix_personal_items_empty_tip",
+        "definition": "Cet outil permet de corriger le problème lorsque les éléments personnels sont vides après une mise à niveau de Teampass. Il nécessite d'avoir restauré une copie de la table teampass_items depuis Teampass version 2. La table doit être nommée teampass_items_v2.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "table_not_exists",
+        "definition": "La table attendue n'existe pas. Veuillez la restaurer depuis une sauvegarde.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "tools_usage_warning",
+        "definition": "L'utilisation des outils peut avoir un impact direct sur la base de données. Soyez prudent. Effectuez toujours une sauvegarde avant et définissez une période de maintenance.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_ldap_group_objectclasses_attibute_tip",
+        "definition": "Les objectClasses à utiliser lors de la recherche de groupes. Plusieurs objectClasses sont séparées par une virgule (,). Exemple: groupOfNames,group ou top,posixGroup",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "otp",
+        "definition": "OTP",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_otv_subdomain_tip",
+        "definition": "Sous-domaine dédié pour les liens à usage unique. Considérez votre URL Teampass principale comme isolée d'Internet, ce sous-domaine pourrait être accessible par tous pour partager cet élément avec quelqu'un en dehors de votre organisation. Du point de vue de la sécurité, c'est beaucoup plus sûr avec de telles mécaniques. Remarque: cela nécessiterait d'avoir une entrée DNS pour ce sous-domaine pointant vers votre serveur Teampass.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "maximum",
+        "definition": "maximum",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "email_body_user_config_3",
+        "definition": "Bonjour #lastname#,<br><br>Ceci est un e-mail généré par le gestionnaire de mots de passe Teampass.<br><br>Le mot de passe suivant est attendu lors de votre prochaine utilisation de Teampass:<br><br><b>#password#</b><br><br><br>Cordialement",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "email_body_user_config_4",
+        "definition": "Bonjour #lastname#,<br><br>Ceci est un e-mail généré par le gestionnaire de mots de passe Teampass.<br><br>Votre compte Teampass est entièrement prêt.<br><br>Cordialement",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_ldap_tls_certifacte_check_tip",
+        "definition": "Spécifie la stratégie de vérification des certificats. <a href=\"https://gist.github.com/heiglandreas/8a299a6f47a13ba463c3f2da41c679f7\" target=\"_blank\">Plus d'informations</a>.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "html",
+        "definition": "html",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "base_distiguished_name",
+        "definition": "Base DN",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "suggestions",
+        "definition": "Suggestions",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "csv",
+        "definition": "CSV",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "keepass",
+        "definition": "Keepass",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "position",
+        "definition": "Position",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "ip",
+        "definition": "IP",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "parent",
+        "definition": "Parent",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "id",
+        "definition": "ID",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "mfa_short",
+        "definition": "MFA",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "actions",
+        "definition": "Actions",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "ldap",
+        "definition": "LDAP",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "emails",
+        "definition": "Emails",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "api",
+        "definition": "API",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "notification",
+        "definition": "Notification",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "information",
+        "definition": "Information",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "version_alone",
+        "definition": "version",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "options",
+        "definition": "Options",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "action",
+        "definition": "Action",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "email_bodyalt_item_updated",
+        "definition": "Le mot de passe de #item_label# a été mis à jour.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "at_email",
+        "definition": "email",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "pdf",
+        "definition": "PDF",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "at_restriction",
+        "definition": "Restriction",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "admin",
+        "definition": "Administration",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "at_label",
+        "definition": "Libellé",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "at_login",
+        "definition": "Identifiant",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "at_url",
+        "definition": "URL",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "date",
+        "definition": "Date",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "description",
+        "definition": "Description",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "kbs",
+        "definition": "KBs",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "minutes",
+        "definition": "minutes",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "pages",
+        "definition": "Pages",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "url",
+        "definition": "URL",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_api_ip",
+        "definition": "IP",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "suggestion_menu",
+        "definition": "Suggestions",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "imported_via_api",
+        "definition": "API",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "documentation_canal",
+        "definition": "Documentation",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "type",
+        "definition": "Type",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "at_export",
+        "definition": "Export",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    }
+]
