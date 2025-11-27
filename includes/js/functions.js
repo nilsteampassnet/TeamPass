@@ -225,42 +225,177 @@ function jsonErrorHdl(message)
     return false;
 }
 
+
 /**
- * [prepareExchangedData description]
- * @param  {[type]} data [description]
- * @param  {[type]} type [description]
- * @param  {[type]} key  [description]
- * @param  {[type]} fileName  [description]
- * @param  {[type]} functionName  [description]
- * @return {[type]} purify [description]
+ * Converts a value (object, TypedArray, number, boolean, etc.) into a safe UTF-8 string
+ * suitable for being passed to the CryptoJS encryption library (Encryption.encrypt()).
+ * * This normalization is crucial to prevent the 'Uncaught RangeError: Failed to set the 
+ * 'length' property on 'Array': Invalid array length' when the payload is not a string.
+ * It ensures the input to the crypto library is always a standard string representation.
+ * * @param {*} v The value to normalize (can be string, object, ArrayBuffer, null, undefined).
+ * @returns {string} A safe UTF-8 string representation of the input.
+ */
+function tpSafePlain(v) {
+    // 1. Handle common empty/invalid primitives
+    if (v === undefined || v === null) return '';
+    if (typeof v === 'string') return v;
+
+    // 2. Handle ArrayBuffer / TypedArray (binary data)
+    if (typeof ArrayBuffer !== 'undefined') {
+        try {
+            // Check if it's an ArrayBuffer itself
+            if (v instanceof ArrayBuffer) {
+                // Use modern TextDecoder if available
+                if (typeof TextDecoder !== 'undefined') {
+                    return new TextDecoder().decode(new Uint8Array(v));
+                }
+                // Fallback for older browsers
+                return String.fromCharCode.apply(null, new Uint8Array(v));
+            }
+            // Check if it's a TypedArray view (Uint8Array, etc.)
+            if (ArrayBuffer.isView && ArrayBuffer.isView(v)) {
+                // Use modern TextDecoder if available
+                if (typeof TextDecoder !== 'undefined') {
+                    return new TextDecoder().decode(v);
+                }
+                // Fallback using buffer manipulation
+                return String.fromCharCode.apply(null, new Uint8Array(v.buffer, v.byteOffset, v.byteLength));
+            }
+        } catch (e) {
+            // Fallback for complex binary conversion errors
+        }
+    }
+
+    // 3. Handle Primitives (number, boolean)
+    if (typeof v === 'number' || typeof v === 'boolean') return String(v);
+
+    // 4. Handle Objects (JSON serialization)
+    if (typeof v === 'object') {
+        try { 
+            // Attempt to stringify objects (e.g., standard AJAX data)
+            return JSON.stringify(v); 
+        } catch (e) { 
+            // Fallback for circular references or other JSON errors
+            return String(v); 
+        }
+    }
+    
+    // 5. Final fallback for unknown types
+    return String(v);
+}
+
+/**
+ * Parses a string into JSON in a safe and robust way, without failing 
+ * on invalid inputs like "undefined", empty strings, null, or HTML content.
+ * * @param {*} data The data to parse. Expected to be a string or string-like.
+ * @returns {{ok: boolean, value: *, error?: string}} A structured result object.
+ * 'ok: true' indicates successful parsing.
+ */
+function safeParseJSONMaybe(data) {
+    // Return early for common invalid values
+    if (data === null || data === undefined) return { ok: false, error: 'empty', value: data };
+    
+    // If it's already an object (e.g., already parsed by a preceding process), return it as OK
+    if (typeof data === 'object') return { ok: true, value: data };
+
+    // Ensure we are working with a string for JSON parsing
+    if (typeof data !== 'string') return { ok: false, error: 'not a string', value: data };
+    
+    const t = data.trim();
+    
+    // Check for common invalid JSON literals
+    if (t === '' || t === 'undefined' || t === 'null') {
+        return { ok: false, error: 'invalid json literal', value: data };
+    }
+    
+    // Attempt standard JSON parsing
+    try {
+        return { ok: true, value: JSON.parse(t) };
+    } catch (e) {
+        // Return detailed error information on parsing failure
+        return { ok: false, error: e && e.message ? e.message : 'parse error', value: data };
+    }
+}
+
+/**
+ * Handles the preparation of data exchanged between client and server, 
+ * including optional encryption/decryption using the configured key.
+ * * This function has been enhanced for:
+ * 1. Robust data ENCODING: Always normalizes the payload to a safe string before encryption (using tpSafePlain).
+ * 2. Robust data DECODING: Uses safeParseJSONMaybe for robust handling of server responses (plain or decrypted).
+ * * @param {*} data The data payload to process (encode or decode).
+ * @param {'encode'|'decode'} type Operation type.
+ * @param {string} key The encryption key (if active).
+ * @param {string} [fileName=''] Context: File where the function was called.
+ * @param {string} [functionName=''] Context: Function where the call originated.
+ * @param {boolean} [purify=true] Whether to run the result through purifyData.
+ * @param {boolean} [bStringify=false] Whether to stringify the result of purifyData (rarely used here).
+ * @returns {*} The processed data (decrypted/parsed object, encrypted string, or error HTML).
  */
 function prepareExchangedData(data, type, key, fileName = '', functionName = '', purify = true, bStringify = false)
 {
+    // Determine the current encryption status globally
+    const ENC_ACTIVE = parseInt($('#encryptClientServerStatus').val()) === 1;
+
     if (type === 'decode') {
-        if (parseInt($('#encryptClientServerStatus').val()) === 0) {
-            try {
-                return purifyData($.parseJSON(data), false, false, false, bStringify);
-            }
-            catch (e) {
-                return jsonErrorHdl(data);
+        if (!ENC_ACTIVE) {
+            // Response expected as plain JSON -> robust parsing
+            const parsed = safeParseJSONMaybe(data);
+            
+            if (parsed.ok) {
+                return purifyData(parsed.value, false, false, false, bStringify);
+            } else {
+                // Handle non-JSON server response gracefully with detailed error info
+                return jsonErrorHdl(
+                    '<b>Server response is not valid JSON</b>'
+                    + (fileName ? '<br><b>Informations:</b><div>  - File: ' + fileName + '<br>  - Function: ' + functionName + '</div>' : '')
+                    + '<div><br><b>Raw data:</b><br>' + sanitizeDom(String(parsed.value)) + '</div>'
+                );
             }
         } else {
+            // Encrypted response -> decrypt, then robust parsing
             try {
                 let encryption = new Encryption();
-                return purifyData(JSON.parse(encryption.decrypt(data, key)), false, false, false, bStringify);
-            }
-            catch (e) {
-                return jsonErrorHdl('<b>Next error occurred</b><div>' + e + '</div>'
-                    + (fileName !== '' ? '<br><b>Informations:</b><div>  - File: ' + fileName + '<br>  - Function: ' + functionName + '</div>': '')
-                    + '<div><br><b>Raw answer from server:</b><br>'+data+'</div>');
+                const decryptedStr = encryption.decrypt(data, key);
+                
+                const parsed = safeParseJSONMaybe(decryptedStr);
+                
+                if (!parsed.ok) {
+                    // Handle case where decryption works, but the content is not valid JSON
+                    return jsonErrorHdl(
+                        '<b>Decrypted payload is not valid JSON</b>'
+                        + (fileName ? '<br><b>Informations:</b><div>  - File: ' + fileName + '<br>  - Function: ' + functionName + '</div>' : '')
+                        + '<div><br><b>Raw decrypted data:</b><br>' + sanitizeDom(String(decryptedStr)) + '</div>'
+                    );
+                }
+                
+                return purifyData(parsed.value, false, false, false, bStringify);
+            } catch (e) {
+                // Handle case where decryption itself failed (e.g., bad key, corrupted data)
+                return jsonErrorHdl(
+                    '<b>Decryption error occurred</b><div>' + e + '</div>'
+                    + (fileName !== '' ? '<br><b>Informations:</b><div>  - File: ' + fileName + '<br>  - Function: ' + functionName + '</div>' : '')
+                    + '<div><br><b>Raw answer from server:</b><br>' + sanitizeDom(String(data)) + '</div>'
+                );
             }
         }
     } else if (type === 'encode') {
-        if (parseInt($('#encryptClientServerStatus').val()) === 0) {
+        if (!ENC_ACTIVE) {
+            // ENCODE branch (No encryption)
+            // Keep the original behavior (purify the data according to the flag)
             return purify === true ? purifyData(data, false, false, false, bStringify) : data;
         } else {
+            // ENCODE branch (With encryption)
             let encryption = new Encryption();
-            return purify === true ? purifyData(encryption.encrypt(data, key), false, false, false, bStringify) : encryption.encrypt(data, key);
+            
+            // IMPORTANT: Normalize the payload to a string BEFORE encryption to avoid RangeError
+            const safePayload = tpSafePlain(data);
+            
+            // Perform encryption
+            const out = encryption.encrypt(safePayload, key);
+            
+            // Preserve the original semantics (purify the encrypted string if requested)
+            return purify === true ? purifyData(out, false, false, false, bStringify) : out;
         }
     } else {
         return false;
