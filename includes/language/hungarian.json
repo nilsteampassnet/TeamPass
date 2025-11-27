@@ -1,0 +1,3512 @@
+[
+    {
+        "term": "copied",
+        "definition": "Másolva",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "opened_edit_form_of",
+        "definition": "Szerkesztési űrlap megnyitva:",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "admin_info_header",
+        "definition": "Adminisztrációs Vezérlőpult",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "admin_last_refresh",
+        "definition": "Utolsó frissítés",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "admin_view_changelog_github",
+        "definition": "Változásnapló megtekintése a GitHub-on",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "dashboard",
+        "definition": "Vezérlőpult",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "active_users",
+        "definition": "Aktív Felhasználók",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "online",
+        "definition": "Online",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "blocked",
+        "definition": "Blokkolt",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "total_items",
+        "definition": "Összes Tétel",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "shared",
+        "definition": "Megosztott",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "personal",
+        "definition": "Személyes",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "total_folders",
+        "definition": "Összes Mappa",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "public",
+        "definition": "Nyilvános",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "logs_24h",
+        "definition": "Naplók (24ó)",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "accesses",
+        "definition": "Hozzáférések",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "live_activity",
+        "definition": "Élő Aktivitás",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "no_recent_activity",
+        "definition": "Nincs friss aktivitás",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "view_all_logs",
+        "definition": "Összes napló megtekintése",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "ago",
+        "definition": "ezelőtt",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "tasks_queue",
+        "definition": "Feladatok a Sorban",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "system_last_cron",
+        "definition": "Utolsó Cron Feladat",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "view_tasks",
+        "definition": "Feladatok Megtekintése",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "system_health",
+        "definition": "Rendszer Állapot",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "health_encryption",
+        "definition": "Titkosítási Rendszer",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "health_sessions",
+        "definition": "Aktív Munkamenetek",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "health_cron",
+        "definition": "Cron Feladatok",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "health_unknown_files",
+        "definition": "Ismeretlen Fájlok",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "health_status_ok",
+        "definition": "Működik",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "health_secure_file_missing",
+        "definition": "Biztonságos fájl hiányzik",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "health_cron_delayed",
+        "definition": "Késleltetett",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "action_accessed",
+        "definition": "hozzáférve",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "action_created",
+        "definition": "létrehozva",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "action_modified",
+        "definition": "módosítva",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "action_deleted",
+        "definition": "törölve",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "action_manual",
+        "definition": "művelet végrehajtva:",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "unknown",
+        "definition": "Ismeretlen",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "admin_support_teampass",
+        "definition": "TeamPass Fejlesztés Támogatása",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "admin_support_message",
+        "definition": "A TeamPass ingyenes és nyílt forráskódú. Segítsen nekünk fenntartani és fejleszteni!",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "admin_support_description",
+        "definition": "A szponzorok lehetővé teszik a fejlesztési időt karbantartásra, új funkciókra és közösségi támogatásra. Segítsen biztosítani, hogy a TeamPass folytatja a vállalati szintű jelszókezelést mindenki számára.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "admin_support_github_sponsors",
+        "definition": "Szponzorálás GitHub-on",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "admin_support_paypal",
+        "definition": "Adományozás PayPal-on",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "admin_support_thank_you",
+        "definition": "Köszönjük a támogatást!",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "home",
+        "definition": "Kezdőlap",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "error_user_deleted_exists",
+        "definition": "A felhasználó törölve lett",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "no_subfolders",
+        "definition": "Nincsenek al-mappák",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "copy_sub_directories",
+        "definition": "Al-mappák másolása",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "copy_items",
+        "definition": "Tételek másolása",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "deleted_date",
+        "definition": "Törlés dátuma",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "days_since",
+        "definition": "Napok száma",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "no_deleted_users",
+        "definition": "Nincs törölt felhasználó",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "no_users_to_purge",
+        "definition": "Nincs törölhető felhasználó",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "and_x_more_errors",
+        "definition": "... és még %x% hiba",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "purge_completed",
+        "definition": "Törlés befejezve",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "purging_users",
+        "definition": "Felhasználók törlése",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "starting_purge",
+        "definition": "Törlés indítása",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "purging_in_progress",
+        "definition": "Törlés folyamatban",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "purge_users_90days",
+        "definition": "90 napnál régebben törölt felhasználók végleges eltávolítása",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "deleted_users",
+        "definition": "Törölt felhasználók",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "user_purged_successfully",
+        "definition": "Felhasználó sikeresen törölve",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "users_purged_successfully",
+        "definition": "Felhasználók sikeresen törölve",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "confirm_purge_user",
+        "definition": "Biztosan véglegesen törli ezt a felhasználót?",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "transparent_key_recovery_pbkdf2_iterations",
+        "definition": "PBKDF2 iterációk a jelszó átlátható visszaállításához",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "transparent_key_recovery_pbkdf2_iterations_tip",
+        "definition": "Az iterációk száma a PBKDF2 kulcs származtatásához a jelszó átlátható visszaállításában. Magasabb értékek növelik a biztonságot, de hatással lehetnek a teljesítményre. Igazítsa a szerver képességei alapján.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "please_fill_in_all_required_fields",
+        "definition": "Kérjük töltse ki az összes kötelező mezőt",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "an_error_occurred",
+        "definition": "Hiba történt",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "attention_user_password_change",
+        "definition": "A jelszava megváltozott, újra kell titkosítani a személyes tételeit.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "your_current_password",
+        "definition": "Az aktuális jelszava",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "ignore_this_password_is_lost",
+        "definition": "Nem emlékszem a korábbi jelszavamra. Megértem, hogy ez visszaállítja a személyes tételeimben lévő jelszavakat.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "build_missing_api_keys",
+        "definition": "Hiányzó API kulcsok létrehozása a felhasználóknak",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "highlight_selected",
+        "definition": "Kiválasztottak kiemelése",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_category_general_info_title",
+        "definition": "Általános információk és telepítési útvonalak",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_category_general_info_goal",
+        "definition": "Határozza meg, hol tárolódnak a TeamPass fájlok és erőforrások.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_category_system_title",
+        "definition": "Rendszer beállítások és karbantartás",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_category_system_goal",
+        "definition": "A teljes rendszer viselkedésének és rendelkezésre állásának vezérlése.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_category_security_title",
+        "definition": "Biztonság és hitelesítés",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_category_security_goal",
+        "definition": "Biztonság, hozzáférés-vezérlés és titkosítási szabályzatok kezelése.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_category_users_title",
+        "definition": "Felhasználó és szerepkör kezelés",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_category_users_goal",
+        "definition": "Felhasználói képességek és korlátozások meghatározása a rendszeren belül.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_category_items_title",
+        "definition": "Tételek és mappák kezelése",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_category_items_goal",
+        "definition": "Szabályozza, hogyan szerveződnek és kezelődnek a jelszó tételek és mappák.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_category_collaboration_title",
+        "definition": "Együttműködési és speciális funkciók",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_category_collaboration_goal",
+        "definition": "További eszközök és funkciók biztosítása a csapatmunkához és kiterjesztett funkcionalitáshoz.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_category_logging_title",
+        "definition": "Naplózás és előzmények",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_category_logging_goal",
+        "definition": "Naplók kezelése és felhasználói műveletek nyomon követése audit és nyomonkövethetőség céljából.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "no_previous_valide_private_key",
+        "definition": "Nincs korábbi privát kulcs, amely illeszkedik a megadott jelszóhoz",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "user_password_changed",
+        "definition": "A jelszava megváltozott. Kérjük adja meg a korábbi jelszavát a személyes tételek újratitkosításához. Amint ez megtörtént, várjon néhány percet, mielőtt hozzáfér a személyes tételekhez.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "suggested_value",
+        "definition": "Javasolt érték",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "import_error_folder_creation",
+        "definition": "Hiba a mappa létrehozása során",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "files_are_not_expected_ones",
+        "definition": "a fájlok nem a várt fájlok",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "perform_file_integrity_check",
+        "definition": "Fájl integritás ellenőrzés végrehajtása",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "files_integrity_check",
+        "definition": "Fájl integritás ellenőrzés",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "item_checkbox",
+        "definition": "Tétel jelölőnégyzet",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "at_phone_number",
+        "definition": "Telefonszám",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "at_otp_secret",
+        "definition": "OTP titkos kulcs",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "file_not_exists",
+        "definition": "A fájl nem létezik",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "path_not_a_file",
+        "definition": "Az útvonal nem fájl",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "file_not_writable",
+        "definition": "A fájl nem írható",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "failed_to_delete",
+        "definition": "Törlés sikertelen",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "successfully_deleted",
+        "definition": "Sikeresen törölve",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "delete_unknown_files",
+        "definition": "Törli az ismeretlen fájlokat?",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "unknown_files_should_be_deleted",
+        "definition": "Ajánlott ezeket a fájlokat törölni a verziók keveredésének megakadályozása érdekében.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "account_in_construction_please_wait_email",
+        "definition": "A fiókja jelenleg létrehozás alatt áll. E-mailt fog kapni, amikor készen áll.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "oauth_selfregistered_user_belongs_to_role",
+        "definition": "Az önregisztrált felhasználó ehhez a szerepkörhöz tartozik",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "oauth_self_register_groups",
+        "definition": "Engedélyezett csoportok az önregisztrációhoz",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "oauth_self_register_groups_tip",
+        "definition": "Vesszővel elválasztott lista azon csoportokról, amelyek önregisztrációra jogosultak. Hagyja üresen, ha le szeretné tiltani az önregisztrációt. Az önregisztráció lehetővé teszi felhasználói fiók létrehozását a TeamPass-ban adminisztrátor nélkül. A felhasználó bejelentkezhet AD hitelesítő adataival és automatikusan létrejön a TeamPass-ban.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "oauth2_synchronization",
+        "definition": "OAuth2 szinkronizáció",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "oauth2_user_has_no_mail",
+        "definition": "A felhasználónak nincs e-mail címe",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "role_not_exists_in_teampass",
+        "definition": "A szerepkör nem létezik a TeamPass-ban",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "toggle_user_authentification",
+        "definition": "Felhasználói hitelesítés váltása",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "max_parallel_tasks",
+        "definition": "Párhuzamos feladatok maximális száma",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "max_parallel_tasks_tip",
+        "definition": "Ez az opció beállítja a folyamatok maximális számát, amelyek egyidejűleg futhatnak. Fontos ezt a számot a vCPU-k kapacitása alapján beállítani a rendszer túlterhelésének elkerülése érdekében. Kezdje alacsony számmal és állítsa be a megfigyelt teljesítmény alapján.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "item_copied",
+        "definition": "Tétel másolva",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "item_updated",
+        "definition": "Tétel frissítve",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "done_tasks_history_delay_in_days",
+        "definition": "Feladatelőzmények megőrzési időtartama (napokban)",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "import_csv_keys_generation_strategy",
+        "definition": "Kulcs generálási stratégia",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "import_csv_keys_generation_strategy_tip",
+        "definition": "Tételek importálásakor választhat, hogy új kulcsokat generál a tételekhez menet közben vagy feladatkezelővel.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "csv_import_success",
+        "definition": "CSV fájl sikeresen importálva",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "number_of_items_failed",
+        "definition": "Sikertelen tételek száma",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "import_error_item_creation",
+        "definition": "Hiba a tétel létrehozása során",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "import_no_items_to_process",
+        "definition": "Nincs feldolgozandó tétel",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "import_error_no_rights",
+        "definition": "Nincs jogosultsága mappák létrehozásához tételek importálása közben",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "password_minimal_complexity_target_for_folders",
+        "definition": "Minimális jelszó összetettség új mappákhoz",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "access_right_for_roles_for_folders",
+        "definition": "Hozzáférési jog szerepköröknek új mappákhoz",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "import_folders_success",
+        "definition": "Mappák sikeresen importálva",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "to_be_imported",
+        "definition": "Importálandó",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "please_wait_folders_in_construction",
+        "definition": "Kérjük várjon, a mappák létrehozás alatt állnak",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "please_wait_items_in_construction",
+        "definition": "Kérjük várjon, a tételek létrehozás alatt állnak",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "unable_to_clear_clipboard",
+        "definition": "Nem lehet kézzel törölni a vágólapot",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "clipboard_unsafe",
+        "definition": "A vágólap nem törölhető automatikusan, ez nem biztonságos!",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "clipboard_clear_now",
+        "definition": "Törölje most!",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "clipboard_clearing_failed",
+        "definition": "Vágólap törlése sikertelen",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "clipboard_error",
+        "definition": "Vágólap hiba",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "error_fetching_password",
+        "definition": "Hiba a jelszó lekérésekor",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "clipboard_cleared",
+        "definition": "Vágólap törölve",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "user_password_expired",
+        "definition": "A jelszava lejárt. Kérjük változtassa meg.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "oauth2_client_urlResourceOwnerDetails",
+        "definition": "URL a felhasználói adatok lekéréséhez",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "oauth2_client_urlResourceOwnerDetails_tip",
+        "definition": "URL a felhasználói adatok lekéréséhez. A hitelesítés után használatos a felhasználói adatok lekérésére.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "encryptClientServer_tip",
+        "definition": "Ha engedélyezve van, a kliens titkosítja az adatokat, mielőtt elküldi a szervernek. A szerver csak titkosított adatokat tárol. Letiltható.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "highlight_favorites",
+        "definition": "Kedvencek kiemelése",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "user_not_allowed_to_auth_to_teampass_app",
+        "definition": "A felhasználónak nincs jogosultsága hitelesíteni a TeamPass alkalmazásban",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "user_is_not_auth_with_oauth2",
+        "definition": "A felhasználó ne hitelesítsen Entra\/Azure AD-val",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "items_page_split_view_mode",
+        "definition": "Tétel részletek megjelenítése osztott nézet módban",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "show_item_data",
+        "definition": "Tétel adatok megjelenítése a tételek listájában",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "show_item_data_tip",
+        "definition": "Lehetővé teszi extra információk megjelenítését a tételek listájában (felhasználónév, e-mail és URL). Ez hasznos lehet a tétel tartalmának gyors áttekintéséhez.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "server_connected_to_internet",
+        "definition": "A szerver csatlakozik az internethez",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "server_not_connected_to_internet_tip",
+        "definition": "Ez több funkció helytelen működéséhez vezethet. Különösen az MFA esetében.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "tools",
+        "definition": "Eszközök",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "user_config_not_compliant",
+        "definition": "A felhasználó konfigurációja nem megfelelő",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "fix_personal_items_empty",
+        "definition": "Személyes tételek üresek javítása",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "fix_personal_items_empty_tip",
+        "definition": "Ez az eszköz lehetővé teszi a probléma javítását, amikor a személyes tételek üresek egy TeamPass frissítés után. Szükséges a teampass_items tábla másolatának visszaállítása a TeamPass 2-es verzióból. A táblának teampass_items_v2 néven kell létezni.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "table_not_exists",
+        "definition": "A várt tábla nem létezik. Kérjük állítsa vissza biztonsági mentésből.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "tools_usage_warning",
+        "definition": "Az eszközök használata közvetlen hatással lehet az adatbázisra. Kérjük legyen óvatos. Mindig készítsen mentést előtte és határozzon meg karbantartási időszakot.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "select_user",
+        "definition": "Felhasználó kiválasztása",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "replace_tenant_id",
+        "definition": "Állítsa be az URL-t, de tartsa meg a {tenant-id} értéket. Élőben lecserélődik a bérlő azonosítóra.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "login_with_sso",
+        "definition": "Bejelentkezés SSO-val",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "folder_created",
+        "definition": "Mappa létrehozva",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "allowed_to_create",
+        "definition": "Létrehozás engedélyezve",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "allowed_to_read",
+        "definition": "Olvasás engedélyezve",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "allowed_to_update",
+        "definition": "Frissítés engedélyezve",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "allowed_to_delete",
+        "definition": "Törlés engedélyezve",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "error_folder_not_allowed_for_this_user",
+        "definition": "Ez a mappa nem engedélyezett ennek a felhasználónak",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "users_api_access_info",
+        "definition": "A felhasználók hozzáférhetnek az API-hoz ugyanazokkal a jogokkal, mint a TeamPass-ban.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "users_fetch_error",
+        "definition": "Valami hiba történt a felhasználók lekérésekor",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "error_otp_secret",
+        "definition": "Nem sikerült dekódolni az OTP titkot, helyes a titok?",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "tasks_log_retention_delay_in_days",
+        "definition": "Feladat naplók megőrzési időtartama (napokban)",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "tasks_log_table_size",
+        "definition": "Feladat napló tábla mérete",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "progress",
+        "definition": "Folyamat",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "password_length_by_default",
+        "definition": "Alapértelmezett jelszó hossz",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "display_warning_icons",
+        "definition": "Figyelmeztető ikonok megjelenítése",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_ldap_group_objectclasses_attibute",
+        "definition": "AD Csoport ObjectClasses attribútum",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_ldap_group_objectclasses_attibute_tip",
+        "definition": "Az objectClasses a csoportok keresésekor használandók. Több objectClass vesszővel elválasztva (,). Példa: groupOfNames,group vagy top,posixGroup",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "otp",
+        "definition": "OTP",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "otp_code",
+        "definition": "OTP kód",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "enabled_otp_for_item",
+        "definition": "OTP kód engedélyezése",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "at_otp_status",
+        "definition": "OTP státusz",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "phone_number",
+        "definition": "Kapcsolódó telefonszám (opcionális)",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "otp_secret",
+        "definition": "OTP titkos kulcs",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "mfa_code_send_by_email",
+        "definition": "MFA kód elküldve e-mailben",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "user_keys_downloaded",
+        "definition": "Felhasználói kulcsok letöltve",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "please_confirm_task_to_be_run",
+        "definition": "Kérjük erősítse meg a végrehajtandó feladatot",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "recovery_keys_not_downloaded",
+        "definition": "Helyreállítási kulcsok nem lettek letöltve",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "provide_recovery_keys",
+        "definition": "Adja meg a helyreállítási kulcsokat",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "public_key",
+        "definition": "Nyilvános kulcs",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "private_key",
+        "definition": "Privát kulcs",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "download_recovery_keys",
+        "definition": "Helyreállítási kulcsok letöltése",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "download_recovery_keys_confirmation",
+        "definition": "Helyreállítási kulcsok letöltésére készül. Kérjük tárolja őket biztonságos helyen, mivel kötelezőek lehetnek katasztrófa esetén.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "recovery_keys_download_date",
+        "definition": "Helyreállítási kulcsok letöltési dátuma",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "keys_not_recovered",
+        "definition": "Nyilvános és Privát kulcsok nem tárolva",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "keys_not_recovered_explanation",
+        "definition": "A jelszavak elvesztése elleni védelem érdekében biztonságosan tárolja a személyes TeamPass kulcsokat",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "get_your_recovery_keys",
+        "definition": "Helyreállítási kulcsok beszerzése",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "keys_management",
+        "definition": "Kulcskezelés",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "started",
+        "definition": "Elindítva",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "existing_valid_otv_links",
+        "definition": "OTV érvényes hivatkozások",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "feature_disabled_by_administrator",
+        "definition": "Funkció az adminisztrátor által letiltva",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "shared_globaly",
+        "definition": "Globálisan megosztott",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_otv_subdomain",
+        "definition": "OTV al-domain név",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_otv_subdomain_tip",
+        "definition": "Dedikált al-domain az egyszeri hivatkozásokhoz. Tekintse a fő TeamPass URL-t az internettől elszigeteltnek, ez az al-domain elérhető lehet mindenki számára, hogy megossza ezt a tételt valakivel a szervezeten kívül. Biztonsági szempontból sokkal biztonságosabb ilyen mechanikával. Megjegyzés: Ehhez DNS bejegyzés szükséges ehhez az al-domainhez, amely a TeamPass szerverre mutat.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "previously_used_passwords",
+        "definition": "Korábban használt jelszavak",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "next_passwords_were_valid_until_date",
+        "definition": "A következő jelszavak érvényesek voltak eddig a dátumig",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "items_management",
+        "definition": "Tétel műveletek",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "reload_user_cache_table",
+        "definition": "Felhasználói gyorsítótár tábla újratöltése",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "send_email_to_user",
+        "definition": "E-mail küldése a felhasználónak",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "sharekey_not_ready",
+        "definition": "Megosztási kulcs még nem generált... az összes tétel adat lehet, hogy nem készen áll... kérjük próbálja később",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "item_action_not_yet_possible",
+        "definition": "A művelet még nem lehetséges ezen a tételen",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "open",
+        "definition": "Megnyitás",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "maximum",
+        "definition": "maximum",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "updated",
+        "definition": "Frissítve",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "number_of_days",
+        "definition": "Napok száma",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "number_of_times",
+        "definition": "Alkalmak száma",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "open_tasks_settings",
+        "definition": "Feladatok beállításainak megnyitása",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "extend_session_duration_by",
+        "definition": "Munkamenet időtartamának kiterjesztése",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "maximum_session_expiration_time",
+        "definition": "Maximális munkamenet lejárati idő",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "maximum_session_expiration_time_tip",
+        "definition": "Maximális idő percekben, amennyivel egy felhasználó kiterjesztheti a munkamenet időtartamát",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "index_session_duration_too_long",
+        "definition": "A munkamenet időtartama túl hosszú",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "new_keys_generated",
+        "definition": "Új kulcsok generálva",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "user_creation",
+        "definition": "Felhasználó létrehozás",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "user_deletion",
+        "definition": "Felhasználó törlés",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "error_while_creating_file",
+        "definition": "Hiba a fájl létrehozása során",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "field",
+        "definition": "Mező",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "task_scheduling",
+        "definition": "Feladat ütemezés",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "parameter",
+        "definition": "Paraméter",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "frequency",
+        "definition": "Gyakoriság",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "in_minutes",
+        "definition": "percekben",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "run_once",
+        "definition": "Egyszeri futtatás",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "run_weekday",
+        "definition": "Futtatás hétköznapokon",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "monday",
+        "definition": "Hétfő",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "tuesday",
+        "definition": "Kedd",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "wednesday",
+        "definition": "Szerda",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "thursday",
+        "definition": "Csütörtök",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "friday",
+        "definition": "Péntek",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "saturday",
+        "definition": "Szombat",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "sunday",
+        "definition": "Vasárnap",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "hourly",
+        "definition": "Óránként",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "daily",
+        "definition": "Naponta",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "monthly",
+        "definition": "Havonta",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "day_of_month",
+        "definition": "A hónap napja",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "day",
+        "definition": "Nap",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "reset",
+        "definition": "Visszaállítás",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "purge_temporary_files",
+        "definition": "Ideiglenes fájlok törlése",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "clean_orphan_objects",
+        "definition": "Árva objektumok törlése",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "maintenance_operations",
+        "definition": "Karbantartási műveletek",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "maintenance_operations_tip",
+        "definition": "Kiválasztott karbantartási műveletek a TeamPass adatbázison.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "mfa_enabled",
+        "definition": "MFA engedélyezve",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "mfa_disabled_for_user",
+        "definition": "MFA letiltva a felhasználónak",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "error_data_not_valid",
+        "definition": "Az adatok nem érvényesek",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "new_user_info_by_mail",
+        "definition": "Az új felhasználó e-mailt fog kapni a hitelesítő adatairól",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "login_credentials",
+        "definition": "Bejelentkezési adatok",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "email_body_user_config_1",
+        "definition": "Helló #lastname#,<br><br>Ez egy generált e-mail a TeamPass jelszókezelőtől.<br><br>Következő hitelesítő adatok szükségesek a TeamPass használatakor:<ul><li>bejelentkezés: #login#<\/li><li>Jelszó: #password#<\/li><li>Titkosító kód: #code#<\/li><\/ul><br><br><br>Üdvözlettel",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "email_body_user_config_3",
+        "definition": "Helló #lastname#,<br><br>Ez egy generált e-mail a TeamPass jelszókezelőtől.<br><br>Következő jelszó szükséges a TeamPass használatakor:<br><br><b>#password#<\/b><br><br><br>Üdvözlettel",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "email_body_user_config_4",
+        "definition": "Helló #lastname#,<br><br>Ez egy generált e-mail a TeamPass jelszókezelőtől.<br><br>A TeamPass fiókja teljesen készen áll.<br><br>Üdvözlettel",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "email_body_user_config_5",
+        "definition": "Helló #lastname#,<br><br>Ez egy generált e-mail a TeamPass jelszókezelőtől.<br><br>Következő kód szükséges a TeamPass használatakor:<br><br><b>#code#<\/b><br><br><br>Üdvözlettel",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "email_body_user_config_6",
+        "definition": "Helló #lastname#,<br><br>Ez egy generált e-mail a TeamPass jelszókezelőtől.<br><br>Következő hitelesítő adatok szükségesek a TeamPass használatakor:<ul><li>bejelentkezés: #login#<\/li><li>Jelszó: #password#<\/li><\/ul><br><br><br>Üdvözlettel",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "no_code_is_requested",
+        "definition": "Nincs kód kérve.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "user_encryption_ongoing",
+        "definition": "A fiók jelenleg titkosítás alatt áll. A kérése nem folytatható. Kérjük várjon, amíg ez befejeződik.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "teampass_information",
+        "definition": "TeamPass információ",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "show_password",
+        "definition": "Jelszó megjelenítése",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "generate_new_keys",
+        "definition": "Új kulcsok generálása",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "generate_new_keys_info",
+        "definition": "A folytatással új titkosítási kulcsokat generál minden objektumhoz, amelyhez hozzáfér. Ezt csak akkor szabad megtenni, ha nem látja a jelszavakat.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "confirm_password",
+        "definition": "Meg kell erősítenie a jelszavát",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "generate_new_keys_end",
+        "definition": "A folyamat a háttérben fut és több percig is tarthat. Most bezárhatja ezt az ablakot.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "currently_using_version",
+        "definition": "Jelenleg betöltött verzió",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "git_commit_value",
+        "definition": "Git commit érték",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "add_new_job",
+        "definition": "Új feladat hozzáadása",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "tasks_cron_not_running",
+        "definition": "A Cron feladat nincs beállítva. Kérjük szerkessze a crontab-ot a szerver felhasználóval (általában www-data) a <code>crontab -u www-data -e<\/code> paranccsal.<br>Vagy nyomja meg a gombot az automatikus létrehozás megkísérlésére.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "tasks_cron_running",
+        "definition": "A Cron feladat helyesen be van állítva",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "keys_encryption_not_ready",
+        "definition": "Tájékoztatjuk, hogy a jelszó kulcsai jelenleg létrehozás alatt állnak. Kérjük várjon még néhány percet.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "account_not_ready",
+        "definition": "Fiók építés alatt",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "provide_label",
+        "definition": "Adjon meg egy címkét",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "enable_backlog_mail",
+        "definition": "Hátralékes e-mailek küldésének engedélyezése",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_ad_users_with_ad_groups",
+        "definition": "AD felhasználói szerepkörök hozzárendelve AD csoportjaikhoz",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_ad_users_with_ad_groups_tip",
+        "definition": "Lehetővé teszi az AD felhasználói szerepkörök hozzárendelését AD csoportjaikhoz. Ezek a szerepkörök hozzáadódnak a profiljukban meghatározotthoz.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_ad_user_auto_creation",
+        "definition": "AD felhasználó automatikus létrehozása",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_ad_user_auto_creation_tip",
+        "definition": "Lehetővé teszi az AD felhasználó automatikus létrehozását a TeamPass-ban, amikor először bejelentkezik. Vegye figyelembe, hogy ha az AD felhasználói szerepkörök az AD csoportokhoz rendelve opció engedélyezve van, akkor az AD csoportjaihoz rendelt szerepköröket kapja.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_ldap_guid_attibute",
+        "definition": "LDAP GUID attribútum",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_ldap_guid_attibute_tip",
+        "definition": "LDAP attribútum egy objektum GUID azonosítójának azonosításához. Például: objectGUID, objectSid, GUID, gidNumber, ...",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "ad_group",
+        "definition": "AD csoport",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "mapped_with_role",
+        "definition": "Szerepkörhöz rendelve",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "ad_groupe_and_roles_mapping",
+        "definition": "AD csoport és szerepkör hozzárendelés",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "select_adgroup_mapping",
+        "definition": "Válassza ki a szerepkört, amelyet hozzá szeretne rendelni a jelenlegi AD csoporthoz",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_ldap_group_object_filter",
+        "definition": "LDAP csoport objektum szűrő",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_ldap_group_object_filter_tip",
+        "definition": "LDAP szűrő a csoport objektum megtalálásához. Például: (objectClass=group1)(objectClass=group2)",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "upgrade_requested",
+        "definition": "A TeamPass adatbázis nincs naprakészen.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "upgrade_requested_more",
+        "definition": "Néhány inkonzisztencia észlelhető a fájlok és a konfiguráció között. Az adminisztrátornak el kell végezni a frissítési folyamatot a folytatás előtt.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "item_copying",
+        "definition": "Tétel másolás alatt",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "error_not_allowed_to_authenticate",
+        "definition": "Nem jogosult hitelesítésre",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "enable_tasks_log",
+        "definition": "Cron feladat napló engedélyezése",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "enable_tasks_log_tip",
+        "definition": "Lehetővé teszi a cron feladat által végrehajtott összes feladat naplózását a <i>processes_log<\/i> táblában. Hasznos lehet az események ellenőrzéséhez.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "items_and_folders_statistics",
+        "definition": "Tételek és mappák statisztikái",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "link",
+        "definition": "Hivatkozás",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "loading_main_page",
+        "definition": "Főoldal betöltése ...",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "never",
+        "definition": "Soha",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "creation_date",
+        "definition": "Létrehozás dátuma",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "user_keys_management",
+        "definition": "Felhasználói kulcsok kezelése",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "sending_emails",
+        "definition": "E-mailek küldése",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "sync_new_ldap_password",
+        "definition": "Új jelszó szinkronizálása",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "error_new_ldap_password_detected",
+        "definition": "Úgy tűnik, a jelszava megváltozott és a TeamPass-nak szüksége van rá a mester privát kulcs titkosításához.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_ldap_tls_certifacte_check",
+        "definition": "Tanúsítvány ellenőrzés LDAP TLS-hez",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_ldap_tls_certifacte_check_tip",
+        "definition": "Meghatározza a tanúsítvány ellenőrzési stratégiát. <a href=\"https:\/\/gist.github.com\/heiglandreas\/8a299a6f47a13ba463c3f2da41c679f7\" target=\"_blank\">További információ<\/a>.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "generate_new_otp",
+        "definition": "Új OTP generálása",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "generate_new_otp_informations",
+        "definition": "Ez a művelet a kiválasztott felhasználó összes kulcsának nulláról történő generálásából áll. Ennek következtében a felhasználónak meg kell adnia az újonnan generált OTP-t a következő bejelentkezéskor.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "html",
+        "definition": "html",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "execution_time",
+        "definition": "Végrehajtási idő",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "maximum_number_of_items_to_treat",
+        "definition": "Maximális tételek száma egy ciklusban való kezelésre",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "maximum_number_of_items_to_treat_tip",
+        "definition": "A szkript időtúllépés nélküli befejezésének biztosításához lehetséges személyes érték meghatározása.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "maximum_time_script_allowed_to_run",
+        "definition": "A szkript háttérben történő futtatására engedélyezett időtartam másodpercekben",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "maximum_time_script_allowed_to_run_tip",
+        "definition": "Alapértelmezetten a PHP szkript nem futhat tovább, mint a php.ini fájlban a max_execution_time paraméter által meghatározott időtartam. A cél itt egy magasabb érték meghatározása, hogy biztosítsa a szkript teljes végrehajtását.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "refresh_data_every_on_screen",
+        "definition": "Képernyő frissítési periódus (másodpercekben)",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "refresh_data_every_on_screen_tip",
+        "definition": "A feladatok nézet böngészésekor ez lehetővé teszi a frissített lista alapján történő megjelenítést.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "refreshed",
+        "definition": "Frissítve",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "process_details",
+        "definition": "Folyamat részletek",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "created_at",
+        "definition": "Létrehozva",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "updated_at",
+        "definition": "Frissítve",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "finished_at",
+        "definition": "Befejezve",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "tasks_manager",
+        "definition": "Feladatkezelő",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "tasks",
+        "definition": "Feladatok",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "task_in_progress_user_not_active",
+        "definition": "Feladatok folyamatban - Felhasználó nem aktív",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "enable_tasks_manager",
+        "definition": "Háttérfeladatok engedélyezése cron kezelővel",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "enable_tasks_manager_tip",
+        "definition": "Ezt az opciót engedélyezni kell, ha észrevette, hogy néhány feladat hosszú időt vesz igénybe. Ez lehetővé teszi ezen feladatok kezelését háttérfolyamattal, amelyet a szerver cron kezelője hajt végre. További részletekért lásd a dokumentációt.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_api_token_duration",
+        "definition": "JWT token lejárati időtartam (másodpercekben)",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_api_token_duration_tip",
+        "definition": "Időtartam, amely alatt a generált JWT token érvényes. Ezen időtartam után szükséges egy authorize kérés küldése az API-hoz.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "show_encryption_code_to_admin",
+        "definition": "Ez a titkosított kód, amelyre a felhasználónak szüksége lesz ennél a bejelentkezésnél. Ön kérte annak megtekintését, kérjük másolja és ossza meg biztonságos módon. A kód:",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "previous_password",
+        "definition": "Korábbi jelszó, amelyet a TeamPass-hoz használt",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "icon",
+        "definition": "Ikon",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "icon_on_selection",
+        "definition": "Ikon kiválasztáskor",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "fontawesome_icon_tip",
+        "definition": "Megadhat egy Font Awesome ikon kódot, amelyet a Free és Solid ikonokból választott. Hagyja üresen az alapértelmezett ikonhoz.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_ldap_user_dn_attribute",
+        "definition": "Felhasználó Distinguished Name",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "user_specific_right",
+        "definition": "Felhasználó specifikus jog",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "email_debug_level",
+        "definition": "Válasszon hibakeresési szintet",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "email_debug_client",
+        "definition": "Kliens parancsok",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "email_debug_server",
+        "definition": "Kliens parancsok és szerver válaszok",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "email_debug_connection",
+        "definition": "Kliens parancsok, szerver válaszok és kapcsolat státusz",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "email_debug_low_level",
+        "definition": "Alacsony szintű adat kimenet, minden üzenet",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "email_debug_level_usage",
+        "definition": "Ezt a beállítást Nincs értékre kell állítani. Csak e-mail hibakereséssel való tesztelésre használandó. Ha engedélyezve van, lehetővé teszi az e-mail parancsok kimenetének megjelenítését.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "email_body_temporary_login_password",
+        "definition": "Helló,<br><br>Ez egy generált e-mail a TeamPass jelszókezelőtől.<br><br>Egy adminisztrátor megváltoztatta a TeamPass bejelentkezési jelszavát. Következő alkalommal, amikor csatlakozik a TeamPass-hoz, kérjük használja a következőt:<br><br><b>#enc_code#<\/b><br><br><br>Üdvözlettel",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "your_new_password",
+        "definition": "Az új jelszava",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "show_user_temporary_encryption_code",
+        "definition": "Felhasználó titkosító kód megjelenítése",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "email_body_new_user",
+        "definition": "Helló,<br><br>Ez egy generált e-mail a TeamPass jelszókezelőtől.<br><br>Egy adminisztrátor létrehozott Önnek egy felhasználói fiókot a TeamPass-on. Következő alkalommal, amikor csatlakozik a TeamPass-hoz, kérjük használja a következő hitelesítő adatokat:<ul><li>bejelentkezés: #login#<\/li><li>Jelszó: #password#<\/li><li>Titkosító kód: #code#<\/li><\/ul><br><br><br>Üdvözlettel",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "user_password",
+        "definition": "Felhasználó jelszó",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "user_temporary_encryption_code",
+        "definition": "Felhasználó titkosító kód",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "no_email_set",
+        "definition": "Nincs e-mail regisztrálva",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "send_user_password_by_email",
+        "definition": "Döntse el, hogy a felhasználó bejelentkezési jelszavát el kell-e küldeni e-mailben.<br>Ha igen, akkor nyomja meg a Küldés gombot.<br><br>Ellenkező esetben használja a Másolás a vágólapra gombot, hogy elküldje a felhasználónak más módon.<br>Az Ön felelőssége, mint Adminisztrátornak, hogy biztonságos módon biztosítsa a jelszót a felhasználónak.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "admin_change_user_encryption_code_info",
+        "definition": "Ez a művelet visszaállítja a titkosító kódot ennek a felhasználónak.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "send_by_email",
+        "definition": "Küldés e-mailben",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "filters",
+        "definition": "Szűrők",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "show_user_password",
+        "definition": "Felhasználó jelszó megjelenítése",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "open_website",
+        "definition": "Weboldal megnyitása",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "mfa_for_roles",
+        "definition": "MFA szükséges a Szerepkörök felhasználóihoz",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "mfa_for_roles_tip",
+        "definition": "Alapértelmezetten, ha egy MFA módszer ki van választva, az engedélyezve van minden felhasználó számára. Mindazonáltal kiválaszthatja azokat a szerepköröket, amelyekhez ez elvárás.<br>MÉG NINCS IMPLEMENTÁLVA",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "at_least_one_administrator_is_requested",
+        "definition": "Legalább egy adminisztrátor szükséges",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "bad_code",
+        "definition": "Rossz kód",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "generating_keys",
+        "definition": "Kulcsok generálása",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "this_may_take_time",
+        "definition": "Ez eltarthat néhány percig",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "disable_enable",
+        "definition": "Letiltás \/ Engedélyezés",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "user_disable_status",
+        "definition": "Jelölje be a négyzetet a letiltáshoz vagy hagyja üresen az engedélyezéshez",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "help_for_launching_items_encryption",
+        "definition": "Generálni kell a kulcs adatbázist a fiókjához. Kérjük adja meg a titkosító kódját.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "managed_through_ad",
+        "definition": "AD-n keresztül kezelve",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "new_ldap_user_info",
+        "definition": "Kérjük töltse ki a felhasználó meghatározást",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_ldap_user_object_filter",
+        "definition": "Felhasználó Objektum Szűrő",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_ldap_user_object_filter_tip",
+        "definition": "A szűrő használata felhasználói objektumok keresésekor. Több szűrő vesszővel elválasztva (,). Példa: (objectCategory=Person),(sAMAccountName=*)",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_ldap_additional_user_dn_tip",
+        "definition": "Ez az érték a base DN-hez hozzáadva használatos felhasználók keresésekor és betöltésekor. Ha nincs megadva érték, az altérkereső keresés a base DN-től indul. Példák: ou=Users ; cn=users",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_ldap_additional_user_dn",
+        "definition": "További Felhasználó DN",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "provide_your_previous_password",
+        "definition": "Az előző jelszava",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "admin_change_user_password_info",
+        "definition": "Ez a művelet visszaállítja a kiválasztott felhasználó jelenlegi jelszavát.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "sending_email_message",
+        "definition": "E-mail küldése a felhasználónak, kérjük várjon",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "change_your_password_info_message",
+        "definition": "Kérjük adja meg az új hitelesítési jelszavát és erősítse meg.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "user_has_to_change_password_info",
+        "definition": "A jelenleg használt jelszó generálva lett. Biztonsági okokból meg kell változtatnia.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "ready_to_go",
+        "definition": "Készen áll",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "passwords_not_the_same",
+        "definition": "A megadott jelszavak nem egyeznek",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "inititialization",
+        "definition": "Inicializálás",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "bad_password",
+        "definition": "Rossz jelszó",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "perform_checks",
+        "definition": "Ellenőrzések végrehajtása",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "temporary_encryption_code",
+        "definition": "Az ideiglenes titkosító kódja",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "renecyption_expected",
+        "definition": "Újra kell titkosítani a kulcsokat, hogy megfeleljenek a fiókjához és jogaihoz tartozó jogosultságoknak.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "error_no_user_in_ad",
+        "definition": "Felhasználó nem található az AD-ben!",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "error_ad_user_expired",
+        "definition": "A felhasználó lejárt!",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "hosts",
+        "definition": "Hosztok",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_ldap_hosts_tip",
+        "definition": "A hosztok opció IP címek vagy hosztnév tömb, amely a hálózaton található és LDAP címtár szolgáltatást nyújt (vesszővel elválasztva). Annyi szervert beszúrhat, amennyit szeretne, az erdőtől függően (legalább egyet természetesen).",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "base_distiguished_name",
+        "definition": "Base DN",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_ldap_bdn_tip",
+        "definition": "A gyökér distinguished name (DN) használata a címtárszerver elleni lekérdezések futtatásakor. Példák: o=example,c=com ; cn=users,dc=ad,dc=example,dc=com",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "username",
+        "definition": "Felhasználónév",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_ldap_username_tip",
+        "definition": "A felhasználó distinguished name-je, amelyet az alkalmazás használ a címtárszerverhez való csatlakozáskor. Példák: cn=administrator,cn=users,dc=ad,dc=example,dc=com ; cn=user,dc=domain,dc=name",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_ldap_password_tip",
+        "definition": "A fenti felhasználó jelszava.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "undefined",
+        "definition": "Nincs meghatározva",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "error_cannot_open_file",
+        "definition": "A fájl nem nyitható meg",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "provide_current_psk_and_click_launch",
+        "definition": "Amikor készen áll, kattintson az Indítás gombra",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "start",
+        "definition": "Indítás",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "data_inconsistency",
+        "definition": "Adat inkonzisztencia található. Kérjük töltse újra az oldalt!",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "one_time_code_expected",
+        "definition": "Egyszeri kód várható",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "data_are_missing",
+        "definition": "Várt adatok hiányoznak",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    }
+]
