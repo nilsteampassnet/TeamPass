@@ -2037,6 +2037,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             '<tr><td colspan="5" class="text-center"><?php echo $lang->get("no_deleted_users"); ?></td></tr>'
                         );
                     }
+
+                    // Adjust counter in button
+                    update_deleted_users_button(data.deleted_accounts_count);
                 });
                 }
             }
@@ -2138,6 +2141,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 }
                 
                 list.slideDown();
+
+                update_deleted_users_button(data.result.users.length);
             }
         );
     }
@@ -2296,6 +2301,45 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         
         // Start process
         processNextBatch();
+    }
+
+    /**
+     * update_deleted_users_button
+     *
+     * Updates the counter and the blinking status of the 'deleted-users' button.
+     * This function should be called after a successful user reactivation.
+     *
+     * @param int new_count The updated count of deleted users after the action.
+     * @return void
+     */
+    function update_deleted_users_button(new_count) {
+        const $button = $('button[data-action="deleted-users"]');
+        const $textContainer = $button.find('.fa-user-xmark').next(); // Get the text element after the icon
+        
+        // 1. Mettre à jour le contenu du bouton (y compris le badge)
+        if (new_count > 0) {
+            // Update the badge content (or create it if it wasn't there)
+            let $badge = $button.find('.badge');
+            if ($badge.length === 0) {
+                // Re-create the full HTML if the badge needs to be added (rarely happens on decrease)
+                const langText = $textContainer.text();
+                $textContainer.html(`${langText} <span class="badge badge-danger ml-1">${new_count}</span>`);
+            } else {
+                // Update existing badge
+                $badge.text(new_count);
+            }
+
+            // 2. Continue to blink
+            $button.addClass('blink_me');
+
+        } else {
+            // If count = 0
+            // Remove badge if exists
+            $button.find('.badge').remove();
+
+            // 3. Stop blicking
+            $button.removeClass('blink_me');
+        }
     }
 
     $(document).on('click', '.btn-restore-user', function() {

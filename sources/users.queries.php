@@ -1312,11 +1312,13 @@ if (null !== $post_type) {
                 break;
             }
 
+            $login = (string) filter_input(INPUT_POST, 'login', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             DB::queryFirstRow(
                 'SELECT * FROM ' . prefixTable('users') . '
-                WHERE login = %s
-                AND deleted_at IS NULL',
-                filter_input(INPUT_POST, 'login', FILTER_SANITIZE_FULL_SPECIAL_CHARS)
+                WHERE (login = %s AND deleted_at IS NULL) 
+                OR login LIKE %s',
+                $login,
+                $login.'_deleted_%%'
             );
 
             echo prepareExchangedData(
@@ -2975,9 +2977,14 @@ if (null !== $post_type) {
             }
             
             $result = purgeDeletedUserById($userId);
+            $deletedAccountsCount = (int) DB::queryFirstField("SELECT COUNT(id) FROM " . prefixTable('users') . " WHERE deleted_at IS NOT NULL");
 
             echo prepareExchangedData(
-                $result,
+                [
+                    'error' => false,
+                    'result' => $result,
+                    'deleted_accounts_count' => $deletedAccountsCount,
+                ],
                 'encode'
             );
             
@@ -3109,13 +3116,16 @@ if (null !== $post_type) {
                 }
             }
             
+            $deletedAccountsCount = (int) DB::queryFirstField("SELECT COUNT(id) FROM " . prefixTable('users') . " WHERE deleted_at IS NOT NULL");
+
             echo prepareExchangedData(
                 [
                     'error' => false,
                     'purged_count' => $purgedCount,
                     'total_in_batch' => count($userIds),
                     'errors' => $errors,
-                    'message' => $purgedCount . ' user(s) purged in this batch'
+                    'message' => $purgedCount . ' user(s) purged in this batch',
+                    'deletedAccountsCount' => $deletedAccountsCount,
                 ],
                 'encode'
             );
