@@ -1,0 +1,3188 @@
+[
+    {
+        "term": "show_user_temporary_encryption_code",
+        "definition": "Kuva kasutaja krüpteerimisvõti",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "email_body_new_user",
+        "definition": "Tere!<br><br>See on Teampassi poolt genereeritud e-kiri.<br><br>Administraator on loonud sulle Teampassi kasutajakonto. Järgmisel sisselogimisel kasuta järgmisi andmeid:<ul><li>kasutajanimi: #login#</li><li>Parool: #password#</li><li>Krüpteerimisvõti: #code#</li></ul><br><br><br>Tervitades",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "user_password",
+        "definition": "Kasutaja parool",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "user_temporary_encryption_code",
+        "definition": "Kasutaja krüpteerimisvõti",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "no_email_set",
+        "definition": "E-posti aadress pole registreeritud",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "send_user_password_by_email",
+        "definition": "Otsusta, kas kasutaja parool tuleks saata e-mailiga.<br>Kui jah, vajuta nuppu Saada.<br><br>Vastasel juhul kasuta nuppu Kopeeri lõikelauale ja saada parool kasutajale muul moel.<br>Administraatorina on sinu vastutus anda kasutajale parool turvaliselt.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "admin_change_user_encryption_code_info",
+        "definition": "See tegevus lähtestab selle kasutaja krüpteerimisvõtme.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "send_by_email",
+        "definition": "Saada e-mailiga",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "filters",
+        "definition": "Filtrid",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "show_user_password",
+        "definition": "Kuva kasutaja parool",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "open_website",
+        "definition": "Ava veebileht",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "mfa_for_roles",
+        "definition": "MFA on nõutud kasutajatele rollides",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "mfa_for_roles_tip",
+        "definition": "Vaikimisi, kui MFA meetod on valitud, on see lubatud kõigile kasutajatele. Siiski võid valida rollid, kellele see on nõutav.<br>POLE VEEL RAKENDATUD",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "at_least_one_administrator_is_requested",
+        "definition": "Vähemalt üks administraator on nõutud",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "bad_code",
+        "definition": "Vale kood",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "disable_enable",
+        "definition": "Keela / Luba",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "user_disable_status",
+        "definition": "Märgi ruut keelamiseks või jäta tühjaks lubamiseks",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "managed_through_ad",
+        "definition": "Hallatakse AD kaudu",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "new_ldap_user_info",
+        "definition": "Palun täida kasutaja andmed",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_ldap_user_object_filter",
+        "definition": "Kasutaja objekti filter",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_ldap_user_object_filter_tip",
+        "definition": "Filter kasutaja objektide otsimiseks. Mitu filtrit on eraldatud komaga (,). Näide: (objectCategory=Person),(sAMAccountName=*)",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_ldap_additional_user_dn_tip",
+        "definition": "Seda väärtust kasutatakse base DN-i lisaks kasutajate otsimisel ja laadimisel. Kui väärtust pole, algab otsing base DN-ist. Näited: ou=Users ; cn=users",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_ldap_additional_user_dn",
+        "definition": "Täiendav kasutaja DN",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "admin_change_user_password_info",
+        "definition": "See tegevus lähtestab valitud kasutaja parooli.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "sending_email_message",
+        "definition": "Saadan kasutajale e-kirja, palun oota",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "change_your_password_info_message",
+        "definition": "Palun sisesta oma uus parool ja kinnita see.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "user_has_to_change_password_info",
+        "definition": "Praegune parool on genereeritud. Turvalisuse huvides peaksid selle muutma.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "ready_to_go",
+        "definition": "Valmis",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "passwords_not_the_same",
+        "definition": "Sisestatud paroolid ei ole samad",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "inititialization",
+        "definition": "Lähtestamine",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "bad_password",
+        "definition": "Vale parool",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "perform_checks",
+        "definition": "Teosta kontrollid",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "temporary_encryption_code",
+        "definition": "Sinu ajutine krüpteerimisvõti",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "renecyption_expected",
+        "definition": "Peame sinu võtmed uuesti krüpteerima vastavalt sinu konto õigustele.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "error_ad_user_expired",
+        "definition": "Kasutaja on aegunud!",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "hosts",
+        "definition": "Hostid",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_ldap_hosts_tip",
+        "definition": "Hostide valik on IP-aadresside või hostinimede massiiv, mis asuvad võrgus ja pakuvad LDAP kataloogi (eraldatud komaga). Võid lisada nii palju servereid kui soovid sõltuvalt oma metsast (miinimum üks).",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_ldap_bdn_tip",
+        "definition": "Juur-DN päringuteks kataloogiserverisse. Näited: o=example,c=com ; cn=users,dc=ad,dc=example,dc=com",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "username",
+        "definition": "Kasutajanimi",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_ldap_username_tip",
+        "definition": "Kasutaja DN, mida rakendus kasutab kataloogiserveriga ühendumisel. Näited: cn=administrator,cn=users,dc=ad,dc=example,dc=com ; cn=user,dc=domain,dc=name",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_ldap_password_tip",
+        "definition": "Ülalpool määratud kasutaja parool.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "undefined",
+        "definition": "Määramata",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "error_cannot_open_file",
+        "definition": "Faili ei saa avada",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "provide_current_psk_and_click_launch",
+        "definition": "Kui oled valmis, vajuta nuppu Käivita",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "data_inconsistency",
+        "definition": "Leiti andmete vastuolu. Palun laadi leht uuesti!",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "data_are_missing",
+        "definition": "Oodatud andmed puuduvad",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "one_time_code",
+        "definition": "Ühekordne kood",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "provide_personal_one_time_code",
+        "definition": "Palun sisesta ühekordne kood, mille said e-mailiga",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "change_authentification_type_to_ldap",
+        "definition": "Muuda autentimise tüübiks LDAP",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "change_authentification_type_to_local",
+        "definition": "Muuda autentimise tüübiks Teampass lokaalne andmebaas",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "ldap_user_password_is_used_for_authentication",
+        "definition": "LDAP kasutaja parooli kasutatakse autentimiseks",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "local_user_password_is_used_for_authentication",
+        "definition": "Teampass kasutaja parooli kasutatakse autentimiseks",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "current_password",
+        "definition": "Praegune parool",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "password_is_not_correct",
+        "definition": "See parool on vale",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "personal_items",
+        "definition": "Isiklikud kirjed",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "fill_in_fields_and_hit_launch",
+        "definition": "Sisesta andmed ja vajuta nuppu Käivita",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "please_select_a_folder",
+        "definition": "Palun vali kaust",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "user_must_have_login_and_email",
+        "definition": "Kasutajal peab olema kasutajanimi ja e-posti aadress",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "user_has_this_role_in_teampass",
+        "definition": "Kasutajal on see roll Teampassis",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "select_role_to_create",
+        "definition": "Vali loodav roll",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "adding_ldap_role_to_teampass",
+        "definition": "Võid luua Teampassi rolli oma Active Directory grupist. See võimaldab seostada kasutaja selle rolliga Teampassis.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "add_user_to_role",
+        "definition": "Lisa see roll kasutajale Teampassis",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "add_user_in_teampass",
+        "definition": "Lisa kasutaja Teampassi",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "synchronized",
+        "definition": "Sünkroniseeritud",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "output",
+        "definition": "Väljund",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "remove_install_folder",
+        "definition": "Installikaust tuleb kustutada",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "list_users",
+        "definition": "Kasutajate nimekiri",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "ldap_synchronization",
+        "definition": "LDAP sünkroniseerimine",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "in_progress",
+        "definition": "Pooleli",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "clipboard_password_life_duration",
+        "definition": "Viivitus enne lõikelaua puhastamist (sekundites)",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "clipboard_password_life_duration_tip",
+        "definition": "Võimaldab määrata viivituse sekundites, mille järel lõikelauale kopeeritud parool eemaldatakse. Määra 0 keelamiseks.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "clipboard_will_be_cleared",
+        "definition": "Parool on nüüd lõikelaual. See kustutatakse varsti...",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "error_missing_id",
+        "definition": "Ilmnes viga. Puuduv ID...?",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "error_folder_not_allowed",
+        "definition": "Valitud kaust pole lubatud",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "all_fields_mandatory",
+        "definition": "Kõik väljad on kohustuslikud",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "history_insert_entry",
+        "definition": "Lisa ajalukku",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "clear_form",
+        "definition": "Tühjenda vorm",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "info_about_history_insertion",
+        "definition": "Ettevaatust - See funktsioon võimaldab käsitsi lisada sündmuse kirje ajalukku. Pärast lisamist pole võimalik seda eemaldada. Pane tähele, et sinu konto ID seostatakse selle uue kirjega.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "select_all",
+        "definition": "Vali kõik",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "unselect_all",
+        "definition": "Tühista kõik valikud",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "no_data_to_display",
+        "definition": "Pole andmeid kuvamiseks! Kas kaustu pole olemas või sul pole ühelegi neist juurdepääsu.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "data_refreshed",
+        "definition": "Andmed värskendatud",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "loading_image",
+        "definition": "Laen pilti",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "compare_with_another_role",
+        "definition": "Võrdle teise rolliga",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "only_display_folders_to_depth",
+        "definition": "Kuva kaustu sügavuseni",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "propagate_rights_to_descendants",
+        "definition": "Levita õigused almobjektidele",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "loading_data",
+        "definition": "Laen andmeid",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "password_overview_delay",
+        "definition": "Viivitus parooli kuvamisel",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "password_overview_delay_tip",
+        "definition": "See seade võimaldab määrata sekundite arvu, mille jooksul parooli kuvatakse kasutajale.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "select_date_showing_items_expiration",
+        "definition": "Loetleleitud aegunud kirjed kuupäeval",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "renewal_page_info",
+        "definition": "See leht võimaldab tuvastada kirjed, mis on hetkel aegunud või aeguvad lähiperioodil.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "filename",
+        "definition": "Failinimi",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "exported_to_file",
+        "definition": "Eksporditud faili",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "operation_progress",
+        "definition": "Tegevus pooleli",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "exporting_items",
+        "definition": "Ekspordin kirjeid",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "select_folders_to_export",
+        "definition": "Vali eksporditavad kaustad",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "export_format_type",
+        "definition": "Vali ekspordi vorming",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "export_items",
+        "definition": "Ekspordi kirjed",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "loading_item",
+        "definition": "Laen kirjet",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "otv_message",
+        "definition": "Saad seda kirjet kellegagi jagada ilma Teampass kontota. Ühekordne vaatamine võimaldab külalisel pääseda kirje põhiväljadele ainult üks kord ilma Teampassi autentimata. Pane tähele, et see link kehtib kuni üks järgmistest seadetest on saavutatud. Kopeeri ja jaga allolevat linki.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "no_sharekey_found",
+        "definition": "Selle faili jaoks ei leitud võtit",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "otv_link",
+        "definition": "Ühekordse vaatamise link",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "one_time_view",
+        "definition": "Ühekordne vaatamine",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "form_presents_inconsistencies",
+        "definition": "Vormis on ebakõlasid. Palun kontrolli punase äärega välju.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "download",
+        "definition": "Lae alla",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "see",
+        "definition": "Vaata",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "at_anyoneconmodify",
+        "definition": "Igaüks saab muuta",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "disabled",
+        "definition": "Keelatud",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "enabled",
+        "definition": "Lubatud",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "confirmation_seems_wrong",
+        "definition": "Kinnitus näib vale, palun paranda",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "i_cannot_remember",
+        "definition": "Ma ei mäleta",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "i_cannot_remember_info",
+        "definition": "See tegevus on pöördumatu. See kustutab paroolid sinu isiklikest kirjetest. Kirjeid ei kustutata, ainult nende paroolid. Kui sa ei mäleta oma isiklikku võtit, on see ainus valik.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "user_has_psk_info",
+        "definition": "Oleme tuvastanud, et sul on mõned isiklikud kirjed krüpteeritud vana isikliku võtmega. See samm eesmärk on nende uuesti krüpteerimine sinu uue privaatvõtmega. Palun anna meile oma isiklik võti.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "files",
+        "definition": "Failid",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "suggestions",
+        "definition": "Soovitused",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "encryption_keys",
+        "definition": "Krüpteerin võtmeid",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "hit_launch_to_start",
+        "definition": "Palun vajuta nuppu Käivita",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "password_changed",
+        "definition": "Parool uuendatud",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "password_already_used",
+        "definition": "Parool on juba kasutatud",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "change_login_password",
+        "definition": "Muuda sisselogimise parooli",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "current_password_mandatory",
+        "definition": "Praegune parool on kohustuslik",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "description_has_changed",
+        "definition": "Kirjeldus on muutunud",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "number_of_items_imported",
+        "definition": "Imporditud kirjete arv",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "propagate",
+        "definition": "Levita",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "propagate_user_rights",
+        "definition": "Levita kasutajaõigused",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "register_new_yubiko_key",
+        "definition": "Registreeri uus Yubiko võti",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "part_of_groups",
+        "definition": "Kuulub gruppidesse",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "previous_value",
+        "definition": "Eelmine väärtus",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "no_previous_value",
+        "definition": "Eelmist väärtust pole",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "cannot_open_file",
+        "definition": "Faili ei saa avada",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "reading_file",
+        "definition": "Loen faili",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "where_shall_items_be_created",
+        "definition": "Kuhu luuakse kirjed",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "target_folder",
+        "definition": "Sihtkaust",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "select_file",
+        "definition": "Vali fail",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "data_type_for_import",
+        "definition": "Alusta andmete allika tüübi valimisega",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "get_tips_about_importation",
+        "definition": "Hangi näpunäiteid importimise kohta",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "import_new_items",
+        "definition": "Impordi uued kirjed",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "for",
+        "definition": "jaoks",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "request_access",
+        "definition": "Taotle juurdepääsu kirjele",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "request_access_message",
+        "definition": "Kui taotled juurdepääsu kirjele, saadetakse e-kiri autorile. Autor aktsepteerib või lükkab taotluse tagasi, lisades su kirje piirangute nimekirja. Palun kinnita e-kirja saatmine autorile.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "request_access_reason",
+        "definition": "Anna autorile oma taotluse põhjus",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "error_provide_reason",
+        "definition": "Palun põhjenda, miks soovid sellele kirjele juurde pääseda",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "need_access",
+        "definition": "Vajad juurdepääsu?",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "item_with_restricted_access",
+        "definition": "Piiratud juurdepääsuga kirje",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "remaining_emails_to_send",
+        "definition": "Saatmata e-kirju",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "mfa_flash",
+        "definition": "Skanneeri oma mobiilseadmega",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "role_definition",
+        "definition": "Rolli määratlus",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "2factors_expected_for_admin",
+        "definition": "Administraator vajab MFA-d sisselogimiseks",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "2factors_expected_for_admin_tip",
+        "definition": "Vaikimisi peab administraator MFA meetodit kasutama sisselogimiseks. Kui pole lubatud, ei vaja administraator seda isegi kui MFA on teistele kasutajatele lubatud.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "restore_done_now_logout",
+        "definition": "Andmebaasi taastamine on tehtud. Pead nüüd välja logima sessioonimuutujate värskendamiseks.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "backup_and_restore",
+        "definition": "Varundamine ja taastamine",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "perform_backup",
+        "definition": "Tee varukoopia",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "perform_restore",
+        "definition": "Taasta varukoopia",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "backup_select",
+        "definition": "Varukoopia fail",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "choose_file",
+        "definition": "Vali fail",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "on_the_fly",
+        "definition": "Lennult",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "scheduled",
+        "definition": "Ajastatud",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "caution_on_field_encryption_change",
+        "definition": "Ettevaatust - Krüpteerimise tüübi muutmine nõuab kõigi olemasolevate andmete läbivaatamist, et muuta andmebaasi krüpteerimine.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "caution_while_deleting_field",
+        "definition": "Ettevaatust - Selle välja kustutamine kustutab ka seotud andmed kirjetest.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "error_could_not_update_the_field",
+        "definition": "Viga - Välja ei saanud uuendada. Palun proovi pärast lehe uuesti laadimist.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "caution_while_deleting_category",
+        "definition": "Ettevaatust - Selle kausta kustutamine kustutab kõik selle väljad ja ka kõik väljade seotud andmed.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "your_attention_please",
+        "definition": "Palun tähelepanu",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "all_fields_are_required",
+        "definition": "Kõik väljad on kohustuslikud",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "position",
+        "definition": "Asukoht",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "before",
+        "definition": "Enne",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "top",
+        "definition": "Üles",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "bottom",
+        "definition": "Alla",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "field",
+        "definition": "Väli",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "configuration",
+        "definition": "Seadistus",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "last_execution",
+        "definition": "Viimane käivitus",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "launch",
+        "definition": "Käivita",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "uploads",
+        "definition": "Üleslaadimised",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "uploads_configuration",
+        "definition": "Üleslaadimise seadistus",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "email_configuration",
+        "definition": "E-posti seadistus",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "email_configuration_test",
+        "definition": "E-posti seadistuse test",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "send_a_test_email",
+        "definition": "Saada test e-mail",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "manage_emails_not_sent",
+        "definition": "Halda saatmata e-kirju",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "email_send_backlog",
+        "definition": "#nb_emails# saatmata e-kirja",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "send_waiting_emails",
+        "definition": "Saada ootel e-kirjad",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "no_data_defined",
+        "definition": "Andmeid pole määratud",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "adding_new_api_ip",
+        "definition": "Lisa uus IP valgenimekirja",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "adding_new_api_key",
+        "definition": "Lisa uus API võti",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "api_configuration",
+        "definition": "API seadistus",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "mfa_configuration",
+        "definition": "MFA seadistus",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "yubico_authentication_tip",
+        "definition": "Täpsema info jaoks külasta www.yubico.com.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "complexity_level_not_reached",
+        "definition": "Keerukuse tase ei ole saavutatud",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "expected_complexity_level",
+        "definition": "Oodatud keerukuse tase",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "your_attention_is_required",
+        "definition": "Sinu tähelepanu on vajalik",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "favorite",
+        "definition": "Lemmik",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "unfavorite",
+        "definition": "Eemalda lemmikutest",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "you_need_to_select_at_least_one_folder",
+        "definition": "Pead valima vähemalt ühe kausta",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "no_value_defined_please_fix",
+        "definition": "Väärtus määramata! Palun paranda.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "apply",
+        "definition": "Rakenda",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "from",
+        "definition": "Alates",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "please_confirm_by_clicking_checkbox",
+        "definition": "Palun kinnita märkeruudu abil",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "date_range",
+        "definition": "Kuupäevavahemik",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "purge",
+        "definition": "Puhasta",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "belong_of_deleted_folder",
+        "definition": "Kuulub kustutatud kausta",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "number_of_selected_objects",
+        "definition": "Valitud objektide arv",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "confirm_selection_restore",
+        "definition": "Palun kinnita valitud kirjete taastamine.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "confirm_selection_delete",
+        "definition": "Palun kinnita valitud kirjete kustutamine.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "refreshing",
+        "definition": "Värskendamine",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "empty_list",
+        "definition": "Tühi nimekiri",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "deleted_folders",
+        "definition": "Kustutatud kaustad",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "deleted_items",
+        "definition": "Kustutatud kirjed",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "recycled_bin",
+        "definition": "Prügikast",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "database",
+        "definition": "Andmebaas",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "renewal",
+        "definition": "Uuendamine",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "renewal_delay",
+        "definition": "Uuendamise viivitus",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "please_confirm_deletion",
+        "definition": "Palun kinnita kustutamine",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "caution",
+        "definition": "Ettevaatust",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "role_can_edit_any_visible_item",
+        "definition": "Roll saab muuta iga nähtavat kirjet",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "role_can_edit_any_visible_item_tip",
+        "definition": "Tavaline seade on jätta see ruut märkimata. Tõepoolest, kui märgitud, võimaldab see kasutajal, kes kuulub sellesse rolli, muuta iga kirjet, mida kasutaja saab avada, mis viib ebaturvalise olekuni. Seda tuleks märkida ainult teatud ajaperioodiks ja vajaduseks.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "edit_allowed",
+        "definition": "Muutmine lubatud",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "delete_allowed",
+        "definition": "Kustutamine lubatud",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "add_allowed",
+        "definition": "Lisamine lubatud",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "edit_not_allowed",
+        "definition": "Muutmine keelatud",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "delete_not_allowed",
+        "definition": "Kustutamine keelatud",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "select_a_role",
+        "definition": "Vali roll",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "access_rights_for_user",
+        "definition": "Kasutaja juurdepääsuõigused",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "logs_for_user",
+        "definition": "Kasutaja logid",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "by_clicking_this_checkbox_confirm_user_deletion",
+        "definition": "Selle ruudu märkimine kinnitab kasutaja kustutamise.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "fields_with_mandatory_information_are_missing",
+        "definition": "Kohustuslikud väljad on täitmata",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "enable_personal_folder_for_this_user",
+        "definition": "Luba sellele kasutajale isiklik kaust",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "special",
+        "definition": "Eriline",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "administrator",
+        "definition": "Administraator",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "super_manager",
+        "definition": "Teampass haldur",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "manager",
+        "definition": "Haldur",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "read_only",
+        "definition": "Ainult lugemine",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "privileges",
+        "definition": "Õigused",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "user_definition",
+        "definition": "Kasutaja määratlus",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "next_list_to_be_deleted",
+        "definition": "Järgmine nimekiri kustutatakse",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "delete_folders",
+        "definition": "Kustuta kaustad",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "submit",
+        "definition": "Saada",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "parent",
+        "definition": "Ülemkaust",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "password_minimal_complexity_target",
+        "definition": "Minimaalne parooli keerukus",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "access_right_for_roles",
+        "definition": "Rollide õigused",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "create_without_password_minimal_complexity_target",
+        "definition": "Luba uute kirjete loomine ilma minimaalse parooli keerukuseta",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "edit_without_password_minimal_complexity_target",
+        "definition": "Luba kirjete muutmine ilma minimaalse parooli keerukuseta",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "add_new_folder",
+        "definition": "Lisa uus kaust",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "new",
+        "definition": "Uus",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "mfa",
+        "definition": "Mitmefaktoriline autentimine",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "google_2fa",
+        "definition": "Google 2-astmeline verifitseerimine",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "duo_security",
+        "definition": "Duo turvalisus",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "yubico",
+        "definition": "Yubico autentija",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "no_change_performed",
+        "definition": "Muudatusi ei tehtud.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "password_strength",
+        "definition": "Parooli tugevus",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "new_password_required",
+        "definition": "Uus parool on nõutud",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "limited_search",
+        "definition": "Piiratud otsing",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "empty_psk",
+        "definition": "Võti puudub",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "currently_no_favorites",
+        "definition": "Sul pole hetkel lemmikuid",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "confirm_item_move",
+        "definition": "Oled valinud \"Liigutamine\"... oled kindel?",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "copy_to_clipboard",
+        "definition": "Kopeeri lõikelauale",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "actions",
+        "definition": "Tegevused",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "no_user",
+        "definition": "Vale kasutaja",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "generate_api_token",
+        "definition": "Genereeri uus API võti",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "upload_feature",
+        "definition": "Üleslaadimise funktsioon",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "profile",
+        "definition": "Profiil",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "language",
+        "definition": "Keel",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings",
+        "definition": "Seaded",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "created_items",
+        "definition": "Loodud kirjed",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "modification_performed",
+        "definition": "Muudatus tehtud",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "items_opened",
+        "definition": "Avatud kirjed",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "passwords_seen",
+        "definition": "Vaadatud paroolid",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "nothing_to_save",
+        "definition": "Pole midagi salvestada",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "notification_engaged",
+        "definition": "Saad teavitusi kirjete muutumisest",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "notification_not_engaged",
+        "definition": "Ei saa teavitusi kirjete muutumisest",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "viewed_number",
+        "definition": "Vaatamiste arv",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "automatic_deletion_engaged",
+        "definition": "Automaatne kustutamine",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "auto_update_enabled",
+        "definition": "Automaatne kasutaja parooli vahetamine lubatud. Järgmine muutus planeeritud",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "copy_folder",
+        "definition": "Kopeeri kaust",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "select_source_folder",
+        "definition": "Vali kopeeritav kaust",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "select_destination_folder",
+        "definition": "Vali sihtkaust",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "delete_folder",
+        "definition": "Kausta kustutamine",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "select_folder_to_delete",
+        "definition": "Vali kustutatav kaust",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "folder_delete_confirm",
+        "definition": "Valitud kaust ja selle kirjed kustutatakse. Palun märgi ruut kustutamise kinnitamiseks.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "json_error_format",
+        "definition": "Vale JSON vorming",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "password_cannot_be_empty",
+        "definition": "Parool ei saa olla tühi",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "password_too_long",
+        "definition": "Parool on liiga pikk",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "error_no_action_identified",
+        "definition": "Ühtegi tegevust ei tuvastatud",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "emails",
+        "definition": "E-mailid",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "backups",
+        "definition": "Varukoopiad",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "add_folder",
+        "definition": "Lisa uus kaust",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "select_folder_parent",
+        "definition": "Vali ülemkaust",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "add",
+        "definition": "Lisa",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "key_is_not_correct",
+        "definition": "Antud sessiooni võti on vale",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "email_address",
+        "definition": "E-posti aadress",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "enter_email",
+        "definition": "Sisesta e-mail",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "notification",
+        "definition": "Teavitus",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "notify_on_change",
+        "definition": "Teavita mind muudatustest",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "notification_message",
+        "definition": "Selle seadega saad valida, kas soovid teavitusi selle kirje muudatustest.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "share_item",
+        "definition": "Jaga kirjet",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "share_item_message",
+        "definition": "Saad seda kirjet kellegagi jagada. Sisesta kehtiv e-posti aadress ja vajuta nuppu Teosta.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "delete_item_message",
+        "definition": "Oled otsustanud selle kirje kustutada. Pead kinnitama oma valiku nupuga Teosta.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "warning",
+        "definition": "Hoiatus",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "information",
+        "definition": "Teave",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "perform",
+        "definition": "Teosta",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "delete_item",
+        "definition": "Kustuta kirje",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "copy_item",
+        "definition": "Kopeeri kirje",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "new_item",
+        "definition": "Uus kirje",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "error_not_allowed_to_edit_item",
+        "definition": "Sul pole õigust seda kirjet muuta",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "error_not_allowed_to_access_this_folder",
+        "definition": "Sul pole õigust sellele kaustale juurde pääseda",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "no_fields",
+        "definition": "Selle kirjega pole seotud ühtegi välja.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "changes_ongoing",
+        "definition": "Mõned muudatused ei salvestunud. Kas kinnitad lahkumise ilma salvestamata?",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "no_file_to_upload",
+        "definition": "Üleslaadimiseks pole faili",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "add_files_and_click_start",
+        "definition": "Lisa failid üleslaadimise järjekorda ja vajuta alustamise nuppu.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "select_files",
+        "definition": "Vali failid",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "attached_files",
+        "definition": "Manustatud failid",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "visible_by",
+        "definition": "Nähtav",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "anounce_item_by_email",
+        "definition": "Teavita kasutajaid sellest kirjest",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "select_users_if_needed",
+        "definition": "Vali kasutajad vajadusel",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "allow_item_to_be_deleted",
+        "definition": "Luba selle kirje kustutamine järgmisel tingimusel",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "item_deleted_after_being_viewed_x_times",
+        "definition": "Kirje kustutatakse pärast X korda vaatamist",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "item_deleted_after_date",
+        "definition": "Kirje kustutatakse pärast määratud kuupäeva",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "password",
+        "definition": "Parool",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "save",
+        "definition": "Salvesta",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "folder",
+        "definition": "Kaust",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "main",
+        "definition": "Peamine",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "fields",
+        "definition": "Väljad",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "details",
+        "definition": "Üksikasjad",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "no_special_restriction",
+        "definition": "Eripiiranguid pole",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "no_custom_fields",
+        "definition": "Kohandatud välju pole",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "no_attachment",
+        "definition": "Manuseid pole",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "saved",
+        "definition": "Salvestatud",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "attachments",
+        "definition": "Manused",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "success",
+        "definition": "Edukas",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "server_answer_error",
+        "definition": "Ilmnes viga. Serveri vastust ei saa töödelda!",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "server_returned_data",
+        "definition": "Tagastatud andmed",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "statistics",
+        "definition": "Statistika",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "options",
+        "definition": "Valikud",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "password_is_empty",
+        "definition": "Kirjel puudub parool",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "log_in",
+        "definition": "Logi sisse",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "create_item_based_upon_template",
+        "definition": "Kasuta kirjele malli",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "create_item_based_upon_template_tip",
+        "definition": "Kui lubatud, võimaldab see funktsioon autoril valida malli, mis koosneb kohandatud väljadest. Pane tähele, et see funktsioon nõuab ka kohandatud väljade lubamist.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "main_template",
+        "definition": "Kasuta mallina",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "is_mandatory",
+        "definition": "On kohustuslik",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "error_field_is_mandatory",
+        "definition": "Vähemalt üks kohustuslik väli on tühi",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "restrict_visibility_to",
+        "definition": "Piira nähtavust",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "every_roles",
+        "definition": "Kõik rollid",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "masked_text",
+        "definition": "Varjatud tekst",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "textarea",
+        "definition": "Tekstiala",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "admin_yubico_authentication_setting",
+        "definition": "Luba Yubico autentimine",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "yubico_user_id",
+        "definition": "Kliendi ID",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "yubico_user_key",
+        "definition": "Salajane võti",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "press_your_yubico_key",
+        "definition": "Vajuta oma Yubico võtit",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_secure_display_image",
+        "definition": "Luba turvaline piltide kuvamine",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_secure_display_image_tip",
+        "definition": "Turvaline piltide kuvamine võimaldab pilti lugeda PHP kaudu, kui kasutaja eelvaatab kirjele lisatud pilti. Plussid: manus salvestatakse väljaspool saidi kausta ja pole häkkeritele kättesaadav. Miinused: natuke aeglasem kui otse URL-ist eelvaatamine.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "email_debug_level",
+        "definition": "Vali silumise tase",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "email_debug_client",
+        "definition": "Kliendi käsud",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "email_debug_server",
+        "definition": "Kliendi käsud ja serveri vastused",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "email_debug_connection",
+        "definition": "Kliendi käsud, serveri vastused ja ühenduse staatus",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "email_debug_low_level",
+        "definition": "Madala taseme andmete väljund, kõik sõnumid",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "email_debug_level_usage",
+        "definition": "See seade peaks olema seatud Puudub. Kasutatakse ainult e-posti silumiseks testimise ajal. Kui lubatud, kuvab see e-posti käskude väljundi.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "user_specific_right",
+        "definition": "Kasutaja spetsiifiline õigus",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    }
+]
