@@ -1017,6 +1017,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                     progressBar: true
                                 }
                             );
+                            return false;
                         } else if (store.get('teampassApplication').formUserAction === 'add_new_user') {
                             // Inform user
                             toastr.remove();
