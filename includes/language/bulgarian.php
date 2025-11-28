@@ -898,7 +898,6 @@ return array(
     'mapped_with_role' => 'Картирано с роля',
     'ad_groupe_and_roles_mapping' => 'Картиране на AD групи и роли',
     'select_adgroup_mapping' => 'Изберете ролята за картиране',
-    'provide_label' => 'Предоставете етикет',
     'uploading' => 'Uploading...',
     'account_not_ready' => 'Акаунтът е в изграждане',
     'add_new_job' => 'Добави нова задача',
