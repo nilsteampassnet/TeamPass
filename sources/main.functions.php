@@ -741,7 +741,7 @@ function cacheTableRefresh(): void
                         WHERE id = %i',
                         $elem->title
                     );
-                    if (count($user) > 0) {
+                    if (!empty($user)) {
                         $elem->title = $user['login'];
                     }
                 }
@@ -816,7 +816,7 @@ function cacheTableUpdate(?int $ident = null): void
                 WHERE id = %i',
                 $elem->title
             );
-            if (count($user) > 0) {
+            if (!empty($user)) {
                 $elem->title = $user['login'];
             }
         }
@@ -894,7 +894,7 @@ function cacheTableAdd(?int $ident = null): void
                 WHERE id = %i',
                 $elem->title
             );
-            if (count($user) > 0) {
+            if (!empty($user)) {
                 $elem->title = $user['login'];
             }
         }
