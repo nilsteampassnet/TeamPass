@@ -198,9 +198,9 @@ jobs:
         run: |
           FULL_SHA="${{ github.sha }}"
           SHORT_TAG="${FULL_SHA:0:7}"
-          docker pull ${{ env.IMAGE_NAME_DOCKERHUB }}:${{SHORT_TAG}}
-          docker run --rm ${{ env.IMAGE_NAME_DOCKERHUB }}:${{SHORT_TAG}} php -v
-          docker run --rm ${{ env.IMAGE_NAME_DOCKERHUB }}:${{SHORT_TAG}} nginx -v
+          docker pull ${{ env.IMAGE_NAME_DOCKERHUB }}:"$SHORT_TAG"
+          docker run --rm ${{ env.IMAGE_NAME_DOCKERHUB }}:"$SHORT_TAG" php -v
+          docker run --rm ${{ env.IMAGE_NAME_DOCKERHUB }}:"$SHORT_TAG" nginx -v
 
       - name: Test docker-compose
         run: |
