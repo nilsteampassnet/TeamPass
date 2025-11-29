@@ -196,9 +196,11 @@ jobs:
 
       - name: Pull and test image
         run: |
-          docker pull ${{ env.IMAGE_NAME_DOCKERHUB }}:${{ github.ref_name }}
-          docker run --rm ${{ env.IMAGE_NAME_DOCKERHUB }}:${{ github.ref_name }} php -v
-          docker run --rm ${{ env.IMAGE_NAME_DOCKERHUB }}:${{ github.ref_name }} nginx -v
+          SHORT_SHA=${{ github.sha }}
+          SHORT_TAG=${SHORT_SHA:0:7}
+          docker pull ${{ env.IMAGE_NAME_DOCKERHUB }}:${{ SHORT_TAG }}
+          docker run --rm ${{ env.IMAGE_NAME_DOCKERHUB }}:${{ SHORT_TAG }} php -v
+          docker run --rm ${{ env.IMAGE_NAME_DOCKERHUB }}:${{ SHORT_TAG }} nginx -v
 
       - name: Test docker-compose
         run: |
